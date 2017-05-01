@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
-	"golang.org/x/net/context/ctxhttp"
-	"github.com/prebid/openrtb"
 )
 
 type PubmaticAdapter struct {
