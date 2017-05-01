@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
+
 # prebid-server
 Server side component to offload prebid processing to the cloud
 
