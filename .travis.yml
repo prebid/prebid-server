@@ -4,6 +4,7 @@ go:
     - master
 
 install:
+    - go get github.com/Masterminds/glide
     - glide update
 
 script:
