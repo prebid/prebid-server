@@ -9,10 +9,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-
 	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/openrtb"
 )
 
@@ -143,7 +140,7 @@ func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL strin
 	a := NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=$UID", externalURL)
-	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?p=31445&s=21446&predirect="
+	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, redirect_uri),
