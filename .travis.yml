@@ -1,0 +1,10 @@
+language: go
+go:
+    - 1.8.1
+    - master
+
+install:
+    - glide update
+
+script:
+    - ./validate.sh

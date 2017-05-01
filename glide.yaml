@@ -1,0 +1,32 @@
+package: prebid-server
+import:
+- package: github.com/golang/glog
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/julienschmidt/httprouter
+  version: ~1.1.0
+- package: github.com/prebid/openrtb
+  version: ~3.0.2
+- package: github.com/rcrowley/go-metrics
+- package: github.com/spf13/viper
+- package: github.com/vrischmann/go-metrics-influxdb
+- package: github.com/xeipuuv/gojsonschema
+- package: golang.org/x/net
+  subpackages:
+  - context/ctxhttp
+  - publicsuffix
+- package: gopkg.in/mgo.v2
+- package: gopkg.in/yaml.v2
+- package: github.com/rs/cors
+  version: ^1.0.0
+- package: github.com/lib/pq
+- package: github.com/coocood/freecache
+- package: github.com/spaolacci/murmur3
+- package: github.com/cloudfoundry/gosigar
+- package: github.com/xojoc/useragent
+testImport:
+- package: github.com/stretchr/testify
+  version: ^1.1.4
+  subpackages:
+  - assert

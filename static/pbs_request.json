@@ -1,0 +1,99 @@
+{
+    "id": "http://prebid.org/pbs_request.json",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": "schema for a Prebid Server request",
+    "type": "object",
+    "required": [
+        "account_id",
+        "ad_units"
+    ],
+    "properties": {
+        "account_id": {
+            "type": "string"
+        },
+        "tid": {
+            "description": "Unique transaction ID",
+            "type": "string"
+        },
+        "timeout_millis": {
+            "description": "How long to wait for adapters to return bids",
+            "type": "integer"
+        },
+        "ad_units": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": [
+                    "sizes",
+                    "code"
+                ],
+                "oneOf": [
+                    {"required": ["bids"]},
+                    {"required": ["config_id"]}
+                ],
+                "properties": {
+                    "code": {
+                        "description": "Unique code of the ad unit on the page",
+                        "type": "string"
+                    },
+                    "sizes": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "h": {
+                                    "description": "Height of the ad unit",
+                                    "type": "integer"
+                                },
+                                "w": {
+                                    "description": "Width of the ad unit",
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "bids": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "bidder",
+                                "bid_id"
+                            ],
+                            "properties": {
+                                "bid_id": {
+                                    "description": "Unique bid id for this bidder for this slot - for analytics",
+                                    "type": "string"
+                                },
+                                "bidder": {
+                                    "description": "Unique code for an adapter to call",
+                                    "type": "string"
+                                },
+                                "params": {
+                                    "description": "Optional params to send to the adapter",
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "config_id": {
+                        "description": "The config to load for this ad unit",
+                        "type": "string"
+                    },
+                    "slot_code": {
+                        "description": "The slot code used by DFP",
+                        "type": "string"
+                    },
+                    "topframe": {
+                        "description": "Whether this ad will render in the top IFRAME",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1
+                    }
+                }
+            }
+        }
+    }
+}
