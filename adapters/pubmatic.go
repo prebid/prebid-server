@@ -146,7 +146,7 @@ func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL strin
 	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?p=31445&s=21446&predirect="
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		URL:         fmt.Sprintf("%s%s", usersyncURL, redirect_uri),
 		Type:        "iframe",
 		SupportCORS: false,
 	}
