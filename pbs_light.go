@@ -67,7 +67,7 @@ var (
 	cookieDomain string
 )
 
-var exchanges map[string]adapters.Adapter
+var exchanges map[string]pbs.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
 
@@ -124,7 +124,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, exchanges)
 	if err != nil {
 		glog.Info("error parsing request", err)
 		writeAuctionError(w, "Error parsing request", err)
@@ -167,53 +167,48 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ch := make(chan bidResult)
 	sentBids := 0
 	for _, bidder := range pbs_req.Bidders {
-		if ex, ok := exchanges[bidder.BidderCode]; ok {
-			ametrics := adapterMetrics[bidder.BidderCode]
-			ametrics.RequestMeter.Mark(1)
-			if pbs_req.GetUserID(ex.FamilyName()) == "" {
-				bidder.NoCookie = true
-				bidder.UsersyncInfo = ex.GetUsersyncInfo()
-				ametrics.NoCookieMeter.Mark(1)
-				continue
-			}
-			sentBids++
-			go func(bidder *pbs.PBSBidder) {
-				start := time.Now()
-				bid_list, err := ex.Call(ctx, pbs_req, bidder)
-				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
-				ametrics.RequestTimer.UpdateSince(start)
-				if err != nil {
-					switch err {
-					case context.DeadlineExceeded:
-						ametrics.TimeoutMeter.Mark(1)
-						bidder.Error = "Timed out"
-					case context.Canceled:
-						fallthrough
-					default:
-						ametrics.ErrorMeter.Mark(1)
-						bidder.Error = err.Error()
-					}
-				} else if bid_list != nil {
-					bidder.NumBids = len(bid_list)
-					accountMetrics[pbs_req.AccountID].BidsReceivedMeter.Mark(int64(bidder.NumBids))
-					for _, bid := range bid_list {
-						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
-						accountMetrics[pbs_req.AccountID].PriceHistogram.Update(int64(bid.Price * 1000))
-					}
-				} else {
-					bidder.NoBid = true
-					ametrics.NoBidMeter.Mark(1)
-				}
-
-				ch <- bidResult{
-					bidder:   bidder,
-					bid_list: bid_list,
-				}
-			}(bidder)
-
-		} else {
-			bidder.Error = "Unsupported bidder"
+		ametrics := adapterMetrics[bidder.BidderCode]
+		ametrics.RequestMeter.Mark(1)
+		if pbs_req.GetUserID(bidder.Adapter.FamilyName()) == "" {
+			bidder.NoCookie = true
+			bidder.UsersyncInfo = bidder.Adapter.GetUsersyncInfo()
+			ametrics.NoCookieMeter.Mark(1)
+			continue
 		}
+		sentBids++
+		go func(bidder *pbs.PBSBidder) {
+			start := time.Now()
+			bid_list, err := bidder.Adapter.Call(ctx, pbs_req, bidder)
+			bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
+			ametrics.RequestTimer.UpdateSince(start)
+			if err != nil {
+				switch err {
+				case context.DeadlineExceeded:
+					ametrics.TimeoutMeter.Mark(1)
+					bidder.Error = "Timed out"
+				case context.Canceled:
+					fallthrough
+				default:
+					ametrics.ErrorMeter.Mark(1)
+					bidder.Error = err.Error()
+				}
+			} else if bid_list != nil {
+				bidder.NumBids = len(bid_list)
+				accountMetrics[pbs_req.AccountID].BidsReceivedMeter.Mark(int64(bidder.NumBids))
+				for _, bid := range bid_list {
+					ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
+					accountMetrics[pbs_req.AccountID].PriceHistogram.Update(int64(bid.Price * 1000))
+				}
+			} else {
+				bidder.NoBid = true
+				ametrics.NoBidMeter.Mark(1)
+			}
+
+			ch <- bidResult{
+				bidder:   bidder,
+				bid_list: bid_list,
+			}
+		}(bidder)
 	}
 
 	for i := 0; i < sentBids; i++ {
@@ -395,7 +390,7 @@ func main() {
 		glog.Fatalf("Postgres cache not configured: %v", err)
 	}
 
-	exchanges = map[string]adapters.Adapter{
+	exchanges = map[string]pbs.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),

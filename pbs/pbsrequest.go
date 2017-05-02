@@ -1,6 +1,7 @@
 package pbs
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/prebid/prebid-server/cache"
@@ -43,6 +44,14 @@ type PBSAdUnit struct {
 	Params   json.RawMessage
 }
 
+type Adapter interface {
+	Name() string
+	FamilyName() string
+	GetUsersyncInfo() *UsersyncInfo
+	Call(ctx context.Context, req *PBSRequest, bidder *PBSBidder) (PBSBidSlice, error)
+	SplitAdUnits() bool
+}
+
 type PBSBidder struct {
 	BidderCode   string        `json:"bidder"`
 	AdUnitCode   string        `json:"ad_unit,omitempty"` // for index to dedup responses
@@ -55,6 +64,7 @@ type PBSBidder struct {
 	Debug        *BidderDebug  `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
+	Adapter Adapter     `json:"-"`
 }
 
 func (bidder *PBSBidder) LookupBidID(Code string) string {
@@ -101,15 +111,10 @@ func getConfig(cache cache.Cache, id string) ([]Bids, error) {
 	return bids, nil
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
-	/*
-		dump, err := httputil.DumpRequest(r, false)
-		if err != nil {
-			return
-		}
-		fmt.Printf("%q", dump)
-	*/
-
+func ParsePBSRequest(r *http.Request, cache cache.Cache, exchanges map[string]Adapter) (*PBSRequest, error) {
+	if exchanges == nil {
+		return nil, fmt.Errorf("Exchanges is nil")
+	}
 	defer r.Body.Close()
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -227,23 +232,28 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 		for _, b := range bidders {
 			var bidder *PBSBidder
-			// index requires a different request for each ad unit
-			if b.BidderCode != "indexExchange" {
-				for _, pb := range pbsReq.Bidders {
-					if pb.BidderCode == b.BidderCode {
-						bidder = pb
+
+			if ex, ok := exchanges[bidder.BidderCode]; ok {
+				if !ex.SplitAdUnits() {
+					for _, pb := range pbsReq.Bidders {
+						if pb.BidderCode == b.BidderCode {
+							bidder = pb
+							break
+						}
 					}
 				}
-			}
-			if bidder == nil {
-				bidder = &PBSBidder{BidderCode: b.BidderCode}
-				if b.BidderCode == "indexExchange" {
-					bidder.AdUnitCode = unit.Code
+				if bidder == nil {
+					bidder = &PBSBidder{BidderCode: b.BidderCode, Adapter: ex}
+					if ex.SplitAdUnits() {
+						bidder.AdUnitCode = unit.Code
+					}
+					if pbsReq.IsDebug {
+						bidder.Debug = &BidderDebug{}
+					}
+					pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 				}
-				if pbsReq.IsDebug {
-					bidder.Debug = &BidderDebug{}
-				}
-				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
+			} else {
+				return nil, fmt.Errorf("Invalid bidder '%s'", bidder.BidderCode)
 			}
 
 			pau := PBSAdUnit{

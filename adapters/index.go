@@ -32,6 +32,11 @@ func (a *IndexAdapter) FamilyName() string {
 	return "indexExchange"
 }
 
+// Index only supports one ad unit per call
+func (a *IndexAdapter) SplitAdUnits() bool {
+	return true
+}
+
 func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }

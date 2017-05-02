@@ -32,6 +32,10 @@ func (a *AppNexusAdapter) FamilyName() string {
 	return "adnxs"
 }
 
+func (a *AppNexusAdapter) SplitAdUnits() bool {
+	return false
+}
+
 func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }

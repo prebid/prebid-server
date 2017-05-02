@@ -32,6 +32,10 @@ func (a *PubmaticAdapter) FamilyName() string {
 	return "pubmatic"
 }
 
+func (a *PubmaticAdapter) SplitAdUnits() bool {
+	return false
+}
+
 func (a *PubmaticAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }

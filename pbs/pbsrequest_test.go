@@ -2,11 +2,35 @@ package pbs
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/prebid/prebid-server/cache"
 	"net/http/httptest"
 	"testing"
 )
+
+type DummyAdapter struct {
+	Nom string
+}
+
+func (d DummyAdapter) Name() string {
+	return d.Nom
+}
+func (d DummyAdapter) FamilyName() string {
+	return d.Nom
+}
+func (d DummyAdapter) GetUsersyncInfo() *UsersyncInfo {
+	return nil
+}
+func (d DummyAdapter) Call(ctx context.Context, req *PBSRequest, bidder *PBSBidder) (PBSBidSlice, error) {
+	return nil, nil
+}
+func (d DummyAdapter) SplitAdUnits() bool {
+	if d.Nom == "indexExchange" {
+		return true
+	}
+	return false
+}
 
 func TestParseSimpleRequest(t *testing.T) {
 	body := []byte(`{
@@ -42,8 +66,11 @@ func TestParseSimpleRequest(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d := &DummyCache{}
-
-	pbs_req, err := ParsePBSRequest(r, d)
+	x := map[string]Adapter{
+		"appnexus":      DummyAdapter{Nom: "appnexus"},
+		"indexExchange": DummyAdapter{Nom: "indexExchange"},
+	}
+	pbs_req, err := ParsePBSRequest(r, d, x)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -102,8 +129,12 @@ func TestHeaderParsing(t *testing.T) {
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	r.Header.Add("User-Agent", "Mozilla/")
 	d := &DummyCache{}
+	x := map[string]Adapter{
+		"appnexus":      DummyAdapter{Nom: "appnexus"},
+		"indexExchange": DummyAdapter{Nom: "indexExchange"},
+	}
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, x)
 	if err != nil {
 		t.Fatalf("Parse simple request failed")
 	}
@@ -202,8 +233,12 @@ func TestParseConfig(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d := &DummyCache{}
+	x := map[string]Adapter{
+		"appnexus":      DummyAdapter{Nom: "appnexus"},
+		"indexExchange": DummyAdapter{Nom: "indexExchange"},
+	}
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, x)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}

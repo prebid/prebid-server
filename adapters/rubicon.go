@@ -34,6 +34,10 @@ func (a *RubiconAdapter) FamilyName() string {
 	return "rubicon"
 }
 
+func (a *RubiconAdapter) SplitAdUnits() bool {
+	return false
+}
+
 func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
