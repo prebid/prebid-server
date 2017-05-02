@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -15,6 +12,10 @@ import (
 	_ "net/http/pprof"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -58,10 +59,9 @@ var (
 	mRequestTimer        metrics.Timer
 
 	adapterMetrics map[string]*AdapterMetrics
-	accountMetrics map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
 
-	adapterMetricsMutex sync.Mutex
-	accountMetricsMutex sync.Mutex
+	accountMetrics        map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
+	accountMetricsRWMutex sync.RWMutex
 
 	requireUUID2 bool
 	cookieDomain string
@@ -89,6 +89,28 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	} else {
 		w.Write(b)
 	}
+}
+
+func getAccountMetrics(id string) *AccountMetrics {
+	var am *AccountMetrics
+
+	accountMetricsRWMutex.RLock()
+	am, ok := accountMetrics[id]
+	accountMetricsRWMutex.RUnlock()
+
+	if ok {
+		return am
+	}
+
+	accountMetricsRWMutex.Lock()
+	am = &AccountMetrics{}
+	am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
+	am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
+	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+	accountMetrics[id] = am
+	accountMetricsRWMutex.Unlock()
+
+	return am
 }
 
 func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -147,16 +169,8 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	accountMetricsMutex.Lock()
-	if _, ok := accountMetrics[pbs_req.AccountID]; !ok {
-		am := AccountMetrics{}
-		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", pbs_req.AccountID), metricsRegistry)
-		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", pbs_req.AccountID), metricsRegistry)
-		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", pbs_req.AccountID), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		accountMetrics[pbs_req.AccountID] = &am
-	}
-	accountMetrics[pbs_req.AccountID].RequestMeter.Mark(1)
-	accountMetricsMutex.Unlock()
+	am := getAccountMetrics(pbs_req.AccountID)
+	am.RequestMeter.Mark(1)
 
 	pbs_resp := pbs.PBSResponse{
 		Status:       "OK",
@@ -195,10 +209,10 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					}
 				} else if bid_list != nil {
 					bidder.NumBids = len(bid_list)
-					accountMetrics[pbs_req.AccountID].BidsReceivedMeter.Mark(int64(bidder.NumBids))
+					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					for _, bid := range bid_list {
 						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
-						accountMetrics[pbs_req.AccountID].PriceHistogram.Update(int64(bid.Price * 1000))
+						am.PriceHistogram.Update(int64(bid.Price * 1000))
 					}
 				} else {
 					bidder.NoBid = true
