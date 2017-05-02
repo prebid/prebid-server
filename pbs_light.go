@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -15,6 +12,12 @@ import (
 	_ "net/http/pprof"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs"
+
+	"log"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -346,7 +349,7 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return
 }
 
-func loadPostgresDataCache(cache_size int) (cache.Cache, error) {
+func loadPostgresDataCache() (cache.Cache, error) {
 	mem := sigar.Mem{}
 	mem.Get()
 
@@ -355,11 +358,37 @@ func loadPostgresDataCache(cache_size int) (cache.Cache, error) {
 		Host:     viper.GetString("datacache.host"),
 		User:     viper.GetString("datacache.user"),
 		Password: viper.GetString("datacache.password"),
-		Size:     cache_size,
+		Size:     viper.GetInt("datacache.cache_size"),
 		TTL:      viper.GetInt("datacache.ttl_seconds"),
 	}
 
 	return cache.NewPostgresDataCache(&cfg)
+
+}
+
+func loadDataCache() {
+	var err error
+
+	cacheType := viper.GetString("datacache.type")
+	switch cacheType {
+	case "dummy":
+		dataCache = cache.NewDummyCache()
+
+	case "postgres":
+		dataCache, err = loadPostgresDataCache()
+		if err != nil {
+			glog.Fatalf("Postgres cache not configured: %s", err.Error())
+		}
+
+	case "filecache":
+		dataCache, err = cache.NewFileCache(viper.GetString("datacache.filename"))
+		if err != nil {
+			glog.Fatalf("Failed to load filecach: %s", err.Error())
+		}
+
+	default:
+		log.Fatalf("Unknown datacache.type: %s", cacheType)
+	}
 }
 
 func main() {
@@ -372,11 +401,7 @@ func main() {
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
-	viper.SetDefault("postgres_cache_size", 32*1024*1024)
-
-	viper.SetDefault("datacache.type", "postgres")
-	viper.SetDefault("datacache.dbname", "prebid")
-	viper.SetDefault("datacache.ttl_seconds", 10*60)
+	viper.SetDefault("datacache.type", "dummy")
 
 	// no metrics configured by default (metrics{host|database|username|password})
 
@@ -389,11 +414,7 @@ func main() {
 	externalURL := viper.GetString("external_url")
 	requireUUID2 = viper.GetBool("require_uuid2")
 
-	var err error
-	dataCache, err = loadPostgresDataCache(viper.GetInt("postgres_cache_size"))
-	if err != nil {
-		glog.Fatalf("Postgres cache not configured: %v", err)
-	}
+	loadDataCache()
 
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
