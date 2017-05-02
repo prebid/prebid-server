@@ -93,9 +93,10 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 
 func getAccountMetrics(id string) *AccountMetrics {
 	var am *AccountMetrics
+	var ok bool
 
 	accountMetricsRWMutex.RLock()
-	am, ok := accountMetrics[id]
+	am, ok = accountMetrics[id]
 	accountMetricsRWMutex.RUnlock()
 
 	if ok {
@@ -103,11 +104,14 @@ func getAccountMetrics(id string) *AccountMetrics {
 	}
 
 	accountMetricsRWMutex.Lock()
-	am = &AccountMetrics{}
-	am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
-	am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
-	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-	accountMetrics[id] = am
+	am, ok = accountMetrics[id]
+	if !ok {
+		am = &AccountMetrics{}
+		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
+		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
+		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+		accountMetrics[id] = am
+	}
 	accountMetricsRWMutex.Unlock()
 
 	return am
