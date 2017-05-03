@@ -1,16 +1,16 @@
 package pbs
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/cache"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/cache"
 
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb"
@@ -42,14 +42,6 @@ type PBSAdUnit struct {
 	Code     string
 	BidID    string
 	Params   json.RawMessage
-}
-
-type Adapter interface {
-	Name() string
-	FamilyName() string
-	GetUsersyncInfo() *UsersyncInfo
-	Call(ctx context.Context, req *PBSRequest, bidder *PBSBidder) (PBSBidSlice, error)
-	SplitAdUnits() bool
 }
 
 type PBSBidder struct {
@@ -233,27 +225,35 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, exchanges map[string]Ad
 		for _, b := range bidders {
 			var bidder *PBSBidder
 
-			if ex, ok := exchanges[bidder.BidderCode]; ok {
-				if !ex.SplitAdUnits() {
-					for _, pb := range pbsReq.Bidders {
-						if pb.BidderCode == b.BidderCode {
-							bidder = pb
-							break
-						}
+			ex, ok := exchanges[b.BidderCode]
+			if !ok {
+				glog.Info("Invalid bidder '%s'", b.BidderCode)
+				continue
+			}
+
+			if !ex.SplitAdUnits() {
+				for _, pb := range pbsReq.Bidders {
+					if pb.BidderCode == b.BidderCode {
+						bidder = pb
+						break
 					}
 				}
-				if bidder == nil {
-					bidder = &PBSBidder{BidderCode: b.BidderCode, Adapter: ex}
-					if ex.SplitAdUnits() {
-						bidder.AdUnitCode = unit.Code
-					}
-					if pbsReq.IsDebug {
-						bidder.Debug = &BidderDebug{}
-					}
-					pbsReq.Bidders = append(pbsReq.Bidders, bidder)
+			}
+
+			if bidder == nil {
+				bidder = &PBSBidder{
+					BidderCode: b.BidderCode,
+					Adapter:    ex,
 				}
-			} else {
-				return nil, fmt.Errorf("Invalid bidder '%s'", bidder.BidderCode)
+
+				if ex.SplitAdUnits() {
+					bidder.AdUnitCode = unit.Code
+				}
+
+				if pbsReq.IsDebug {
+					bidder.Debug = &BidderDebug{}
+				}
+				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
 
 			pau := PBSAdUnit{

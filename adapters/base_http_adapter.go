@@ -2,9 +2,10 @@ package adapters
 
 import (
 	"crypto/tls"
-	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
+
+	"github.com/prebid/prebid-server/ssl"
 )
 
 type HTTPAdapterConfig struct {

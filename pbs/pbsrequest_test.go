@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/prebid/prebid-server/cache"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/prebid/prebid-server/cache"
 )
 
 type DummyAdapter struct {
@@ -70,6 +71,7 @@ func TestParseSimpleRequest(t *testing.T) {
 		"appnexus":      DummyAdapter{Nom: "appnexus"},
 		"indexExchange": DummyAdapter{Nom: "indexExchange"},
 	}
+
 	pbs_req, err := ParsePBSRequest(r, d, x)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
@@ -250,8 +252,8 @@ func TestParseConfig(t *testing.T) {
 	}
 
 	// see if our internal representation is intact
-	if len(pbs_req.Bidders) != 5 {
-		t.Fatalf("Should have five bidders (2 for index) not %d", len(pbs_req.Bidders))
+	if len(pbs_req.Bidders) != 3 {
+		t.Fatalf("Should have three bidders (2 for index) not %d", len(pbs_req.Bidders))
 	}
 	if pbs_req.Bidders[0].BidderCode != "indexExchange" {
 		t.Errorf("First bidder not index")
