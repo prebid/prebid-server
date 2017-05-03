@@ -14,6 +14,7 @@ type Adapter interface {
 	FamilyName() string
 	GetUsersyncInfo() *pbs.UsersyncInfo
 	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
+	
 }
 
 type HTTPAdapterConfig struct {
