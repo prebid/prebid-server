@@ -8,6 +8,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// FileCache is a file backed cache
 type FileCache struct {
 	Configs  map[string]string
 	Domains  map[string]bool
@@ -25,6 +26,7 @@ type fileCacheFile struct {
 	Accounts []string          `yaml:"accounts"`
 }
 
+// NewFileCache will load the file into memory
 func NewFileCache(filename string) (*FileCache, error) {
 
 	if glog.V(2) {
@@ -73,9 +75,11 @@ func NewFileCache(filename string) (*FileCache, error) {
 	return fc, nil
 }
 
+// Close does nothing
 func (c *FileCache) Close() {
 }
 
+// GetConfig will return config from memory if it exists
 func (c *FileCache) GetConfig(key string) (string, error) {
 	cfg, ok := c.Configs[key]
 	if !ok {
@@ -85,6 +89,7 @@ func (c *FileCache) GetConfig(key string) (string, error) {
 	return cfg, nil
 }
 
+// GetDomain will return Domain from memory if it exists
 func (c *FileCache) GetDomain(key string) (*Domain, error) {
 
 	d := &Domain{
@@ -99,6 +104,7 @@ func (c *FileCache) GetDomain(key string) (*Domain, error) {
 	return d, nil
 }
 
+// GetAccount will return Account from memory if it exists
 func (c *FileCache) GetAccount(key string) (*Account, error) {
 
 	d := &Account{
