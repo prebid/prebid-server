@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -20,8 +19,6 @@ func TestPostgresConfig(t *testing.T) {
 	}
 
 	u := conf.uri()
-	fmt.Println("u")
-
 	assert.True(t, strings.Contains(u, "host=host"))
 	assert.True(t, strings.Contains(u, "port=1234"))
 	assert.True(t, strings.Contains(u, "dbname=dbname"))
