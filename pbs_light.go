@@ -169,7 +169,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	_, err = dataCache.GetAccount(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
-		writeAuctionError(w, "Unknown account id", err)
+		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
 		mErrorMeter.Mark(1)
 		return
 	}
