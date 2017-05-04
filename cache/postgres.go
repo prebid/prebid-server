@@ -145,7 +145,7 @@ func (c *PostgresDataCache) GetAccount(key string) (*Account, error) {
 		return &account, nil
 	}
 
-	err = c.db.QueryRow("SELECT domain FROM domains_domain where domain = $1 LIMIT 1", key).Scan(&id)
+	err = c.db.QueryRow("SELECT domain FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id)
 	if err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
 		return nil, err
