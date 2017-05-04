@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	"database/sql"
-	"encoding/binary"
+	"encoding/gob"
 
 	"fmt"
 
@@ -103,7 +103,8 @@ func (c *PostgresDataCache) GetDomain(key string) (*Domain, error) {
 	b, err := c.lru.Get([]byte(key))
 	if err == nil {
 		buf := bytes.NewReader(b)
-		err = binary.Read(buf, binary.BigEndian, &d)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&d)
 		if err != nil {
 			panic(err)
 		}
@@ -118,8 +119,9 @@ func (c *PostgresDataCache) GetDomain(key string) (*Domain, error) {
 
 	d.Domain = domain
 
-	buf := &bytes.Buffer{}
-	err = binary.Write(buf, binary.BigEndian, &d)
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	enc.Encode(&d)
 	if err != nil {
 		panic(err)
 	}
@@ -135,7 +137,8 @@ func (c *PostgresDataCache) GetAccount(key string) (*Account, error) {
 	b, err := c.lru.Get([]byte(key))
 	if err == nil {
 		buf := bytes.NewReader(b)
-		err = binary.Read(buf, binary.BigEndian, &account)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&account)
 		if err != nil {
 			panic(err)
 		}
@@ -150,8 +153,9 @@ func (c *PostgresDataCache) GetAccount(key string) (*Account, error) {
 
 	account.ID = id
 
-	buf := &bytes.Buffer{}
-	err = binary.Write(buf, binary.BigEndian, &account)
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(&account)
 	if err != nil {
 		panic(err)
 	}
