@@ -24,6 +24,57 @@ to ask for user consent and drop a cookie.
 Prebid Server does no server-side logging. It can stream metrics to an InfluxDB endpoint, which are aggregated as a time series.
 Prebid Server has no user profiling or user-data collection capabilities.
 
+# Usage
+## Without Docker
+### Prerequisites
+* [Go](https://www.golang.org)
+* [Glide](https://glide.sh/)
+
+### Getting
+```
+$ go get github.com/prebid/prebid-server
+```
+
+### Running
+To compile a binary and run locally:
+```
+$ go build
+$ ./prebid-server -v 1 -logtostderr
+```
+
+## With Docker
+### Prerequisites
+* [Docker](https://www.docker.com)
+
+### Compiling an alpine binary
+The Dockerfile for prebid-server copies the binary in the root directory to the
+docker container, and must be specifically be compiled for the target
+architecture (alpine).
+
+```
+$ docker run --rm -v "$PWD":/go/src/github.com/prebid/prebid-server \
+-w /go/src/github.com/prebid/prebid-server \
+billyteves/alpine-golang-glide:1.2.0 \
+/bin/bash -c 'glide install; go build -v'
+```
+
+The above command will run a container with the necessary dependencies (alpine,
+go 1.8, glide) and compile an alpine compatible binary.
+
+### Build prebid-server docker container
+```
+$ docker build -t prebid-server .
+```
+
+### Run container
+This command will run a prebid-server container in interactive mode and map the
+`8000` port to your machine's `8000` port so that you can visit `http://localhost:8000`
+and see prebid-server's index page.
+
+```
+$ docker run --rm -it -p 8000:8000 prebid-server
+```
+
 # Data integration
 Prebid Server has three primary data objects that it needs to manage:
  * Accounts represent publishers, and are used for metrics aggregation and terms of service adherence. Requests without an
