@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
-	"io/ioutil"
-	"net/http"
 )
 
 type PubmaticAdapter struct {
@@ -138,12 +140,11 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
 	a := NewHTTPAdapter(config)
-
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=$UID", externalURL)
-	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
+	usersyncURL := "https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, redirect_uri),
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
 		Type:        "iframe",
 		SupportCORS: false,
 	}
