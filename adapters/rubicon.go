@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -194,11 +193,10 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 
 func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, externalURL string) *RubiconAdapter {
 	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=rubicon&uid=$UID", externalURL)
-	usersyncURL := "TBD"
+	usersyncURL := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		URL:         usersyncURL,
 		Type:        "redirect",
 		SupportCORS: false,
 	}
