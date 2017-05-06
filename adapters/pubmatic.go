@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+
+	"golang.org/x/net/context/ctxhttp"
+
+	"github.com/prebid/openrtb"
 )
 
 type PubmaticAdapter struct {
@@ -27,10 +30,6 @@ func (a *PubmaticAdapter) Name() string {
 // used for cookies and such
 func (a *PubmaticAdapter) FamilyName() string {
 	return "pubmatic"
-}
-
-func (a *PubmaticAdapter) SplitAdUnits() bool {
-	return false
 }
 
 func (a *PubmaticAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
@@ -64,9 +63,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	reqJSON, err := json.Marshal(pbReq)
 
+    debug := &pbs.BidderDebug {
+        RequestURI: a.URI,
+    }
+
 	if req.IsDebug {
-		bidder.Debug.RequestBody = string(reqJSON)
-		bidder.Debug.RequestURI = a.URI
+		debug.RequestBody = string(reqJSON)
+        bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
@@ -82,9 +85,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 
-	if req.IsDebug {
-		bidder.Debug.StatusCode = pbResp.StatusCode
-	}
+	debug.StatusCode = pbResp.StatusCode
 
 	if pbResp.StatusCode == 204 {
 		return nil, nil
@@ -101,7 +102,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if req.IsDebug {
-		bidder.Debug.ResponseBody = string(body)
+		debug.ResponseBody = string(body)
 	}
 
 	var bidResp openrtb.BidResponse
@@ -144,10 +145,10 @@ func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL strin
 	a := NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=$UID", externalURL)
-	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
+	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?p=31445&s=21446&predirect="
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, redirect_uri),
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
 		Type:        "iframe",
 		SupportCORS: false,
 	}

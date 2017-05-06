@@ -1,12 +1,20 @@
 package adapters
 
 import (
+	"context"
 	"crypto/tls"
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
-
-	"github.com/prebid/prebid-server/ssl"
 )
+
+type Adapter interface {
+	Name() string
+	FamilyName() string
+	GetUsersyncInfo() *pbs.UsersyncInfo
+	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
+}
 
 type HTTPAdapterConfig struct {
 	IdleConnTimeout     time.Duration

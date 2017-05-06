@@ -3,14 +3,13 @@ package pbs
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/cache"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/prebid/prebid-server/cache"
 
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb"
@@ -28,7 +27,7 @@ type Bids struct {
 	Params     json.RawMessage `json:"params"`
 }
 
-type adUnit struct {
+type AdUnit struct {
 	Code     string           `json:"code"`
 	TopFrame int8             `json:"is_top_frame"`
 	Sizes    []openrtb.Format `json:"sizes"`
@@ -53,10 +52,9 @@ type PBSBidder struct {
 	NoCookie     bool          `json:"no_cookie,omitempty"`
 	NoBid        bool          `json:"no_bid,omitempty"`
 	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
-	Debug        *BidderDebug  `json:"debug,omitempty"`
+	Debug        []*BidderDebug `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
-	Adapter Adapter     `json:"-"`
 }
 
 func (bidder *PBSBidder) LookupBidID(Code string) string {
@@ -72,7 +70,7 @@ type PBSRequest struct {
 	AccountID     string            `json:"account_id"`
 	Tid           string            `json:"tid"`
 	TimeoutMillis uint64            `json:"timeout_millis"`
-	AdUnits       []adUnit          `json:"ad_units"`
+	AdUnits       []AdUnit          `json:"ad_units"`
 	UserIDs       map[string]string `json:"user_ids"`
 	IsDebug       bool              `json:"is_debug"`
 
@@ -82,7 +80,7 @@ type PBSRequest struct {
 	Domain    string       `json:"-"`
 	IPAddress string       `json:"-"`
 	UserAgent string       `json:"-"`
-	Start     time.Time
+    Start     time.Time    `json:"-"`
 	ServerURL string `json:"-"`
 	Hostname  string `json:"-"`
 	Protocol  string `json:"-"`
@@ -103,10 +101,15 @@ func getConfig(cache cache.Cache, id string) ([]Bids, error) {
 	return bids, nil
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache, exchanges map[string]Adapter) (*PBSRequest, error) {
-	if exchanges == nil {
-		return nil, fmt.Errorf("Exchanges is nil")
-	}
+func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
+	/*
+		dump, err := httputil.DumpRequest(r, false)
+		if err != nil {
+			return
+		}
+		fmt.Printf("%q", dump)
+	*/
+
 	defer r.Body.Close()
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -224,34 +227,18 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, exchanges map[string]Ad
 
 		for _, b := range bidders {
 			var bidder *PBSBidder
-
-			ex, ok := exchanges[b.BidderCode]
-			if !ok {
-				glog.Info("Invalid bidder '%s'", b.BidderCode)
-				continue
-			}
-
-			if !ex.SplitAdUnits() {
+			// index requires a different request for each ad unit
+			if b.BidderCode != "indexExchange" {
 				for _, pb := range pbsReq.Bidders {
 					if pb.BidderCode == b.BidderCode {
 						bidder = pb
-						break
 					}
 				}
 			}
-
 			if bidder == nil {
-				bidder = &PBSBidder{
-					BidderCode: b.BidderCode,
-					Adapter:    ex,
-				}
-
-				if ex.SplitAdUnits() {
+				bidder = &PBSBidder{BidderCode: b.BidderCode}
+				if b.BidderCode == "indexExchange" {
 					bidder.AdUnitCode = unit.Code
-				}
-
-				if pbsReq.IsDebug {
-					bidder.Debug = &BidderDebug{}
 				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}

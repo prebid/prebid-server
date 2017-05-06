@@ -34,10 +34,6 @@ func (a *RubiconAdapter) FamilyName() string {
 	return "rubicon"
 }
 
-func (a *RubiconAdapter) SplitAdUnits() bool {
-	return false
-}
-
 func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
@@ -121,9 +117,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		return nil, err
 	}
 
+    debug := &pbs.BidderDebug {
+        RequestURI: a.URI,
+    }
+
 	if req.IsDebug {
-		bidder.Debug.RequestURI = a.URI
-		bidder.Debug.RequestBody = string(reqJSON)
+		debug.RequestBody = string(reqJSON)
+        bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
@@ -138,9 +138,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		return nil, err
 	}
 
-	if req.IsDebug {
-		bidder.Debug.StatusCode = anResp.StatusCode
-	}
+	debug.StatusCode = anResp.StatusCode
 
 	if anResp.StatusCode == 204 {
 		return nil, nil
@@ -157,7 +155,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	if req.IsDebug {
-		bidder.Debug.ResponseBody = string(body)
+		debug.ResponseBody = string(body)
 	}
 
 	var bidResp openrtb.BidResponse

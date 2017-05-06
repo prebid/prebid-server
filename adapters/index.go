@@ -32,11 +32,6 @@ func (a *IndexAdapter) FamilyName() string {
 	return "indexExchange"
 }
 
-// Index only supports one ad unit per call
-func (a *IndexAdapter) SplitAdUnits() bool {
-	return true
-}
-
 func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
@@ -67,13 +62,16 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	// ext object on request for prefetch
 
 	j, _ := json.Marshal(indexReq)
-	if req.IsDebug {
-		bidder.Debug.RequestBody = string(j)
-	}
+
+    debug := &pbs.BidderDebug {
+        RequestURI: a.URI,
+    }
 
 	if req.IsDebug {
-		bidder.Debug.RequestURI = a.URI
+		debug.RequestBody = string(j)
+        bidder.Debug = append(bidder.Debug, debug)
 	}
+
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(j))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
@@ -83,9 +81,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		return nil, err
 	}
 
-	if req.IsDebug {
-		bidder.Debug.StatusCode = ixResp.StatusCode
-	}
+	debug.StatusCode = ixResp.StatusCode
 
 	if ixResp.StatusCode == 204 {
 		return nil, nil
@@ -102,7 +98,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 
 	if req.IsDebug {
-		bidder.Debug.ResponseBody = string(body)
+		debug.ResponseBody = string(body)
 	}
 
 	var bidResp openrtb.BidResponse
@@ -142,7 +138,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapter {
 	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=$UID", externalURL)
 	usersyncURI := "https://ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
 
 	info := &pbs.UsersyncInfo{
