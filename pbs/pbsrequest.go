@@ -44,14 +44,14 @@ type PBSAdUnit struct {
 }
 
 type PBSBidder struct {
-	BidderCode   string        `json:"bidder"`
-	AdUnitCode   string        `json:"ad_unit,omitempty"` // for index to dedup responses
-	ResponseTime int           `json:"response_time_ms,omitempty"`
-	NumBids      int           `json:"num_bids,omitempty"`
-	Error        string        `json:"error,omitempty"`
-	NoCookie     bool          `json:"no_cookie,omitempty"`
-	NoBid        bool          `json:"no_bid,omitempty"`
-	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
+	BidderCode   string         `json:"bidder"`
+	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
+	ResponseTime int            `json:"response_time_ms,omitempty"`
+	NumBids      int            `json:"num_bids,omitempty"`
+	Error        string         `json:"error,omitempty"`
+	NoCookie     bool           `json:"no_cookie,omitempty"`
+	NoBid        bool           `json:"no_bid,omitempty"`
+	UsersyncInfo *UsersyncInfo  `json:"usersync,omitempty"`
 	Debug        []*BidderDebug `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
@@ -80,10 +80,10 @@ type PBSRequest struct {
 	Domain    string       `json:"-"`
 	IPAddress string       `json:"-"`
 	UserAgent string       `json:"-"`
-    Start     time.Time    `json:"-"`
-	ServerURL string `json:"-"`
-	Hostname  string `json:"-"`
-	Protocol  string `json:"-"`
+	Start     time.Time    `json:"-"`
+	ServerURL string       `json:"-"`
+	Hostname  string       `json:"-"`
+	Protocol  string       `json:"-"`
 }
 
 func getConfig(cache cache.Cache, id string) ([]Bids, error) {

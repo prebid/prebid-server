@@ -62,14 +62,14 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 
-    debug := &pbs.BidderDebug{
-        RequestURI: a.URI,
-    }
+	debug := &pbs.BidderDebug{
+		RequestURI: a.URI,
+	}
 
-    if req.IsDebug {
-        debug.RequestBody = string(reqJSON)
-        bidder.Debug = append(bidder.Debug, debug)
-    }
+	if req.IsDebug {
+		debug.RequestBody = string(reqJSON)
+		bidder.Debug = append(bidder.Debug, debug)
+	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
@@ -96,9 +96,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 
-    if req.IsDebug {
-	    debug.ResponseBody = string(body)
-    }
+	if req.IsDebug {
+		debug.ResponseBody = string(body)
+	}
 
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)

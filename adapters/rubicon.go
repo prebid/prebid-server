@@ -117,13 +117,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		return nil, err
 	}
 
-    debug := &pbs.BidderDebug {
-        RequestURI: a.URI,
-    }
+	debug := &pbs.BidderDebug{
+		RequestURI: a.URI,
+	}
 
 	if req.IsDebug {
 		debug.RequestBody = string(reqJSON)
-        bidder.Debug = append(bidder.Debug, debug)
+		bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))

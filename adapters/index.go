@@ -63,13 +63,13 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	j, _ := json.Marshal(indexReq)
 
-    debug := &pbs.BidderDebug {
-        RequestURI: a.URI,
-    }
+	debug := &pbs.BidderDebug{
+		RequestURI: a.URI,
+	}
 
 	if req.IsDebug {
 		debug.RequestBody = string(j)
-        bidder.Debug = append(bidder.Debug, debug)
+		bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(j))

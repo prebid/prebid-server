@@ -63,13 +63,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	reqJSON, err := json.Marshal(pbReq)
 
-    debug := &pbs.BidderDebug {
-        RequestURI: a.URI,
-    }
+	debug := &pbs.BidderDebug{
+		RequestURI: a.URI,
+	}
 
 	if req.IsDebug {
 		debug.RequestBody = string(reqJSON)
-        bidder.Debug = append(bidder.Debug, debug)
+		bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
