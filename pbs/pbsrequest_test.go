@@ -113,7 +113,7 @@ func TestHeaderParsing(t *testing.T) {
 	if pbs_req.Domain != "nytimes.com" {
 		t.Errorf("Failed to parse TLD from referrer: %s not nytimes.com", pbs_req.Domain)
 	}
-	if pbs_req.UserAgent != "Mozilla/" {
+	if pbs_req.Device.UA != "Mozilla/" {
 		t.Errorf("Failed to pull User-Agent from referrer")
 	}
 }
