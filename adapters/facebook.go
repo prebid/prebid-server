@@ -169,11 +169,10 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 	}
 
-	if err == nil || len(bids) > 0 {
-		return bids, nil
-	} else {
-		return nil, err
-	}
+    if len(bids) == 0 {
+        return nil, err
+    }
+    return bids, nil
 }
 
 func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, externalURL string) *FacebookAdapter {

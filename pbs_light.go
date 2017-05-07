@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -58,10 +60,9 @@ var (
 	mRequestTimer        metrics.Timer
 
 	adapterMetrics map[string]*AdapterMetrics
-	accountMetrics map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
 
-	adapterMetricsMutex sync.Mutex
-	accountMetricsMutex sync.Mutex
+	accountMetrics        map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
+	accountMetricsRWMutex sync.RWMutex
 
 	requireUUID2 bool
 	cookieDomain string
@@ -89,6 +90,32 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	} else {
 		w.Write(b)
 	}
+}
+
+func getAccountMetrics(id string) *AccountMetrics {
+	var am *AccountMetrics
+	var ok bool
+
+	accountMetricsRWMutex.RLock()
+	am, ok = accountMetrics[id]
+	accountMetricsRWMutex.RUnlock()
+
+	if ok {
+		return am
+	}
+
+	accountMetricsRWMutex.Lock()
+	am, ok = accountMetrics[id]
+	if !ok {
+		am = &AccountMetrics{}
+		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
+		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
+		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+		accountMetrics[id] = am
+	}
+	accountMetricsRWMutex.Unlock()
+
+	return am
 }
 
 func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -142,21 +169,13 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	_, err = dataCache.GetAccount(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
-		writeAuctionError(w, "Unknown account id", err)
+		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
 		mErrorMeter.Mark(1)
 		return
 	}
 
-	accountMetricsMutex.Lock()
-	if _, ok := accountMetrics[pbs_req.AccountID]; !ok {
-		am := AccountMetrics{}
-		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", pbs_req.AccountID), metricsRegistry)
-		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", pbs_req.AccountID), metricsRegistry)
-		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", pbs_req.AccountID), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		accountMetrics[pbs_req.AccountID] = &am
-	}
-	accountMetrics[pbs_req.AccountID].RequestMeter.Mark(1)
-	accountMetricsMutex.Unlock()
+	am := getAccountMetrics(pbs_req.AccountID)
+	am.RequestMeter.Mark(1)
 
 	pbs_resp := pbs.PBSResponse{
 		Status:       "OK",
@@ -195,10 +214,10 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					}
 				} else if bid_list != nil {
 					bidder.NumBids = len(bid_list)
-					accountMetrics[pbs_req.AccountID].BidsReceivedMeter.Mark(int64(bidder.NumBids))
+					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					for _, bid := range bid_list {
 						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
-						accountMetrics[pbs_req.AccountID].PriceHistogram.Update(int64(bid.Price * 1000))
+						am.PriceHistogram.Update(int64(bid.Price * 1000))
 					}
 				} else {
 					bidder.NoBid = true
@@ -346,7 +365,7 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return
 }
 
-func loadPostgresDataCache(cache_size int) (cache.Cache, error) {
+func loadPostgresDataCache() (cache.Cache, error) {
 	mem := sigar.Mem{}
 	mem.Get()
 
@@ -355,11 +374,37 @@ func loadPostgresDataCache(cache_size int) (cache.Cache, error) {
 		Host:     viper.GetString("datacache.host"),
 		User:     viper.GetString("datacache.user"),
 		Password: viper.GetString("datacache.password"),
-		Size:     cache_size,
+		Size:     viper.GetInt("datacache.cache_size"),
 		TTL:      viper.GetInt("datacache.ttl_seconds"),
 	}
 
 	return cache.NewPostgresDataCache(&cfg)
+
+}
+
+func loadDataCache() {
+	var err error
+
+	cacheType := viper.GetString("datacache.type")
+	switch cacheType {
+	case "dummy":
+		dataCache = cache.NewDummyCache()
+
+	case "postgres":
+		dataCache, err = loadPostgresDataCache()
+		if err != nil {
+			glog.Fatalf("Postgres cache not configured: %s", err.Error())
+		}
+
+	case "filecache":
+		dataCache, err = cache.NewFileCache(viper.GetString("datacache.filename"))
+		if err != nil {
+			glog.Fatalf("Failed to load filecach: %s", err.Error())
+		}
+
+	default:
+		log.Fatalf("Unknown datacache.type: %s", cacheType)
+	}
 }
 
 func main() {
@@ -372,11 +417,7 @@ func main() {
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
-	viper.SetDefault("postgres_cache_size", 32*1024*1024)
-
-	viper.SetDefault("datacache.type", "postgres")
-	viper.SetDefault("datacache.dbname", "prebid")
-	viper.SetDefault("datacache.ttl_seconds", 10*60)
+	viper.SetDefault("datacache.type", "dummy")
 
 	// no metrics configured by default (metrics{host|database|username|password})
 
@@ -389,11 +430,7 @@ func main() {
 	externalURL := viper.GetString("external_url")
 	requireUUID2 = viper.GetBool("require_uuid2")
 
-	var err error
-	dataCache, err = loadPostgresDataCache(viper.GetInt("postgres_cache_size"))
-	if err != nil {
-		glog.Fatalf("Postgres cache not configured: %v", err)
-	}
+	loadDataCache()
 
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
