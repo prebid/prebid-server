@@ -62,9 +62,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	reqJSON, err := json.Marshal(pbReq)
 
+	debug := &pbs.BidderDebug{
+		RequestURI: a.URI,
+	}
+
 	if req.IsDebug {
-		bidder.Debug.RequestBody = string(reqJSON)
-		bidder.Debug.RequestURI = a.URI
+		debug.RequestBody = string(reqJSON)
+		bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
@@ -80,9 +84,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 
-	if req.IsDebug {
-		bidder.Debug.StatusCode = pbResp.StatusCode
-	}
+	debug.StatusCode = pbResp.StatusCode
 
 	if pbResp.StatusCode == 204 {
 		return nil, nil
@@ -99,7 +101,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if req.IsDebug {
-		bidder.Debug.ResponseBody = string(body)
+		debug.ResponseBody = string(body)
 	}
 
 	var bidResp openrtb.BidResponse
@@ -140,8 +142,14 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
 	a := NewHTTPAdapter(config)
+<<<<<<< HEAD
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
 	usersyncURL := "https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
+=======
+
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=$UID", externalURL)
+	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?p=31445&s=21446&predirect="
+>>>>>>> fb-bidder-initial
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),

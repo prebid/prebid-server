@@ -30,9 +30,13 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		}
 	}
 
+	cur := make([]string, 1)
+	cur[0] = "USD"
+
 	return openrtb.BidRequest{
 		ID:  req.Tid,
 		Imp: imps,
+		Cur: cur,
 		Site: &openrtb.Site{
 			Domain: req.Domain,
 			Page:   req.Url,
