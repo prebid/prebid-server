@@ -142,14 +142,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
 	a := NewHTTPAdapter(config)
-<<<<<<< HEAD
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
 	usersyncURL := "https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
-=======
-
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=$UID", externalURL)
-	usersyncURL := "http://ads.pubmatic.com/AdServer/js/user_sync.html?p=31445&s=21446&predirect="
->>>>>>> fb-bidder-initial
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
