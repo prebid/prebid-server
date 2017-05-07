@@ -27,7 +27,7 @@ type Bids struct {
 	Params     json.RawMessage `json:"params"`
 }
 
-type adUnit struct {
+type AdUnit struct {
 	Code     string           `json:"code"`
 	TopFrame int8             `json:"is_top_frame"`
 	Sizes    []openrtb.Format `json:"sizes"`
@@ -44,15 +44,15 @@ type PBSAdUnit struct {
 }
 
 type PBSBidder struct {
-	BidderCode   string        `json:"bidder"`
-	AdUnitCode   string        `json:"ad_unit,omitempty"` // for index to dedup responses
-	ResponseTime int           `json:"response_time_ms,omitempty"`
-	NumBids      int           `json:"num_bids,omitempty"`
-	Error        string        `json:"error,omitempty"`
-	NoCookie     bool          `json:"no_cookie,omitempty"`
-	NoBid        bool          `json:"no_bid,omitempty"`
-	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
-	Debug        *BidderDebug  `json:"debug,omitempty"`
+	BidderCode   string         `json:"bidder"`
+	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
+	ResponseTime int            `json:"response_time_ms,omitempty"`
+	NumBids      int            `json:"num_bids,omitempty"`
+	Error        string         `json:"error,omitempty"`
+	NoCookie     bool           `json:"no_cookie,omitempty"`
+	NoBid        bool           `json:"no_bid,omitempty"`
+	UsersyncInfo *UsersyncInfo  `json:"usersync,omitempty"`
+	Debug        []*BidderDebug `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
 }
@@ -72,7 +72,7 @@ type PBSRequest struct {
 	CacheMarkup   int8            `json:"cache_markup"`
 	Secure        int8            `json:"secure"`
 	TimeoutMillis uint64          `json:"timeout_millis"`
-	AdUnits       []adUnit        `json:"ad_units"`
+	AdUnits       []AdUnit        `json:"ad_units"`
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
 	Device        *openrtb.Device `json:"device"`
@@ -225,9 +225,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				bidder = &PBSBidder{BidderCode: b.BidderCode}
 				if b.BidderCode == "indexExchange" {
 					bidder.AdUnitCode = unit.Code
-				}
-				if pbsReq.IsDebug {
-					bidder.Debug = &BidderDebug{}
 				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
