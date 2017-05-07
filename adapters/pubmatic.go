@@ -57,7 +57,12 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		pbReq.Imp[i].Banner.Format = nil // pubmatic doesn't support
 		pbReq.Imp[i].TagID = params.AdSlot
-		pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+		if pbReq.Site != nil {
+			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+		}
+		if pbReq.App != nil {
+			pbReq.App.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+		}
 	}
 
 	reqJSON, err := json.Marshal(pbReq)

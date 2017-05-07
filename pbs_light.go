@@ -52,6 +52,7 @@ type AdapterMetrics struct {
 var (
 	metricsRegistry      metrics.Registry
 	mRequestMeter        metrics.Meter
+	mAppRequestMeter     metrics.Meter
 	mNoCookieMeter       metrics.Meter
 	mSafariRequestMeter  metrics.Meter
 	mSafariNoCookieMeter metrics.Meter
@@ -131,7 +132,17 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	if requireUUID2 {
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
+	if err != nil {
+		glog.Info("error parsing request", err)
+		writeAuctionError(w, "Error parsing request", err)
+		mErrorMeter.Mark(1)
+		return
+	}
+
+	if pbs_req.App != nil {
+		mAppRequestMeter.Mark(1)
+	} else if requireUUID2 {
 		if _, err := r.Cookie("uuid2"); err != nil {
 			mNoCookieMeter.Mark(1)
 			if isSafari {
@@ -149,14 +160,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			w.Write(b)
 			return
 		}
-	}
-
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
-	if err != nil {
-		glog.Info("error parsing request", err)
-		writeAuctionError(w, "Error parsing request", err)
-		mErrorMeter.Mark(1)
-		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
@@ -189,7 +192,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			ametrics := adapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
-			if pbs_req.GetUserID(ex.FamilyName()) == "" {
+			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
 				bidder.NoCookie = true
 				bidder.UsersyncInfo = ex.GetUsersyncInfo()
 				ametrics.NoCookieMeter.Mark(1)
@@ -342,7 +345,7 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	if reqSchema == nil {
-		fmt.Fprintf(w, "Validation chema not loaded\n")
+		fmt.Fprintf(w, "Validation schema not loaded\n")
 		return
 	}
 
@@ -444,6 +447,7 @@ func main() {
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
+	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
 	mNoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry)
 	mSafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", metricsRegistry)
 	mSafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", metricsRegistry)

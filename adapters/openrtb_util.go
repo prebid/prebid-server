@@ -22,11 +22,23 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				Format:   unit.Sizes,
 				TopFrame: unit.TopFrame,
 			},
+			Secure: req.Secure,
 			// pmp
 			// ext
 		}
-		if req.Protocol == "https" {
-			imps[i].Secure = 1
+	}
+
+	if req.App != nil {
+		return openrtb.BidRequest{
+			ID:     req.Tid,
+			Imp:    imps,
+			App:    req.App,
+			Device: req.Device,
+			Source: &openrtb.Source{
+				TID: req.Tid,
+			},
+			AT:   1,
+			TMax: req.TimeoutMillis,
 		}
 	}
 
@@ -37,11 +49,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			Domain: req.Domain,
 			Page:   req.Url,
 		},
-		Device: &openrtb.Device{
-			UA: req.UserAgent,
-			IP: req.IPAddress,
-			// language? screen size? device type?
-		},
+		Device: req.Device,
 		User: &openrtb.User{
 			BuyerUID: req.GetUserID(bidderFamily),
 			ID:       req.GetUserID("adnxs"),

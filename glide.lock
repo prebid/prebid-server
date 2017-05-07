@@ -1,5 +1,5 @@
-hash: 8b59ad2d89a594d8e5870e2fd11df81a76a309a51b1fe4617f80de38a10bc9e9
-updated: 2017-05-01T13:00:30.217099938-04:00
+hash: 62378076bd204a046aaba6acbd71ed889a2696ba03106d944cb48d09f0efba91
+updated: 2017-05-07T14:24:08.105474731-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -16,7 +16,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/hashicorp/hcl
-  version: 7fa7fff964d035e8a162cce3a164b3ad02ad651b
+  version: a4b07c25de5ff55ad3b8936cea69a79a3d95a855
   subpackages:
   - hcl/ast
   - hcl/parser
@@ -27,7 +27,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/influxdata/influxdb
-  version: 8655042b122a6372d0b37c810773cdb5e34e95ed
+  version: a4a902e3f2519721f36f2ce7e2d26d736d5e3a8f
   subpackages:
   - client
   - models
@@ -45,9 +45,9 @@ imports:
 - name: github.com/pelletier/go-buffruneio
   version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml
-  version: fe206efb84b2bc8e8cfafe6b4c1826622be969e3
+  version: 97253b98df84f9eef872866d079e74b8265150f1
 - name: github.com/prebid/openrtb
-  version: 2a139cf623d9eaeaf1b0b79c9423a3b8d79229a2
+  version: 4abcf757715a1a5e13211dd6c67c8e21c73b4668
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
@@ -65,7 +65,7 @@ imports:
 - name: github.com/spf13/jwalterweatherman
   version: fa7ca7e836cf3a8bb4ebf799f472c12d7e903d66
 - name: github.com/spf13/pflag
-  version: f1d95a35e132e8a1868023a08932b14f0b8b8fcb
+  version: 80fe0fb4eba54167e2ccae1c6c950e72abf61b73
 - name: github.com/spf13/viper
   version: 0967fc9aceab2ce9da34061253ac10fb99bba5b2
 - name: github.com/vrischmann/go-metrics-influxdb
@@ -79,7 +79,7 @@ imports:
 - name: github.com/xojoc/useragent
   version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
 - name: golang.org/x/net
-  version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
+  version: feeb485667d1fdabe727840fe00adc22431bc86e
   subpackages:
   - context
   - context/ctxhttp

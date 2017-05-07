@@ -79,7 +79,6 @@ type rubiconBannerExt struct {
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	rpReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
-	rpReq.Site.Publisher = &openrtb.Publisher{}
 	for i, unit := range bidder.AdUnits {
 		var params rubiconParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -104,11 +103,19 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			rpReq.Imp[i].Banner.W = 0
 			rpReq.Imp[i].Banner.H = 0
 		}
-		// this may be redundant, but params are per-unit
+		// params are per-unit, so site may overwrite itself
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
-		rpReq.Site.Ext, err = json.Marshal(&siteExt)
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
-		rpReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
+		if rpReq.Site != nil {
+			rpReq.Site.Ext, err = json.Marshal(&siteExt)
+			rpReq.Site.Publisher = &openrtb.Publisher{}
+			rpReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
+		}
+		if rpReq.App != nil {
+			rpReq.App.Ext, err = json.Marshal(&siteExt)
+			rpReq.App.Publisher = &openrtb.Publisher{}
+			rpReq.App.Publisher.Ext, err = json.Marshal(&pubExt)
+		}
 	}
 
 	reqJSON, err := json.Marshal(rpReq)

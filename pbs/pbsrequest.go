@@ -67,23 +67,22 @@ func (bidder *PBSBidder) LookupBidID(Code string) string {
 }
 
 type PBSRequest struct {
-	AccountID     string            `json:"account_id"`
-	Tid           string            `json:"tid"`
-	TimeoutMillis uint64            `json:"timeout_millis"`
-	AdUnits       []adUnit          `json:"ad_units"`
-	UserIDs       map[string]string `json:"user_ids"`
-	IsDebug       bool              `json:"is_debug"`
+	AccountID     string          `json:"account_id"`
+	Tid           string          `json:"tid"`
+	CacheMarkup   int8            `json:"cache_markup"`
+	Secure        int8            `json:"secure"`
+	TimeoutMillis uint64          `json:"timeout_millis"`
+	AdUnits       []adUnit        `json:"ad_units"`
+	IsDebug       bool            `json:"is_debug"`
+	App           *openrtb.App    `json:"app"`
+	Device        *openrtb.Device `json:"device"`
 
 	// internal
-	Bidders   []*PBSBidder `json:"-"`
-	Url       string       `json:"-"`
-	Domain    string       `json:"-"`
-	IPAddress string       `json:"-"`
-	UserAgent string       `json:"-"`
-	Start     time.Time
-	ServerURL string `json:"-"`
-	Hostname  string `json:"-"`
-	Protocol  string `json:"-"`
+	Bidders []*PBSBidder      `json:"-"`
+	UserIDs map[string]string `json:"-"`
+	Url     string            `json:"-"`
+	Domain  string            `json:"-"`
+	Start   time.Time
 }
 
 func getConfig(cache cache.Cache, id string) ([]Bids, error) {
@@ -102,14 +101,6 @@ func getConfig(cache cache.Cache, id string) ([]Bids, error) {
 }
 
 func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
-	/*
-		dump, err := httputil.DumpRequest(r, false)
-		if err != nil {
-			return
-		}
-		fmt.Printf("%q", dump)
-	*/
-
 	defer r.Body.Close()
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -121,6 +112,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if err != nil {
 		return nil, err
 	}
+	pbsReq.Start = time.Now()
 
 	if len(pbsReq.AdUnits) == 0 {
 		return nil, fmt.Errorf("No ad units specified")
@@ -130,85 +122,79 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		pbsReq.TimeoutMillis = uint64(viper.GetInt("default_timeout_ms"))
 	}
 
-	// anything set in cookie overrides what's in bid request? or opposite?
-	pc := ParseUIDCookie(r)
-	if pbsReq.UserIDs == nil {
+	if pbsReq.Device == nil {
+		pbsReq.Device = &openrtb.Device{}
+	}
+
+	// use client-side data for web requests
+	if pbsReq.App == nil {
+		pc := ParseUIDCookie(r)
 		pbsReq.UserIDs = pc.UIDs
-	} else {
-		for bidder, uid := range pc.UIDs {
-			pbsReq.UserIDs[bidder] = uid
+
+		// this would be for the shared adnxs.com domain
+		if anid, err := r.Cookie("uuid2"); err == nil {
+			pbsReq.UserIDs["adnxs"] = anid.Value
 		}
-	}
 
-	// this would be for the shared adnxs.com domain
-	if anid, err := r.Cookie("uuid2"); err == nil {
-		pbsReq.UserIDs["adnxs"] = anid.Value
-	}
+		pbsReq.Device.UA = r.Header.Get("User-Agent")
 
-	pbsReq.Start = time.Now()
-	pbsReq.Bidders = make([]*PBSBidder, 0)
+		if r.Header.Get("X-Real-Ip") != "" {
+			pbsReq.Device.IP = r.Header.Get("X-Real-Ip")
+		} else {
+			ip, _, uerr := net.SplitHostPort(r.RemoteAddr)
+			if uerr == nil && net.ParseIP(ip) != nil {
+				pbsReq.Device.IP = ip
+			}
+		}
+		pbsReq.Url = r.Header.Get("Referer") // must be specified in the header
+		// TODO: this should explicitly put us in test mode
+		if r.FormValue("url_override") != "" {
+			pbsReq.Url = r.FormValue("url_override")
+		}
+		if strings.Index(pbsReq.Url, "http") == -1 {
+			pbsReq.Url = fmt.Sprintf("http://%s", pbsReq.Url)
+		}
 
-	pbsReq.UserAgent = r.Header.Get("User-Agent")
-	pbsReq.Url = r.Header.Get("Referer") // must be specified in the header
+		url, err := url.Parse(pbsReq.Url)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid URL '%s': %v", pbsReq.Url, err)
+		}
 
-	// TODO: this should explicitly put us in test mode
-	if r.FormValue("url_override") != "" {
-		pbsReq.Url = r.FormValue("url_override")
-	}
+		if url.Host == "" {
+			return nil, fmt.Errorf("Host not found from URL '%v'", url)
+		}
 
-	if strings.Index(pbsReq.Url, "http") == -1 {
-		pbsReq.Url = fmt.Sprintf("http://%s", pbsReq.Url)
-	}
+		pbsReq.Domain, err = publicsuffix.EffectiveTLDPlusOne(url.Host)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
+		}
 
-	url, err := url.Parse(pbsReq.Url)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid URL '%s': %v", pbsReq.Url, err)
-	}
-
-	if url.Host == "" {
-		return nil, fmt.Errorf("Host not found from URL '%v'", url)
-	}
-
-	pbsReq.Domain, err = publicsuffix.EffectiveTLDPlusOne(url.Host)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
-	}
-
-	_, err = cache.GetDomain(pbsReq.Domain)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
+		_, err = cache.GetDomain(pbsReq.Domain)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
+		}
+	} else {
+		_, err = cache.GetDomain(pbsReq.App.Bundle)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid app bundle %s", pbsReq.App.Bundle)
+		}
 	}
 
 	if r.FormValue("debug") == "1" {
 		pbsReq.IsDebug = true
 	}
 
-	// TODO: X-Forwarded-For
-	if r.Header.Get("X-Real-Ip") != "" {
-		pbsReq.IPAddress = r.Header.Get("X-Real-Ip")
-	} else {
-		ip, _, uerr := net.SplitHostPort(r.RemoteAddr)
-		if uerr == nil && net.ParseIP(ip) != nil {
-			pbsReq.IPAddress = ip
+	if pbsReq.Secure == 0 {
+		if r.Header.Get("X-Forwarded-Proto") == "" {
+			if r.Header.Get("X-Forwarded-Proto") == "https" {
+				pbsReq.Secure = 1
+			}
+		} else if r.TLS != nil {
+			pbsReq.Secure = 1
 		}
 	}
 
-	if r.Header.Get("X-Forwarded-Proto") != "" {
-		pbsReq.Protocol = r.Header.Get("X-Forwarded-Proto")
-	} else {
-		if r.TLS == nil {
-			pbsReq.Protocol = "http"
-		} else {
-			pbsReq.Protocol = "https"
-		}
-	}
-	if r.Header.Get("X-Forwarded-Host") != "" {
-		pbsReq.Hostname = r.Header.Get("X-Forwarded-Host")
-	} else {
-		pbsReq.Hostname = r.Host
-	}
-
-	pbsReq.ServerURL = fmt.Sprintf("%s://%s", pbsReq.Protocol, pbsReq.Hostname)
+	pbsReq.Bidders = make([]*PBSBidder, 0)
 
 	for _, unit := range pbsReq.AdUnits {
 		bidders := unit.Bids

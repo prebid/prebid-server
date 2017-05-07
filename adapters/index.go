@@ -41,6 +41,9 @@ type indexParams struct {
 }
 
 func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	if req.App != nil {
+		return nil, fmt.Errorf("Index doesn't support apps")
+	}
 	indexReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params indexParams
