@@ -62,9 +62,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	reqJSON, err := json.Marshal(pbReq)
 
+	debug := &pbs.BidderDebug{
+		RequestURI: a.URI,
+	}
+
 	if req.IsDebug {
-		bidder.Debug.RequestBody = string(reqJSON)
-		bidder.Debug.RequestURI = a.URI
+		debug.RequestBody = string(reqJSON)
+		bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
@@ -80,9 +84,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 
-	if req.IsDebug {
-		bidder.Debug.StatusCode = pbResp.StatusCode
-	}
+	debug.StatusCode = pbResp.StatusCode
 
 	if pbResp.StatusCode == 204 {
 		return nil, nil
@@ -99,7 +101,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if req.IsDebug {
-		bidder.Debug.ResponseBody = string(body)
+		debug.ResponseBody = string(body)
 	}
 
 	var bidResp openrtb.BidResponse
