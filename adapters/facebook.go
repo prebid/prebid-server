@@ -65,17 +65,14 @@ func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 
 	result.statusCode = anResp.StatusCode
 
-	if anResp.StatusCode != 200 {
-		defer anResp.Body.Close()
-		body, _ := ioutil.ReadAll(anResp.Body)
-		err = errors.New(fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, string(body)))
-		return
-	}
-
 	defer anResp.Body.Close()
 	body, _ := ioutil.ReadAll(anResp.Body)
-
 	result.responseBody = string(body)
+
+	if anResp.StatusCode != 200 {
+		err = errors.New(fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.responseBody))
+		return
+	}
 
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
