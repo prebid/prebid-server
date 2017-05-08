@@ -185,7 +185,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	}
 
 	if pbsReq.Secure == 0 {
-		if r.Header.Get("X-Forwarded-Proto") == "" {
+		if r.Header.Get("X-Forwarded-Proto") != "" {
 			if r.Header.Get("X-Forwarded-Proto") == "https" {
 				pbsReq.Secure = 1
 			}
