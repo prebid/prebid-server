@@ -238,3 +238,18 @@ func TestIndexBasicResponse(t *testing.T) {
 		t.Fatalf("Should have received one bid")
 	}
 }
+
+func TestIndexUserSyncInfo(t *testing.T) {
+
+	conf := *DefaultHTTPAdapterConfig
+	an := NewIndexAdapter(&conf, "localhost")
+	if an.usersyncInfo.URL != "https://ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D__UID__" {
+		t.Fatalf("should have matched")
+	}
+	if an.usersyncInfo.Type != "redirect" {
+		t.Fatalf("should be redirect")
+	}
+	if an.usersyncInfo.SupportCORS != false {
+		t.Fatalf("should have been false")
+	}
+}
