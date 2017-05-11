@@ -169,18 +169,18 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
 		}
 
-        // all domains must be in the whitelist
+		// all domains must be in the whitelist
 		_, err = cache.GetDomain(pbsReq.Domain)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
 		}
 	} else {
-        /* should we whitelist bundles? Skipping for now
+		/* should we whitelist bundles? Skipping for now
 		_, err = cache.GetDomain(pbsReq.App.Bundle)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid app bundle %s", pbsReq.App.Bundle)
 		}
-        */
+		*/
 	}
 
 	if r.FormValue("debug") == "1" {

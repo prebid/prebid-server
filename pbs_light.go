@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/pbs"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -72,6 +73,11 @@ var (
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
+
+type BidCache struct {
+	Adm  string `json:"adm,omitempty"`
+	NURL string `json:"nurl,omitempty"`
+}
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -243,6 +249,32 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 		for _, bid := range result.bid_list {
 			pbs_resp.Bids = append(pbs_resp.Bids, bid)
+		}
+	}
+
+	if pbs_req.CacheMarkup == 1 {
+		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
+		for i, bid := range pbs_resp.Bids {
+			bc := BidCache{
+				Adm:  bid.Adm,
+				NURL: bid.NURL,
+			}
+			j, _ := json.Marshal(bc)
+			cobjs[i] = &pbc.CacheObject{
+				Key:   fmt.Sprintf("%d", i),
+				Value: string(j),
+			}
+		}
+		err = pbc.Put(ctx, cobjs)
+		if err != nil {
+			writeAuctionError(w, "Prebid cache failed", err)
+			mErrorMeter.Mark(1)
+			return
+		}
+		for i, bid := range pbs_resp.Bids {
+			bid.CacheID = cobjs[i].UUID
+			bid.NURL = ""
+			bid.Adm = ""
 		}
 	}
 
@@ -511,6 +543,8 @@ func main() {
 	cookieDomain = viper.GetString("cookie_domain")
 
 	pbs.InitUsersyncHandlers(router, metricsRegistry, cookieDomain, externalURL, viper.GetString("recaptcha_secret"))
+
+	pbc.InitPrebidCache(viper.GetString("prebid_cache_url"))
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})
