@@ -59,7 +59,7 @@ func TestAppNexusTimeout(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -94,7 +94,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -130,7 +130,7 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -157,7 +157,7 @@ func TestMissingPlacementId(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"XXX\": \"10\"}"),
+				Params: json.RawMessage("{\"XXX\": 10}"),
 			},
 		},
 	}
@@ -218,7 +218,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}

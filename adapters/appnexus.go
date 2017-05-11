@@ -37,9 +37,17 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type appnexusParams struct {
-	PlacementId string `json:"placementId"`
+	PlacementId int    `json:"placementId"`
 	invCode     string `json:"invCode"`
 	member      string `json:"member"`
+}
+
+type appnexusImpExtAppnexus struct {
+	PlacementID int `json:"placement_id"`
+}
+
+type appnexusImpExt struct {
+	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
 }
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -50,10 +58,13 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if err != nil {
 			return nil, err
 		}
-		if params.PlacementId == "" {
+
+		if params.PlacementId == 0 {
 			return nil, errors.New("Missing placementId param")
 		}
-		anReq.Imp[i].TagID = params.PlacementId
+
+		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{PlacementID: params.PlacementId}}
+		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 		// TODO: support member + invCode
 	}
 
@@ -149,9 +160,8 @@ func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexus
 	}
 
 	return &AppNexusAdapter{
-		http: a,
-		// TODO: Get new endpoint from sweeney
-		URI:          "http://ib.adnxs.com/openrtb2?member_id=958",
+		http:         a,
+		URI:          "http://ib.adnxs.com/openrtb2",
 		usersyncInfo: info,
 	}
 }
