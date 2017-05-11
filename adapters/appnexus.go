@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -38,7 +37,7 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type appnexusParams struct {
-	PlacementId string `json:"placementId"`
+	PlacementId int    `json:"placementId"`
 	invCode     string `json:"invCode"`
 	member      string `json:"member"`
 }
@@ -60,16 +59,11 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			return nil, err
 		}
 
-		if params.PlacementId == "" {
+		if params.PlacementId == 0 {
 			return nil, errors.New("Missing placementId param")
 		}
 
-		placementIdInt, err := strconv.Atoi(params.PlacementId)
-		if err != nil {
-			return nil, err
-		}
-
-		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{PlacementID: placementIdInt}}
+		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{PlacementID: params.PlacementId}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 		// TODO: support member + invCode
 	}
