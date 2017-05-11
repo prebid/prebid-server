@@ -59,7 +59,7 @@ func TestAppNexusTimeout(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -94,7 +94,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -130,7 +130,7 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -157,7 +157,7 @@ func TestMissingPlacementId(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"XXX\": \"10\"}"),
+				Params: json.RawMessage("{\"XXX\": 10}"),
 			},
 		},
 	}
@@ -218,7 +218,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": \"10\"}"),
+				Params: json.RawMessage("{\"placementId\": 10}"),
 			},
 		},
 	}
@@ -228,5 +228,19 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 	if len(bids) != 1 {
 		t.Fatalf("Did not receive 1 bid")
+	}
+}
+
+func TestAppNexusUserSyncInfo(t *testing.T) {
+
+	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
+	if an.usersyncInfo.URL != "https://ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
+		t.Fatalf("should have matched")
+	}
+	if an.usersyncInfo.Type != "redirect" {
+		t.Fatalf("should be redirect")
+	}
+	if an.usersyncInfo.SupportCORS != false {
+		t.Fatalf("should have been false")
 	}
 }

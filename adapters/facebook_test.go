@@ -280,3 +280,17 @@ func TestFacebookBasicResponse(t *testing.T) {
 		t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bids[0].Price, fbdata.tags[1].bid)
 	}
 }
+
+func TestFacebookUserSyncInfo(t *testing.T) {
+
+	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", "localhost")
+	if an.usersyncInfo.URL != "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID" {
+		t.Fatalf("should have matched")
+	}
+	if an.usersyncInfo.Type != "redirect" {
+		t.Fatalf("should be redirect")
+	}
+	if an.usersyncInfo.SupportCORS != false {
+		t.Fatalf("should have been false")
+	}
+}

@@ -42,7 +42,6 @@ type pubmaticParams struct {
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	pbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
-	pbReq.AT = 0 // this seems to break their bidder otherwise
 	for i, unit := range bidder.AdUnits {
 		var params pubmaticParams
 		err := json.Unmarshal(unit.Params, &params)
