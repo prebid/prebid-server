@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -259,10 +260,13 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				Adm:  bid.Adm,
 				NURL: bid.NURL,
 			}
-			j, _ := json.Marshal(bc)
+			buf := new(bytes.Buffer)
+			enc := json.NewEncoder(buf)
+			enc.SetEscapeHTML(false)
+			enc.Encode(bc)
 			cobjs[i] = &pbc.CacheObject{
 				Key:   fmt.Sprintf("%d", i),
-				Value: string(j),
+				Value: buf.String(),
 			}
 		}
 		err = pbc.Put(ctx, cobjs)
