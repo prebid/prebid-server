@@ -6,8 +6,7 @@ import (
 
 func TestRubiconUserSyncInfo(t *testing.T) {
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewRubiconAdapter(&conf, "uri", "xuser", "xpass", "localhost")
+	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "localhost")
 	if an.usersyncInfo.URL != "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid" {
 		t.Fatalf("should have matched")
 	}

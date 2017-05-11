@@ -279,8 +279,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 
 func TestFacebookUserSyncInfo(t *testing.T) {
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, "partnerId", "localhost")
+	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", "localhost")
 	if an.usersyncInfo.URL != "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}
