@@ -13,7 +13,7 @@ type PBSBid struct {
 	Width       uint64  `json:"width,omitempty"`
 	Height      uint64  `json:"height,omitempty"`
 	DealId      string  `json:"deal_id,omitempty"`
-	CacheID     string  `json""cache_id,omitempty`
+	CacheID     string  `json:"cache_id,omitempty"`
 }
 
 type PBSBidSlice []*PBSBid
