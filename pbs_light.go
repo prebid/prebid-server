@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
+	"./adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/pbs"
 
@@ -423,6 +423,7 @@ func main() {
 
 	viper.SetDefault("pubmatic_endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("rubicon_endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("pulsepoint_endpoint", "http://lga-bid00:8080/header/s/ortb/a9?")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -437,6 +438,7 @@ func main() {
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pubmatic_endpoint"), externalURL),
+		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pulsepoint_endpoint"), externalURL),
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("rubicon_endpoint"),
 			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), externalURL),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), externalURL),
