@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-  
+
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
@@ -130,7 +130,6 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
 			numBids++
-
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
 				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
