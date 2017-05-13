@@ -7,7 +7,6 @@ import (
   "net/http"
   "net/http/httptest"
   "testing"
-  //"time"
   "fmt"
   "github.com/prebid/openrtb"
 )

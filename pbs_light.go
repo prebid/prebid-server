@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"./adapters"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/pbs"
 

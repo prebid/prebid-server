@@ -38,7 +38,7 @@ func (a *PulsePointAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 // parameters for pulsepoint adapter.
-type pulsepointParams struct {
+type PulsepointParams struct {
   PublisherId int `json:"cp"`
   TagId       int `json:"ct"`
   AdSize      string `json:"cf"`
@@ -47,7 +47,7 @@ type pulsepointParams struct {
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
   ppReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
   for i, unit := range bidder.AdUnits {
-    var params pulsepointParams
+    var params PulsepointParams
     err := json.Unmarshal(unit.Params, &params)
     if err != nil {
       return nil, err
@@ -77,7 +77,6 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
       }
     }
   }
-  ppReq.Device.IP = "158.106.210.74"
   reqJSON, err := json.Marshal(ppReq)
 
   debug := &pbs.BidderDebug{
