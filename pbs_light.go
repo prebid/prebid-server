@@ -423,7 +423,7 @@ func main() {
 
 	viper.SetDefault("pubmatic_endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("rubicon_endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	viper.SetDefault("pulsepoint_endpoint", "http://lga-bid00:8080/header/s/ortb/a9?")
+	viper.SetDefault("pulsepoint_endpoint", "http://bid.contextweb.com/header/s/ortb/prebidS2S?")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
