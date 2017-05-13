@@ -1,15 +1,15 @@
 package adapters
 
 import (
-	"context"
-	"encoding/json"
-	"github.com/prebid/prebid-server/pbs"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	//"time"
-	"fmt"
-	"github.com/prebid/openrtb"
+  "context"
+  "encoding/json"
+  "github.com/prebid/prebid-server/pbs"
+  "net/http"
+  "net/http/httptest"
+  "testing"
+  //"time"
+  "fmt"
+  "github.com/prebid/openrtb"
 )
 
 /**
@@ -17,7 +17,7 @@ import (
  */
 func TestPulsePointAdapterNames(t *testing.T) {
   adapter := NewPulsePointAdapter(DefaultHTTPAdapterConfig, "http://localhost/bid", "http://localhost")
-	VerifyStringValue(adapter.Name(), "PulsePoint", t)
+  VerifyStringValue(adapter.Name(), "PulsePoint", t)
   VerifyStringValue(adapter.FamilyName(), "pulsepoint", t)
 }
 
@@ -26,7 +26,7 @@ func TestPulsePointAdapterNames(t *testing.T) {
  */
 func TestPulsePointUserSyncInfo(t *testing.T) {
   adapter := NewPulsePointAdapter(DefaultHTTPAdapterConfig, "http://localhost/bid", "http://localhost")
-	VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
+  VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
   VerifyStringValue(adapter.GetUsersyncInfo().URL, "https://bh.contextweb.com/rtset?pid=-1&ev=1&rurl=http%3A%2F%2Flocalhost%2Fsetuid%3Fbidder%3Dpulsepoint%26uid%3D%25%25VGUID%25%25", t)
 }
 
@@ -35,16 +35,16 @@ func TestPulsePointUserSyncInfo(t *testing.T) {
  */
 func TestPulsePointRequiredBidParameters(t *testing.T) {
   adapter := NewPulsePointAdapter(DefaultHTTPAdapterConfig, "http://localhost/bid", "http://localhost")
-	ctx := context.TODO()
-	req := SampleRequest()
-	bidder := SampleBidder()
+  ctx := context.TODO()
+  req := SampleRequest()
+  bidder := SampleBidder()
   // remove "ct" param and verify error message.
   bidder.AdUnits[0].Params = json.RawMessage("{\"cp\": 2001, \"cf\": \"728X90\"}")
-	 _, errTag := adapter.Call(ctx, &req, &bidder)
+   _, errTag := adapter.Call(ctx, &req, &bidder)
   VerifyStringValue(errTag.Error(), "Missing TagId param ct", t)
   // remove "cp" param and verify error message.
   bidder.AdUnits[0].Params = json.RawMessage("{\"ct\": 1001, \"cf\": \"728X90\"}")
-	 _, errPub := adapter.Call(ctx, &req, &bidder)
+   _, errPub := adapter.Call(ctx, &req, &bidder)
   VerifyStringValue(errPub.Error(), "Missing PublisherId param cp", t)
   // remove "cf" param and verify error message.
   bidder.AdUnits[0].Params = json.RawMessage("{\"cp\": 2001, \"ct\": 1001}")
@@ -59,18 +59,18 @@ func TestPulsePointRequiredBidParameters(t *testing.T) {
 func TestPulsePointOpenRTBRequest(t *testing.T) {
   var ortbRequest openrtb.BidRequest
   server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// Send 204 (no-bid)
+    http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+      // Send 204 (no-bid)
       decoder := json.NewDecoder(req.Body)
       decoder.Decode(&ortbRequest)
       defer req.Body.Close()
       w.WriteHeader(204)
-		}),
-	)
-	defer server.Close()
+    }),
+  )
+  defer server.Close()
   ctx := context.TODO()
-	req := SampleRequest()
-	bidder := SampleBidder()
+  req := SampleRequest()
+  bidder := SampleBidder()
   adapter := NewPulsePointAdapter(DefaultHTTPAdapterConfig, server.URL, "http://localhost")
   adapter.Call(ctx, &req, &bidder)
   VerifyStringValue(ortbRequest.Imp[0].TagID, "1001", t)
@@ -85,17 +85,17 @@ func TestPulsePointOpenRTBRequest(t *testing.T) {
 func TestPulsePointBiddingBehavior(t *testing.T) {
   // setup server endpoint to return bid.
   server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+    http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
       resp := SampleBidResponse()
-			js, _ := json.Marshal(resp)
-			w.Header().Set("Content-Type", "application/json")
+      js, _ := json.Marshal(resp)
+      w.Header().Set("Content-Type", "application/json")
       w.Write(js)
-		}),
-	)
-	defer server.Close()
+    }),
+  )
+  defer server.Close()
   ctx := context.TODO()
-	req := SampleRequest()
-	bidder := SampleBidder()
+  req := SampleRequest()
+  bidder := SampleBidder()
   adapter := NewPulsePointAdapter(DefaultHTTPAdapterConfig, server.URL, "http://localhost")
   bids, _ := adapter.Call(ctx, &req, &bidder)
   // number of bids should be 1
@@ -118,11 +118,11 @@ func SampleBidder() pbs.PBSBidder {
         Code: "div-adunit-1",
         BidID: "bid-123",
         Sizes: []openrtb.Format{
-					{
-						W: 120,
-						H: 600,
-					},
-				},
+          {
+            W: 120,
+            H: 600,
+          },
+        },
         Params: json.RawMessage("{\"ct\": 1001, \"cp\": 2001, \"cf\": \"728X90\"}"),
       },
     },
@@ -152,26 +152,26 @@ func SampleBidResponse() openrtb.BidResponse {
 
 func SampleRequest() pbs.PBSRequest {
   req := pbs.PBSRequest{
-		AccountID: "1",
-		AdUnits: []pbs.AdUnit {
-			{
-				Code: "div-adunit-1",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Bids: []pbs.Bids {
+    AccountID: "1",
+    AdUnits: []pbs.AdUnit {
+      {
+        Code: "div-adunit-1",
+        Sizes: []openrtb.Format{
+          {
+            W: 10,
+            H: 12,
+          },
+        },
+        Bids: []pbs.Bids {
           {
             BidderCode: "pulsepoint",
             BidID: "Bid-123",
             Params: json.RawMessage("{\"cp\": 1001, \"cp\": 2001, \"cf\": \"728X90\"}"),
           },
         },
-			},
-		},
-	}
+      },
+    },
+  }
   return req
 }
 
