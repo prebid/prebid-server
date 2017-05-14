@@ -38,8 +38,8 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 
 type appnexusParams struct {
 	PlacementId int    `json:"placementId"`
-	invCode     string `json:"invCode"`
-	member      string `json:"member"`
+	InvCode     string `json:"invCode"`
+	Member      string `json:"member"`
 }
 
 type appnexusImpExtAppnexus struct {
@@ -151,7 +151,7 @@ func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexus
 	a := NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
-	usersyncURL := "https://ib.adnxs.com/getuid?"
+	usersyncURL := "//ib.adnxs.com/getuid?"
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),

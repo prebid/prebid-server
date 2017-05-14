@@ -17,6 +17,8 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+const MAX_BIDDERS = 8
+
 type ConfigCache interface {
 	LoadConfig(string) ([]Bids, error)
 }
@@ -197,7 +199,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 	}
 
-	pbsReq.Bidders = make([]*PBSBidder, 0)
+	pbsReq.Bidders = make([]*PBSBidder, 0, MAX_BIDDERS)
 
 	for _, unit := range pbsReq.AdUnits {
 		bidders := unit.Bids

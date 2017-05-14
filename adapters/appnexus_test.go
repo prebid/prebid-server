@@ -234,7 +234,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 func TestAppNexusUserSyncInfo(t *testing.T) {
 
 	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != "https://ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
+	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {

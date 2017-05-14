@@ -1,4 +1,4 @@
-package: prebid-server
+package: github.com/prebid/prebid-server
 import:
 - package: github.com/golang/glog
 - package: github.com/golang/protobuf

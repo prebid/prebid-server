@@ -11,7 +11,6 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
@@ -177,13 +176,11 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, externalURL string) *FacebookAdapter {
+func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
 	a := NewHTTPAdapter(config)
 
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=audienceNetwork&uid=$UID", externalURL)
-	usersyncURL := fmt.Sprintf("https://www.facebook.com/audiencenetwork/idsync/?partner=%s&callback=", partnerID)
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		URL:         usersyncURL,
 		Type:        "redirect",
 		SupportCORS: false,
 	}

@@ -265,7 +265,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			enc.SetEscapeHTML(false)
 			enc.Encode(bc)
 			cobjs[i] = &pbc.CacheObject{
-				Key:   fmt.Sprintf("%d", i),
 				Value: buf.String(),
 			}
 		}
@@ -462,6 +461,7 @@ func main() {
 
 	viper.SetDefault("pubmatic_endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("rubicon_endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("rubicon_usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -477,8 +477,8 @@ func main() {
 		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pubmatic_endpoint"), externalURL),
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("rubicon_endpoint"),
-			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), externalURL),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), externalURL),
+			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), viper.GetString("rubicon_usersync_url")),
+		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), viper.GetString("facebook_usersync_url")),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")

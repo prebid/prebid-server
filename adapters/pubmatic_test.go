@@ -273,7 +273,7 @@ func TestPubmaticBasicResponse(t *testing.T) {
 func TestPubmaticUserSyncInfo(t *testing.T) {
 
 	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
-	if an.usersyncInfo.URL != "https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
+	if an.usersyncInfo.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "iframe" {

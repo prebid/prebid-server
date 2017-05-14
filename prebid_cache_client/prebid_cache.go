@@ -12,7 +12,6 @@ import (
 )
 
 type CacheObject struct {
-	Key   string
 	Value string
 	UUID  string
 }
@@ -29,7 +28,6 @@ type putRequest struct {
 }
 
 type responseObject struct {
-	Key  string `json:"key"`
 	UUID string `json:"uuid"`
 }
 type response struct {
@@ -38,9 +36,11 @@ type response struct {
 
 var client *http.Client
 var base_url string
+var put_url string
 
 func InitPrebidCache(baseurl string) {
 	base_url = baseurl
+	put_url = fmt.Sprintf("%s/put", base_url)
 
 	ts := &http.Transport{
 		MaxIdleConns:    10,
@@ -62,7 +62,7 @@ func Get(ctx context.Context, uuid string) string {
 func Put(ctx context.Context, objs []*CacheObject) error {
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
-		pr.Puts[i].Key = obj.Key
+		pr.Puts[i].Key = "deprecated"
 		pr.Puts[i].Value = obj.Value
 	}
 
@@ -71,7 +71,7 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 		return err
 	}
 
-	httpReq, err := http.NewRequest("POST", fmt.Sprintf("%s/put", base_url), bytes.NewBuffer(reqJSON))
+	httpReq, err := http.NewRequest("POST", put_url, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 

@@ -39,7 +39,7 @@ type bidInfo struct {
 var fbdata bidInfo
 
 type FacebookExt struct {
-	PlatformID int `json:platformid`
+	PlatformID int `json:"platformid"`
 }
 
 func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if fext.PlatformID != fbdata.partnerID {
-		http.Error(w, fmt.Sprintf("Platform ID '%s' doesn't match '%s", fext.PlatformID, fbdata.partnerID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Platform ID '%d' doesn't match '%d", fext.PlatformID, fbdata.partnerID), http.StatusInternalServerError)
 		return
 	}
 	if breq.Site == nil {
@@ -282,9 +282,10 @@ func TestFacebookBasicResponse(t *testing.T) {
 }
 
 func TestFacebookUserSyncInfo(t *testing.T) {
+	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
 
-	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", "localhost")
-	if an.usersyncInfo.URL != "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID" {
+	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", url)
+	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {

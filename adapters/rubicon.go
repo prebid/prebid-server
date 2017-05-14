@@ -200,9 +200,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, externalURL string) *RubiconAdapter {
+func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
 	a := NewHTTPAdapter(config)
-	usersyncURL := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,

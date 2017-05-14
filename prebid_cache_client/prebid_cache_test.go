@@ -32,9 +32,8 @@ func DummyPrebidCacheServer(w http.ResponseWriter, r *http.Request) {
 	resp := response{
 		Responses: make([]responseObject, len(pr.Puts)),
 	}
-	for i, put := range pr.Puts {
-		resp.Responses[i].Key = put.Key
-		resp.Responses[i].UUID = fmt.Sprintf("%s-%d", put.Key, i+1) // deterministic for testing
+	for i, _ := range pr.Puts {
+		resp.Responses[i].UUID = fmt.Sprintf("UUID-%d", i+1) // deterministic for testing
 	}
 
 	js, err := json.Marshal(resp)
@@ -58,11 +57,9 @@ func TestPrebidClient(t *testing.T) {
 	cobj := make([]*CacheObject, 2)
 
 	cobj[0] = &CacheObject{
-		Key:   "abcd",
 		Value: "random",
 	}
 	cobj[1] = &CacheObject{
-		Key:   "nurl",
 		Value: "totally awesome value!",
 	}
 
@@ -74,11 +71,11 @@ func TestPrebidClient(t *testing.T) {
 		t.Fatalf("pbc put failed: %v", err)
 	}
 
-	if cobj[0].UUID != "abcd-1" {
-		t.Errorf("First object UUID was '%s', should have been 'abcd-1'", cobj[0].UUID)
+	if cobj[0].UUID != "UUID-1" {
+		t.Errorf("First object UUID was '%s', should have been 'UUID-1'", cobj[0].UUID)
 	}
-	if cobj[1].UUID != "nurl-2" {
-		t.Errorf("Second object UUID was '%s', should have been 'nurl-2'", cobj[0].UUID)
+	if cobj[1].UUID != "UUID-2" {
+		t.Errorf("Second object UUID was '%s', should have been 'UUID-2'", cobj[0].UUID)
 	}
 
 	delay = 5 * time.Millisecond
