@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 type FacebookAdapter struct {
@@ -70,7 +71,7 @@ func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 	result.responseBody = string(body)
 
 	if anResp.StatusCode != 200 {
-		err = errors.New(fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.responseBody))
+		err = fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, result.responseBody)
 		return
 	}
 

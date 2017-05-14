@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -88,7 +89,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 
 	if ixResp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP status: %d", ixResp.StatusCode))
+		return nil, fmt.Errorf("HTTP status: %d", ixResp.StatusCode)
 	}
 
 	defer ixResp.Body.Close()
@@ -116,7 +117,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
+				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
 			}
 
 			pbid := pbs.PBSBid{
