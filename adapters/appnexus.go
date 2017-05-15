@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -38,8 +39,8 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 
 type appnexusParams struct {
 	PlacementId int    `json:"placementId"`
-	invCode     string `json:"invCode"`
-	member      string `json:"member"`
+	InvCode     string `json:"invCode"`
+	Member      string `json:"member"`
 }
 
 type appnexusImpExtAppnexus struct {
@@ -98,7 +99,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if anResp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP status code %d", anResp.StatusCode))
+		return nil, fmt.Errorf("HTTP status code %d", anResp.StatusCode)
 	}
 
 	defer anResp.Body.Close()
@@ -126,7 +127,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
+				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
 			}
 
 			pbid := pbs.PBSBid{
@@ -151,7 +152,7 @@ func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexus
 	a := NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
-	usersyncURL := "https://ib.adnxs.com/getuid?"
+	usersyncURL := "//ib.adnxs.com/getuid?"
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),

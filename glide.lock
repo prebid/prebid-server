@@ -1,5 +1,5 @@
-hash: 8b59ad2d89a594d8e5870e2fd11df81a76a309a51b1fe4617f80de38a10bc9e9
-updated: 2017-05-01T13:00:30.217099938-04:00
+hash: 2b039748d5f160374a2cf8cf53b90151551a7fb319ef5df9e87a56cdcfe3cc2d
+updated: 2017-05-14T10:50:09.949542099-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -12,11 +12,11 @@ imports:
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: 18c9bb3261723cd5401db4d0c9fbc5c3b6c70fe8
+  version: fec3b39b059c0f88fa6b20f5ed012b1aa203a8b4
   subpackages:
   - proto
 - name: github.com/hashicorp/hcl
-  version: 7fa7fff964d035e8a162cce3a164b3ad02ad651b
+  version: 392dba7d905ed5d04a5794ba89f558b27e2ba1ca
   subpackages:
   - hcl/ast
   - hcl/parser
@@ -27,7 +27,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/influxdata/influxdb
-  version: 8655042b122a6372d0b37c810773cdb5e34e95ed
+  version: 3b700863eaa3fae65a995ce65ca12fc85c0a6995
   subpackages:
   - client
   - models
@@ -45,9 +45,9 @@ imports:
 - name: github.com/pelletier/go-buffruneio
   version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml
-  version: fe206efb84b2bc8e8cfafe6b4c1826622be969e3
+  version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
 - name: github.com/prebid/openrtb
-  version: 2a139cf623d9eaeaf1b0b79c9423a3b8d79229a2
+  version: 4abcf757715a1a5e13211dd6c67c8e21c73b4668
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
@@ -63,9 +63,9 @@ imports:
 - name: github.com/spf13/cast
   version: acbeb36b902d72a7a4c18e8f3241075e7ab763e4
 - name: github.com/spf13/jwalterweatherman
-  version: fa7ca7e836cf3a8bb4ebf799f472c12d7e903d66
+  version: 8f07c835e5cc1450c082fe3a439cf87b0cbb2d99
 - name: github.com/spf13/pflag
-  version: f1d95a35e132e8a1868023a08932b14f0b8b8fcb
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/spf13/viper
   version: 0967fc9aceab2ce9da34061253ac10fb99bba5b2
 - name: github.com/vrischmann/go-metrics-influxdb
@@ -79,17 +79,17 @@ imports:
 - name: github.com/xojoc/useragent
   version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
 - name: golang.org/x/net
-  version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
+  version: 84f0e6f92b10139f986b1756e149a7d9de270cdc
   subpackages:
   - context
   - context/ctxhttp
   - publicsuffix
 - name: golang.org/x/sys
-  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
+  version: f845067cf72a21fb4929b0e6a35273bd83b56396
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4
+  version: 19e51611da83d6be54ddafce4a4af510cb3e9ea4
   subpackages:
   - transform
   - unicode/norm

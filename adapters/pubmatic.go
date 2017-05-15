@@ -56,7 +56,12 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		pbReq.Imp[i].Banner.Format = nil // pubmatic doesn't support
 		pbReq.Imp[i].TagID = params.AdSlot
-		pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+		if pbReq.Site != nil {
+			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+		}
+		if pbReq.App != nil {
+			pbReq.App.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+		}
 	}
 
 	reqJSON, err := json.Marshal(pbReq)
@@ -90,7 +95,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if pbResp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP status: %d", pbResp.StatusCode))
+		return nil, fmt.Errorf("HTTP status: %d", pbResp.StatusCode)
 	}
 
 	defer pbResp.Body.Close()
@@ -142,7 +147,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
 	a := NewHTTPAdapter(config)
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
-	usersyncURL := "https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
+	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),

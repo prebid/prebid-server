@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -79,7 +80,6 @@ type rubiconBannerExt struct {
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	rpReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
-	rpReq.Site.Publisher = &openrtb.Publisher{}
 	for i, unit := range bidder.AdUnits {
 		var params rubiconParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -104,11 +104,19 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			rpReq.Imp[i].Banner.W = 0
 			rpReq.Imp[i].Banner.H = 0
 		}
-		// this may be redundant, but params are per-unit
+		// params are per-unit, so site may overwrite itself
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
-		rpReq.Site.Ext, err = json.Marshal(&siteExt)
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
-		rpReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
+		if rpReq.Site != nil {
+			rpReq.Site.Ext, err = json.Marshal(&siteExt)
+			rpReq.Site.Publisher = &openrtb.Publisher{}
+			rpReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
+		}
+		if rpReq.App != nil {
+			rpReq.App.Ext, err = json.Marshal(&siteExt)
+			rpReq.App.Publisher = &openrtb.Publisher{}
+			rpReq.App.Publisher.Ext, err = json.Marshal(&pubExt)
+		}
 	}
 
 	reqJSON, err := json.Marshal(rpReq)
@@ -144,7 +152,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	if anResp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP status code %d", anResp.StatusCode))
+		return nil, fmt.Errorf("HTTP status code %d", anResp.StatusCode)
 	}
 
 	defer anResp.Body.Close()
@@ -172,7 +180,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
+				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
 			}
 
 			pbid := pbs.PBSBid{
@@ -193,9 +201,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, externalURL string) *RubiconAdapter {
+func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
 	a := NewHTTPAdapter(config)
-	usersyncURL := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,
