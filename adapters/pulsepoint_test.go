@@ -26,7 +26,7 @@ func TestPulsePointAdapterNames(t *testing.T) {
 func TestPulsePointUserSyncInfo(t *testing.T) {
 	adapter := NewPulsePointAdapter(DefaultHTTPAdapterConfig, "http://localhost/bid", "http://localhost")
 	VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
-	VerifyStringValue(adapter.GetUsersyncInfo().URL, "https://bh.contextweb.com/rtset?pid=-1&ev=1&rurl=http%3A%2F%2Flocalhost%2Fsetuid%3Fbidder%3Dpulsepoint%26uid%3D%25%25VGUID%25%25", t)
+	VerifyStringValue(adapter.GetUsersyncInfo().URL, "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl=http%3A%2F%2Flocalhost%2Fsetuid%3Fbidder%3Dpulsepoint%26uid%3D%25%25VGUID%25%25", t)
 }
 
 /**
