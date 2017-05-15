@@ -11,6 +11,7 @@ import (
 func TestFileCache(t *testing.T) {
 	fcf := fileCacheFile{
 		Domains:  []string{"one.com", "two.com", "three.com"},
+		Apps:     []string{"com.app.one", "com.app.two", "com.app.three"},
 		Accounts: []string{"account1", "account2", "account3"},
 		Configs: []fileCacheConfig{
 			{
@@ -60,6 +61,20 @@ func TestFileCache(t *testing.T) {
 	}
 
 	d, err = dataCache.GetDomain("abc123")
+	if err == nil {
+		t.Error("domain should not exist in cache")
+	}
+
+	app, err := dataCache.GetApp("com.app.one")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if app.Bundle != "com.app.one" {
+		t.Error("fetched invalid app")
+	}
+
+	app, err = dataCache.GetApp("abc123")
 	if err == nil {
 		t.Error("domain should not exist in cache")
 	}

@@ -15,6 +15,15 @@ func TestDummyCache(t *testing.T) {
 		t.Error("Wrong domain returned")
 	}
 
+	app, err := c.GetApp("com.app.one")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if app.Bundle != "com.app.one" {
+		t.Error("Wrong app returned")
+	}
+
 	account, err := c.GetAccount("account1")
 	if err != nil {
 		t.Fatal(err)

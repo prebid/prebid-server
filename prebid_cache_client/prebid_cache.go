@@ -17,9 +17,7 @@ type CacheObject struct {
 }
 
 // internal protocol objects
-
 type putObject struct {
-	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
@@ -34,13 +32,16 @@ type response struct {
 	Responses []responseObject `json:"responses"`
 }
 
-var client *http.Client
-var base_url string
-var put_url string
+var (
+	client  *http.Client
+	baseURL string
+	putURL  string
+)
 
+// InitPrebidCache setup the global prebid cache
 func InitPrebidCache(baseurl string) {
-	base_url = baseurl
-	put_url = fmt.Sprintf("%s/put", base_url)
+	baseURL = baseurl
+	putURL = fmt.Sprintf("%s/put", baseURL)
 
 	ts := &http.Transport{
 		MaxIdleConns:    10,
@@ -52,17 +53,10 @@ func InitPrebidCache(baseurl string) {
 	}
 }
 
-/*
-func Get(ctx context.Context, uuid string) string {
-
-}
-*/
-
-// will send the array of objs and update each with a UUID
+// Put will send the array of objs and update each with a UUID
 func Put(ctx context.Context, objs []*CacheObject) error {
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
-		pr.Puts[i].Key = "deprecated"
 		pr.Puts[i].Value = obj.Value
 	}
 
@@ -71,7 +65,7 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 		return err
 	}
 
-	httpReq, err := http.NewRequest("POST", put_url, bytes.NewBuffer(reqJSON))
+	httpReq, err := http.NewRequest("POST", putURL, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 

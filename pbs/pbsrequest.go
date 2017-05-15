@@ -3,13 +3,14 @@ package pbs
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/cache"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/cache"
 
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb"
@@ -177,12 +178,12 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
 		}
 	} else {
-		/* should we whitelist bundles? Skipping for now
-		_, err = cache.GetDomain(pbsReq.App.Bundle)
+
+		_, err = cache.GetApp(pbsReq.App.Bundle)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid app bundle %s", pbsReq.App.Bundle)
 		}
-		*/
+
 	}
 
 	if r.FormValue("debug") == "1" {

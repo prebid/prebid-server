@@ -38,3 +38,12 @@ func (c *DummyCache) GetAccount(key string) (*Account, error) {
 	}
 	return d, nil
 }
+
+// GetApp echos back the app
+func (c *DummyCache) GetApp(bundle string) (*App, error) {
+
+	d := &App{
+		Bundle: bundle,
+	}
+	return d, nil
+}
