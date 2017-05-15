@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/prebid/openrtb"
@@ -119,7 +118,12 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if len(s) != 2 {
 			return nil, fmt.Errorf("Invalid placementId param '%s'", params.PlacementId)
 		}
-		fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
+		if fbReq.Site != nil {
+			fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
+		}
+		if fbReq.App != nil {
+			fbReq.App.Publisher = &openrtb.Publisher{ID: s[0]}
+		}
 		fbReq.Imp[0].TagID = params.PlacementId
 
 		err = json.NewEncoder(&requests[i]).Encode(fbReq)
@@ -173,13 +177,11 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, externalURL string) *FacebookAdapter {
+func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
 	a := NewHTTPAdapter(config)
 
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=audienceNetwork&uid=$UID", externalURL)
-	usersyncURL := fmt.Sprintf("https://www.facebook.com/audiencenetwork/idsync/?partner=%s&callback=", partnerID)
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		URL:         usersyncURL,
 		Type:        "redirect",
 		SupportCORS: false,
 	}

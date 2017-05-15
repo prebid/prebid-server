@@ -12,6 +12,7 @@ import (
 type FileCache struct {
 	Configs  map[string]string
 	Domains  map[string]bool
+	Apps     map[string]bool
 	Accounts map[string]bool
 }
 
@@ -23,6 +24,7 @@ type fileCacheConfig struct {
 type fileCacheFile struct {
 	Configs  []fileCacheConfig `yaml:"configs"`
 	Domains  []string          `yaml:"domains"`
+	Apps     []string          `yaml:"apps"`
 	Accounts []string          `yaml:"accounts"`
 }
 
@@ -66,6 +68,12 @@ func NewFileCache(filename string) (*FileCache, error) {
 	}
 	glog.Infof("Loaded %d domains", len(u.Domains))
 
+	fc.Apps = make(map[string]bool, len(u.Apps))
+	for _, app := range u.Apps {
+		fc.Apps[app] = true
+	}
+	glog.Infof("Loaded %d apps", len(u.Apps))
+
 	fc.Accounts = make(map[string]bool, len(u.Accounts))
 	for _, Account := range u.Accounts {
 		fc.Accounts[Account] = true
@@ -97,6 +105,21 @@ func (c *FileCache) GetDomain(key string) (*Domain, error) {
 	}
 
 	_, ok := c.Domains[key]
+	if !ok {
+		return nil, fmt.Errorf("Not found")
+	}
+
+	return d, nil
+}
+
+// GetAoo will return App from memory if it exists
+func (c *FileCache) GetApp(bundle string) (*App, error) {
+
+	d := &App{
+		Bundle: bundle,
+	}
+
+	_, ok := c.Apps[bundle]
 	if !ok {
 		return nil, fmt.Errorf("Not found")
 	}

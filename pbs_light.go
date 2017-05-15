@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -17,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/pbs"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -52,6 +54,7 @@ type AdapterMetrics struct {
 var (
 	metricsRegistry      metrics.Registry
 	mRequestMeter        metrics.Meter
+	mAppRequestMeter     metrics.Meter
 	mNoCookieMeter       metrics.Meter
 	mSafariRequestMeter  metrics.Meter
 	mSafariNoCookieMeter metrics.Meter
@@ -71,6 +74,11 @@ var (
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
+
+type BidCache struct {
+	Adm  string `json:"adm,omitempty"`
+	NURL string `json:"nurl,omitempty"`
+}
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -131,7 +139,17 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	if requireUUID2 {
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
+	if err != nil {
+		glog.Info("error parsing request", err)
+		writeAuctionError(w, "Error parsing request", err)
+		mErrorMeter.Mark(1)
+		return
+	}
+
+	if pbs_req.App != nil {
+		mAppRequestMeter.Mark(1)
+	} else if requireUUID2 {
 		if _, err := r.Cookie("uuid2"); err != nil {
 			mNoCookieMeter.Mark(1)
 			if isSafari {
@@ -149,14 +167,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			w.Write(b)
 			return
 		}
-	}
-
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
-	if err != nil {
-		glog.Info("error parsing request", err)
-		writeAuctionError(w, "Error parsing request", err)
-		mErrorMeter.Mark(1)
-		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
@@ -189,7 +199,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			ametrics := adapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
-			if pbs_req.GetUserID(ex.FamilyName()) == "" {
+			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
 				bidder.NoCookie = true
 				bidder.UsersyncInfo = ex.GetUsersyncInfo()
 				ametrics.NoCookieMeter.Mark(1)
@@ -240,6 +250,34 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 		for _, bid := range result.bid_list {
 			pbs_resp.Bids = append(pbs_resp.Bids, bid)
+		}
+	}
+
+	if pbs_req.CacheMarkup == 1 {
+		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
+		for i, bid := range pbs_resp.Bids {
+			bc := BidCache{
+				Adm:  bid.Adm,
+				NURL: bid.NURL,
+			}
+			buf := new(bytes.Buffer)
+			enc := json.NewEncoder(buf)
+			enc.SetEscapeHTML(false)
+			enc.Encode(bc)
+			cobjs[i] = &pbc.CacheObject{
+				Value: buf.String(),
+			}
+		}
+		err = pbc.Put(ctx, cobjs)
+		if err != nil {
+			writeAuctionError(w, "Prebid cache failed", err)
+			mErrorMeter.Mark(1)
+			return
+		}
+		for i, bid := range pbs_resp.Bids {
+			bid.CacheID = cobjs[i].UUID
+			bid.NURL = ""
+			bid.Adm = ""
 		}
 	}
 
@@ -342,7 +380,7 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	if reqSchema == nil {
-		fmt.Fprintf(w, "Validation chema not loaded\n")
+		fmt.Fprintf(w, "Validation schema not loaded\n")
 		return
 	}
 
@@ -423,6 +461,7 @@ func main() {
 
 	viper.SetDefault("pubmatic_endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("rubicon_endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("rubicon_usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -438,12 +477,13 @@ func main() {
 		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pubmatic_endpoint"), externalURL),
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("rubicon_endpoint"),
-			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), externalURL),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), externalURL),
+			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), viper.GetString("rubicon_usersync_url")),
+		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), viper.GetString("facebook_usersync_url")),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
+	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
 	mNoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry)
 	mSafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", metricsRegistry)
 	mSafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", metricsRegistry)
@@ -507,6 +547,8 @@ func main() {
 	cookieDomain = viper.GetString("cookie_domain")
 
 	pbs.InitUsersyncHandlers(router, metricsRegistry, cookieDomain, externalURL, viper.GetString("recaptcha_secret"))
+
+	pbc.InitPrebidCache(viper.GetString("prebid_cache_url"))
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})

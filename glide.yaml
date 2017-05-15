@@ -1,4 +1,4 @@
-package: prebid-server
+package: github.com/prebid/prebid-server
 import:
 - package: github.com/golang/glog
 - package: github.com/golang/protobuf
@@ -7,7 +7,7 @@ import:
 - package: github.com/julienschmidt/httprouter
   version: ~1.1.0
 - package: github.com/prebid/openrtb
-  version: ~3.0.2
+  version: ~3.0.3
 - package: github.com/rcrowley/go-metrics
 - package: github.com/spf13/viper
 - package: github.com/vrischmann/go-metrics-influxdb

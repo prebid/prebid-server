@@ -130,6 +130,40 @@ func (c *PostgresDataCache) GetDomain(key string) (*Domain, error) {
 	return &d, nil
 }
 
+func (c *PostgresDataCache) GetApp(key string) (*App, error) {
+	var bundle string
+	app := App{}
+
+	b, err := c.lru.Get([]byte(key))
+	if err == nil {
+		buf := bytes.NewReader(b)
+		dec := gob.NewDecoder(buf)
+		err = dec.Decode(&app)
+		if err != nil {
+			panic(err)
+		}
+		return &app, nil
+	}
+
+	err = c.db.QueryRow("SELECT bundle FROM mobile_bundle where bundle = $1 LIMIT 1", key).Scan(&bundle)
+	if err != nil {
+		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
+		return nil, err
+	}
+
+	app.Bundle = bundle
+
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	enc.Encode(&app)
+	if err != nil {
+		panic(err)
+	}
+
+	c.lru.Set([]byte(key), buf.Bytes(), c.ttlSeconds)
+	return &app, nil
+}
+
 func (c *PostgresDataCache) GetAccount(key string) (*Account, error) {
 	var id string
 	account := Account{}

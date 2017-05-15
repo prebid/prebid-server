@@ -3,9 +3,10 @@ package pbs
 import (
 	"bytes"
 	"fmt"
-	"github.com/prebid/prebid-server/cache"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/prebid/prebid-server/cache"
 )
 
 func TestParseSimpleRequest(t *testing.T) {
@@ -113,7 +114,7 @@ func TestHeaderParsing(t *testing.T) {
 	if pbs_req.Domain != "nytimes.com" {
 		t.Errorf("Failed to parse TLD from referrer: %s not nytimes.com", pbs_req.Domain)
 	}
-	if pbs_req.UserAgent != "Mozilla/" {
+	if pbs_req.Device.UA != "Mozilla/" {
 		t.Errorf("Failed to pull User-Agent from referrer")
 	}
 }
@@ -124,6 +125,13 @@ type DummyCache struct {
 func (d DummyCache) GetDomain(domain string) (*cache.Domain, error) {
 	if domain == "nytimes.com" {
 		return &cache.Domain{Domain: domain}, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (d DummyCache) GetApp(bundle string) (*cache.App, error) {
+	if bundle == "com.one.com" {
+		return &cache.App{Bundle: bundle}, nil
 	}
 	return nil, fmt.Errorf("not found")
 }

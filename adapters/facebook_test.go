@@ -39,7 +39,7 @@ type bidInfo struct {
 var fbdata bidInfo
 
 type FacebookExt struct {
-	PlatformID int `json:platformid`
+	PlatformID int `json:"platformid"`
 }
 
 func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if fext.PlatformID != fbdata.partnerID {
-		http.Error(w, fmt.Sprintf("Platform ID '%s' doesn't match '%s", fext.PlatformID, fbdata.partnerID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Platform ID '%d' doesn't match '%d", fext.PlatformID, fbdata.partnerID), http.StatusInternalServerError)
 		return
 	}
 	if breq.Site == nil {
@@ -178,9 +178,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
-		UserIDs: make(map[string]string),
 	}
-	pbin.UserIDs["audienceNetwork"] = fbdata.buyerUID
 	for i, tag := range fbdata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code: tag.code,
@@ -212,6 +210,12 @@ func TestFacebookBasicResponse(t *testing.T) {
 	req.Header.Add("Referer", fbdata.page)
 	req.Header.Add("User-Agent", fbdata.deviceUA)
 	req.Header.Add("X-Real-IP", fbdata.deviceIP)
+
+	pc := pbs.ParseUIDCookie(req)
+	pc.UIDs["audienceNetwork"] = fbdata.buyerUID
+	fakewriter := httptest.NewRecorder()
+	pbs.SetUIDCookie(fakewriter, pc)
+	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	pbReq, err := pbs.ParsePBSRequest(req, cache.NewDummyCache())
 	if err != nil {
@@ -278,9 +282,10 @@ func TestFacebookBasicResponse(t *testing.T) {
 }
 
 func TestFacebookUserSyncInfo(t *testing.T) {
+	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
 
-	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", "localhost")
-	if an.usersyncInfo.URL != "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID" {
+	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", url)
+	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {
