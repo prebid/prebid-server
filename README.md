@@ -15,9 +15,9 @@ In testing:
 - Facebook web
 
 Under development / pending testing:
-- Pubmatic
-- Index Exchange
-- PulsePoint
+- Pubmatic (waiting for clean & stable usersync endpoint and param compatibility with client-side prebid)
+- Index Exchange (waiting for stable endpoint)
+- PulsePoint (in code review)
 
 # How it works
 The client (typically prebid.js) sends a JSON request to Prebid Server at `/auction`. See static/pbs_request.json for the format.
