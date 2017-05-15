@@ -95,7 +95,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if pbResp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP status: %d", pbResp.StatusCode))
+		return nil, fmt.Errorf("HTTP status: %d", pbResp.StatusCode)
 	}
 
 	defer pbResp.Body.Close()
