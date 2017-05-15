@@ -72,7 +72,7 @@ func NewFileCache(filename string) (*FileCache, error) {
 	for _, app := range u.Apps {
 		fc.Apps[app] = true
 	}
-	glog.Infof("Loaded %d domains", len(u.Apps))
+	glog.Infof("Loaded %d apps", len(u.Apps))
 
 	fc.Accounts = make(map[string]bool, len(u.Accounts))
 	for _, Account := range u.Accounts {
