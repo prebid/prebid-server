@@ -155,7 +155,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
   a := NewHTTPAdapter(config)
   redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
-  usersyncURL := "https://bh.contextweb.com/rtset?pid=-1&ev=1&rurl="
+  usersyncURL := "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
 
   info := &pbs.UsersyncInfo{
     URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
