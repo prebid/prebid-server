@@ -462,6 +462,7 @@ func main() {
 	viper.SetDefault("pubmatic_endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("rubicon_endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("rubicon_usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	viper.SetDefault("pulsepoint_endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -476,6 +477,7 @@ func main() {
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
 		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pubmatic_endpoint"), externalURL),
+		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pulsepoint_endpoint"), externalURL),
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("rubicon_endpoint"),
 			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), viper.GetString("rubicon_usersync_url")),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), viper.GetString("facebook_usersync_url")),
