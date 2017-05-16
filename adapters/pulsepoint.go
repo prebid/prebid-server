@@ -25,7 +25,7 @@ type PulsePointAdapter struct {
 
 // adapter name
 func (a *PulsePointAdapter) Name() string {
-	return "PulsePoint"
+	return "pulsepoint"
 }
 
 // used for cookies and such
@@ -53,32 +53,42 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			return nil, err
 		}
 		if params.PublisherId == 0 {
-			return nil, errors.New("Missing PublisherId param cp")
+			return nil, fmt.Errorf("Missing PublisherId param cp")
 		}
 		if params.TagId == 0 {
-			return nil, errors.New("Missing TagId param ct")
+			return nil, fmt.Errorf("Missing TagId param ct")
 		}
 		if params.AdSize == "" {
-			return nil, errors.New("Missing AdSize param cf")
+			return nil, fmt.Errorf("Missing AdSize param cf")
 		}
 		ppReq.Imp[i].TagID = strconv.Itoa(params.TagId)
-		ppReq.Site.Publisher = &openrtb.Publisher{ID: strconv.Itoa(params.PublisherId)}
+		publisher := &openrtb.Publisher{ID: strconv.Itoa(params.PublisherId)}
+		if ppReq.Site != nil {
+			ppReq.Site.Publisher = publisher
+		} else {
+			ppReq.App.Publisher = publisher
+		}
 		if ppReq.Imp[i].Banner != nil {
 			var size = strings.Split(strings.ToLower(params.AdSize), "x")
 			if len(size) == 2 {
 				width, err := strconv.Atoi(size[0])
 				if err == nil {
 					ppReq.Imp[i].Banner.W = uint64(width)
+				} else {
+					return nil, fmt.Errorf("Invalid Width param %s", size[0])
 				}
 				height, err := strconv.Atoi(size[1])
 				if err == nil {
 					ppReq.Imp[i].Banner.H = uint64(height)
+				} else {
+					return nil, fmt.Errorf("Invalid Height param %s", size[1])
 				}
+			} else {
+				return nil, fmt.Errorf("Invalid AdSize param %s", params.AdSize)
 			}
 		}
 	}
 	reqJSON, err := json.Marshal(ppReq)
-
 	debug := &pbs.BidderDebug{
 		RequestURI: a.URI,
 	}
@@ -104,7 +114,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	if ppResp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("HTTP status: %d", ppResp.StatusCode))
+		return nil, fmt.Errorf("HTTP status: %d", ppResp.StatusCode)
 	}
 
 	defer ppResp.Body.Close()
@@ -125,10 +135,8 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 	bids := make(pbs.PBSBidSlice, 0)
 
-	numBids := 0
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			numBids++
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
 				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
@@ -143,7 +151,6 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				Creative_id: bid.CrID,
 				Width:       bid.W,
 				Height:      bid.H,
-				DealId:      bid.DealID,
 			}
 			bids = append(bids, &pbid)
 		}
@@ -155,7 +162,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
 	a := NewHTTPAdapter(config)
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
-	usersyncURL := "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
+	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
