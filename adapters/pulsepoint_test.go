@@ -5,14 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"strings"
 	"github.com/deckarep/golang-set"
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/pbs"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -20,8 +20,8 @@ import (
  * Represents a scaffolded PulsePoint OpenRTB service.
  */
 type PulsePointOrtbMockService struct {
-	Server 					*httptest.Server
-	LastBidRequest	*openrtb.BidRequest
+	Server         *httptest.Server
+	LastBidRequest *openrtb.BidRequest
 }
 
 /**
@@ -185,7 +185,7 @@ func TestMobileAppRequest(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleRequest(1, t)
 	req.App = &openrtb.App{
-		ID: "com.facebook.katana",
+		ID:   "com.facebook.katana",
 		Name: "facebook",
 	}
 	bidder := req.Bidders[0]
@@ -234,7 +234,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	// create a request object
 	req := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
-	};
+	}
 	req.AccountID = "1"
 	tagId := 1001
 	for i := 0; i < numberOfImpressions; i++ {
@@ -250,7 +250,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 				{
 					BidderCode: "pulsepoint",
 					BidID:      fmt.Sprintf("Bid-%d", i+1),
-					Params:     json.RawMessage(fmt.Sprintf("{\"ct\": %d, \"cp\": 2001, \"cf\": \"728X90\"}", tagId + i)),
+					Params:     json.RawMessage(fmt.Sprintf("{\"ct\": %d, \"cp\": 2001, \"cf\": \"728X90\"}", tagId+i)),
 				},
 			},
 		}
