@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/deckarep/golang-set"
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/pbs"
@@ -200,14 +199,14 @@ func TestMobileAppRequest(t *testing.T) {
 }
 
 /**
- * Produces a set of TagIds, based on a comma separated strings. The set
+ * Produces a map of TagIds, based on a comma separated strings. The map
  * contains the list of tags to bid on.
  */
-func BidOnTags(tags string) mapset.Set {
+func BidOnTags(tags string) map[string]bool {
 	values := strings.Split(tags, ",")
-	set := mapset.NewSet()
+	set := make(map[string]bool)
 	for _, tag := range values {
-		set.Add(tag)
+		set[tag] = true
 	}
 	return set
 }
@@ -281,7 +280,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
  * Represents a mock ORTB endpoint of PulsePoint. Would return a bid
  * for TagId 1001 and passback for 1002 as the default behavior.
  */
-func CreateService(tagsToBid mapset.Set) PulsePointOrtbMockService {
+func CreateService(tagsToBid map[string]bool) PulsePointOrtbMockService {
 	service := PulsePointOrtbMockService{}
 	var lastBidRequest openrtb.BidRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +299,7 @@ func CreateService(tagsToBid mapset.Set) PulsePointOrtbMockService {
 		lastBidRequest = breq
 		var bids []openrtb.Bid
 		for i, imp := range breq.Imp {
-			if tagsToBid.Contains(imp.TagID) {
+			if tagsToBid[imp.TagID] {
 				bids = append(bids, SampleBid(int(imp.Banner.W), int(imp.Banner.H), imp.ID, i+1))
 			}
 		}
