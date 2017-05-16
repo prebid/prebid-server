@@ -3,6 +3,22 @@
 # prebid-server
 Server side component to offload prebid processing to the cloud
 
+# Discussion group for development / adapter testing
+http://redditadops.slack.com channel headerbidding-dev
+
+# Current Status of Adapters (May 15, 2017)
+Working on live sites:
+- AppNexus web
+- Rubicon web
+
+In testing:
+- Facebook web
+
+Under development / pending testing:
+- Pubmatic (waiting for clean & stable usersync endpoint and param compatibility with client-side prebid)
+- Index Exchange (waiting for stable endpoint)
+- PulsePoint (in code review)
+
 # How it works
 The client (typically prebid.js) sends a JSON request to Prebid Server at `/auction`. See static/pbs_request.json for the format.
 Prebid Server forms OpenRTB requests, sends them to the appropriate adapters, concatenates the responses, and returns them
@@ -29,6 +45,9 @@ Prebid Server has no user profiling or user-data collection capabilities.
 ### Prerequisites
 * [Go](https://www.golang.org)
 * [Glide](https://glide.sh/)
+
+# Hosted version
+AppNexus is hosting a version (generally bleeding-edge of this repo including some in-flight pull requests) at https://prebid.adnxs.com.
 
 ### Getting
 ```
@@ -80,10 +99,13 @@ Prebid Server has three primary data objects that it needs to manage:
  * Accounts represent publishers, and are used for metrics aggregation and terms of service adherence. Requests without an
  active account will be rejected.
  * Domains are compared to the HTTP Referer header; all unknown/unapproved domains will be rejected.
+ * Bundles are compared to the `app.bundle` value; all unknown/unapproved bundles will be rejected.
  * Configs are used for server-side configuration of adapters, primarily for use with mobile apps where managing configs
  client-side is ineffective.
 
 # Up Next
- * Refine adapters and openrtb protocol (support burl? validation of responses?)
- * Support Prebid mobile SDK
- * Video and native
+ * Limit adapters to one bid per ad unit
+ * NURL support
+ * Think through how deals work
+ * Video
+ * Native
