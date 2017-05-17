@@ -415,21 +415,23 @@ func (s *Server) newAccountMetrics(id string) *AccountMetrics {
 }
 
 func NewServer(c *config.Configuration, dataCache cache.Cache) (*Server, error) {
+	metricsRegistry := metrics.NewPrefixedRegistry("prebidserver.")
+
 	s := &Server{
 		externalURL:          c.ExternalURL,
 		requireUUID2:         c.RequireUUID2,
 		dataCache:            dataCache,
 		accountMetrics:       make(map[string]*AccountMetrics),
 		adapterMetrics:       make(map[string]*AdapterMetrics),
-		metricsRegistry:      metrics.NewPrefixedRegistry("prebidserver."),
-		mRequestMeter:        metrics.GetOrRegisterMeter("requests", s.metricsRegistry),
-		mAppRequestMeter:     metrics.GetOrRegisterMeter("app_requests", s.metricsRegistry),
-		mNoCookieMeter:       metrics.GetOrRegisterMeter("no_cookie_requests", s.metricsRegistry),
-		mSafariRequestMeter:  metrics.GetOrRegisterMeter("safari_requests", s.metricsRegistry),
-		mSafariNoCookieMeter: metrics.GetOrRegisterMeter("safari_no_cookie_requests", s.metricsRegistry),
-		mErrorMeter:          metrics.GetOrRegisterMeter("error_requests", s.metricsRegistry),
-		mInvalidMeter:        metrics.GetOrRegisterMeter("invalid_requests", s.metricsRegistry),
-		mRequestTimer:        metrics.GetOrRegisterTimer("request_time", s.metricsRegistry),
+		metricsRegistry:      metricsRegistry,
+		mRequestMeter:        metrics.GetOrRegisterMeter("requests", metricsRegistry),
+		mAppRequestMeter:     metrics.GetOrRegisterMeter("app_requests", metricsRegistry),
+		mNoCookieMeter:       metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry),
+		mSafariRequestMeter:  metrics.GetOrRegisterMeter("safari_requests", metricsRegistry),
+		mSafariNoCookieMeter: metrics.GetOrRegisterMeter("safari_no_cookie_requests", metricsRegistry),
+		mErrorMeter:          metrics.GetOrRegisterMeter("error_requests", metricsRegistry),
+		mInvalidMeter:        metrics.GetOrRegisterMeter("invalid_requests", metricsRegistry),
+		mRequestTimer:        metrics.GetOrRegisterTimer("request_time", metricsRegistry),
 	}
 
 	s.exchanges = map[string]prebid.Adapter{

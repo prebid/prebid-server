@@ -83,7 +83,8 @@ func New(filename string) (*FileCache, error) {
 }
 
 // Close does nothing
-func (c *FileCache) Close() {
+func (c *FileCache) Close() error {
+	return nil
 }
 
 // GetConfig will return config from memory if it exists
