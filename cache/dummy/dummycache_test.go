@@ -1,10 +1,10 @@
-package cache
+package dummy
 
 import "testing"
 
 func TestDummyCache(t *testing.T) {
 
-	c := NewDummyCache()
+	c := New()
 
 	domain, err := c.GetDomain("one.com")
 	if err != nil {

@@ -5,15 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/ssl"
-	metrics "github.com/rcrowley/go-metrics"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/prebid/prebid-server/ssl"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 var cookie_domain string
@@ -27,7 +27,7 @@ type PBSCookie struct {
 }
 
 func ParseUIDCookie(r *http.Request) *PBSCookie {
-	t := time.Now()
+	t := time.Now().UTC()
 	pc := PBSCookie{
 		UIDs:     make(map[string]string),
 		Birthday: &t,
@@ -42,8 +42,7 @@ func ParseUIDCookie(r *http.Request) *PBSCookie {
 		// corrupted cookie; we should reset
 		return &pc
 	}
-	err = json.Unmarshal(j, &pc)
-	if err != nil {
+	if err := json.Unmarshal(j, &pc); err != nil {
 		// corrupted cookie; we should reset
 		return &pc
 	}
@@ -60,7 +59,7 @@ func SetUIDCookie(w http.ResponseWriter, pc *PBSCookie) {
 	hc := http.Cookie{
 		Name:    "uids",
 		Value:   b64,
-		Expires: time.Now().Add(180 * 24 * time.Hour),
+		Expires: time.Now().UTC().Add(180 * 24 * time.Hour),
 	}
 	if cookie_domain != "" {
 		hc.Domain = cookie_domain
@@ -126,7 +125,6 @@ func VerifyRecaptcha(response string) error {
 	ts := &http.Transport{
 		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
 	}
-
 	client := &http.Client{
 		Transport: ts,
 	}
@@ -136,14 +134,8 @@ func VerifyRecaptcha(response string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	gr := new(googleResponse)
-	err = json.Unmarshal(body, &gr)
-	if err != nil {
+	var gr googleResponse
+	if err := json.NewDecoder(resp.Body).Decode(&gr); err != nil {
 		return err
 	}
 	if !gr.Success {
@@ -161,8 +153,7 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	err := VerifyRecaptcha(rr)
-	if err != nil {
+	if err := VerifyRecaptcha(rr); err != nil {
 		glog.Infof("Optout failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -179,9 +170,9 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	SetUIDCookie(w, pc)
 	if optout == "" {
 		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
-	} else {
-		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
+		return
 	}
+	http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
 }
 
 // split this for testability

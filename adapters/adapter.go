@@ -1,19 +1,19 @@
 package adapters
 
 import (
-	"context"
 	"crypto/tls"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
+
+	"github.com/prebid/prebid-server/ssl"
 )
 
-type Adapter interface {
-	Name() string
-	FamilyName() string
-	GetUsersyncInfo() *pbs.UsersyncInfo
-	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
+type Configuration struct {
+	Name        string // required
+	Endpoint    string
+	Username    string
+	Password    string
+	UserSyncURL string
 }
 
 type HTTPAdapterConfig struct {
@@ -23,6 +23,7 @@ type HTTPAdapterConfig struct {
 	MaxConnsPerHost     int
 }
 
+// HTTPAdapter contains an http.Transport and reusable http.Client
 type HTTPAdapter struct {
 	Transport *http.Transport
 	Client    *http.Client
@@ -35,18 +36,22 @@ var DefaultHTTPAdapterConfig = &HTTPAdapterConfig{
 	IdleConnTimeout:     60 * time.Second,
 }
 
+// NewHTTPAdapter takes a HTTPAdapterConfig and returns a pointer to a HTTPAdapter
 func NewHTTPAdapter(c *HTTPAdapterConfig) *HTTPAdapter {
-	ts := &http.Transport{
+	return &HTTPAdapter{
+		Transport: defaultTransport(c),
+		Client: &http.Client{
+			Transport: defaultTransport(c),
+		},
+	}
+}
+
+// defaultTransport will take a HTTPAdapterConfig and return *http.Transport
+func defaultTransport(c *HTTPAdapterConfig) *http.Transport {
+	return &http.Transport{
 		MaxIdleConns:        c.MaxConns,
 		MaxIdleConnsPerHost: c.MaxConnsPerHost,
 		IdleConnTimeout:     c.IdleConnTimeout,
 		TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
-	}
-
-	return &HTTPAdapter{
-		Transport: ts,
-		Client: &http.Client{
-			Transport: ts,
-		},
 	}
 }

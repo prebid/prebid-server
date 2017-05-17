@@ -1,4 +1,4 @@
-package adapters
+package appnexus
 
 import (
 	"bytes"
@@ -10,15 +10,20 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/register"
 	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/openrtb"
+	"golang.org/x/net/context/ctxhttp"
 )
 
+func init() {
+	var adapter = &AppNexusAdapter{}
+	register.Add("appnexus", adapter)
+}
+
 type AppNexusAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -52,11 +57,12 @@ type appnexusImpExt struct {
 }
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	anReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	anReq := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
+	var err error
+
 	for i, unit := range bidder.AdUnits {
 		var params appnexusParams
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
+		if err := json.Unmarshal(unit.Params, &params); err != nil {
 			return nil, err
 		}
 
@@ -67,6 +73,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{PlacementID: params.PlacementId}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 		// TODO: support member + invCode
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	reqJSON, err := json.Marshal(anReq)
@@ -84,6 +93,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -113,8 +125,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
+	if err := json.Unmarshal(body, &bidResp); err != nil {
 		return nil, err
 	}
 
@@ -148,9 +159,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexusAdapter {
-	a := NewHTTPAdapter(config)
-
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string, a adapters.Configuration) *AppNexusAdapter {
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
 	usersyncURL := "//ib.adnxs.com/getuid?"
 
@@ -161,7 +170,7 @@ func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexus
 	}
 
 	return &AppNexusAdapter{
-		http:         a,
+		http:         adapters.NewHTTPAdapter(config),
 		URI:          "http://ib.adnxs.com/openrtb2",
 		usersyncInfo: info,
 	}

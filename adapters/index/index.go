@@ -1,4 +1,4 @@
-package adapters
+package index
 
 import (
 	"bytes"
@@ -10,15 +10,20 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/register"
 	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/openrtb"
+	"golang.org/x/net/context/ctxhttp"
 )
 
+func init() {
+	var adapter = &IndexAdapter{}
+	register.Add("index", adapter)
+}
+
 type IndexAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -45,7 +50,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	if req.App != nil {
 		return nil, fmt.Errorf("Index doesn't support apps")
 	}
-	indexReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	indexReq := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params indexParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -106,8 +111,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
+	if err = json.Unmarshal(body, &bidResp); err != nil {
 		return nil, fmt.Errorf("Error parsing response: %v", err)
 	}
 
@@ -140,8 +144,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	return bids, nil
 }
 
-func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapter {
-	a := NewHTTPAdapter(config)
+func NewIndexAdapter(config *adapters.HTTPAdapterConfig, externalURL string, a adapters.Configuration) *IndexAdapter {
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
 	usersyncURI := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
 
@@ -152,7 +155,7 @@ func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapte
 	}
 
 	return &IndexAdapter{
-		http:         a,
+		http:         adapters.NewHTTPAdapter(config),
 		URI:          "http://ssp-sandbox.casalemedia.com/bidder?p=184932",
 		usersyncInfo: info,
 	}

@@ -1,4 +1,4 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
@@ -10,13 +10,20 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/register"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
+func init() {
+	var adapter = &FacebookAdapter{}
+	register.Add("facebook", adapter)
+}
+
 type FacebookAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 	platformJSON openrtb.RawJSON
@@ -53,20 +60,23 @@ type fbResult struct {
 }
 
 func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result fbResult, err error) {
-	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
+	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
+	if err != nil {
+		return
+	}
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
-
-	anResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if e != nil {
-		err = e
+	anResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
+	if err != nil {
 		return
 	}
 
 	result.statusCode = anResp.StatusCode
-
 	defer anResp.Body.Close()
-	body, _ := ioutil.ReadAll(anResp.Body)
+	body, err := ioutil.ReadAll(anResp.Body)
+	if err != nil {
+		return
+	}
 	result.responseBody = string(body)
 
 	if anResp.StatusCode != 200 {
@@ -75,8 +85,7 @@ func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
+	if err = json.Unmarshal(body, &bidResp); err != nil {
 		return
 	}
 	if len(bidResp.SeatBid) == 0 {
@@ -100,7 +109,7 @@ func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
-		fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+		fbReq := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 		fbReq.Ext = a.platformJSON
 
 		// only grab this ad unit
@@ -126,8 +135,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		fbReq.Imp[0].TagID = params.PlacementId
 
-		err = json.NewEncoder(&requests[i]).Encode(fbReq)
-		if err != nil {
+		if err = json.NewEncoder(&requests[i]).Encode(fbReq); err != nil {
 			return nil, err
 		}
 	}
@@ -170,24 +178,21 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			err = result.Error
 		}
 	}
-
+	// if no bids then return the error (if it exists)
 	if len(bids) == 0 {
 		return nil, err
 	}
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
-	a := NewHTTPAdapter(config)
-
+func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string, usersyncURL string, a adapters.Configuration) *FacebookAdapter {
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,
 		Type:        "redirect",
 		SupportCORS: false,
 	}
-
 	return &FacebookAdapter{
-		http:         a,
+		http:         adapters.NewHTTPAdapter(config),
 		URI:          "https://an.facebook.com/placementbid.ortb",
 		usersyncInfo: info,
 		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),

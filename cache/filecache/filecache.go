@@ -1,11 +1,11 @@
-package cache
+package filecache
 
 import (
 	"fmt"
 	"io/ioutil"
 
 	"github.com/golang/glog"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // FileCache is a file backed cache
@@ -28,8 +28,8 @@ type fileCacheFile struct {
 	Accounts []string          `yaml:"accounts"`
 }
 
-// NewFileCache will load the file into memory
-func NewFileCache(filename string) (*FileCache, error) {
+// New will load the file into memory
+func New(filename string) (*FileCache, error) {
 
 	if glog.V(2) {
 		glog.Infof("Reading inventory urls from %s", filename)
@@ -45,8 +45,7 @@ func NewFileCache(filename string) (*FileCache, error) {
 	}
 
 	var u fileCacheFile
-	err = yaml.Unmarshal(b, &u)
-	if err != nil {
+	if err = yaml.Unmarshal(b, &u); err != nil {
 		return nil, err
 	}
 
@@ -93,51 +92,35 @@ func (c *FileCache) GetConfig(key string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("Not found")
 	}
-
 	return cfg, nil
 }
 
 // GetDomain will return Domain from memory if it exists
 func (c *FileCache) GetDomain(key string) (*Domain, error) {
-
-	d := &Domain{
-		Domain: key,
-	}
-
-	_, ok := c.Domains[key]
-	if !ok {
+	if _, ok := c.Domains[key]; !ok {
 		return nil, fmt.Errorf("Not found")
 	}
-
-	return d, nil
+	return &Domain{
+		Domain: key,
+	}, nil
 }
 
 // GetAoo will return App from memory if it exists
 func (c *FileCache) GetApp(bundle string) (*App, error) {
-
-	d := &App{
-		Bundle: bundle,
-	}
-
-	_, ok := c.Apps[bundle]
-	if !ok {
+	if _, ok := c.Apps[bundle]; !ok {
 		return nil, fmt.Errorf("Not found")
 	}
-
-	return d, nil
+	return &App{
+		Bundle: bundle,
+	}, nil
 }
 
 // GetAccount will return Account from memory if it exists
 func (c *FileCache) GetAccount(key string) (*Account, error) {
-
-	d := &Account{
-		ID: key,
-	}
-
-	_, ok := c.Accounts[key]
-	if !ok {
+	if _, ok := c.Accounts[key]; !ok {
 		return nil, fmt.Errorf("Not found")
 	}
-
-	return d, nil
+	return &Account{
+		ID: key,
+	}, nil
 }

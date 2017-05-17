@@ -1,19 +1,18 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"fmt"
-
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/openrtb"
 )
 

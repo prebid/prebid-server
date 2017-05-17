@@ -1,16 +1,15 @@
-package adapters
+package pubmatic
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/pbs"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"fmt"
-
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/openrtb"
 )
 

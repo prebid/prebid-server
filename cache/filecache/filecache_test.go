@@ -1,4 +1,4 @@
-package cache
+package filecache
 
 import (
 	"io/ioutil"
@@ -46,7 +46,7 @@ func TestFileCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dataCache, err := NewFileCache(tmpfile.Name())
+	dataCache, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}

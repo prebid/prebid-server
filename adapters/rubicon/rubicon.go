@@ -1,4 +1,4 @@
-package adapters
+package rubicon
 
 import (
 	"bytes"
@@ -9,15 +9,20 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/register"
 	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/openrtb"
+	"golang.org/x/net/context/ctxhttp"
 )
 
+func init() {
+	var adapter = &RubiconAdapter{}
+	register.Add("rubicon", adapter)
+}
+
 type RubiconAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 	XAPIUsername string
@@ -79,11 +84,12 @@ type rubiconBannerExt struct {
 }
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	rpReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	rpReq := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
+	var err error
+
 	for i, unit := range bidder.AdUnits {
 		var params rubiconParams
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
+		if err := json.Unmarshal(unit.Params, &params); err != nil {
 			return nil, err
 		}
 		if params.AccountId == 0 {
@@ -134,6 +140,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.Header.Add("User-Agent", "prebid-server/1.0")
@@ -166,8 +175,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
+	if err = json.Unmarshal(body, &bidResp); err != nil {
 		return nil, err
 	}
 
@@ -201,20 +209,18 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
-	a := NewHTTPAdapter(config)
-
+func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, a adapters.Configuration) *RubiconAdapter {
 	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
+		URL:         a.UserSyncURL,
 		Type:        "redirect",
 		SupportCORS: false,
 	}
 
 	return &RubiconAdapter{
-		http:         a,
+		http:         adapters.NewHTTPAdapter(config),
 		URI:          uri,
 		usersyncInfo: info,
-		XAPIUsername: xuser,
-		XAPIPassword: xpass,
+		XAPIUsername: a.Username,
+		XAPIPassword: a.Password,
 	}
 }

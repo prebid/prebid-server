@@ -1,4 +1,4 @@
-package cache
+package dummy
 
 import "fmt"
 
@@ -6,8 +6,8 @@ import "fmt"
 type DummyCache struct {
 }
 
-// NewDummyCache create new config
-func NewDummyCache() *DummyCache {
+// New creates new DummyCache
+func New() *DummyCache {
 
 	return &DummyCache{}
 }
@@ -23,27 +23,21 @@ func (c *DummyCache) GetConfig(key string) (string, error) {
 
 // GetDomain echos back the domain
 func (c *DummyCache) GetDomain(key string) (*Domain, error) {
-
-	d := &Domain{
+	return &Domain{
 		Domain: key,
-	}
-	return d, nil
+	}, nil
 }
 
 // GetAccount echos back the account
 func (c *DummyCache) GetAccount(key string) (*Account, error) {
-
-	d := &Account{
+	return &Account{
 		ID: key,
-	}
-	return d, nil
+	}, nil
 }
 
 // GetApp echos back the app
 func (c *DummyCache) GetApp(bundle string) (*App, error) {
-
-	d := &App{
+	return &App{
 		Bundle: bundle,
-	}
-	return d, nil
+	}, nil
 }

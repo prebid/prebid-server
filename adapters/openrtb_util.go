@@ -2,11 +2,10 @@ package adapters
 
 import (
 	"github.com/prebid/prebid-server/pbs"
-
 	"github.com/prebid/openrtb"
 )
 
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
+func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
