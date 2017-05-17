@@ -3,13 +3,12 @@ package prebid_cache_client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"fmt"
 )
 
 var delay time.Duration

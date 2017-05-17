@@ -1,12 +1,11 @@
 package adapters
 
 import (
-	"github.com/prebid/prebid-server/pbs"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/openrtb"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenRTB(t *testing.T) {
@@ -26,7 +25,7 @@ func TestOpenRTB(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+	resp := MakeOpenRTBGeneric(&pbReq, &pbBidder, "test")
 
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
@@ -44,6 +43,6 @@ func TestOpenRTBNoSize(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+	resp := MakeOpenRTBGeneric(&pbReq, &pbBidder, "test")
 	assert.Equal(t, resp.Imp[0].ID, "")
 }

@@ -3,7 +3,6 @@ package pbs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,10 +10,8 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/cache"
-
 	"github.com/golang/glog"
 	"github.com/prebid/openrtb"
-	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -89,32 +86,25 @@ type PBSRequest struct {
 }
 
 func getConfig(cache cache.Cache, id string) ([]Bids, error) {
-	conf, err := cache.GetConfig(id)
+	conf, err := cache.Config().Get(id)
 	if err != nil {
 		return nil, err
 	}
-
-	bids := make([]Bids, 0)
-	err = json.Unmarshal([]byte(conf), &bids)
-	if err != nil {
+	var bids = make([]Bids, 0)
+	if err := json.Unmarshal([]byte(conf), &bids); err != nil {
 		return nil, err
 	}
-
 	return bids, nil
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, defaultTimeoutMS uint64) (*PBSRequest, error) {
 	defer r.Body.Close()
-	b, err := ioutil.ReadAll(r.Body)
+	pbsReq := &PBSRequest{}
+	err := json.NewDecoder(r.Body).Decode(&pbsReq)
 	if err != nil {
 		return nil, err
 	}
 
-	pbsReq := &PBSRequest{}
-	err = json.Unmarshal(b, pbsReq)
-	if err != nil {
-		return nil, err
-	}
 	pbsReq.Start = time.Now()
 
 	if len(pbsReq.AdUnits) == 0 {
@@ -122,7 +112,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	}
 
 	if pbsReq.TimeoutMillis == 0 || pbsReq.TimeoutMillis > 2000 {
-		pbsReq.TimeoutMillis = uint64(viper.GetInt("default_timeout_ms"))
+		pbsReq.TimeoutMillis = defaultTimeoutMS
 	}
 
 	if pbsReq.Device == nil {
@@ -173,17 +163,13 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 
 		// all domains must be in the whitelist
-		_, err = cache.GetDomain(pbsReq.Domain)
-		if err != nil {
+		if _, err := cache.Domains().Get(pbsReq.Domain); err != nil {
 			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
 		}
 	} else {
-
-		_, err = cache.GetApp(pbsReq.App.Bundle)
-		if err != nil {
+		if _, err = cache.Apps().Get(pbsReq.App.Bundle); err != nil {
 			return nil, fmt.Errorf("Invalid app bundle %s", pbsReq.App.Bundle)
 		}
-
 	}
 
 	if r.FormValue("debug") == "1" {
@@ -191,10 +177,8 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	}
 
 	if pbsReq.Secure == 0 {
-		if r.Header.Get("X-Forwarded-Proto") != "" {
-			if r.Header.Get("X-Forwarded-Proto") == "https" {
-				pbsReq.Secure = 1
-			}
+		if r.Header.Get("X-Forwarded-Proto") == "https" {
+			pbsReq.Secure = 1
 		} else if r.TLS != nil {
 			pbsReq.Secure = 1
 		}
@@ -235,15 +219,13 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
 
-			pau := PBSAdUnit{
+			bidder.AdUnits = append(bidder.AdUnits, PBSAdUnit{
 				Sizes:    unit.Sizes,
 				TopFrame: unit.TopFrame,
 				Code:     unit.Code,
 				Params:   b.Params,
 				BidID:    b.BidID,
-			}
-
-			bidder.AdUnits = append(bidder.AdUnits, pau)
+			})
 		}
 	}
 

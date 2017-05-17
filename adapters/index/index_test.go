@@ -1,22 +1,22 @@
-package adapters
+package index
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/pbs"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"fmt"
-
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/openrtb"
 )
 
-func TestAppNexusInvalidCall(t *testing.T) {
+func TestIndexInvalidCall(t *testing.T) {
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
+	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
 	an.URI = "blah"
 	s := an.Name()
 	if s == "" {
@@ -28,11 +28,11 @@ func TestAppNexusInvalidCall(t *testing.T) {
 	pbBidder := pbs.PBSBidder{}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error received for invalid request")
+		t.Fatalf("No error recived for invalid request")
 	}
 }
 
-func TestAppNexusTimeout(t *testing.T) {
+func TestIndexTimeout(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +42,7 @@ func TestAppNexusTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewIndexAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
@@ -59,17 +59,17 @@ func TestAppNexusTimeout(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil || err != context.DeadlineExceeded {
-		t.Fatalf("Timeout error not received for invalid request: %v", err)
+		t.Fatalf("Invalid timeout error received")
 	}
 }
 
-func TestAppNexusInvalidJson(t *testing.T) {
+func TestIndexInvalidJson(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +79,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewIndexAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -94,7 +94,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
@@ -104,7 +104,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 	}
 }
 
-func TestAppNexusInvalidStatusCode(t *testing.T) {
+func TestIndexInvalidStatusCode(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +115,7 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewIndexAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -130,7 +130,7 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
@@ -140,10 +140,19 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 	}
 }
 
-func TestMissingPlacementId(t *testing.T) {
+func TestIndexMissingSiteId(t *testing.T) {
+
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Send 404
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		}),
+	)
+	defer server.Close()
+
 	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
-	an.URI = "dummy"
+	an := NewIndexAdapter(&conf, "localhost")
+	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -157,17 +166,16 @@ func TestMissingPlacementId(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"XXX\": 10}"),
 			},
 		},
 	}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error received for invalid request")
+		t.Fatalf("No error received for missing siteID")
 	}
 }
 
-func TestAppNexusBasicResponse(t *testing.T) {
+func TestIndexBasicResponse(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +210,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewIndexAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -218,7 +226,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
@@ -227,14 +235,14 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
 	if len(bids) != 1 {
-		t.Fatalf("Did not receive 1 bid")
+		t.Fatalf("Should have received one bid")
 	}
 }
 
-func TestAppNexusUserSyncInfo(t *testing.T) {
+func TestIndexUserSyncInfo(t *testing.T) {
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
+	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "localhost")
+	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D__UID__" {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {

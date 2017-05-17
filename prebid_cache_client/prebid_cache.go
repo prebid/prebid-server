@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -43,13 +42,11 @@ func InitPrebidCache(baseurl string) {
 	baseURL = baseurl
 	putURL = fmt.Sprintf("%s/put", baseURL)
 
-	ts := &http.Transport{
-		MaxIdleConns:    10,
-		IdleConnTimeout: 65,
-	}
-
 	client = &http.Client{
-		Transport: ts,
+		Transport: &http.Transport{
+			MaxIdleConns:    10,
+			IdleConnTimeout: 65,
+		},
 	}
 }
 
@@ -66,31 +63,27 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	}
 
 	httpReq, err := http.NewRequest("POST", putURL, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return err
+	}
+
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
-
 	anResp, err := ctxhttp.Do(ctx, client, httpReq)
 	if err != nil {
 		return err
 	}
+	defer anResp.Body.Close()
 
 	if anResp.StatusCode != 200 {
 		return fmt.Errorf("HTTP status code %d", anResp.StatusCode)
 	}
-
-	defer anResp.Body.Close()
-	body, err := ioutil.ReadAll(anResp.Body)
-	if err != nil {
-		return err
-	}
-
 	var resp response
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
+	if err := json.NewDecoder(anResp.Body).Decode(&resp); err != nil {
 		return err
 	}
 	if len(resp.Responses) != len(objs) {
-		return fmt.Errorf("Put response length didn't match")
+		return fmt.Errorf("Put response length didn't match. Got %d and expected %d", len(resp.Responses), len(objs))
 	}
 
 	for i, r := range resp.Responses {

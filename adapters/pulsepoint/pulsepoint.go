@@ -1,4 +1,4 @@
-package adapters
+package pulsepoint
 
 import (
 	"bytes"
@@ -12,13 +12,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/register"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
+func init() {
+	var adapter = &PulsePointAdapter{}
+	register.Add("pulsepoint", adapter)
+}
+
 type PulsePointAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -45,11 +52,10 @@ type PulsepointParams struct {
 }
 
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	ppReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	ppReq := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params PulsepointParams
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
+		if err := json.Unmarshal(unit.Params, &params); err != nil {
 			return nil, err
 		}
 		if params.PublisherId == 0 {
@@ -89,6 +95,9 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 	}
 	reqJSON, err := json.Marshal(ppReq)
+	if err != nil {
+		return nil, err
+	}
 	debug := &pbs.BidderDebug{
 		RequestURI: a.URI,
 	}
@@ -128,8 +137,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
+	if err = json.Unmarshal(body, &bidResp); err != nil {
 		return nil, err
 	}
 
@@ -159,8 +167,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
-	a := NewHTTPAdapter(config)
+func NewPulsePointAdapter(config *adapters.HTTPAdapterConfig, externalURL string, a adapters.Configuration) *PulsePointAdapter {
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
 	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
 
@@ -171,8 +178,8 @@ func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL str
 	}
 
 	return &PulsePointAdapter{
-		http:         a,
-		URI:          uri,
+		http: adapters.NewHTTPAdapter(config),
+		//URI:          uri,
 		usersyncInfo: info,
 	}
 }

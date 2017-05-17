@@ -1,18 +1,19 @@
-package adapters
+package pulsepoint
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/openrtb"
 )
 
 /**
