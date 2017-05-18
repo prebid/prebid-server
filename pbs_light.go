@@ -147,6 +147,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
 	} else if requireUUID2 {
@@ -155,17 +156,16 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			if isSafari {
 				mSafariNoCookieMeter.Mark(1)
 			}
-			resp := pbs.PBSResponse{Status: "no_cookie"}
-			b, _ := json.Marshal(&resp)
+			status = "no_cookie"
+			uuid2 := fmt.Sprintf("%d", rand.Int63())
 			c := http.Cookie{
 				Name:    "uuid2",
-				Value:   fmt.Sprintf("%d", rand.Int63()),
+				Value:   uuid2,
 				Domain:  cookieDomain,
 				Expires: time.Now().Add(180 * 24 * time.Hour),
 			}
 			http.SetCookie(w, &c)
-			w.Write(b)
-			return
+			pbs_req.UserIDs["adnxs"] = uuid2
 		}
 	}
 
@@ -188,7 +188,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	am.RequestMeter.Mark(1)
 
 	pbs_resp := pbs.PBSResponse{
-		Status:       "OK",
+		Status:       status,
 		TID:          pbs_req.Tid,
 		BidderStatus: pbs_req.Bidders,
 	}
