@@ -70,7 +70,7 @@ type rubiconPubExt struct {
 }
 
 type rubiconBannerExtRP struct {
-	SizeID int    `json:"size_id"`
+	SizeID int    `json:"size_id,omitempty"`
 	MIME   string `json:"mime"`
 }
 
@@ -97,13 +97,14 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 		impExt := rubiconImpExt{RP: rubiconImpExtRP{ZoneID: params.ZoneId}}
 		rpReq.Imp[i].Ext, err = json.Marshal(&impExt)
+		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{MIME: "text/html"}}
 		if len(params.Sizes) > 0 {
-			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: params.Sizes[0], MIME: "text/html"}}
-			rpReq.Imp[i].Banner.Ext, err = json.Marshal(&bannerExt)
+			bannerExt.RP.SizeID = params.Sizes[0]
 			rpReq.Imp[i].Banner.Format = nil
 			rpReq.Imp[i].Banner.W = 0
 			rpReq.Imp[i].Banner.H = 0
 		}
+		rpReq.Imp[i].Banner.Ext, err = json.Marshal(&bannerExt)
 		// params are per-unit, so site may overwrite itself
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
