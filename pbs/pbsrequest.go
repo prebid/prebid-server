@@ -88,8 +88,8 @@ type PBSRequest struct {
 	Start   time.Time
 }
 
-func getConfig(cache cache.Cache, id string) ([]Bids, error) {
-	conf, err := cache.GetConfig(id)
+func ConfigGet(cache cache.Cache, id string) ([]Bids, error) {
+	conf, err := cache.Config().Get(id)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +109,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(string(b))
 
 	pbsReq := &PBSRequest{}
 	err = json.Unmarshal(b, pbsReq)
@@ -173,13 +174,13 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 
 		// all domains must be in the whitelist
-		_, err = cache.GetDomain(pbsReq.Domain)
+		_, err = cache.Domains().Get(pbsReq.Domain)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
 		}
 	} else {
 
-		_, err = cache.GetApp(pbsReq.App.Bundle)
+		_, err = cache.Apps().Get(pbsReq.App.Bundle)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid app bundle %s", pbsReq.App.Bundle)
 		}
@@ -205,7 +206,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	for _, unit := range pbsReq.AdUnits {
 		bidders := unit.Bids
 		if unit.ConfigID != "" {
-			bidders, err = getConfig(cache, unit.ConfigID)
+			bidders, err = ConfigGet(cache, unit.ConfigID)
 			if err != nil {
 				// proceed with other ad units
 				glog.Infof("Unable to load config '%s': %v", unit.ConfigID, err)

@@ -15,12 +15,15 @@ import (
 	"sync"
 	"time"
 
+	sigar "github.com/cloudfoundry/gosigar"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/cache/filecache"
+	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/pbs"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 
-	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	metrics "github.com/rcrowley/go-metrics"
@@ -176,7 +179,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		glog.Infof("Request for %d ad units on url %s by account %s", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID)
 	}
 
-	_, err = dataCache.GetAccount(pbs_req.AccountID)
+	_, err = dataCache.Accounts().Get(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
@@ -407,7 +410,7 @@ func loadPostgresDataCache() (cache.Cache, error) {
 	mem := sigar.Mem{}
 	mem.Get()
 
-	cfg := cache.PostgresDataCacheConfig{
+	cfg := postgrescache.PostgresConfig{
 		Dbname:   viper.GetString("datacache.dbname"),
 		Host:     viper.GetString("datacache.host"),
 		User:     viper.GetString("datacache.user"),
@@ -416,7 +419,7 @@ func loadPostgresDataCache() (cache.Cache, error) {
 		TTL:      viper.GetInt("datacache.ttl_seconds"),
 	}
 
-	return cache.NewPostgresDataCache(&cfg)
+	return postgrescache.New(cfg)
 
 }
 
@@ -426,7 +429,10 @@ func loadDataCache() {
 	cacheType := viper.GetString("datacache.type")
 	switch cacheType {
 	case "dummy":
-		dataCache = cache.NewDummyCache()
+		dataCache, err = dummycache.New()
+		if err != nil {
+			glog.Fatalf("Dummy cache not configured: %s", err.Error())
+		}
 
 	case "postgres":
 		dataCache, err = loadPostgresDataCache()
@@ -435,7 +441,7 @@ func loadDataCache() {
 		}
 
 	case "filecache":
-		dataCache, err = cache.NewFileCache(viper.GetString("datacache.filename"))
+		dataCache, err = filecache.New(viper.GetString("datacache.filename"))
 		if err != nil {
 			glog.Fatalf("Failed to load filecach: %s", err.Error())
 		}
