@@ -3,7 +3,6 @@ package pbs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -105,13 +104,8 @@ func getConfig(cache cache.Cache, id string) ([]Bids, error) {
 
 func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	defer r.Body.Close()
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	pbsReq := &PBSRequest{}
-	err = json.Unmarshal(b, pbsReq)
+	err := json.NewDecoder(r.Body).Decode(&pbsReq)
 	if err != nil {
 		return nil, err
 	}
