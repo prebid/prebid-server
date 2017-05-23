@@ -1,22 +1,22 @@
-package adapters
+package adapters_test
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/pbs"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "blah", "localhost")
+	an := adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah", "localhost")
 
 	s := an.Name()
 	if s == "" {
@@ -41,8 +41,8 @@ func TestPubmaticTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
@@ -77,8 +77,8 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -112,8 +112,8 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -147,8 +147,8 @@ func TestPubmaticMissingPublisherId(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -182,8 +182,8 @@ func TestPubmaticMissingAdSlot(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -241,8 +241,8 @@ func TestPubmaticBasicResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -272,14 +272,14 @@ func TestPubmaticBasicResponse(t *testing.T) {
 
 func TestPubmaticUserSyncInfo(t *testing.T) {
 
-	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
-	if an.usersyncInfo.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
+	an := adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
+	if an.GetUsersyncInfo().URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
 		t.Fatalf("should have matched")
 	}
-	if an.usersyncInfo.Type != "iframe" {
+	if an.GetUsersyncInfo().Type != "iframe" {
 		t.Fatalf("should be iframe")
 	}
-	if an.usersyncInfo.SupportCORS != false {
+	if an.GetUsersyncInfo().SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
 
