@@ -5,15 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/ssl"
-	metrics "github.com/rcrowley/go-metrics"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/ssl"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 var cookie_domain string
@@ -136,14 +136,8 @@ func VerifyRecaptcha(response string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	gr := new(googleResponse)
-	err = json.Unmarshal(body, &gr)
-	if err != nil {
+	var gr = googleResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&gr); err != nil {
 		return err
 	}
 	if !gr.Success {

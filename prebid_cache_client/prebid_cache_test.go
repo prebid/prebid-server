@@ -3,7 +3,6 @@ package prebid_cache_client
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,15 +15,9 @@ var delay time.Duration
 
 func DummyPrebidCacheServer(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	var pr putRequest
-	err = json.Unmarshal(body, &pr)
-	if err != nil {
+
+	if err := json.NewDecoder(r.Body).Decode(&pr); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
