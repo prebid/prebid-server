@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -77,18 +76,13 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	if anResp.StatusCode != 200 {
 		return fmt.Errorf("HTTP status code %d", anResp.StatusCode)
 	}
-
 	defer anResp.Body.Close()
-	body, err := ioutil.ReadAll(anResp.Body)
-	if err != nil {
-		return err
-	}
 
 	var resp response
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
+	if err := json.NewDecoder(anResp.Body).Decode(&resp); err != nil {
 		return err
 	}
+
 	if len(resp.Responses) != len(objs) {
 		return fmt.Errorf("Put response length didn't match")
 	}
