@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,8 +13,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rcrowley/go-metrics"
+
 	"github.com/prebid/prebid-server/ssl"
-	metrics "github.com/rcrowley/go-metrics"
 )
 
 var cookie_domain string
@@ -122,15 +124,25 @@ type googleResponse struct {
 	ErrorCodes []string `json:"error-codes"`
 }
 
-func VerifyRecaptcha(response string) error {
-	ts := &http.Transport{
-		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
-	}
+// httpClient constructs a an http.Client for each VerifyRecaptcha request
+// and includes our SSL certs
+var httpClient = &http.Client{
+	Timeout: time.Second * 10,
+	Transport: &http.Transport{
+		MaxIdleConns:    10,
+		IdleConnTimeout: 65,
+		Dial: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 5 * time.Second,
+		TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+	},
+}
 
-	client := &http.Client{
-		Transport: ts,
-	}
-	resp, err := client.PostForm(recaptchaURL,
+// VerifyRecaptcha takes a string value and validates by
+// making an http request to https://www.google.com/recaptcha/api/siteverify
+func VerifyRecaptcha(response string) error {
+	resp, err := httpClient.PostForm(recaptchaURL,
 		url.Values{"secret": {recaptcha_secret}, "response": {response}})
 	if err != nil {
 		return err

@@ -31,25 +31,19 @@ type response struct {
 	Responses []responseObject `json:"responses"`
 }
 
-var (
-	client  *http.Client
-	baseURL string
-	putURL  string
-)
+var putURL string
 
 // InitPrebidCache setup the global prebid cache
-func InitPrebidCache(baseurl string) {
-	baseURL = baseurl
+func InitPrebidCache(baseURL string) {
 	putURL = fmt.Sprintf("%s/put", baseURL)
+}
 
-	ts := &http.Transport{
+// httpClient constructs a new http.Client for each Put request
+var httpClient = &http.Client{
+	Transport: &http.Transport{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 65,
-	}
-
-	client = &http.Client{
-		Transport: ts,
-	}
+	},
 }
 
 // Put will send the array of objs and update each with a UUID
@@ -65,18 +59,21 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	}
 
 	httpReq, err := http.NewRequest("POST", putURL, bytes.NewBuffer(reqJSON))
-	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
-	httpReq.Header.Add("Accept", "application/json")
-
-	anResp, err := ctxhttp.Do(ctx, client, httpReq)
 	if err != nil {
 		return err
 	}
+	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
+	httpReq.Header.Add("Accept", "application/json")
+
+	anResp, err := ctxhttp.Do(ctx, httpClient, httpReq)
+	if err != nil {
+		return err
+	}
+	defer anResp.Body.Close()
 
 	if anResp.StatusCode != 200 {
 		return fmt.Errorf("HTTP status code %d", anResp.StatusCode)
 	}
-	defer anResp.Body.Close()
 
 	var resp response
 	if err := json.NewDecoder(anResp.Body).Decode(&resp); err != nil {
