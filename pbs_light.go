@@ -26,6 +26,9 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/cache/filecache"
+	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
@@ -407,7 +410,7 @@ func loadPostgresDataCache(cfg *config.Configuration) (cache.Cache, error) {
 	mem := sigar.Mem{}
 	mem.Get()
 
-	return postgrescache.New(&cache.PostgresDataCacheConfig{
+	return postgrescache.New(postgrescache.PostgresConfig{
 		Dbname:   cfg.DataCache.Database,
 		Host:     cfg.DataCache.Host,
 		User:     cfg.DataCache.Username,
@@ -434,7 +437,7 @@ func loadDataCache(cfg *config.Configuration) (err error) {
 		}
 
 	case "filecache":
-		dataCache, err = cache.NewFileCache(cfg.DataCache.Filename)
+		dataCache, err = filecache.New(cfg.DataCache.Filename)
 		if err != nil {
 			return fmt.Errorf("FileCache Error: %s", err.Error())
 		}
