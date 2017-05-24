@@ -2,11 +2,10 @@ package pbs
 
 import (
 	"bytes"
-	"fmt"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/cache/dummycache"
 )
 
 func TestParseSimpleRequest(t *testing.T) {
@@ -42,7 +41,7 @@ func TestParseSimpleRequest(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
-	d := &DummyCache{}
+	d, _ := dummycache.New()
 
 	pbs_req, err := ParsePBSRequest(r, d)
 	if err != nil {
@@ -102,7 +101,9 @@ func TestHeaderParsing(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	r.Header.Add("User-Agent", "Mozilla/")
-	d := &DummyCache{}
+	d, _ := dummycache.New()
+
+	d.Config().Set("dummy", dummyConfig)
 
 	pbs_req, err := ParsePBSRequest(r, d)
 	if err != nil {
@@ -119,69 +120,41 @@ func TestHeaderParsing(t *testing.T) {
 	}
 }
 
-type DummyCache struct {
-}
+var dummyConfig = `
+[
+							{
+									"bidder": "indexExchange",
+									"bid_id": "22222222",
+									"params": {
+											"id": "4",
+											"siteID": "186774",
+											"timeout": "10000"
+									}
 
-func (d DummyCache) GetDomain(domain string) (*cache.Domain, error) {
-	if domain == "nytimes.com" {
-		return &cache.Domain{Domain: domain}, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-
-func (d DummyCache) GetApp(bundle string) (*cache.App, error) {
-	if bundle == "com.one.com" {
-		return &cache.App{Bundle: bundle}, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-
-func (d DummyCache) GetAccount(id string) (*cache.Account, error) {
-	return nil, fmt.Errorf("not supported")
-}
-
-func (d DummyCache) GetConfig(id string) (string, error) {
-	c := `
-	[
-                {
-                    "bidder": "indexExchange",
-                    "bid_id": "22222222",
-                    "params": {
-                        "id": "4",
-                        "siteID": "186774",
-                        "timeout": "10000"
-                    }
-
-                },
-                {
-                    "bidder": "audienceNetwork",
-                    "bid_id": "22222225",
-                    "params": {
-                    }
-                },
-                {
-                    "bidder": "pubmatic",
-                    "bid_id": "22222223",
-                    "params": {
-                        "publisherId": "156009",
-                        "adSlot": "39620189@728x90"
-                    }
-                },
-                {
-                    "bidder": "appnexus",
-                    "bid_id": "22222224",
-                    "params": {
-                        "placementId": "10433394"
-                    }
-                }
-            ]
-			`
-
-	return c, nil
-}
-
-func (d DummyCache) Close() {
-}
+							},
+							{
+									"bidder": "audienceNetwork",
+									"bid_id": "22222225",
+									"params": {
+									}
+							},
+							{
+									"bidder": "pubmatic",
+									"bid_id": "22222223",
+									"params": {
+											"publisherId": "156009",
+											"adSlot": "39620189@728x90"
+									}
+							},
+							{
+									"bidder": "appnexus",
+									"bid_id": "22222224",
+									"params": {
+											"placementId": "10433394"
+									}
+							}
+					]
+		`
 
 func TestParseConfig(t *testing.T) {
 	body := []byte(`{
@@ -209,7 +182,9 @@ func TestParseConfig(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
-	d := &DummyCache{}
+	d, _ := dummycache.New()
+
+	d.Config().Set("dummy", dummyConfig)
 
 	pbs_req, err := ParsePBSRequest(r, d)
 	if err != nil {
@@ -224,7 +199,7 @@ func TestParseConfig(t *testing.T) {
 
 	// see if our internal representation is intact
 	if len(pbs_req.Bidders) != 5 {
-		t.Fatalf("Should have five bidders (2 for index) not %d", len(pbs_req.Bidders))
+		t.Fatalf("Should have 5 bidders (2 for index) not %d", len(pbs_req.Bidders))
 	}
 	if pbs_req.Bidders[0].BidderCode != "indexExchange" {
 		t.Errorf("First bidder not index")

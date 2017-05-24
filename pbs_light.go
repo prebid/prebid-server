@@ -176,7 +176,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		glog.Infof("Request for %d ad units on url %s by account %s", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID)
 	}
 
-	_, err = dataCache.GetAccount(pbs_req.AccountID)
+	_, err = dataCache.Accounts().Get(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
@@ -407,7 +407,7 @@ func loadPostgresDataCache(cfg *config.Configuration) (cache.Cache, error) {
 	mem := sigar.Mem{}
 	mem.Get()
 
-	return cache.NewPostgresDataCache(&cache.PostgresDataCacheConfig{
+	return postgrescache.New(&cache.PostgresDataCacheConfig{
 		Dbname:   cfg.DataCache.Database,
 		Host:     cfg.DataCache.Host,
 		User:     cfg.DataCache.Username,
@@ -422,7 +422,10 @@ func loadDataCache(cfg *config.Configuration) (err error) {
 
 	switch cfg.DataCache.Type {
 	case "dummy":
-		dataCache = cache.NewDummyCache()
+		dataCache, err = dummycache.New()
+		if err != nil {
+			glog.Fatalf("Dummy cache not configured: %s", err.Error())
+		}
 
 	case "postgres":
 		dataCache, err = loadPostgresDataCache(cfg)

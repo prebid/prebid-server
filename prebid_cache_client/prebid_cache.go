@@ -65,6 +65,9 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	}
 
 	httpReq, err := http.NewRequest("POST", putURL, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -72,11 +75,11 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	if err != nil {
 		return err
 	}
+	defer anResp.Body.Close()
 
 	if anResp.StatusCode != 200 {
 		return fmt.Errorf("HTTP status code %d", anResp.StatusCode)
 	}
-	defer anResp.Body.Close()
 
 	var resp response
 	if err := json.NewDecoder(anResp.Body).Decode(&resp); err != nil {
