@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 /**
@@ -269,7 +270,8 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	pbs.SetUIDCookie(fakewriter, pc)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 	// parse the http request
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cache.NewDummyCache())
+	cacheClient, _ := dummycache.New()
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient)
 	if err != nil {
 		t.Fatalf("Error when parsing request", err)
 	}

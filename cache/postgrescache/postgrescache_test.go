@@ -1,4 +1,4 @@
-package cache
+package postgrescache
 
 import (
 	"strings"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestPostgresConfig(t *testing.T) {
-	conf := PostgresDataCacheConfig{
+	conf := PostgresConfig{
 		Host:     "host",
 		Port:     1234,
 		Dbname:   "dbname",

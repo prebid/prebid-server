@@ -1,21 +1,45 @@
 package cache
 
 type Domain struct {
-	Domain string
+	Domain string `json:"domain"`
 }
 
 type App struct {
-	Bundle string
+	Bundle string `json:"bundle"`
 }
 
 type Account struct {
-	ID string
+	ID string `json:"id"`
+}
+
+type Configuration struct {
+	Type string `json:"type"` // required
 }
 
 type Cache interface {
-	GetDomain(domain string) (*Domain, error)
-	GetApp(bundle string) (*App, error)
-	GetAccount(id string) (*Account, error)
-	GetConfig(id string) (string, error)
-	Close()
+	Close() error
+	Accounts() AccountsService
+	Apps() AppsService
+	Config() ConfigService
+	Domains() DomainsService
+}
+
+type AccountsService interface {
+	Get(string) (*Account, error)
+	Set(*Account) error
+}
+
+type AppsService interface {
+	Get(string) (*App, error)
+	Set(*App) error
+}
+
+type ConfigService interface {
+	Get(string) (string, error)
+	Set(string, string) error
+}
+
+type DomainsService interface {
+	Get(string) (*Domain, error)
+	Set(*Domain) error
 }
