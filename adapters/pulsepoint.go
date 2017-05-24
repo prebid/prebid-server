@@ -12,9 +12,10 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/net/context/ctxhttp"
+
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 type PulsePointAdapter struct {

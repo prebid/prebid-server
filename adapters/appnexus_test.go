@@ -1,22 +1,22 @@
-package adapters
+package adapters_test
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/pbs"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 func TestAppNexusInvalidCall(t *testing.T) {
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
+	an := adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
 	an.URI = "blah"
 	s := an.Name()
 	if s == "" {
@@ -41,8 +41,8 @@ func TestAppNexusTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewAppNexusAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
@@ -78,8 +78,8 @@ func TestAppNexusInvalidJson(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewAppNexusAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -114,8 +114,8 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewAppNexusAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -141,8 +141,8 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 }
 
 func TestMissingPlacementId(t *testing.T) {
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewAppNexusAdapter(&conf, "localhost")
 	an.URI = "dummy"
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -201,8 +201,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewAppNexusAdapter(&conf, "localhost")
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -233,14 +233,14 @@ func TestAppNexusBasicResponse(t *testing.T) {
 
 func TestAppNexusUserSyncInfo(t *testing.T) {
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
+	an := adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
+	if an.GetUsersyncInfo().URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}
-	if an.usersyncInfo.Type != "redirect" {
+	if an.GetUsersyncInfo().Type != "redirect" {
 		t.Fatalf("should be redirect")
 	}
-	if an.usersyncInfo.SupportCORS != false {
+	if an.GetUsersyncInfo().SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
 }

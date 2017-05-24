@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"net/url"
 
+	"golang.org/x/net/context/ctxhttp"
+
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 type PubmaticAdapter struct {

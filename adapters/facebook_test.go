@@ -1,20 +1,20 @@
-package adapters
+package adapters_test
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 type tagInfo struct {
@@ -172,8 +172,8 @@ func TestFacebookBasicResponse(t *testing.T) {
 		bid:         3.22,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := adapters.NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -284,14 +284,14 @@ func TestFacebookBasicResponse(t *testing.T) {
 func TestFacebookUserSyncInfo(t *testing.T) {
 	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
 
-	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", url)
-	if an.usersyncInfo.URL != url {
+	an := adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, "partnerId", url)
+	if an.GetUsersyncInfo().URL != url {
 		t.Fatalf("should have matched")
 	}
-	if an.usersyncInfo.Type != "redirect" {
+	if an.GetUsersyncInfo().Type != "redirect" {
 		t.Fatalf("should be redirect")
 	}
-	if an.usersyncInfo.SupportCORS != false {
+	if an.GetUsersyncInfo().SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
 }

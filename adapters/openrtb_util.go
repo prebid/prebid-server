@@ -1,10 +1,14 @@
 package adapters
 
 import (
-	"github.com/prebid/prebid-server/pbs"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/pbs"
 )
+
+// MakeOpenRTBGeneric makes makeOpenRTBGeneric public
+func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
+	return makeOpenRTBGeneric(req, bidder, bidderFamily)
+}
 
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
 
