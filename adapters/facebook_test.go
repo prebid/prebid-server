@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/pbs"
 
 	"fmt"
 
@@ -217,7 +218,8 @@ func TestFacebookBasicResponse(t *testing.T) {
 	pbs.SetUIDCookie(fakewriter, pc)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
-	pbReq, err := pbs.ParsePBSRequest(req, cache.NewDummyCache())
+	cacheClient, _ := dummycache.New()
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}

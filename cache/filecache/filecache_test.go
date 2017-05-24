@@ -1,4 +1,4 @@
-package cache
+package filecache
 
 import (
 	"io/ioutil"
@@ -13,7 +13,7 @@ func TestFileCache(t *testing.T) {
 		Domains:  []string{"one.com", "two.com", "three.com"},
 		Apps:     []string{"com.app.one", "com.app.two", "com.app.three"},
 		Accounts: []string{"account1", "account2", "account3"},
-		Configs: []fileCacheConfig{
+		Configs: []fileConfig{
 			{
 				ID:     "one",
 				Config: "config1",
@@ -46,12 +46,12 @@ func TestFileCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	dataCache, err := NewFileCache(tmpfile.Name())
+	dataCache, err := New(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	d, err := dataCache.GetDomain("one.com")
+	d, err := dataCache.Domains().Get("one.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,12 +60,12 @@ func TestFileCache(t *testing.T) {
 		t.Error("fetched invalid domain")
 	}
 
-	d, err = dataCache.GetDomain("abc123")
+	d, err = dataCache.Domains().Get("abc123")
 	if err == nil {
 		t.Error("domain should not exist in cache")
 	}
 
-	app, err := dataCache.GetApp("com.app.one")
+	app, err := dataCache.Apps().Get("com.app.one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,12 +74,12 @@ func TestFileCache(t *testing.T) {
 		t.Error("fetched invalid app")
 	}
 
-	app, err = dataCache.GetApp("abc123")
+	app, err = dataCache.Apps().Get("abc123")
 	if err == nil {
 		t.Error("domain should not exist in cache")
 	}
 
-	a, err := dataCache.GetAccount("account1")
+	a, err := dataCache.Accounts().Get("account1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,12 +88,12 @@ func TestFileCache(t *testing.T) {
 		t.Error("fetched invalid domain")
 	}
 
-	a, err = dataCache.GetAccount("abc123")
+	a, err = dataCache.Accounts().Get("abc123")
 	if err == nil {
 		t.Error("domain should not exist in cache")
 	}
 
-	c, err := dataCache.GetConfig("one")
+	c, err := dataCache.Config().Get("one")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestFileCache(t *testing.T) {
 		t.Error("fetched invalid domain")
 	}
 
-	c, err = dataCache.GetConfig("abc123")
+	c, err = dataCache.Config().Get("abc123")
 	if err == nil {
 		t.Error("domain should not exist in cache")
 	}
