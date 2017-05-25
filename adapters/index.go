@@ -6,15 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/prebid-server/pbs"
-
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 type IndexAdapter struct {
@@ -77,67 +73,17 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(j))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
-	ixResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if err != nil {
-		return nil, err
+	if !req.IsDebug {
+		debug = nil // make this nil so DefaultOpenRTBResponse can ignore it
 	}
 
-	debug.StatusCode = ixResp.StatusCode
-
-	if ixResp.StatusCode == 204 {
-		return nil, nil
-	}
-
-	if ixResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status: %d", ixResp.StatusCode)
-	}
-
-	defer ixResp.Body.Close()
-	body, err := ioutil.ReadAll(ixResp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if req.IsDebug {
-		debug.ResponseBody = string(body)
-	}
-
-	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing response: %v", err)
-	}
-
-	bids := make(pbs.PBSBidSlice, 0)
-
-	numBids := 0
-	for _, sb := range bidResp.SeatBid {
-		for i, bid := range sb.Bid {
-			numBids++
-
-			bidID := bidder.LookupBidID(bid.ImpID)
-			if bidID == "" {
-				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
-			}
-
-			pbid := pbs.PBSBid{
-				BidID:       bidID,
-				AdUnitCode:  bidder.AdUnits[i].Code, // todo: check this
-				BidderCode:  bidder.BidderCode,
-				Price:       bid.Price,
-				Adm:         bid.AdM,
-				Creative_id: bid.CrID,
-				Width:       bid.W,
-				Height:      bid.H,
-				DealId:      bid.DealID,
-			}
-			bids = append(bids, &pbid)
-		}
-	}
-	return bids, nil
+	return DefaultOpenRTBResponse(ctx, a.http, httpReq, bidder, debug)
 }
 
 func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapter {
@@ -145,15 +91,13 @@ func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapte
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
 	usersyncURI := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
 
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURI, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &IndexAdapter{
-		http:         a,
-		URI:          "http://ssp-sandbox.casalemedia.com/bidder?p=184932",
-		usersyncInfo: info,
+		http: a,
+		URI:  "http://ssp-sandbox.casalemedia.com/bidder?p=184932",
+		usersyncInfo: &pbs.UsersyncInfo{
+			URL:         fmt.Sprintf("%s%s", usersyncURI, url.QueryEscape(redirect_uri)),
+			Type:        "redirect",
+			SupportCORS: false,
+		},
 	}
 }
