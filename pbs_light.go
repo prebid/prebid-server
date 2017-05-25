@@ -129,6 +129,8 @@ func getAccountMetrics(id string) *AccountMetrics {
 	return am
 }
 
+var defaultTimeoutMS uint32
+
 func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
@@ -198,61 +200,86 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	ch := make(chan bidResult)
 	sentBids := 0
-	for _, bidder := range pbs_req.Bidders {
-		if ex, ok := exchanges[bidder.BidderCode]; ok {
-			ametrics := adapterMetrics[bidder.BidderCode]
-			ametrics.RequestMeter.Mark(1)
-			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
-				bidder.NoCookie = true
-				bidder.UsersyncInfo = ex.GetUsersyncInfo()
-				ametrics.NoCookieMeter.Mark(1)
-				continue
+	returnedBids := 0
+
+	// maxTime is the maximum amount of time to wait for the bidders to return responses back
+	maxTime := time.NewTimer(time.Millisecond * time.Duration(defaultTimeoutMS))
+
+	// process all of the bidders inside of a goroutine.
+	// we'll wait for the responses in the for loop below
+	go func(pbs_req *pbs.PBSRequest) {
+		for _, bidder := range pbs_req.Bidders {
+			if ex, ok := exchanges[bidder.BidderCode]; ok {
+				ametrics := adapterMetrics[bidder.BidderCode]
+				ametrics.RequestMeter.Mark(1)
+				if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
+					bidder.NoCookie = true
+					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					ametrics.NoCookieMeter.Mark(1)
+					continue
+				}
+				sentBids++
+				go func(bidder *pbs.PBSBidder) {
+					start := time.Now()
+					bid_list, err := ex.Call(ctx, pbs_req, bidder)
+					bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
+					ametrics.RequestTimer.UpdateSince(start)
+					if err != nil {
+						switch err {
+						case context.DeadlineExceeded:
+							ametrics.TimeoutMeter.Mark(1)
+							bidder.Error = "Timed out"
+						case context.Canceled:
+							fallthrough
+						default:
+							ametrics.ErrorMeter.Mark(1)
+							bidder.Error = err.Error()
+						}
+					} else if bid_list != nil {
+						bidder.NumBids = len(bid_list)
+						am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
+						for _, bid := range bid_list {
+							ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
+							am.PriceHistogram.Update(int64(bid.Price * 1000))
+						}
+					} else {
+						bidder.NoBid = true
+						ametrics.NoBidMeter.Mark(1)
+					}
+
+					ch <- bidResult{
+						bidder:   bidder,
+						bid_list: bid_list,
+					}
+				}(bidder)
+
+			} else {
+				bidder.Error = "Unsupported bidder"
 			}
-			sentBids++
-			go func(bidder *pbs.PBSBidder) {
-				start := time.Now()
-				bid_list, err := ex.Call(ctx, pbs_req, bidder)
-				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
-				ametrics.RequestTimer.UpdateSince(start)
-				if err != nil {
-					switch err {
-					case context.DeadlineExceeded:
-						ametrics.TimeoutMeter.Mark(1)
-						bidder.Error = "Timed out"
-					case context.Canceled:
-						fallthrough
-					default:
-						ametrics.ErrorMeter.Mark(1)
-						bidder.Error = err.Error()
-					}
-				} else if bid_list != nil {
-					bidder.NumBids = len(bid_list)
-					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
-					for _, bid := range bid_list {
-						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
-						am.PriceHistogram.Update(int64(bid.Price * 1000))
-					}
-				} else {
-					bidder.NoBid = true
-					ametrics.NoBidMeter.Mark(1)
-				}
-
-				ch <- bidResult{
-					bidder:   bidder,
-					bid_list: bid_list,
-				}
-			}(bidder)
-
-		} else {
-			bidder.Error = "Unsupported bidder"
 		}
-	}
+		close(ch) // close the channel. there are no more results to process.
+	}(pbs_req)
 
-	for i := 0; i < sentBids; i++ {
-		result := <-ch
+Loop:
+	for {
+		select {
+		case result, open := <-ch:
+			if !open {
+				// if channel has been closed then we can safely break out of this loop
+				break Loop
+			}
+			for _, bid := range result.bid_list {
+				pbs_resp.Bids = append(pbs_resp.Bids, bid)
+			}
+			// increment counter for logging
+			returnedBids++
 
-		for _, bid := range result.bid_list {
-			pbs_resp.Bids = append(pbs_resp.Bids, bid)
+		case <-maxTime.C:
+			// if the max time has been reached then we will exit out of the loop
+			if glog.V(1) {
+				glog.Infof("We expected %d results but only %d returned within %dms", sentBids, returnedBids, defaultTimeoutMS)
+			}
+			break Loop
 		}
 	}
 
@@ -475,6 +502,8 @@ func main() {
 
 	externalURL := viper.GetString("external_url")
 	requireUUID2 = viper.GetBool("require_uuid2")
+
+	defaultTimeoutMS = uint32(viper.GetInt("default_timeout_ms"))
 
 	loadDataCache()
 
