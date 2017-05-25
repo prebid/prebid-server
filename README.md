@@ -57,7 +57,7 @@ $ go get github.com/prebid/prebid-server
 ### Running
 To compile a binary and run locally:
 ```
-$ go build
+$ go build .
 $ ./prebid-server -v 1 -logtostderr
 ```
 

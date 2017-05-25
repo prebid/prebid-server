@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -15,23 +14,24 @@ import (
 	"sync"
 	"time"
 
-	sigar "github.com/cloudfoundry/gosigar"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/cache/filecache"
-	"github.com/prebid/prebid-server/cache/postgrescache"
-	"github.com/prebid/prebid-server/pbs"
-	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-
+	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	metrics "github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
 	"github.com/xojoc/useragent"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/cache/filecache"
+	"github.com/prebid/prebid-server/cache/postgrescache"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 )
 
 type DomainMetrics struct {
@@ -406,28 +406,24 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return
 }
 
-func loadPostgresDataCache() (cache.Cache, error) {
+func loadPostgresDataCache(cfg *config.Configuration) (cache.Cache, error) {
 	mem := sigar.Mem{}
 	mem.Get()
 
-	cfg := postgrescache.PostgresConfig{
-		Dbname:   viper.GetString("datacache.dbname"),
-		Host:     viper.GetString("datacache.host"),
-		User:     viper.GetString("datacache.user"),
-		Password: viper.GetString("datacache.password"),
-		Size:     viper.GetInt("datacache.cache_size"),
-		TTL:      viper.GetInt("datacache.ttl_seconds"),
-	}
-
-	return postgrescache.New(cfg)
+	return postgrescache.New(postgrescache.PostgresConfig{
+		Dbname:   cfg.DataCache.Database,
+		Host:     cfg.DataCache.Host,
+		User:     cfg.DataCache.Username,
+		Password: cfg.DataCache.Password,
+		Size:     cfg.DataCache.CacheSize,
+		TTL:      cfg.DataCache.TTLSeconds,
+	})
 
 }
 
-func loadDataCache() {
-	var err error
+func loadDataCache(cfg *config.Configuration) (err error) {
 
-	cacheType := viper.GetString("datacache.type")
-	switch cacheType {
+	switch cfg.DataCache.Type {
 	case "dummy":
 		dataCache, err = dummycache.New()
 		if err != nil {
@@ -435,23 +431,24 @@ func loadDataCache() {
 		}
 
 	case "postgres":
-		dataCache, err = loadPostgresDataCache()
+		dataCache, err = loadPostgresDataCache(cfg)
 		if err != nil {
-			glog.Fatalf("Postgres cache not configured: %s", err.Error())
+			return fmt.Errorf("PostgresCache Error: %s", err.Error())
 		}
 
 	case "filecache":
-		dataCache, err = filecache.New(viper.GetString("datacache.filename"))
+		dataCache, err = filecache.New(cfg.DataCache.Filename)
 		if err != nil {
-			glog.Fatalf("Failed to load filecach: %s", err.Error())
+			return fmt.Errorf("FileCache Error: %s", err.Error())
 		}
 
 	default:
-		log.Fatalf("Unknown datacache.type: %s", cacheType)
+		return fmt.Errorf("Unknown datacache.type: %s", cfg.DataCache.Type)
 	}
+	return nil
 }
 
-func main() {
+func init() {
 	rand.Seed(time.Now().UnixNano())
 	viper.SetConfigName("pbs")
 	viper.AddConfigPath(".")
@@ -462,31 +459,43 @@ func main() {
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
 	viper.SetDefault("datacache.type", "dummy")
-
 	// no metrics configured by default (metrics{host|database|username|password})
 
-	viper.SetDefault("pubmatic_endpoint", "http://openbid-useast.pubmatic.com/translator?")
-	viper.SetDefault("rubicon_endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	viper.SetDefault("rubicon_usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
-	viper.SetDefault("pulsepoint_endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
+}
 
-	externalURL := viper.GetString("external_url")
-	requireUUID2 = viper.GetBool("require_uuid2")
+func main() {
+	cfg, err := config.New()
+	if err != nil {
+		glog.Errorf("Viper was unable to read configurations: %v", err)
+	}
+	// we need to set this global variable so it can be used by other methods
+	requireUUID2 = cfg.RequireUUID2
+	if err := serve(cfg); err != nil {
+		glog.Fatalf("PreBid Server encountered an error: %v", err)
+	}
+}
 
-	loadDataCache()
+func serve(cfg *config.Configuration) error {
+	if err := loadDataCache(cfg); err != nil {
+		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
+	}
 
 	exchanges = map[string]adapters.Adapter{
-		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
-		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, externalURL),
-		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pubmatic_endpoint"), externalURL),
-		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("pulsepoint_endpoint"), externalURL),
-		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("rubicon_endpoint"),
-			viper.GetString("rubicon_xapi_username"), viper.GetString("rubicon_xapi_password"), viper.GetString("rubicon_usersync_url")),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, viper.GetString("facebook_platform_id"), viper.GetString("facebook_usersync_url")),
+		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
+		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
+		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
+			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].UserSyncURL),
+		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -514,14 +523,14 @@ func main() {
 		adapterMetrics[exchange] = &a
 	}
 
-	if viper.Get("metrics") != nil {
+	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
-			metricsRegistry,                     // metrics registry
-			time.Second*10,                      // interval
-			viper.GetString("metrics.host"),     // the InfluxDB url
-			viper.GetString("metrics.database"), // your InfluxDB database
-			viper.GetString("metrics.username"), // your InfluxDB user
-			viper.GetString("metrics.password"), // your InfluxDB password
+			metricsRegistry,      // metrics registry
+			time.Second*10,       // interval
+			cfg.Metrics.Host,     // the InfluxDB url
+			cfg.Metrics.Database, // your InfluxDB database
+			cfg.Metrics.Username, // your InfluxDB user
+			cfg.Metrics.Password, // your InfluxDB password
 		)
 	}
 
@@ -539,7 +548,7 @@ func main() {
 	/* Run admin on different port thats not exposed */
 	go func() {
 		// Todo -- make configurable
-		adminURI := fmt.Sprintf("%s:%s", viper.GetString("host"), viper.GetString("admin_port"))
+		adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
 		fmt.Println("Admin running on: ", adminURI)
 		glog.Fatal(http.ListenAndServe(adminURI, nil))
 	}()
@@ -552,11 +561,9 @@ func main() {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	cookieDomain = viper.GetString("cookie_domain")
+	pbs.InitUsersyncHandlers(router, metricsRegistry, cfg.CookieDomain, cfg.ExternalURL, cfg.RecaptchaSecret)
 
-	pbs.InitUsersyncHandlers(router, metricsRegistry, cookieDomain, externalURL, viper.GetString("recaptcha_secret"))
-
-	pbc.InitPrebidCache(viper.GetString("prebid_cache_url"))
+	pbc.InitPrebidCache(cfg.CacheURL)
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})
@@ -566,12 +573,15 @@ func main() {
 	noCacheHandler := NoCache{corsRouter}
 
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", viper.GetString("host"), viper.GetString("port")),
+		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		Handler:      noCacheHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
-	fmt.Println("Server running on: ", server.Addr)
-	glog.Fatal(server.ListenAndServe())
+	fmt.Printf("Server running on: %s\n", server.Addr)
+	if err := server.ListenAndServe(); err != nil {
+		return err
+	}
+	return nil
 }
