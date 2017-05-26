@@ -9,10 +9,10 @@ http://redditadops.slack.com channel headerbidding-dev
 # Current Status of Adapters (May 15, 2017)
 Working on live sites:
 - AppNexus web
-- Rubicon web
 
 In testing:
 - Facebook web
+- Rubicon web
 
 Under development / pending testing:
 - Pubmatic (waiting for clean & stable usersync endpoint and param compatibility with client-side prebid)
