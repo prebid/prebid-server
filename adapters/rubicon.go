@@ -39,9 +39,9 @@ func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type rubiconParams struct {
-	AccountId int   `json:"accountId"`
-	SiteId    int   `json:"siteId"`
-	ZoneId    int   `json:"zoneId"`
+	AccountId int `json:"accountId"`
+	SiteId    int `json:"siteId"`
+	ZoneId    int `json:"zoneId"`
 }
 
 type rubiconImpExtRP struct {
@@ -69,9 +69,9 @@ type rubiconPubExt struct {
 }
 
 type rubiconBannerExtRP struct {
-	SizeID 		int    `json:"size_id,omitempty"`
-	AltSizeIDs 	[]int `json:"alt_size_ids,omitempty"`
-	MIME   		string `json:"mime"`
+	SizeID     int    `json:"size_id,omitempty"`
+	AltSizeIDs []int  `json:"alt_size_ids,omitempty"`
+	MIME       string `json:"mime"`
 }
 
 type rubiconBannerExt struct {
@@ -80,47 +80,47 @@ type rubiconBannerExt struct {
 
 // Conversion map from dimensions to internal identifiers
 var rubiconSizeMap = map[string]int{
-	"468x60": 1,
-	"728x90": 2,
-	"120x600": 8,
-	"160x600": 9,
-	"300x600": 10,
-	"300x250": 15,
-	"336x280": 16,
-	"300x100": 19,
-	"980x120": 31,
-	"250x360": 32,
-	"180x500": 33,
-	"980x150": 35,
-	"468x400": 37,
-	"930x180": 38,
-	"320x50": 43,
-	"300x50": 44,
-	"300x300": 48,
-	"300x1050": 54,
-	"970x90": 55,
-	"970x250": 57,
-	"1000x90": 58,
-	"320x80": 59,
+	"468x60":    1,
+	"728x90":    2,
+	"120x600":   8,
+	"160x600":   9,
+	"300x600":   10,
+	"300x250":   15,
+	"336x280":   16,
+	"300x100":   19,
+	"980x120":   31,
+	"250x360":   32,
+	"180x500":   33,
+	"980x150":   35,
+	"468x400":   37,
+	"930x180":   38,
+	"320x50":    43,
+	"300x50":    44,
+	"300x300":   48,
+	"300x1050":  54,
+	"970x90":    55,
+	"970x250":   57,
+	"1000x90":   58,
+	"320x80":    59,
 	"1000x1000": 61,
-	"640x480": 65,
-	"320x480": 67,
+	"640x480":   65,
+	"320x480":   67,
 	"1800x1000": 68,
-	"320x320": 72,
-	"320x160": 73,
-	"980x240": 78,
-	"980x300": 79,
-	"980x400": 80,
-	"480x300": 83,
-	"970x310": 94,
-	"970x210": 96,
-	"480x320": 101,
-	"768x1024": 102,
-	"480x280": 103,
-	"1000x300": 113,
-	"320x100": 117,
-	"800x250": 125,
-	"200x600": 126,
+	"320x320":   72,
+	"320x160":   73,
+	"980x240":   78,
+	"980x300":   79,
+	"980x400":   80,
+	"480x300":   83,
+	"970x310":   94,
+	"970x210":   96,
+	"480x320":   101,
+	"768x1024":  102,
+	"480x280":   103,
+	"1000x300":  113,
+	"320x100":   117,
+	"800x250":   125,
+	"200x600":   126,
 }
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -149,15 +149,15 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 
 		// Convert inbound dimensions to internal identifiers
 		switch len(unit.Sizes) {
-			case 0:
-			default:
-				primarySizeID = rubiconSizeMap[fmt.Sprintf("%dx%d", unit.Sizes[0].W, unit.Sizes[0].H)]
-				fallthrough
-			case 1:
-				var extraSizes = unit.Sizes[1:]
-				for _, size := range extraSizes {
-					altSizeIDs = append(altSizeIDs, rubiconSizeMap[fmt.Sprintf("%dx%d", size.W, size.H)])
-				}
+		case 0:
+		default:
+			primarySizeID = rubiconSizeMap[fmt.Sprintf("%dx%d", unit.Sizes[0].W, unit.Sizes[0].H)]
+			fallthrough
+		case 1:
+			var extraSizes = unit.Sizes[1:]
+			for _, size := range extraSizes {
+				altSizeIDs = append(altSizeIDs, rubiconSizeMap[fmt.Sprintf("%dx%d", size.W, size.H)])
+			}
 		}
 
 		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
