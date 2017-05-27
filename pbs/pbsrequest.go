@@ -3,18 +3,18 @@ package pbs
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/cache"
-
 	"github.com/golang/glog"
-	"github.com/prebid/openrtb"
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
+
+	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/prebid"
 )
 
 const MAX_BIDDERS = 8
@@ -135,15 +135,8 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
+		pbsReq.Device.IP = prebid.GetIP(r)
 
-		if r.Header.Get("X-Real-Ip") != "" {
-			pbsReq.Device.IP = r.Header.Get("X-Real-Ip")
-		} else {
-			ip, _, uerr := net.SplitHostPort(r.RemoteAddr)
-			if uerr == nil && net.ParseIP(ip) != nil {
-				pbsReq.Device.IP = ip
-			}
-		}
 		pbsReq.Url = r.Header.Get("Referer") // must be specified in the header
 		// TODO: this should explicitly put us in test mode
 		if r.FormValue("url_override") != "" {
@@ -185,14 +178,8 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		pbsReq.IsDebug = true
 	}
 
-	if pbsReq.Secure == 0 {
-		if r.Header.Get("X-Forwarded-Proto") != "" {
-			if r.Header.Get("X-Forwarded-Proto") == "https" {
-				pbsReq.Secure = 1
-			}
-		} else if r.TLS != nil {
-			pbsReq.Secure = 1
-		}
+	if prebid.IsSecure(r) {
+		pbsReq.Secure = 1
 	}
 
 	pbsReq.Bidders = make([]*PBSBidder, 0, MAX_BIDDERS)

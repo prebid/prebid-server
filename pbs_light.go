@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 )
 
@@ -344,10 +345,7 @@ func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 	}
 	ip, port, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
-		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
-
 		fmt.Fprintf(w, "userip: %q is not IP:port", req.RemoteAddr)
-
 	}
 
 	userIP := net.ParseIP(ip)
@@ -355,17 +353,15 @@ func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
 		fmt.Fprintf(w, "userip: %q is not IP:port", req.RemoteAddr)
 		return
-
 	}
 
-	// This will only be defined when site is accessed via non-anonymous proxy
-	// and takes precedence over RemoteAddr
-	// Header.Get is case-insensitive
-	forward := req.Header.Get("X-Forwarded-For")
+	forwardedIP := prebid.GetForwardedIP(req)
+	realIP := prebid.GetIP(req)
 
 	fmt.Fprintf(w, "<p>IP: %s</p>", ip)
 	fmt.Fprintf(w, "<p>Port: %s</p>", port)
-	fmt.Fprintf(w, "<p>Forwarded for: %s</p>", forward)
+	fmt.Fprintf(w, "<p>Forwarded IP: %s</p>", forwardedIP)
+	fmt.Fprintf(w, "<p>Real IP: %s</p>", realIP)
 
 	for k, v := range req.Header {
 		fmt.Fprintf(w, "<p>%s: %s</p>", k, v)
