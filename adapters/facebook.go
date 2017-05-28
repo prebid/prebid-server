@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/net/context/ctxhttp"
+
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 type FacebookAdapter struct {
@@ -180,16 +181,14 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
 	a := NewHTTPAdapter(config)
 
-	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &FacebookAdapter{
-		http:         a,
-		URI:          "https://an.facebook.com/placementbid.ortb",
-		usersyncInfo: info,
+		http: a,
+		URI:  "https://an.facebook.com/placementbid.ortb",
+		usersyncInfo: &pbs.UsersyncInfo{
+			URL:         usersyncURL,
+			Type:        "redirect",
+			SupportCORS: false,
+		},
 		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
 	}
 }
