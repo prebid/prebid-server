@@ -315,3 +315,60 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 	}
 
 }
+
+func TestParseSizes(t *testing.T) {
+	sizes := []openrtb.Format{
+		{
+			W: 300,
+			H: 600,
+		},
+		{
+			W: 300,
+			H: 250,
+		},
+	}
+	primary, alt, err := parseRubiconSizes(sizes)
+	if err != nil {
+		t.Errorf("Parsing error: %v", err)
+	}
+	if primary != 10 {
+		t.Errorf("Primary %d != 10", primary)
+	}
+	if len(alt) != 1 {
+		t.Fatalf("Alt not len 1")
+	}
+	if alt[0] != 15 {
+		t.Errorf("Alt not 15: %d", alt[0])
+	}
+
+	sizes = []openrtb.Format{
+		{
+			W: 1111,
+			H: 1111,
+		},
+		{
+			W: 300,
+			H: 250,
+		},
+	}
+	primary, alt, err = parseRubiconSizes(sizes)
+	if err == nil {
+		t.Errorf("Should have thrown error for invalid size 1111x1111")
+	}
+}
+
+func BenchmarkParseSizes(b *testing.B) {
+	sizes := []openrtb.Format{
+		{
+			W: 300,
+			H: 600,
+		},
+		{
+			W: 300,
+			H: 250,
+		},
+	}
+	for i := 0; i < b.N; i++ {
+		_, _, _ = parseRubiconSizes(sizes)
+	}
+}

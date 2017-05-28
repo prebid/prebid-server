@@ -78,49 +78,81 @@ type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
 }
 
-// Conversion map from dimensions to internal identifiers
-var rubiconSizeMap = map[string]int{
-	"468x60":    1,
-	"728x90":    2,
-	"120x600":   8,
-	"160x600":   9,
-	"300x600":   10,
-	"300x250":   15,
-	"336x280":   16,
-	"300x100":   19,
-	"980x120":   31,
-	"250x360":   32,
-	"180x500":   33,
-	"980x150":   35,
-	"468x400":   37,
-	"930x180":   38,
-	"320x50":    43,
-	"300x50":    44,
-	"300x300":   48,
-	"300x1050":  54,
-	"970x90":    55,
-	"970x250":   57,
-	"1000x90":   58,
-	"320x80":    59,
-	"1000x1000": 61,
-	"640x480":   65,
-	"320x480":   67,
-	"1800x1000": 68,
-	"320x320":   72,
-	"320x160":   73,
-	"980x240":   78,
-	"980x300":   79,
-	"980x400":   80,
-	"480x300":   83,
-	"970x310":   94,
-	"970x210":   96,
-	"480x320":   101,
-	"768x1024":  102,
-	"480x280":   103,
-	"1000x300":  113,
-	"320x100":   117,
-	"800x250":   125,
-	"200x600":   126,
+type rubiSize struct {
+	w uint64
+	h uint64
+}
+
+var rubiSizeMap = map[rubiSize]int{
+	rubiSize{w: 468, h: 60}:    1,
+	rubiSize{w: 728, h: 90}:    2,
+	rubiSize{w: 120, h: 600}:   8,
+	rubiSize{w: 160, h: 600}:   9,
+	rubiSize{w: 300, h: 600}:   10,
+	rubiSize{w: 300, h: 250}:   15,
+	rubiSize{w: 336, h: 280}:   16,
+	rubiSize{w: 300, h: 100}:   19,
+	rubiSize{w: 980, h: 120}:   31,
+	rubiSize{w: 250, h: 360}:   32,
+	rubiSize{w: 180, h: 500}:   33,
+	rubiSize{w: 980, h: 150}:   35,
+	rubiSize{w: 468, h: 400}:   37,
+	rubiSize{w: 930, h: 180}:   38,
+	rubiSize{w: 320, h: 50}:    43,
+	rubiSize{w: 300, h: 50}:    44,
+	rubiSize{w: 300, h: 300}:   48,
+	rubiSize{w: 300, h: 1050}:  54,
+	rubiSize{w: 970, h: 90}:    55,
+	rubiSize{w: 970, h: 250}:   57,
+	rubiSize{w: 1000, h: 90}:   58,
+	rubiSize{w: 320, h: 80}:    59,
+	rubiSize{w: 1000, h: 1000}: 61,
+	rubiSize{w: 640, h: 480}:   65,
+	rubiSize{w: 320, h: 480}:   67,
+	rubiSize{w: 1800, h: 1000}: 68,
+	rubiSize{w: 320, h: 320}:   72,
+	rubiSize{w: 320, h: 160}:   73,
+	rubiSize{w: 980, h: 240}:   78,
+	rubiSize{w: 980, h: 300}:   79,
+	rubiSize{w: 980, h: 400}:   80,
+	rubiSize{w: 480, h: 300}:   83,
+	rubiSize{w: 970, h: 310}:   94,
+	rubiSize{w: 970, h: 210}:   96,
+	rubiSize{w: 480, h: 320}:   101,
+	rubiSize{w: 768, h: 1024}:  102,
+	rubiSize{w: 480, h: 280}:   103,
+	rubiSize{w: 1000, h: 300}:  113,
+	rubiSize{w: 320, h: 100}:   117,
+	rubiSize{w: 800, h: 250}:   125,
+	rubiSize{w: 200, h: 600}:   126,
+}
+
+func lookupSize(s openrtb.Format) (int, error) {
+	if sz, ok := rubiSizeMap[rubiSize{w: s.W, h: s.H}]; ok {
+		return sz, nil
+	}
+	return 0, fmt.Errorf("Size %dx%d not found", s.W, s.H)
+}
+
+func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
+	if len(sizes) < 1 {
+		err = fmt.Errorf("No sizes")
+		return
+	}
+	primary, err = lookupSize(sizes[0])
+	if err != nil {
+		return
+	}
+	if len(sizes) > 1 {
+		alt = make([]int, len(sizes)-1)
+		for i := 1; i < len(sizes); i++ {
+			alt[i-1], err = lookupSize(sizes[i])
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
 }
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -144,20 +176,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		impExt := rubiconImpExt{RP: rubiconImpExtRP{ZoneID: params.ZoneId}}
 		rpReq.Imp[i].Ext, err = json.Marshal(&impExt)
 
-		primarySizeID := int(0)
-		altSizeIDs := []int{}
-
-		// Convert inbound dimensions to internal identifiers
-		switch len(unit.Sizes) {
-		case 0:
-		default:
-			primarySizeID = rubiconSizeMap[fmt.Sprintf("%dx%d", unit.Sizes[0].W, unit.Sizes[0].H)]
-			fallthrough
-		case 1:
-			var extraSizes = unit.Sizes[1:]
-			for _, size := range extraSizes {
-				altSizeIDs = append(altSizeIDs, rubiconSizeMap[fmt.Sprintf("%dx%d", size.W, size.H)])
-			}
+		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
+		if err != nil {
+			return nil, err
 		}
 
 		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
@@ -203,6 +224,10 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		return nil, err
 	}
 
+	defer anResp.Body.Close()
+	body, _ := ioutil.ReadAll(anResp.Body)
+	responseBody := string(body)
+
 	debug.StatusCode = anResp.StatusCode
 
 	if anResp.StatusCode == 204 {
@@ -210,17 +235,11 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	if anResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status code %d", anResp.StatusCode)
-	}
-
-	defer anResp.Body.Close()
-	body, err := ioutil.ReadAll(anResp.Body)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, responseBody)
 	}
 
 	if req.IsDebug {
-		debug.ResponseBody = string(body)
+		debug.ResponseBody = responseBody
 	}
 
 	var bidResp openrtb.BidResponse
