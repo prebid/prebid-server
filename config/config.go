@@ -34,7 +34,7 @@ type Metrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
-	Password string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type DataCache struct {
