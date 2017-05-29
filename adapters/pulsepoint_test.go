@@ -273,7 +273,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	cacheClient, _ := dummycache.New()
 	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient)
 	if err != nil {
-		t.Fatalf("Error when parsing request", err)
+		t.Fatalf("Error when parsing request: %v", err)
 	}
 	return parsedReq
 }

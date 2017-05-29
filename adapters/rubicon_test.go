@@ -131,7 +131,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rsx.RP.SiteID != rubidata.siteID {
-		http.Error(w, fmt.Sprintf("SiteID '%s' doesn't match '%s", rsx.RP.SiteID, rubidata.siteID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("SiteID '%d' doesn't match '%d", rsx.RP.SiteID, rubidata.siteID), http.StatusInternalServerError)
 		return
 	}
 	if breq.Site.Publisher == nil {
@@ -145,7 +145,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rpx.RP.AccountID != rubidata.accountID {
-		http.Error(w, fmt.Sprintf("AccountID '%s' doesn't match '%s", rpx.RP.AccountID, rubidata.accountID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("AccountID '%d' doesn't match '%d", rpx.RP.AccountID, rubidata.accountID), http.StatusInternalServerError)
 		return
 	}
 	if breq.Device.UA != rubidata.deviceUA {
