@@ -39,10 +39,9 @@ func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type rubiconParams struct {
-	AccountId int   `json:"accountId"`
-	SiteId    int   `json:"siteId"`
-	ZoneId    int   `json:"zoneId"`
-	Sizes     []int `json:"sizes"`
+	AccountId int `json:"accountId"`
+	SiteId    int `json:"siteId"`
+	ZoneId    int `json:"zoneId"`
 }
 
 type rubiconImpExtRP struct {
@@ -70,16 +69,95 @@ type rubiconPubExt struct {
 }
 
 type rubiconBannerExtRP struct {
-	SizeID int    `json:"size_id,omitempty"`
-	MIME   string `json:"mime"`
+	SizeID     int    `json:"size_id,omitempty"`
+	AltSizeIDs []int  `json:"alt_size_ids,omitempty"`
+	MIME       string `json:"mime"`
 }
 
 type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
 }
 
+type rubiSize struct {
+	w uint64
+	h uint64
+}
+
+var rubiSizeMap = map[rubiSize]int{
+	rubiSize{w: 468, h: 60}:    1,
+	rubiSize{w: 728, h: 90}:    2,
+	rubiSize{w: 120, h: 600}:   8,
+	rubiSize{w: 160, h: 600}:   9,
+	rubiSize{w: 300, h: 600}:   10,
+	rubiSize{w: 300, h: 250}:   15,
+	rubiSize{w: 336, h: 280}:   16,
+	rubiSize{w: 300, h: 100}:   19,
+	rubiSize{w: 980, h: 120}:   31,
+	rubiSize{w: 250, h: 360}:   32,
+	rubiSize{w: 180, h: 500}:   33,
+	rubiSize{w: 980, h: 150}:   35,
+	rubiSize{w: 468, h: 400}:   37,
+	rubiSize{w: 930, h: 180}:   38,
+	rubiSize{w: 320, h: 50}:    43,
+	rubiSize{w: 300, h: 50}:    44,
+	rubiSize{w: 300, h: 300}:   48,
+	rubiSize{w: 300, h: 1050}:  54,
+	rubiSize{w: 970, h: 90}:    55,
+	rubiSize{w: 970, h: 250}:   57,
+	rubiSize{w: 1000, h: 90}:   58,
+	rubiSize{w: 320, h: 80}:    59,
+	rubiSize{w: 1000, h: 1000}: 61,
+	rubiSize{w: 640, h: 480}:   65,
+	rubiSize{w: 320, h: 480}:   67,
+	rubiSize{w: 1800, h: 1000}: 68,
+	rubiSize{w: 320, h: 320}:   72,
+	rubiSize{w: 320, h: 160}:   73,
+	rubiSize{w: 980, h: 240}:   78,
+	rubiSize{w: 980, h: 300}:   79,
+	rubiSize{w: 980, h: 400}:   80,
+	rubiSize{w: 480, h: 300}:   83,
+	rubiSize{w: 970, h: 310}:   94,
+	rubiSize{w: 970, h: 210}:   96,
+	rubiSize{w: 480, h: 320}:   101,
+	rubiSize{w: 768, h: 1024}:  102,
+	rubiSize{w: 480, h: 280}:   103,
+	rubiSize{w: 1000, h: 300}:  113,
+	rubiSize{w: 320, h: 100}:   117,
+	rubiSize{w: 800, h: 250}:   125,
+	rubiSize{w: 200, h: 600}:   126,
+}
+
+func lookupSize(s openrtb.Format) (int, error) {
+	if sz, ok := rubiSizeMap[rubiSize{w: s.W, h: s.H}]; ok {
+		return sz, nil
+	}
+	return 0, fmt.Errorf("Size %dx%d not found", s.W, s.H)
+}
+
+func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
+	if len(sizes) < 1 {
+		err = fmt.Errorf("No sizes")
+		return
+	}
+	primary, err = lookupSize(sizes[0])
+	if err != nil {
+		return
+	}
+	if len(sizes) > 1 {
+		alt = make([]int, len(sizes)-1)
+		for i := 1; i < len(sizes); i++ {
+			alt[i-1], err = lookupSize(sizes[i])
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	rpReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+
 	for i, unit := range bidder.AdUnits {
 		var params rubiconParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -97,13 +175,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 		impExt := rubiconImpExt{RP: rubiconImpExtRP{ZoneID: params.ZoneId}}
 		rpReq.Imp[i].Ext, err = json.Marshal(&impExt)
-		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{MIME: "text/html"}}
-		if len(params.Sizes) > 0 {
-			bannerExt.RP.SizeID = params.Sizes[0]
-			rpReq.Imp[i].Banner.Format = nil
-			rpReq.Imp[i].Banner.W = 0
-			rpReq.Imp[i].Banner.H = 0
+
+		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
+		if err != nil {
+			return nil, err
 		}
+
+		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
 		rpReq.Imp[i].Banner.Ext, err = json.Marshal(&bannerExt)
 		// params are per-unit, so site may overwrite itself
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
@@ -146,6 +224,10 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		return nil, err
 	}
 
+	defer anResp.Body.Close()
+	body, _ := ioutil.ReadAll(anResp.Body)
+	responseBody := string(body)
+
 	debug.StatusCode = anResp.StatusCode
 
 	if anResp.StatusCode == 204 {
@@ -153,17 +235,11 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	if anResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status code %d", anResp.StatusCode)
-	}
-
-	defer anResp.Body.Close()
-	body, err := ioutil.ReadAll(anResp.Body)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, responseBody)
 	}
 
 	if req.IsDebug {
-		debug.ResponseBody = string(body)
+		debug.ResponseBody = responseBody
 	}
 
 	var bidResp openrtb.BidResponse

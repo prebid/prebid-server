@@ -3,6 +3,7 @@ package postgrescache
 import (
 	"bytes"
 	"database/sql"
+    _ "github.com/lib/pq"
 	"encoding/gob"
 	"fmt"
 
