@@ -3,11 +3,12 @@ package adapters
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/pbs"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/pbs"
 
 	"fmt"
 
@@ -44,7 +45,7 @@ func TestIndexTimeout(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewIndexAdapter(&conf, "localhost")
 	an.URI = server.URL
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
 	pbReq := pbs.PBSRequest{}
