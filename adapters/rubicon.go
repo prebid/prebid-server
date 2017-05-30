@@ -79,8 +79,8 @@ type rubiconBannerExt struct {
 }
 
 type rubiSize struct {
-	w uint64
-	h uint64
+	w uint16
+	h uint16
 }
 
 var rubiSizeMap = map[rubiSize]int{
@@ -128,7 +128,7 @@ var rubiSizeMap = map[rubiSize]int{
 }
 
 func lookupSize(s openrtb.Format) (int, error) {
-	if sz, ok := rubiSizeMap[rubiSize{w: s.W, h: s.H}]; ok {
+	if sz, ok := rubiSizeMap[rubiSize{w: uint16(s.W), h: uint16(s.H)}]; ok {
 		return sz, nil
 	}
 	return 0, fmt.Errorf("Size %dx%d not found", s.W, s.H)
