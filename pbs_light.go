@@ -176,10 +176,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
 	defer cancel()
 
-	if glog.V(1) {
-		glog.Infof("Request for %d ad units on url %s by account %s", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID)
-	}
-
 	_, err = dataCache.Accounts().Get(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
@@ -283,6 +279,10 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			bid.NURL = ""
 			bid.Adm = ""
 		}
+	}
+
+	if glog.V(1) {
+		glog.Infof("Request for %d ad units on url %s by account %s got %d bids", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID, len(pbs_resp.Bids))
 	}
 
 	/*
