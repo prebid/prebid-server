@@ -57,7 +57,7 @@ $ go get github.com/prebid/prebid-server
 ### Running
 To compile a binary and run locally:
 ```
-$ go build .
+$ make build
 $ ./prebid-server -v 1 -logtostderr
 ```
 
@@ -82,7 +82,7 @@ go 1.8, glide) and compile an alpine compatible binary.
 
 ### Build prebid-server docker container
 ```
-$ docker build -t prebid-server .
+# make image
 ```
 
 ### Run container
