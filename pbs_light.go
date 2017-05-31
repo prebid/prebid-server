@@ -31,7 +31,6 @@ import (
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 )
 
@@ -75,7 +74,6 @@ var (
 	cookieDomain string
 )
 
-var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
 
@@ -196,7 +194,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ch := make(chan bidResult)
 	sentBids := 0
 	for _, bidder := range pbs_req.Bidders {
-		if ex, ok := exchanges[bidder.BidderCode]; ok {
+		if ex, ok := adapters.Get(bidder.BidderCode); ok {
 			ametrics := adapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
 			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
@@ -355,8 +353,8 @@ func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	forwardedIP := prebid.GetForwardedIP(req)
-	realIP := prebid.GetIP(req)
+	forwardedIP := pbs.GetForwardedIP(req)
+	realIP := pbs.GetIP(req)
 
 	fmt.Fprintf(w, "IP: %s\n", ip)
 	fmt.Fprintf(w, "Port: %s\n", port)
@@ -483,15 +481,9 @@ func serve(cfg *config.Configuration) error {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
-	exchanges = map[string]adapters.Adapter{
-		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
-		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
-		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].UserSyncURL),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+	// configure all of the adapters
+	if err := adapters.Configure(cfg.ExternalURL, cfg.Adapters); err != nil {
+		return err
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -507,16 +499,16 @@ func serve(cfg *config.Configuration) error {
 	accountMetrics = make(map[string]*AccountMetrics)
 
 	adapterMetrics = make(map[string]*AdapterMetrics)
-	for exchange := range exchanges {
-		a := AdapterMetrics{}
-		a.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.no_cookie_requests", exchange), metricsRegistry)
-		a.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.error_requests", exchange), metricsRegistry)
-		a.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.requests", exchange), metricsRegistry)
-		a.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.no_bid_requests", exchange), metricsRegistry)
-		a.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.timeout_requests", exchange), metricsRegistry)
-		a.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("adapter.%s.request_time", exchange), metricsRegistry)
-		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("adapter.%s.prices", exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		adapterMetrics[exchange] = &a
+	for exchange, _ := range adapters.Active {
+		adapterMetrics[exchange] = &AdapterMetrics{
+			NoCookieMeter:  metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.no_cookie_requests", exchange), metricsRegistry),
+			ErrorMeter:     metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.error_requests", exchange), metricsRegistry),
+			RequestMeter:   metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.requests", exchange), metricsRegistry),
+			NoBidMeter:     metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.no_bid_requests", exchange), metricsRegistry),
+			TimeoutMeter:   metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.timeout_requests", exchange), metricsRegistry),
+			RequestTimer:   metrics.GetOrRegisterTimer(fmt.Sprintf("adapter.%s.request_time", exchange), metricsRegistry),
+			PriceHistogram: metrics.GetOrRegisterHistogram(fmt.Sprintf("adapter.%s.prices", exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015)),
+		}
 	}
 
 	if cfg.Metrics.Host != "" {

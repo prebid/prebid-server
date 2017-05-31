@@ -1,4 +1,4 @@
-package adapters
+package indexExchange
 
 import (
 	"bytes"
@@ -10,30 +10,69 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/prebid-server/pbs"
-
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/openrtb_util"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-type IndexAdapter struct {
-	http         *HTTPAdapter
+// init will register the Adapter with our global exchanges
+func init() {
+	var a = NewAdapter()
+	adapters.Init("indexExchange", a)
+}
+
+func NewAdapter() *Adapter {
+	return &Adapter{
+		URI:  "http://ssp-sandbox.casalemedia.com/bidder?p=184932",
+		http: pbs.NewHTTPAdapter(pbs.DefaultHTTPAdapterConfig),
+	}
+}
+
+type Adapter struct {
+	http         *pbs.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
 
+// Use will set a shared Use(http *pbs.HTTPAdapter) (optional)
+func (a *Adapter) Use(http *pbs.HTTPAdapter) {
+	a.http = http
+}
+
+// Configure is required. It accepts an external url (required) and optional *config.Adapter
+// After Configure is run, the adapter will be registered as an active PBS exchange
+func (a *Adapter) Configure(externalURL string, config *config.Adapter) {
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
+	usersyncURL := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
+
+	a.usersyncInfo = &pbs.UsersyncInfo{
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		Type:        "redirect",
+		SupportCORS: false,
+	}
+
+	// if no configs are provided then we'll use the default values provided in init()
+	if config == nil {
+		return
+	}
+	return
+}
+
 /* Name - export adapter name */
-func (a *IndexAdapter) Name() string {
+func (a *Adapter) Name() string {
 	return "indexExchange"
 }
 
 // used for cookies and such
-func (a *IndexAdapter) FamilyName() string {
+func (a *Adapter) FamilyName() string {
 	return "indexExchange"
 }
 
-func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *Adapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
@@ -41,11 +80,11 @@ type indexParams struct {
 	SiteID int `json:"siteID"`
 }
 
-func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	if req.App != nil {
 		return nil, fmt.Errorf("Index doesn't support apps")
 	}
-	indexReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	indexReq := openrtb_util.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params indexParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -138,22 +177,4 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		}
 	}
 	return bids, nil
-}
-
-func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapter {
-	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
-	usersyncURI := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURI, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
-	return &IndexAdapter{
-		http:         a,
-		URI:          "http://ssp-sandbox.casalemedia.com/bidder?p=184932",
-		usersyncInfo: info,
-	}
 }

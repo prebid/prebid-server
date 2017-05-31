@@ -1,24 +1,22 @@
-package adapters
+package districtm
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/pbs"
-
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-func TestAppNexusInvalidCall(t *testing.T) {
+func TestDistrictMInvalidCall(t *testing.T) {
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	an.URI = "blah"
+	an := NewAdapter()
+	an.URI = "dummy"
 	s := an.Name()
 	if s == "" {
 		t.Fatal("Missing name")
@@ -33,7 +31,7 @@ func TestAppNexusInvalidCall(t *testing.T) {
 	}
 }
 
-func TestAppNexusTimeout(t *testing.T) {
+func TestDistrictMTimeout(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +40,7 @@ func TestAppNexusTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewAdapter()
 	an.URI = server.URL
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
@@ -70,7 +67,7 @@ func TestAppNexusTimeout(t *testing.T) {
 	}
 }
 
-func TestAppNexusInvalidJson(t *testing.T) {
+func TestDistrictMInvalidJson(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,8 +76,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewAdapter()
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -105,7 +101,7 @@ func TestAppNexusInvalidJson(t *testing.T) {
 	}
 }
 
-func TestAppNexusInvalidStatusCode(t *testing.T) {
+func TestDistrictMInvalidStatusCode(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -115,8 +111,7 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewAdapter()
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -142,8 +137,7 @@ func TestAppNexusInvalidStatusCode(t *testing.T) {
 }
 
 func TestMissingPlacementId(t *testing.T) {
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewAdapter()
 	an.URI = "dummy"
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -168,7 +162,7 @@ func TestMissingPlacementId(t *testing.T) {
 	}
 }
 
-func TestAppNexusBasicResponse(t *testing.T) {
+func TestDistrictMBasicResponse(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -202,8 +196,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
+	an := NewAdapter()
 	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -232,16 +225,18 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 }
 
-func TestAppNexusUserSyncInfo(t *testing.T) {
+func TestDistrictMUserSyncInfo(t *testing.T) {
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
+	an := NewAdapter()
+	an.Configure("localhost", nil)
+
+	if an.GetUsersyncInfo().URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}
-	if an.usersyncInfo.Type != "redirect" {
+	if an.GetUsersyncInfo().Type != "redirect" {
 		t.Fatalf("should be redirect")
 	}
-	if an.usersyncInfo.SupportCORS != false {
+	if an.GetUsersyncInfo().SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
 }

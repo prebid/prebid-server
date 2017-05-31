@@ -1,4 +1,4 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
@@ -10,34 +10,66 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+
+	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/openrtb_util"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-type FacebookAdapter struct {
-	http         *HTTPAdapter
+// init will register the Adapter with our global exchanges
+func init() {
+	var a = NewAdapter()
+	adapters.Init("audienceNetwork", a)
+}
+
+func NewAdapter() *Adapter {
+	return &Adapter{
+		URI:  "https://an.facebook.com/placementbid.ortb",
+		http: pbs.NewHTTPAdapter(pbs.DefaultHTTPAdapterConfig),
+	}
+}
+
+type Adapter struct {
+	http         *pbs.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 	platformJSON openrtb.RawJSON
 }
 
+// Use will set a shared Use(http *pbs.HTTPAdapter) (optional)
+func (a *Adapter) Use(http *pbs.HTTPAdapter) {
+	a.http = http
+}
+
+// Configure is required. We require both an ExternalURl and *config.Adapter (so we can configre the PlatformID and UserSync URL)
+func (a *Adapter) Configure(externalURL string, config *config.Adapter) {
+	a.usersyncInfo = &pbs.UsersyncInfo{
+		URL:         config.UserSyncURL,
+		Type:        "redirect",
+		SupportCORS: false,
+	}
+	a.platformJSON = openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", config.PlatformID))
+}
+
 /* Name - export adapter name */
-func (a *FacebookAdapter) Name() string {
-	return "audienceNetwork"
+func (a *Adapter) Name() string {
+	return "facebook"
 }
 
 // used for cookies and such
-func (a *FacebookAdapter) FamilyName() string {
+func (a *Adapter) FamilyName() string {
 	return "audienceNetwork"
 }
 
 // Facebook likes to parallelize to minimize latency
-func (a *FacebookAdapter) SplitAdUnits() bool {
+func (a *Adapter) SplitAdUnits() bool {
 	return true
 }
 
-func (a *FacebookAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *Adapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
@@ -52,14 +84,16 @@ type fbResult struct {
 	Error        error
 }
 
-func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result fbResult, err error) {
+func (a *Adapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result fbResult, err error) {
 	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
+	if err != nil {
+		return
+	}
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
 
-	anResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if e != nil {
-		err = e
+	anResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
+	if err != nil {
 		return
 	}
 
@@ -97,10 +131,10 @@ func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 	return
 }
 
-func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
-		fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+		fbReq := openrtb_util.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 		fbReq.Ext = a.platformJSON
 
 		// only grab this ad unit
@@ -175,21 +209,4 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 	return bids, nil
-}
-
-func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
-	a := NewHTTPAdapter(config)
-
-	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
-	return &FacebookAdapter{
-		http:         a,
-		URI:          "https://an.facebook.com/placementbid.ortb",
-		usersyncInfo: info,
-		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
-	}
 }
