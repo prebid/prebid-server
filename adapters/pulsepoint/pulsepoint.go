@@ -140,6 +140,9 @@ func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBS
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 

@@ -124,6 +124,9 @@ func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBS
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -169,8 +172,7 @@ func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBS
 			if bidID == "" {
 				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
 			}
-
-			pbid := pbs.PBSBid{
+			bids = append(bids, &pbs.PBSBid{
 				BidID:       bidID,
 				AdUnitCode:  bid.ImpID,
 				BidderCode:  bidder.BidderCode,
@@ -180,8 +182,7 @@ func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBS
 				Width:       bid.W,
 				Height:      bid.H,
 				DealId:      bid.DealID,
-			}
-			bids = append(bids, &pbid)
+			})
 		}
 	}
 

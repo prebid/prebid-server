@@ -85,7 +85,7 @@ type fbResult struct {
 }
 
 func (a *Adapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result fbResult, err error) {
-	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
+	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	if err != nil {
 		return
 	}
@@ -100,7 +100,10 @@ func (a *Adapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON byte
 	result.statusCode = anResp.StatusCode
 
 	defer anResp.Body.Close()
-	body, _ := ioutil.ReadAll(anResp.Body)
+	body, err := ioutil.ReadAll(anResp.Body)
+	if err != nil {
+		return
+	}
 	result.responseBody = string(body)
 
 	if anResp.StatusCode != 200 {

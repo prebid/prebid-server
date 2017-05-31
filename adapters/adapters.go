@@ -12,6 +12,7 @@ var all map[string]pbs.Adapter
 // Active allows us to access all of the active adapters that have been configured
 var Active map[string]pbs.Adapter
 
+// init will ensure that we are not appending to a nil map
 func init() {
 	if Active == nil {
 		Active = map[string]pbs.Adapter{}
