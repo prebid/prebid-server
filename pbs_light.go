@@ -341,30 +341,30 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // https://blog.golang.org/context/userip/userip.go
 func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 	if ua := useragent.Parse(req.Header.Get("User-Agent")); ua != nil {
-		fmt.Fprintf(w, "User Agent: %v", ua)
+		fmt.Fprintf(w, "User Agent: %v\n", ua)
 	}
 	ip, port, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
-		fmt.Fprintf(w, "userip: %q is not IP:port", req.RemoteAddr)
+		fmt.Fprintf(w, "userip: %q is not IP:port\n", req.RemoteAddr)
 	}
 
 	userIP := net.ParseIP(ip)
 	if userIP == nil {
 		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
-		fmt.Fprintf(w, "userip: %q is not IP:port", req.RemoteAddr)
+		fmt.Fprintf(w, "userip: %q is not IP:port\n", req.RemoteAddr)
 		return
 	}
 
 	forwardedIP := prebid.GetForwardedIP(req)
 	realIP := prebid.GetIP(req)
 
-	fmt.Fprintf(w, "<p>IP: %s</p>", ip)
-	fmt.Fprintf(w, "<p>Port: %s</p>", port)
-	fmt.Fprintf(w, "<p>Forwarded IP: %s</p>", forwardedIP)
-	fmt.Fprintf(w, "<p>Real IP: %s</p>", realIP)
+	fmt.Fprintf(w, "IP: %s\n", ip)
+	fmt.Fprintf(w, "Port: %s\n", port)
+	fmt.Fprintf(w, "Forwarded IP: %s\n", forwardedIP)
+	fmt.Fprintf(w, "Real IP: %s\n", realIP)
 
 	for k, v := range req.Header {
-		fmt.Fprintf(w, "<p>%s: %s</p>", k, v)
+		fmt.Fprintf(w, "%s: %s\n", k, v)
 	}
 
 }
