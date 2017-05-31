@@ -1,4 +1,4 @@
-package adapters
+package pulsepoint
 
 import (
 	"bytes"
@@ -12,28 +12,69 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+
+	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/openrtb_util"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-type PulsePointAdapter struct {
-	http         *HTTPAdapter
+// init will register the Adapter with our global exchanges
+func init() {
+	var a = NewAdapter()
+	adapters.Init("pulsepoint", a)
+}
+
+func NewAdapter() *Adapter {
+	return &Adapter{
+		URI:  "http://bid.contextweb.com/header/s/ortb/prebid-s2s",
+		http: pbs.NewHTTPAdapter(pbs.DefaultHTTPAdapterConfig),
+	}
+}
+
+type Adapter struct {
+	http         *pbs.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
 
+// Use will set a shared Use(http *pbs.HTTPAdapter) (optional)
+func (a *Adapter) Use(http *pbs.HTTPAdapter) {
+	a.http = http
+}
+
+// Configure is required. It accepts an external url (required) and optional *config.Adapter
+// After Configure is run, the adapter will be registered as an active PBS exchange
+func (a *Adapter) Configure(externalURL string, config *config.Adapter) {
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
+	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
+
+	a.usersyncInfo = &pbs.UsersyncInfo{
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		Type:        "redirect",
+		SupportCORS: false,
+	}
+
+	// if no configs are provided then we'll use the default values provided in init()
+	if config == nil {
+		return
+	}
+	return
+}
+
 // adapter name
-func (a *PulsePointAdapter) Name() string {
+func (a *Adapter) Name() string {
 	return "pulsepoint"
 }
 
 // used for cookies and such
-func (a *PulsePointAdapter) FamilyName() string {
+func (a *Adapter) FamilyName() string {
 	return "pulsepoint"
 }
 
-func (a *PulsePointAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *Adapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
@@ -44,8 +85,8 @@ type PulsepointParams struct {
 	AdSize      string `json:"cf"`
 }
 
-func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	ppReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	ppReq := openrtb_util.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params PulsepointParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -99,6 +140,9 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -157,22 +201,4 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	return bids, nil
-}
-
-func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
-	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
-	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
-	return &PulsePointAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
-	}
 }

@@ -1,19 +1,21 @@
-package adapters
+package pbs
 
 import (
 	"context"
 	"crypto/tls"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/ssl"
 )
 
 type Adapter interface {
-	Name() string
-	FamilyName() string
-	GetUsersyncInfo() *pbs.UsersyncInfo
-	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
+	Configure(string, *config.Adapter) // Configure is required
+	Name() string                      // Name should be unique
+	FamilyName() string                // FamilyName is used for cookies
+	GetUsersyncInfo() *UsersyncInfo
+	Call(ctx context.Context, req *PBSRequest, bidder *PBSBidder) (PBSBidSlice, error)
 }
 
 type HTTPAdapterConfig struct {

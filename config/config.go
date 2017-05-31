@@ -21,13 +21,15 @@ type Configuration struct {
 }
 
 type Adapter struct {
-	Endpoint    string `mapstructure:"endpoint"` // Required
-	UserSyncURL string `mapstructure:"usersync_url"`
-	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	XAPI        struct {
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-	} `mapstructure:"xapi"` // needed for Rubicon
+	Endpoint    string      `mapstructure:"endpoint"`     // optional (useful for testing)
+	UserSyncURL string      `mapstructure:"usersync_url"` // optional (useful for testing)
+	PlatformID  string      `mapstructure:"platform_id"`  // needed for Facebook
+	XAPI        AdapterXAPI `mapstructure:"xapi"`         // needed for Rubicon
+}
+
+type AdapterXAPI struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type Metrics struct {

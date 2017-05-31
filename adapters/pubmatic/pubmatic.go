@@ -1,4 +1,4 @@
-package adapters
+package pubmatic
 
 import (
 	"bytes"
@@ -10,28 +10,69 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+
+	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/openrtb_util"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-type PubmaticAdapter struct {
-	http         *HTTPAdapter
+// init will register the Adapter with our global exchanges
+func init() {
+	var a = NewAdapter()
+	adapters.Init("pubmatic", a)
+}
+
+func NewAdapter() *Adapter {
+	return &Adapter{
+		URI:  "http://openbid-useast.pubmatic.com/translator?",
+		http: pbs.NewHTTPAdapter(pbs.DefaultHTTPAdapterConfig),
+	}
+}
+
+type Adapter struct {
+	http         *pbs.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
 
+// Use will set a shared Use(http *pbs.HTTPAdapter) (optional)
+func (a *Adapter) Use(http *pbs.HTTPAdapter) {
+	a.http = http
+}
+
+// Configure is required. It accepts an external url (required) and optional *config.Adapter
+// After Configure is run, the adapter will be registered as an active PBS exchange
+func (a *Adapter) Configure(externalURL string, config *config.Adapter) {
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
+	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
+
+	a.usersyncInfo = &pbs.UsersyncInfo{
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		Type:        "iframe",
+		SupportCORS: false,
+	}
+
+	// if no configs are provided then we'll use the default values provided in init()
+	if config == nil {
+		return
+	}
+	return
+}
+
 /* Name - export adapter name */
-func (a *PubmaticAdapter) Name() string {
+func (a *Adapter) Name() string {
 	return "Pubmatic"
 }
 
 // used for cookies and such
-func (a *PubmaticAdapter) FamilyName() string {
+func (a *Adapter) FamilyName() string {
 	return "pubmatic"
 }
 
-func (a *PubmaticAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *Adapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
@@ -40,8 +81,8 @@ type pubmaticParams struct {
 	AdSlot      string `json:"adSlot"`
 }
 
-func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	pbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	pbReq := openrtb_util.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params pubmaticParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -76,6 +117,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.AddCookie(&http.Cookie{
@@ -126,7 +170,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
 			}
 
-			pbid := pbs.PBSBid{
+			bids = append(bids, &pbs.PBSBid{
 				BidID:       bidID,
 				AdUnitCode:  bid.ImpID,
 				BidderCode:  bidder.BidderCode,
@@ -136,28 +180,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				Width:       bid.W,
 				Height:      bid.H,
 				DealId:      bid.DealID,
-			}
-			bids = append(bids, &pbid)
+			})
 		}
 	}
 
 	return bids, nil
-}
-
-func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
-	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
-	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "iframe",
-		SupportCORS: false,
-	}
-
-	return &PubmaticAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
-	}
 }

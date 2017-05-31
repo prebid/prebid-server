@@ -14,7 +14,6 @@ import (
 
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/prebid"
 )
 
 const MAX_BIDDERS = 8
@@ -135,7 +134,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
-		pbsReq.Device.IP = prebid.GetIP(r)
+		pbsReq.Device.IP = GetIP(r)
 
 		pbsReq.Url = r.Header.Get("Referer") // must be specified in the header
 		// TODO: this should explicitly put us in test mode
@@ -178,7 +177,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		pbsReq.IsDebug = true
 	}
 
-	if prebid.IsSecure(r) {
+	if IsSecure(r) {
 		pbsReq.Secure = 1
 	}
 

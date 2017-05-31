@@ -1,4 +1,4 @@
-package prebid
+package pbs
 
 import (
 	"net"

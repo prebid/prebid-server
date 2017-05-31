@@ -1,24 +1,22 @@
-package adapters
+package indexExchange
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/pbs"
-
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-func TestPubmaticInvalidCall(t *testing.T) {
+func TestIndexInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "blah", "localhost")
-
+	an := NewAdapter()
+	an.URI = "blah"
 	s := an.Name()
 	if s == "" {
 		t.Fatal("Missing name")
@@ -29,11 +27,11 @@ func TestPubmaticInvalidCall(t *testing.T) {
 	pbBidder := pbs.PBSBidder{}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error received for invalid request")
+		t.Fatalf("No error recived for invalid request")
 	}
 }
 
-func TestPubmaticTimeout(t *testing.T) {
+func TestIndexTimeout(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +40,8 @@ func TestPubmaticTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewAdapter()
+	an.URI = server.URL
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -59,17 +57,17 @@ func TestPubmaticTimeout(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"12\"}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil || err != context.DeadlineExceeded {
-		t.Fatalf("No timeout received for timed out request: %v", err)
+		t.Fatalf("Invalid timeout error received")
 	}
 }
 
-func TestPubmaticInvalidJson(t *testing.T) {
+func TestIndexInvalidJson(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +76,8 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewAdapter()
+	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -93,7 +91,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"12\"}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
@@ -103,7 +101,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	}
 }
 
-func TestPubmaticInvalidStatusCode(t *testing.T) {
+func TestIndexInvalidStatusCode(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -113,8 +111,8 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewAdapter()
+	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -128,7 +126,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"12\"}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
@@ -138,7 +136,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	}
 }
 
-func TestPubmaticMissingPublisherId(t *testing.T) {
+func TestIndexMissingSiteId(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -148,8 +146,8 @@ func TestPubmaticMissingPublisherId(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewAdapter()
+	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -163,52 +161,16 @@ func TestPubmaticMissingPublisherId(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"adSlot\": \"12\"}"),
 			},
 		},
 	}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error received for missing publisherId")
+		t.Fatalf("No error received for missing siteID")
 	}
 }
 
-func TestPubmaticMissingAdSlot(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Send 404
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		}),
-	)
-	defer server.Close()
-
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			{
-				Code: "unitCode",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Params: json.RawMessage("{\"PublisherId\": \"10\"}"),
-			},
-		},
-	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for missing adSlot")
-	}
-}
-
-func TestPubmaticBasicResponse(t *testing.T) {
+func TestIndexBasicResponse(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -242,8 +204,8 @@ func TestPubmaticBasicResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewAdapter()
+	an.URI = server.URL
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -258,7 +220,7 @@ func TestPubmaticBasicResponse(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"12\"}"),
+				Params: json.RawMessage("{\"siteID\": 12}"),
 			},
 		},
 	}
@@ -271,17 +233,17 @@ func TestPubmaticBasicResponse(t *testing.T) {
 	}
 }
 
-func TestPubmaticUserSyncInfo(t *testing.T) {
+func TestIndexUserSyncInfo(t *testing.T) {
 
-	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
-	if an.usersyncInfo.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
+	an := NewAdapter()
+	an.Configure("localhost", nil)
+	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D__UID__" {
 		t.Fatalf("should have matched")
 	}
-	if an.usersyncInfo.Type != "iframe" {
-		t.Fatalf("should be iframe")
+	if an.usersyncInfo.Type != "redirect" {
+		t.Fatalf("should be redirect")
 	}
 	if an.usersyncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
-
 }

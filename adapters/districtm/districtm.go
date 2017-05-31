@@ -1,4 +1,4 @@
-package adapters
+package districtm
 
 import (
 	"bytes"
@@ -10,30 +10,70 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/prebid-server/pbs"
-
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/openrtb_util"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-type AppNexusAdapter struct {
-	http         *HTTPAdapter
+// init will register the Adapter with our global exchanges
+func init() {
+	var a = NewAdapter()
+	adapters.Init("districtm", a)
+}
+
+func NewAdapter() *Adapter {
+	return &Adapter{
+		URI:  "http://ib.adnxs.com/openrtb2",
+		http: pbs.NewHTTPAdapter(pbs.DefaultHTTPAdapterConfig),
+	}
+}
+
+// Adapter
+type Adapter struct {
+	http         *pbs.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
 
-/* Name - export adapter name */
-func (a *AppNexusAdapter) Name() string {
-	return "AppNexus"
+// Use will set a shared Use(http *pbs.HTTPAdapter) (optional)
+func (a *Adapter) Use(http *pbs.HTTPAdapter) {
+	a.http = http
+}
+
+// Configure is required. It accepts an external url (required) and optional *config.Adapter
+// After Configure is run, the adapter will be registered as an active PBS exchange
+func (a *Adapter) Configure(externalURL string, config *config.Adapter) {
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
+	usersyncURL := "//ib.adnxs.com/getuid?"
+
+	a.usersyncInfo = &pbs.UsersyncInfo{
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		Type:        "redirect",
+		SupportCORS: false,
+	}
+
+	// if no configs are provided then we'll use the default values provided in init()
+	if config == nil {
+		return
+	}
+	return
+}
+
+// Name needs to be unique per adapter
+func (a *Adapter) Name() string {
+	return "DistrictM"
 }
 
 // used for cookies and such
-func (a *AppNexusAdapter) FamilyName() string {
+func (a *Adapter) FamilyName() string {
 	return "adnxs"
 }
 
-func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *Adapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
@@ -51,8 +91,8 @@ type appnexusImpExt struct {
 	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
 }
 
-func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	anReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	anReq := openrtb_util.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 	for i, unit := range bidder.AdUnits {
 		var params appnexusParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -84,6 +124,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -130,7 +173,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
 			}
 
-			pbid := pbs.PBSBid{
+			bids = append(bids, &pbs.PBSBid{
 				BidID:       bidID,
 				AdUnitCode:  bid.ImpID,
 				BidderCode:  bidder.BidderCode,
@@ -140,29 +183,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				Width:       bid.W,
 				Height:      bid.H,
 				DealId:      bid.DealID,
-			}
-			bids = append(bids, &pbid)
+			})
 		}
 	}
 
 	return bids, nil
-}
-
-func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexusAdapter {
-	a := NewHTTPAdapter(config)
-
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
-	usersyncURL := "//ib.adnxs.com/getuid?"
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
-	return &AppNexusAdapter{
-		http:         a,
-		URI:          "http://ib.adnxs.com/openrtb2",
-		usersyncInfo: info,
-	}
 }

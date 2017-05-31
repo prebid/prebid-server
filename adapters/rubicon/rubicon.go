@@ -1,4 +1,4 @@
-package adapters
+package rubicon
 
 import (
 	"bytes"
@@ -9,32 +9,70 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/prebid/prebid-server/pbs"
-
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/openrtb_util"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
-type RubiconAdapter struct {
-	http         *HTTPAdapter
+// init will register the Adapter with our global exchanges
+func init() {
+	var a = NewAdapter()
+	adapters.Init("rubicon", a)
+}
+
+func NewAdapter() *Adapter {
+	return &Adapter{
+		URI:  "http://staged-by.rubiconproject.com/a/api/exchange.json",
+		http: pbs.NewHTTPAdapter(pbs.DefaultHTTPAdapterConfig),
+	}
+}
+
+type Adapter struct {
+	http         *pbs.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 	XAPIUsername string
 	XAPIPassword string
 }
 
+// Use will set a shared Use(http *pbs.HTTPAdapter) (optional)
+func (a *Adapter) Use(http *pbs.HTTPAdapter) {
+	a.http = http
+}
+
+// Configure is required. We require both an ExternalURl and *config.Adapter (so we can configre the Username and Password)
+func (a *Adapter) Configure(externalURL string, config *config.Adapter) {
+	usersyncURL := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
+
+	if config.UserSyncURL != "" {
+		usersyncURL = config.UserSyncURL
+	}
+
+	a.XAPIUsername = config.XAPI.Username
+	a.XAPIPassword = config.XAPI.Password
+
+	a.usersyncInfo = &pbs.UsersyncInfo{
+		URL:         usersyncURL,
+		Type:        "redirect",
+		SupportCORS: false,
+	}
+}
+
 /* Name - export adapter name */
-func (a *RubiconAdapter) Name() string {
+func (a *Adapter) Name() string {
 	return "Rubicon"
 }
 
 // used for cookies and such
-func (a *RubiconAdapter) FamilyName() string {
+func (a *Adapter) FamilyName() string {
 	return "rubicon"
 }
 
-func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *Adapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
@@ -155,8 +193,8 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	return
 }
 
-func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	rpReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+func (a *Adapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	rpReq := openrtb_util.MakeOpenRTBGeneric(req, bidder, a.FamilyName())
 
 	for i, unit := range bidder.AdUnits {
 		var params rubiconParams
@@ -213,6 +251,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	if err != nil {
+		return nil, err
+	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.Header.Add("User-Agent", "prebid-server/1.0")
@@ -260,7 +301,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
 			}
 
-			pbid := pbs.PBSBid{
+			bids = append(bids, &pbs.PBSBid{
 				BidID:       bidID,
 				AdUnitCode:  bid.ImpID,
 				BidderCode:  bidder.BidderCode,
@@ -270,28 +311,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				Width:       bid.W,
 				Height:      bid.H,
 				DealId:      bid.DealID,
-			}
-			bids = append(bids, &pbid)
+			})
 		}
 	}
 
 	return bids, nil
-}
-
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
-	a := NewHTTPAdapter(config)
-
-	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
-	return &RubiconAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
-		XAPIUsername: xuser,
-		XAPIPassword: xpass,
-	}
 }

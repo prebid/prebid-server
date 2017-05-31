@@ -1,21 +1,20 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/pbs"
-
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 type tagInfo struct {
@@ -173,8 +172,8 @@ func TestFacebookBasicResponse(t *testing.T) {
 		bid:         3.22,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an := NewAdapter()
+	an.Configure("localhost", &config.Adapter{PlatformID: fmt.Sprintf("%d", fbdata.partnerID), UserSyncURL: ""})
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -286,7 +285,9 @@ func TestFacebookBasicResponse(t *testing.T) {
 func TestFacebookUserSyncInfo(t *testing.T) {
 	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
 
-	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", url)
+	an := NewAdapter()
+	an.Configure("localhost", &config.Adapter{PlatformID: "partnerId", UserSyncURL: url})
+
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}

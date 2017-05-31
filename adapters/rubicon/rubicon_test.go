@@ -1,21 +1,20 @@
-package adapters
+package rubicon
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/pbs"
-
-	"fmt"
-
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 type rubiTagInfo struct {
@@ -199,8 +198,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 		bid:    3.22,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "localhost/usersync")
+	an := NewAdapter()
+
+	an.Configure("localhost/usersync", &config.Adapter{XAPI: config.AdapterXAPI{Username: rubidata.xapiuser, Password: rubidata.xapipass}})
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -303,7 +303,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 func TestRubiconUserSyncInfo(t *testing.T) {
 	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
-	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", url)
+	an := NewAdapter()
+	an.Configure("localhost", &config.Adapter{UserSyncURL: url, XAPI: config.AdapterXAPI{Username: rubidata.xapiuser, Password: rubidata.xapipass}})
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}
