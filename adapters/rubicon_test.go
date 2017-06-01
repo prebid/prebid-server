@@ -352,8 +352,14 @@ func TestParseSizes(t *testing.T) {
 		},
 	}
 	primary, alt, err = parseRubiconSizes(sizes)
-	if err == nil {
-		t.Errorf("Should have thrown error for invalid size 1111x1111")
+	if err != nil {
+		t.Errorf("Shouldn't have thrown error for invalid size 1111x1111 since we still have a valid one")
+	}
+	if primary != 15 {
+		t.Errorf("Primary %d != 15", primary)
+	}
+	if len(alt) != 0 {
+		t.Fatalf("Alt should be empty")
 	}
 }
 
