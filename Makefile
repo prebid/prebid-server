@@ -15,22 +15,26 @@ all:
 install:
 	curl https://glide.sh/get | sh
 
-# debs will clean out the vendor directory and use glide for a fresh install
+# deps will clean out the vendor directory and use glide for a fresh install
 deps:
 	-rm -rf vendor
 	glide install
 
 # test will ensure that all of our dependencies are available and run validate.sh
-test:
-	make deps
+test: deps
 	./validate.sh
 
+	# TODO: when adapters are in their own packages we can enable adapter-specific testing by passing the "adapter" argument
+	#ifeq ($(adapter),"all")
+	#	./validate.sh
+	#else
+	#	go test github.com/prebid/prebid-server/adapters/$(adapter) -bench=.
+	#endif
+
 # build will ensure all of our tests pass and then build the go binary
-build:
-	make test
+build: test
 	go build .
 
 # image will build a docker image
-image:
-	make build
+image: build
 	docker build -t prebid-server .
