@@ -135,22 +135,20 @@ func lookupSize(s openrtb.Format) (int, error) {
 }
 
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
-	if len(sizes) < 1 {
-		err = fmt.Errorf("No sizes")
-		return
-	}
-	primary, err = lookupSize(sizes[0])
-	if err != nil {
-		return
-	}
-	if len(sizes) > 1 {
-		alt = make([]int, len(sizes)-1)
-		for i := 1; i < len(sizes); i++ {
-			alt[i-1], err = lookupSize(sizes[i])
-			if err != nil {
-				return
-			}
+	alt = make([]int, 0, len(sizes)-1)
+	for _, size := range sizes {
+		rs, lerr := lookupSize(size)
+		if lerr != nil {
+			continue
 		}
+		if primary == 0 {
+			primary = rs
+		} else {
+			alt = append(alt, rs)
+		}
+	}
+	if primary == 0 {
+		err = fmt.Errorf("No valid sizes")
 	}
 	return
 }
