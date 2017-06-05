@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"github.com/prebid/prebid-server/pbs"
 
@@ -86,10 +87,12 @@ type rubiSize struct {
 var rubiSizeMap = map[rubiSize]int{
 	rubiSize{w: 468, h: 60}:    1,
 	rubiSize{w: 728, h: 90}:    2,
+	rubiSize{w: 728, h: 91}:    2,
 	rubiSize{w: 120, h: 600}:   8,
 	rubiSize{w: 160, h: 600}:   9,
 	rubiSize{w: 300, h: 600}:   10,
 	rubiSize{w: 300, h: 250}:   15,
+	rubiSize{w: 300, h: 251}:   15,
 	rubiSize{w: 336, h: 280}:   16,
 	rubiSize{w: 300, h: 100}:   19,
 	rubiSize{w: 980, h: 120}:   31,
@@ -276,8 +279,25 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
+func appendTrackerToUrl(uri string) (res string) {
+	// Append integration method. Adapter init happens once
+	urlObject, err := url.Parse(uri)
+	// No other exception throwing mechanism in this stack, so ignoring parse errors.
+	if err == nil {
+		values := urlObject.Query()
+		values.Add("tk_xint", "prebid")
+		urlObject.RawQuery = values.Encode()
+		res = urlObject.String()
+	} else {
+		res = uri
+	}
+	return
+}
+
 func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
 	a := NewHTTPAdapter(config)
+
+	uri = appendTrackerToUrl(uri)
 
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,
