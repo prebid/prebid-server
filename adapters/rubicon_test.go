@@ -18,6 +18,11 @@ import (
 	"github.com/prebid/openrtb"
 )
 
+type rubiAppendTrackerUrlTestScenario struct {
+	source   string
+	expected string
+}
+
 type rubiTagInfo struct {
 	code    string
 	zoneID  int
@@ -96,7 +101,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 15 { // 300x250
-			http.Error(w, fmt.Sprintf("Alt size ID isn't 10"), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Alt size ID isn't 15"), http.StatusInternalServerError)
 			return
 		}
 		if bix.RP.MIME != "text/html" {
@@ -352,6 +357,7 @@ func TestParseSizes(t *testing.T) {
 		},
 	}
 	primary, alt, err = parseRubiconSizes(sizes)
+
 	if err != nil {
 		t.Errorf("Shouldn't have thrown error for invalid size 1111x1111 since we still have a valid one")
 	}
@@ -359,7 +365,45 @@ func TestParseSizes(t *testing.T) {
 		t.Errorf("Primary %d != 15", primary)
 	}
 	if len(alt) != 0 {
-		t.Fatalf("Alt should be empty")
+		t.Fatalf("Alt len %d != 0", len(alt))
+	}
+
+	sizes = []openrtb.Format{
+		{
+			W: 300,
+			H: 250,
+		},
+	}
+	primary, alt, err = parseRubiconSizes(sizes)
+
+	if err != nil {
+		t.Errorf("Parsing error: %v", err)
+	}
+	if primary != 15 {
+		t.Errorf("Primary %d != 15", primary)
+	}
+	if len(alt) != 0 {
+		t.Fatalf("Alt len %d != 0", len(alt))
+	}
+}
+
+func TestAppendTracker(t *testing.T) {
+	testScenarios := []rubiAppendTrackerUrlTestScenario{
+		{
+			source:   "http://test.url/",
+			expected: "http://test.url/?tk_xint=prebid",
+		},
+		{
+			source:   "http://test.url/?hello=true",
+			expected: "http://test.url/?hello=true&tk_xint=prebid",
+		},
+	}
+
+	for _, scenario := range testScenarios {
+		res := appendTrackerToUrl(scenario.source)
+		if res != scenario.expected {
+			t.Fatalf("Failed to convert '%s' to '%s'", res, scenario.expected)
+		}
 	}
 }
 
