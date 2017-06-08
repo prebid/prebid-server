@@ -78,6 +78,8 @@ datacache:
   cache_size: 10000000
   ttl_seconds: 3600
 adapters:
+  indexExchange:
+    endpoint: http://ixtest.com/api
   rubicon:
     endpoint: http://rubitest.com/api
     usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
@@ -91,54 +93,55 @@ adapters:
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
-    if a != b {
-        t.Errorf("%s: %s != %s", key, a, b)
-    }
+	if a != b {
+		t.Errorf("%s: %s != %s", key, a, b)
+	}
 }
 
 func cmpInts(t *testing.T, key string, a int, b int) {
-    if a != b {
-        t.Errorf("%s: %d != %d", key, a, b)
-    }
+	if a != b {
+		t.Errorf("%s: %d != %d", key, a, b)
+	}
 }
 
 func TestFullConfig(t *testing.T) {
-    viper.SetConfigType("yaml")
-    viper.ReadConfig(bytes.NewBuffer(fullConfig))
+	viper.SetConfigType("yaml")
+	viper.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := config.New()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-    cmpStrings(t, "cookie domain", cfg.CookieDomain, "adnxs.com")
-    cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid.adnxs.com/")
-    cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
-    cmpInts(t, "port", cfg.Port, 1234)
-    cmpInts(t, "admin_port", cfg.AdminPort, 5678)
-    if cfg.DefaultTimeout != 123 {
-        t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
-    }
-    cmpStrings(t, "prebid_cache_url", cfg.CacheURL, "http://prebidcache.net/test/a1?qs=something")
-    if cfg.RequireUUID2 != true {
-        t.Errorf("RequireUUID2 was false")
-    }
-    cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
-    cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
-    cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
-    cmpStrings(t, "metrics.username", cfg.Metrics.Username, "admin")
-    cmpStrings(t, "metrics.password", cfg.Metrics.Password, "admin1324")
-    cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
-    cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
-    cmpStrings(t, "datacache.dbname", cfg.DataCache.Database, "pbsdb")
-    cmpStrings(t, "datacache.host", cfg.DataCache.Host, "postgres.internal")
-    cmpStrings(t, "datacache.user", cfg.DataCache.Username, "dbadmin")
-    cmpStrings(t, "datacache.password", cfg.DataCache.Password, "db2342")
-    cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
-    cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
-    cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
-    cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
-    cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters["rubicon"].XAPI.Username, "rubiuser")
-    cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters["rubicon"].XAPI.Password, "rubipw23")
-    cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
-    cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
-    cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "cookie domain", cfg.CookieDomain, "adnxs.com")
+	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid.adnxs.com/")
+	cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
+	cmpInts(t, "port", cfg.Port, 1234)
+	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
+	if cfg.DefaultTimeout != 123 {
+		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
+	}
+	cmpStrings(t, "prebid_cache_url", cfg.CacheURL, "http://prebidcache.net/test/a1?qs=something")
+	if cfg.RequireUUID2 != true {
+		t.Errorf("RequireUUID2 was false")
+	}
+	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
+	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
+	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
+	cmpStrings(t, "metrics.username", cfg.Metrics.Username, "admin")
+	cmpStrings(t, "metrics.password", cfg.Metrics.Password, "admin1324")
+	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
+	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
+	cmpStrings(t, "datacache.dbname", cfg.DataCache.Database, "pbsdb")
+	cmpStrings(t, "datacache.host", cfg.DataCache.Host, "postgres.internal")
+	cmpStrings(t, "datacache.user", cfg.DataCache.Username, "dbadmin")
+	cmpStrings(t, "datacache.password", cfg.DataCache.Password, "db2342")
+	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
+	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
+	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
+	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
+	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
+	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters["rubicon"].XAPI.Username, "rubiuser")
+	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters["rubicon"].XAPI.Password, "rubipw23")
+	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
+	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
+	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
 }
