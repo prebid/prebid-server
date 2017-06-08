@@ -140,7 +140,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	return bids, nil
 }
 
-func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapter {
+func NewIndexAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *IndexAdapter {
 	a := NewHTTPAdapter(config)
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
 	usersyncURI := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
@@ -153,7 +153,7 @@ func NewIndexAdapter(config *HTTPAdapterConfig, externalURL string) *IndexAdapte
 
 	return &IndexAdapter{
 		http:         a,
-		URI:          "http://ssp-sandbox.casalemedia.com/bidder?p=184932",
+		URI:          uri,
 		usersyncInfo: info,
 	}
 }
