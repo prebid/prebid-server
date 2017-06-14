@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
-	"github.com/xojoc/useragent"
+	"xojoc.pw/useragent" // don't import from github: https://github.com/xojoc/useragent/blob/master/parse.go#L4
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"

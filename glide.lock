@@ -1,5 +1,5 @@
-hash: 2b039748d5f160374a2cf8cf53b90151551a7fb319ef5df9e87a56cdcfe3cc2d
-updated: 2017-05-29T11:42:46.307695035-04:00
+hash: a0854a5146168c8807716290f6d4ea09cc04d6f7abd614c067754842fc4716ca
+updated: 2017-06-14T11:49:48.515999944-07:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -36,6 +36,8 @@ imports:
   version: 8c199fb6259ffc1af525cc3ad52ee60ba8359669
 - name: github.com/lib/pq
   version: 2704adc878c21e1329f46f6e56a1c387d788ff94
+  subpackages:
+  - oid
 - name: github.com/magiconair/properties
   version: 51463bfca2576e06c62a8504b5c0f06d61312647
 - name: github.com/mitchellh/mapstructure
@@ -74,8 +76,6 @@ imports:
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
   version: a55c211c418162597a32c74c7230f81adb5ad616
-- name: github.com/xojoc/useragent
-  version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
 - name: golang.org/x/net
   version: 84f0e6f92b10139f986b1756e149a7d9de270cdc
   subpackages:
@@ -95,6 +95,8 @@ imports:
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+- name: xojoc.pw/useragent
+  version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
 testImports:
 - name: github.com/davecgh/go-spew
   version: 346938d642f2ec3594ed81d874461961cd0faa76

@@ -24,7 +24,7 @@ import:
 - package: github.com/coocood/freecache
 - package: github.com/spaolacci/murmur3
 - package: github.com/cloudfoundry/gosigar
-- package: github.com/xojoc/useragent
+- package: xojoc.pw/useragent
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.1.4
