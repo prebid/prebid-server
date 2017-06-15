@@ -293,9 +293,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 		// record bids by ad unit code for sorting
 		code_bids := make(map[string]pbs.PBSBidSlice)
-        for _, bid :=  range pbs_resp.Bids {
-            code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
-        }
+		for _, bid := range pbs_resp.Bids {
+			code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
+		}
 
 		// loop through ad units to find top bid
 		for _, unit := range pbs_req.AdUnits {
@@ -318,9 +318,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
 				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
 				pbs_kvs := map[string]string{
-					hbPbBidderKey : roundedCpm,
-					hbBidderBidderKey : bid.BidderCode,
-					hbCacheIdBidderKey : bid.CacheID,
+					hbPbBidderKey:      roundedCpm,
+					hbBidderBidderKey:  bid.BidderCode,
+					hbCacheIdBidderKey: bid.CacheID,
 				}
 				// For the top bid, we want to add the following additional keys
 				if i == 0 {
@@ -328,7 +328,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					pbs_kvs["hb_bidder"] = bid.BidderCode
 					pbs_kvs["hb_cache_id"] = bid.CacheID
 				}
-
 				bid.AdServerTargeting = pbs_kvs
 			}
 		}

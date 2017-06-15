@@ -1,20 +1,20 @@
 package pbs
 
 type PBSBid struct {
-	BidID       		string  `json:"bid_id"`
-	AdUnitCode  		string  `json:"code"`
-	Creative_id 		string  `json:"creative_id,omitempty"`
-	BidderCode  		string  `json:"bidder"`
-	BidHash     		string  `json:"-"` // this is the hash of the bidder's unique bid identifier for blockchain. Should not be sent to browser.
-	Price       		float64 `json:"price"`
-	Currency    		string  `json:"currency,omitempty"`
-	NURL        		string  `json:"nurl,omitempty"`
-	Adm         		string  `json:"adm,omitempty"`
-	Width       		uint64  `json:"width,omitempty"`
-	Height      		uint64  `json:"height,omitempty"`
-	DealId      		string  `json:"deal_id,omitempty"`
-	CacheID     		string  `json:"cache_id,omitempty"`
-	AdServerTargeting   map[string]string `json:"ad_server_targeting,omitempty"`
+	BidID             string            `json:"bid_id"`
+	AdUnitCode        string            `json:"code"`
+	Creative_id       string            `json:"creative_id,omitempty"`
+	BidderCode        string            `json:"bidder"`
+	BidHash           string            `json:"-"` // this is the hash of the bidder's unique bid identifier for blockchain. Should not be sent to browser.
+	Price             float64           `json:"price"`
+	Currency          string            `json:"currency,omitempty"`
+	NURL              string            `json:"nurl,omitempty"`
+	Adm               string            `json:"adm,omitempty"`
+	Width             uint64            `json:"width,omitempty"`
+	Height            uint64            `json:"height,omitempty"`
+	DealId            string            `json:"deal_id,omitempty"`
+	CacheID           string            `json:"cache_id,omitempty"`
+	AdServerTargeting map[string]string `json:"ad_server_targeting,omitempty"`
 }
 
 type PBSBidSlice []*PBSBid

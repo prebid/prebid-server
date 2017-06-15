@@ -7,8 +7,8 @@ const DEFAULT_PRECISION = 2
 
 func getLowPriceConfig() map[string][]map[string]float64 {
 	return map[string][]map[string]float64{
-		"buckets": []map[string]float64{
-			map[string]float64{
+		"buckets": {
+			{
 				"min":       0,
 				"max":       5,
 				"increment": 0.5,
@@ -19,8 +19,8 @@ func getLowPriceConfig() map[string][]map[string]float64 {
 
 func getMedPriceConfig() map[string][]map[string]float64 {
 	return map[string][]map[string]float64{
-		"buckets": []map[string]float64{
-			map[string]float64{
+		"buckets": {
+			{
 				"min":       0,
 				"max":       20,
 				"increment": 0.1,
@@ -31,8 +31,8 @@ func getMedPriceConfig() map[string][]map[string]float64 {
 
 func getHighPriceConfig() map[string][]map[string]float64 {
 	return map[string][]map[string]float64{
-		"buckets": []map[string]float64{
-			map[string]float64{
+		"buckets": {
+			{
 				"min":       0,
 				"max":       20,
 				"increment": 0.01,
@@ -43,18 +43,18 @@ func getHighPriceConfig() map[string][]map[string]float64 {
 
 func getDensePriceConfig() map[string][]map[string]float64 {
 	return map[string][]map[string]float64{
-		"buckets": []map[string]float64{
-			map[string]float64{
+		"buckets": {
+			{
 				"min":       0,
 				"max":       3,
 				"increment": 0.01,
 			},
-			map[string]float64{
+			{
 				"min":       3,
 				"max":       8,
 				"increment": 0.05,
 			},
-			map[string]float64{
+			{
 				"min":       8,
 				"max":       20,
 				"increment": 0.5,
@@ -65,18 +65,18 @@ func getDensePriceConfig() map[string][]map[string]float64 {
 
 func getAutoPriceConfig() map[string][]map[string]float64 {
 	return map[string][]map[string]float64{
-		"buckets": []map[string]float64{
-			map[string]float64{
+		"buckets": {
+			{
 				"min":       0,
 				"max":       5,
 				"increment": 0.05,
 			},
-			map[string]float64{
+			{
 				"min":       5,
 				"max":       10,
 				"increment": 0.1,
 			},
-			map[string]float64{
+			{
 				"min":       10,
 				"max":       20,
 				"increment": 0.5,
