@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"sort"
 	"sync"
 	"time"
 
@@ -88,6 +89,8 @@ type bidResult struct {
 	bidder   *pbs.PBSBidder
 	bid_list pbs.PBSBidSlice
 }
+
+const DEFAULT_PRICE_GRANULARITY = "med"
 
 func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	var resp pbs.PBSResponse
@@ -278,6 +281,53 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			bid.CacheID = cobjs[i].UUID
 			bid.NURL = ""
 			bid.Adm = ""
+		}
+	}
+
+	if pbs_req.App != nil {
+		// TODO (pbm): the below setting is the default for price granularity
+		priceGranularitySetting := DEFAULT_PRICE_GRANULARITY
+
+		// record bids by ad unit code for sorting
+		code_bids := make(map[string]pbs.PBSBidSlice)
+        for _, bid :=  range pbs_resp.Bids {
+            code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
+        }
+
+		// loop through ad units to find top bid
+		for _, unit := range pbs_req.AdUnits {
+			bar := code_bids[unit.Code]
+
+			if len(bar) == 0 {
+				if glog.V(1) {
+					glog.Infof("No bids for ad unit '%s'", unit.Code)
+				}
+				continue
+			}
+			sort.Sort(bar)
+
+			// after sorting we need to add the ad targeting keywords
+			for i, bid := range bar {
+				priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
+				roundedCpm := priceBucketStringMap[priceGranularitySetting]
+
+				hbPbBidderKey := "hb_pb_" + bid.BidderCode
+				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
+				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
+				pbs_kvs := map[string]string{
+					hbPbBidderKey : roundedCpm,
+					hbBidderBidderKey : bid.BidderCode,
+					hbCacheIdBidderKey : bid.CacheID,
+				}
+				// For the top bid, we want to add the following additional keys
+				if i == 0 {
+					pbs_kvs["hb_pb"] = roundedCpm
+					pbs_kvs["hb_bidder"] = bid.BidderCode
+					pbs_kvs["hb_cache_id"] = bid.CacheID
+				}
+
+				bid.AdServerTargeting = pbs_kvs
+			}
 		}
 	}
 
