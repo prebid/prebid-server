@@ -80,8 +80,10 @@ var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
 
 type BidCache struct {
-	Adm  string `json:"adm,omitempty"`
-	NURL string `json:"nurl,omitempty"`
+	Adm    string `json:"adm,omitempty"`
+	NURL   string `json:"nurl,omitempty"`
+	Width  uint64 `json:"width,omitempty"`
+	Height uint64 `json:"height,omitempty"`
 }
 
 type bidResult struct {
@@ -252,13 +254,14 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			pbs_resp.Bids = append(pbs_resp.Bids, bid)
 		}
 	}
-
 	if pbs_req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
 		for i, bid := range pbs_resp.Bids {
 			bc := BidCache{
-				Adm:  bid.Adm,
-				NURL: bid.NURL,
+				Adm:    bid.Adm,
+				NURL:   bid.NURL,
+				Width:  bid.Width,
+				Height: bid.Height,
 			}
 			buf := new(bytes.Buffer)
 			enc := json.NewEncoder(buf)
