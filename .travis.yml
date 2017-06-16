@@ -1,11 +1,11 @@
 language: go
 go:
-    - 1.8.1
+    - 1.8.3
     - master
 
 install:
     - go get github.com/Masterminds/glide
-    - glide update
+    - glide install
 
 script:
     - ./validate.sh

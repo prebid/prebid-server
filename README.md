@@ -50,9 +50,12 @@ Prebid Server has no user profiling or user-data collection capabilities.
 AppNexus is hosting a version (generally bleeding-edge of this repo including some in-flight pull requests) at https://prebid.adnxs.com.
 
 ### Getting
-```
-$ go get github.com/prebid/prebid-server
-```
+1. Install glide: https://github.com/Masterminds/glide#install
+2. `cd $GOPATH`
+3. `git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server`
+4. `cd src/github.com/prebid/prebid-server`
+5. `glide install`
+6. `./validate.sh`
 
 ### Running
 To compile a binary and run locally:
