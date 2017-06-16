@@ -14,6 +14,7 @@ type PBSBid struct {
 	Height            uint64            `json:"height,omitempty"`
 	DealId            string            `json:"deal_id,omitempty"`
 	CacheID           string            `json:"cache_id,omitempty"`
+	ResponseTime      int               `json:"response_time_ms,omitempty"`
 	AdServerTargeting map[string]string `json:"ad_server_targeting,omitempty"`
 }
 
@@ -25,7 +26,7 @@ func (bids PBSBidSlice) Len() int {
 }
 
 func (bids PBSBidSlice) Less(i, j int) bool {
-	return bids[i].Price < bids[j].Price
+	return bids[i].Price + (float64(bids[i].ResponseTime) / 1000000000.0) < bids[j].Price + (float64(bids[j].ResponseTime) / 1000000000.0)
 }
 
 func (bids PBSBidSlice) Swap(i, j int) {

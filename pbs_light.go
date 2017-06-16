@@ -233,6 +233,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					for _, bid := range bid_list {
 						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
 						am.PriceHistogram.Update(int64(bid.Price * 1000))
+						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
@@ -287,7 +288,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	if pbs_req.App != nil {
+	if pbs_req.SortBids == 1 {
 		// TODO (pbm): the below setting is the default for price granularity
 		priceGranularitySetting := DEFAULT_PRICE_GRANULARITY
 
