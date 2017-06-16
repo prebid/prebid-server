@@ -94,6 +94,13 @@ type bidResult struct {
 
 const DEFAULT_PRICE_GRANULARITY = "med"
 
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
 func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	var resp pbs.PBSResponse
 	if err != nil {
@@ -319,9 +326,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
 				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
 				pbs_kvs := map[string]string{
-					hbPbBidderKey:      roundedCpm,
-					hbBidderBidderKey:  bid.BidderCode,
-					hbCacheIdBidderKey: bid.CacheID,
+					hbPbBidderKey[:min(len(hbPbBidderKey), 20)]:      roundedCpm,
+					hbBidderBidderKey[:min(len(hbBidderBidderKey), 20)]:  bid.BidderCode,
+					hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), 20)]: bid.CacheID,
 				}
 				// For the top bid, we want to add the following additional keys
 				if i == 0 {
