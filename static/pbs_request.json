@@ -31,6 +31,10 @@
             "description": "Sorts bids by price & response time and returns ad server targeting keys for each bid in prebid server response",
             "type": "integer"
         },
+        "is_dfp": {
+            "description": "Returns true if the ad server is dfp. Used to determine whether ad server targeting key strings should be truncated on prebid server",
+            "type": "integer"
+        },
         "app": {
             "type": "object",
             "description": "This object should be included if the ad supported content is a non-browser application (typically in mobile) as opposed to a website. At a minimum, it is useful to provide an App ID or bundle, but this is not strictly required.",
