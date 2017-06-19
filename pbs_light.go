@@ -300,7 +300,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		priceGranularitySetting := DEFAULT_PRICE_GRANULARITY
 
 		// record bids by ad unit code for sorting
-		code_bids := make(map[string]pbs.PBSBidSlice)
+		code_bids := make(map[string]pbs.PBSBidSlice, len(pbs_resp.Bids))
 		for _, bid := range pbs_resp.Bids {
 			code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
 		}

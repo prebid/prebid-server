@@ -24,15 +24,23 @@ func TestGetPriceBucketString(t *testing.T) {
 		t.Error("Expected 1.87")
 	}
 
-	// TODO (pbm) test more prices
-	// interval := 0.01
-	// price := 0.00
-	// for price < 20.01 {
-	// 	fmt.Println(price)
+	// test a cpm above the max in low price bucket
+	price = 5.72
+	priceMap = GetPriceBucketString(price)
 
-	// 	priceMap := GetPriceBucketString(price)
-	// 	fmt.Println(priceMap)
-
-	// 	price += interval
-	// }
+	if priceMap["low"] != "5.00" {
+		t.Error("Expected 5.00")
+	}
+	if priceMap["med"] != "5.70" {
+		t.Error("Expected 5.70")
+	}
+	if priceMap["high"] != "5.72" {
+		t.Error("Expected 5.72")
+	}
+	if priceMap["auto"] != "5.70" {
+		t.Error("Expected 5.70")
+	}
+	if priceMap["dense"] != "5.70" {
+		t.Error("Expected 5.70")
+	}
 }

@@ -87,15 +87,40 @@ func getAutoPriceConfig() map[string][]map[string]float64 {
 
 func getCpmStringValue(cpm float64, config map[string][]map[string]float64) string {
 	bucketsArr := config["buckets"]
+	cpmStr := ""
+	bucket := make(map[string]float64)
+	bucketMax := 0.0
+	// calculate max of highest bucket
+	for i := 0; i < len(bucketsArr); i++ {
+		if bucketsArr[i]["max"] > bucketMax {
+			bucketMax = bucketsArr[i]["max"]
+		}
+	}	// calculate which bucket cpm is in
 	for i := 0; i < len(bucketsArr); i++ {
 		currentBucket := bucketsArr[i]
-		if cpm >= currentBucket["min"] && cpm < currentBucket["max"] {
-			d := RoundUp(cpm/currentBucket["increment"], DEFAULT_PRECISION)
-			roundedCPM := math.Floor(d) * currentBucket["increment"]
-			return strconv.FormatFloat(roundedCPM, 'f', DEFAULT_PRECISION, 64)
+		if cpm > bucketMax {
+			var precision int = DEFAULT_PRECISION
+			if currentBucket["precision"] != 0 {
+				precision = int(currentBucket["precision"])
+			}
+			cpmStr = strconv.FormatFloat(bucketMax, 'f', precision, 64)
+		} else if cpm >= currentBucket["min"] && cpm <= currentBucket["max"] {
+			bucket = currentBucket
 		}
 	}
-	return ""
+	if len(bucket) > 0 {
+		cpmStr = getCpmTarget(cpm, bucket["increment"], int(bucket["precision"]))
+	}
+	return cpmStr
+}
+
+func getCpmTarget(cpm float64, increment float64, precision int) string {
+	if precision == 0 {
+		precision = DEFAULT_PRECISION
+	}
+	d := RoundUp(cpm/increment, precision)
+	roundedCPM := math.Floor(d) * increment
+	return strconv.FormatFloat(roundedCPM, 'f', precision, 64)
 }
 
 func RoundUp(input float64, places int) (newVal float64) {
