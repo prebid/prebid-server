@@ -189,7 +189,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
 	defer cancel()
 
-	_, err = dataCache.Accounts().Get(pbs_req.AccountID)
+	account, err := dataCache.Accounts().Get(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
@@ -297,8 +297,10 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	if pbs_req.SortBids == 1 {
-		// TODO (pbm): the below setting is the default for price granularity
-		priceGranularitySetting := DEFAULT_PRICE_GRANULARITY
+		priceGranularitySetting := account.PriceGranularity
+		if priceGranularitySetting == "" {
+			priceGranularitySetting = DEFAULT_PRICE_GRANULARITY
+		}
 
 		// record bids by ad unit code for sorting
 		code_bids := make(map[string]pbs.PBSBidSlice, len(pbs_resp.Bids))
