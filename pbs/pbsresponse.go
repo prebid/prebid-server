@@ -28,7 +28,7 @@ func (bids PBSBidSlice) Len() int {
 func (bids PBSBidSlice) Less(i, j int) bool {
 	bidiResponseTimeInNanos := (float64(bids[i].ResponseTime) / 1000000000.0)
 	bidjResponseTimeInNanos := (float64(bids[j].ResponseTime) / 1000000000.0)
-	return bids[i].Price - bidiResponseTimeInNanos < bids[j].Price - bidjResponseTimeInNanos
+	return bids[i].Price-bidiResponseTimeInNanos < bids[j].Price-bidjResponseTimeInNanos
 }
 
 func (bids PBSBidSlice) Swap(i, j int) {

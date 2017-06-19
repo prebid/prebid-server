@@ -95,7 +95,7 @@ func getCpmStringValue(cpm float64, config map[string][]map[string]float64) stri
 		if bucketsArr[i]["max"] > bucketMax {
 			bucketMax = bucketsArr[i]["max"]
 		}
-	}	// calculate which bucket cpm is in
+	} // calculate which bucket cpm is in
 	for i := 0; i < len(bucketsArr); i++ {
 		currentBucket := bucketsArr[i]
 		if cpm > bucketMax {
