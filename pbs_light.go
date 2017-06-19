@@ -93,7 +93,6 @@ type bidResult struct {
 }
 
 const DEFAULT_PRICE_GRANULARITY = "med"
-const DFP_KEY_STRING_MAX_LENGTH = 20
 
 func min(x, y int) int {
 	if x < y {
@@ -328,10 +327,10 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				hbPbBidderKey := "hb_pb_" + bid.BidderCode
 				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
 				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
-				if pbs_req.IsDFP == 1 {
-					hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), DFP_KEY_STRING_MAX_LENGTH)]
-					hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), DFP_KEY_STRING_MAX_LENGTH)]
-					hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), DFP_KEY_STRING_MAX_LENGTH)]
+				if pbs_req.MaxKeyLength != 0 {
+					hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
+					hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
+					hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
 				}
 				pbs_kvs := map[string]string{
 					hbPbBidderKey:      roundedCpm,

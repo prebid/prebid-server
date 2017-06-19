@@ -31,8 +31,8 @@
             "description": "Sorts bids by price & response time and returns ad server targeting keys for each bid in prebid server response",
             "type": "integer"
         },
-        "is_dfp": {
-            "description": "Returns true if the ad server is dfp. Used to determine whether ad server targeting key strings should be truncated on prebid server",
+        "max_key_length": {
+            "description": "Used to determine whether ad server targeting key strings should be truncated on prebid server. For DFP max key length should be 20.",
             "type": "integer"
         },
         "app": {
