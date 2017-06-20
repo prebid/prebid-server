@@ -72,6 +72,8 @@ type PBSRequest struct {
 	AccountID     string          `json:"account_id"`
 	Tid           string          `json:"tid"`
 	CacheMarkup   int8            `json:"cache_markup"`
+	SortBids      int8            `json:"sort_bids"`
+	MaxKeyLength  int8            `json:"max_key_length"`
 	Secure        int8            `json:"secure"`
 	TimeoutMillis uint64          `json:"timeout_millis"`
 	AdUnits       []AdUnit        `json:"ad_units"`

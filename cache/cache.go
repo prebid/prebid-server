@@ -10,6 +10,7 @@ type App struct {
 
 type Account struct {
 	ID string `json:"id"`
+	PriceGranularity string `json:"price_granularity"`
 }
 
 type Configuration struct {

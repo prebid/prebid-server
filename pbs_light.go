@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"sort"
 	"sync"
 	"time"
 
@@ -89,6 +90,15 @@ type BidCache struct {
 type bidResult struct {
 	bidder   *pbs.PBSBidder
 	bid_list pbs.PBSBidSlice
+}
+
+const DEFAULT_PRICE_GRANULARITY = "med"
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
 
 func writeAuctionError(w http.ResponseWriter, s string, err error) {
@@ -178,7 +188,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
 	defer cancel()
 
-	_, err = dataCache.Accounts().Get(pbs_req.AccountID)
+	account, err := dataCache.Accounts().Get(pbs_req.AccountID)
 	if err != nil {
 		glog.Info("Invalid account id: ", err)
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
@@ -230,6 +240,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					for _, bid := range bid_list {
 						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
 						am.PriceHistogram.Update(int64(bid.Price * 1000))
+						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
@@ -281,6 +292,59 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			bid.CacheID = cobjs[i].UUID
 			bid.NURL = ""
 			bid.Adm = ""
+		}
+	}
+
+	if pbs_req.SortBids == 1 {
+		priceGranularitySetting := account.PriceGranularity
+		if priceGranularitySetting == "" {
+			priceGranularitySetting = DEFAULT_PRICE_GRANULARITY
+		}
+
+		// record bids by ad unit code for sorting
+		code_bids := make(map[string]pbs.PBSBidSlice, len(pbs_resp.Bids))
+		for _, bid := range pbs_resp.Bids {
+			code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
+		}
+
+		// loop through ad units to find top bid
+		for _, unit := range pbs_req.AdUnits {
+			bar := code_bids[unit.Code]
+
+			if len(bar) == 0 {
+				if glog.V(1) {
+					glog.Infof("No bids for ad unit '%s'", unit.Code)
+				}
+				continue
+			}
+			sort.Sort(bar)
+
+			// after sorting we need to add the ad targeting keywords
+			for i, bid := range bar {
+				priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
+				roundedCpm := priceBucketStringMap[priceGranularitySetting]
+
+				hbPbBidderKey := "hb_pb_" + bid.BidderCode
+				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
+				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
+				if pbs_req.MaxKeyLength != 0 {
+					hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
+					hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
+					hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				}
+				pbs_kvs := map[string]string{
+					hbPbBidderKey:      roundedCpm,
+					hbBidderBidderKey:  bid.BidderCode,
+					hbCacheIdBidderKey: bid.CacheID,
+				}
+				// For the top bid, we want to add the following additional keys
+				if i == 0 {
+					pbs_kvs["hb_pb"] = roundedCpm
+					pbs_kvs["hb_bidder"] = bid.BidderCode
+					pbs_kvs["hb_cache_id"] = bid.CacheID
+				}
+				bid.AdServerTargeting = pbs_kvs
+			}
 		}
 	}
 
