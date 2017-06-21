@@ -66,6 +66,7 @@ var (
 	mErrorMeter          metrics.Meter
 	mInvalidMeter        metrics.Meter
 	mRequestTimer        metrics.Timer
+	mCookieSyncMeter     metrics.Meter
 
 	adapterMetrics map[string]*AdapterMetrics
 
@@ -154,6 +155,7 @@ type cookieSyncResponse struct {
 }
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	mNoCookieMeter.Mark(1)
 	cookies := pbs.ParseUIDCookie(r)
 	if cookies.OptOut {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
@@ -614,15 +616,6 @@ func setupExchanges(cfg *config.Configuration) {
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
 	}
 
-}
-
-func serve(cfg *config.Configuration) error {
-	if err := loadDataCache(cfg); err != nil {
-		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
-	}
-
-	setupExchanges(cfg)
-
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
 	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
@@ -632,6 +625,7 @@ func serve(cfg *config.Configuration) error {
 	mErrorMeter = metrics.GetOrRegisterMeter("error_requests", metricsRegistry)
 	mInvalidMeter = metrics.GetOrRegisterMeter("invalid_requests", metricsRegistry)
 	mRequestTimer = metrics.GetOrRegisterTimer("request_time", metricsRegistry)
+	mCookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", metricsRegistry)
 
 	accountMetrics = make(map[string]*AccountMetrics)
 
@@ -647,6 +641,15 @@ func serve(cfg *config.Configuration) error {
 		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("adapter.%s.prices", exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 		adapterMetrics[exchange] = &a
 	}
+
+}
+
+func serve(cfg *config.Configuration) error {
+	if err := loadDataCache(cfg); err != nil {
+		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
+	}
+
+	setupExchanges(cfg)
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
