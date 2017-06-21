@@ -137,14 +137,8 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
 		return nil, err
 	}
-	var priceGranularity string
-	if err := s.shared.db.QueryRow("SELECT price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&priceGranularity); err != nil {
-		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
-		return nil, err
-	}
 
 	account.ID = id
-	account.PriceGranularity = priceGranularity
 
 	buf := bytes.Buffer{}
 	if err := gob.NewEncoder(&buf).Encode(&account); err != nil {
