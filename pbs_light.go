@@ -142,6 +142,63 @@ func getAccountMetrics(id string) *AccountMetrics {
 	return am
 }
 
+type cookieSyncRequest struct {
+	UUID    string   `json:"uuid"`
+	Bidders []string `json"bidders"`
+}
+
+type cookieSyncResponse struct {
+	UUID         string           `json:"uuid"`
+	Status       string           `json:"status"`
+	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
+}
+
+func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	cookies := pbs.ParseUIDCookie(r)
+	if cookies.OptOut {
+		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		return
+	}
+
+	defer r.Body.Close()
+
+	csReq := &cookieSyncRequest{}
+	err := json.NewDecoder(r.Body).Decode(&csReq)
+	if err != nil {
+		glog.Infof("Read cookie sync request failed: %v", err)
+		http.Error(w, "JSON parse failed", http.StatusBadRequest)
+		return
+	}
+
+	csResp := cookieSyncResponse{
+		UUID:         csReq.UUID,
+		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
+	}
+	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || len(cookies.UIDs) == 0 {
+		csResp.Status = "no_cookie"
+	} else {
+		csResp.Status = "ok"
+	}
+
+	for _, bidder := range csReq.Bidders {
+		if ex, ok := exchanges[bidder]; ok {
+			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+				b := pbs.PBSBidder{
+					BidderCode:   bidder,
+					NoCookie:     true,
+					UsersyncInfo: ex.GetUsersyncInfo(),
+				}
+				csResp.BidderStatus = append(csResp.BidderStatus, &b)
+			}
+		}
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	//enc.SetIndent("", "  ")
+	enc.Encode(csResp)
+}
+
 func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
@@ -166,13 +223,13 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if requireUUID2 {
-		if _, err := r.Cookie("uuid2"); err != nil {
-			mNoCookieMeter.Mark(1)
-			if isSafari {
-				mSafariNoCookieMeter.Mark(1)
-			}
-			status = "no_cookie"
+	} else if len(pbs_req.UserIDs) == 0 {
+		mNoCookieMeter.Mark(1)
+		if isSafari {
+			mSafariNoCookieMeter.Mark(1)
+		}
+		status = "no_cookie"
+		if requireUUID2 {
 			uuid2 := fmt.Sprintf("%d", rand.Int63())
 			c := http.Cookie{
 				Name:    "uuid2",
@@ -545,11 +602,7 @@ func main() {
 	}
 }
 
-func serve(cfg *config.Configuration) error {
-	if err := loadDataCache(cfg); err != nil {
-		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
-	}
-
+func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
@@ -560,6 +613,15 @@ func serve(cfg *config.Configuration) error {
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
 	}
+
+}
+
+func serve(cfg *config.Configuration) error {
+	if err := loadDataCache(cfg); err != nil {
+		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
+	}
+
+	setupExchanges(cfg)
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
@@ -618,6 +680,7 @@ func serve(cfg *config.Configuration) error {
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
+	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
