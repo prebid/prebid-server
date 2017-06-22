@@ -240,7 +240,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 		t.Fatalf("Json encoding failed: %v", err)
 	}
 
-	fmt.Println("body", body)
+	// fmt.Println("body", body)
 
 	req := httptest.NewRequest("POST", server.URL, body)
 	req.Header.Add("Referer", rubidata.page)
