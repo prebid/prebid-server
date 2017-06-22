@@ -46,11 +46,11 @@ type KeyVal struct {
 type appnexusParams struct {
 	PlacementId       int      `json:"placementId"`
 	InvCode           string   `json:"invCode"`
-	Member            int      `json:"member"`
+	Member            string   `json:"member"`
 	Keywords          []KeyVal `json:"keywords"`
 	TrafficSourceCode string   `json:"trafficSourceCode"`
 	Reserve           float64  `json:"reserve"`
-	Position          int      `json:"position"`
+	Position          string   `json:"position"`
 }
 
 type appnexusImpExtAppnexus struct {
@@ -74,26 +74,26 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			return nil, err
 		}
 
-		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == 0) {
+		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
 			return nil, errors.New("No placement or member+invcode provided")
 		}
 
 		if params.InvCode != "" {
 			anReq.Imp[i].TagID = params.InvCode
-			if params.Member != 0 {
+			if params.Member != "" {
 				// this assumes that the same member ID is used across all tags, which should be the case
-				uri = fmt.Sprintf("%s?member=%d", a.URI, params.Member)
+				uri = fmt.Sprintf("%s?member=%s", a.URI, params.Member)
 			}
 
 		}
 		if params.Reserve > 0 {
 			anReq.Imp[i].BidFloor = params.Reserve // TODO: we need to factor in currency here if non-USD
 		}
-		if anReq.Imp[i].Banner != nil && params.Position > 0 {
-			if params.Position == 1 {
+		if anReq.Imp[i].Banner != nil && params.Position != "" {
+			if params.Position == "above" {
 				anReq.Imp[i].Banner.Pos = 1
-			} else if params.Position == 2 {
-				anReq.Imp[i].Banner.Pos = 3 // openRTB spec
+			} else if params.Position == "below" {
+				anReq.Imp[i].Banner.Pos = 3
 			}
 		}
 

@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 	"time"
 
@@ -27,14 +26,14 @@ type anTagInfo struct {
 	in_keywords       string
 	out_keywords      string
 	reserve           float64
-	position          int8
+	position          string
 	bid               float64
 	content           string
 }
 
 type anBidInfo struct {
 	impType   string
-	memberID  int
+	memberID  string
 	domain    string
 	page      string
 	accountID int
@@ -56,8 +55,6 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// fmt.Println("Request", string(body))
-
 	var breq openrtb.BidRequest
 	err = json.Unmarshal(body, &breq)
 	if err != nil {
@@ -65,11 +62,9 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memberStr := r.FormValue("member")
-	memberID, err := strconv.Atoi(memberStr)
+	memberID := r.FormValue("member")
 	if memberID != andata.memberID {
-		http.Error(w, fmt.Sprintf("Member ID '%s (%d)' doesn't match '%d", memberStr, memberID,
-			andata.memberID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Member ID '%s' doesn't match '%s", memberID, andata.memberID), http.StatusInternalServerError)
 		return
 	}
 
@@ -103,7 +98,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			}
 			has_placement = true
 		}
-		if memberID != 0 && imp.TagID != "" {
+		if memberID != "" && imp.TagID != "" {
 			if imp.TagID != andata.tags[i].invCode {
 				http.Error(w, fmt.Sprintf("Inv Code '%s' doesn't match '%s", imp.TagID,
 					andata.tags[i].invCode), http.StatusInternalServerError)
@@ -150,14 +145,12 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, fmt.Sprintf("Empty imp.banner.format array"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == 2 {
-				if imp.Banner.Pos != 3 {
-					http.Error(w, fmt.Sprintf("Mismatch in position - expected 3 for btf"), http.StatusInternalServerError)
-					return
-				}
-			} else if andata.tags[i].position != imp.Banner.Pos {
-				http.Error(w, fmt.Sprintf("Mismatch in position - got %d expected %d", imp.Banner.Pos, andata.tags[i].position),
-					http.StatusInternalServerError)
+			if andata.tags[i].position == "above" && imp.Banner.Pos != 1 {
+				http.Error(w, fmt.Sprintf("Mismatch in position - expected 1 for atf"), http.StatusInternalServerError)
+				return
+			}
+			if andata.tags[i].position == "below" && imp.Banner.Pos != 3 {
+				http.Error(w, fmt.Sprintf("Mismatch in position - expected 3 for btf"), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -238,7 +231,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		deviceIP: "25.91.96.36",
 		deviceUA: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
 		buyerUID: "23482348223",
-		memberID: 958,
+		memberID: "958",
 	}
 	andata.tags[0] = anTagInfo{
 		code:              "first-tag",
@@ -249,7 +242,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"jazz\", \"pop\"] }]",
 		out_keywords:      "genre=jazz,pop",
 		reserve:           1.50,
-		position:          2,
+		position:          "below",
 	}
 	andata.tags[1] = anTagInfo{
 		code:              "second-tag",
@@ -260,7 +253,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"rock\", \"pop\"] }]",
 		out_keywords:      "genre=rock,pop",
 		reserve:           0.75,
-		position:          1,
+		position:          "above",
 	}
 
 	conf := *DefaultHTTPAdapterConfig
@@ -273,12 +266,12 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	for i, tag := range andata.tags {
 		var params json.RawMessage
 		if tag.placementID > 0 {
-			params = json.RawMessage(fmt.Sprintf("{\"placementId\": %d, \"member\": %d, \"keywords\": %s, "+
-				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": %d}",
+			params = json.RawMessage(fmt.Sprintf("{\"placementId\": %d, \"member\": \"%s\", \"keywords\": %s, "+
+				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": \"%s\"}",
 				tag.placementID, andata.memberID, tag.in_keywords, tag.trafficSourceCode, tag.reserve, tag.position))
 		} else {
-			params = json.RawMessage(fmt.Sprintf("{\"invCode\": \"%s\", \"member\": %d, \"keywords\": %s, "+
-				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": %d}",
+			params = json.RawMessage(fmt.Sprintf("{\"invCode\": \"%s\", \"member\": \"%s\", \"keywords\": %s, "+
+				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": \"%s\"}",
 				tag.invCode, andata.memberID, tag.in_keywords, tag.trafficSourceCode, tag.reserve, tag.position))
 		}
 
@@ -309,8 +302,6 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Json encoding failed: %v", err)
 	}
-
-	// fmt.Println("body", body)
 
 	req := httptest.NewRequest("POST", server.URL, body)
 	req.Header.Add("Referer", andata.page)
@@ -375,12 +366,9 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 }
 
-/*
-func TestRubiconUserSyncInfo(t *testing.T) {
-	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
-
-	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", url)
-	if an.usersyncInfo.URL != url {
+func TestAppNexusUserSyncInfo(t *testing.T) {
+	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
+	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {
@@ -391,4 +379,3 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 	}
 
 }
-*/
