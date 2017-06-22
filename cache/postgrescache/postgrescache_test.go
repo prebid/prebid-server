@@ -40,7 +40,7 @@ type StubCache struct {
 }
 
 // New creates new postgres.Cache
-func StubNew(cfg PostgresConfig) (*Cache) {
+func StubNew(cfg PostgresConfig) *Cache {
 	shared := stubnewShared(cfg)
 	return &Cache{
 		shared:   shared,
@@ -51,7 +51,7 @@ func StubNew(cfg PostgresConfig) (*Cache) {
 	}
 }
 
-func stubnewShared(conf PostgresConfig) (*shared) {
+func stubnewShared(conf PostgresConfig) *shared {
 	db, _ := sql.Open("testdb", "")
 
 	s := &shared{

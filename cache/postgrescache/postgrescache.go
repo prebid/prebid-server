@@ -3,9 +3,9 @@ package postgrescache
 import (
 	"bytes"
 	"database/sql"
-    _ "github.com/lib/pq"
 	"encoding/gob"
 	"fmt"
+	_ "github.com/lib/pq"
 
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"

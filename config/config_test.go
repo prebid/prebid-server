@@ -54,7 +54,7 @@ func TestDefaults(t *testing.T) {
 
 }
 
-var fullConfig = []byte(`cookie_domain: adnxs.com
+var fullConfig = []byte(`cookie_domain: ".adnxs.com"
 external_url: http://prebid.adnxs.com/
 host: prebid.adnxs.com
 port: 1234
@@ -111,7 +111,7 @@ func TestFullConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	cmpStrings(t, "cookie domain", cfg.CookieDomain, "adnxs.com")
+	cmpStrings(t, "cookie domain", cfg.CookieDomain, ".adnxs.com")
 	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid.adnxs.com/")
 	cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
 	cmpInts(t, "port", cfg.Port, 1234)

@@ -145,7 +145,7 @@ func getAccountMetrics(id string) *AccountMetrics {
 
 type cookieSyncRequest struct {
 	UUID    string   `json:"uuid"`
-	Bidders []string `json"bidders"`
+	Bidders []string `json:"bidders"`
 }
 
 type cookieSyncResponse struct {
@@ -155,7 +155,7 @@ type cookieSyncResponse struct {
 }
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	mNoCookieMeter.Mark(1)
+	mCookieSyncMeter.Mark(1)
 	cookies := pbs.ParseUIDCookie(r)
 	if cookies.OptOut {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
@@ -599,6 +599,7 @@ func main() {
 	}
 	// we need to set this global variable so it can be used by other methods
 	requireUUID2 = cfg.RequireUUID2
+	cookieDomain = cfg.CookieDomain
 	if err := serve(cfg); err != nil {
 		glog.Fatalf("PreBid Server encountered an error: %v", err)
 	}
