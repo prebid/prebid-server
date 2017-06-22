@@ -38,13 +38,19 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type appnexusParams struct {
-	PlacementId int    `json:"placementId"`
-	InvCode     string `json:"invCode"`
-	Member      string `json:"member"`
+	PlacementId       int     `json:"placementId"`
+	InvCode           string  `json:"invCode"`
+	Member            int     `json:"member"`
+	Keywords          string  `json:"keywords"`
+	TrafficSourceCode string  `json:"trafficSourceCode"`
+	Reserve           float64 `json:"reserve"`
+	Position          int     `json:"position"`
 }
 
 type appnexusImpExtAppnexus struct {
-	PlacementID int `json:"placement_id"`
+	PlacementID       int    `json:"placement_id"`
+	Keywords          string `json:"keywords"`
+	TrafficSourceCode string `json:"traffic_source_code"`
 }
 
 type appnexusImpExt struct {
@@ -53,6 +59,8 @@ type appnexusImpExt struct {
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	anReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+
+	uri := a.URI
 	for i, unit := range bidder.AdUnits {
 		var params appnexusParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -60,13 +68,35 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			return nil, err
 		}
 
-		if params.PlacementId == 0 {
-			return nil, errors.New("Missing placementId param")
+		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == 0) {
+			return nil, errors.New("No placement or member+invcode provided")
 		}
 
-		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{PlacementID: params.PlacementId}}
+		if params.InvCode != "" {
+			anReq.Imp[i].TagID = params.InvCode
+			if params.Member != 0 {
+				// this assumes that the same member ID is used across all tags, which should be the case
+				uri = fmt.Sprintf("%s?member=%d", a.URI, params.Member)
+			}
+
+		}
+		if params.Reserve > 0 {
+			anReq.Imp[i].BidFloor = params.Reserve // TODO: we need to factor in currency here if non-USD
+		}
+		if anReq.Imp[i].Banner != nil && params.Position > 0 {
+			if params.Position == 1 {
+				anReq.Imp[i].Banner.Pos = 1
+			} else if params.Position == 2 {
+				anReq.Imp[i].Banner.Pos = 3 // openRTB spec
+			}
+		}
+
+		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
+			PlacementID:       params.PlacementId,
+			TrafficSourceCode: params.TrafficSourceCode,
+			Keywords:          params.Keywords,
+		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
-		// TODO: support member + invCode
 	}
 
 	reqJSON, err := json.Marshal(anReq)
@@ -75,7 +105,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	debug := &pbs.BidderDebug{
-		RequestURI: a.URI,
+		RequestURI: uri,
 	}
 
 	if req.IsDebug {
@@ -83,7 +113,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
-	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
+	httpReq, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -98,18 +128,19 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, nil
 	}
 
-	if anResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status code %d", anResp.StatusCode)
-	}
-
 	defer anResp.Body.Close()
 	body, err := ioutil.ReadAll(anResp.Body)
 	if err != nil {
 		return nil, err
 	}
+	responseBody := string(body)
+
+	if anResp.StatusCode != 200 {
+		return nil, fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, responseBody)
+	}
 
 	if req.IsDebug {
-		debug.ResponseBody = string(body)
+		debug.ResponseBody = responseBody
 	}
 
 	var bidResp openrtb.BidResponse

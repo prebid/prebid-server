@@ -1,13 +1,17 @@
 package adapters
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
 
 	"fmt"
@@ -15,227 +19,370 @@ import (
 	"github.com/prebid/openrtb"
 )
 
-func TestAppNexusInvalidCall(t *testing.T) {
-
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	an.URI = "blah"
-	s := an.Name()
-	if s == "" {
-		t.Fatal("Missing name")
-	}
-
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
+type anTagInfo struct {
+	code              string
+	invCode           string
+	placementID       int
+	trafficSourceCode string
+	in_keywords       string
+	out_keywords      string
+	reserve           float64
+	position          int8
+	bid               float64
+	content           string
 }
 
-func TestAppNexusTimeout(t *testing.T) {
+type anBidInfo struct {
+	impType   string
+	memberID  int
+	domain    string
+	page      string
+	accountID int
+	siteID    int
+	tags      []anTagInfo
+	deviceIP  string
+	deviceUA  string
+	buyerUID  string
+	delay     time.Duration
+}
 
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			<-time.After(2 * time.Millisecond)
-		}),
-	)
-	defer server.Close()
+var andata anBidInfo
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
-	an.URI = server.URL
-	ctx, cancel := context.WithTimeout(context.Background(), 0)
-	defer cancel()
+func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
+	// fmt.Println("Request", string(body))
+
+	var breq openrtb.BidRequest
+	err = json.Unmarshal(body, &breq)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	memberStr := r.FormValue("member")
+	memberID, err := strconv.Atoi(memberStr)
+	if memberID != andata.memberID {
+		http.Error(w, fmt.Sprintf("Member ID '%s (%d)' doesn't match '%d", memberStr, memberID,
+			andata.memberID), http.StatusInternalServerError)
+		return
+	}
+
+	resp := openrtb.BidResponse{
+		ID:    breq.ID,
+		BidID: "a-random-id",
+		Cur:   "USD",
+		SeatBid: []openrtb.SeatBid{
 			{
-				Code: "unitCode",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
+				Seat: "Buyer Member ID",
+				Bid:  make([]openrtb.Bid, 0, 2),
 			},
 		},
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil || err != context.DeadlineExceeded {
-		t.Fatalf("Timeout error not received for invalid request: %v", err)
-	}
-}
 
-func TestAppNexusInvalidJson(t *testing.T) {
+	for i, imp := range breq.Imp {
+		var aix appnexusImpExt
+		err = json.Unmarshal(imp.Ext, &aix)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, "Blah")
-		}),
-	)
-	defer server.Close()
+		// Either placementID or member+invCode must be specified
+		has_placement := false
+		if aix.Appnexus.PlacementID != 0 {
+			if aix.Appnexus.PlacementID != andata.tags[i].placementID {
+				http.Error(w, fmt.Sprintf("Placement ID '%d' doesn't match '%d", aix.Appnexus.PlacementID,
+					andata.tags[i].placementID), http.StatusInternalServerError)
+				return
+			}
+			has_placement = true
+		}
+		if memberID != 0 && imp.TagID != "" {
+			if imp.TagID != andata.tags[i].invCode {
+				http.Error(w, fmt.Sprintf("Inv Code '%s' doesn't match '%s", imp.TagID,
+					andata.tags[i].invCode), http.StatusInternalServerError)
+				return
+			}
+			has_placement = true
+		}
+		if !has_placement {
+			http.Error(w, fmt.Sprintf("Either placement or member+inv not present"), http.StatusInternalServerError)
+			return
+		}
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
-	an.URI = server.URL
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			{
-				Code: "unitCode",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
-			},
-		},
-	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
-}
+		/*
+			if aix.Appnexus.Keywords != andata.tags[i].out_keywords {
+				http.Error(w, fmt.Sprintf("Keywords '%s' doesn't match '%s", aix.Appnexus.Keywords,
+					andata.tags[i].out_keywords), http.StatusInternalServerError)
+				return
+			}
+		*/
 
-func TestAppNexusInvalidStatusCode(t *testing.T) {
+		if aix.Appnexus.TrafficSourceCode != andata.tags[i].trafficSourceCode {
+			http.Error(w, fmt.Sprintf("Traffic source code '%s' doesn't match '%s", aix.Appnexus.TrafficSourceCode,
+				andata.tags[i].trafficSourceCode), http.StatusInternalServerError)
+			return
+		}
+		if imp.BidFloor != andata.tags[i].reserve {
+			http.Error(w, fmt.Sprintf("Bid floor '%.2f' doesn't match '%.2f", imp.BidFloor,
+				andata.tags[i].reserve), http.StatusInternalServerError)
+			return
+		}
+		if imp.Banner == nil && imp.Video == nil {
+			http.Error(w, fmt.Sprintf("No banner or app object sent"), http.StatusInternalServerError)
+			return
+		}
+		if (imp.Banner == nil && andata.impType == "banner") || (imp.Banner != nil && andata.impType != "banner") {
+			http.Error(w, fmt.Sprintf("Invalid impression type - banner"), http.StatusInternalServerError)
+			return
+		}
+		if (imp.Video == nil && andata.impType == "video") || (imp.Video != nil && andata.impType != "video") {
+			http.Error(w, fmt.Sprintf("Invalid impression type - video"), http.StatusInternalServerError)
+			return
+		}
 
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Send 404
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		}),
-	)
-	defer server.Close()
+		if imp.Banner != nil {
+			if len(imp.Banner.Format) == 0 {
+				http.Error(w, fmt.Sprintf("Empty imp.banner.format array"), http.StatusInternalServerError)
+				return
+			}
+			if andata.tags[i].position == 2 {
+				if imp.Banner.Pos != 3 {
+					http.Error(w, fmt.Sprintf("Mismatch in position - expected 3 for btf"), http.StatusInternalServerError)
+					return
+				}
+			} else if andata.tags[i].position != imp.Banner.Pos {
+				http.Error(w, fmt.Sprintf("Mismatch in position - got %d expected %d", imp.Banner.Pos, andata.tags[i].position),
+					http.StatusInternalServerError)
+				return
+			}
+		}
+		if imp.Video != nil {
+			// TODO: add more validations
+			if len(imp.Video.MIMEs) == 0 {
+				http.Error(w, fmt.Sprintf("Empty imp.video.mimes array"), http.StatusInternalServerError)
+				return
+			}
+			if len(imp.Video.Protocols) == 0 {
+				http.Error(w, fmt.Sprintf("Empty imp.video.protocols array"), http.StatusInternalServerError)
+				return
+			}
+			for _, protocol := range imp.Video.Protocols {
+				if protocol < 1 || protocol > 8 {
+					http.Error(w, fmt.Sprintf("Invalid video protocol %d", protocol), http.StatusInternalServerError)
+					return
+				}
+			}
+		}
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
-	an.URI = server.URL
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			{
-				Code: "unitCode",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
-			},
-		},
+		resp.SeatBid[0].Bid = append(resp.SeatBid[0].Bid, openrtb.Bid{
+			ID:    "random-id",
+			ImpID: imp.ID,
+			Price: andata.tags[i].bid,
+			AdM:   andata.tags[i].content,
+		})
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
-	}
-}
 
-func TestMissingPlacementId(t *testing.T) {
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
-	an.URI = "dummy"
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			{
-				Code: "unitCode",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Params: json.RawMessage("{\"XXX\": 10}"),
-			},
-		},
+	// TODO: are all of these valid for app?
+	if breq.Site == nil {
+		http.Error(w, fmt.Sprintf("No site object sent"), http.StatusInternalServerError)
+		return
 	}
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	if err == nil {
-		t.Fatalf("No error received for invalid request")
+	if breq.Site.Domain != andata.domain {
+		http.Error(w, fmt.Sprintf("Domain '%s' doesn't match '%s", breq.Site.Domain, andata.domain), http.StatusInternalServerError)
+		return
 	}
+	if breq.Site.Page != andata.page {
+		http.Error(w, fmt.Sprintf("Page '%s' doesn't match '%s", breq.Site.Page, andata.page), http.StatusInternalServerError)
+		return
+	}
+	if breq.Device.UA != andata.deviceUA {
+		http.Error(w, fmt.Sprintf("UA '%s' doesn't match '%s", breq.Device.UA, andata.deviceUA), http.StatusInternalServerError)
+		return
+	}
+	if breq.Device.IP != andata.deviceIP {
+		http.Error(w, fmt.Sprintf("IP '%s' doesn't match '%s", breq.Device.IP, andata.deviceIP), http.StatusInternalServerError)
+		return
+	}
+	if breq.User.BuyerUID != andata.buyerUID {
+		http.Error(w, fmt.Sprintf("User ID '%s' doesn't match '%s", breq.User.BuyerUID, andata.buyerUID), http.StatusInternalServerError)
+		return
+	}
+
+	if andata.delay > 0 {
+		<-time.After(andata.delay)
+	}
+
+	js, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }
 
 func TestAppNexusBasicResponse(t *testing.T) {
-
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			resp := openrtb.BidResponse{
-				SeatBid: []openrtb.SeatBid{
-					{
-						Bid: []openrtb.Bid{
-							{
-								ID:     "1234",
-								ImpID:  "unitCode",
-								Price:  1.0,
-								AdM:    "Content",
-								CrID:   "567",
-								W:      10,
-								H:      12,
-								DealID: "5",
-							},
-						},
-					},
-				},
-			}
-
-			js, err := json.Marshal(resp)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(js)
-		}),
-	)
+	server := httptest.NewServer(http.HandlerFunc(DummyAppNexusServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, "localhost")
-	an.URI = server.URL
-	ctx := context.TODO()
-	pbReq := pbs.PBSRequest{}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			{
-				Code:  "unitCode",
-				BidID: "bidid",
-				Sizes: []openrtb.Format{
-					{
-						W: 10,
-						H: 12,
-					},
-				},
-				Params: json.RawMessage("{\"placementId\": 10}"),
-			},
-		},
+	andata = anBidInfo{
+		impType:  "banner",
+		domain:   "nytimes.com",
+		page:     "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		tags:     make([]anTagInfo, 2),
+		deviceIP: "25.91.96.36",
+		deviceUA: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID: "23482348223",
+		memberID: 958,
 	}
-	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	andata.tags[0] = anTagInfo{
+		code:              "first-tag",
+		placementID:       8394,
+		bid:               1.67,
+		trafficSourceCode: "ppc-exchange",
+		content:           "<html><body>huh</body></html>",
+		in_keywords:       "{ genre: ['jazz', 'pop']  }",
+		out_keywords:      "genre=jazz,pop",
+		reserve:           1.50,
+		position:          2,
+	}
+	andata.tags[1] = anTagInfo{
+		code:              "second-tag",
+		invCode:           "leftbottom",
+		bid:               3.22,
+		trafficSourceCode: "taboola",
+		content:           "<html><body>yow!</body></html>",
+		in_keywords:       "{ genre: ['rock', 'pop']  }",
+		out_keywords:      "genre=rock,pop",
+		reserve:           0.75,
+		position:          1,
+	}
+
+	conf := *DefaultHTTPAdapterConfig
+	an := NewAppNexusAdapter(&conf, server.URL)
+	an.URI = server.URL
+
+	pbin := pbs.PBSRequest{
+		AdUnits: make([]pbs.AdUnit, 2),
+	}
+	for i, tag := range andata.tags {
+		var params json.RawMessage
+		if tag.placementID > 0 {
+			params = json.RawMessage(fmt.Sprintf("{\"placementId\": %d, \"member\": %d, \"keywords\": \"%s\", "+
+				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": %d}",
+				tag.placementID, andata.memberID, tag.in_keywords, tag.trafficSourceCode, tag.reserve, tag.position))
+		} else {
+			params = json.RawMessage(fmt.Sprintf("{\"invCode\": \"%s\", \"member\": %d, \"keywords\": \"%s\", "+
+				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": %d}",
+				tag.invCode, andata.memberID, tag.in_keywords, tag.trafficSourceCode, tag.reserve, tag.position))
+		}
+
+		pbin.AdUnits[i] = pbs.AdUnit{
+			Code: tag.code,
+			Sizes: []openrtb.Format{
+				{
+					W: 300,
+					H: 600,
+				},
+				{
+					W: 300,
+					H: 250,
+				},
+			},
+			Bids: []pbs.Bids{
+				pbs.Bids{
+					BidderCode: "appnexus",
+					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
+					Params:     params,
+				},
+			},
+		}
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(pbin)
+	if err != nil {
+		t.Fatalf("Json encoding failed: %v", err)
+	}
+
+	// fmt.Println("body", body)
+
+	req := httptest.NewRequest("POST", server.URL, body)
+	req.Header.Add("Referer", andata.page)
+	req.Header.Add("User-Agent", andata.deviceUA)
+	req.Header.Add("X-Real-IP", andata.deviceIP)
+
+	pc := pbs.ParseUIDCookie(req)
+	pc.UIDs["adnxs"] = andata.buyerUID
+	fakewriter := httptest.NewRecorder()
+	pbs.SetUIDCookie(fakewriter, pc)
+	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
+
+	cacheClient, _ := dummycache.New()
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	if err != nil {
+		t.Fatalf("ParsePBSRequest failed: %v", err)
+	}
+	if len(pbReq.Bidders) != 1 {
+		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(pbReq.Bidders))
+	}
+	if pbReq.Bidders[0].BidderCode != "appnexus" {
+		t.Fatalf("ParsePBSRequest returned invalid bidder")
+	}
+
+	ctx := context.TODO()
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
-	if len(bids) != 1 {
-		t.Fatalf("Did not receive 1 bid")
+	if len(bids) != 2 {
+		t.Fatalf("Received %d bids instead of 2", len(bids))
+	}
+	for _, bid := range bids {
+		matched := false
+		for _, tag := range andata.tags {
+			if bid.AdUnitCode == tag.code {
+				matched = true
+				if bid.BidderCode != "appnexus" {
+					t.Errorf("Incorrect BidderCode '%s'", bid.BidderCode)
+				}
+				if bid.Price != tag.bid {
+					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
+				}
+				if bid.Adm != tag.content {
+					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
+				}
+			}
+		}
+		if !matched {
+			t.Errorf("Received bid for unknown ad unit '%s'", bid.AdUnitCode)
+		}
+	}
+
+	// same test but with request timing out
+	andata.delay = 5 * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten a timeout error: %v", err)
 	}
 }
 
-func TestAppNexusUserSyncInfo(t *testing.T) {
+/*
+func TestRubiconUserSyncInfo(t *testing.T) {
+	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
+	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", url)
+	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {
@@ -244,4 +391,6 @@ func TestAppNexusUserSyncInfo(t *testing.T) {
 	if an.usersyncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
+
 }
+*/
