@@ -66,6 +66,7 @@ var (
 	mErrorMeter          metrics.Meter
 	mInvalidMeter        metrics.Meter
 	mRequestTimer        metrics.Timer
+	mCookieSyncMeter     metrics.Meter
 
 	adapterMetrics map[string]*AdapterMetrics
 
@@ -142,6 +143,64 @@ func getAccountMetrics(id string) *AccountMetrics {
 	return am
 }
 
+type cookieSyncRequest struct {
+	UUID    string   `json:"uuid"`
+	Bidders []string `json"bidders"`
+}
+
+type cookieSyncResponse struct {
+	UUID         string           `json:"uuid"`
+	Status       string           `json:"status"`
+	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
+}
+
+func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	mNoCookieMeter.Mark(1)
+	cookies := pbs.ParseUIDCookie(r)
+	if cookies.OptOut {
+		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		return
+	}
+
+	defer r.Body.Close()
+
+	csReq := &cookieSyncRequest{}
+	err := json.NewDecoder(r.Body).Decode(&csReq)
+	if err != nil {
+		glog.Infof("Read cookie sync request failed: %v", err)
+		http.Error(w, "JSON parse failed", http.StatusBadRequest)
+		return
+	}
+
+	csResp := cookieSyncResponse{
+		UUID:         csReq.UUID,
+		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
+	}
+	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || len(cookies.UIDs) == 0 {
+		csResp.Status = "no_cookie"
+	} else {
+		csResp.Status = "ok"
+	}
+
+	for _, bidder := range csReq.Bidders {
+		if ex, ok := exchanges[bidder]; ok {
+			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+				b := pbs.PBSBidder{
+					BidderCode:   bidder,
+					NoCookie:     true,
+					UsersyncInfo: ex.GetUsersyncInfo(),
+				}
+				csResp.BidderStatus = append(csResp.BidderStatus, &b)
+			}
+		}
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	//enc.SetIndent("", "  ")
+	enc.Encode(csResp)
+}
+
 func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
@@ -166,13 +225,13 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if requireUUID2 {
-		if _, err := r.Cookie("uuid2"); err != nil {
-			mNoCookieMeter.Mark(1)
-			if isSafari {
-				mSafariNoCookieMeter.Mark(1)
-			}
-			status = "no_cookie"
+	} else if len(pbs_req.UserIDs) == 0 {
+		mNoCookieMeter.Mark(1)
+		if isSafari {
+			mSafariNoCookieMeter.Mark(1)
+		}
+		status = "no_cookie"
+		if requireUUID2 {
 			uuid2 := fmt.Sprintf("%d", rand.Int63())
 			c := http.Cookie{
 				Name:    "uuid2",
@@ -545,11 +604,7 @@ func main() {
 	}
 }
 
-func serve(cfg *config.Configuration) error {
-	if err := loadDataCache(cfg); err != nil {
-		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
-	}
-
+func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
@@ -570,6 +625,7 @@ func serve(cfg *config.Configuration) error {
 	mErrorMeter = metrics.GetOrRegisterMeter("error_requests", metricsRegistry)
 	mInvalidMeter = metrics.GetOrRegisterMeter("invalid_requests", metricsRegistry)
 	mRequestTimer = metrics.GetOrRegisterTimer("request_time", metricsRegistry)
+	mCookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", metricsRegistry)
 
 	accountMetrics = make(map[string]*AccountMetrics)
 
@@ -585,6 +641,15 @@ func serve(cfg *config.Configuration) error {
 		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("adapter.%s.prices", exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 		adapterMetrics[exchange] = &a
 	}
+
+}
+
+func serve(cfg *config.Configuration) error {
+	if err := loadDataCache(cfg); err != nil {
+		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
+	}
+
+	setupExchanges(cfg)
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
@@ -618,6 +683,7 @@ func serve(cfg *config.Configuration) error {
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
+	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
