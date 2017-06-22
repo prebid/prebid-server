@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/prebid/prebid-server/pbs"
 
@@ -37,14 +38,19 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+type KeyVal struct {
+	Key    string   `json:"key"`
+	Values []string `json:"value"`
+}
+
 type appnexusParams struct {
-	PlacementId       int     `json:"placementId"`
-	InvCode           string  `json:"invCode"`
-	Member            int     `json:"member"`
-	Keywords          string  `json:"keywords"`
-	TrafficSourceCode string  `json:"trafficSourceCode"`
-	Reserve           float64 `json:"reserve"`
-	Position          int     `json:"position"`
+	PlacementId       int      `json:"placementId"`
+	InvCode           string   `json:"invCode"`
+	Member            int      `json:"member"`
+	Keywords          []KeyVal `json:"keywords"`
+	TrafficSourceCode string   `json:"trafficSourceCode"`
+	Reserve           float64  `json:"reserve"`
+	Position          int      `json:"position"`
 }
 
 type appnexusImpExtAppnexus struct {
@@ -91,10 +97,20 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			}
 		}
 
+		var buffer bytes.Buffer
+		for i, kv := range params.Keywords {
+			if i > 0 {
+				buffer.WriteString(",")
+			}
+			buffer.WriteString(kv.Key)
+			buffer.WriteString("=")
+			buffer.WriteString(strings.Join(kv.Values, ","))
+		}
+
 		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 			PlacementID:       params.PlacementId,
 			TrafficSourceCode: params.TrafficSourceCode,
-			Keywords:          params.Keywords,
+			Keywords:          buffer.String(),
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 	}

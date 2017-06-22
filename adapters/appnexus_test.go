@@ -116,13 +116,11 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		/*
-			if aix.Appnexus.Keywords != andata.tags[i].out_keywords {
-				http.Error(w, fmt.Sprintf("Keywords '%s' doesn't match '%s", aix.Appnexus.Keywords,
-					andata.tags[i].out_keywords), http.StatusInternalServerError)
-				return
-			}
-		*/
+		if aix.Appnexus.Keywords != andata.tags[i].out_keywords {
+			http.Error(w, fmt.Sprintf("Keywords '%s' doesn't match '%s", aix.Appnexus.Keywords,
+				andata.tags[i].out_keywords), http.StatusInternalServerError)
+			return
+		}
 
 		if aix.Appnexus.TrafficSourceCode != andata.tags[i].trafficSourceCode {
 			http.Error(w, fmt.Sprintf("Traffic source code '%s' doesn't match '%s", aix.Appnexus.TrafficSourceCode,
@@ -248,7 +246,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		bid:               1.67,
 		trafficSourceCode: "ppc-exchange",
 		content:           "<html><body>huh</body></html>",
-		in_keywords:       "{ genre: ['jazz', 'pop']  }",
+		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"jazz\", \"pop\"] }]",
 		out_keywords:      "genre=jazz,pop",
 		reserve:           1.50,
 		position:          2,
@@ -259,7 +257,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		bid:               3.22,
 		trafficSourceCode: "taboola",
 		content:           "<html><body>yow!</body></html>",
-		in_keywords:       "{ genre: ['rock', 'pop']  }",
+		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"rock\", \"pop\"] }]",
 		out_keywords:      "genre=rock,pop",
 		reserve:           0.75,
 		position:          1,
@@ -275,11 +273,11 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	for i, tag := range andata.tags {
 		var params json.RawMessage
 		if tag.placementID > 0 {
-			params = json.RawMessage(fmt.Sprintf("{\"placementId\": %d, \"member\": %d, \"keywords\": \"%s\", "+
+			params = json.RawMessage(fmt.Sprintf("{\"placementId\": %d, \"member\": %d, \"keywords\": %s, "+
 				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": %d}",
 				tag.placementID, andata.memberID, tag.in_keywords, tag.trafficSourceCode, tag.reserve, tag.position))
 		} else {
-			params = json.RawMessage(fmt.Sprintf("{\"invCode\": \"%s\", \"member\": %d, \"keywords\": \"%s\", "+
+			params = json.RawMessage(fmt.Sprintf("{\"invCode\": \"%s\", \"member\": %d, \"keywords\": %s, "+
 				"\"trafficSourceCode\": \"%s\", \"reserve\": %.3f, \"position\": %d}",
 				tag.invCode, andata.memberID, tag.in_keywords, tag.trafficSourceCode, tag.reserve, tag.position))
 		}
