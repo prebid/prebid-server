@@ -39,8 +39,8 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type KeyVal struct {
-	Key    string   `json:"key"`
-	Values []string `json:"value"`
+	Key    string   `json:"key,omitempty"`
+	Values []string `json:"value,omitempty"`
 }
 
 type appnexusParams struct {
@@ -54,9 +54,9 @@ type appnexusParams struct {
 }
 
 type appnexusImpExtAppnexus struct {
-	PlacementID       int    `json:"placement_id"`
-	Keywords          string `json:"keywords"`
-	TrafficSourceCode string `json:"traffic_source_code"`
+	PlacementID       int    `json:"placement_id,omitempty"`
+	Keywords          string `json:"keywords,omitempty"`
+	TrafficSourceCode string `json:"traffic_source_code,omitempty"`
 }
 
 type appnexusImpExt struct {

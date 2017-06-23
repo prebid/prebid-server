@@ -62,7 +62,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memberID := r.FormValue("member")
+	memberID := r.FormValue("member_id")
 	if memberID != andata.memberID {
 		http.Error(w, fmt.Sprintf("Member ID '%s' doesn't match '%s", memberID, andata.memberID), http.StatusInternalServerError)
 		return
