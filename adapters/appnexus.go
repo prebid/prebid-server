@@ -97,20 +97,24 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			}
 		}
 
-		var buffer bytes.Buffer
-		for i, kv := range params.Keywords {
-			if i > 0 {
-				buffer.WriteString(",")
+		kvs := make([]string, 0, len(params.Keywords)*2)
+		for _, kv := range params.Keywords {
+			if len(kv.Values) == 0 {
+				kvs = append(kvs, kv.Key)
+			} else {
+				for _, val := range kv.Values {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
+				}
+
 			}
-			buffer.WriteString(kv.Key)
-			buffer.WriteString("=")
-			buffer.WriteString(strings.Join(kv.Values, ","))
 		}
+
+		keywordStr := strings.Join(kvs, ",")
 
 		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 			PlacementID:       params.PlacementId,
 			TrafficSourceCode: params.TrafficSourceCode,
-			Keywords:          buffer.String(),
+			Keywords:          keywordStr,
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 	}
