@@ -82,7 +82,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			anReq.Imp[i].TagID = params.InvCode
 			if params.Member != "" {
 				// this assumes that the same member ID is used across all tags, which should be the case
-				uri = fmt.Sprintf("%s?member=%s", a.URI, params.Member)
+				uri = fmt.Sprintf("%s?member_id=%s", a.URI, params.Member)
 			}
 
 		}
