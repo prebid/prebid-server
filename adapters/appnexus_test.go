@@ -62,7 +62,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	memberID := r.FormValue("member")
+	memberID := r.FormValue("member_id")
 	if memberID != andata.memberID {
 		http.Error(w, fmt.Sprintf("Member ID '%s' doesn't match '%s", memberID, andata.memberID), http.StatusInternalServerError)
 		return
@@ -239,8 +239,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		bid:               1.67,
 		trafficSourceCode: "ppc-exchange",
 		content:           "<html><body>huh</body></html>",
-		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"jazz\", \"pop\"] }]",
-		out_keywords:      "genre=jazz,pop",
+		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"jazz\", \"pop\"] }, {\"key\": \"myEmptyKey\", \"value\": []}]",
+		out_keywords:      "genre=jazz,genre=pop,myEmptyKey",
 		reserve:           1.50,
 		position:          "below",
 	}
@@ -250,8 +250,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		bid:               3.22,
 		trafficSourceCode: "taboola",
 		content:           "<html><body>yow!</body></html>",
-		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"rock\", \"pop\"] }]",
-		out_keywords:      "genre=rock,pop",
+		in_keywords:       "[{ \"key\": \"genre\", \"value\": [\"rock\", \"pop\"] }, {\"key\": \"myKey\", \"value\": [\"myVal\"]}]",
+		out_keywords:      "genre=rock,genre=pop,myKey=myVal",
 		reserve:           0.75,
 		position:          "above",
 	}

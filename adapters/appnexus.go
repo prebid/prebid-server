@@ -39,8 +39,8 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 type KeyVal struct {
-	Key    string   `json:"key"`
-	Values []string `json:"value"`
+	Key    string   `json:"key,omitempty"`
+	Values []string `json:"value,omitempty"`
 }
 
 type appnexusParams struct {
@@ -54,9 +54,9 @@ type appnexusParams struct {
 }
 
 type appnexusImpExtAppnexus struct {
-	PlacementID       int    `json:"placement_id"`
-	Keywords          string `json:"keywords"`
-	TrafficSourceCode string `json:"traffic_source_code"`
+	PlacementID       int    `json:"placement_id,omitempty"`
+	Keywords          string `json:"keywords,omitempty"`
+	TrafficSourceCode string `json:"traffic_source_code,omitempty"`
 }
 
 type appnexusImpExt struct {
@@ -82,7 +82,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			anReq.Imp[i].TagID = params.InvCode
 			if params.Member != "" {
 				// this assumes that the same member ID is used across all tags, which should be the case
-				uri = fmt.Sprintf("%s?member=%s", a.URI, params.Member)
+				uri = fmt.Sprintf("%s?member_id=%s", a.URI, params.Member)
 			}
 
 		}
@@ -97,20 +97,24 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			}
 		}
 
-		var buffer bytes.Buffer
-		for i, kv := range params.Keywords {
-			if i > 0 {
-				buffer.WriteString(",")
+		kvs := make([]string, 0, len(params.Keywords)*2)
+		for _, kv := range params.Keywords {
+			if len(kv.Values) == 0 {
+				kvs = append(kvs, kv.Key)
+			} else {
+				for _, val := range kv.Values {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
+				}
+
 			}
-			buffer.WriteString(kv.Key)
-			buffer.WriteString("=")
-			buffer.WriteString(strings.Join(kv.Values, ","))
 		}
+
+		keywordStr := strings.Join(kvs, ",")
 
 		impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 			PlacementID:       params.PlacementId,
 			TrafficSourceCode: params.TrafficSourceCode,
-			Keywords:          buffer.String(),
+			Keywords:          keywordStr,
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 	}
