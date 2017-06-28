@@ -77,10 +77,10 @@ func TestParseSimpleRequest(t *testing.T) {
 		t.Errorf("Index bidder should have 1 ad unit")
 	}
 	if pbs_req.Bidders[1].AdUnits[0].BidID == "" {
-		t.Errorf("UUID should have been generated for empty BidID")
+		t.Errorf("ID should have been generated for empty BidID")
 	}
 	if pbs_req.Bidders[2].AdUnits[0].BidID == "" {
-		t.Errorf("UUID should have been generated for empty BidID")
+		t.Errorf("ID should have been generated for empty BidID")
 	}
 }
 
