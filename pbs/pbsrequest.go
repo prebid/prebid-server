@@ -220,7 +220,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
 			if b.BidID == "" {
-				rand.Seed(time.Now().UnixNano())
 				b.BidID = fmt.Sprintf("%d", rand.Int63())
 			}
 
