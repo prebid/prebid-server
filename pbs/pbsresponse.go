@@ -22,9 +22,9 @@ type PBSBid struct {
 	// Width is the intended width which Adm should be shown, in pixels.
 	Width uint64 `json:"width,omitempty"`
 	// Height is the intended width which Adm should be shown, in pixels.
-	Height  uint64 `json:"height,omitempty"`
-	DealId  string `json:"deal_id,omitempty"`
-	CacheID string `json:"cache_id,omitempty"`
+	Height            uint64            `json:"height,omitempty"`
+	DealId            string            `json:"deal_id,omitempty"`
+	CacheID           string            `json:"cache_id,omitempty"`
 	ResponseTime      int               `json:"response_time_ms,omitempty"`
 	AdServerTargeting map[string]string `json:"ad_server_targeting,omitempty"`
 }
