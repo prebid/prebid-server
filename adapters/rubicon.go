@@ -156,31 +156,31 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	return
 }
 
-func (a *RubiconAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result fbResult, err error) {
+func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
 	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.Header.Add("User-Agent", "prebid-server/1.0")
 	httpReq.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 
-	anResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
+	rubiResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
 	if e != nil {
 		err = e
 		return
 	}
 
-	defer anResp.Body.Close()
-	body, _ := ioutil.ReadAll(anResp.Body)
+	defer rubiResp.Body.Close()
+	body, _ := ioutil.ReadAll(rubiResp.Body)
 	result.responseBody = string(body)
 
-	result.statusCode = anResp.StatusCode
+	result.statusCode = rubiResp.StatusCode
 
-	if anResp.StatusCode == 204 {
+	if rubiResp.StatusCode == 204 {
 		return
 	}
 
-	if anResp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, result.responseBody)
+	if rubiResp.StatusCode != 200 {
+		err = fmt.Errorf("HTTP status %d; body: %s", rubiResp.StatusCode, result.responseBody)
 		return
 	}
 
@@ -260,10 +260,10 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 	}
 
-	ch := make(chan fbResult)
+	ch := make(chan callOneResult)
 	for i, _ := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.CallOne(ctx, req, reqJSON)
+			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err
 			if result.bid != nil {
 				result.bid.BidderCode = bidder.BidderCode
