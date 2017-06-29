@@ -25,7 +25,6 @@ type PBSBid struct {
 	Height  uint64 `json:"height,omitempty"`
 	DealId  string `json:"deal_id,omitempty"`
 	CacheID string `json:"cache_id,omitempty"`
-	// ResponseTime shows the
 	ResponseTime      int               `json:"response_time_ms,omitempty"`
 	AdServerTargeting map[string]string `json:"ad_server_targeting,omitempty"`
 }
