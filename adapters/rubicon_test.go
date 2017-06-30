@@ -307,7 +307,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	}
 
 	// same test but with request timing out
-	rubidata.delay = 5 * time.Millisecond
+	rubidata.delay = 20 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
