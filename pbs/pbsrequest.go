@@ -3,6 +3,7 @@ package pbs
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -217,6 +218,9 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 					bidder.AdUnitCode = unit.Code
 				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
+			}
+			if b.BidID == "" {
+				b.BidID = fmt.Sprintf("%d", rand.Int63())
 			}
 
 			pau := PBSAdUnit{
