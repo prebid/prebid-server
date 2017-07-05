@@ -39,6 +39,10 @@ func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *RubiconAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type rubiconParams struct {
 	AccountId int `json:"accountId"`
 	SiteId    int `json:"siteId"`

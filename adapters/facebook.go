@@ -41,6 +41,10 @@ func (a *FacebookAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *FacebookAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type facebookParams struct {
 	PlacementId string `json:"placementId"`
 }

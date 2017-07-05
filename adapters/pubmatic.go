@@ -35,6 +35,10 @@ func (a *PubmaticAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *PubmaticAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type pubmaticParams struct {
 	PublisherId string `json:"publisherId"`
 	AdSlot      string `json:"adSlot"`
