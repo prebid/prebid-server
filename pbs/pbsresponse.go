@@ -16,7 +16,8 @@ type PBSBid struct {
 	// it helps publishers and bidders identify and communicate about malicious or inappropriate ads.
 	// This project simply passes it along with the bid.
 	Creative_id string `json:"creative_id,omitempty"`
-	BidderCode  string `json:"bidder"`
+	// BidderCode is the PBSBidder.BidderCode of the PBSBidder who made this bid.
+	BidderCode string `json:"bidder"`
 	// BidHash is the hash of the bidder's unique bid identifier for blockchain. It should not be sent to browser.
 	BidHash string `json:"-"`
 	// Price is the cpm, in US Dollars, which the bidder is willing to pay if this bid is chosen.
@@ -52,7 +53,6 @@ func (bids PBSBidSlice) Len() int {
 	return len(bids)
 }
 
-// Less sorts from lowest to highest, to reverse we want to check which is greater bids[i].Price > bids[j].Price
 func (bids PBSBidSlice) Less(i, j int) bool {
 	bidiResponseTimeInTerras := (float64(bids[i].ResponseTime) / 1000000000.0)
 	bidjResponseTimeInTerras := (float64(bids[j].ResponseTime) / 1000000000.0)
