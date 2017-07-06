@@ -16,9 +16,17 @@ import (
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
+	"golang.org/x/tools/go/gcimporter15/testdata"
 )
 
 const MAX_BIDDERS = 8
+
+type MediaType byte
+
+const (
+	BANNER MediaType = iota
+	VIDEO
+)
 
 type ConfigCache interface {
 	LoadConfig(string) ([]Bids, error)
@@ -36,7 +44,9 @@ type AdUnit struct {
 	Sizes    []openrtb.Format `json:"sizes"`
 	Bids     []Bids           `json:"bids"`
 	ConfigID string           `json:"config_id"`
+	MediaTypes []string       `json:"media_types"`
 }
+
 
 type PBSAdUnit struct {
 	Sizes    []openrtb.Format
@@ -44,6 +54,16 @@ type PBSAdUnit struct {
 	Code     string
 	BidID    string
 	Params   json.RawMessage
+	MediaTypes []MediaType
+}
+
+func ParseMediaType(s string) (MediaType, error) {
+	mediaTypes := map[string]MediaType {"BANNER":BANNER, "VIDEO":VIDEO}
+	t, ok := mediaTypes[s]
+	if !ok  {
+		return nil, fmt.Errorf("Invalid MediaType %q", s)
+	}
+	return t, nil
 }
 
 type PBSBidder struct {
@@ -202,6 +222,28 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			glog.Infof("Ad unit %s has %d bidders for %d sizes", unit.Code, len(bidders), len(unit.Sizes))
 		}
 
+		var mtypes []MediaType
+		mtmap := make(map[MediaType]bool)
+
+		if unit.MediaTypes == nil {
+			mtypes = append(mtypes, BANNER)
+		} else {
+			for _, t := range unit.MediaTypes {
+				mt, er := ParseMediaType(t)
+				if er != nil {
+					glog.Infof(er)
+				} else {
+					if !mtmap[mt] {
+						mtypes = append(mtypes, mt)
+						mtmap[mt] = true
+					}
+				}
+			}
+			if len(mtypes) == 0 {
+				mtypes = append(mtypes, BANNER)
+			}
+		}
+
 		for _, b := range bidders {
 			var bidder *PBSBidder
 			// index requires a different request for each ad unit
@@ -229,6 +271,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				Code:     unit.Code,
 				Params:   b.Params,
 				BidID:    b.BidID,
+				MediaTypes: mtypes,
 			}
 
 			bidder.AdUnits = append(bidder.AdUnits, pau)
