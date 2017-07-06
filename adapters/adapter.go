@@ -18,6 +18,8 @@ type Adapter interface {
 	// FamilyName identifies the space of cookies which this adapter accesses. For example, an adapter
 	// using the adnxs.com cookie space should return "adnxs".
 	FamilyName() string
+  // Determines whether this adapter should get callouts if there is not a synched user ID
+  SkipNoCookies() bool
 	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.
 	// For more information, see http://clearcode.cc/2015/12/cookie-syncing/
 	GetUsersyncInfo() *pbs.UsersyncInfo
@@ -63,4 +65,12 @@ func NewHTTPAdapter(c *HTTPAdapterConfig) *HTTPAdapter {
 			Transport: ts,
 		},
 	}
+}
+
+// used for callOne (possibly pull all of the shared code here)
+type callOneResult struct {
+	statusCode   int
+	responseBody string
+	bid          *pbs.PBSBid
+	Error        error
 }

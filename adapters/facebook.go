@@ -41,18 +41,15 @@ func (a *FacebookAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *FacebookAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type facebookParams struct {
 	PlacementId string `json:"placementId"`
 }
 
-type fbResult struct {
-	statusCode   int
-	responseBody string
-	bid          *pbs.PBSBid
-	Error        error
-}
-
-func (a *FacebookAdapter) CallOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result fbResult, err error) {
+func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
 	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
@@ -132,10 +129,10 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 	}
 
-	ch := make(chan fbResult)
+	ch := make(chan callOneResult)
 	for i, _ := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.CallOne(ctx, req, reqJSON)
+			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err
 			if result.bid != nil {
 				result.bid.BidderCode = bidder.BidderCode

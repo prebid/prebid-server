@@ -63,6 +63,30 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(breq.Imp) > 1 {
+		http.Error(w, "Rubicon adapter only supports one Imp per request", http.StatusInternalServerError)
+		return
+	}
+	imp := breq.Imp[0]
+	var rix rubiconImpExt
+	err = json.Unmarshal(imp.Ext, &rix)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ix := -1
+
+	for i, tag := range rubidata.tags {
+		if rix.RP.ZoneID == tag.zoneID {
+			ix = i
+		}
+	}
+	if ix == -1 {
+		http.Error(w, fmt.Sprintf("Zone %d not found", rix.RP.ZoneID), http.StatusInternalServerError)
+		return
+	}
+
 	resp := openrtb.BidResponse{
 		ID:    "a-random-id",
 		BidID: "another-random-id",
@@ -75,46 +99,34 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	for i, imp := range breq.Imp {
-		var rix rubiconImpExt
-		err = json.Unmarshal(imp.Ext, &rix)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if rix.RP.ZoneID != rubidata.tags[i].zoneID {
-			http.Error(w, fmt.Sprintf("Zone ID '%d' doesn't match '%d", rix.RP.ZoneID, rubidata.tags[i].zoneID), http.StatusInternalServerError)
-			return
-		}
-		if imp.Banner == nil {
-			http.Error(w, fmt.Sprintf("No banner object sent"), http.StatusInternalServerError)
-			return
-		}
-		var bix rubiconBannerExt
-		err = json.Unmarshal(imp.Banner.Ext, &bix)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if bix.RP.SizeID != 10 { // 300x600
-			http.Error(w, fmt.Sprintf("Primary size ID isn't 10"), http.StatusInternalServerError)
-			return
-		}
-		if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 15 { // 300x250
-			http.Error(w, fmt.Sprintf("Alt size ID isn't 15"), http.StatusInternalServerError)
-			return
-		}
-		if bix.RP.MIME != "text/html" {
-			http.Error(w, fmt.Sprintf("MIME isn't text/html"), http.StatusInternalServerError)
-			return
-		}
+	if imp.Banner == nil {
+		http.Error(w, fmt.Sprintf("No banner object sent"), http.StatusInternalServerError)
+		return
+	}
+	var bix rubiconBannerExt
+	err = json.Unmarshal(imp.Banner.Ext, &bix)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if bix.RP.SizeID != 10 { // 300x600
+		http.Error(w, fmt.Sprintf("Primary size ID isn't 10"), http.StatusInternalServerError)
+		return
+	}
+	if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 15 { // 300x250
+		http.Error(w, fmt.Sprintf("Alt size ID isn't 15"), http.StatusInternalServerError)
+		return
+	}
+	if bix.RP.MIME != "text/html" {
+		http.Error(w, fmt.Sprintf("MIME isn't text/html"), http.StatusInternalServerError)
+		return
+	}
 
-		resp.SeatBid[0].Bid[i] = openrtb.Bid{
-			ID:    "random-id",
-			ImpID: imp.ID,
-			Price: rubidata.tags[i].bid,
-			AdM:   rubidata.tags[i].content,
-		}
+	resp.SeatBid[0].Bid[0] = openrtb.Bid{
+		ID:    "random-id",
+		ImpID: imp.ID,
+		Price: rubidata.tags[ix].bid,
+		AdM:   rubidata.tags[ix].content,
 	}
 
 	if breq.Site == nil {
@@ -295,7 +307,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	}
 
 	// same test but with request timing out
-	rubidata.delay = 5 * time.Millisecond
+	rubidata.delay = 20 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 

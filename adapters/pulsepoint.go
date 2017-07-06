@@ -37,6 +37,10 @@ func (a *PulsePointAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *PulsePointAdapter) SkipNoCookies() bool {
+	return false
+}
+
 // parameters for pulsepoint adapter.
 type PulsepointParams struct {
 	PublisherId int    `json:"cp"`

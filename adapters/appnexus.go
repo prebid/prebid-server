@@ -38,6 +38,10 @@ func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *AppNexusAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type KeyVal struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"value,omitempty"`

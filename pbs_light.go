@@ -274,7 +274,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				bidder.NoCookie = true
 				bidder.UsersyncInfo = ex.GetUsersyncInfo()
 				ametrics.NoCookieMeter.Mark(1)
-				continue
+				if ex.SkipNoCookies() {
+					continue
+				}
 			}
 			sentBids++
 			go func(bidder *pbs.PBSBidder) {

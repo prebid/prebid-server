@@ -39,6 +39,10 @@ func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *RubiconAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type rubiconParams struct {
 	AccountId int `json:"accountId"`
 	SiteId    int `json:"siteId"`
@@ -156,10 +160,67 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	return
 }
 
-func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	rpReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
+	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
+	httpReq.Header.Add("Accept", "application/json")
+	httpReq.Header.Add("User-Agent", "prebid-server/1.0")
+	httpReq.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
 
+	rubiResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
+	if e != nil {
+		err = e
+		return
+	}
+
+	defer rubiResp.Body.Close()
+	body, _ := ioutil.ReadAll(rubiResp.Body)
+	result.responseBody = string(body)
+
+	result.statusCode = rubiResp.StatusCode
+
+	if rubiResp.StatusCode == 204 {
+		return
+	}
+
+	if rubiResp.StatusCode != 200 {
+		err = fmt.Errorf("HTTP status %d; body: %s", rubiResp.StatusCode, result.responseBody)
+		return
+	}
+
+	var bidResp openrtb.BidResponse
+	err = json.Unmarshal(body, &bidResp)
+	if err != nil {
+		return
+	}
+	if len(bidResp.SeatBid) == 0 {
+		return
+	}
+	if len(bidResp.SeatBid[0].Bid) == 0 {
+		return
+	}
+	bid := bidResp.SeatBid[0].Bid[0]
+
+	result.bid = &pbs.PBSBid{
+		AdUnitCode:  bid.ImpID,
+		Price:       bid.Price,
+		Adm:         bid.AdM,
+		Creative_id: bid.CrID,
+		Width:       bid.W,
+		Height:      bid.H,
+		DealId:      bid.DealID,
+	}
+	return
+}
+
+func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
+		rubiReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+
+		// only grab this ad unit
+		rubiReq.Imp = rubiReq.Imp[i : i+1]
+
 		var params rubiconParams
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
@@ -175,7 +236,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			return nil, errors.New("Missing zoneId param")
 		}
 		impExt := rubiconImpExt{RP: rubiconImpExtRP{ZoneID: params.ZoneId}}
-		rpReq.Imp[i].Ext, err = json.Marshal(&impExt)
+		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
 
 		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 		if err != nil {
@@ -183,99 +244,69 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 
 		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-		rpReq.Imp[i].Banner.Ext, err = json.Marshal(&bannerExt)
-		// params are per-unit, so site may overwrite itself
+		rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
-		if rpReq.Site != nil {
-			rpReq.Site.Ext, err = json.Marshal(&siteExt)
-			rpReq.Site.Publisher = &openrtb.Publisher{}
-			rpReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
+		if rubiReq.Site != nil {
+			rubiReq.Site.Ext, err = json.Marshal(&siteExt)
+			rubiReq.Site.Publisher = &openrtb.Publisher{}
+			rubiReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
 		}
-		if rpReq.App != nil {
-			rpReq.App.Ext, err = json.Marshal(&siteExt)
-			rpReq.App.Publisher = &openrtb.Publisher{}
-			rpReq.App.Publisher.Ext, err = json.Marshal(&pubExt)
+		if rubiReq.App != nil {
+			rubiReq.App.Ext, err = json.Marshal(&siteExt)
+			rubiReq.App.Publisher = &openrtb.Publisher{}
+			rubiReq.App.Publisher.Ext, err = json.Marshal(&pubExt)
+		}
+
+		err = json.NewEncoder(&requests[i]).Encode(rubiReq)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	reqJSON, err := json.Marshal(rpReq)
-	if err != nil {
-		return nil, err
+	ch := make(chan callOneResult)
+	for i, _ := range bidder.AdUnits {
+		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
+			result, err := a.callOne(ctx, req, reqJSON)
+			result.Error = err
+			if result.bid != nil {
+				result.bid.BidderCode = bidder.BidderCode
+				result.bid.BidID = bidder.LookupBidID(result.bid.AdUnitCode)
+				if result.bid.BidID == "" {
+					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.bid.AdUnitCode)
+					result.bid = nil
+				}
+			}
+			ch <- result
+		}(bidder, requests[i])
 	}
 
-	debug := &pbs.BidderDebug{
-		RequestURI: a.URI,
-	}
-
-	if req.IsDebug {
-		debug.RequestBody = string(reqJSON)
-		bidder.Debug = append(bidder.Debug, debug)
-	}
-
-	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
-	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
-	httpReq.Header.Add("Accept", "application/json")
-	httpReq.Header.Add("User-Agent", "prebid-server/1.0")
-	httpReq.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
-	// todo: add basic auth
-
-	anResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if err != nil {
-		return nil, err
-	}
-
-	defer anResp.Body.Close()
-	body, _ := ioutil.ReadAll(anResp.Body)
-	responseBody := string(body)
-
-	debug.StatusCode = anResp.StatusCode
-
-	if anResp.StatusCode == 204 {
-		return nil, nil
-	}
-
-	if anResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, responseBody)
-	}
-
-	if req.IsDebug {
-		debug.ResponseBody = responseBody
-	}
-
-	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
-		return nil, err
-	}
+	var err error
 
 	bids := make(pbs.PBSBidSlice, 0)
-
-	numBids := 0
-	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
-			numBids++
-
-			bidID := bidder.LookupBidID(bid.ImpID)
-			if bidID == "" {
-				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
+	for i := 0; i < len(bidder.AdUnits); i++ {
+		result := <-ch
+		if result.bid != nil {
+			bids = append(bids, result.bid)
+		}
+		if req.IsDebug {
+			debug := &pbs.BidderDebug{
+				RequestURI:   a.URI,
+				RequestBody:  requests[i].String(),
+				StatusCode:   result.statusCode,
+				ResponseBody: result.responseBody,
 			}
-
-			pbid := pbs.PBSBid{
-				BidID:       bidID,
-				AdUnitCode:  bid.ImpID,
-				BidderCode:  bidder.BidderCode,
-				Price:       bid.Price,
-				Adm:         bid.AdM,
-				Creative_id: bid.CrID,
-				Width:       bid.W,
-				Height:      bid.H,
-				DealId:      bid.DealID,
-			}
-			bids = append(bids, &pbid)
+			bidder.Debug = append(bidder.Debug, debug)
+		}
+		if result.Error != nil {
+			fmt.Printf("Error in rubicon adapter: %v", result.Error)
+			err = result.Error
 		}
 	}
 
+	if len(bids) == 0 {
+		return nil, err
+	}
 	return bids, nil
 }
 

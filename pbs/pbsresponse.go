@@ -52,6 +52,7 @@ func (bids PBSBidSlice) Len() int {
 	return len(bids)
 }
 
+// Less sorts from lowest to highest, to reverse we want to check which is greater bids[i].Price > bids[j].Price
 func (bids PBSBidSlice) Less(i, j int) bool {
 	bidiResponseTimeInTerras := (float64(bids[i].ResponseTime) / 1000000000.0)
 	bidjResponseTimeInTerras := (float64(bids[j].ResponseTime) / 1000000000.0)
