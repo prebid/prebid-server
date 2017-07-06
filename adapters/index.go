@@ -37,6 +37,10 @@ func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+func (a *IndexAdapter) SkipNoCookies() bool {
+	return false
+}
+
 type indexParams struct {
 	SiteID int `json:"siteID"`
 }
