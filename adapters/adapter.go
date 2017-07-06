@@ -23,7 +23,10 @@ type Adapter interface {
 	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.
 	// For more information, see http://clearcode.cc/2015/12/cookie-syncing/
 	GetUsersyncInfo() *pbs.UsersyncInfo
-	// Produce bids which should be considered, given the auction params.
+	// Call produces bids which should be considered, given the auction params.
+	//
+	// In practice, implementations almost always make one call to an external server here.
+	// However, that is not a requirement for satisfying this interface.
 	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
 }
 
