@@ -12,10 +12,14 @@ import (
 // Adapters connect prebid-server to a demand partner. Their primary purpose is to produce bids
 // in response to Auction requests.
 type Adapter interface {
-	// A name which uniquely identifies this adapter.
-	// This must not overlap with any other adapters in prebid-server.
+	// Name uniquely identifies this adapter. This must be identical to the code in Prebid.js,
+	// but cannot overlap with any other adapters in prebid-server.
 	Name() string
+	// FamilyName identifies the space of cookies which this adapter accesses. For example, an adapter
+	// using the adnxs.com cookie space should return "adnxs".
 	FamilyName() string
+	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.
+	// For more information, see http://clearcode.cc/2015/12/cookie-syncing/
 	GetUsersyncInfo() *pbs.UsersyncInfo
 	// Produce bids which should be considered, given the auction params.
 	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
