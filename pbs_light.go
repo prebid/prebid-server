@@ -44,7 +44,8 @@ type AccountMetrics struct {
 	RequestMeter      metrics.Meter
 	BidsReceivedMeter metrics.Meter
 	PriceHistogram    metrics.Histogram
-	AdapterMetrics    map[string]*AdapterMetrics
+	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
+	AdapterMetrics map[string]*AdapterMetrics
 }
 
 type AdapterMetrics struct {
