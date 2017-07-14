@@ -38,29 +38,39 @@ type Bids struct {
 	Params     json.RawMessage `json:"params"`
 }
 
-type AdUnit struct {
-	Code     string           `json:"code"`
-	TopFrame int8             `json:"is_top_frame"`
-	Sizes    []openrtb.Format `json:"sizes"`
-	Bids     []Bids           `json:"bids"`
-	ConfigID string           `json:"config_id"`
-	MediaTypes []string       `json:"media_types"`
+type PBSVideo struct {
+	Mimes          []string `json:"mimes,omitempty"`
+	Minduration    int      `json:"minduration,omitempty"`
+	Maxduration    int      `json:"maxduration,omitempty"`
+	Startdelay     int      `json:"startdelay,omitempty"`
+	Skippable      int      `json:"skippable,omitempty"`
+	PlaybackMethod string   `json:"playback_method,omitempty"`
+	Frameworks     []string `json:"frameworks,omitempty"`
 }
 
+type AdUnit struct {
+	Code       string           `json:"code"`
+	TopFrame   int8             `json:"is_top_frame"`
+	Sizes      []openrtb.Format `json:"sizes"`
+	Bids       []Bids           `json:"bids"`
+	ConfigID   string           `json:"config_id"`
+	MediaTypes []string         `json:"media_types"`
+}
 
 type PBSAdUnit struct {
-	Sizes    []openrtb.Format
-	TopFrame int8
-	Code     string
-	BidID    string
-	Params   json.RawMessage
+	Sizes      []openrtb.Format
+	TopFrame   int8
+	Code       string
+	BidID      string
+	Params     json.RawMessage
+	Video      PBSVideo
 	MediaTypes []MediaType
 }
 
 func ParseMediaType(s string) (MediaType, error) {
-	mediaTypes := map[string]MediaType {"BANNER":BANNER, "VIDEO":VIDEO}
+	mediaTypes := map[string]MediaType{"BANNER": BANNER, "VIDEO": VIDEO}
 	t, ok := mediaTypes[s]
-	if !ok  {
+	if !ok {
 		return nil, fmt.Errorf("Invalid MediaType %q", s)
 	}
 	return t, nil
@@ -266,11 +276,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			}
 
 			pau := PBSAdUnit{
-				Sizes:    unit.Sizes,
-				TopFrame: unit.TopFrame,
-				Code:     unit.Code,
-				Params:   b.Params,
-				BidID:    b.BidID,
+				Sizes:      unit.Sizes,
+				TopFrame:   unit.TopFrame,
+				Code:       unit.Code,
+				Params:     b.Params,
+				BidID:      b.BidID,
 				MediaTypes: mtypes,
 			}
 
