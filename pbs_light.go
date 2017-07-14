@@ -44,16 +44,19 @@ type AccountMetrics struct {
 	RequestMeter      metrics.Meter
 	BidsReceivedMeter metrics.Meter
 	PriceHistogram    metrics.Histogram
+	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
+	AdapterMetrics map[string]*AdapterMetrics
 }
 
 type AdapterMetrics struct {
-	NoCookieMeter  metrics.Meter
-	ErrorMeter     metrics.Meter
-	NoBidMeter     metrics.Meter
-	TimeoutMeter   metrics.Meter
-	RequestMeter   metrics.Meter
-	RequestTimer   metrics.Timer
-	PriceHistogram metrics.Histogram
+	NoCookieMeter     metrics.Meter
+	ErrorMeter        metrics.Meter
+	NoBidMeter        metrics.Meter
+	TimeoutMeter      metrics.Meter
+	RequestMeter      metrics.Meter
+	RequestTimer      metrics.Timer
+	PriceHistogram    metrics.Histogram
+	BidsReceivedMeter metrics.Meter
 }
 
 var (
@@ -136,6 +139,7 @@ func getAccountMetrics(id string) *AccountMetrics {
 		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
 		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+		am.AdapterMetrics = makeExchangeMetrics(fmt.Sprintf("account.%s", id))
 		accountMetrics[id] = am
 	}
 	accountMetricsRWMutex.Unlock()
@@ -269,11 +273,14 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			ametrics := adapterMetrics[bidder.BidderCode]
+			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
+			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
 				bidder.NoCookie = true
 				bidder.UsersyncInfo = ex.GetUsersyncInfo()
 				ametrics.NoCookieMeter.Mark(1)
+				accountAdapterMetric.NoCookieMeter.Mark(1)
 				if ex.SkipNoCookies() {
 					continue
 				}
@@ -284,20 +291,24 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				ametrics.RequestTimer.UpdateSince(start)
+				accountAdapterMetric.RequestTimer.UpdateSince(start)
 				if err != nil {
 					switch err {
 					case context.DeadlineExceeded:
 						ametrics.TimeoutMeter.Mark(1)
+						accountAdapterMetric.TimeoutMeter.Mark(1)
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
 						ametrics.ErrorMeter.Mark(1)
+						accountAdapterMetric.ErrorMeter.Mark(1)
 						bidder.Error = err.Error()
 					}
 				} else if bid_list != nil {
 					bidder.NumBids = len(bid_list)
 					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
+					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					for _, bid := range bid_list {
 						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
 						am.PriceHistogram.Update(int64(bid.Price * 1000))
@@ -306,6 +317,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				} else {
 					bidder.NoBid = true
 					ametrics.NoBidMeter.Mark(1)
+					accountAdapterMetric.NoBidMeter.Mark(1)
 				}
 
 				ch <- bidResult{
@@ -631,20 +643,28 @@ func setupExchanges(cfg *config.Configuration) {
 	mCookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", metricsRegistry)
 
 	accountMetrics = make(map[string]*AccountMetrics)
+	adapterMetrics = makeExchangeMetrics("adapter")
 
-	adapterMetrics = make(map[string]*AdapterMetrics)
+}
+
+func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
+	var adapterMetrics = make(map[string]*AdapterMetrics)
 	for exchange := range exchanges {
 		a := AdapterMetrics{}
-		a.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.no_cookie_requests", exchange), metricsRegistry)
-		a.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.error_requests", exchange), metricsRegistry)
-		a.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.requests", exchange), metricsRegistry)
-		a.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.no_bid_requests", exchange), metricsRegistry)
-		a.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("adapter.%s.timeout_requests", exchange), metricsRegistry)
-		a.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("adapter.%s.request_time", exchange), metricsRegistry)
-		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("adapter.%s.prices", exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+		a.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), metricsRegistry)
+		a.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.error_requests", adapterOrAccount, exchange), metricsRegistry)
+		a.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), metricsRegistry)
+		a.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_bid_requests", adapterOrAccount, exchange), metricsRegistry)
+		a.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.timeout_requests", adapterOrAccount, exchange), metricsRegistry)
+		a.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), metricsRegistry)
+		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+		if adapterOrAccount != "adapter" {
+			a.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), metricsRegistry)
+		}
+
 		adapterMetrics[exchange] = &a
 	}
-
+	return adapterMetrics
 }
 
 func serve(cfg *config.Configuration) error {
