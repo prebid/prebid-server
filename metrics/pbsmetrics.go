@@ -5,7 +5,8 @@ import (
 )
 
 // PBSMetrics logs useful metrics to InfluxDB.
-// Its APIs should only use only models from the PBS domain.
+//
+// Implementations of this interface should be threadsafe, so they can be used in multiple goroutines.
 type PBSMetrics interface {
 	// ServerStartedRequest should be called whenever PBS starts to serve an incoming request
 	ServerStartedRequest(requestInfo *RequestInfo) ServerRequestFollowups
@@ -15,6 +16,7 @@ type PBSMetrics interface {
 }
 
 type RequestInfo struct {
+	Publisher  string
 	IsSafari bool
 	IsApp    bool
 }

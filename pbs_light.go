@@ -594,18 +594,18 @@ func init() {
 	flag.Parse() // read glog settings from cmd line
 }
 
-func main() {
-	cfg, err := config.New()
-	if err != nil {
-		glog.Errorf("Viper was unable to read configurations: %v", err)
-	}
-	// we need to set this global variable so it can be used by other methods
-	requireUUID2 = cfg.RequireUUID2
-	cookieDomain = cfg.CookieDomain
-	if err := serve(cfg); err != nil {
-		glog.Fatalf("PreBid Server encountered an error: %v", err)
-	}
-}
+//func main() {
+//	cfg, err := config.New()
+//	if err != nil {
+//		glog.Errorf("Viper was unable to read configurations: %v", err)
+//	}
+//	// we need to set this global variable so it can be used by other methods
+//	requireUUID2 = cfg.RequireUUID2
+//	cookieDomain = cfg.CookieDomain
+//	if err := serve(cfg); err != nil {
+//		glog.Fatalf("PreBid Server encountered an error: %v", err)
+//	}
+//}
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
