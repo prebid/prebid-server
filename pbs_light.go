@@ -36,6 +36,7 @@ import (
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 )
 
+// TODO: Delete all metrics from this file after we've validated the data and written queries against the tags
 type DomainMetrics struct {
 	RequestMeter metrics.Meter
 }

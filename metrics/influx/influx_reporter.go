@@ -14,7 +14,7 @@ import (
 // Reporter periodically sends the metrics from a TaggableRegistry to Influx.
 type Reporter struct {
 	// Client is the Influx client which we use to write data points.
-	Client   coreInflux.Client
+	Client coreInflux.Client
 	// Database is the name of the Influx datatbase where metrics should go.
 	Database string
 	// Interval specifies the amount of time between writes to Influx.
@@ -22,7 +22,7 @@ type Reporter struct {
 	// Registry stores the Metrics which should be written to Influx.
 	Registry *TaggableRegistry
 	// Tags specifies tags which should appear in *every* Measurement written to influx.
-	Tags     map[string]string
+	Tags map[string]string
 }
 
 // run() starts the reporter. This should be run inside a goroutine, since it blocks pretty frequently.
@@ -49,12 +49,12 @@ func (r *Reporter) send() error {
 	var pts, err = coreInflux.NewBatchPoints(coreInflux.BatchPointsConfig{
 		Database: r.Database,
 	})
-	if (err != nil) {
+	if err != nil {
 		glog.Warningf("Failed to create InfluxDB BatchPoints. %v. Some metrics may be missing", err)
 	}
 
 	var tryAddPoint = func(point *coreInflux.Point, err error) {
-		if (err != nil) {
+		if err != nil {
 			glog.Warningf("Failed to create InfluxDB Point. %v. Some metrics may be missing", err)
 		} else {
 			pts.AddPoint(point)

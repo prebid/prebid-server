@@ -2,8 +2,8 @@ package metrics
 
 import (
 	"encoding/json"
-	"github.com/rcrowley/go-metrics"
 	"github.com/golang/glog"
+	"github.com/rcrowley/go-metrics"
 )
 
 // TaggedRegistry is a pseudo-Registry which allows metrics-level Influx Tags.
