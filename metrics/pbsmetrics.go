@@ -8,11 +8,14 @@ import (
 //
 // Implementations of this interface should be threadsafe, so they can be used in multiple goroutines.
 type PBSMetrics interface {
-	// ServerStartedRequest should be called whenever PBS starts to serve an incoming request
-	StartAuctionRequest(requestInfo *AuctionRequestInfo) ServerRequestFollowups
+	// ServerStartedRequest should be called each time the /auction endpoint is hit.
+	StartAuctionRequest(requestInfo *AuctionRequestInfo) AuctionRequestFollowups
 
 	// BidderStartedRequest should be called just before PBS calls Adapter.Call
-	StartBidRequest(auctionRequestInfo *AuctionRequestInfo, bidRequestInfo *BidRequestInfo) BidderRequestFollowups
+	StartBidderRequest(auctionRequestInfo *AuctionRequestInfo, bidRequestInfo *BidRequestInfo) BidderRequestFollowups
+
+	// StartCookieSyncRequest should be called each time the /cookie_sync endpoint is hit.
+	StartCookieSyncRequest()
 }
 
 // RequestSource is the list of sources where requests might come from.
@@ -50,12 +53,13 @@ type BidRequestInfo struct {
 	Bidder *pbs.PBSBidder
 }
 
-// ServerRequestFollowups contains functions which log followup data for the a particular request.
-type ServerRequestFollowups interface {
+// AuctionRequestFollowups contains functions which log followup data for the a particular request.
+type AuctionRequestFollowups interface {
 	// Completed should be called after the server is done with the request. If successful, err can be nil.
 	Completed(err error)
 }
 
+// BidderRequestFollowups contains functions which log followup data from a bidder request.
 type BidderRequestFollowups interface {
 	// BidderResponded should be called with the bidder's response. This is the return from Adapter.Call()
 	BidderResponded(pbs.PBSBidSlice, error)

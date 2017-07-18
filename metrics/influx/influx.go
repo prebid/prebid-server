@@ -53,7 +53,7 @@ func NewInfluxMetrics(client coreInflux.Client) coreMetrics.PBSMetrics {
 	var reporter = Reporter{
 		Client:   client,
 		Database: DATABASE,
-		Interval: 10 * time.Second,
+		Interval: 1 * time.Second,
 		Registry: registry,
 		Tags: map[string]string{
 			"hostname": hostname,
@@ -76,7 +76,7 @@ func NewInfluxMetrics(client coreInflux.Client) coreMetrics.PBSMetrics {
 //   1. The number of requests which come to prebid-server.
 //   2. The number of requests which end in some sort of error.
 //   3. Performance metrics for how long it takes prebid-server to respond.
-func (influx *PBSInflux) StartAuctionRequest(requestInfo *coreMetrics.AuctionRequestInfo) coreMetrics.ServerRequestFollowups {
+func (influx *PBSInflux) StartAuctionRequest(requestInfo *coreMetrics.AuctionRequestInfo) coreMetrics.AuctionRequestFollowups {
 	var followupTags = map[string]string{
 		"account_id": requestInfo.AccountId,
 	}
@@ -151,7 +151,7 @@ func (followups *InfluxBidderRequestFollowups) WithResponseTypeTag(value string)
 //   1. The number of requests to this bidder.
 //   2. The number of times this bidder responded with bids, had an error, or was too slow for the timeout.
 //   3. A price distribution for all the bids
-func (influx *PBSInflux) StartBidRequest(
+func (influx *PBSInflux) StartBidderRequest(
 	auctionRequestInfo *coreMetrics.AuctionRequestInfo,
 	bidRequestInfo *coreMetrics.BidRequestInfo) coreMetrics.BidderRequestFollowups {
 
@@ -170,4 +170,9 @@ func (influx *PBSInflux) StartBidRequest(
 		Tags:      followupTags,
 		StartTime: time.Now(),
 	}
+}
+
+// StartCookieSyncRequest implements part of the PBSMetrics interface.
+func (influx *PBSInflux) StartCookieSyncRequest() {
+	influx.Registry.GetOrRegisterMeter(COOKIESYNC_REQUEST_COUNT, nil).Mark(1)
 }
