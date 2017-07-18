@@ -11,7 +11,7 @@ import (
 // This piggybacks on the Registry for its threadsafety...
 // but exposes Tag-based APIs, and only implements the subset of the features we actually use.
 type TaggableRegistry struct {
-	delegate metrics.Registry
+	Delegate metrics.Registry
 }
 
 func (r *TaggableRegistry) Each(f func(string, map[string]string, interface{})) {
@@ -19,22 +19,22 @@ func (r *TaggableRegistry) Each(f func(string, map[string]string, interface{})) 
 		var measurementData = decode(encodedName)
 		f(measurementData.Name, measurementData.Tags, metric)
 	}
-	r.delegate.Each(decodeNamesBeforeF)
+	r.Delegate.Each(decodeNamesBeforeF)
 }
 
 func (r *TaggableRegistry) GetOrRegisterMeter(name string, tags map[string]string) metrics.Meter {
 	var encodedName = encode(name, tags)
-	return r.delegate.GetOrRegister(encodedName, metrics.NewMeter).(metrics.Meter)
+	return r.Delegate.GetOrRegister(encodedName, metrics.NewMeter).(metrics.Meter)
 }
 
 func (r *TaggableRegistry) GetOrRegisterTimer(name string, tags map[string]string) metrics.Timer {
 	var encodedName = encode(name, tags)
-	return r.delegate.GetOrRegister(encodedName, metrics.NewTimer).(metrics.Timer)
+	return r.Delegate.GetOrRegister(encodedName, metrics.NewTimer).(metrics.Timer)
 }
 
 func (r *TaggableRegistry) GetOrRegisterHistogram(name string, tags map[string]string) metrics.Histogram {
 	var encodedName = encode(name, tags)
-	return r.delegate.GetOrRegister(encodedName, metrics.NewHistogram).(metrics.Histogram)
+	return r.Delegate.GetOrRegister(encodedName, metrics.NewHistogram).(metrics.Histogram)
 }
 
 type FieldMetadata struct {

@@ -33,6 +33,21 @@ type ServerRequestFollowups interface {
 	Failed()
 }
 
+// ServerRequestFollowupsPrototype is a pluggable implementation of the ServerRequestFollowups interface.
+type ServerRequestFollowupsPrototype struct {
+	CompletedImpl func()
+	FailedImpl    func()
+}
+
+func (followups *ServerRequestFollowupsPrototype) Completed() {
+	followups.CompletedImpl()
+}
+
+func (followups *ServerRequestFollowupsPrototype) Failed() {
+	followups.FailedImpl()
+}
+
+
 type BidderRequestFollowups interface {
 	// NoBid should be called if the bidder has responded with a No-Bid request.
 	NoBid()
