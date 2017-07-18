@@ -32,9 +32,9 @@ func (r *TaggableRegistry) GetOrRegisterTimer(name string, tags map[string]strin
 	return r.Delegate.GetOrRegister(encodedName, metrics.NewTimer).(metrics.Timer)
 }
 
-func (r *TaggableRegistry) GetOrRegisterHistogram(name string, tags map[string]string) metrics.Histogram {
+func (r *TaggableRegistry) GetOrRegisterHistogram(name string, tags map[string]string, sample metrics.Sample) metrics.Histogram {
 	var encodedName = encode(name, tags)
-	return r.Delegate.GetOrRegister(encodedName, metrics.NewHistogram).(metrics.Histogram)
+	return r.Delegate.GetOrRegister(encodedName, func() metrics.Histogram { return metrics.NewHistogram(sample) }).(metrics.Histogram)
 }
 
 type FieldMetadata struct {

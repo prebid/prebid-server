@@ -135,7 +135,8 @@ func (f *InfluxBidderRequestFollowups) BidderResponded(bids pbs.PBSBidSlice, err
 		f.Influx.Registry.GetOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag("success")).Mark(1)
 		f.Influx.Registry.GetOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bids)))
 		for _, bid := range bids {
-			f.Influx.Registry.GetOrRegisterHistogram(BID_PRICES, f.Tags).Update(int64(bid.Price * 1000))
+			var histogram = f.Influx.Registry.GetOrRegisterHistogram(BID_PRICES, f.Tags, metrics.NewExpDecaySample(1028, 0.015))
+			histogram.Update(int64(bid.Price * 1000))
 		}
 	}
 }

@@ -37,7 +37,7 @@ func (r *Reporter) run() {
 				glog.Warningf("Failed to send metrics to InfluxDB. %v", err)
 			}
 		case <-pingTicker:
-			_, _, err := r.Client.Ping(1 * time.Second)
+			_, _, err := r.Client.Ping(5 * time.Second)
 			if err != nil {
 				glog.Warningf("Failed to ping InfluxDB. %v.", err)
 			}
