@@ -35,7 +35,7 @@ const (
 //
 // Users outside the package should use NewInfluxMetrics() instead.
 type pbsInflux struct {
-	Registry *taggableRegistry
+	registry *taggableRegistry
 }
 
 // NewInfluxMetrics returns a PBSMetrics which logs data to InfluxDB through the given Client.
@@ -62,7 +62,7 @@ func NewInfluxMetrics(client coreInflux.Client) coreMetrics.PBSMetrics {
 	go reporter.Run(time.Tick(1 * time.Second), time.Tick(time.Second * 5), nil)
 
 	var influxMetrics = &pbsInflux{
-		Registry: registry,
+		registry: registry,
 	}
 
 	return influxMetrics
@@ -85,7 +85,7 @@ func (influx *pbsInflux) StartAuctionRequest(requestInfo *coreMetrics.AuctionReq
 		"has_cookie": strconv.FormatBool(requestInfo.HasCookie),
 	}, followupTags)
 
-	influx.Registry.getOrRegisterMeter(AUCTION_REQUEST_COUNT, initialTags).Mark(1)
+	influx.registry.getOrRegisterMeter(AUCTION_REQUEST_COUNT, initialTags).Mark(1)
 
 	return &influxAuctionRequestFollowups{
 		Influx:    influx,
@@ -100,12 +100,20 @@ type influxAuctionRequestFollowups struct {
 	StartTime time.Time
 }
 
-func (f *influxAuctionRequestFollowups) Completed(err error) {
+// makeRespTypeForAuction determines which "type" Tag value we use for AUCTION_RESPONSE_COUNT events.
+func makeRespTypeForAuction(err error) string {
 	if err == nil {
-		f.Influx.Registry.getOrRegisterTimer(AUCTION_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
-		f.Influx.Registry.getOrRegisterMeter(AUCTION_RESPONSE_COUNT, f.WithResponseTypeTag("success")).Mark(1)
+		return "success"
 	} else {
-		f.Influx.Registry.getOrRegisterMeter(AUCTION_RESPONSE_COUNT, f.WithResponseTypeTag("error")).Mark(1)
+		return "error"
+	}
+}
+
+func (f *influxAuctionRequestFollowups) Completed(err error) {
+	f.Influx.registry.getOrRegisterMeter(AUCTION_RESPONSE_COUNT, f.WithResponseTypeTag(makeRespTypeForAuction(err))).Mark(1)
+
+	if err == nil {
+		f.Influx.registry.getOrRegisterTimer(AUCTION_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
 	}
 }
 
@@ -113,7 +121,7 @@ func (f *influxAuctionRequestFollowups) WithResponseTypeTag(value string) map[st
 	return combineMaps(map[string]string{"type": value}, f.Tags)
 }
 
-// InfluxBidderRequestFollowups is the Influx implementation of the BidderRequestFollowups interface.
+// influxBidderRequestFollowups is the Influx implementation of the BidderRequestFollowups interface.
 type influxBidderRequestFollowups struct {
 	Influx    *pbsInflux
 	Tags      map[string]string
@@ -121,21 +129,31 @@ type influxBidderRequestFollowups struct {
 }
 
 func (f *influxBidderRequestFollowups) BidderResponded(bids pbs.PBSBidSlice, err error) {
-	f.Influx.Registry.getOrRegisterTimer(BIDDER_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
+	f.Influx.registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag(makeRespTypeForBidder(err))).Mark(1)
 
-	if err != nil {
+	if err == nil {
+		f.Influx.registry.getOrRegisterTimer(BIDDER_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
+	}
+
+	if bids != nil {
+		f.Influx.registry.getOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bids)))
+		for _, bid := range bids {
+			var histogram = f.Influx.registry.getOrRegisterHistogram(BID_PRICES, f.Tags, metrics.NewExpDecaySample(1028, 0.015))
+			histogram.Update(int64(bid.Price * 1000))
+		}
+	}
+}
+
+// makeRespTypeForBidder determines which "type" Tag value we attach to BIDDER_RESPONSE_COUNT counts
+func makeRespTypeForBidder(err error) string {
+	if err == nil {
+		return "success"
+	} else {
 		switch err {
 		case context.DeadlineExceeded:
-			f.Influx.Registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag("timeout")).Mark(1)
+			return "timeout"
 		default:
-			f.Influx.Registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag("error")).Mark(1)
-		}
-	} else {
-		f.Influx.Registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag("success")).Mark(1)
-		f.Influx.Registry.getOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bids)))
-		for _, bid := range bids {
-			var histogram = f.Influx.Registry.getOrRegisterHistogram(BID_PRICES, f.Tags, metrics.NewExpDecaySample(1028, 0.015))
-			histogram.Update(int64(bid.Price * 1000))
+			return "error"
 		}
 	}
 }
@@ -164,9 +182,10 @@ func (influx *pbsInflux) StartBidderRequest(
 		"has_cookie": strconv.FormatBool(auctionRequestInfo.HasCookie),
 	}, followupTags)
 
-	influx.Registry.getOrRegisterMeter(BIDDER_REQUEST_COUNT, requestTags).Mark(1)
+	influx.registry.getOrRegisterMeter(BIDDER_REQUEST_COUNT, requestTags).Mark(1)
 
 	return &influxBidderRequestFollowups{
+		Influx: influx,
 		Tags:      followupTags,
 		StartTime: time.Now(),
 	}
@@ -174,5 +193,5 @@ func (influx *pbsInflux) StartBidderRequest(
 
 // StartCookieSyncRequest implements part of the PBSMetrics interface.
 func (influx *pbsInflux) StartCookieSyncRequest() {
-	influx.Registry.getOrRegisterMeter(COOKIESYNC_REQUEST_COUNT, nil).Mark(1)
+	influx.registry.getOrRegisterMeter(COOKIESYNC_REQUEST_COUNT, nil).Mark(1)
 }
