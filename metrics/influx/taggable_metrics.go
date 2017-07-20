@@ -9,34 +9,34 @@ import (
 //
 // This piggybacks on the Registry for its threadsafety...
 // but exposes Tag-based APIs, and only implements the subset of the features we actually use.
-type TaggableRegistry struct {
-	Delegate metrics.Registry
+type taggableRegistry struct {
+	delegate metrics.Registry
 }
 
-func (r *TaggableRegistry) Each(f func(string, map[string]string, interface{})) {
+func (r *taggableRegistry) each(f func(string, map[string]string, interface{})) {
 	var decodeNamesBeforeF = func(encodedName string, metric interface{}) {
 		var measurementData = decode(encodedName)
 		f(measurementData.Name, measurementData.Tags, metric)
 	}
-	r.Delegate.Each(decodeNamesBeforeF)
+	r.delegate.Each(decodeNamesBeforeF)
 }
 
-func (r *TaggableRegistry) GetOrRegisterMeter(name string, tags map[string]string) metrics.Meter {
+func (r *taggableRegistry) getOrRegisterMeter(name string, tags map[string]string) metrics.Meter {
 	var encodedName = encode(name, tags)
-	return r.Delegate.GetOrRegister(encodedName, metrics.NewMeter).(metrics.Meter)
+	return r.delegate.GetOrRegister(encodedName, metrics.NewMeter).(metrics.Meter)
 }
 
-func (r *TaggableRegistry) GetOrRegisterTimer(name string, tags map[string]string) metrics.Timer {
+func (r *taggableRegistry) getOrRegisterTimer(name string, tags map[string]string) metrics.Timer {
 	var encodedName = encode(name, tags)
-	return r.Delegate.GetOrRegister(encodedName, metrics.NewTimer).(metrics.Timer)
+	return r.delegate.GetOrRegister(encodedName, metrics.NewTimer).(metrics.Timer)
 }
 
-func (r *TaggableRegistry) GetOrRegisterHistogram(name string, tags map[string]string, sample metrics.Sample) metrics.Histogram {
+func (r *taggableRegistry) getOrRegisterHistogram(name string, tags map[string]string, sample metrics.Sample) metrics.Histogram {
 	var encodedName = encode(name, tags)
-	return r.Delegate.GetOrRegister(encodedName, func() metrics.Histogram { return metrics.NewHistogram(sample) }).(metrics.Histogram)
+	return r.delegate.GetOrRegister(encodedName, func() metrics.Histogram { return metrics.NewHistogram(sample) }).(metrics.Histogram)
 }
 
-type FieldMetadata struct {
+type fieldMetadata struct {
 	Name string            `json:"n"`
 	Tags map[string]string `json:"t"`
 }
@@ -46,7 +46,7 @@ func encode(name string, tags map[string]string) string {
 		return name
 	}
 
-	var fieldMetadata = FieldMetadata{
+	var fieldMetadata = fieldMetadata{
 		Name: name,
 		Tags: tags,
 	}
@@ -58,14 +58,14 @@ func encode(name string, tags map[string]string) string {
 	}
 }
 
-func decode(name string) *FieldMetadata {
-	var dat FieldMetadata
+func decode(name string) *fieldMetadata {
+	var dat fieldMetadata
 	var err = json.Unmarshal([]byte(name), &dat)
 
 	if err == nil {
 		return &dat
 	} else {
-		return &FieldMetadata{
+		return &fieldMetadata{
 			Name: name,
 			Tags: map[string]string{},
 		}

@@ -12,15 +12,15 @@ import (
 // but has been updated to support Tags, and use the v2 InfluxDB client.
 
 // Reporter periodically sends the metrics from a TaggableRegistry to Influx.
-type Reporter struct {
+type reporter struct {
 	// Client is the Influx client which we use to write data points.
-	Client coreInflux.Client
+	client coreInflux.Client
 	// Database is the name of the Influx datatbase where metrics should go.
-	Database string
+	database string
 	// Registry stores the Metrics which should be written to Influx.
-	Registry *TaggableRegistry
+	registry *taggableRegistry
 	// Tags specifies tags which should appear in *every* Measurement written to influx.
-	Tags map[string]string
+	tags map[string]string
 }
 
 // Run() starts the reporter.
@@ -31,7 +31,7 @@ type Reporter struct {
 // It blocks until the causeSend channel is closed, so it should be run in its own goroutine.
 //
 // When the function exits, it will also close the Influx Client stored on the reporter.
-func (r *Reporter) Run(causePing <- chan time.Time, causeSend <- chan time.Time, done chan <- bool) {
+func (r *reporter) Run(causePing <- chan time.Time, causeSend <- chan time.Time, done chan <- bool) {
 	for sendChannelOpen := true; sendChannelOpen; {
 		select {
 		case _, sendChannelOpen = <- causeSend:
@@ -39,22 +39,22 @@ func (r *Reporter) Run(causePing <- chan time.Time, causeSend <- chan time.Time,
 				glog.Warningf("Failed to send metrics to InfluxDB. %v", err)
 			}
 		case <-causePing:
-			_, _, err := r.Client.Ping(1 * time.Second)
+			_, _, err := r.client.Ping(1 * time.Second)
 			if err != nil {
 				glog.Warningf("Failed to ping InfluxDB. %v.", err)
 			}
 		}
 	}
-	r.Client.Close();
+	r.client.Close();
 	if done != nil {
 		done <- true
 	}
 }
 
 // Send() sends the captured metrics to influx.
-func (r *Reporter) Send() error {
+func (r *reporter) Send() error {
 	var pts, err = coreInflux.NewBatchPoints(coreInflux.BatchPointsConfig{
-		Database: r.Database,
+		Database: r.database,
 	})
 	if err != nil {
 		glog.Warningf("Failed to create InfluxDB BatchPoints. %v. Some metrics may be missing", err)
@@ -68,7 +68,7 @@ func (r *Reporter) Send() error {
 		}
 	}
 
-	r.Registry.Each(func(name string, tags map[string]string, i interface{}) {
+	r.registry.each(func(name string, tags map[string]string, i interface{}) {
 		now := time.Now()
 
 		switch metric := i.(type) {
@@ -76,7 +76,7 @@ func (r *Reporter) Send() error {
 			ms := metric.Snapshot()
 			tryAddPoint(coreInflux.NewPoint(
 				name,
-				combineMaps(tags, r.Tags),
+				combineMaps(tags, r.tags),
 				map[string]interface{}{
 					"value": ms.Count(),
 				},
@@ -85,7 +85,7 @@ func (r *Reporter) Send() error {
 			ms := metric.Snapshot()
 			tryAddPoint(coreInflux.NewPoint(
 				name,
-				combineMaps(tags, r.Tags),
+				combineMaps(tags, r.tags),
 				map[string]interface{}{
 					"value": ms.Value(),
 				},
@@ -94,7 +94,7 @@ func (r *Reporter) Send() error {
 			ms := metric.Snapshot()
 			tryAddPoint(coreInflux.NewPoint(
 				name,
-				combineMaps(tags, r.Tags),
+				combineMaps(tags, r.tags),
 				map[string]interface{}{
 					"value": ms.Value(),
 				},
@@ -104,7 +104,7 @@ func (r *Reporter) Send() error {
 			ps := ms.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
 			tryAddPoint(coreInflux.NewPoint(
 				name,
-				combineMaps(tags, r.Tags),
+				combineMaps(tags, r.tags),
 				map[string]interface{}{
 					"count":    ms.Count(),
 					"max":      ms.Max(),
@@ -124,7 +124,7 @@ func (r *Reporter) Send() error {
 			ms := metric.Snapshot()
 			tryAddPoint(coreInflux.NewPoint(
 				name,
-				combineMaps(tags, r.Tags),
+				combineMaps(tags, r.tags),
 				map[string]interface{}{
 					"count": ms.Count(),
 					"m1":    ms.Rate1(),
@@ -138,7 +138,7 @@ func (r *Reporter) Send() error {
 			ps := ms.Percentiles([]float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999})
 			tryAddPoint(coreInflux.NewPoint(
 				name,
-				combineMaps(tags, r.Tags),
+				combineMaps(tags, r.tags),
 				map[string]interface{}{
 					"count":    ms.Count(),
 					"max":      ms.Max(),
@@ -162,7 +162,7 @@ func (r *Reporter) Send() error {
 	})
 
 	if len(pts.Points()) > 0 {
-		return r.Client.Write(pts)
+		return r.client.Write(pts)
 	} else {
 		return nil
 	}

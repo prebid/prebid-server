@@ -41,18 +41,18 @@ func (c *TestableClient) Close() error {
 	}
 }
 
-func NewTestableReporter(pointsCapacity int) (*Reporter, *TestableClient) {
+func NewTestableReporter(pointsCapacity int) (*reporter, *TestableClient) {
 	var influxClient = &TestableClient{
 		IsClosed: false,
 		Points: make([]coreInflux.BatchPoints, pointsCapacity),
 	}
 
-	var registry = TaggableRegistry{Delegate:metrics.NewRegistry()}
+	var registry = taggableRegistry{metrics.NewRegistry()}
 
-	var reporter = &Reporter{
-		Client:   influxClient,
-		Database: "whatever",
-		Registry: &registry,
+	var reporter = &reporter{
+		client:   influxClient,
+		database: "whatever",
+		registry: &registry,
 	}
 
 	return reporter, influxClient
@@ -72,7 +72,7 @@ func TestChannelClose(t *testing.T) {
 		t.Error("The influx client should be closed, since the channel was closed.")
 	}
 
-	reporter.Registry.GetOrRegisterMeter("metric_count", nil).Mark(1)
+	reporter.registry.getOrRegisterMeter("metric_count", nil).Mark(1)
 
 	if len(influxClient.Points) != 0 {
 		t.Errorf("The client shouldn't have been sent any points. Received %d", len(influxClient.Points))
@@ -135,8 +135,8 @@ func TestSendMeters(t *testing.T) {
 	go reporter.Run(nil, sender, done)
 	var name1 = "metric_count"
 	var name2 = "metric_count2"
-	reporter.Registry.GetOrRegisterMeter(name1, nil).Mark(1)
-	reporter.Registry.GetOrRegisterMeter(name2, nil).Mark(2)
+	reporter.registry.getOrRegisterMeter(name1, nil).Mark(1)
+	reporter.registry.getOrRegisterMeter(name2, nil).Mark(2)
 
 	close(sender)
 	<- done
@@ -163,8 +163,8 @@ func TestSendHistograms(t *testing.T) {
 	go reporter.Run(nil, sender, done)
 	var name1 = "metric_count"
 	var name2 = "metric_count2"
-	reporter.Registry.GetOrRegisterHistogram(name1, nil, metrics.NewUniformSample(50)).Update(20)
-	reporter.Registry.GetOrRegisterHistogram(name2, nil, metrics.NewUniformSample(50)).Update(25)
+	reporter.registry.getOrRegisterHistogram(name1, nil, metrics.NewUniformSample(50)).Update(20)
+	reporter.registry.getOrRegisterHistogram(name2, nil, metrics.NewUniformSample(50)).Update(25)
 
 	close(sender)
 	<- done
@@ -191,8 +191,8 @@ func TestSendTimers(t *testing.T) {
 	go reporter.Run(nil, sender, done)
 	var name1 = "metric_count"
 	var name2 = "metric_count2"
-	reporter.Registry.GetOrRegisterTimer(name1, nil).Update(20)
-	reporter.Registry.GetOrRegisterTimer(name2, nil).Update(25)
+	reporter.registry.getOrRegisterTimer(name1, nil).Update(20)
+	reporter.registry.getOrRegisterTimer(name2, nil).Update(25)
 
 	close(sender)
 	<- done

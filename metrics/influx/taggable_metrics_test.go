@@ -7,12 +7,12 @@ import (
 )
 
 func doStoreMeterTest(t *testing.T, name string, tags map[string]string) {
-	var registry = TaggableRegistry{
-		Delegate: metrics.NewRegistry(),
+	var registry = taggableRegistry{
+		delegate: metrics.NewRegistry(),
 	}
 
-	var meter1 = registry.GetOrRegisterMeter(name, tags)
-	var meter2 = registry.GetOrRegisterMeter(name, tags)
+	var meter1 = registry.getOrRegisterMeter(name, tags)
+	var meter2 = registry.getOrRegisterMeter(name, tags)
 
 	if (meter1 != meter2) {
 		t.Error("The registry did not return the same meter in both cases")
@@ -21,26 +21,26 @@ func doStoreMeterTest(t *testing.T, name string, tags map[string]string) {
 
 
 func doStoreHistogramTest(t *testing.T, name string, tags map[string]string) {
-	var registry = TaggableRegistry{
-		Delegate: metrics.NewRegistry(),
+	var registry = taggableRegistry{
+		delegate: metrics.NewRegistry(),
 	}
 
-	var h1 = registry.GetOrRegisterHistogram(name, tags, metrics.NewUniformSample(50))
-	var h2 = registry.GetOrRegisterHistogram(name, tags, metrics.NewUniformSample(100))
+	var h1 = registry.getOrRegisterHistogram(name, tags, metrics.NewUniformSample(50))
+	var h2 = registry.getOrRegisterHistogram(name, tags, metrics.NewUniformSample(100))
 
-	if (h1 != h2) {
+	if h1 != h2 {
 		t.Error("The registry did not return the same histogram in both cases")
 	}
 }
 
 
 func doStoreTimerTest(t *testing.T, name string, tags map[string]string) {
-	var registry = TaggableRegistry{
-		Delegate: metrics.NewRegistry(),
+	var registry = taggableRegistry{
+		delegate: metrics.NewRegistry(),
 	}
 
-	var h1 = registry.GetOrRegisterTimer(name, tags)
-	var h2 = registry.GetOrRegisterTimer(name, tags)
+	var h1 = registry.getOrRegisterTimer(name, tags)
+	var h2 = registry.getOrRegisterTimer(name, tags)
 
 	if (h1 != h2) {
 		t.Error("The registry did not return the same timer in both cases")
@@ -75,15 +75,15 @@ func TestTaggedTimer(t *testing.T) {
 }
 
 func TestEach(t *testing.T) {
-	var registry = TaggableRegistry{
-		Delegate: metrics.NewRegistry(),
+	var registry = taggableRegistry{
+		delegate: metrics.NewRegistry(),
 	}
 
 	var name = "some_name"
 	var tags = map[string]string{"tag1": "value"}
-	var meter = registry.GetOrRegisterMeter(name, tags)
+	var meter = registry.getOrRegisterMeter(name, tags)
 
-	registry.Each(func(name2 string, tags2 map[string]string, metric interface{}) {
+	registry.each(func(name2 string, tags2 map[string]string, metric interface{}) {
 		if (name != name2) {
 			t.Errorf("%s does not match %s", name, name2)
 		}
