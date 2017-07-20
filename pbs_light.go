@@ -304,14 +304,17 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 						ametrics.ErrorMeter.Mark(1)
 						accountAdapterMetric.ErrorMeter.Mark(1)
 						bidder.Error = err.Error()
+						glog.Infof("Error from bidder: %v : %v", bidder.BidderCode, err)
 					}
 				} else if bid_list != nil {
 					bidder.NumBids = len(bid_list)
 					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					for _, bid := range bid_list {
-						ametrics.PriceHistogram.Update(int64(bid.Price * 1000))
-						am.PriceHistogram.Update(int64(bid.Price * 1000))
+						var cpm = int64(bid.Price * 1000)
+						ametrics.PriceHistogram.Update(cpm)
+						am.PriceHistogram.Update(cpm)
+						accountAdapterMetric.PriceHistogram.Update(cpm)
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
