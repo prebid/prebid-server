@@ -53,14 +53,13 @@ func NewInfluxMetrics(client coreInflux.Client) coreMetrics.PBSMetrics {
 	var reporter = Reporter{
 		Client:   client,
 		Database: DATABASE,
-		Interval: 1 * time.Second,
 		Registry: registry,
 		Tags: map[string]string{
 			"hostname": hostname,
 		},
 	}
 
-	go reporter.run()
+	go reporter.Run(time.Tick(1 * time.Second), time.Tick(time.Second * 5), nil)
 
 	var influxMetrics = &PBSInflux{
 		Registry: registry,

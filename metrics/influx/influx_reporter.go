@@ -17,35 +17,42 @@ type Reporter struct {
 	Client coreInflux.Client
 	// Database is the name of the Influx datatbase where metrics should go.
 	Database string
-	// Interval specifies the amount of time between writes to Influx.
-	Interval time.Duration
 	// Registry stores the Metrics which should be written to Influx.
 	Registry *TaggableRegistry
 	// Tags specifies tags which should appear in *every* Measurement written to influx.
 	Tags map[string]string
 }
 
-// run() starts the reporter. This should be run inside a goroutine, since it blocks pretty frequently.
-func (r *Reporter) run() {
-	intervalTicker := time.Tick(r.Interval)
-	pingTicker := time.Tick(time.Second * 5)
-
-	for {
+// Run() starts the reporter.
+// It will ping Influx whenever the pingNotifier receives a message.
+// It will send any collected metrics whenever the sendNotifier receives a message.
+// If done is not nil, a single "true" message will be passed just before this function exits
+//
+// It blocks until the causeSend channel is closed, so it should be run in its own goroutine.
+//
+// When the function exits, it will also close the Influx Client stored on the reporter.
+func (r *Reporter) Run(causePing <- chan time.Time, causeSend <- chan time.Time, done chan <- bool) {
+	for sendChannelOpen := true; sendChannelOpen; {
 		select {
-		case <-intervalTicker:
-			if err := r.send(); err != nil {
+		case _, sendChannelOpen = <- causeSend:
+			if err := r.Send(); err != nil {
 				glog.Warningf("Failed to send metrics to InfluxDB. %v", err)
 			}
-		case <-pingTicker:
-			_, _, err := r.Client.Ping(5 * time.Second)
+		case <-causePing:
+			_, _, err := r.Client.Ping(1 * time.Second)
 			if err != nil {
 				glog.Warningf("Failed to ping InfluxDB. %v.", err)
 			}
 		}
 	}
+	r.Client.Close();
+	if done != nil {
+		done <- true
+	}
 }
 
-func (r *Reporter) send() error {
+// Send() sends the captured metrics to influx.
+func (r *Reporter) Send() error {
 	var pts, err = coreInflux.NewBatchPoints(coreInflux.BatchPointsConfig{
 		Database: r.Database,
 	})
@@ -154,7 +161,11 @@ func (r *Reporter) send() error {
 		}
 	})
 
-	return r.Client.Write(pts)
+	if len(pts.Points()) > 0 {
+		return r.Client.Write(pts)
+	} else {
+		return nil
+	}
 }
 
 func combineMaps(a, b map[string]string) map[string]string {

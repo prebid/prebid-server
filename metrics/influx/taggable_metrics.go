@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"encoding/json"
-	"github.com/golang/glog"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -63,13 +62,12 @@ func decode(name string) *FieldMetadata {
 	var dat FieldMetadata
 	var err = json.Unmarshal([]byte(name), &dat)
 
-	if err != nil {
-		glog.Errorf("Failed to decode measurement: %s", name)
+	if err == nil {
+		return &dat
+	} else {
 		return &FieldMetadata{
 			Name: name,
 			Tags: map[string]string{},
 		}
-	} else {
-		return &dat
 	}
 }
