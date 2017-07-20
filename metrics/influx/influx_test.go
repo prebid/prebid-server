@@ -96,6 +96,19 @@ func TestBidderEvents(t *testing.T) {
 	}
 }
 
+func TestCookieSyncEvents(t *testing.T) {
+	registry := taggableRegistry{delegate:metrics.NewRegistry()}
+	influx := &pbsInflux{registry:&registry}
+
+	influx.StartCookieSyncRequest()
+
+	count := influx.registry.getOrRegisterMeter(COOKIESYNC_REQUEST_COUNT, nil).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Failed to log cookiesync event. Expected %d, got %d", 1, count)
+	}
+
+}
+
 func TestRespTypeForAuctionParsing(t *testing.T) {
 	if makeRespTypeForAuction(nil) != "success" {
 		t.Errorf("Successful auctions should count events as tag type=\"success\". Got %s", makeRespTypeForAuction(nil));
