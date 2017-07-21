@@ -1,9 +1,9 @@
 package metrics
 
 import (
-	"testing"
 	"github.com/rcrowley/go-metrics"
 	"reflect"
+	"testing"
 )
 
 func doStoreMeterTest(t *testing.T, name string, tags map[string]string) {
@@ -14,11 +14,10 @@ func doStoreMeterTest(t *testing.T, name string, tags map[string]string) {
 	var meter1 = registry.getOrRegisterMeter(name, tags)
 	var meter2 = registry.getOrRegisterMeter(name, tags)
 
-	if (meter1 != meter2) {
+	if meter1 != meter2 {
 		t.Error("The registry did not return the same meter in both cases")
 	}
 }
-
 
 func doStoreHistogramTest(t *testing.T, name string, tags map[string]string) {
 	var registry = taggableRegistry{
@@ -33,7 +32,6 @@ func doStoreHistogramTest(t *testing.T, name string, tags map[string]string) {
 	}
 }
 
-
 func doStoreTimerTest(t *testing.T, name string, tags map[string]string) {
 	var registry = taggableRegistry{
 		delegate: metrics.NewRegistry(),
@@ -42,7 +40,7 @@ func doStoreTimerTest(t *testing.T, name string, tags map[string]string) {
 	var h1 = registry.getOrRegisterTimer(name, tags)
 	var h2 = registry.getOrRegisterTimer(name, tags)
 
-	if (h1 != h2) {
+	if h1 != h2 {
 		t.Error("The registry did not return the same timer in both cases")
 	}
 }
@@ -70,7 +68,7 @@ func TestTaglessTimer(t *testing.T) {
 func TestTaggedTimer(t *testing.T) {
 	doStoreTimerTest(t, "some_name", map[string]string{
 		"tag1": "value1",
-	  "tag2": "value2",
+		"tag2": "value2",
 	})
 }
 
@@ -84,13 +82,13 @@ func TestEach(t *testing.T) {
 	var meter = registry.getOrRegisterMeter(name, tags)
 
 	registry.each(func(name2 string, tags2 map[string]string, metric interface{}) {
-		if (name != name2) {
+		if name != name2 {
 			t.Errorf("%s does not match %s", name, name2)
 		}
-		if (!reflect.DeepEqual(tags, tags2)) {
+		if !reflect.DeepEqual(tags, tags2) {
 			t.Errorf("%v does not match %v", tags, tags2)
 		}
-		if (meter != metric) {
+		if meter != metric {
 			t.Error("The metrics don't match.")
 		}
 	})

@@ -14,8 +14,6 @@ import (
 	"strconv"
 )
 
-const DATABASE = "test_data"
-
 // These are the names of Measurements which we export to Influx.
 const (
 	AUCTION_REQUEST_COUNT    = "prebidserver.auction_request_count"
@@ -39,7 +37,7 @@ type pbsInflux struct {
 }
 
 // NewInfluxMetrics returns a PBSMetrics which logs data to InfluxDB through the given Client.
-func NewInfluxMetrics(client coreInflux.Client) coreMetrics.PBSMetrics {
+func NewInfluxMetrics(client coreInflux.Client, database string) coreMetrics.PBSMetrics {
 	var registry = &taggableRegistry{
 		delegate: metrics.NewRegistry(),
 	}
@@ -52,14 +50,14 @@ func NewInfluxMetrics(client coreInflux.Client) coreMetrics.PBSMetrics {
 
 	var reporter = reporter{
 		client:   client,
-		database: DATABASE,
+		database: database,
 		registry: registry,
 		tags: map[string]string{
 			"hostname": hostname,
 		},
 	}
 
-	go reporter.Run(time.Tick(1 * time.Second), time.Tick(time.Second * 5), nil)
+	go reporter.Run(time.Tick(1*time.Second), time.Tick(time.Second*5), nil)
 
 	var influxMetrics = &pbsInflux{
 		registry: registry,
@@ -128,6 +126,10 @@ type influxBidderRequestFollowups struct {
 	StartTime time.Time
 }
 
+func (f *influxBidderRequestFollowups) BidderSkipped() {
+	f.Influx.registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag("skipped_no_cookie")).Mark(1)
+}
+
 func (f *influxBidderRequestFollowups) BidderResponded(bids pbs.PBSBidSlice, err error) {
 	f.Influx.registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag(makeRespTypeForBidder(err))).Mark(1)
 
@@ -179,13 +181,13 @@ func (influx *pbsInflux) StartBidderRequest(
 	}
 
 	var requestTags = combineMaps(map[string]string{
-		"has_cookie": strconv.FormatBool(auctionRequestInfo.HasCookie),
+		"has_cookie": strconv.FormatBool(bidRequestInfo.HasCookie),
 	}, followupTags)
 
 	influx.registry.getOrRegisterMeter(BIDDER_REQUEST_COUNT, requestTags).Mark(1)
 
 	return &influxBidderRequestFollowups{
-		Influx: influx,
+		Influx:    influx,
 		Tags:      followupTags,
 		StartTime: time.Now(),
 	}

@@ -1,16 +1,16 @@
 package metrics
 
 import (
-	"time"
-	coreInflux "github.com/influxdata/influxdb/client/v2"
 	"errors"
+	coreInflux "github.com/influxdata/influxdb/client/v2"
 	"github.com/rcrowley/go-metrics"
 	"testing"
+	"time"
 )
 
 type TestableClient struct {
 	IsClosed bool
-	Points []coreInflux.BatchPoints
+	Points   []coreInflux.BatchPoints
 }
 
 // Ping checks that status of cluster, and will always return 0 time and no
@@ -44,7 +44,7 @@ func (c *TestableClient) Close() error {
 func NewTestableReporter(pointsCapacity int) (*reporter, *TestableClient) {
 	var influxClient = &TestableClient{
 		IsClosed: false,
-		Points: make([]coreInflux.BatchPoints, pointsCapacity),
+		Points:   make([]coreInflux.BatchPoints, pointsCapacity),
 	}
 
 	var registry = taggableRegistry{metrics.NewRegistry()}
@@ -79,8 +79,8 @@ func TestChannelClose(t *testing.T) {
 	}
 }
 
-type PointPair struct{
-	actual *coreInflux.Point
+type PointPair struct {
+	actual   *coreInflux.Point
 	expected *coreInflux.Point
 }
 
@@ -139,10 +139,10 @@ func TestSendMeters(t *testing.T) {
 	reporter.registry.getOrRegisterMeter(name2, nil).Mark(2)
 
 	close(sender)
-	<- done
+	<-done
 
-	expectedPoint1, _ := coreInflux.NewPoint(name1, make(map[string]string), map[string]interface{}{"count":1}, time.Now())
-	expectedPoint2, _ := coreInflux.NewPoint(name2, make(map[string]string), map[string]interface{}{"count":2}, time.Now())
+	expectedPoint1, _ := coreInflux.NewPoint(name1, make(map[string]string), map[string]interface{}{"count": 1}, time.Now())
+	expectedPoint2, _ := coreInflux.NewPoint(name2, make(map[string]string), map[string]interface{}{"count": 2}, time.Now())
 
 	if len(influxClient.Points) != 1 {
 		t.Errorf("The client should have been sent 1 point. Received %d", len(influxClient.Points))
@@ -167,10 +167,10 @@ func TestSendHistograms(t *testing.T) {
 	reporter.registry.getOrRegisterHistogram(name2, nil, metrics.NewUniformSample(50)).Update(25)
 
 	close(sender)
-	<- done
+	<-done
 
-	expectedPoint1, _ := coreInflux.NewPoint(name1, make(map[string]string), map[string]interface{}{"max":20}, time.Now())
-	expectedPoint2, _ := coreInflux.NewPoint(name2, make(map[string]string), map[string]interface{}{"max":25}, time.Now())
+	expectedPoint1, _ := coreInflux.NewPoint(name1, make(map[string]string), map[string]interface{}{"max": 20}, time.Now())
+	expectedPoint2, _ := coreInflux.NewPoint(name2, make(map[string]string), map[string]interface{}{"max": 25}, time.Now())
 
 	if len(influxClient.Points) != 1 {
 		t.Errorf("The client should have been sent 1 point. Received %d", len(influxClient.Points))
@@ -195,10 +195,10 @@ func TestSendTimers(t *testing.T) {
 	reporter.registry.getOrRegisterTimer(name2, nil).Update(25)
 
 	close(sender)
-	<- done
+	<-done
 
-	expectedPoint1, _ := coreInflux.NewPoint(name1, make(map[string]string), map[string]interface{}{"max":20}, time.Now())
-	expectedPoint2, _ := coreInflux.NewPoint(name2, make(map[string]string), map[string]interface{}{"max":25}, time.Now())
+	expectedPoint1, _ := coreInflux.NewPoint(name1, make(map[string]string), map[string]interface{}{"max": 20}, time.Now())
+	expectedPoint2, _ := coreInflux.NewPoint(name2, make(map[string]string), map[string]interface{}{"max": 25}, time.Now())
 
 	if len(influxClient.Points) != 1 {
 		t.Errorf("The client should have been sent 1 point. Received %d", len(influxClient.Points))

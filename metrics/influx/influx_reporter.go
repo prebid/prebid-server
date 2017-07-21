@@ -31,10 +31,10 @@ type reporter struct {
 // It blocks until the causeSend channel is closed, so it should be run in its own goroutine.
 //
 // When the function exits, it will also close the Influx Client stored on the reporter.
-func (r *reporter) Run(causePing <- chan time.Time, causeSend <- chan time.Time, done chan <- bool) {
+func (r *reporter) Run(causePing <-chan time.Time, causeSend <-chan time.Time, done chan<- bool) {
 	for sendChannelOpen := true; sendChannelOpen; {
 		select {
-		case _, sendChannelOpen = <- causeSend:
+		case _, sendChannelOpen = <-causeSend:
 			if err := r.Send(); err != nil {
 				glog.Warningf("Failed to send metrics to InfluxDB. %v", err)
 			}
@@ -45,7 +45,7 @@ func (r *reporter) Run(causePing <- chan time.Time, causeSend <- chan time.Time,
 			}
 		}
 	}
-	r.client.Close();
+	r.client.Close()
 	if done != nil {
 		done <- true
 	}

@@ -25,20 +25,31 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 	"github.com/xojoc/useragent"
 
+	"github.com/influxdata/influxdb/client/v2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	pbsMetrics "github.com/prebid/prebid-server/metrics"
+	metrics2 "github.com/prebid/prebid-server/metrics/influx"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 )
 
-// TODO: Delete all metrics from this file after we've validated the data and written queries against the tags
+// TODO(#83): Delete all these global metrics objects and uses once the Tagged data has been validated
 type DomainMetrics struct {
 	RequestMeter metrics.Meter
+}
+
+// PrebidServerDependencies stores interfaces for the top-level services which the server depends on.
+//
+// This allows for dependency injection (for testability), and should reduce the dependence on
+// global mutable variables.
+type PrebidServerDependencies struct {
+	metrics pbsMetrics.PBSMetrics
 }
 
 type AccountMetrics struct {
@@ -159,7 +170,8 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.metrics.StartCookieSyncRequest()
 	mCookieSyncMeter.Mark(1)
 	cookies := pbs.ParseUIDCookie(r)
 	if cookies.OptOut {
@@ -206,17 +218,26 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.Encode(csResp)
 }
 
-func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+// isSafari tries to detect whether the request came from a Safari browser.
+func isRequestSafari(r *http.Request) bool {
+	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
+		if ua.Type == useragent.Browser && ua.Name == "Safari" {
+			return true
+		}
+	}
+	return false
+}
+
+func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
 	mRequestMeter.Mark(1)
 
-	isSafari := false
-	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
-		if ua.Type == useragent.Browser && ua.Name == "Safari" {
-			isSafari = true
-			mSafariRequestMeter.Mark(1)
-		}
+	requestSource := pbsMetrics.UNKNOWN
+	isSafari := isRequestSafari(r)
+	if isSafari {
+		mSafariRequestMeter.Mark(1)
+		requestSource = pbsMetrics.SAFARI
 	}
 
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
@@ -224,13 +245,25 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		glog.Info("error parsing request", err)
 		writeAuctionError(w, "Error parsing request", err)
 		mErrorMeter.Mark(1)
+		deps.metrics.StartAuctionRequest(&pbsMetrics.AuctionRequestInfo{
+			AccountId:     "unknown",
+			RequestSource: requestSource,
+			HasCookie:     false,
+		}).Completed(err)
 		return
 	}
 
+	if pbs_req.App != nil {
+		requestSource = pbsMetrics.APP
+	}
+	hasNoCookie := false
+
 	status := "OK"
 	if pbs_req.App != nil {
+		requestSource = pbsMetrics.APP
 		mAppRequestMeter.Mark(1)
 	} else if len(pbs_req.UserIDs) == 0 {
+		hasNoCookie = true
 		mNoCookieMeter.Mark(1)
 		if isSafari {
 			mSafariNoCookieMeter.Mark(1)
@@ -249,6 +282,13 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
+	auctionRequestInfo := &pbsMetrics.AuctionRequestInfo{
+		AccountId:     pbs_req.AccountID,
+		RequestSource: requestSource,
+		HasCookie:     !hasNoCookie,
+	}
+	auctionMetrics := deps.metrics.StartAuctionRequest(auctionRequestInfo)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
 	defer cancel()
 
@@ -257,6 +297,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		glog.Info("Invalid account id: ", err)
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
 		mErrorMeter.Mark(1)
+		auctionMetrics.Completed(err)
 		return
 	}
 
@@ -277,19 +318,30 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
+			cookieExistsForBidder := true
 			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
+				cookieExistsForBidder = false
 				bidder.NoCookie = true
 				bidder.UsersyncInfo = ex.GetUsersyncInfo()
 				ametrics.NoCookieMeter.Mark(1)
 				accountAdapterMetric.NoCookieMeter.Mark(1)
 				if ex.SkipNoCookies() {
+					deps.metrics.StartBidderRequest(auctionRequestInfo, &pbsMetrics.BidRequestInfo{
+						Bidder:    bidder,
+						HasCookie: cookieExistsForBidder,
+					}).BidderSkipped()
 					continue
 				}
 			}
 			sentBids++
 			go func(bidder *pbs.PBSBidder) {
 				start := time.Now()
+				bidderMetrics := deps.metrics.StartBidderRequest(auctionRequestInfo, &pbsMetrics.BidRequestInfo{
+					Bidder:    bidder,
+					HasCookie: cookieExistsForBidder,
+				})
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
+				bidderMetrics.BidderResponded(bid_list, err)
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				ametrics.RequestTimer.UpdateSince(start)
 				accountAdapterMetric.RequestTimer.UpdateSince(start)
@@ -363,6 +415,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if err != nil {
 			writeAuctionError(w, "Prebid cache failed", err)
 			mErrorMeter.Mark(1)
+			auctionMetrics.Completed(err)
 			return
 		}
 		for i, bid := range pbs_resp.Bids {
@@ -461,6 +514,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	//enc.SetIndent("", "  ")
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+	auctionMetrics.Completed(nil)
 }
 
 func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -610,18 +664,18 @@ func init() {
 	flag.Parse() // read glog settings from cmd line
 }
 
-//func main() {
-//	cfg, err := config.New()
-//	if err != nil {
-//		glog.Errorf("Viper was unable to read configurations: %v", err)
-//	}
-//	// we need to set this global variable so it can be used by other methods
-//	requireUUID2 = cfg.RequireUUID2
-//	cookieDomain = cfg.CookieDomain
-//	if err := serve(cfg); err != nil {
-//		glog.Fatalf("PreBid Server encountered an error: %v", err)
-//	}
-//}
+func main() {
+	cfg, err := config.New()
+	if err != nil {
+		glog.Errorf("Viper was unable to read configurations: %v", err)
+	}
+	// we need to set this global variable so it can be used by other methods
+	requireUUID2 = cfg.RequireUUID2
+	cookieDomain = cfg.CookieDomain
+	if err := serve(cfg); err != nil {
+		glog.Fatalf("PreBid Server encountered an error: %v", err)
+	}
+}
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
@@ -671,6 +725,27 @@ func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
 	return adapterMetrics
 }
 
+// chooseMetrics returns an appropriate metrics receiver for the given config.
+func chooseMetrics(cfg *config.Configuration) pbsMetrics.PBSMetrics {
+	if cfg.Metrics.Host != "" {
+		influxClient, err := client.NewHTTPClient(client.HTTPConfig{
+			Addr:     cfg.Metrics.Host,
+			Username: cfg.Metrics.Username,
+			Password: cfg.Metrics.Password,
+		})
+
+		if err == nil {
+			return metrics2.NewInfluxMetrics(influxClient, cfg.Metrics.Database)
+		} else {
+			glog.Errorf("Error configuring Influx exporter. No metrics will be exported: %s", err.Error())
+			return pbsMetrics.NewNilMetrics()
+		}
+	} else {
+		glog.Errorf("No metrics config detected. No metrics will be exported.")
+		return pbsMetrics.NewNilMetrics()
+	}
+}
+
 func serve(cfg *config.Configuration) error {
 	if err := loadDataCache(cfg); err != nil {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
@@ -678,6 +753,7 @@ func serve(cfg *config.Configuration) error {
 
 	setupExchanges(cfg)
 
+	// TODO(#83): Delete this once the tagged statistics are available.
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
 			metricsRegistry,      // metrics registry
@@ -708,9 +784,13 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatal(http.ListenAndServe(adminURI, nil))
 	}()
 
+	deps := PrebidServerDependencies{
+		metrics: chooseMetrics(cfg),
+	}
+
 	router := httprouter.New()
-	router.POST("/auction", auction)
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/auction", deps.auction)
+	router.POST("/cookie_sync", deps.cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
