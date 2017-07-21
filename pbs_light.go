@@ -218,7 +218,7 @@ func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.
 	enc.Encode(csResp)
 }
 
-// isSafari tries to detect whether the request came from a Safari browser.
+// isRequestSafari tries to detect whether the request came from a Safari browser.
 func isRequestSafari(r *http.Request) bool {
 	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
 		if ua.Type == useragent.Browser && ua.Name == "Safari" {
@@ -252,10 +252,7 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 		}).Completed(err)
 		return
 	}
-
-	if pbs_req.App != nil {
-		requestSource = pbsMetrics.APP
-	}
+	
 	hasNoCookie := false
 
 	status := "OK"
