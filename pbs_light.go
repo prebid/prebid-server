@@ -252,7 +252,7 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 		}).Completed(err)
 		return
 	}
-	
+
 	hasNoCookie := false
 
 	status := "OK"
