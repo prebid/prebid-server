@@ -13,7 +13,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/ssl"
-	metrics "github.com/rcrowley/go-metrics"
 )
 
 var cookie_domain string
@@ -179,8 +178,7 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 // split this for testability
-func InitUsersyncHandlers(router *httprouter.Router, metricsRegistry metrics.Registry, cdomain string,
-	xternal_url string, captcha_secret string) {
+func InitUsersyncHandlers(router *httprouter.Router, cdomain string, xternal_url string, captcha_secret string) {
 	cookie_domain = cdomain
 	external_url = xternal_url
 	recaptcha_secret = captcha_secret
