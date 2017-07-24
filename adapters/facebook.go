@@ -95,14 +95,9 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 }
 
 func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	requests := make([]bytes.Buffer, len(bidder.AdUnits))
+	requests := make([]bytes.Buffer, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
+	reqIndex := 0
 	for i, unit := range bidder.AdUnits {
-		fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
-		fbReq.Ext = a.platformJSON
-
-		// only grab this ad unit
-		fbReq.Imp = fbReq.Imp[i : i+1]
-
 		var params facebookParams
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
@@ -115,18 +110,57 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if len(s) != 2 {
 			return nil, fmt.Errorf("Invalid placementId param '%s'", params.PlacementId)
 		}
-		if fbReq.Site != nil {
-			fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
-		}
-		if fbReq.App != nil {
-			fbReq.App.Publisher = &openrtb.Publisher{ID: s[0]}
-		}
-		fbReq.Imp[0].TagID = params.PlacementId
 
-		err = json.NewEncoder(&requests[i]).Encode(fbReq)
-		if err != nil {
-			return nil, err
+
+		fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+		fbReq.Ext = a.platformJSON
+
+		// only grab this ad unit
+		fbReq.Imp = fbReq.Imp[i : i+1]
+
+		// check whether BANNER Imp exists for that adUnit
+		if fbReq.Imp != nil {
+
+			if fbReq.Site != nil {
+				fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
+			}
+			if fbReq.App != nil {
+				fbReq.App.Publisher = &openrtb.Publisher{ID: s[0]}
+			}
+			fbReq.Imp[0].TagID = params.PlacementId
+
+			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReq)
+			reqIndex = reqIndex +1
+			if err != nil {
+				return nil, err
+			}
 		}
+
+		// VIDEO
+		fbReq = makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
+		fbReq.Ext = a.platformJSON
+
+		// only grab this ad unit
+		fbReq.Imp = fbReq.Imp[i : i+1]
+
+		// check whether BANNER Imp exists for that adUnit
+		if fbReq.Imp != nil {
+
+			if fbReq.Site != nil {
+				fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
+			}
+			if fbReq.App != nil {
+				fbReq.App.Publisher = &openrtb.Publisher{ID: s[0]}
+			}
+			fbReq.Imp[0].TagID = params.PlacementId
+
+			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReq)
+			reqIndex = reqIndex +1
+			if err != nil {
+				return nil, err
+			}
+		}
+
 	}
 
 	ch := make(chan callOneResult)

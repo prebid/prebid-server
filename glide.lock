@@ -1,5 +1,5 @@
 hash: 254023165c0bb49bce2dcdc276d754d2dc5fc6592d19e9d40a9358323faf8ba9
-updated: 2017-06-21T17:00:58.66496526-04:00
+updated: 2017-07-17T14:59:27.087179719-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -51,9 +51,7 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
-  version: a62a804a8a009876ca59105f7899938a1349f4b3
-- name: github.com/rs/xhandler
-  version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
+  version: 8dd4211afb5d08dbb39a533b9bb9e4b486351df6
 - name: github.com/spaolacci/murmur3
   version: 0d12bf811670bf6a1a63828dfbd003eded177fce
 - name: github.com/spf13/afero
@@ -93,6 +91,10 @@ imports:
   subpackages:
   - transform
   - unicode/norm
+- name: golang.org/x/tools
+  version: 807424b52bbede51990d57ed6e388f9ccc283770
+  subpackages:
+  - go/gcimporter15/testdata
 - name: gopkg.in/mgo.v2
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
 - name: gopkg.in/yaml.v2

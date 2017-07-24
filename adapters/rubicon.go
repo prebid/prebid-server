@@ -213,10 +213,12 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 	return
 }
 
+
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
-		rubiReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+		rubiReq := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+		// TODO: Implement special video handling for Rubicon
 
 		// only grab this ad unit
 		rubiReq.Imp = rubiReq.Imp[i : i+1]

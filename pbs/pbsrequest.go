@@ -16,7 +16,6 @@ import (
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
-	"golang.org/x/tools/go/gcimporter15/testdata"
 )
 
 const MAX_BIDDERS = 8
@@ -24,8 +23,8 @@ const MAX_BIDDERS = 8
 type MediaType byte
 
 const (
-	BANNER MediaType = iota
-	VIDEO
+	MEDIA_TYPE_BANNER MediaType = iota
+	MEDIA_TYPE_VIDEO
 )
 
 type ConfigCache interface {
@@ -40,11 +39,11 @@ type Bids struct {
 
 type PBSVideo struct {
 	Mimes          []string `json:"mimes,omitempty"`
-	Minduration    int      `json:"minduration,omitempty"`
-	Maxduration    int      `json:"maxduration,omitempty"`
-	Startdelay     int      `json:"startdelay,omitempty"`
+	Minduration    uint64      `json:"minduration,omitempty"`
+	Maxduration    int64      `json:"maxduration,omitempty"`
+	Startdelay     int64      `json:"startdelay,omitempty"`
 	Skippable      int      `json:"skippable,omitempty"`
-	PlaybackMethod string   `json:"playback_method,omitempty"`
+	PlaybackMethod int8   `json:"playback_method,omitempty"`
 	Frameworks     []string `json:"frameworks,omitempty"`
 }
 
@@ -68,10 +67,10 @@ type PBSAdUnit struct {
 }
 
 func ParseMediaType(s string) (MediaType, error) {
-	mediaTypes := map[string]MediaType{"BANNER": BANNER, "VIDEO": VIDEO}
+	mediaTypes := map[string]MediaType{"MEDIA_TYPE_BANNER": MEDIA_TYPE_BANNER, "MEDIA_TYPE_VIDEO": MEDIA_TYPE_VIDEO}
 	t, ok := mediaTypes[s]
 	if !ok {
-		return nil, fmt.Errorf("Invalid MediaType %q", s)
+		return 0, fmt.Errorf("Invalid MediaType %s", s)
 	}
 	return t, nil
 }
@@ -236,12 +235,12 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		mtmap := make(map[MediaType]bool)
 
 		if unit.MediaTypes == nil {
-			mtypes = append(mtypes, BANNER)
+			mtypes = append(mtypes, MEDIA_TYPE_BANNER)
 		} else {
 			for _, t := range unit.MediaTypes {
 				mt, er := ParseMediaType(t)
 				if er != nil {
-					glog.Infof(er)
+					glog.Infof("Invalid media type: %s",er)
 				} else {
 					if !mtmap[mt] {
 						mtypes = append(mtypes, mt)
@@ -250,7 +249,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				}
 			}
 			if len(mtypes) == 0 {
-				mtypes = append(mtypes, BANNER)
+				mtypes = append(mtypes, MEDIA_TYPE_BANNER)
 			}
 		}
 
