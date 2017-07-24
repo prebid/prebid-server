@@ -6,7 +6,16 @@ import (
 	"github.com/prebid/openrtb"
 )
 
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, mediatypes []MediaType, singleMediaTypeImp bool) openrtb.BidRequest {
+func mediaTypeInSlice(t pbs.MediaType, list []pbs.MediaType) bool {
+	for _, b := range list {
+		if b == t {
+			return true
+		}
+	}
+	return false
+}
+
+func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, mediatypes []pbs.MediaType, singleMediaTypeImp bool) openrtb.BidRequest {
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(mediatypes))
 	ind := 0
@@ -16,34 +25,39 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		}
 
 		if singleMediaTypeImp {
-			for _, mType := range mediatypes {
-				newImp := openrtb.Imp{
-					ID:     unit.Code,
-					Secure: req.Secure,
-				}
-				switch mType {
-				case BANNER:
-					newImp.Banner = &openrtb.Banner{
-						W:        unit.Sizes[0].W,
-						H:        unit.Sizes[0].H,
-						Format:   unit.Sizes,
-						TopFrame: unit.TopFrame,
+			for _, mType := range unit.MediaTypes {
+				var newImp openrtb.Imp
+				if mediaTypeInSlice(mType, mediatypes) {
+					newImp = openrtb.Imp{
+						ID:     unit.Code,
+						Secure: req.Secure,
 					}
-				case VIDEO:
-					mimes := make([]string, len(req.Video.mimes))
-					copy(mimes, req.Video.mimes)
-					newImp.Video = &openrtb.Video{
-						MIMEs:          mimes,
-						MinDuration:    req.Video.Minduration,
-						W:              unit.Sizes[0].W,
-						H:              unit.Sizes[0].H,
-						StartDelay:     req.Video.Startdelay,
-						PlaybackMethod: req.Video.PlaybackMethod,
+					switch mType {
+					case pbs.MEDIA_TYPE_BANNER:
+						newImp.Banner = &openrtb.Banner{
+							W:        unit.Sizes[0].W,
+							H:        unit.Sizes[0].H,
+							Format:   unit.Sizes,
+							TopFrame: unit.TopFrame,
+						}
+					case pbs.MEDIA_TYPE_VIDEO:
+						mimes := make([]string, len(unit.Video.Mimes))
+						copy(mimes, unit.Video.Mimes)
+						pbm := make([]int8, 1)
+						pbm[0] = unit.Video.PlaybackMethod
+						newImp.Video = &openrtb.Video{
+							MIMEs:          mimes,
+							MinDuration:    unit.Video.Minduration,
+							W:              unit.Sizes[0].W,
+							H:              unit.Sizes[0].H,
+							StartDelay:     unit.Video.Startdelay,
+							PlaybackMethod: pbm,
+						}
+					default:
+						// Error - unknown media type
 					}
-				default:
-					// Error - unknown media type
+					imps[ind] = newImp
 				}
-				imps[ind] = newImp
 				ind = ind + 1
 			}
 		} else {
@@ -51,28 +65,30 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				ID:     unit.Code,
 				Secure: req.Secure,
 			}
-			for _, mType := range mediatypes {
+			for _, mType := range unit.MediaTypes {
 				switch mType {
-				case BANNER:
-					newImp.Banner = &openrtb.Banner{
-						W:        unit.Sizes[0].W,
-						H:        unit.Sizes[0].H,
-						Format:   unit.Sizes,
-						TopFrame: unit.TopFrame,
-					}
-				case VIDEO:
-					mimes := make([]string, len(req.Video.mimes))
-					copy(mimes, req.Video.mimes)
-					newImp.Video = &openrtb.Video{
-						MIMEs:          mimes,
-						MinDuration:    req.Video.Minduration,
-						W:              unit.Sizes[0].W,
-						H:              unit.Sizes[0].H,
-						StartDelay:     req.Video.Startdelay,
-						PlaybackMethod: req.Video.PlaybackMethod,
-					}
-				default:
-					// Error - unknown media type
+					case pbs.MEDIA_TYPE_BANNER:
+						newImp.Banner = &openrtb.Banner{
+							W:        unit.Sizes[0].W,
+							H:        unit.Sizes[0].H,
+							Format:   unit.Sizes,
+							TopFrame: unit.TopFrame,
+						}
+					case pbs.MEDIA_TYPE_VIDEO:
+						mimes := make([]string, len(unit.Video.Mimes))
+						copy(mimes, unit.Video.Mimes)
+						pbm := make([]int8, 1)
+						pbm[0] = unit.Video.PlaybackMethod
+						newImp.Video = &openrtb.Video{
+							MIMEs:          mimes,
+							MinDuration:    unit.Video.Minduration,
+							W:              unit.Sizes[0].W,
+							H:              unit.Sizes[0].H,
+							StartDelay:     unit.Video.Startdelay,
+							PlaybackMethod: pbm,
+						}
+					default:
+						// Error - unknown media type
 				}
 			}
 			imps[i] = newImp
