@@ -604,6 +604,10 @@ func init() {
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=sovrn_prebid_server")
+	viper.SetDefault("adapters.sovrn.usersync_url", "http://ap.lijit.dev:9080/userSync?")
+
+
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -632,6 +636,7 @@ func setupExchanges(cfg *config.Configuration) {
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+		"sovrn": adapters.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint, cfg.Adapters["sovrn"].UserSyncURL, cfg.ExternalURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
