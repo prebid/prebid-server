@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	coreMetrics "github.com/prebid/prebid-server/metrics"
-	"github.com/prebid/prebid-server/pbs"
 	"github.com/rcrowley/go-metrics"
 	"strconv"
 	"testing"
@@ -55,10 +54,7 @@ func TestBidderWithCookie(t *testing.T) {
 	}
 
 	bidInfo1 := &coreMetrics.BidRequestInfo{
-		Bidder: &pbs.PBSBidder{
-			BidderCode:   "bidder1",
-			ResponseTime: 20,
-		},
+		BidderCode: "bidder1",
 		HasCookie: true,
 	}
 	var count int64
@@ -87,13 +83,10 @@ func TestBidderNoCookie(t *testing.T) {
 		HasCookie:     true,
 	}
 	bidInfo2 := &coreMetrics.BidRequestInfo{
-		Bidder: &pbs.PBSBidder{
-			BidderCode:   "bidder1",
-			ResponseTime: 20,
-		},
+		BidderCode: "bidder1",
 		HasCookie: false,
 	}
-	mockResponse := pbs.PBSBidSlice{&pbs.PBSBid{Price: 0.07}, &pbs.PBSBid{Price: 0.08}}
+	mockResponse := []float64{0.07, 0.08}
 	doBidderStart(t, influx, aucInfo, bidInfo2).BidderResponded(mockResponse, nil)
 	var count int64
 	count = influx.registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, getBidEndTagsWithType(aucInfo, bidInfo2, nil)).Snapshot().Count()
@@ -120,10 +113,7 @@ func TestBidderSkipNoCookie(t *testing.T) {
 		HasCookie:     true,
 	}
 	bidInfo := &coreMetrics.BidRequestInfo{
-		Bidder: &pbs.PBSBidder{
-			BidderCode:   "bidder1",
-			ResponseTime: 20,
-		},
+		BidderCode: "bidder1",
 		HasCookie: false,
 	}
 	doBidderStart(t, influx, aucInfo, bidInfo).BidderSkipped()
@@ -227,7 +217,7 @@ func doBidderStart(
 func getBidStartTags(reqInfo *coreMetrics.AuctionRequestInfo, bidInfo *coreMetrics.BidRequestInfo) map[string]string {
 	return map[string]string{
 		"account_id":  reqInfo.AccountId,
-		"bidder_code": bidInfo.Bidder.BidderCode,
+		"bidder_code": bidInfo.BidderCode,
 		"has_cookie":  strconv.FormatBool(bidInfo.HasCookie),
 	}
 }
@@ -241,6 +231,6 @@ func getBidEndTagsWithType(reqInfo *coreMetrics.AuctionRequestInfo, bidInfo *cor
 func getBidEndTags(reqInfo *coreMetrics.AuctionRequestInfo, bidInfo *coreMetrics.BidRequestInfo) map[string]string {
 	return map[string]string{
 		"account_id":  reqInfo.AccountId,
-		"bidder_code": bidInfo.Bidder.BidderCode,
+		"bidder_code": bidInfo.BidderCode,
 	}
 }

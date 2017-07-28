@@ -1,8 +1,8 @@
 package metrics
 
-import (
-	"github.com/prebid/prebid-server/pbs"
-)
+// The metrics module contains APIs which export metrics to some sort of aggregation service.
+// It should not import any other PBS modules, to avoid surprise circular dependencies.
+
 
 // PBSMetrics logs useful metrics to InfluxDB.
 //
@@ -56,7 +56,7 @@ type AuctionRequestInfo struct {
 // BidRequestInfo contains data about the particular Bidder who PBS is requesting bids from.
 type BidRequestInfo struct {
 	// Bidder is the bidder to whom we're making the request.
-	Bidder *pbs.PBSBidder
+	BidderCode string
 
 	// HasCookie is true if this user has an ID *for this bidder*, and false otherwise.
 	// If AuctionRequestInfo.HasCookie is false, then this also must be false.
@@ -73,8 +73,9 @@ type AuctionRequestFollowups interface {
 
 // BidderRequestFollowups contains functions which log followup data from a bidder request.
 type BidderRequestFollowups interface {
-	// BidderResponded should be called with the bidder's response. This is the return from Adapter.Call()
-	BidderResponded(pbs.PBSBidSlice, error)
+	// BidderResponded should be called with the bidder's response. This is the return from Adapter.Call(),
+	// with the Price extracted from each PBSBid.
+	BidderResponded(bidPrices []float64, err error)
 
 	// BidderSkipped should be called if Prebid-Server never even called the Bidder's Adapter.
 	//

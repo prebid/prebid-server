@@ -9,7 +9,6 @@ import (
 	coreMetrics "github.com/prebid/prebid-server/metrics"
 
 	"context"
-	"github.com/prebid/prebid-server/pbs"
 	"github.com/rcrowley/go-metrics"
 	"strconv"
 )
@@ -130,18 +129,18 @@ func (f *influxBidderRequestFollowups) BidderSkipped() {
 	f.Influx.registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag("skipped_no_cookie")).Mark(1)
 }
 
-func (f *influxBidderRequestFollowups) BidderResponded(bids pbs.PBSBidSlice, err error) {
+func (f *influxBidderRequestFollowups) BidderResponded(bidPrices []float64, err error) {
 	f.Influx.registry.getOrRegisterMeter(BIDDER_RESPONSE_COUNT, f.WithResponseTypeTag(makeRespTypeForBidder(err))).Mark(1)
 
 	if err == nil {
 		f.Influx.registry.getOrRegisterTimer(BIDDER_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
 	}
 
-	if bids != nil {
-		f.Influx.registry.getOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bids)))
-		for _, bid := range bids {
+	if bidPrices != nil {
+		f.Influx.registry.getOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bidPrices)))
+		for _, bidPrice := range bidPrices {
 			var histogram = f.Influx.registry.getOrRegisterHistogram(BID_PRICES, f.Tags, metrics.NewExpDecaySample(1028, 0.015))
-			histogram.Update(int64(bid.Price * 1000))
+			histogram.Update(int64(bidPrice * 1000))
 		}
 	}
 }
@@ -177,7 +176,7 @@ func (influx *pbsInflux) StartBidderRequest(
 
 	var followupTags = map[string]string{
 		"account_id":  auctionRequestInfo.AccountId,
-		"bidder_code": bidRequestInfo.Bidder.BidderCode,
+		"bidder_code": bidRequestInfo.BidderCode,
 	}
 
 	var requestTags = combineMaps(map[string]string{

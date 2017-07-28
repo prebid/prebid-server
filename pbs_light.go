@@ -324,8 +324,8 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 				accountAdapterMetric.NoCookieMeter.Mark(1)
 				if ex.SkipNoCookies() {
 					deps.metrics.StartBidderRequest(auctionRequestInfo, &pbsMetrics.BidRequestInfo{
-						Bidder:    bidder,
-						HasCookie: cookieExistsForBidder,
+						BidderCode: bidder.BidderCode,
+						HasCookie:  cookieExistsForBidder,
 					}).BidderSkipped()
 					continue
 				}
@@ -334,11 +334,18 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 			go func(bidder *pbs.PBSBidder) {
 				start := time.Now()
 				bidderMetrics := deps.metrics.StartBidderRequest(auctionRequestInfo, &pbsMetrics.BidRequestInfo{
-					Bidder:    bidder,
-					HasCookie: cookieExistsForBidder,
+					BidderCode: bidder.BidderCode,
+					HasCookie:  cookieExistsForBidder,
 				})
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
-				bidderMetrics.BidderResponded(bid_list, err)
+				var bidPrices []float64 = nil
+				if bid_list != nil {
+					bidPrices := make([]float64, 0, len(bid_list))
+					for i := 0; i < len(bid_list); i++ {
+						bidPrices = append(bidPrices, bid_list[i].Price)
+					}
+				}
+				bidderMetrics.BidderResponded(bidPrices, err)
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				ametrics.RequestTimer.UpdateSince(start)
 				accountAdapterMetric.RequestTimer.UpdateSince(start)

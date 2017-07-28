@@ -1,7 +1,5 @@
 package metrics
 
-import "github.com/prebid/prebid-server/pbs"
-
 // This file provides a no-op implementation of PBSMetrics.
 // The server code can use this if it doesn't want to export metrics anywhere.
 
@@ -29,4 +27,4 @@ type nilBidderRequestFollowups struct{}
 
 func (brf *nilBidderRequestFollowups) BidderSkipped() {}
 
-func (brf *nilBidderRequestFollowups) BidderResponded(bids pbs.PBSBidSlice, err error) {}
+func (brf *nilBidderRequestFollowups) BidderResponded(bidPrices []float64, err error) {}
