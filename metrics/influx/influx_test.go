@@ -55,7 +55,7 @@ func TestBidderWithCookie(t *testing.T) {
 
 	bidInfo1 := &coreMetrics.BidRequestInfo{
 		BidderCode: "bidder1",
-		HasCookie: true,
+		HasCookie:  true,
 	}
 	var count int64
 	doBidderStart(t, influx, aucInfo, bidInfo1).BidderResponded(nil, errors.New("Internal bidder error"))
@@ -84,7 +84,7 @@ func TestBidderNoCookie(t *testing.T) {
 	}
 	bidInfo2 := &coreMetrics.BidRequestInfo{
 		BidderCode: "bidder1",
-		HasCookie: false,
+		HasCookie:  false,
 	}
 	mockResponse := []float64{0.07, 0.08}
 	doBidderStart(t, influx, aucInfo, bidInfo2).BidderResponded(mockResponse, nil)
@@ -114,7 +114,7 @@ func TestBidderSkipNoCookie(t *testing.T) {
 	}
 	bidInfo := &coreMetrics.BidRequestInfo{
 		BidderCode: "bidder1",
-		HasCookie: false,
+		HasCookie:  false,
 	}
 	doBidderStart(t, influx, aucInfo, bidInfo).BidderSkipped()
 
@@ -163,6 +163,18 @@ func TestRespTypeForBidderParsing(t *testing.T) {
 
 	if makeRespTypeForBidder(timeout) != "timeout" {
 		t.Errorf("Bidders with generic errors should count events as tag type=\"error\". Got %s", makeRespTypeForBidder(timeout))
+	}
+}
+
+func TestUserSyncEvent(t *testing.T) {
+	registry := taggableRegistry{delegate: metrics.NewRegistry()}
+	influx := &pbsInflux{registry: &registry}
+	influx.DoneUserSync("mock_bidder")
+
+	expectedTags := map[string]string{"bidderCode": "mock_bidder"}
+	count := influx.registry.getOrRegisterMeter(USERSYNC_COUNT, expectedTags).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Expected 1 usersync event. Got %d", count)
 	}
 }
 

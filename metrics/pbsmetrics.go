@@ -3,7 +3,6 @@ package metrics
 // The metrics module contains APIs which export metrics to some sort of aggregation service.
 // It should not import any other PBS modules, to avoid surprise circular dependencies.
 
-
 // PBSMetrics logs useful metrics to InfluxDB.
 //
 // Implementations of this interface should be threadsafe, so they can be used in multiple goroutines.
@@ -16,6 +15,10 @@ type PBSMetrics interface {
 
 	// StartCookieSyncRequest should be called each time the /cookie_sync endpoint is hit.
 	StartCookieSyncRequest()
+
+	// DoneUserSync should be called each time the /setuid endpoint is used to successfully sync
+	// user IDs for some bidder.
+	DoneUserSync(bidderCode string)
 }
 
 // RequestSource is the list of sources where requests might come from.
