@@ -59,7 +59,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if params.AdSlot == "" {
 			return nil, errors.New("Missing adSlot param")
 		}
-		pbReq.Imp[i].Banner.Format = nil // pubmatic doesn't support
+		if pbReq.Imp[i].Banner != nil {
+			pbReq.Imp[i].Banner.Format = nil
+		} // pubmatic doesn't support
 		pbReq.Imp[i].TagID = params.AdSlot
 		if pbReq.Site != nil {
 			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}

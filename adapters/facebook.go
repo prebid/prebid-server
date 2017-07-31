@@ -111,7 +111,6 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			return nil, fmt.Errorf("Invalid placementId param '%s'", params.PlacementId)
 		}
 
-
 		fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 		fbReq.Ext = a.platformJSON
 
@@ -130,7 +129,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			fbReq.Imp[0].TagID = params.PlacementId
 
 			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReq)
-			reqIndex = reqIndex +1
+			reqIndex = reqIndex + 1
 			if err != nil {
 				return nil, err
 			}
@@ -155,7 +154,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			fbReq.Imp[0].TagID = params.PlacementId
 
 			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReq)
-			reqIndex = reqIndex +1
+			reqIndex = reqIndex + 1
 			if err != nil {
 				return nil, err
 			}

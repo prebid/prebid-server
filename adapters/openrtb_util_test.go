@@ -16,7 +16,8 @@ func TestOpenRTB(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -26,7 +27,7 @@ func TestOpenRTB(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
@@ -40,11 +41,12 @@ func TestOpenRTBNoSize(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 	assert.Equal(t, resp.Imp[0].ID, "")
 }
 
