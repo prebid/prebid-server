@@ -67,28 +67,28 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			}
 			for _, mType := range unit.MediaTypes {
 				switch mType {
-					case pbs.MEDIA_TYPE_BANNER:
-						newImp.Banner = &openrtb.Banner{
-							W:        unit.Sizes[0].W,
-							H:        unit.Sizes[0].H,
-							Format:   unit.Sizes,
-							TopFrame: unit.TopFrame,
-						}
-					case pbs.MEDIA_TYPE_VIDEO:
-						mimes := make([]string, len(unit.Video.Mimes))
-						copy(mimes, unit.Video.Mimes)
-						pbm := make([]int8, 1)
-						pbm[0] = unit.Video.PlaybackMethod
-						newImp.Video = &openrtb.Video{
-							MIMEs:          mimes,
-							MinDuration:    unit.Video.Minduration,
-							W:              unit.Sizes[0].W,
-							H:              unit.Sizes[0].H,
-							StartDelay:     unit.Video.Startdelay,
-							PlaybackMethod: pbm,
-						}
-					default:
-						// Error - unknown media type
+				case pbs.MEDIA_TYPE_BANNER:
+					newImp.Banner = &openrtb.Banner{
+						W:        unit.Sizes[0].W,
+						H:        unit.Sizes[0].H,
+						Format:   unit.Sizes,
+						TopFrame: unit.TopFrame,
+					}
+				case pbs.MEDIA_TYPE_VIDEO:
+					mimes := make([]string, len(unit.Video.Mimes))
+					copy(mimes, unit.Video.Mimes)
+					pbm := make([]int8, 1)
+					pbm[0] = unit.Video.PlaybackMethod
+					newImp.Video = &openrtb.Video{
+						MIMEs:          mimes,
+						MinDuration:    unit.Video.Minduration,
+						W:              unit.Sizes[0].W,
+						H:              unit.Sizes[0].H,
+						StartDelay:     unit.Video.Startdelay,
+						PlaybackMethod: pbm,
+					}
+				default:
+					// Error - unknown media type
 				}
 			}
 			imps[i] = newImp
@@ -98,7 +98,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	if req.App != nil {
 		return openrtb.BidRequest{
 			ID:     req.Tid,
-			Imp:    imps,
+			Imp:    imps[:ind],
 			App:    req.App,
 			Device: req.Device,
 			Source: &openrtb.Source{
@@ -111,7 +111,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 
 	return openrtb.BidRequest{
 		ID:  req.Tid,
-		Imp: imps,
+		Imp: imps[:ind],
 		Site: &openrtb.Site{
 			Domain: req.Domain,
 			Page:   req.Url,

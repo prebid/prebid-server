@@ -213,7 +213,6 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 	return
 }
 
-
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {

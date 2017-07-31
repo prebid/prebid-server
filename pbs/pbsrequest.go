@@ -39,11 +39,11 @@ type Bids struct {
 
 type PBSVideo struct {
 	Mimes          []string `json:"mimes,omitempty"`
-	Minduration    uint64      `json:"minduration,omitempty"`
-	Maxduration    int64      `json:"maxduration,omitempty"`
-	Startdelay     int64      `json:"startdelay,omitempty"`
+	Minduration    uint64   `json:"minduration,omitempty"`
+	Maxduration    int64    `json:"maxduration,omitempty"`
+	Startdelay     int64    `json:"startdelay,omitempty"`
 	Skippable      int      `json:"skippable,omitempty"`
-	PlaybackMethod int8   `json:"playback_method,omitempty"`
+	PlaybackMethod int8     `json:"playback_method,omitempty"`
 	Frameworks     []string `json:"frameworks,omitempty"`
 }
 
@@ -240,7 +240,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			for _, t := range unit.MediaTypes {
 				mt, er := ParseMediaType(t)
 				if er != nil {
-					glog.Infof("Invalid media type: %s",er)
+					glog.Infof("Invalid media type: %s", er)
 				} else {
 					if !mtmap[mt] {
 						mtypes = append(mtypes, mt)
