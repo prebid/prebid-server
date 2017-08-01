@@ -225,7 +225,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 	}
 	for i, tag := range rubidata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
-			Code: tag.code,
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
