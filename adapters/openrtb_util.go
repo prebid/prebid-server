@@ -21,6 +21,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	ind := 0
 	for i, unit := range bidder.AdUnits {
 		if len(unit.Sizes) <= 0 {
+			ind = ind + 1
 			continue
 		}
 
