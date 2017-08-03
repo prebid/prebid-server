@@ -17,6 +17,8 @@ func (m *nilPBSMetrics) StartBidderRequest(auctionRequestInfo *AuctionRequestInf
 	return &nilBidderRequestFollowups{}
 }
 
+func (m *nilPBSMetrics) DoneUserSync(bidderCode string) {}
+
 func (m *nilPBSMetrics) StartCookieSyncRequest() {}
 
 type nilAuctionRequestFollowups struct{}

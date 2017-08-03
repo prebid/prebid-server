@@ -785,8 +785,9 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatal(http.ListenAndServe(adminURI, nil))
 	}()
 
+	metricsExporter := chooseMetrics(cfg)
 	deps := PrebidServerDependencies{
-		metrics: chooseMetrics(cfg),
+		metrics: metricsExporter,
 	}
 
 	router := httprouter.New()
@@ -798,7 +799,17 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	pbs.InitUsersyncHandlers(router, metricsRegistry, cfg.CookieDomain, cfg.ExternalURL, cfg.RecaptchaSecret)
+	userSyncDeps := &pbs.UserSyncDeps{
+		Cookie_domain:    cfg.CookieDomain,
+		External_url:     cfg.ExternalURL,
+		Recaptcha_secret: cfg.RecaptchaSecret,
+		Metrics:          metricsExporter,
+	}
+
+	router.GET("/getuids", userSyncDeps.GetUIDs)
+	router.GET("/setuid", userSyncDeps.SetUID)
+	router.POST("/optout", userSyncDeps.OptOut)
+	router.GET("/optout", userSyncDeps.OptOut)
 
 	pbc.InitPrebidCache(cfg.CacheURL)
 

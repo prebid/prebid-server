@@ -25,6 +25,7 @@ const (
 	BID_PRICES              = "prebidserver.bid_response_cpm_cents"
 	BID_COUNT               = "prebidserver.bid_count"
 
+	USERSYNC_COUNT           = "prebidserver.usersync_count"
 	COOKIESYNC_REQUEST_COUNT = "prebidserver.cookiesync_request_count"
 )
 
@@ -196,4 +197,12 @@ func (influx *pbsInflux) StartBidderRequest(
 // StartCookieSyncRequest implements part of the PBSMetrics interface.
 func (influx *pbsInflux) StartCookieSyncRequest() {
 	influx.registry.getOrRegisterMeter(COOKIESYNC_REQUEST_COUNT, nil).Mark(1)
+}
+
+// StartCookieSyncRequest implements part of the PBSMetrics interface.
+func (influx *pbsInflux) DoneUserSync(bidderCode string) {
+	tags := map[string]string{
+		"bidderCode": bidderCode,
+	}
+	influx.registry.getOrRegisterMeter(USERSYNC_COUNT, tags).Mark(1)
 }

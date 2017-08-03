@@ -12,13 +12,16 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/ssl"
-	metrics "github.com/rcrowley/go-metrics"
 )
 
-var cookie_domain string
-var external_url string
-var recaptcha_secret string
+type UserSyncDeps struct {
+	Cookie_domain    string
+	External_url     string
+	Recaptcha_secret string
+	Metrics          metrics.PBSMetrics
+}
 
 type PBSCookie struct {
 	UIDs     map[string]string `json:"uids,omitempty"`
@@ -53,7 +56,7 @@ func ParseUIDCookie(r *http.Request) *PBSCookie {
 	return &pc
 }
 
-func SetUIDCookie(w http.ResponseWriter, pc *PBSCookie) {
+func (deps *UserSyncDeps) SetUIDCookie(w http.ResponseWriter, pc *PBSCookie) {
 	j, _ := json.Marshal(pc)
 	b64 := base64.URLEncoding.EncodeToString(j)
 
@@ -62,15 +65,15 @@ func SetUIDCookie(w http.ResponseWriter, pc *PBSCookie) {
 		Value:   b64,
 		Expires: time.Now().Add(180 * 24 * time.Hour),
 	}
-	if cookie_domain != "" {
-		hc.Domain = cookie_domain
+	if deps.Cookie_domain != "" {
+		hc.Domain = deps.Cookie_domain
 	}
 	http.SetCookie(w, &hc)
 }
 
-func GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseUIDCookie(r)
-	SetUIDCookie(w, pc)
+	deps.SetUIDCookie(w, pc)
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -89,7 +92,7 @@ func getRawQueryMap(query string) map[string]string {
 	return m
 }
 
-func SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseUIDCookie(r)
 	if pc.OptOut {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -110,7 +113,8 @@ func SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		pc.UIDs[bidder] = uid
 	}
 
-	SetUIDCookie(w, pc)
+	deps.Metrics.DoneUserSync(bidder)
+	deps.SetUIDCookie(w, pc)
 }
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -122,7 +126,7 @@ type googleResponse struct {
 	ErrorCodes []string `json:"error-codes"`
 }
 
-func VerifyRecaptcha(response string) error {
+func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 	ts := &http.Transport{
 		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
 	}
@@ -131,7 +135,7 @@ func VerifyRecaptcha(response string) error {
 		Transport: ts,
 	}
 	resp, err := client.PostForm(recaptchaURL,
-		url.Values{"secret": {recaptcha_secret}, "response": {response}})
+		url.Values{"secret": {deps.Recaptcha_secret}, "response": {response}})
 	if err != nil {
 		return err
 	}
@@ -146,16 +150,16 @@ func VerifyRecaptcha(response string) error {
 	return nil
 }
 
-func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	optout := r.FormValue("optout")
 	rr := r.FormValue("g-recaptcha-response")
 
 	if rr == "" {
-		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", external_url), 301)
+		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.External_url), 301)
 		return
 	}
 
-	err := VerifyRecaptcha(rr)
+	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
 		glog.Infof("Optout failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -170,23 +174,10 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		pc.UIDs = nil
 	}
 
-	SetUIDCookie(w, pc)
+	deps.SetUIDCookie(w, pc)
 	if optout == "" {
 		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
 	} else {
 		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
 	}
-}
-
-// split this for testability
-func InitUsersyncHandlers(router *httprouter.Router, metricsRegistry metrics.Registry, cdomain string,
-	xternal_url string, captcha_secret string) {
-	cookie_domain = cdomain
-	external_url = xternal_url
-	recaptcha_secret = captcha_secret
-
-	router.GET("/getuids", GetUIDs)
-	router.GET("/setuid", SetUID)
-	router.POST("/optout", OptOut)
-	router.GET("/optout", OptOut)
 }

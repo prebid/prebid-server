@@ -311,7 +311,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	pc := pbs.ParseUIDCookie(req)
 	pc.UIDs["adnxs"] = andata.buyerUID
 	fakewriter := httptest.NewRecorder()
-	pbs.SetUIDCookie(fakewriter, pc)
+	userSync := pbs.UserSyncDeps{}
+	userSync.SetUIDCookie(fakewriter, pc)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
