@@ -40,7 +40,7 @@ type Bids struct {
 type PBSVideo struct {
 	Mimes          []string `json:"mimes,omitempty"`
 	Minduration    uint64   `json:"minduration,omitempty"`
-	Maxduration    int64    `json:"maxduration,omitempty"`
+	Maxduration    uint64   `json:"maxduration,omitempty"`
 	Startdelay     int64    `json:"startdelay,omitempty"`
 	Skippable      int      `json:"skippable,omitempty"`
 	PlaybackMethod int8     `json:"playback_method,omitempty"`

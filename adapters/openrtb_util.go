@@ -50,6 +50,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 						newImp.Video = &openrtb.Video{
 							MIMEs:          mimes,
 							MinDuration:    unit.Video.Minduration,
+							MaxDuration:    unit.Video.Maxduration,
 							W:              unit.Sizes[0].W,
 							H:              unit.Sizes[0].H,
 							StartDelay:     unit.Video.Startdelay,
@@ -57,6 +58,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 						}
 					default:
 						// Error - unknown media type
+						continue
 					}
 					imps[ind] = newImp
 					ind = ind + 1
@@ -85,6 +87,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 					newImp.Video = &openrtb.Video{
 						MIMEs:          mimes,
 						MinDuration:    unit.Video.Minduration,
+						MaxDuration:    unit.Video.Maxduration,
 						W:              unit.Sizes[0].W,
 						H:              unit.Sizes[0].H,
 						StartDelay:     unit.Video.Startdelay,
@@ -92,6 +95,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 					}
 				default:
 					// Error - unknown media type
+					continue
 				}
 			}
 			imps[ind] = newImp
