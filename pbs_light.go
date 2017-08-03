@@ -233,12 +233,13 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 
 	mRequestMeter.Mark(1)
 
-	requestSource := pbsMetrics.UNKNOWN
+	requestBrowser := pbsMetrics.UNKNOWN
 	isSafari := isRequestSafari(r)
 	if isSafari {
 		mSafariRequestMeter.Mark(1)
-		requestSource = pbsMetrics.SAFARI
+		requestBrowser = pbsMetrics.SAFARI
 	}
+	requestSource := pbsMetrics.DESKTOP
 
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
 	if err != nil {
@@ -246,9 +247,10 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 		writeAuctionError(w, "Error parsing request", err)
 		mErrorMeter.Mark(1)
 		deps.metrics.StartAuctionRequest(&pbsMetrics.AuctionRequestInfo{
-			AccountId:     "unknown",
-			RequestSource: requestSource,
-			HasCookie:     false,
+			AccountId: "unknown",
+			Browser:   requestBrowser,
+			Source:    requestSource,
+			HasCookie: false,
 		}).Completed(err)
 		return
 	}
@@ -280,9 +282,10 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 	}
 
 	auctionRequestInfo := &pbsMetrics.AuctionRequestInfo{
-		AccountId:     pbs_req.AccountID,
-		RequestSource: requestSource,
-		HasCookie:     !hasNoCookie,
+		AccountId: pbs_req.AccountID,
+		Browser:   requestBrowser,
+		Source:    requestSource,
+		HasCookie: !hasNoCookie,
 	}
 	auctionMetrics := deps.metrics.StartAuctionRequest(auctionRequestInfo)
 
