@@ -78,7 +78,8 @@ func (influx *pbsInflux) StartAuctionRequest(requestInfo *coreMetrics.AuctionReq
 	}
 
 	var initialTags = combineMaps(map[string]string{
-		"source":     requestInfo.RequestSource.String(),
+		"source":     requestInfo.Source.String(),
+		"browser":    requestInfo.Browser.String(),
 		"has_cookie": strconv.FormatBool(requestInfo.HasCookie),
 	}, followupTags)
 
@@ -134,7 +135,9 @@ func (f *influxBidderRequestFollowups) BidderResponded(bidPrices []float64, err 
 
 	if err == nil {
 		f.Influx.registry.getOrRegisterTimer(BIDDER_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
+	}
 
+	if bidPrices != nil {
 		f.Influx.registry.getOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bidPrices)))
 		for _, bidPrice := range bidPrices {
 			var histogram = f.Influx.registry.getOrRegisterHistogram(BID_PRICES, f.Tags, metrics.NewExpDecaySample(1028, 0.015))

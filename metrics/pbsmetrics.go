@@ -19,23 +19,37 @@ type PBSMetrics interface {
 }
 
 // RequestSource is the list of sources where requests might come from.
-// This obviously isn't comprehensive... just defined on an as-needed basis.
 type RequestSource int
 
 const (
 	// Safari has restrictive policies on 3rd party cookies. This helps measure how much of an effect that has.
-	SAFARI RequestSource = iota
+	DESKTOP RequestSource = iota
 	APP
-	OTHER
-	UNKNOWN
 )
 
 func (source RequestSource) String() string {
 	switch source {
-	case SAFARI:
-		return "safari"
+	case DESKTOP:
+		return "desktop"
 	case APP:
 		return "app"
+	default:
+		return "other"
+	}
+}
+
+// RequestBrowser is the list of browsers where requetss might come from.
+type RequestBrowser int
+
+const (
+	SAFARI RequestBrowser = iota
+	UNKNOWN
+)
+
+func (browser RequestBrowser) String() string {
+	switch browser {
+	case SAFARI:
+		return "safari"
 	case UNKNOWN:
 		return "unknown"
 	default:
@@ -48,7 +62,9 @@ type AuctionRequestInfo struct {
 	// AccountId is the ID of the account requesting this auction.
 	AccountId string
 	// RequestSource specifies the type of Client which is making the request.
-	RequestSource RequestSource
+	Source RequestSource
+	// RequestBrowser specifies the browser which made the request, as best as the prebid server can determine.
+	Browser RequestBrowser
 	// HasCookie is true if Prebid Server has any bidders who can ID this user.
 	HasCookie bool
 }
