@@ -47,7 +47,8 @@ func TestOpenRTBNoSize(t *testing.T) {
 		},
 	}
 	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
-	assert.Equal(t, resp.Imp[0].ID, "")
+	//	assert.Equal(t, resp.Imp[0].ID, "")
+	assert.Equal(t, resp.Imp, []openrtb.Imp(nil))
 }
 
 func TestOpenRTBMobile(t *testing.T) {
