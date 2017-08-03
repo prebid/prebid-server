@@ -78,8 +78,8 @@ func (influx *pbsInflux) StartAuctionRequest(requestInfo *coreMetrics.AuctionReq
 	}
 
 	var initialTags = combineMaps(map[string]string{
-		"source":     requestInfo.Source.String(),
 		"browser":    requestInfo.Browser.String(),
+		"source":     requestInfo.Source.String(),
 		"has_cookie": strconv.FormatBool(requestInfo.HasCookie),
 	}, followupTags)
 

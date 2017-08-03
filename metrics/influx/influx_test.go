@@ -30,7 +30,7 @@ func TestAuctionEvents(t *testing.T) {
 	auc2Info := &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
 		Browser:       coreMetrics.UNKNOWN,
-		Source: coreMetrics.APP,
+		Source:        coreMetrics.DESKTOP,
 		HasCookie:     true,
 	}
 	doAuctionStart(t, influx, auc2Info).Completed(errors.New("Some failure"))
@@ -176,8 +176,8 @@ func TestRespTypeForBidderParsing(t *testing.T) {
 func getAucStartTags(reqInfo *coreMetrics.AuctionRequestInfo) map[string]string {
 	return map[string]string{
 		"account_id": reqInfo.AccountId,
-		"source":     reqInfo.Source.String(),
 		"browser":    reqInfo.Browser.String(),
+		"source":     reqInfo.Source.String(),
 		"has_cookie": strconv.FormatBool(reqInfo.HasCookie),
 	}
 }
