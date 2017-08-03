@@ -74,7 +74,8 @@ type AuctionRequestFollowups interface {
 // BidderRequestFollowups contains functions which log followup data from a bidder request.
 type BidderRequestFollowups interface {
 	// BidderResponded should be called with the bidder's response. This is the return from Adapter.Call(),
-	// with the Price extracted from each PBSBid.
+	// with the Price extracted from each PBSBid. Exactly one of these arguments should be nil each time
+	// they're called.
 	BidderResponded(bidPrices []float64, err error)
 
 	// BidderSkipped should be called if Prebid-Server never even called the Bidder's Adapter.

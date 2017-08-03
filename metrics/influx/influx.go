@@ -134,9 +134,7 @@ func (f *influxBidderRequestFollowups) BidderResponded(bidPrices []float64, err 
 
 	if err == nil {
 		f.Influx.registry.getOrRegisterTimer(BIDDER_REQUEST_DURATION, f.Tags).UpdateSince(f.StartTime)
-	}
 
-	if bidPrices != nil {
 		f.Influx.registry.getOrRegisterMeter(BID_COUNT, f.Tags).Mark(int64(len(bidPrices)))
 		for _, bidPrice := range bidPrices {
 			var histogram = f.Influx.registry.getOrRegisterHistogram(BID_PRICES, f.Tags, metrics.NewExpDecaySample(1028, 0.015))

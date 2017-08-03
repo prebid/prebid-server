@@ -338,13 +338,7 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 					HasCookie:  cookieExistsForBidder,
 				})
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
-				var bidPrices []float64 = nil
-				if bid_list != nil {
-					bidPrices := make([]float64, 0, len(bid_list))
-					for i := 0; i < len(bid_list); i++ {
-						bidPrices = append(bidPrices, bid_list[i].Price)
-					}
-				}
+				bidPrices := bid_list.ExtractPrices()
 				bidderMetrics.BidderResponded(bidPrices, err)
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				ametrics.RequestTimer.UpdateSince(start)
