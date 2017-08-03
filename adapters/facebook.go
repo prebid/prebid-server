@@ -115,10 +115,10 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		fbReq.Ext = a.platformJSON
 
 		// only grab this ad unit
-		fbReq.Imp = fbReq.Imp[i : i+1]
 
 		// check whether BANNER Imp exists for that adUnit
-		if fbReq.Imp != nil {
+		if fbReq.Imp != nil && len(fbReq.Imp) > 0 {
+			fbReq.Imp = fbReq.Imp[i : i+1]
 
 			if fbReq.Site != nil {
 				fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
@@ -140,10 +140,10 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		fbReq.Ext = a.platformJSON
 
 		// only grab this ad unit
-		fbReq.Imp = fbReq.Imp[i : i+1]
 
-		// check whether BANNER Imp exists for that adUnit
-		if fbReq.Imp != nil {
+		// check whether VIDEO Imp exists for that adUnit
+		if fbReq.Imp != nil && len(fbReq.Imp) > 0 {
+			fbReq.Imp = fbReq.Imp[i : i+1]
 
 			if fbReq.Site != nil {
 				fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}

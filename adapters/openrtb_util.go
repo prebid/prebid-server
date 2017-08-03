@@ -19,7 +19,8 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(mediatypes))
 	ind := 0
-	for i, unit := range bidder.AdUnits {
+	impsPresent := false
+	for _, unit := range bidder.AdUnits {
 		if len(unit.Sizes) <= 0 {
 			ind = ind + 1
 			continue
@@ -58,8 +59,9 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 						// Error - unknown media type
 					}
 					imps[ind] = newImp
+					ind = ind + 1
+					impsPresent = true
 				}
-				ind = ind + 1
 			}
 		} else {
 			newImp := openrtb.Imp{
@@ -92,14 +94,21 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 					// Error - unknown media type
 				}
 			}
-			imps[i] = newImp
+			imps[ind] = newImp
+			ind = ind + 1
+			impsPresent = true
 		}
+	}
+
+	newImps := imps[:ind]
+	if !impsPresent {
+		newImps = nil
 	}
 
 	if req.App != nil {
 		return openrtb.BidRequest{
 			ID:     req.Tid,
-			Imp:    imps[:ind],
+			Imp:    newImps,
 			App:    req.App,
 			Device: req.Device,
 			Source: &openrtb.Source{
@@ -112,7 +121,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 
 	return openrtb.BidRequest{
 		ID:  req.Tid,
-		Imp: imps[:ind],
+		Imp: newImps,
 		Site: &openrtb.Site{
 			Domain: req.Domain,
 			Page:   req.Url,
