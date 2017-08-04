@@ -213,10 +213,9 @@ func TestFacebookBasicResponse(t *testing.T) {
 	req.Header.Add("X-Real-IP", fbdata.deviceIP)
 
 	pc := pbs.ParseUIDCookie(req)
-	pc.UIDs["audienceNetwork"] = fbdata.buyerUID
+	pc.TrySync("audienceNetwork", fbdata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	userSync := pbs.UserSyncDeps{}
-	userSync.SetUIDCookie(fakewriter, pc)
+	pc.SetUIDCookie(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

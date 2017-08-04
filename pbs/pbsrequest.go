@@ -130,7 +130,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	// use client-side data for web requests
 	if pbsReq.App == nil {
 		pc := ParseUIDCookie(r)
-		pbsReq.UserIDs = pc.UIDs
+		pbsReq.UserIDs = pc.getUIDs()
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {

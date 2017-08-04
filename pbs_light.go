@@ -174,7 +174,7 @@ func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.
 	deps.metrics.StartCookieSyncRequest()
 	mCookieSyncMeter.Mark(1)
 	cookies := pbs.ParseUIDCookie(r)
-	if cookies.OptOut {
+	if !cookies.AllowsUserSync() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
 	}
@@ -193,7 +193,7 @@ func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || len(cookies.UIDs) == 0 {
+	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || cookies.SyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -201,7 +201,7 @@ func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+			if !cookies.HasSync(ex.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,

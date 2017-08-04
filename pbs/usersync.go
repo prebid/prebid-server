@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/metrics"
@@ -23,15 +24,85 @@ type UserSyncDeps struct {
 	Metrics          metrics.PBSMetrics
 }
 
-type PBSCookie struct {
+type PBSCookie interface {
+	AllowsUserSync() bool
+	SetUserSyncPreference(allow bool)
+	GetUIDCookie() *http.Cookie
+	SetUIDCookie(w http.ResponseWriter, domain string)
+	Unsync(familyName string)
+	TrySync(familyName string, uid string) error
+	HasSync(familyName string) bool
+	SyncCount() int
+	getUIDs() map[string]string
+}
+
+type cookie struct {
 	UIDs     map[string]string `json:"uids,omitempty"`
 	OptOut   bool              `json:"optout,omitempty"`
 	Birthday *time.Time        `json:"bday,omitempty"`
 }
 
-func ParseUIDCookie(r *http.Request) *PBSCookie {
+func (cookie *cookie) AllowsUserSync() bool {
+	return !cookie.OptOut
+}
+
+func (cookie *cookie) SetUserSyncPreference(allow bool) {
+	if allow {
+		cookie.OptOut = false
+	} else {
+		cookie.OptOut = true
+		cookie.UIDs = nil
+	}
+}
+
+func (cookie *cookie) GetUIDCookie() *http.Cookie {
+	j, _ := json.Marshal(cookie)
+	b64 := base64.URLEncoding.EncodeToString(j)
+
+	return &http.Cookie{
+		Name:    "uids",
+		Value:   b64,
+		Expires: time.Now().Add(180 * 24 * time.Hour),
+	}
+}
+
+func (cookie *cookie) SetUIDCookie(w http.ResponseWriter, domain string) {
+	httpCookie := cookie.GetUIDCookie()
+	if domain != "" {
+		httpCookie.Domain = domain
+	}
+	http.SetCookie(w, httpCookie)
+}
+
+func (cookie *cookie) Unsync(familyName string) {
+	delete(cookie.UIDs, familyName)
+}
+
+func (cookie *cookie) HasSync(familyName string) bool {
+	_, ok := cookie.UIDs[familyName]
+	return ok
+}
+
+func (cookie *cookie) SyncCount() int {
+	return len(cookie.UIDs)
+}
+
+func (cookie *cookie) TrySync(familyName string, uid string) error {
+	if !cookie.AllowsUserSync() {
+		return errors.New("The user has opted out of prebid server cookie syncs.")
+	}
+
+	cookie.UIDs[familyName] = uid
+	return nil
+}
+
+func (cookie *cookie) getUIDs() map[string]string {
+	return cookie.UIDs
+}
+
+func ParseUIDCookie(r *http.Request) PBSCookie {
 	t := time.Now()
-	pc := PBSCookie{
+	pc := cookie{
 		UIDs:     make(map[string]string),
 		Birthday: &t,
 	}
@@ -56,24 +127,9 @@ func ParseUIDCookie(r *http.Request) *PBSCookie {
 	return &pc
 }
 
-func (deps *UserSyncDeps) SetUIDCookie(w http.ResponseWriter, pc *PBSCookie) {
-	j, _ := json.Marshal(pc)
-	b64 := base64.URLEncoding.EncodeToString(j)
-
-	hc := http.Cookie{
-		Name:    "uids",
-		Value:   b64,
-		Expires: time.Now().Add(180 * 24 * time.Hour),
-	}
-	if deps.Cookie_domain != "" {
-		hc.Domain = deps.Cookie_domain
-	}
-	http.SetCookie(w, &hc)
-}
-
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseUIDCookie(r)
-	deps.SetUIDCookie(w, pc)
+	pc.SetUIDCookie(w, deps.Cookie_domain)
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -94,7 +150,7 @@ func getRawQueryMap(query string) map[string]string {
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseUIDCookie(r)
-	if pc.OptOut {
+	if !pc.AllowsUserSync() {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -108,13 +164,13 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 
 	uid := query["uid"]
 	if uid == "" {
-		delete(pc.UIDs, bidder)
+		pc.Unsync(bidder)
 	} else {
-		pc.UIDs[bidder] = uid
+		pc.TrySync(bidder, uid)
 	}
 
 	deps.Metrics.DoneUserSync(bidder)
-	deps.SetUIDCookie(w, pc)
+	pc.SetUIDCookie(w, deps.Cookie_domain)
 }
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -167,14 +223,9 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	pc := ParseUIDCookie(r)
-	if optout == "" {
-		pc.OptOut = false
-	} else {
-		pc.OptOut = true
-		pc.UIDs = nil
-	}
+	pc.SetUserSyncPreference(optout == "")
 
-	deps.SetUIDCookie(w, pc)
+	pc.SetUIDCookie(w, deps.Cookie_domain)
 	if optout == "" {
 		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
 	} else {
