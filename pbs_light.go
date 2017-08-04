@@ -259,7 +259,7 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 	if pbs_req.App != nil {
 		requestSource = pbsMetrics.APP
 		mAppRequestMeter.Mark(1)
-	} else if len(pbs_req.UserIDs) == 0 {
+	} else if pbs_req.Cookie.SyncCount() == 0 {
 		hasNoCookie = true
 		mNoCookieMeter.Mark(1)
 		if isSafari {
@@ -275,7 +275,7 @@ func (deps *PrebidServerDependencies) auction(w http.ResponseWriter, r *http.Req
 				Expires: time.Now().Add(180 * 24 * time.Hour),
 			}
 			http.SetCookie(w, &c)
-			pbs_req.UserIDs["adnxs"] = uuid2
+			pbs_req.Cookie.TrySync("adnxs", uuid2)
 		}
 	}
 

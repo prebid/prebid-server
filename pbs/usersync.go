@@ -29,11 +29,11 @@ type PBSCookie interface {
 	SetUserSyncPreference(allow bool)
 	GetUIDCookie() *http.Cookie
 	SetUIDCookie(w http.ResponseWriter, domain string)
+	GetUID(familyName string) (string, bool)
 	Unsync(familyName string)
 	TrySync(familyName string, uid string) error
 	HasSync(familyName string) bool
 	SyncCount() int
-	getUIDs() map[string]string
 }
 
 type cookie struct {
@@ -66,6 +66,11 @@ func (cookie *cookie) GetUIDCookie() *http.Cookie {
 	}
 }
 
+func (cookie *cookie) GetUID(familyName string) (string, bool) {
+	uid, ok := cookie.UIDs[familyName]
+	return uid, ok
+}
+
 func (cookie *cookie) SetUIDCookie(w http.ResponseWriter, domain string) {
 	httpCookie := cookie.GetUIDCookie()
 	if domain != "" {
@@ -94,10 +99,6 @@ func (cookie *cookie) TrySync(familyName string, uid string) error {
 
 	cookie.UIDs[familyName] = uid
 	return nil
-}
-
-func (cookie *cookie) getUIDs() map[string]string {
-	return cookie.UIDs
 }
 
 func ParseUIDCookie(r *http.Request) PBSCookie {
