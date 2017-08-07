@@ -129,7 +129,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pc := ParseUIDCookie(r)
+		pc := ParseCookieFromRequest(r)
 		pbsReq.Cookie = pc
 
 		// this would be for the shared adnxs.com domain

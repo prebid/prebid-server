@@ -173,7 +173,7 @@ type cookieSyncResponse struct {
 func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	deps.metrics.StartCookieSyncRequest()
 	mCookieSyncMeter.Mark(1)
-	cookies := pbs.ParseUIDCookie(r)
+	cookies := pbs.ParseCookieFromRequest(r)
 	if !cookies.IsAllowed() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return

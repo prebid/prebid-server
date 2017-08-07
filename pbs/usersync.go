@@ -28,22 +28,22 @@ type UserSyncDeps struct {
 	Metrics          metrics.PBSMetrics
 }
 
-// UserSyncCookie is cookie which stores the user sync info for all of our bidders.
+// UserSyncCookie is cookieImpl which stores the user sync info for all of our bidders.
 //
-// To get an instance of this from a request, use ParseUIDCookie.
+// To get an instance of this from a request, use ParseCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type UserSyncCookie interface {
 	// IsAllowed is true if the user lets bidders sync cookies, and false otherwise.
 	IsAllowed() bool
 	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
 	SetPreference(allow bool)
-	// Gets an HTTP cookie containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
+	// Gets an HTTP cookieImpl containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
 	ToHTTPCookie() *http.Cookie
-	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
+	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookieImpl.setDomain(domain); setCookie(w, cookieImpl)"
 	SetCookieOnResponse(w http.ResponseWriter, domain string)
 	// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
 	GetUID(familyName string) (string, bool)
-	// Unsync removes the user's ID for the given family from this cookie.
+	// Unsync removes the user's ID for the given family from this cookieImpl.
 	Unsync(familyName string)
 	// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
 	TrySync(familyName string, uid string) error
@@ -53,26 +53,40 @@ type UserSyncCookie interface {
 	SyncCount() int
 }
 
-// ParseUIDCookie retrieves the cookie which stores UserSync data from the request.
-func ParseUIDCookie(r *http.Request) UserSyncCookie {
-	t := time.Now()
-	pc := cookie{
-		UIDs:     make(map[string]string),
-		Birthday: &t,
-	}
-
+// ParseCookieFromRequest parses the UserSync cookieImpl from an HTTP Request.
+func ParseCookieFromRequest(r *http.Request) UserSyncCookie {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err != nil {
-		return &pc
+		return &cookieImpl{
+			UIDs:     make(map[string]string),
+			Birthday: timestamp(),
+		}
 	}
+
+	return ParseCookie(cookie)
+}
+
+// ParseCookie parses the UserSync cookieImpl from a raw HTTP cookieImpl.
+func ParseCookie(cookie *http.Cookie) UserSyncCookie {
+	return parseCookieImpl(cookie)
+}
+
+// parseCookieImpl parses the cookieImpl cookieImpl from a raw HTTP cookieImpl.
+// This exists for testing. Callers should use ParseCookie.
+func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
+	pc := cookieImpl{
+		UIDs:     make(map[string]string),
+		Birthday: timestamp(),
+	}
+
 	j, err := base64.URLEncoding.DecodeString(cookie.Value)
 	if err != nil {
-		// corrupted cookie; we should reset
+		// corrupted cookieImpl; we should reset
 		return &pc
 	}
 	err = json.Unmarshal(j, &pc)
 	if err != nil {
-		// corrupted cookie; we should reset
+		// corrupted cookieImpl; we should reset
 		return &pc
 	}
 	if pc.OptOut || pc.UIDs == nil {
@@ -90,17 +104,17 @@ func ParseUIDCookie(r *http.Request) UserSyncCookie {
 	return &pc
 }
 
-type cookie struct {
+type cookieImpl struct {
 	UIDs     map[string]string `json:"uids,omitempty"`
 	OptOut   bool              `json:"optout,omitempty"`
 	Birthday *time.Time        `json:"bday,omitempty"`
 }
 
-func (cookie *cookie) IsAllowed() bool {
+func (cookie *cookieImpl) IsAllowed() bool {
 	return !cookie.OptOut
 }
 
-func (cookie *cookie) SetPreference(allow bool) {
+func (cookie *cookieImpl) SetPreference(allow bool) {
 	if allow {
 		cookie.OptOut = false
 	} else {
@@ -109,7 +123,7 @@ func (cookie *cookie) SetPreference(allow bool) {
 	}
 }
 
-func (cookie *cookie) ToHTTPCookie() *http.Cookie {
+func (cookie *cookieImpl) ToHTTPCookie() *http.Cookie {
 	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
 
@@ -120,12 +134,12 @@ func (cookie *cookie) ToHTTPCookie() *http.Cookie {
 	}
 }
 
-func (cookie *cookie) GetUID(familyName string) (string, bool) {
+func (cookie *cookieImpl) GetUID(familyName string) (string, bool) {
 	uid, ok := cookie.UIDs[familyName]
 	return uid, ok
 }
 
-func (cookie *cookie) SetCookieOnResponse(w http.ResponseWriter, domain string) {
+func (cookie *cookieImpl) SetCookieOnResponse(w http.ResponseWriter, domain string) {
 	httpCookie := cookie.ToHTTPCookie()
 	if domain != "" {
 		httpCookie.Domain = domain
@@ -133,22 +147,22 @@ func (cookie *cookie) SetCookieOnResponse(w http.ResponseWriter, domain string) 
 	http.SetCookie(w, httpCookie)
 }
 
-func (cookie *cookie) Unsync(familyName string) {
+func (cookie *cookieImpl) Unsync(familyName string) {
 	delete(cookie.UIDs, familyName)
 }
 
-func (cookie *cookie) HasSync(familyName string) bool {
+func (cookie *cookieImpl) HasSync(familyName string) bool {
 	_, ok := cookie.UIDs[familyName]
 	return ok
 }
 
-func (cookie *cookie) SyncCount() int {
+func (cookie *cookieImpl) SyncCount() int {
 	return len(cookie.UIDs)
 }
 
-func (cookie *cookie) TrySync(familyName string, uid string) error {
+func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
 	if !cookie.IsAllowed() {
-		return errors.New("The user has opted out of prebid server cookie syncs.")
+		return errors.New("The user has opted out of prebid server cookieImpl syncs.")
 	}
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
@@ -162,7 +176,7 @@ func (cookie *cookie) TrySync(familyName string, uid string) error {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseUIDCookie(r)
+	pc := ParseCookieFromRequest(r)
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	json.NewEncoder(w).Encode(pc)
 	return
@@ -183,7 +197,7 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseUIDCookie(r)
+	pc := ParseCookieFromRequest(r)
 	if !pc.IsAllowed() {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -253,7 +267,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := ParseUIDCookie(r)
+	pc := ParseCookieFromRequest(r)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
@@ -262,4 +276,9 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	} else {
 		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
 	}
+}
+
+func timestamp() *time.Time {
+	birthday := time.Now()
+	return &birthday
 }
