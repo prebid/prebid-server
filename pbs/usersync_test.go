@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"testing"
+	"net/http/httptest"
 )
 
 func TestOptOutCookie(t *testing.T) {
@@ -106,6 +107,41 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 	}
 	parsed := ParseCookie(&raw)
 	ensureEmptyCookie(t, parsed)
+}
+
+func writeThenRead(t *testing.T, cookie UserSyncCookie) UserSyncCookie {
+	w := httptest.NewRecorder()
+	cookie.SetCookieOnResponse(w, "mock-domain")
+	writtenCookie := w.HeaderMap.Get("Set-Cookie")
+
+	header := http.Header{}
+	header.Add("Cookie", writtenCookie)
+	request := http.Request{Header: header}
+	return ParseCookieFromRequest(&request)
+}
+
+func TestCookieReadWrite(t *testing.T) {
+	cookie := &cookieImpl{
+		UIDs: map[string]string{
+			"adnxs":           "123",
+			"audienceNetwork": "456",
+		},
+		OptOut:   false,
+		Birthday: timestamp(),
+	}
+
+	received := writeThenRead(t, cookie)
+	uid, exists := received.GetUID("adnxs")
+	if !exists || uid != "123" {
+		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
+	}
+	uid, exists = received.GetUID("audienceNetwork")
+	if !exists || uid != "456" {
+		t.Errorf("Received cookie should have the audienceNetwork ID=456. Got %s", uid)
+	}
+	if received.SyncCount() != 2 {
+		t.Errorf("Expected 2 user syncs. Got %d", received.SyncCount())
+	}
 }
 
 func ensureEmptyCookie(t *testing.T, cookie UserSyncCookie) {
