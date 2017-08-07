@@ -202,9 +202,11 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	followups := deps.Metrics.StartUserSyncRequest()
 	pc := ParseUserSyncMapFromRequest(r)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
+		followups.UserOptedOut()
 		return
 	}
 
@@ -212,6 +214,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	bidder := query["bidder"]
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		followups.BadRequest()
 		return
 	}
 
@@ -223,10 +226,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		err = pc.TrySync(bidder, uid)
 	}
 
-	if err == nil {
-		deps.Metrics.DoneUserSync(bidder)
-	}
-
+	followups.Completed(bidder, err)
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 }
 

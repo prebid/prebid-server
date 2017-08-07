@@ -166,15 +166,67 @@ func TestRespTypeForBidderParsing(t *testing.T) {
 	}
 }
 
-func TestUserSyncEvent(t *testing.T) {
+func TestUserSyncOptOut(t *testing.T) {
 	registry := taggableRegistry{delegate: metrics.NewRegistry()}
 	influx := &pbsInflux{registry: &registry}
-	influx.DoneUserSync("mock_bidder")
+	influx.StartUserSyncRequest().UserOptedOut()
 
-	expectedTags := map[string]string{"bidderCode": "mock_bidder"}
-	count := influx.registry.getOrRegisterMeter(USERSYNC_COUNT, expectedTags).Snapshot().Count()
+	count := registry.getOrRegisterMeter(USERSYNC_ATTEMPT_COUNT, map[string]string{"result":"opt_out"}).Snapshot().Count()
 	if count != 1 {
-		t.Errorf("Expected 1 usersync event. Got %d", count)
+		t.Errorf("Expected 1 usersync opt_out. Got %d", count)
+	}
+}
+
+func TestBadUserSyncRequest(t *testing.T) {
+	registry := taggableRegistry{delegate: metrics.NewRegistry()}
+	influx := &pbsInflux{registry: &registry}
+	influx.StartUserSyncRequest().BadRequest()
+
+	count := registry.getOrRegisterMeter(USERSYNC_ATTEMPT_COUNT, map[string]string{"result":"bad_request"}).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Expected 1 usersync bad_request. Got %d", count)
+	}
+}
+
+func TestUserSyncError(t *testing.T) {
+	bidder := "mock_bidder"
+	registry := taggableRegistry{delegate: metrics.NewRegistry()}
+	influx := &pbsInflux{registry: &registry}
+	influx.StartUserSyncRequest().Completed("mock_bidder", errors.New("Something bad happened."))
+
+	count := registry.getOrRegisterMeter(USERSYNC_ATTEMPT_COUNT, map[string]string{"result":"completed"}).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Expected 1 usersync attempt completed. Got %d", count)
+	}
+
+	count = registry.getOrRegisterMeter(USERSYNC_RESULT_COUNT, map[string]string{"bidder":bidder,"result":"error"}).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Expected 1 usersync attempt error. Got %d", count)
+	}
+	count = registry.getOrRegisterMeter(USERSYNC_RESULT_COUNT, map[string]string{"bidder":bidder,"result":"success"}).Snapshot().Count()
+	if count != 0 {
+		t.Errorf("Expected 0 usersync attempt successes. Got %d", count)
+	}
+}
+
+func TestUserSyncSuccess(t *testing.T) {
+	bidder := "mock_bidder"
+	registry := taggableRegistry{delegate: metrics.NewRegistry()}
+	influx := &pbsInflux{registry: &registry}
+	influx.StartUserSyncRequest().Completed(bidder, nil)
+
+	count := registry.getOrRegisterMeter(USERSYNC_ATTEMPT_COUNT, map[string]string{"result":"completed"}).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Expected 1 usersync attempt completed. Got %d", count)
+	}
+
+	count = registry.getOrRegisterMeter(USERSYNC_RESULT_COUNT, map[string]string{"result":"error"}).Snapshot().Count()
+	if count != 0 {
+		t.Errorf("Expected 0 usersync attempt errors. Got %d", count)
+	}
+	count = registry.getOrRegisterMeter(USERSYNC_RESULT_COUNT, map[string]string{"bidder": bidder,"result":"success"}).Snapshot().Count()
+	if count != 1 {
+		t.Errorf("Expected 1 usersync attempt successes. Got %d", count)
 	}
 }
 

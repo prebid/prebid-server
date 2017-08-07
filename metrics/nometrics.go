@@ -17,7 +17,9 @@ func (m *nilPBSMetrics) StartBidderRequest(auctionRequestInfo *AuctionRequestInf
 	return &nilBidderRequestFollowups{}
 }
 
-func (m *nilPBSMetrics) DoneUserSync(bidderCode string) {}
+func (m *nilPBSMetrics) StartUserSyncRequest() UserSyncFollowups {
+	return &nilUserSyncFollowups{}
+}
 
 func (m *nilPBSMetrics) StartCookieSyncRequest() {}
 
@@ -30,3 +32,11 @@ type nilBidderRequestFollowups struct{}
 func (brf *nilBidderRequestFollowups) BidderSkipped() {}
 
 func (brf *nilBidderRequestFollowups) BidderResponded(bidPrices []float64, err error) {}
+
+type nilUserSyncFollowups struct{}
+
+func (brf *nilUserSyncFollowups) UserOptedOut() {}
+
+func (brf *nilUserSyncFollowups) BadRequest() {}
+
+func (f *nilUserSyncFollowups) Completed(bidder string, err error) {}

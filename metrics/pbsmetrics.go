@@ -16,9 +16,8 @@ type PBSMetrics interface {
 	// StartCookieSyncRequest should be called each time the /cookie_sync endpoint is hit.
 	StartCookieSyncRequest()
 
-	// DoneUserSync should be called each time the /setuid endpoint is used to successfully sync
-	// user IDs for some bidder.
-	DoneUserSync(bidderCode string)
+	// StartUserSyncRequest should be called each time the /setuid endpoint is hit.
+	StartUserSyncRequest() UserSyncFollowups
 }
 
 // RequestSource is the list of sources where requests might come from.
@@ -85,4 +84,17 @@ type BidderRequestFollowups interface {
 	// Currently the only reason this happens is because the bidder didn't ID the user, and reported
 	// that it didn't want to serve bids to those users (see Adapter.SkipNoCookies()).
 	BidderSkipped()
+}
+
+// UserSyncFollowups contains functions which log followup data from the UserSync request.
+type UserSyncFollowups interface {
+	// UserOptedOut should be called if the user has opted out of cookie syncs.
+	UserOptedOut()
+
+	// BadRequest should be called if we couldn't interpret the cookie sync request properly.
+	BadRequest()
+
+	// Completed should be called if we completed the cookie sync totally.
+	// If it succeeded, err should be nil.
+	Completed(bidder string, err error)
 }

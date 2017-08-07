@@ -25,7 +25,9 @@ const (
 	BID_PRICES              = "prebidserver.bid_response_cpm_cents"
 	BID_COUNT               = "prebidserver.bid_count"
 
-	USERSYNC_COUNT           = "prebidserver.usersync_count"
+	USERSYNC_ATTEMPT_COUNT  = "prebidserver.usersync_attempt_count"
+	USERSYNC_RESULT_COUNT   = "prebidserver.usersync_completed_count"
+
 	COOKIESYNC_REQUEST_COUNT = "prebidserver.cookiesync_request_count"
 )
 
@@ -198,10 +200,37 @@ func (influx *pbsInflux) StartCookieSyncRequest() {
 	influx.registry.getOrRegisterMeter(COOKIESYNC_REQUEST_COUNT, nil).Mark(1)
 }
 
-// StartCookieSyncRequest implements part of the PBSMetrics interface.
-func (influx *pbsInflux) DoneUserSync(bidderCode string) {
-	tags := map[string]string{
-		"bidderCode": bidderCode,
+func (influx *pbsInflux) StartUserSyncRequest() coreMetrics.UserSyncFollowups {
+	return &influxUserSyncFollowups{
+		influx: influx,
 	}
-	influx.registry.getOrRegisterMeter(USERSYNC_COUNT, tags).Mark(1)
+}
+
+type influxUserSyncFollowups struct {
+	influx *pbsInflux
+}
+
+func incrementUsersyncAttempts(registry *taggableRegistry, result string) {
+	tags := map[string]string{
+		"result": result,
+	}
+	registry.getOrRegisterMeter(USERSYNC_ATTEMPT_COUNT, tags).Mark(1)
+}
+
+func (f *influxUserSyncFollowups) UserOptedOut() {
+	incrementUsersyncAttempts(f.influx.registry, "opt_out")
+}
+
+func (f *influxUserSyncFollowups) BadRequest() {
+	incrementUsersyncAttempts(f.influx.registry, "bad_request")
+}
+
+func (f *influxUserSyncFollowups) Completed(bidder string, err error) {
+	incrementUsersyncAttempts(f.influx.registry, "completed")
+
+	resultTags := map[string]string{
+		"bidder": bidder,
+		"result": makeRespTypeForAuction(err),
+	}
+	f.influx.registry.getOrRegisterMeter(USERSYNC_RESULT_COUNT, resultTags).Mark(1)
 }
