@@ -84,7 +84,7 @@ type PBSRequest struct {
 
 	// internal
 	Bidders []*PBSBidder   `json:"-"`
-	Cookie  UserSyncCookie `json:"="`
+	Cookie  UserSyncCookie `json:"-"`
 	Url     string         `json:"-"`
 	Domain  string         `json:"-"`
 	Start   time.Time

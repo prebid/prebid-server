@@ -176,6 +176,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
 	a := NewHTTPAdapter(config)
+
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,
 		Type:        "redirect",

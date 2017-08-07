@@ -28,7 +28,7 @@ type UserSyncDeps struct {
 	Metrics          metrics.PBSMetrics
 }
 
-// UserSyncCookie is cookieImpl which stores the user sync info for all of our bidders.
+// UserSyncCookie is cookie which stores the user sync info for all of our bidders.
 //
 // To get an instance of this from a request, use ParseCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
@@ -37,13 +37,13 @@ type UserSyncCookie interface {
 	AllowSyncs() bool
 	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
 	SetPreference(allow bool)
-	// Gets an HTTP cookieImpl containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
+	// Gets an HTTP cookie containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
 	ToHTTPCookie() *http.Cookie
-	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookieImpl.setDomain(domain); setCookie(w, cookieImpl)"
+	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 	SetCookieOnResponse(w http.ResponseWriter, domain string)
 	// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
 	GetUID(familyName string) (string, bool)
-	// Unsync removes the user's ID for the given family from this cookieImpl.
+	// Unsync removes the user's ID for the given family from this cookie.
 	Unsync(familyName string)
 	// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
 	TrySync(familyName string, uid string) error
@@ -53,7 +53,7 @@ type UserSyncCookie interface {
 	SyncCount() int
 }
 
-// ParseCookieFromRequest parses the UserSync cookieImpl from an HTTP Request.
+// ParseCookieFromRequest parses the UserSyncCookie from an HTTP Request.
 func ParseCookieFromRequest(r *http.Request) UserSyncCookie {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err != nil {
@@ -66,12 +66,12 @@ func ParseCookieFromRequest(r *http.Request) UserSyncCookie {
 	return ParseCookie(cookie)
 }
 
-// ParseCookie parses the UserSync cookieImpl from a raw HTTP cookieImpl.
+// ParseCookie parses the UserSync cookie from a raw HTTP cookie.
 func ParseCookie(cookie *http.Cookie) UserSyncCookie {
 	return parseCookieImpl(cookie)
 }
 
-// parseCookieImpl parses the cookieImpl cookieImpl from a raw HTTP cookieImpl.
+// parseCookieImpl parses the cookieImpl from a raw HTTP cookie.
 // This exists for testing. Callers should use ParseCookie.
 func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 	pc := cookieImpl{
@@ -81,12 +81,12 @@ func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 
 	j, err := base64.URLEncoding.DecodeString(cookie.Value)
 	if err != nil {
-		// corrupted cookieImpl; we should reset
+		// corrupted cookie; we should reset
 		return &pc
 	}
 	err = json.Unmarshal(j, &pc)
 	if err != nil {
-		// corrupted cookieImpl; we should reset
+		// corrupted cookie; we should reset
 		return &pc
 	}
 	if pc.OptOut || pc.UIDs == nil {
