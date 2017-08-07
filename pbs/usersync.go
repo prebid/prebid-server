@@ -33,8 +33,8 @@ type UserSyncDeps struct {
 // To get an instance of this from a request, use ParseCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type UserSyncCookie interface {
-	// IsAllowed is true if the user lets bidders sync cookies, and false otherwise.
-	IsAllowed() bool
+	// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
+	AllowSyncs() bool
 	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
 	SetPreference(allow bool)
 	// Gets an HTTP cookieImpl containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
@@ -110,7 +110,7 @@ type cookieImpl struct {
 	Birthday *time.Time        `json:"bday,omitempty"`
 }
 
-func (cookie *cookieImpl) IsAllowed() bool {
+func (cookie *cookieImpl) AllowSyncs() bool {
 	return !cookie.OptOut
 }
 
@@ -161,7 +161,7 @@ func (cookie *cookieImpl) SyncCount() int {
 }
 
 func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
-	if !cookie.IsAllowed() {
+	if !cookie.AllowSyncs() {
 		return errors.New("The user has opted out of prebid server cookieImpl syncs.")
 	}
 
@@ -198,7 +198,7 @@ func getRawQueryMap(query string) map[string]string {
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseCookieFromRequest(r)
-	if !pc.IsAllowed() {
+	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

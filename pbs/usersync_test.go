@@ -70,7 +70,7 @@ func TestOptOutReset(t *testing.T) {
 	}
 
 	cookie.SetPreference(false)
-	if cookie.IsAllowed() {
+	if cookie.AllowSyncs() {
 		t.Error("After SetPreference(false), a cookie should not allow more user syncs.")
 	}
 	ensureConsistency(t, cookie)
@@ -84,7 +84,7 @@ func TestOptIn(t *testing.T) {
 	}
 
 	cookie.SetPreference(true)
-	if !cookie.IsAllowed() {
+	if !cookie.AllowSyncs() {
 		t.Error("After SetPreference(true), a cookie should allow more user syncs.")
 	}
 	ensureConsistency(t, cookie)
@@ -145,7 +145,7 @@ func TestCookieReadWrite(t *testing.T) {
 }
 
 func ensureEmptyCookie(t *testing.T, cookie UserSyncCookie) {
-	if !cookie.IsAllowed() {
+	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
 	}
 	if cookie.SyncCount() != 0 {
@@ -154,7 +154,7 @@ func ensureEmptyCookie(t *testing.T, cookie UserSyncCookie) {
 }
 
 func ensureConsistency(t *testing.T, cookie UserSyncCookie) {
-	if cookie.IsAllowed() {
+	if cookie.AllowSyncs() {
 		err := cookie.TrySync("pulsepoint", "1")
 		if err != nil {
 			t.Errorf("Cookie sync should succeed if the user has opted in.")
@@ -185,7 +185,7 @@ func ensureConsistency(t *testing.T, cookie UserSyncCookie) {
 	}
 
 	cookieImpl := parseCookieImpl(cookie.ToHTTPCookie())
-	if cookieImpl.OptOut == cookie.IsAllowed() {
+	if cookieImpl.OptOut == cookie.AllowSyncs() {
 		t.Error("The cookieImpl interface shouldn't let modifications happen if the user has opted out")
 	}
 	if cookie.SyncCount() != len(cookieImpl.UIDs) {
