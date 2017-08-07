@@ -97,6 +97,12 @@ func (cookie *cookie) TrySync(familyName string, uid string) error {
 		return errors.New("The user has opted out of prebid server cookie syncs.")
 	}
 
+	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
+	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
+	if familyName == "audienceNetwork" && uid == "0" {
+		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
+	}
+
 	cookie.UIDs[familyName] = uid
 	return nil
 }
