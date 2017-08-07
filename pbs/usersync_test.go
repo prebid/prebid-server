@@ -3,8 +3,8 @@ package pbs
 import (
 	"encoding/base64"
 	"net/http"
-	"testing"
 	"net/http/httptest"
+	"testing"
 )
 
 func TestOptOutCookie(t *testing.T) {
