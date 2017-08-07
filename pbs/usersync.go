@@ -216,13 +216,17 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	uid := query["uid"]
+	var err error = nil
 	if uid == "" {
 		pc.Unsync(bidder)
 	} else {
-		pc.TrySync(bidder, uid)
+		err = pc.TrySync(bidder, uid)
 	}
 
-	deps.Metrics.DoneUserSync(bidder)
+	if err == nil {
+		deps.Metrics.DoneUserSync(bidder)
+	}
+
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 }
 
