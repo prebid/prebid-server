@@ -83,10 +83,10 @@ type PBSRequest struct {
 	Device        *openrtb.Device `json:"device"`
 
 	// internal
-	Bidders []*PBSBidder   `json:"-"`
-	Cookie  UserSyncCookie `json:"-"`
-	Url     string         `json:"-"`
-	Domain  string         `json:"-"`
+	Bidders []*PBSBidder `json:"-"`
+	SyncMap UserSyncMap  `json:"-"`
+	Url     string       `json:"-"`
+	Domain  string       `json:"-"`
 	Start   time.Time
 }
 
@@ -129,12 +129,12 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pc := ParseCookieFromRequest(r)
-		pbsReq.Cookie = pc
+		pc := ParseUserSyncMapFromRequest(r)
+		pbsReq.SyncMap = pc
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.Cookie.TrySync("adnxs", anid.Value)
+			pbsReq.SyncMap.TrySync("adnxs", anid.Value)
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -169,12 +169,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
 		}
 	} else {
-
 		_, err = cache.Apps().Get(pbsReq.App.Bundle)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid app bundle %s", pbsReq.App.Bundle)
 		}
-
+		pbsReq.SyncMap = NewSyncMap()
 	}
 
 	if r.FormValue("debug") == "1" {
@@ -243,8 +242,8 @@ func (req PBSRequest) Elapsed() int {
 }
 
 func (req *PBSRequest) GetUserID(BidderCode string) string {
-	if req.Cookie != nil {
-		uid, _ := req.Cookie.GetUID(BidderCode)
+	if req.SyncMap != nil {
+		uid, _ := req.SyncMap.GetUID(BidderCode)
 		return uid
 	}
 	return ""

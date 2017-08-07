@@ -28,16 +28,16 @@ type UserSyncDeps struct {
 	Metrics          metrics.PBSMetrics
 }
 
-// UserSyncCookie is cookie which stores the user sync info for all of our bidders.
+// UserSyncMap is cookie which stores the user sync info for all of our bidders.
 //
-// To get an instance of this from a request, use ParseCookieFromRequest.
+// To get an instance of this from a request, use ParseUserSyncMapFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
-type UserSyncCookie interface {
+type UserSyncMap interface {
 	// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 	AllowSyncs() bool
 	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
 	SetPreference(allow bool)
-	// Gets an HTTP cookie containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
+	// Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
 	ToHTTPCookie() *http.Cookie
 	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 	SetCookieOnResponse(w http.ResponseWriter, domain string)
@@ -53,26 +53,31 @@ type UserSyncCookie interface {
 	SyncCount() int
 }
 
-// ParseCookieFromRequest parses the UserSyncCookie from an HTTP Request.
-func ParseCookieFromRequest(r *http.Request) UserSyncCookie {
+// ParseUserSyncMapFromRequest parses the UserSyncMap from an HTTP Request.
+func ParseUserSyncMapFromRequest(r *http.Request) UserSyncMap {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err != nil {
-		return &cookieImpl{
-			UIDs:     make(map[string]string),
-			Birthday: timestamp(),
-		}
+		return NewSyncMap()
 	}
 
-	return ParseCookie(cookie)
+	return ParseUserSyncMap(cookie)
 }
 
-// ParseCookie parses the UserSync cookie from a raw HTTP cookie.
-func ParseCookie(cookie *http.Cookie) UserSyncCookie {
+// ParseUserSyncMap parses the UserSync cookie from a raw HTTP cookie.
+func ParseUserSyncMap(cookie *http.Cookie) UserSyncMap {
 	return parseCookieImpl(cookie)
 }
 
+// NewSyncMap returns an empty UserSyncMap
+func NewSyncMap() UserSyncMap {
+	return &cookieImpl{
+		UIDs:     make(map[string]string),
+		Birthday: timestamp(),
+	}
+}
+
 // parseCookieImpl parses the cookieImpl from a raw HTTP cookie.
-// This exists for testing. Callers should use ParseCookie.
+// This exists for testing. Callers should use ParseUserSyncMap.
 func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 	pc := cookieImpl{
 		UIDs:     make(map[string]string),
@@ -176,7 +181,7 @@ func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseCookieFromRequest(r)
+	pc := ParseUserSyncMapFromRequest(r)
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	json.NewEncoder(w).Encode(pc)
 	return
@@ -197,7 +202,7 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseCookieFromRequest(r)
+	pc := ParseUserSyncMapFromRequest(r)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -267,7 +272,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := ParseCookieFromRequest(r)
+	pc := ParseUserSyncMapFromRequest(r)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)

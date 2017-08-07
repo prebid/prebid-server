@@ -54,7 +54,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		OptOut:   false,
 		Birthday: timestamp(),
 	}
-	parsed := ParseCookie(raw.ToHTTPCookie())
+	parsed := ParseUserSyncMap(raw.ToHTTPCookie())
 	if parsed.HasSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
@@ -104,8 +104,8 @@ func TestParseCorruptedCookie(t *testing.T) {
 		Name:  "uids",
 		Value: "bad base64 encoding",
 	}
-	parsed := ParseCookie(&raw)
-	ensureEmptyCookie(t, parsed)
+	parsed := ParseUserSyncMap(&raw)
+	ensureEmptyMap(t, parsed)
 }
 
 func TestParseCorruptedCookieJSON(t *testing.T) {
@@ -114,8 +114,8 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 		Name:  "uids",
 		Value: cookieData,
 	}
-	parsed := ParseCookie(&raw)
-	ensureEmptyCookie(t, parsed)
+	parsed := ParseUserSyncMap(&raw)
+	ensureEmptyMap(t, parsed)
 }
 
 func TestParseNilSyncMap(t *testing.T) {
@@ -125,12 +125,12 @@ func TestParseNilSyncMap(t *testing.T) {
 		Name:  COOKIE_NAME,
 		Value: cookieData,
 	}
-	parsed := ParseCookie(&raw)
-	ensureEmptyCookie(t, parsed)
+	parsed := ParseUserSyncMap(&raw)
+	ensureEmptyMap(t, parsed)
 	ensureConsistency(t, parsed)
 }
 
-func writeThenRead(t *testing.T, cookie UserSyncCookie) UserSyncCookie {
+func writeThenRead(t *testing.T, cookie UserSyncMap) UserSyncMap {
 	w := httptest.NewRecorder()
 	cookie.SetCookieOnResponse(w, "mock-domain")
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
@@ -138,7 +138,7 @@ func writeThenRead(t *testing.T, cookie UserSyncCookie) UserSyncCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParseCookieFromRequest(&request)
+	return ParseUserSyncMapFromRequest(&request)
 }
 
 func TestCookieReadWrite(t *testing.T) {
@@ -165,7 +165,7 @@ func TestCookieReadWrite(t *testing.T) {
 	}
 }
 
-func ensureEmptyCookie(t *testing.T, cookie UserSyncCookie) {
+func ensureEmptyMap(t *testing.T, cookie UserSyncMap) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
 	}
@@ -174,7 +174,7 @@ func ensureEmptyCookie(t *testing.T, cookie UserSyncCookie) {
 	}
 }
 
-func ensureConsistency(t *testing.T, cookie UserSyncCookie) {
+func ensureConsistency(t *testing.T, cookie UserSyncMap) {
 	if cookie.AllowSyncs() {
 		err := cookie.TrySync("pulsepoint", "1")
 		if err != nil {
