@@ -243,12 +243,11 @@ func (req PBSRequest) Elapsed() int {
 }
 
 func (req *PBSRequest) GetUserID(BidderCode string) string {
-	if req.Cookie == nil {
-		return ""
-	} else {
+	if req.Cookie != nil {
 		uid, _ := req.Cookie.GetUID(BidderCode)
 		return uid
 	}
+	return ""
 }
 
 func (p PBSRequest) String() string {

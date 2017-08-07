@@ -119,7 +119,7 @@ func (cookie *cookieImpl) SetPreference(allow bool) {
 		cookie.OptOut = false
 	} else {
 		cookie.OptOut = true
-		cookie.UIDs = nil
+		cookie.UIDs = make(map[string]string)
 	}
 }
 

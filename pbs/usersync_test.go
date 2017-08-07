@@ -9,7 +9,16 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs:     make(map[string]string, 0),
+		UIDs:     make(map[string]string),
+		OptOut:   true,
+		Birthday: timestamp(),
+	}
+	ensureConsistency(t, cookie)
+}
+
+func TestEmptyOptOutCookie(t *testing.T) {
+	cookie := &cookieImpl{
+		UIDs:     make(map[string]string),
 		OptOut:   true,
 		Birthday: timestamp(),
 	}
@@ -78,7 +87,7 @@ func TestOptOutReset(t *testing.T) {
 
 func TestOptIn(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs:     map[string]string{},
+		UIDs:     make(map[string]string),
 		OptOut:   true,
 		Birthday: timestamp(),
 	}
@@ -107,6 +116,18 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 	}
 	parsed := ParseCookie(&raw)
 	ensureEmptyCookie(t, parsed)
+}
+
+func TestParseNilSyncMap(t *testing.T) {
+	cookieJSON := "{\"bday\":123,\"optout\":true}"
+	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
+	raw := http.Cookie{
+		Name:  COOKIE_NAME,
+		Value: cookieData,
+	}
+	parsed := ParseCookie(&raw)
+	ensureEmptyCookie(t, parsed)
+	ensureConsistency(t, parsed)
 }
 
 func writeThenRead(t *testing.T, cookie UserSyncCookie) UserSyncCookie {
