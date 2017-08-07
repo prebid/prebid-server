@@ -194,6 +194,9 @@ func ensureConsistency(t *testing.T, cookie UserSyncCookie) {
 		if cookie.HasSync("pulsepoint") {
 			t.Errorf("The cookieImpl should not have have a usersync after a call to Unsync")
 		}
+		if value, hadValue := cookie.GetUID("pulsepoint"); value != "" || hadValue {
+			t.Error("cookieImpl.GetUID() should return empty strings if it doesn't have a sync")
+		}
 	} else {
 		if cookie.SyncCount() != 0 {
 			t.Errorf("If the user opted out, the cookieImpl should have no user syncs. Got %d", cookie.SyncCount())
