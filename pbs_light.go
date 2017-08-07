@@ -174,7 +174,7 @@ func (deps *PrebidServerDependencies) cookieSync(w http.ResponseWriter, r *http.
 	deps.metrics.StartCookieSyncRequest()
 	mCookieSyncMeter.Mark(1)
 	cookies := pbs.ParseUIDCookie(r)
-	if !cookies.AllowsUserSync() {
+	if !cookies.IsAllowed() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
 	}

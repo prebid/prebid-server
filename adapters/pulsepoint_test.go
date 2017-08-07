@@ -267,7 +267,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	pc := pbs.ParseUIDCookie(httpReq)
 	pc.TrySync("pulsepoint", "pulsepointUser123")
 	fakewriter := httptest.NewRecorder()
-	pc.SetUIDCookie(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "")
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 	// parse the http request
 	cacheClient, _ := dummycache.New()

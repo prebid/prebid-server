@@ -262,7 +262,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	pc := pbs.ParseUIDCookie(req)
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetUIDCookie(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

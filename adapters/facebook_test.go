@@ -215,7 +215,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 	pc := pbs.ParseUIDCookie(req)
 	pc.TrySync("audienceNetwork", fbdata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetUIDCookie(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

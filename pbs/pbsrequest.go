@@ -83,10 +83,10 @@ type PBSRequest struct {
 	Device        *openrtb.Device `json:"device"`
 
 	// internal
-	Bidders []*PBSBidder `json:"-"`
-	Cookie  PBSCookie    `json:"="`
-	Url     string       `json:"-"`
-	Domain  string       `json:"-"`
+	Bidders []*PBSBidder   `json:"-"`
+	Cookie  UserSyncCookie `json:"="`
+	Url     string         `json:"-"`
+	Domain  string         `json:"-"`
 	Start   time.Time
 }
 

@@ -17,6 +17,10 @@ import (
 	"github.com/prebid/prebid-server/ssl"
 )
 
+// Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
+const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
+const COOKIE_NAME = "uids"
+
 type UserSyncDeps struct {
 	Cookie_domain    string
 	External_url     string
@@ -24,16 +28,66 @@ type UserSyncDeps struct {
 	Metrics          metrics.PBSMetrics
 }
 
-type PBSCookie interface {
-	AllowsUserSync() bool
-	SetUserSyncPreference(allow bool)
-	GetUIDCookie() *http.Cookie
-	SetUIDCookie(w http.ResponseWriter, domain string)
+// UserSyncCookie is cookie which stores the user sync info for all of our bidders.
+//
+// To get an instance of this from a request, use ParseUIDCookie.
+// To write an instance onto a response, use SetCookieOnResponse.
+type UserSyncCookie interface {
+	// IsAllowed is true if the user lets bidders sync cookies, and false otherwise.
+	IsAllowed() bool
+	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
+	SetPreference(allow bool)
+	// Gets an HTTP cookie containing all the data from this UserSyncCookie. This is a snapshot--not a live view.
+	ToHTTPCookie() *http.Cookie
+	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
+	SetCookieOnResponse(w http.ResponseWriter, domain string)
+	// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
 	GetUID(familyName string) (string, bool)
+	// Unsync removes the user's ID for the given family from this cookie.
 	Unsync(familyName string)
+	// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
 	TrySync(familyName string, uid string) error
+	// HasSync returns true if we have a UID for the given family, and false otherwise.
 	HasSync(familyName string) bool
+	// SyncCount returns the number of families which have UIDs for this user.
 	SyncCount() int
+}
+
+// ParseUIDCookie retrieves the cookie which stores UserSync data from the request.
+func ParseUIDCookie(r *http.Request) UserSyncCookie {
+	t := time.Now()
+	pc := cookie{
+		UIDs:     make(map[string]string),
+		Birthday: &t,
+	}
+
+	cookie, err := r.Cookie(COOKIE_NAME)
+	if err != nil {
+		return &pc
+	}
+	j, err := base64.URLEncoding.DecodeString(cookie.Value)
+	if err != nil {
+		// corrupted cookie; we should reset
+		return &pc
+	}
+	err = json.Unmarshal(j, &pc)
+	if err != nil {
+		// corrupted cookie; we should reset
+		return &pc
+	}
+	if pc.OptOut || pc.UIDs == nil {
+		pc.UIDs = make(map[string]string) // empty map
+	}
+
+	// Facebook sends us a sentinel value of 0 if the user isn't logged in.
+	// As a result, we've stored  "0" as the UID for many users in the audienceNetwork so far.
+	// Since users log in and out of facebook all the time, this will cause re-sync attempts until
+	// we get a non-zero value.
+	if pc.UIDs["audienceNetwork"] == "0" {
+		delete(pc.UIDs, "audienceNetwork")
+	}
+
+	return &pc
 }
 
 type cookie struct {
@@ -42,11 +96,11 @@ type cookie struct {
 	Birthday *time.Time        `json:"bday,omitempty"`
 }
 
-func (cookie *cookie) AllowsUserSync() bool {
+func (cookie *cookie) IsAllowed() bool {
 	return !cookie.OptOut
 }
 
-func (cookie *cookie) SetUserSyncPreference(allow bool) {
+func (cookie *cookie) SetPreference(allow bool) {
 	if allow {
 		cookie.OptOut = false
 	} else {
@@ -55,12 +109,12 @@ func (cookie *cookie) SetUserSyncPreference(allow bool) {
 	}
 }
 
-func (cookie *cookie) GetUIDCookie() *http.Cookie {
+func (cookie *cookie) ToHTTPCookie() *http.Cookie {
 	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
 
 	return &http.Cookie{
-		Name:    "uids",
+		Name:    COOKIE_NAME,
 		Value:   b64,
 		Expires: time.Now().Add(180 * 24 * time.Hour),
 	}
@@ -71,8 +125,8 @@ func (cookie *cookie) GetUID(familyName string) (string, bool) {
 	return uid, ok
 }
 
-func (cookie *cookie) SetUIDCookie(w http.ResponseWriter, domain string) {
-	httpCookie := cookie.GetUIDCookie()
+func (cookie *cookie) SetCookieOnResponse(w http.ResponseWriter, domain string) {
+	httpCookie := cookie.ToHTTPCookie()
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
@@ -93,7 +147,7 @@ func (cookie *cookie) SyncCount() int {
 }
 
 func (cookie *cookie) TrySync(familyName string, uid string) error {
-	if !cookie.AllowsUserSync() {
+	if !cookie.IsAllowed() {
 		return errors.New("The user has opted out of prebid server cookie syncs.")
 	}
 
@@ -107,36 +161,9 @@ func (cookie *cookie) TrySync(familyName string, uid string) error {
 	return nil
 }
 
-func ParseUIDCookie(r *http.Request) PBSCookie {
-	t := time.Now()
-	pc := cookie{
-		UIDs:     make(map[string]string),
-		Birthday: &t,
-	}
-
-	cookie, err := r.Cookie("uids")
-	if err != nil {
-		return &pc
-	}
-	j, err := base64.URLEncoding.DecodeString(cookie.Value)
-	if err != nil {
-		// corrupted cookie; we should reset
-		return &pc
-	}
-	err = json.Unmarshal(j, &pc)
-	if err != nil {
-		// corrupted cookie; we should reset
-		return &pc
-	}
-	if pc.OptOut || pc.UIDs == nil {
-		pc.UIDs = make(map[string]string) // empty map
-	}
-	return &pc
-}
-
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseUIDCookie(r)
-	pc.SetUIDCookie(w, deps.Cookie_domain)
+	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -157,7 +184,7 @@ func getRawQueryMap(query string) map[string]string {
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParseUIDCookie(r)
-	if !pc.AllowsUserSync() {
+	if !pc.IsAllowed() {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -177,11 +204,8 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	deps.Metrics.DoneUserSync(bidder)
-	pc.SetUIDCookie(w, deps.Cookie_domain)
+	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 }
-
-// Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
-var recaptchaURL = "https://www.google.com/recaptcha/api/siteverify"
 
 // Struct for parsing json in google's response
 type googleResponse struct {
@@ -197,7 +221,7 @@ func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 	client := &http.Client{
 		Transport: ts,
 	}
-	resp, err := client.PostForm(recaptchaURL,
+	resp, err := client.PostForm(RECAPTCHA_URL,
 		url.Values{"secret": {deps.Recaptcha_secret}, "response": {response}})
 	if err != nil {
 		return err
@@ -230,9 +254,9 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	pc := ParseUIDCookie(r)
-	pc.SetUserSyncPreference(optout == "")
+	pc.SetPreference(optout == "")
 
-	pc.SetUIDCookie(w, deps.Cookie_domain)
+	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	if optout == "" {
 		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
 	} else {

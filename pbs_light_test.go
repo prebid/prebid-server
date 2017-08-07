@@ -87,7 +87,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	pcs := pbs.ParseUIDCookie(req)
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
-	req.AddCookie(pcs.GetUIDCookie())
+	req.AddCookie(pcs.ToHTTPCookie())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
