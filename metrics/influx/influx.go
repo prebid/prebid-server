@@ -1,10 +1,8 @@
 package metrics
 
 import (
-	"os"
 	"time"
 
-	"github.com/golang/glog"
 	coreInflux "github.com/influxdata/influxdb/client/v2"
 	coreMetrics "github.com/prebid/prebid-server/metrics"
 
@@ -41,19 +39,11 @@ func NewInfluxMetrics(client coreInflux.Client, database string) coreMetrics.PBS
 		delegate: metrics.NewRegistry(),
 	}
 
-	var hostname, err = os.Hostname()
-	if err != nil {
-		glog.Warningf("Failed to determine hostname. Deafulting to \"unknown\" for metrics: %s", err.Error())
-		hostname = "unknown"
-	}
-
 	var reporter = reporter{
 		client:   client,
 		database: database,
 		registry: registry,
-		tags: map[string]string{
-			"hostname": hostname,
-		},
+		tags: map[string]string{},
 	}
 
 	go reporter.Run(time.Tick(1*time.Second), time.Tick(time.Second*5), nil)
