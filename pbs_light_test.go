@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/pbs"
 	"net/http"
 	"net/http/httptest"
@@ -20,10 +19,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	}
 	setupExchanges(cfg)
 	router := httprouter.New()
-	deps := PrebidServerDependencies{
-		metrics: metrics.NewNilMetrics(),
-	}
-	router.POST("/cookie_sync", deps.cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -68,10 +64,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 	setupExchanges(cfg)
 	router := httprouter.New()
-	deps := PrebidServerDependencies{
-		metrics: metrics.NewNilMetrics(),
-	}
-	router.POST("/cookie_sync", deps.cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
