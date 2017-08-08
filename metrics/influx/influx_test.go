@@ -15,7 +15,8 @@ func TestAuctionEvents(t *testing.T) {
 
 	auc1Info := &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
-		RequestSource: coreMetrics.SAFARI,
+		Browser:       coreMetrics.UNKNOWN,
+		Source:        coreMetrics.APP,
 		HasCookie:     true,
 	}
 	doAuctionStart(t, influx, auc1Info).Completed(nil)
@@ -28,7 +29,8 @@ func TestAuctionEvents(t *testing.T) {
 
 	auc2Info := &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
-		RequestSource: coreMetrics.APP,
+		Browser:       coreMetrics.UNKNOWN,
+		Source:        coreMetrics.DESKTOP,
 		HasCookie:     true,
 	}
 	doAuctionStart(t, influx, auc2Info).Completed(errors.New("Some failure"))
@@ -38,7 +40,8 @@ func TestAuctionEvents(t *testing.T) {
 
 	doAuctionStart(t, influx, &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
-		RequestSource: coreMetrics.OTHER,
+		Browser:       coreMetrics.SAFARI,
+		Source:        coreMetrics.DESKTOP,
 		HasCookie:     false,
 	})
 }
@@ -49,7 +52,8 @@ func TestBidderWithCookie(t *testing.T) {
 
 	aucInfo := &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
-		RequestSource: coreMetrics.SAFARI,
+		Browser:       coreMetrics.UNKNOWN,
+		Source:        coreMetrics.DESKTOP,
 		HasCookie:     true,
 	}
 
@@ -79,7 +83,8 @@ func TestBidderNoCookie(t *testing.T) {
 
 	aucInfo := &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
-		RequestSource: coreMetrics.SAFARI,
+		Browser:       coreMetrics.SAFARI,
+		Source:        coreMetrics.DESKTOP,
 		HasCookie:     true,
 	}
 	bidInfo2 := &coreMetrics.BidRequestInfo{
@@ -109,7 +114,8 @@ func TestBidderSkipNoCookie(t *testing.T) {
 
 	aucInfo := &coreMetrics.AuctionRequestInfo{
 		AccountId:     "pub",
-		RequestSource: coreMetrics.SAFARI,
+		Browser:       coreMetrics.UNKNOWN,
+		Source:        coreMetrics.DESKTOP,
 		HasCookie:     true,
 	}
 	bidInfo := &coreMetrics.BidRequestInfo{
@@ -234,7 +240,8 @@ func TestUserSyncSuccess(t *testing.T) {
 func getAucStartTags(reqInfo *coreMetrics.AuctionRequestInfo) map[string]string {
 	return map[string]string{
 		"account_id": reqInfo.AccountId,
-		"source":     reqInfo.RequestSource.String(),
+		"browser":    reqInfo.Browser.String(),
+		"source":     reqInfo.Source.String(),
 		"has_cookie": strconv.FormatBool(reqInfo.HasCookie),
 	}
 }

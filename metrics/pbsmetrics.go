@@ -21,23 +21,37 @@ type PBSMetrics interface {
 }
 
 // RequestSource is the list of sources where requests might come from.
-// This obviously isn't comprehensive... just defined on an as-needed basis.
 type RequestSource int
 
 const (
 	// Safari has restrictive policies on 3rd party cookies. This helps measure how much of an effect that has.
-	SAFARI RequestSource = iota
+	DESKTOP RequestSource = iota
 	APP
-	OTHER
-	UNKNOWN
 )
 
 func (source RequestSource) String() string {
 	switch source {
-	case SAFARI:
-		return "safari"
+	case DESKTOP:
+		return "desktop"
 	case APP:
 		return "app"
+	default:
+		return "other"
+	}
+}
+
+// RequestBrowser is the list of browsers where requets might come from.
+type RequestBrowser int
+
+const (
+	SAFARI RequestBrowser = iota
+	UNKNOWN
+)
+
+func (browser RequestBrowser) String() string {
+	switch browser {
+	case SAFARI:
+		return "safari"
 	case UNKNOWN:
 		return "unknown"
 	default:
@@ -49,8 +63,10 @@ func (source RequestSource) String() string {
 type AuctionRequestInfo struct {
 	// AccountId is the ID of the account requesting this auction.
 	AccountId string
-	// RequestSource specifies the type of Client which is making the request.
-	RequestSource RequestSource
+	// Source specifies the type of Client which is making the request.
+	Source RequestSource
+	// Browser specifies the browser which made the request, as best as the prebid server can determine.
+	Browser RequestBrowser
 	// HasCookie is true if Prebid Server has any bidders who can ID this user.
 	HasCookie bool
 }
@@ -76,7 +92,8 @@ type AuctionRequestFollowups interface {
 // BidderRequestFollowups contains functions which log followup data from a bidder request.
 type BidderRequestFollowups interface {
 	// BidderResponded should be called with the bidder's response. This is the return from Adapter.Call(),
-	// with the Price extracted from each PBSBid.
+	// with the Price extracted from each PBSBid. Exactly one of these arguments should be nil each time
+	// they're called.
 	BidderResponded(bidPrices []float64, err error)
 
 	// BidderSkipped should be called if Prebid-Server never even called the Bidder's Adapter.
