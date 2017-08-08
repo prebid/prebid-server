@@ -86,32 +86,3 @@ func TestSortBidsWithResponseTimes(t *testing.T) {
 		t.Error("Expected bid 3 to be last")
 	}
 }
-
-func TestNilGetPrices(t *testing.T) {
-	var bids PBSBidSlice = nil
-	if bids.ExtractPrices() != nil {
-		t.Error("nil bid slices should return nil price slices.")
-	}
-}
-
-func TestGetPrices(t *testing.T) {
-	price1 := 2.0
-	price2 := 0.4
-	var bids PBSBidSlice = PBSBidSlice{
-		&PBSBid{Price: price1},
-		&PBSBid{Price: price2},
-	}
-
-	bidPrices := bids.ExtractPrices()
-	if len(bidPrices) != 2 {
-		t.Fatalf("Expected 2 bid prices. Got %d", len(bidPrices))
-	}
-
-	if bidPrices[0] != price1 {
-		t.Errorf("Mismatched bid[0] prices. Expected %f, Got %f", price1, bidPrices[0])
-	}
-
-	if bidPrices[1] != price2 {
-		t.Errorf("Mismatched bid[1] prices. Expected %f, Got %f", price2, bidPrices[1])
-	}
-}
