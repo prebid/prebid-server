@@ -63,20 +63,6 @@ func (bids PBSBidSlice) Swap(i, j int) {
 	bids[i], bids[j] = bids[j], bids[i]
 }
 
-// ExtractPrices extracts all the prices from this PBSBidSlice.
-func (bids PBSBidSlice) ExtractPrices() []float64 {
-	if bids == nil {
-		return nil
-	} else {
-		numBids := len(bids)
-		bidPrices := make([]float64, 0, numBids)
-		for i := 0; i < numBids; i++ {
-			bidPrices = append(bidPrices, bids[i].Price)
-		}
-		return bidPrices
-	}
-}
-
 type BidderDebug struct {
 	RequestURI   string `json:"request_uri,omitempty"`
 	RequestBody  string `json:"request_body,omitempty"`
