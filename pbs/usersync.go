@@ -13,19 +13,25 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/ssl"
+	"github.com/rcrowley/go-metrics"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
 const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
 const COOKIE_NAME = "uids"
 
+const (
+	USERSYNC_OPT_OUT     = "usersync.opt_outs"
+	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
+	USERSYNC_SUCCESS     = "usersync.%s.sets"
+)
+
 type UserSyncDeps struct {
 	Cookie_domain    string
 	External_url     string
 	Recaptcha_secret string
-	Metrics          metrics.PBSMetrics
+	Metrics          metrics.Registry
 }
 
 // UserSyncMap is cookie which stores the user sync info for all of our bidders.
@@ -202,11 +208,10 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	followups := deps.Metrics.StartUserSyncRequest()
 	pc := ParseUserSyncMapFromRequest(r)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
-		followups.UserOptedOut()
+		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
 		return
 	}
 
@@ -214,7 +219,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	bidder := query["bidder"]
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		followups.BadRequest()
+		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
 		return
 	}
 
@@ -226,7 +231,10 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		err = pc.TrySync(bidder, uid)
 	}
 
-	followups.Completed(bidder, err)
+	if err == nil {
+		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
+	}
+
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 }
 
