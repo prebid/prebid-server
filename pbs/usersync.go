@@ -207,7 +207,13 @@ func (cookie *cookieImpl) HasSync(familyName string) bool {
 }
 
 func (cookie *cookieImpl) SyncCount() int {
-	return len(cookie.TemporaryUIDs)
+	numSyncs := 0
+	for _, syncInfo := range cookie.TemporaryUIDs {
+		if syncInfo.Expires.After(time.Now()) {
+			numSyncs++
+		}
+	}
+	return numSyncs
 }
 
 func (cookie *cookieImpl) TrySync(familyName string, uid string) error {

@@ -150,13 +150,13 @@ func writeThenRead(t *testing.T, cookie UserSyncMap) UserSyncMap {
 
 func TestCookieReadWrite(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs: map[string]string{
+		UIDs: nil,
+		TemporaryUIDs: attachTTLs(map[string]string{
 			"adnxs":           "123",
 			"audienceNetwork": "456",
-		},
-		TemporaryUIDs: make(map[string]temporaryUid),
-		OptOut:        false,
-		Birthday:      timestamp(),
+		}),
+		OptOut:   false,
+		Birthday: timestamp(),
 	}
 
 	received := writeThenRead(t, cookie)
@@ -170,6 +170,29 @@ func TestCookieReadWrite(t *testing.T) {
 	}
 	if received.SyncCount() != 2 {
 		t.Errorf("Expected 2 user syncs. Got %d", received.SyncCount())
+	}
+}
+
+func TestLegacyCookieReadWrite(t *testing.T) {
+	cookie := &cookieImpl{
+		UIDs: map[string]string{
+			"adnxs":           "123",
+			"audienceNetwork": "456",
+		},
+		TemporaryUIDs: make(map[string]temporaryUid),
+		OptOut:        false,
+		Birthday:      timestamp(),
+	}
+
+	received := writeThenRead(t, cookie)
+	if received.SyncCount() != 0 {
+		t.Errorf("Expected 0 user syncs. Got %d", received.SyncCount())
+	}
+	if received.HasSync("adnxs") {
+		t.Errorf("Received cookie should act like it has no ID for adnxs.")
+	}
+	if received.HasSync("audienceNetwork") {
+		t.Errorf("Received cookie should act like it has no ID for audienceNetwork.")
 	}
 }
 
