@@ -140,7 +140,7 @@ type temporaryUid struct {
 	// uid is the ID given to a user by a particular bidder
 	UID string `json:"uid"`
 	// Expires is the time at which this UID should no longer apply.
-	Expires time.Time
+	Expires time.Time `json:"expires"`
 }
 
 type cookieImpl struct {
