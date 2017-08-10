@@ -120,14 +120,14 @@ func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 
 	// This exists to help migrate a "legacy" cookie format onto the new one. Originally, cookies did not
 	// allow per-bidder expiration dates. Now, they do.
-	// This block attaches TTLs for each bidder. It uses a short(ish) TTL so that they re-sync soon, since there's
-	// no record of how long ago this UID was generated.
+	// This block attaches an expired date so that we re-sync asap, since there's no telling how long
+	// ago the UID from the old format was generated.
 	//
 	// If you're seeing this message after February 2018, this block of logic is safe to delete.
 	for bidder, uid := range pc.UIDs {
 		pc.TemporaryUIDs[bidder] = temporaryUid{
 			UID:     uid,
-			Expires: time.Now().Add(5 * time.Minute),
+			Expires: time.Now().Add(-5 * time.Minute),
 		}
 	}
 
