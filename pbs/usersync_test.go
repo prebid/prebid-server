@@ -9,37 +9,41 @@ import (
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs:     make(map[string]string),
-		OptOut:   true,
-		Birthday: timestamp(),
+		UIDs:          nil,
+		TemporaryUIDs: make(map[string]temporaryUid),
+		OptOut:        true,
+		Birthday:      timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyOptOutCookie(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs:     make(map[string]string),
-		OptOut:   true,
-		Birthday: timestamp(),
+		UIDs:          nil,
+		TemporaryUIDs: make(map[string]temporaryUid),
+		OptOut:        true,
+		Birthday:      timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyCookie(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs:     make(map[string]string, 0),
-		OptOut:   false,
-		Birthday: timestamp(),
+		UIDs:          nil,
+		TemporaryUIDs: make(map[string]temporaryUid),
+		OptOut:        false,
+		Birthday:      timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestCookieWithData(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs: map[string]string{
+		UIDs: nil,
+		TemporaryUIDs: attachTTLs(map[string]string{
 			"adnxs":           "123",
 			"audienceNetwork": "456",
-		},
+		}),
 		OptOut:   false,
 		Birthday: timestamp(),
 	}
@@ -48,6 +52,7 @@ func TestCookieWithData(t *testing.T) {
 
 func TestRejectAudienceNetworkCookie(t *testing.T) {
 	raw := &cookieImpl{
+		// Starting with UIDs here because Facebook IDs of 0 should be impossible in TemporaryUIDs
 		UIDs: map[string]string{
 			"audienceNetwork": "0",
 		},
@@ -70,10 +75,11 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 
 func TestOptOutReset(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs: map[string]string{
+		UIDs: nil,
+		TemporaryUIDs: attachTTLs(map[string]string{
 			"adnxs":           "123",
 			"audienceNetwork": "456",
-		},
+		}),
 		OptOut:   false,
 		Birthday: timestamp(),
 	}
@@ -87,9 +93,10 @@ func TestOptOutReset(t *testing.T) {
 
 func TestOptIn(t *testing.T) {
 	cookie := &cookieImpl{
-		UIDs:     make(map[string]string),
-		OptOut:   true,
-		Birthday: timestamp(),
+		UIDs:          nil,
+		TemporaryUIDs: make(map[string]temporaryUid),
+		OptOut:        true,
+		Birthday:      timestamp(),
 	}
 
 	cookie.SetPreference(true)
@@ -147,8 +154,9 @@ func TestCookieReadWrite(t *testing.T) {
 			"adnxs":           "123",
 			"audienceNetwork": "456",
 		},
-		OptOut:   false,
-		Birthday: timestamp(),
+		TemporaryUIDs: make(map[string]temporaryUid),
+		OptOut:        false,
+		Birthday:      timestamp(),
 	}
 
 	received := writeThenRead(t, cookie)
@@ -212,11 +220,11 @@ func ensureConsistency(t *testing.T, cookie UserSyncMap) {
 	if cookieImpl.OptOut == cookie.AllowSyncs() {
 		t.Error("The cookieImpl interface shouldn't let modifications happen if the user has opted out")
 	}
-	if cookie.SyncCount() != len(cookieImpl.UIDs) {
-		t.Errorf("Incorrect sync count. Expected %d, got %d", len(cookieImpl.UIDs), cookie.SyncCount())
+	if cookie.SyncCount() != len(cookieImpl.TemporaryUIDs) {
+		t.Errorf("Incorrect sync count. Expected %d, got %d", len(cookieImpl.TemporaryUIDs), cookie.SyncCount())
 	}
 
-	for family, uid := range cookieImpl.UIDs {
+	for family, uid := range cookieImpl.TemporaryUIDs {
 		if !cookie.HasSync(family) {
 			t.Errorf("Cookie is missing sync for family %s", family)
 		}
@@ -224,8 +232,19 @@ func ensureConsistency(t *testing.T, cookie UserSyncMap) {
 		if !hadSync {
 			t.Error("The GetUID function should return true when it has a sync. Got false")
 		}
-		if savedUID != uid {
-			t.Errorf("Wrong UID saved for family %s. Expected %s, got %s", family, uid, savedUID)
+		if savedUID != uid.UID {
+			t.Errorf("Wrong UID saved for family %s. Expected %s, got %s", family, uid.UID, savedUID)
 		}
 	}
+}
+
+func attachTTLs(uids map[string]string) map[string]temporaryUid {
+	idMap := make(map[string]temporaryUid, len(uids))
+	for familyName, uid := range uids {
+		idMap[familyName] = temporaryUid{
+			UID:     uid,
+			Expires: getExpiry(familyName),
+		}
+	}
+	return idMap
 }
