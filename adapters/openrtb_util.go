@@ -15,6 +15,31 @@ func mediaTypeInSlice(t pbs.MediaType, list []pbs.MediaType) bool {
 	return false
 }
 
+func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
+	return &openrtb.Banner{
+		W:        unit.Sizes[0].W,
+		H:        unit.Sizes[0].H,
+		Format:   unit.Sizes,
+		TopFrame: unit.TopFrame,
+	}
+}
+
+func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
+	mimes := make([]string, len(unit.Video.Mimes))
+	copy(mimes, unit.Video.Mimes)
+	pbm := make([]int8, 1)
+	pbm[0] = unit.Video.PlaybackMethod
+	return &openrtb.Video{
+		MIMEs:          mimes,
+		MinDuration:    unit.Video.Minduration,
+		MaxDuration:    unit.Video.Maxduration,
+		W:              unit.Sizes[0].W,
+		H:              unit.Sizes[0].H,
+		StartDelay:     unit.Video.Startdelay,
+		PlaybackMethod: pbm,
+	}
+}
+
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, mediatypes []pbs.MediaType, singleMediaTypeImp bool) openrtb.BidRequest {
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(mediatypes))
@@ -36,26 +61,9 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 					}
 					switch mType {
 					case pbs.MEDIA_TYPE_BANNER:
-						newImp.Banner = &openrtb.Banner{
-							W:        unit.Sizes[0].W,
-							H:        unit.Sizes[0].H,
-							Format:   unit.Sizes,
-							TopFrame: unit.TopFrame,
-						}
+						newImp.Banner = makeBanner(unit)
 					case pbs.MEDIA_TYPE_VIDEO:
-						mimes := make([]string, len(unit.Video.Mimes))
-						copy(mimes, unit.Video.Mimes)
-						pbm := make([]int8, 1)
-						pbm[0] = unit.Video.PlaybackMethod
-						newImp.Video = &openrtb.Video{
-							MIMEs:          mimes,
-							MinDuration:    unit.Video.Minduration,
-							MaxDuration:    unit.Video.Maxduration,
-							W:              unit.Sizes[0].W,
-							H:              unit.Sizes[0].H,
-							StartDelay:     unit.Video.Startdelay,
-							PlaybackMethod: pbm,
-						}
+						newImp.Video = makeVideo(unit)
 					default:
 						// Error - unknown media type
 						continue
@@ -71,31 +79,17 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				Secure: req.Secure,
 			}
 			for _, mType := range unit.MediaTypes {
-				switch mType {
-				case pbs.MEDIA_TYPE_BANNER:
-					newImp.Banner = &openrtb.Banner{
-						W:        unit.Sizes[0].W,
-						H:        unit.Sizes[0].H,
-						Format:   unit.Sizes,
-						TopFrame: unit.TopFrame,
+				if mediaTypeInSlice(mType, mediatypes) {
+
+					switch mType {
+					case pbs.MEDIA_TYPE_BANNER:
+						newImp.Banner = makeBanner(unit)
+					case pbs.MEDIA_TYPE_VIDEO:
+						newImp.Video = makeVideo(unit)
+					default:
+						// Error - unknown media type
+						continue
 					}
-				case pbs.MEDIA_TYPE_VIDEO:
-					mimes := make([]string, len(unit.Video.Mimes))
-					copy(mimes, unit.Video.Mimes)
-					pbm := make([]int8, 1)
-					pbm[0] = unit.Video.PlaybackMethod
-					newImp.Video = &openrtb.Video{
-						MIMEs:          mimes,
-						MinDuration:    unit.Video.Minduration,
-						MaxDuration:    unit.Video.Maxduration,
-						W:              unit.Sizes[0].W,
-						H:              unit.Sizes[0].H,
-						StartDelay:     unit.Video.Startdelay,
-						PlaybackMethod: pbm,
-					}
-				default:
-					// Error - unknown media type
-					continue
 				}
 			}
 			imps[ind] = newImp

@@ -49,16 +49,15 @@ func TestOpenRTBVideo(t *testing.T) {
 						H: 12,
 					},
 				},
-				Video: pbs.PBSVideo {
+				Video: pbs.PBSVideo{
 					Mimes:          []string{"video/mp4"},
 					Minduration:    15,
 					Maxduration:    30,
 					Startdelay:     5,
 					Skippable:      0,
 					PlaybackMethod: 1,
+				},
 			},
-
-		},
 		},
 	}
 	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
@@ -86,7 +85,7 @@ func TestOpenRTBVideoFilteredOut(t *testing.T) {
 						H: 12,
 					},
 				},
-				Video: pbs.PBSVideo {
+				Video: pbs.PBSVideo{
 					Mimes:          []string{"video/mp4"},
 					Minduration:    15,
 					Maxduration:    30,
@@ -94,7 +93,6 @@ func TestOpenRTBVideoFilteredOut(t *testing.T) {
 					Skippable:      0,
 					PlaybackMethod: 1,
 				},
-
 			},
 		},
 	}
@@ -117,7 +115,7 @@ func TestOpenRTBMultiMediaImp(t *testing.T) {
 						H: 12,
 					},
 				},
-				Video: pbs.PBSVideo {
+				Video: pbs.PBSVideo{
 					Mimes:          []string{"video/mp4"},
 					Minduration:    15,
 					Maxduration:    30,
@@ -125,7 +123,6 @@ func TestOpenRTBMultiMediaImp(t *testing.T) {
 					Skippable:      0,
 					PlaybackMethod: 1,
 				},
-
 			},
 		},
 	}
@@ -138,6 +135,38 @@ func TestOpenRTBMultiMediaImp(t *testing.T) {
 	assert.EqualValues(t, resp.Imp[0].Video.MinDuration, 15)
 }
 
+func TestOpenRTBMultiMediaImpFiltered(t *testing.T) {
+
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 10,
+						H: 12,
+					},
+				},
+				Video: pbs.PBSVideo{
+					Mimes:          []string{"video/mp4"},
+					Minduration:    15,
+					Maxduration:    30,
+					Startdelay:     5,
+					Skippable:      0,
+					PlaybackMethod: 1,
+				},
+			},
+		},
+	}
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, false)
+	assert.Equal(t, len(resp.Imp), 1)
+	assert.Equal(t, resp.Imp[0].ID, "unitCode")
+	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
+	assert.EqualValues(t, resp.Imp[0].Video, (*openrtb.Video)(nil))
+}
 
 func TestOpenRTBSingleMediaImp(t *testing.T) {
 
@@ -154,7 +183,7 @@ func TestOpenRTBSingleMediaImp(t *testing.T) {
 						H: 12,
 					},
 				},
-				Video: pbs.PBSVideo {
+				Video: pbs.PBSVideo{
 					Mimes:          []string{"video/mp4"},
 					Minduration:    15,
 					Maxduration:    30,
@@ -162,7 +191,6 @@ func TestOpenRTBSingleMediaImp(t *testing.T) {
 					Skippable:      0,
 					PlaybackMethod: 1,
 				},
-
 			},
 		},
 	}
@@ -174,7 +202,6 @@ func TestOpenRTBSingleMediaImp(t *testing.T) {
 	assert.Equal(t, resp.Imp[1].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[1].Banner.W, 10)
 }
-
 
 func TestOpenRTBNoSize(t *testing.T) {
 
