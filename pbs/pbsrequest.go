@@ -81,6 +81,7 @@ type PBSRequest struct {
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
 	Device        *openrtb.Device `json:"device"`
+	User          *openrtb.User   `json:"user"`
 
 	// internal
 	Bidders []*PBSBidder      `json:"-"`
@@ -125,6 +126,9 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
+	}
+	if pbsReq.User == nil {
+		pbsReq.User = &openrtb.User{}
 	}
 
 	// use client-side data for web requests
