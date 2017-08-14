@@ -162,12 +162,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
 		}
-
-		// all domains must be in the whitelist
-		_, err = cache.Domains().Get(pbsReq.Domain)
-		if err != nil {
-			return nil, fmt.Errorf("Invalid URL %s", pbsReq.Domain)
-		}
 	}
 
 	if r.FormValue("debug") == "1" {
