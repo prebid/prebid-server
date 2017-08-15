@@ -261,7 +261,7 @@
                     "type": "integer"
                 },
                 "gender": {
-                    "description": "Gender, where M=male, F=female, 0=known to be other, omitted is unknown",
+                    "description": "Gender, where M=male, F=female, O=known to be other, omitted is unknown",
                     "type": "string"
                 }
             }
