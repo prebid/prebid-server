@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/family"
 )
 
 type RubiconAdapter struct {
@@ -31,8 +32,8 @@ func (a *RubiconAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *RubiconAdapter) FamilyName() string {
-	return "rubicon"
+func (a *RubiconAdapter) FamilyName() family.Name {
+	return family.Rubicon
 }
 
 func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
@@ -216,7 +217,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
-		rubiReq := makeOpenRTBGeneric(req, bidder, string(a.FamilyName()))
+		rubiReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
 
 		// only grab this ad unit
 		rubiReq.Imp = rubiReq.Imp[i : i+1]

@@ -3,36 +3,12 @@ package adapters
 import (
 	"context"
 	"crypto/tls"
+	"github.com/prebid/prebid-server/family"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
 )
-
-// FamilyName type to verify and centralize FamilyName usage
-type FamilyName int
-
-const (
-	FNappnexus FamilyName = iota
-	FNfacebook
-	FNindex
-	FNpubmatic
-	FNpulsepoint
-	FNrubicon
-)
-
-var validFamilyNames = [...]string{
-	"adnxs",
-	"audienceNetwork",
-	"indexExchange",
-	"pubmatic",
-	"pulsepoint",
-	"rubicon",
-}
-
-func (n FamilyName) String() string {
-	return validFamilyNames[int(n)]
-}
 
 // Adapters connect prebid-server to a demand partner. Their primary purpose is to produce bids
 // in response to Auction requests.
@@ -42,7 +18,7 @@ type Adapter interface {
 	Name() string
 	// FamilyName identifies the space of cookies which this adapter accesses. For example, an adapter
 	// using the adnxs.com cookie space should return "adnxs".
-	FamilyName() FamilyName
+	FamilyName() family.Name
 	// Determines whether this adapter should get callouts if there is not a synched user ID
 	SkipNoCookies() bool
 	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.
