@@ -6,7 +6,7 @@ import (
 	"github.com/prebid/openrtb"
 )
 
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
+func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily FamilyName) openrtb.BidRequest {
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
@@ -50,8 +50,8 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			Page:   req.Url,
 		},
 		Device: req.Device,
-		User: &openrtb.User{
-			BuyerUID: req.GetUserID(bidderFamily),
+		User: &openrtb.User{ // Make the family name conversion to string here.
+			BuyerUID: req.GetUserID(string(bidderFamily)),
 			ID:       req.GetUserID("adnxs"),
 		},
 		Source: &openrtb.Source{

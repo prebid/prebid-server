@@ -29,8 +29,8 @@ func (a *IndexAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *IndexAdapter) FamilyName() string {
-	return "indexExchange"
+func (a *IndexAdapter) FamilyName() FamilyName {
+	return FNindex
 }
 
 func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
