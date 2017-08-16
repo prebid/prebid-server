@@ -188,7 +188,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+			if _, ok := cookies.UIDs[string(ex.FamilyName())]; !ok {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
