@@ -9,6 +9,28 @@ import (
 	"github.com/prebid/openrtb"
 )
 
+func TestCommonMediaTypes(t *testing.T) {
+	mt1 := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
+	mt2 := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	common := commonMediaTypes(mt1, mt2)
+	assert.Equal(t, len(common), 1)
+	assert.Equal(t, common[0], pbs.MEDIA_TYPE_BANNER)
+
+	common2 := commonMediaTypes(mt2, mt1)
+	assert.Equal(t, len(common2), 1)
+	assert.Equal(t, common2[0], pbs.MEDIA_TYPE_BANNER)
+
+	mt3 := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	mt4 := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	common3 := commonMediaTypes(mt3, mt4)
+	assert.Equal(t, len(common3), 2)
+
+	mt5 := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
+	mt6 := []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
+	common4 := commonMediaTypes(mt5, mt6)
+	assert.Equal(t, len(common4), 0)
+}
+
 func TestOpenRTB(t *testing.T) {
 
 	pbReq := pbs.PBSRequest{}
@@ -68,6 +90,31 @@ func TestOpenRTBVideo(t *testing.T) {
 	assert.EqualValues(t, resp.Imp[0].Video.StartDelay, 5)
 	assert.EqualValues(t, resp.Imp[0].Video.PlaybackMethod, []int8{1})
 	assert.EqualValues(t, resp.Imp[0].Video.MIMEs, []string{"video/mp4"})
+}
+
+func TestOpenRTBVideoNoVideoData(t *testing.T) {
+
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
+				Sizes: []openrtb.Format{
+					{
+						W: 10,
+						H: 12,
+					},
+				},
+			},
+		},
+	}
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
+
+	assert.Equal(t, resp.Imp[0].ID, "unitCode")
+	assert.Equal(t, resp.Imp[0].Video.MaxDuration, uint64(0x0))
+
 }
 
 func TestOpenRTBVideoFilteredOut(t *testing.T) {

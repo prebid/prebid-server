@@ -37,14 +37,31 @@ type Bids struct {
 	Params     json.RawMessage `json:"params"`
 }
 
+// Structure for holding video-specific information
 type PBSVideo struct {
-	Mimes          []string `json:"mimes,omitempty"`
-	Minduration    uint64   `json:"minduration,omitempty"`
-	Maxduration    uint64   `json:"maxduration,omitempty"`
-	Startdelay     int64    `json:"startdelay,omitempty"`
-	Skippable      int      `json:"skippable,omitempty"`
-	PlaybackMethod int8     `json:"playback_method,omitempty"`
-	Frameworks     []string `json:"frameworks,omitempty"`
+	//Content MIME types supported. Popular MIME types may include “video/x-ms-wmv” for Windows Media and “video/x-flv” for Flash Video.
+	Mimes []string `json:"mimes,omitempty"`
+
+	//Minimum video ad duration in seconds.
+	Minduration uint64 `json:"minduration,omitempty"`
+
+	// Maximum video ad duration in seconds.
+	Maxduration uint64 `json:"maxduration,omitempty"`
+
+	//Indicates the start delay in seconds for pre-roll, mid-roll, or post-roll ad placements.
+	Startdelay int64 `json:"startdelay,omitempty"`
+
+	// Indicates if the player will allow the video to be skipped ( 0 = no, 1 = yes).
+	Skippable int `json:"skippable,omitempty"`
+
+	// Playback method code Description
+	// 1 - Initiates on Page Load with Sound On
+	// 2 - Initiates on Page Load with Sound Off by Default
+	// 3 - Initiates on Click with Sound On
+	// 4 - Initiates on Mouse-Over with Sound On
+	// 5 - Initiates on Entering Viewport with Sound On
+	// 6 - Initiates on Entering Viewport with Sound Off by Default
+	PlaybackMethod int8 `json:"playback_method,omitempty"`
 }
 
 type AdUnit struct {
@@ -67,8 +84,8 @@ type PBSAdUnit struct {
 }
 
 func ParseMediaType(s string) (MediaType, error) {
-	mediaTypes := map[string]MediaType{"MEDIA_TYPE_BANNER": MEDIA_TYPE_BANNER, "MEDIA_TYPE_VIDEO": MEDIA_TYPE_VIDEO}
-	t, ok := mediaTypes[s]
+	mediaTypes := map[string]MediaType{"BANNER": MEDIA_TYPE_BANNER, "VIDEO": MEDIA_TYPE_VIDEO}
+	t, ok := mediaTypes[strings.ToUpper(s)]
 	if !ok {
 		return 0, fmt.Errorf("Invalid MediaType %s", s)
 	}
@@ -133,6 +150,31 @@ func ConfigGet(cache cache.Cache, id string) ([]Bids, error) {
 	}
 
 	return bids, nil
+}
+
+func ParseMediaTypes(types []string) []MediaType {
+	var mtypes []MediaType
+	mtmap := make(map[MediaType]bool)
+
+	if types == nil {
+		mtypes = append(mtypes, MEDIA_TYPE_BANNER)
+	} else {
+		for _, t := range types {
+			mt, er := ParseMediaType(t)
+			if er != nil {
+				glog.Infof("Invalid media type: %s", er)
+			} else {
+				if !mtmap[mt] {
+					mtypes = append(mtypes, mt)
+					mtmap[mt] = true
+				}
+			}
+		}
+		if len(mtypes) == 0 {
+			mtypes = append(mtypes, MEDIA_TYPE_BANNER)
+		}
+	}
+	return mtypes
 }
 
 func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
@@ -222,27 +264,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			glog.Infof("Ad unit %s has %d bidders for %d sizes", unit.Code, len(bidders), len(unit.Sizes))
 		}
 
-		var mtypes []MediaType
-		mtmap := make(map[MediaType]bool)
-
-		if unit.MediaTypes == nil {
-			mtypes = append(mtypes, MEDIA_TYPE_BANNER)
-		} else {
-			for _, t := range unit.MediaTypes {
-				mt, er := ParseMediaType(t)
-				if er != nil {
-					glog.Infof("Invalid media type: %s", er)
-				} else {
-					if !mtmap[mt] {
-						mtypes = append(mtypes, mt)
-						mtmap[mt] = true
-					}
-				}
-			}
-			if len(mtypes) == 0 {
-				mtypes = append(mtypes, MEDIA_TYPE_BANNER)
-			}
-		}
+		mtypes := ParseMediaTypes(unit.MediaTypes)
 
 		for _, b := range bidders {
 			var bidder *PBSBidder
