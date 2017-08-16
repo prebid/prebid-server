@@ -6,6 +6,13 @@ import (
 	"github.com/prebid/openrtb"
 )
 
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
 func mediaTypeInSlice(t pbs.MediaType, list []pbs.MediaType) bool {
 	for _, b := range list {
 		if b == t {
@@ -13,6 +20,18 @@ func mediaTypeInSlice(t pbs.MediaType, list []pbs.MediaType) bool {
 		}
 	}
 	return false
+}
+
+func commonMediaTypes(l1 []pbs.MediaType, l2 []pbs.MediaType) []pbs.MediaType {
+	res := make([]pbs.MediaType, min(len(l1), len(l2)))
+	i := 0
+	for _, b := range l1 {
+		if mediaTypeInSlice(b, l2) {
+			res[i] = b
+			i = i + 1
+		}
+	}
+	return res[:i]
 }
 
 func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
@@ -40,9 +59,9 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 }
 
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, mediatypes []pbs.MediaType, singleMediaTypeImp bool) openrtb.BidRequest {
+func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) openrtb.BidRequest {
 
-	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(mediatypes))
+	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(allowedMediatypes))
 	ind := 0
 	impsPresent := false
 	for _, unit := range bidder.AdUnits {
@@ -50,46 +69,44 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			ind = ind + 1
 			continue
 		}
+		unitMediaTypes := commonMediaTypes(unit.MediaTypes, allowedMediatypes)
+		if len(unitMediaTypes) == 0 {
+			continue
+		}
 
 		if singleMediaTypeImp {
-			for _, mType := range unit.MediaTypes {
-				var newImp openrtb.Imp
-				if mediaTypeInSlice(mType, mediatypes) {
-					newImp = openrtb.Imp{
-						ID:     unit.Code,
-						Secure: req.Secure,
-					}
-					switch mType {
-					case pbs.MEDIA_TYPE_BANNER:
-						newImp.Banner = makeBanner(unit)
-					case pbs.MEDIA_TYPE_VIDEO:
-						newImp.Video = makeVideo(unit)
-					default:
-						// Error - unknown media type
-						continue
-					}
-					imps[ind] = newImp
-					ind = ind + 1
-					impsPresent = true
+			for _, mType := range unitMediaTypes {
+				newImp := openrtb.Imp{
+					ID:     unit.Code,
+					Secure: req.Secure,
 				}
+				switch mType {
+				case pbs.MEDIA_TYPE_BANNER:
+					newImp.Banner = makeBanner(unit)
+				case pbs.MEDIA_TYPE_VIDEO:
+					newImp.Video = makeVideo(unit)
+				default:
+					// Error - unknown media type
+					continue
+				}
+				imps[ind] = newImp
+				ind = ind + 1
+				impsPresent = true
 			}
 		} else {
 			newImp := openrtb.Imp{
 				ID:     unit.Code,
 				Secure: req.Secure,
 			}
-			for _, mType := range unit.MediaTypes {
-				if mediaTypeInSlice(mType, mediatypes) {
-
-					switch mType {
-					case pbs.MEDIA_TYPE_BANNER:
-						newImp.Banner = makeBanner(unit)
-					case pbs.MEDIA_TYPE_VIDEO:
-						newImp.Video = makeVideo(unit)
-					default:
-						// Error - unknown media type
-						continue
-					}
+			for _, mType := range unitMediaTypes {
+				switch mType {
+				case pbs.MEDIA_TYPE_BANNER:
+					newImp.Banner = makeBanner(unit)
+				case pbs.MEDIA_TYPE_VIDEO:
+					newImp.Video = makeVideo(unit)
+				default:
+					// Error - unknown media type
+					continue
 				}
 			}
 			imps[ind] = newImp

@@ -5,8 +5,27 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/magiconair/properties/assert"
 	"github.com/prebid/prebid-server/cache/dummycache"
 )
+
+func TestParseMediaTypes(t *testing.T) {
+	types1 := []string{"Banner"}
+	t1 := ParseMediaTypes(types1)
+	assert.Equal(t, len(t1), 1)
+	assert.Equal(t, t1[0], MEDIA_TYPE_BANNER)
+
+	types2 := []string{"Banner", "Video"}
+	t2 := ParseMediaTypes(types2)
+	assert.Equal(t, len(t2), 2)
+	assert.Equal(t, t2[0], MEDIA_TYPE_BANNER)
+	assert.Equal(t, t2[1], MEDIA_TYPE_VIDEO)
+
+	types3 := []string{"Banner", "Vo"}
+	t3 := ParseMediaTypes(types3)
+	assert.Equal(t, len(t3), 1)
+	assert.Equal(t, t3[0], MEDIA_TYPE_BANNER)
+}
 
 func TestParseSimpleRequest(t *testing.T) {
 	body := []byte(`{
