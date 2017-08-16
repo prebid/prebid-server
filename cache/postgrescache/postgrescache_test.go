@@ -31,11 +31,8 @@ func TestPostgresConfig(t *testing.T) {
 }
 
 type StubCache struct {
-	shared *shared
-
+	shared   *shared
 	accounts *accountService
-	domains  *domainService
-	apps     *appsService
 	config   *configService
 }
 
@@ -45,8 +42,6 @@ func StubNew(cfg PostgresConfig) *Cache {
 	return &Cache{
 		shared:   shared,
 		accounts: &accountService{shared: shared},
-		domains:  &domainService{shared: shared},
-		apps:     &appsService{shared: shared},
 		config:   &configService{shared: shared},
 	}
 }

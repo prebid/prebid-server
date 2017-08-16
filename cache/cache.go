@@ -20,9 +20,7 @@ type Configuration struct {
 type Cache interface {
 	Close() error
 	Accounts() AccountsService
-	Apps() AppsService
 	Config() ConfigService
-	Domains() DomainsService
 }
 
 type AccountsService interface {
@@ -30,17 +28,7 @@ type AccountsService interface {
 	Set(*Account) error
 }
 
-type AppsService interface {
-	Get(string) (*App, error)
-	Set(*App) error
-}
-
 type ConfigService interface {
 	Get(string) (string, error)
 	Set(string, string) error
-}
-
-type DomainsService interface {
-	Get(string) (*Domain, error)
-	Set(*Domain) error
 }
