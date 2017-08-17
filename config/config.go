@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/spf13/viper"
+	"time"
 )
 
 // Configuration
@@ -31,10 +32,13 @@ type Adapter struct {
 }
 
 type Metrics struct {
-	Host     string `mapstructure:"host"`
-	Database string `mapstructure:"database"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Type     string        `mapstructure:"type"`
+	Host     string        `mapstructure:"host"`
+	Database string        `mapstructure:"database"`
+	Username string        `mapstructure:"username"`
+	Password string        `mapstructure:"password"`
+	Interval time.Duration `mapstructure:"interval"`
+	Prefix   string        `mapstructure:"prefix"`
 }
 
 type DataCache struct {
