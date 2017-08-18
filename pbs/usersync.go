@@ -21,6 +21,10 @@ import (
 const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
 const COOKIE_NAME = "uids"
 
+// customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
+// If a bidder does a cookie sync *without* listing a rule here, then the UID's TTL will be 7 days.
+var customBidderTTLs = map[string]time.Duration{}
+
 const (
 	USERSYNC_OPT_OUT     = "usersync.opt_outs"
 	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
@@ -53,7 +57,7 @@ type UserSyncMap interface {
 	Unsync(familyName string)
 	// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
 	TrySync(familyName string, uid string) error
-	// HasSync returns true if we have a UID for the given family, and false otherwise.
+	// HasSync returns true if we have an active UID for the given family, and false otherwise.
 	HasSync(familyName string) bool
 	// SyncCount returns the number of families which have UIDs for this user.
 	SyncCount() int
@@ -77,8 +81,8 @@ func ParseUserSyncMap(cookie *http.Cookie) UserSyncMap {
 // NewSyncMap returns an empty UserSyncMap
 func NewSyncMap() UserSyncMap {
 	return &cookieImpl{
-		UIDs:     make(map[string]string),
-		Birthday: timestamp(),
+		TemporaryUIDs: make(map[string]temporaryUid),
+		Birthday:      timestamp(),
 	}
 }
 
@@ -86,8 +90,8 @@ func NewSyncMap() UserSyncMap {
 // This exists for testing. Callers should use ParseUserSyncMap.
 func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 	pc := cookieImpl{
-		UIDs:     make(map[string]string),
-		Birthday: timestamp(),
+		TemporaryUIDs: make(map[string]temporaryUid),
+		Birthday:      timestamp(),
 	}
 
 	j, err := base64.URLEncoding.DecodeString(cookie.Value)
@@ -100,25 +104,56 @@ func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 		// corrupted cookie; we should reset
 		return &pc
 	}
-	if pc.OptOut || pc.UIDs == nil {
-		pc.UIDs = make(map[string]string) // empty map
+	if pc.OptOut || pc.TemporaryUIDs == nil {
+		pc.TemporaryUIDs = make(map[string]temporaryUid)
 	}
 
 	// Facebook sends us a sentinel value of 0 if the user isn't logged in.
 	// As a result, we've stored  "0" as the UID for many users in the audienceNetwork so far.
 	// Since users log in and out of facebook all the time, this will cause re-sync attempts until
 	// we get a non-zero value.
+	//
+	// If you're seeing this message after February 2018, this block of logic is safe to delete.
 	if pc.UIDs["audienceNetwork"] == "0" {
 		delete(pc.UIDs, "audienceNetwork")
 	}
 
+	// This exists to help migrate a "legacy" cookie format onto the new one. Originally, cookies did not
+	// allow per-bidder expiration dates. Now, they do.
+	// This block attaches an expired date so that we re-sync asap, since there's no telling how long
+	// ago the UID from the old format was generated.
+	//
+	// If you're seeing this message after February 2018, this block of logic is safe to delete.
+	for bidder, uid := range pc.UIDs {
+		pc.TemporaryUIDs[bidder] = temporaryUid{
+			UID:     uid,
+			Expires: time.Now().Add(-5 * time.Minute),
+		}
+	}
+
+	pc.UIDs = nil
+
 	return &pc
 }
 
+type temporaryUid struct {
+	// uid is the ID given to a user by a particular bidder
+	UID string `json:"uid"`
+	// Expires is the time at which this UID should no longer apply.
+	Expires time.Time `json:"expires"`
+}
+
 type cookieImpl struct {
-	UIDs     map[string]string `json:"uids,omitempty"`
-	OptOut   bool              `json:"optout,omitempty"`
-	Birthday *time.Time        `json:"bday,omitempty"`
+	// UIDs *should not be used* outside of the parseCookieImpl function.
+	// They exist for legacy reasons, but should be nil everywhere else.
+	// If you're seeing this message after February 2018, they are safe to delete.
+	UIDs map[string]string `json:"uids,omitempty"`
+	// TemporaryUIDs stores a mapping from various bidders' FamilyNames to the UIDs which recognize them.
+	TemporaryUIDs map[string]temporaryUid `json:"user_ids,omitempty"`
+	// OptOut is true if the user has opted not to let prebid-server sync user IDs, and false otherwise.
+	OptOut bool `json:"optout,omitempty"`
+	// Birthday is the time
+	Birthday *time.Time `json:"bday,omitempty"`
 }
 
 func (cookie *cookieImpl) AllowSyncs() bool {
@@ -130,7 +165,7 @@ func (cookie *cookieImpl) SetPreference(allow bool) {
 		cookie.OptOut = false
 	} else {
 		cookie.OptOut = true
-		cookie.UIDs = make(map[string]string)
+		cookie.TemporaryUIDs = make(map[string]temporaryUid)
 	}
 }
 
@@ -146,8 +181,12 @@ func (cookie *cookieImpl) ToHTTPCookie() *http.Cookie {
 }
 
 func (cookie *cookieImpl) GetUID(familyName string) (string, bool) {
-	uid, ok := cookie.UIDs[familyName]
-	return uid, ok
+	if value, ok := cookie.TemporaryUIDs[familyName]; ok {
+		if time.Now().Before(value.Expires) {
+			return value.UID, true
+		}
+	}
+	return "", false
 }
 
 func (cookie *cookieImpl) SetCookieOnResponse(w http.ResponseWriter, domain string) {
@@ -159,16 +198,22 @@ func (cookie *cookieImpl) SetCookieOnResponse(w http.ResponseWriter, domain stri
 }
 
 func (cookie *cookieImpl) Unsync(familyName string) {
-	delete(cookie.UIDs, familyName)
+	delete(cookie.TemporaryUIDs, familyName)
 }
 
 func (cookie *cookieImpl) HasSync(familyName string) bool {
-	_, ok := cookie.UIDs[familyName]
+	_, ok := cookie.GetUID(familyName)
 	return ok
 }
 
 func (cookie *cookieImpl) SyncCount() int {
-	return len(cookie.UIDs)
+	numSyncs := 0
+	for _, syncInfo := range cookie.TemporaryUIDs {
+		if syncInfo.Expires.After(time.Now()) {
+			numSyncs++
+		}
+	}
+	return numSyncs
 }
 
 func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
@@ -182,7 +227,11 @@ func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
-	cookie.UIDs[familyName] = uid
+	cookie.TemporaryUIDs[familyName] = temporaryUid{
+		UID:     uid,
+		Expires: getExpiry(familyName),
+	}
+
 	return nil
 }
 
@@ -293,6 +342,16 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	} else {
 		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
 	}
+}
+
+// getExpiry gets an expiry date for the cookie, assuming it was generated right now.
+func getExpiry(familyName string) time.Time {
+	ttl := 7 * 24 * time.Hour
+	if customTTL, ok := customBidderTTLs[familyName]; ok {
+		ttl = customTTL
+	}
+	now := time.Now()
+	return now.Add(ttl)
 }
 
 func timestamp() *time.Time {
