@@ -13,6 +13,7 @@ import (
 
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/constants"
 	"github.com/prebid/prebid-server/pbs"
 )
 
@@ -265,7 +266,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	httpReq := httptest.NewRequest("POST", CreateService(BidOnTags("")).Server.URL, body)
 	httpReq.Header.Add("Referer", "http://news.pub/topnews")
 	pc := pbs.ParseUIDCookie(httpReq)
-	pc.UIDs["pulsepoint"] = "pulsepointUser123"
+	pc.UIDs[constants.FNPulsepoint.String()] = "pulsepointUser123"
 	fakewriter := httptest.NewRecorder()
 	pbs.SetUIDCookie(fakewriter, pc)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))

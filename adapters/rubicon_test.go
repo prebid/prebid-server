@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/constants"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -260,7 +261,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
 	pc := pbs.ParseUIDCookie(req)
-	pc.UIDs["rubicon"] = rubidata.buyerUID
+	pc.UIDs[constants.FNRubicon.String()] = rubidata.buyerUID
 	fakewriter := httptest.NewRecorder()
 	pbs.SetUIDCookie(fakewriter, pc)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))

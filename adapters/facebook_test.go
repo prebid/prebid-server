@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/constants"
 )
 
 type tagInfo struct {
@@ -213,7 +214,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 	req.Header.Add("X-Real-IP", fbdata.deviceIP)
 
 	pc := pbs.ParseUIDCookie(req)
-	pc.UIDs["audienceNetwork"] = fbdata.buyerUID
+	pc.UIDs[constants.FNFacebook.String()] = fbdata.buyerUID
 	fakewriter := httptest.NewRecorder()
 	pbs.SetUIDCookie(fakewriter, pc)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))

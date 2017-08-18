@@ -84,10 +84,10 @@ type PBSRequest struct {
 	Device        *openrtb.Device `json:"device"`
 
 	// internal
-	Bidders []*PBSBidder      `json:"-"`
-	UserIDs map[string]string `json:"-"`
-	Url     string            `json:"-"`
-	Domain  string            `json:"-"`
+	Bidders []*PBSBidder `json:"-"`
+	UserIDs []string     `json:"-"`
+	Url     string       `json:"-"`
+	Domain  string       `json:"-"`
 	Start   time.Time
 }
 
@@ -131,11 +131,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	// use client-side data for web requests
 	if pbsReq.App == nil {
 		pc := ParseUIDCookie(r)
-		pbsReq.UserIDs = pc.UIDs
+		pbsReq.UserIDs = constants.UIDsToArray(pc.UIDs)
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.UserIDs["adnxs"] = anid.Value
+			pbsReq.UserIDs[constants.FNAppnexus] = anid.Value
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -231,8 +231,8 @@ func (req PBSRequest) Elapsed() int {
 }
 
 func (req PBSRequest) GetUserID(BidderCode constants.FamilyName) string {
-	if uid, ok := req.UserIDs[BidderCode.String()]; ok { // TODO: consider moving UserIDs to an array indexed by the FamilyName int.
-		return uid
+	if int(BidderCode) < len(req.UserIDs) {
+		return req.UserIDs[BidderCode]
 	}
 	return ""
 }
