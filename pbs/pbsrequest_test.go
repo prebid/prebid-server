@@ -232,7 +232,9 @@ func TestParseMobileRequest(t *testing.T) {
 	   "max_key_length":20,
 	   "user":{
 	      "gender":"F",
-	      "buyeruid":"test_buyeruid"
+	      "buyeruid":"test_buyeruid",
+	      "yob":2000,
+	      "id":"testid"
 	   },
 	   "prebid_version":"0.21.0-pre",
 	   "sort_bids":1,
@@ -288,6 +290,12 @@ func TestParseMobileRequest(t *testing.T) {
 	}
 	if pbs_req.User.Gender != "F" {
 		t.Errorf("Parse user gender failed")
+	}
+	if pbs_req.User.Yob != 2000 {
+		t.Errorf("Parse user year of birth failed")
+	}
+	if pbs_req.User.ID != "testid" {
+		t.Errorf("Parse user id failed")
 	}
 	if pbs_req.App.Bundle != "AppNexus.PrebidMobileDemo" {
 		t.Errorf("Parse app bundle failed")
