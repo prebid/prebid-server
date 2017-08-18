@@ -10,8 +10,6 @@ import (
 
 func TestFileCache(t *testing.T) {
 	fcf := fileCacheFile{
-		Domains:  []string{"one.com", "two.com", "three.com"},
-		Apps:     []string{"com.app.one", "com.app.two", "com.app.three"},
 		Accounts: []string{"account1", "account2", "account3"},
 		Configs: []fileConfig{
 			{
@@ -51,46 +49,18 @@ func TestFileCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d, err := dataCache.Domains().Get("one.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if d.Domain != "one.com" {
-		t.Error("fetched invalid domain")
-	}
-
-	d, err = dataCache.Domains().Get("abc123")
-	if err == nil {
-		t.Error("domain should not exist in cache")
-	}
-
-	app, err := dataCache.Apps().Get("com.app.one")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if app.Bundle != "com.app.one" {
-		t.Error("fetched invalid app")
-	}
-
-	app, err = dataCache.Apps().Get("abc123")
-	if err == nil {
-		t.Error("domain should not exist in cache")
-	}
-
 	a, err := dataCache.Accounts().Get("account1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if a.ID != "account1" {
-		t.Error("fetched invalid domain")
+		t.Error("fetched invalid account")
 	}
 
 	a, err = dataCache.Accounts().Get("abc123")
 	if err == nil {
-		t.Error("domain should not exist in cache")
+		t.Error("account should not exist in cache")
 	}
 
 	c, err := dataCache.Config().Get("one")
@@ -99,11 +69,11 @@ func TestFileCache(t *testing.T) {
 	}
 
 	if c != "config1" {
-		t.Error("fetched invalid domain")
+		t.Error("fetched invalid config")
 	}
 
 	c, err = dataCache.Config().Get("abc123")
 	if err == nil {
-		t.Error("domain should not exist in cache")
+		t.Error("config should not exist in cache")
 	}
 }
