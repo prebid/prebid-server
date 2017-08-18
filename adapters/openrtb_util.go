@@ -34,6 +34,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			Imp:    imps,
 			App:    req.App,
 			Device: req.Device,
+			User:   req.User,
 			Source: &openrtb.Source{
 				TID: req.Tid,
 			},

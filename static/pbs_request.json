@@ -245,6 +245,27 @@
                 }
             }
         },
+        "user" : {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Exchange-specific ID for the user.",
+                    "type": "string"
+                },
+                "buyeruid": {
+                    "description": "Buyer-specific ID for the user as mapped by the exchange for the buyer.",
+                    "type": "string"
+                },
+                "yob": {
+                    "description": "Year of birth as a 4-digit integer.",
+                    "type": "integer"
+                },
+                "gender": {
+                    "description": "Gender, where M=male, F=female, O=known to be other, omitted is unknown",
+                    "type": "string"
+                }
+            }
+        },
         "ad_units": {
             "type": "array",
             "minItems": 1,
