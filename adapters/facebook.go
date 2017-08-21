@@ -95,7 +95,12 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 }
 
 func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, placementId string, mtype pbs.MediaType, pubId string, unitInd int) (openrtb.BidRequest, error) {
-	fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+	fbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+
+	if err != nil {
+		return openrtb.BidRequest{}, err
+	}
+
 	fbReq.Ext = a.platformJSON
 
 	if fbReq.Imp != nil && len(fbReq.Imp) > 0 {

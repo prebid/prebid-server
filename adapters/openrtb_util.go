@@ -3,6 +3,7 @@ package adapters
 import (
 	"github.com/prebid/prebid-server/pbs"
 
+	"errors"
 	"github.com/prebid/openrtb"
 )
 
@@ -44,6 +45,10 @@ func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 }
 
 func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
+	// empty mimes array is a sign of uninitialized Video object
+	if len(unit.Video.Mimes) < 1 {
+		return nil
+	}
 	mimes := make([]string, len(unit.Video.Mimes))
 	copy(mimes, unit.Video.Mimes)
 	pbm := make([]int8, 1)
@@ -59,7 +64,7 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 }
 
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) openrtb.BidRequest {
+func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(allowedMediatypes))
 	ind := 0
@@ -84,7 +89,11 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				case pbs.MEDIA_TYPE_BANNER:
 					newImp.Banner = makeBanner(unit)
 				case pbs.MEDIA_TYPE_VIDEO:
-					newImp.Video = makeVideo(unit)
+					video := makeVideo(unit)
+					if video == nil {
+						return openrtb.BidRequest{}, errors.New("Invalid AdUnit: VIDEO media type with no video data")
+					}
+					newImp.Video = video
 				default:
 					// Error - unknown media type
 					continue
@@ -131,7 +140,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			},
 			AT:   1,
 			TMax: req.TimeoutMillis,
-		}
+		}, nil
 	}
 
 	return openrtb.BidRequest{
@@ -152,5 +161,5 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		},
 		AT:   1,
 		TMax: req.TimeoutMillis,
-	}
+	}, nil
 }

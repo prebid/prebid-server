@@ -50,7 +50,12 @@ type PulsepointParams struct {
 
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	ppReq := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	ppReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+
+	if err != nil {
+		return pbs.PBSBidSlice{}, err
+	}
+
 	for i, unit := range bidder.AdUnits {
 		var params PulsepointParams
 		err := json.Unmarshal(unit.Params, &params)

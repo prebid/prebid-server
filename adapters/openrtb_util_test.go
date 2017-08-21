@@ -49,8 +49,9 @@ func TestOpenRTB(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 
+	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
 	assert.EqualValues(t, resp.Imp[0].Banner.H, 12)
@@ -82,7 +83,9 @@ func TestOpenRTBVideo(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
+
+	assert.Equal(t, err, nil)
 
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
@@ -110,10 +113,9 @@ func TestOpenRTBVideoNoVideoData(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
+	_, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
 
-	assert.Equal(t, resp.Imp[0].ID, "unitCode")
-	assert.Equal(t, resp.Imp[0].Video.MaxDuration, uint64(0x0))
+	assert.NotEqual(t, err, nil)
 
 }
 
@@ -143,7 +145,8 @@ func TestOpenRTBVideoFilteredOut(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp, []openrtb.Imp(nil))
 }
 
@@ -173,7 +176,8 @@ func TestOpenRTBMultiMediaImp(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER}, false)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER}, false)
+	assert.Equal(t, err, nil)
 	assert.Equal(t, len(resp.Imp), 1)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
@@ -208,7 +212,8 @@ func TestOpenRTBMultiMediaImpFiltered(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, false)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, false)
+	assert.Equal(t, err, nil)
 	assert.Equal(t, len(resp.Imp), 1)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
@@ -241,7 +246,8 @@ func TestOpenRTBSingleMediaImp(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER}, true)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO, pbs.MEDIA_TYPE_BANNER}, true)
+	assert.Equal(t, err, nil)
 	assert.Equal(t, len(resp.Imp), 2)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
@@ -262,7 +268,8 @@ func TestOpenRTBNoSize(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 	//	assert.Equal(t, resp.Imp[0].ID, "")
+	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp, []openrtb.Imp(nil))
 }
