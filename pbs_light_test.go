@@ -31,8 +31,8 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Encode csr failed: %v", err)
 	}
 
-	req, _ :=  http.NewRequest("POST", "/cookie_sync", csbuf)
-	rr :=httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
+	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("Wrong status: %d", rr.Code)
