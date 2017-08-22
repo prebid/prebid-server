@@ -331,4 +331,5 @@ func TestOpenRTBMobile(t *testing.T) {
 	assert.EqualValues(t, resp.Device.Make, "test_make")
 	assert.EqualValues(t, resp.Device.Model, "test_model")
 	assert.EqualValues(t, resp.Device.IFA, "test_ifa")
+
 }
