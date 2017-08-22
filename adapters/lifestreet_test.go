@@ -23,7 +23,6 @@ type lsTagInfo struct {
 	slotTag string
 	bid     float64
 	content string
-	delay   time.Duration
 }
 
 type lsBidInfo struct {
@@ -38,6 +37,7 @@ type lsBidInfo struct {
 	referrer             string
 	width                uint64
 	height               uint64
+	delay                time.Duration
 }
 
 var lsdata lsBidInfo
@@ -112,9 +112,6 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 				W:     lsdata.width,
 				H:     lsdata.height,
 			}
-			if tag.delay > 0 {
-				<-time.After(tag.delay)
-			}
 		}
 	}
 	if bid == nil {
@@ -132,6 +129,10 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 				Bid:  []openrtb.Bid{*bid},
 			},
 		},
+	}
+
+	if lsdata.delay > 0 {
+		<-time.After(lsdata.delay)
 	}
 
 	js, err := json.Marshal(resp)
@@ -270,24 +271,14 @@ func TestLifestreetBasicResponse(t *testing.T) {
 		}
 	}
 
-	// testing when 1 request times out
-	lsdata.tags[0].delay = 300 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	// same test but with request timing out
+	lsdata.delay = 5 * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err != nil {
-		// only get an error if everything fails
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
-	if len(bids) != 1 {
-		t.Fatalf("Received %d bids instead of 1", len(bids))
-	}
-	if bids[0].AdUnitCode != lsdata.tags[1].code {
-		t.Fatalf("Didn't receive bid from non-timed out request")
-	}
-	if bids[0].Price != lsdata.tags[1].bid {
-		t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bids[0].Price, lsdata.tags[1].bid)
+	if err == nil {
+		t.Fatalf("Should have gotten a timeout error: %v", err)
 	}
 }
 
