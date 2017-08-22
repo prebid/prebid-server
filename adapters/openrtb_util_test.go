@@ -304,7 +304,8 @@ func TestOpenRTBMobile(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 300,
@@ -314,8 +315,9 @@ func TestOpenRTBMobile(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 
+	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 300)
 	assert.EqualValues(t, resp.Imp[0].Banner.H, 250)
