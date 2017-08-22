@@ -139,7 +139,12 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		pbsReq.SDK = &SDK{}
 	}
 	if pbsReq.SDK.Version != "0.0.1" {
-		err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
+		if pbsReq.PBSUser != nil {
+			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	if pbsReq.User == nil {
 		pbsReq.User = &openrtb.User{}

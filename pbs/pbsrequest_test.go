@@ -254,7 +254,7 @@ func TestParseMobileRequestFirstVersion(t *testing.T) {
 	      "ver":"0.0.1"
 	   },
 	   "sdk":{
-	      "version":"0.0.2",
+	      "version":"0.0.1",
 	      "platform":"iOS",
 	      "source":"prebid-mobile"
 	   },
@@ -346,7 +346,7 @@ func TestParseMobileRequest(t *testing.T) {
 	   "cache_markup":1,
 	   "app":{
 	      "bundle":"AppNexus.PrebidMobileDemo",
-	      "ver":"0.0.1"
+	      "ver":"0.0.2"
 	   },
 	   "sdk":{
 	      "version":"0.0.2",
@@ -393,7 +393,7 @@ func TestParseMobileRequest(t *testing.T) {
 	if pbs_req.App.Bundle != "AppNexus.PrebidMobileDemo" {
 		t.Errorf("Parse app bundle failed")
 	}
-	if pbs_req.App.Ver != "0.0.1" {
+	if pbs_req.App.Ver != "0.0.2" {
 		t.Errorf("Parse app version failed")
 	}
 
@@ -411,5 +411,14 @@ func TestParseMobileRequest(t *testing.T) {
 	}
 	if pbs_req.Device.Model != "iPhone6,1" {
 		t.Errorf("Parse device model failed")
+	}
+	if pbs_req.SDK.Version != "0.0.2" {
+		t.Errorf("Parse sdk version failed")
+	}
+	if pbs_req.SDK.Source != "prebid-mobile" {
+		t.Errorf("Parse sdk source failed")
+	}
+	if pbs_req.SDK.Platform != "iOS" {
+		t.Errorf("Parse sdk platform failed")
 	}
 }
