@@ -349,6 +349,9 @@ func TestAppNexusBasicResponse(t *testing.T) {
 				if bid.Adm != tag.content {
 					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
 				}
+				if bid.CreativeMediaType != pbs.MEDIA_TYPE_BANNER {
+					t.Errorf("Incorrect CreativeMediaType '%s' expected '%s'", bid.CreativeMediaType, pbs.MEDIA_TYPE_BANNER)
+				}
 			}
 		}
 		if !matched {
