@@ -271,8 +271,8 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	}
 
 	// testing when 1 request times out
-	lsdata.tags[0].delay = 20 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+	lsdata.tags[0].delay = 300 * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
