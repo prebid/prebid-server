@@ -418,6 +418,11 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					pbs_kvs["hb_pb"] = roundedCpm
 					pbs_kvs["hb_bidder"] = bid.BidderCode
 					pbs_kvs["hb_cache_id"] = bid.CacheID
+					if bid.BidderCode == "audienceNetwork" {
+						pbs_kvs["hb_creative_load_method"] = "demand_sdk"
+					} else {
+						pbs_kvs["hb_creative_load_method"] = "html"
+					}
 				}
 				bid.AdServerTargeting = pbs_kvs
 			}
