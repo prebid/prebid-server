@@ -87,12 +87,12 @@ type PBSRequest struct {
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
 	Device        *openrtb.Device `json:"device"`
-	User          *openrtb.User   `json:"openrtb_user"`
 	PBSUser       json.RawMessage `json:"user"`
 	SDK           *SDK            `json:"sdk"`
 
 	// internal
 	Bidders []*PBSBidder      `json:"-"`
+	User    *openrtb.User     `json:"-"`
 	UserIDs map[string]string `json:"-"`
 	Url     string            `json:"-"`
 	Domain  string            `json:"-"`
