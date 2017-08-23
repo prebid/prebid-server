@@ -34,33 +34,8 @@ type UserSyncDeps struct {
 	Metrics          metrics.Registry
 }
 
-// UserSyncMap is cookie which stores the user sync info for all of our bidders.
-//
-// To get an instance of this from a request, use ParseUserSyncMapFromRequest.
-// To write an instance onto a response, use SetCookieOnResponse.
-type UserSyncMap interface {
-	// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
-	AllowSyncs() bool
-	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
-	SetPreference(allow bool)
-	// Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
-	ToHTTPCookie() *http.Cookie
-	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-	SetCookieOnResponse(w http.ResponseWriter, domain string)
-	// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
-	GetUID(familyName string) (string, bool)
-	// Unsync removes the user's ID for the given family from this cookie.
-	Unsync(familyName string)
-	// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
-	TrySync(familyName string, uid string) error
-	// HasSync returns true if we have a UID for the given family, and false otherwise.
-	HasSync(familyName string) bool
-	// SyncCount returns the number of families which have UIDs for this user.
-	SyncCount() int
-}
-
 // ParseUserSyncMapFromRequest parses the UserSyncMap from an HTTP Request.
-func ParseUserSyncMapFromRequest(r *http.Request) UserSyncMap {
+func ParseUserSyncMapFromRequest(r *http.Request) *PBSCookie {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err != nil {
 		return NewSyncMap()
@@ -70,24 +45,24 @@ func ParseUserSyncMapFromRequest(r *http.Request) UserSyncMap {
 }
 
 // ParseUserSyncMap parses the UserSync cookie from a raw HTTP cookie.
-func ParseUserSyncMap(cookie *http.Cookie) UserSyncMap {
+func ParseUserSyncMap(cookie *http.Cookie) *PBSCookie {
 	return parseCookieImpl(cookie)
 }
 
 // NewSyncMap returns an empty UserSyncMap
-func NewSyncMap() UserSyncMap {
-	return &cookieImpl{
-		UIDs:     make(map[string]string),
-		Birthday: timestamp(),
+func NewSyncMap() *PBSCookie {
+	return &PBSCookie{
+		uids:     make(map[string]string),
+		birthday: timestamp(),
 	}
 }
 
-// parseCookieImpl parses the cookieImpl from a raw HTTP cookie.
+// parseCookieImpl parses the PBSCookie from a raw HTTP cookie.
 // This exists for testing. Callers should use ParseUserSyncMap.
-func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
-	pc := cookieImpl{
-		UIDs:     make(map[string]string),
-		Birthday: timestamp(),
+func parseCookieImpl(cookie *http.Cookie) *PBSCookie {
+	pc := PBSCookie{
+		uids:     make(map[string]string),
+		birthday: timestamp(),
 	}
 
 	j, err := base64.URLEncoding.DecodeString(cookie.Value)
@@ -100,41 +75,55 @@ func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
 		// corrupted cookie; we should reset
 		return &pc
 	}
-	if pc.OptOut || pc.UIDs == nil {
-		pc.UIDs = make(map[string]string) // empty map
+	if pc.optOut || pc.uids == nil {
+		pc.uids = make(map[string]string) // empty map
 	}
 
 	// Facebook sends us a sentinel value of 0 if the user isn't logged in.
 	// As a result, we've stored  "0" as the UID for many users in the audienceNetwork so far.
 	// Since users log in and out of facebook all the time, this will cause re-sync attempts until
 	// we get a non-zero value.
-	if pc.UIDs["audienceNetwork"] == "0" {
-		delete(pc.UIDs, "audienceNetwork")
+	if pc.uids["audienceNetwork"] == "0" {
+		delete(pc.uids, "audienceNetwork")
 	}
 
 	return &pc
 }
 
-type cookieImpl struct {
+type pbsCookieJson struct {
 	UIDs     map[string]string `json:"uids,omitempty"`
 	OptOut   bool              `json:"optout,omitempty"`
 	Birthday *time.Time        `json:"bday,omitempty"`
 }
 
-func (cookie *cookieImpl) AllowSyncs() bool {
-	return !cookie.OptOut
+// PBSCookie is cookie which stores the user sync info for all of our bidders.
+//
+// To get an instance of this from a request, use ParseUserSyncMapFromRequest.
+// To write an instance onto a response, use SetCookieOnResponse.
+type PBSCookie struct {
+	uids     map[string]string
+	optOut   bool
+	birthday *time.Time
 }
 
-func (cookie *cookieImpl) SetPreference(allow bool) {
-	if allow {
-		cookie.OptOut = false
+func (cookie *PBSCookie) AllowSyncs() bool {
+	if cookie == nil {
+		return false
 	} else {
-		cookie.OptOut = true
-		cookie.UIDs = make(map[string]string)
+		return !cookie.optOut
 	}
 }
 
-func (cookie *cookieImpl) ToHTTPCookie() *http.Cookie {
+func (cookie *PBSCookie) SetPreference(allow bool) {
+	if allow {
+		cookie.optOut = false
+	} else {
+		cookie.optOut = true
+		cookie.uids = make(map[string]string)
+	}
+}
+
+func (cookie *PBSCookie) ToHTTPCookie() *http.Cookie {
 	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
 
@@ -145,12 +134,16 @@ func (cookie *cookieImpl) ToHTTPCookie() *http.Cookie {
 	}
 }
 
-func (cookie *cookieImpl) GetUID(familyName string) (string, bool) {
-	uid, ok := cookie.UIDs[familyName]
-	return uid, ok
+func (cookie *PBSCookie) GetUID(familyName string) (string, bool) {
+	if cookie == nil {
+		return "", false
+	} else {
+		uid, ok := cookie.uids[familyName]
+		return uid, ok
+	}
 }
 
-func (cookie *cookieImpl) SetCookieOnResponse(w http.ResponseWriter, domain string) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string) {
 	httpCookie := cookie.ToHTTPCookie()
 	if domain != "" {
 		httpCookie.Domain = domain
@@ -158,22 +151,30 @@ func (cookie *cookieImpl) SetCookieOnResponse(w http.ResponseWriter, domain stri
 	http.SetCookie(w, httpCookie)
 }
 
-func (cookie *cookieImpl) Unsync(familyName string) {
-	delete(cookie.UIDs, familyName)
+func (cookie *PBSCookie) Unsync(familyName string) {
+	delete(cookie.uids, familyName)
 }
 
-func (cookie *cookieImpl) HasSync(familyName string) bool {
-	_, ok := cookie.UIDs[familyName]
-	return ok
+func (cookie *PBSCookie) HasSync(familyName string) bool {
+	if cookie == nil {
+		return false
+	} else {
+		_, ok := cookie.uids[familyName]
+		return ok
+	}
 }
 
-func (cookie *cookieImpl) SyncCount() int {
-	return len(cookie.UIDs)
+func (cookie *PBSCookie) SyncCount() int {
+	if cookie == nil {
+		return 0
+	} else {
+		return len(cookie.uids)
+	}
 }
 
-func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
+func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 	if !cookie.AllowSyncs() {
-		return errors.New("The user has opted out of prebid server cookieImpl syncs.")
+		return errors.New("The user has opted out of prebid server PBSCookie syncs.")
 	}
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
@@ -182,8 +183,29 @@ func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
-	cookie.UIDs[familyName] = uid
+	cookie.uids[familyName] = uid
 	return nil
+}
+
+func (cookie *PBSCookie) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pbsCookieJson{
+		UIDs:     cookie.uids,
+		OptOut:   cookie.optOut,
+		Birthday: cookie.birthday,
+	})
+}
+
+func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
+	var cookieContract pbsCookieJson
+	err := json.Unmarshal(b, &cookieContract)
+	if err == nil {
+		cookie.uids = cookieContract.UIDs
+		cookie.birthday = cookieContract.Birthday
+		cookie.optOut = cookieContract.OptOut
+		return nil
+	} else {
+		return err
+	}
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

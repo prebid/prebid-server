@@ -84,7 +84,7 @@ type PBSRequest struct {
 
 	// internal
 	Bidders []*PBSBidder `json:"-"`
-	SyncMap UserSyncMap  `json:"-"`
+	SyncMap *PBSCookie   `json:"-"`
 	Url     string       `json:"-"`
 	Domain  string       `json:"-"`
 	Start   time.Time
@@ -162,8 +162,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
 		}
-	} else {
-		pbsReq.SyncMap = NewSyncMap()
 	}
 
 	if r.FormValue("debug") == "1" {
@@ -232,11 +230,8 @@ func (req PBSRequest) Elapsed() int {
 }
 
 func (req *PBSRequest) GetUserID(BidderCode string) string {
-	if req.SyncMap != nil {
-		uid, _ := req.SyncMap.GetUID(BidderCode)
-		return uid
-	}
-	return ""
+	uid, _ := req.SyncMap.GetUID(BidderCode)
+	return uid
 }
 
 func (p PBSRequest) String() string {

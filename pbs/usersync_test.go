@@ -8,51 +8,51 @@ import (
 )
 
 func TestOptOutCookie(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs:     make(map[string]string),
-		OptOut:   true,
-		Birthday: timestamp(),
+	cookie := &PBSCookie{
+		uids:     make(map[string]string),
+		optOut:   true,
+		birthday: timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyOptOutCookie(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs:     make(map[string]string),
-		OptOut:   true,
-		Birthday: timestamp(),
+	cookie := &PBSCookie{
+		uids:     make(map[string]string),
+		optOut:   true,
+		birthday: timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestEmptyCookie(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs:     make(map[string]string, 0),
-		OptOut:   false,
-		Birthday: timestamp(),
+	cookie := &PBSCookie{
+		uids:     make(map[string]string, 0),
+		optOut:   false,
+		birthday: timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestCookieWithData(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs: map[string]string{
+	cookie := &PBSCookie{
+		uids: map[string]string{
 			"adnxs":           "123",
 			"audienceNetwork": "456",
 		},
-		OptOut:   false,
-		Birthday: timestamp(),
+		optOut:   false,
+		birthday: timestamp(),
 	}
 	ensureConsistency(t, cookie)
 }
 
 func TestRejectAudienceNetworkCookie(t *testing.T) {
-	raw := &cookieImpl{
-		UIDs: map[string]string{
+	raw := &PBSCookie{
+		uids: map[string]string{
 			"audienceNetwork": "0",
 		},
-		OptOut:   false,
-		Birthday: timestamp(),
+		optOut:   false,
+		birthday: timestamp(),
 	}
 	parsed := ParseUserSyncMap(raw.ToHTTPCookie())
 	if parsed.HasSync("audienceNetwork") {
@@ -69,13 +69,13 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 }
 
 func TestOptOutReset(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs: map[string]string{
+	cookie := &PBSCookie{
+		uids: map[string]string{
 			"adnxs":           "123",
 			"audienceNetwork": "456",
 		},
-		OptOut:   false,
-		Birthday: timestamp(),
+		optOut:   false,
+		birthday: timestamp(),
 	}
 
 	cookie.SetPreference(false)
@@ -86,10 +86,10 @@ func TestOptOutReset(t *testing.T) {
 }
 
 func TestOptIn(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs:     make(map[string]string),
-		OptOut:   true,
-		Birthday: timestamp(),
+	cookie := &PBSCookie{
+		uids:     make(map[string]string),
+		optOut:   true,
+		birthday: timestamp(),
 	}
 
 	cookie.SetPreference(true)
@@ -130,7 +130,7 @@ func TestParseNilSyncMap(t *testing.T) {
 	ensureConsistency(t, parsed)
 }
 
-func writeThenRead(t *testing.T, cookie UserSyncMap) UserSyncMap {
+func writeThenRead(t *testing.T, cookie *PBSCookie) *PBSCookie {
 	w := httptest.NewRecorder()
 	cookie.SetCookieOnResponse(w, "mock-domain")
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
@@ -142,13 +142,13 @@ func writeThenRead(t *testing.T, cookie UserSyncMap) UserSyncMap {
 }
 
 func TestCookieReadWrite(t *testing.T) {
-	cookie := &cookieImpl{
-		UIDs: map[string]string{
+	cookie := &PBSCookie{
+		uids: map[string]string{
 			"adnxs":           "123",
 			"audienceNetwork": "456",
 		},
-		OptOut:   false,
-		Birthday: timestamp(),
+		optOut:   false,
+		birthday: timestamp(),
 	}
 
 	received := writeThenRead(t, cookie)
@@ -165,7 +165,7 @@ func TestCookieReadWrite(t *testing.T) {
 	}
 }
 
-func ensureEmptyMap(t *testing.T, cookie UserSyncMap) {
+func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
 	}
@@ -174,49 +174,49 @@ func ensureEmptyMap(t *testing.T, cookie UserSyncMap) {
 	}
 }
 
-func ensureConsistency(t *testing.T, cookie UserSyncMap) {
+func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 	if cookie.AllowSyncs() {
 		err := cookie.TrySync("pulsepoint", "1")
 		if err != nil {
 			t.Errorf("Cookie sync should succeed if the user has opted in.")
 		}
 		if !cookie.HasSync("pulsepoint") {
-			t.Errorf("The cookieImpl should have a usersync after a successful call to TrySync")
+			t.Errorf("The PBSCookie should have a usersync after a successful call to TrySync")
 		}
 		savedUID, hadSync := cookie.GetUID("pulsepoint")
 		if !hadSync {
 			t.Error("The GetUID function should return true when it has a sync. Got false")
 		}
 		if savedUID != "1" {
-			t.Errorf("The cookieImpl isn't saving syncs correctly. Expected %s, got %s", "1", savedUID)
+			t.Errorf("The PBSCookie isn't saving syncs correctly. Expected %s, got %s", "1", savedUID)
 		}
 		cookie.Unsync("pulsepoint")
 		if cookie.HasSync("pulsepoint") {
-			t.Errorf("The cookieImpl should not have have a usersync after a call to Unsync")
+			t.Errorf("The PBSCookie should not have have a usersync after a call to Unsync")
 		}
 		if value, hadValue := cookie.GetUID("pulsepoint"); value != "" || hadValue {
-			t.Error("cookieImpl.GetUID() should return empty strings if it doesn't have a sync")
+			t.Error("PBSCookie.GetUID() should return empty strings if it doesn't have a sync")
 		}
 	} else {
 		if cookie.SyncCount() != 0 {
-			t.Errorf("If the user opted out, the cookieImpl should have no user syncs. Got %d", cookie.SyncCount())
+			t.Errorf("If the user opted out, the PBSCookie should have no user syncs. Got %d", cookie.SyncCount())
 		}
 
 		err := cookie.TrySync("adnxs", "123")
 		if err == nil {
-			t.Error("TrySync should fail if the user has opted out of cookieImpl syncs, but it succeeded.")
+			t.Error("TrySync should fail if the user has opted out of PBSCookie syncs, but it succeeded.")
 		}
 	}
 
 	cookieImpl := parseCookieImpl(cookie.ToHTTPCookie())
-	if cookieImpl.OptOut == cookie.AllowSyncs() {
-		t.Error("The cookieImpl interface shouldn't let modifications happen if the user has opted out")
+	if cookieImpl.optOut == cookie.AllowSyncs() {
+		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
-	if cookie.SyncCount() != len(cookieImpl.UIDs) {
-		t.Errorf("Incorrect sync count. Expected %d, got %d", len(cookieImpl.UIDs), cookie.SyncCount())
+	if cookie.SyncCount() != len(cookieImpl.uids) {
+		t.Errorf("Incorrect sync count. Expected %d, got %d", len(cookieImpl.uids), cookie.SyncCount())
 	}
 
-	for family, uid := range cookieImpl.UIDs {
+	for family, uid := range cookieImpl.uids {
 		if !cookie.HasSync(family) {
 			t.Errorf("Cookie is missing sync for family %s", family)
 		}
