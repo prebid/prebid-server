@@ -165,6 +165,31 @@ func TestCookieReadWrite(t *testing.T) {
 	}
 }
 
+func TestNilCookie(t *testing.T) {
+	var nilCookie *PBSCookie = nil
+
+	if nilCookie.HasSync("anything") {
+		t.Error("nil cookies should respond with false when asked if they have a sync")
+	}
+
+	if nilCookie.SyncCount() != 0 {
+		t.Error("nil cookies shouldn't have any syncs.")
+	}
+
+	if nilCookie.AllowSyncs() {
+		t.Error("nil cookies shouldn't allow syncs to take place.")
+	}
+
+	uid, hadUID := nilCookie.GetUID("anything")
+
+	if uid != "" {
+		t.Error("nil cookies should return empty strings for the UID.")
+	}
+	if hadUID {
+		t.Error("nil cookies shouldn't claim to have a UID mapping.")
+	}
+}
+
 func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
