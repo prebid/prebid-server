@@ -27,6 +27,16 @@ const (
 	USERSYNC_SUCCESS     = "usersync.%s.sets"
 )
 
+// PBSCookie is the cookie used in Prebid Server.
+//
+// To get an instance of this from a request, use ParsePBSCookieFromRequest.
+// To write an instance onto a response, use SetCookieOnResponse.
+type PBSCookie struct {
+	uids     map[string]string
+	optOut   bool
+	birthday *time.Time
+}
+
 type UserSyncDeps struct {
 	Cookie_domain    string
 	External_url     string
@@ -82,16 +92,6 @@ func NewPBSCookie() *PBSCookie {
 		uids:     make(map[string]string),
 		birthday: timestamp(),
 	}
-}
-
-// PBSCookie is the cookie used in Prebid Server.
-//
-// To get an instance of this from a request, use ParsePBSCookieFromRequest.
-// To write an instance onto a response, use SetCookieOnResponse.
-type PBSCookie struct {
-	uids     map[string]string
-	optOut   bool
-	birthday *time.Time
 }
 
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
