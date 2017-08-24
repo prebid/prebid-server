@@ -45,7 +45,13 @@ type pubmaticParams struct {
 }
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	pbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	pbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+
+	if err != nil {
+		return pbs.PBSBidSlice{}, err
+	}
+
 	for i, unit := range bidder.AdUnits {
 		var params pubmaticParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -58,7 +64,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if params.AdSlot == "" {
 			return nil, errors.New("Missing adSlot param")
 		}
-		pbReq.Imp[i].Banner.Format = nil // pubmatic doesn't support
+		if pbReq.Imp[i].Banner != nil {
+			pbReq.Imp[i].Banner.Format = nil
+		} // pubmatic doesn't support
 		pbReq.Imp[i].TagID = params.AdSlot
 		if pbReq.Site != nil {
 			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}

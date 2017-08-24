@@ -276,7 +276,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		}
 
 		pbin.AdUnits[i] = pbs.AdUnit{
-			Code: tag.code,
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
