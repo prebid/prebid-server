@@ -10,33 +10,86 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/ssl"
-	metrics "github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics"
 )
 
-var cookie_domain string
-var external_url string
-var recaptcha_secret string
+// Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
+const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
+const COOKIE_NAME = "uids"
 
-type PBSCookie struct {
-	UIDs     map[string]string `json:"uids,omitempty"`
-	OptOut   bool              `json:"optout,omitempty"`
-	Birthday *time.Time        `json:"bday,omitempty"`
+const (
+	USERSYNC_OPT_OUT     = "usersync.opt_outs"
+	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
+	USERSYNC_SUCCESS     = "usersync.%s.sets"
+)
+
+type UserSyncDeps struct {
+	Cookie_domain    string
+	External_url     string
+	Recaptcha_secret string
+	Metrics          metrics.Registry
 }
 
-func ParseUIDCookie(r *http.Request) *PBSCookie {
-	t := time.Now()
-	pc := PBSCookie{
-		UIDs:     make(map[string]string),
-		Birthday: &t,
+// UserSyncMap is cookie which stores the user sync info for all of our bidders.
+//
+// To get an instance of this from a request, use ParseUserSyncMapFromRequest.
+// To write an instance onto a response, use SetCookieOnResponse.
+type UserSyncMap interface {
+	// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
+	AllowSyncs() bool
+	// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
+	SetPreference(allow bool)
+	// Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
+	ToHTTPCookie() *http.Cookie
+	// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
+	SetCookieOnResponse(w http.ResponseWriter, domain string)
+	// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
+	GetUID(familyName string) (string, bool)
+	// Unsync removes the user's ID for the given family from this cookie.
+	Unsync(familyName string)
+	// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
+	TrySync(familyName string, uid string) error
+	// HasSync returns true if we have a UID for the given family, and false otherwise.
+	HasSync(familyName string) bool
+	// SyncCount returns the number of families which have UIDs for this user.
+	SyncCount() int
+}
+
+// ParseUserSyncMapFromRequest parses the UserSyncMap from an HTTP Request.
+func ParseUserSyncMapFromRequest(r *http.Request) UserSyncMap {
+	cookie, err := r.Cookie(COOKIE_NAME)
+	if err != nil {
+		return NewSyncMap()
 	}
 
-	cookie, err := r.Cookie("uids")
-	if err != nil {
-		return &pc
+	return ParseUserSyncMap(cookie)
+}
+
+// ParseUserSyncMap parses the UserSync cookie from a raw HTTP cookie.
+func ParseUserSyncMap(cookie *http.Cookie) UserSyncMap {
+	return parseCookieImpl(cookie)
+}
+
+// NewSyncMap returns an empty UserSyncMap
+func NewSyncMap() UserSyncMap {
+	return &cookieImpl{
+		UIDs:     make(map[string]string),
+		Birthday: timestamp(),
 	}
+}
+
+// parseCookieImpl parses the cookieImpl from a raw HTTP cookie.
+// This exists for testing. Callers should use ParseUserSyncMap.
+func parseCookieImpl(cookie *http.Cookie) *cookieImpl {
+	pc := cookieImpl{
+		UIDs:     make(map[string]string),
+		Birthday: timestamp(),
+	}
+
 	j, err := base64.URLEncoding.DecodeString(cookie.Value)
 	if err != nil {
 		// corrupted cookie; we should reset
@@ -50,27 +103,92 @@ func ParseUIDCookie(r *http.Request) *PBSCookie {
 	if pc.OptOut || pc.UIDs == nil {
 		pc.UIDs = make(map[string]string) // empty map
 	}
+
+	// Facebook sends us a sentinel value of 0 if the user isn't logged in.
+	// As a result, we've stored  "0" as the UID for many users in the audienceNetwork so far.
+	// Since users log in and out of facebook all the time, this will cause re-sync attempts until
+	// we get a non-zero value.
+	if pc.UIDs["audienceNetwork"] == "0" {
+		delete(pc.UIDs, "audienceNetwork")
+	}
+
 	return &pc
 }
 
-func SetUIDCookie(w http.ResponseWriter, pc *PBSCookie) {
-	j, _ := json.Marshal(pc)
+type cookieImpl struct {
+	UIDs     map[string]string `json:"uids,omitempty"`
+	OptOut   bool              `json:"optout,omitempty"`
+	Birthday *time.Time        `json:"bday,omitempty"`
+}
+
+func (cookie *cookieImpl) AllowSyncs() bool {
+	return !cookie.OptOut
+}
+
+func (cookie *cookieImpl) SetPreference(allow bool) {
+	if allow {
+		cookie.OptOut = false
+	} else {
+		cookie.OptOut = true
+		cookie.UIDs = make(map[string]string)
+	}
+}
+
+func (cookie *cookieImpl) ToHTTPCookie() *http.Cookie {
+	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
 
-	hc := http.Cookie{
-		Name:    "uids",
+	return &http.Cookie{
+		Name:    COOKIE_NAME,
 		Value:   b64,
 		Expires: time.Now().Add(180 * 24 * time.Hour),
 	}
-	if cookie_domain != "" {
-		hc.Domain = cookie_domain
-	}
-	http.SetCookie(w, &hc)
 }
 
-func GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseUIDCookie(r)
-	SetUIDCookie(w, pc)
+func (cookie *cookieImpl) GetUID(familyName string) (string, bool) {
+	uid, ok := cookie.UIDs[familyName]
+	return uid, ok
+}
+
+func (cookie *cookieImpl) SetCookieOnResponse(w http.ResponseWriter, domain string) {
+	httpCookie := cookie.ToHTTPCookie()
+	if domain != "" {
+		httpCookie.Domain = domain
+	}
+	http.SetCookie(w, httpCookie)
+}
+
+func (cookie *cookieImpl) Unsync(familyName string) {
+	delete(cookie.UIDs, familyName)
+}
+
+func (cookie *cookieImpl) HasSync(familyName string) bool {
+	_, ok := cookie.UIDs[familyName]
+	return ok
+}
+
+func (cookie *cookieImpl) SyncCount() int {
+	return len(cookie.UIDs)
+}
+
+func (cookie *cookieImpl) TrySync(familyName string, uid string) error {
+	if !cookie.AllowSyncs() {
+		return errors.New("The user has opted out of prebid server cookieImpl syncs.")
+	}
+
+	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
+	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
+	if familyName == "audienceNetwork" && uid == "0" {
+		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
+	}
+
+	cookie.UIDs[familyName] = uid
+	return nil
+}
+
+func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	pc := ParseUserSyncMapFromRequest(r)
+	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -89,10 +207,11 @@ func getRawQueryMap(query string) map[string]string {
 	return m
 }
 
-func SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseUIDCookie(r)
-	if pc.OptOut {
+func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	pc := ParseUserSyncMapFromRequest(r)
+	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
+		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
 		return
 	}
 
@@ -100,21 +219,24 @@ func SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	bidder := query["bidder"]
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
 		return
 	}
 
 	uid := query["uid"]
+	var err error = nil
 	if uid == "" {
-		delete(pc.UIDs, bidder)
+		pc.Unsync(bidder)
 	} else {
-		pc.UIDs[bidder] = uid
+		err = pc.TrySync(bidder, uid)
 	}
 
-	SetUIDCookie(w, pc)
-}
+	if err == nil {
+		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
+	}
 
-// Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
-var recaptchaURL = "https://www.google.com/recaptcha/api/siteverify"
+	pc.SetCookieOnResponse(w, deps.Cookie_domain)
+}
 
 // Struct for parsing json in google's response
 type googleResponse struct {
@@ -122,7 +244,7 @@ type googleResponse struct {
 	ErrorCodes []string `json:"error-codes"`
 }
 
-func VerifyRecaptcha(response string) error {
+func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 	ts := &http.Transport{
 		TLSClientConfig: &tls.Config{RootCAs: ssl.GetRootCAPool()},
 	}
@@ -130,8 +252,8 @@ func VerifyRecaptcha(response string) error {
 	client := &http.Client{
 		Transport: ts,
 	}
-	resp, err := client.PostForm(recaptchaURL,
-		url.Values{"secret": {recaptcha_secret}, "response": {response}})
+	resp, err := client.PostForm(RECAPTCHA_URL,
+		url.Values{"secret": {deps.Recaptcha_secret}, "response": {response}})
 	if err != nil {
 		return err
 	}
@@ -146,31 +268,26 @@ func VerifyRecaptcha(response string) error {
 	return nil
 }
 
-func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	optout := r.FormValue("optout")
 	rr := r.FormValue("g-recaptcha-response")
 
 	if rr == "" {
-		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", external_url), 301)
+		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.External_url), 301)
 		return
 	}
 
-	err := VerifyRecaptcha(rr)
+	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
 		glog.Infof("Optout failed recaptcha: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	pc := ParseUIDCookie(r)
-	if optout == "" {
-		pc.OptOut = false
-	} else {
-		pc.OptOut = true
-		pc.UIDs = nil
-	}
+	pc := ParseUserSyncMapFromRequest(r)
+	pc.SetPreference(optout == "")
 
-	SetUIDCookie(w, pc)
+	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	if optout == "" {
 		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
 	} else {
@@ -178,15 +295,7 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 }
 
-// split this for testability
-func InitUsersyncHandlers(router *httprouter.Router, metricsRegistry metrics.Registry, cdomain string,
-	xternal_url string, captcha_secret string) {
-	cookie_domain = cdomain
-	external_url = xternal_url
-	recaptcha_secret = captcha_secret
-
-	router.GET("/getuids", GetUIDs)
-	router.GET("/setuid", SetUID)
-	router.POST("/optout", OptOut)
-	router.GET("/optout", OptOut)
+func timestamp() *time.Time {
+	birthday := time.Now()
+	return &birthday
 }

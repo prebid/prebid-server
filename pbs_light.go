@@ -160,8 +160,8 @@ type cookieSyncResponse struct {
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	cookies := pbs.ParseUIDCookie(r)
-	if cookies.OptOut {
+	userSyncCookie := pbs.ParseUserSyncMapFromRequest(r)
+	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
 	}
@@ -180,7 +180,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || len(cookies.UIDs) == 0 {
+	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || userSyncCookie.SyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -188,7 +188,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+			if !userSyncCookie.HasSync(ex.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
@@ -229,7 +229,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if len(pbs_req.UserIDs) == 0 {
+	} else if pbs_req.SyncMap.SyncCount() == 0 {
 		mNoCookieMeter.Mark(1)
 		if isSafari {
 			mSafariNoCookieMeter.Mark(1)
@@ -244,7 +244,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				Expires: time.Now().Add(180 * 24 * time.Hour),
 			}
 			http.SetCookie(w, &c)
-			pbs_req.UserIDs["adnxs"] = uuid2
+			pbs_req.SyncMap.TrySync("adnxs", uuid2)
 		}
 	}
 
@@ -716,7 +716,17 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	pbs.InitUsersyncHandlers(router, metricsRegistry, cfg.CookieDomain, cfg.ExternalURL, cfg.RecaptchaSecret)
+	userSyncDeps := &pbs.UserSyncDeps{
+		Cookie_domain:    cfg.CookieDomain,
+		External_url:     cfg.ExternalURL,
+		Recaptcha_secret: cfg.RecaptchaSecret,
+		Metrics:          metricsRegistry,
+	}
+
+	router.GET("/getuids", userSyncDeps.GetUIDs)
+	router.GET("/setuid", userSyncDeps.SetUID)
+	router.POST("/optout", userSyncDeps.OptOut)
+	router.GET("/optout", userSyncDeps.OptOut)
 
 	pbc.InitPrebidCache(cfg.CacheURL)
 

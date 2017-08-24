@@ -84,10 +84,10 @@ type PBSRequest struct {
 	User          *openrtb.User   `json:"user"`
 
 	// internal
-	Bidders []*PBSBidder      `json:"-"`
-	UserIDs map[string]string `json:"-"`
-	Url     string            `json:"-"`
-	Domain  string            `json:"-"`
+	Bidders []*PBSBidder `json:"-"`
+	SyncMap UserSyncMap  `json:"-"`
+	Url     string       `json:"-"`
+	Domain  string       `json:"-"`
 	Start   time.Time
 }
 
@@ -133,12 +133,12 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pc := ParseUIDCookie(r)
-		pbsReq.UserIDs = pc.UIDs
+		pc := ParseUserSyncMapFromRequest(r)
+		pbsReq.SyncMap = pc
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.UserIDs["adnxs"] = anid.Value
+			pbsReq.SyncMap.TrySync("adnxs", anid.Value)
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -166,6 +166,8 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
 		}
+	} else {
+		pbsReq.SyncMap = NewSyncMap()
 	}
 
 	if r.FormValue("debug") == "1" {
@@ -233,8 +235,9 @@ func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
 }
 
-func (req PBSRequest) GetUserID(BidderCode string) string {
-	if uid, ok := req.UserIDs[BidderCode]; ok {
+func (req *PBSRequest) GetUserID(BidderCode string) string {
+	if req.SyncMap != nil {
+		uid, _ := req.SyncMap.GetUID(BidderCode)
 		return uid
 	}
 	return ""

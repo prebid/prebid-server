@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -78,13 +77,10 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
 
-	pcs := pbs.ParseUIDCookie(req)
-	pcs.UIDs["adnxs"] = "1234"
-	pcs.UIDs["audienceNetwork"] = "2345"
-	j, _ := json.Marshal(pcs)
-	b64 := base64.URLEncoding.EncodeToString(j)
-	uid_cookie := http.Cookie{Name: "uids", Value: b64}
-	req.AddCookie(&uid_cookie)
+	pcs := pbs.ParseUserSyncMapFromRequest(req)
+	pcs.TrySync("adnxs", "1234")
+	pcs.TrySync("audienceNetwork", "2345")
+	req.AddCookie(pcs.ToHTTPCookie())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
