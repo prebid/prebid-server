@@ -160,7 +160,7 @@ type cookieSyncResponse struct {
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParseUserSyncMapFromRequest(r)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -229,7 +229,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if pbs_req.SyncMap.SyncCount() == 0 {
+	} else if pbs_req.Cookie.SyncCount() == 0 {
 		mNoCookieMeter.Mark(1)
 		if isSafari {
 			mSafariNoCookieMeter.Mark(1)
@@ -244,7 +244,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				Expires: time.Now().Add(180 * 24 * time.Hour),
 			}
 			http.SetCookie(w, &c)
-			pbs_req.SyncMap.TrySync("adnxs", uuid2)
+			pbs_req.Cookie.TrySync("adnxs", uuid2)
 		}
 	}
 

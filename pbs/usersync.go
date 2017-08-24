@@ -34,32 +34,18 @@ type UserSyncDeps struct {
 	Metrics          metrics.Registry
 }
 
-// ParseUserSyncMapFromRequest parses the UserSyncMap from an HTTP Request.
-func ParseUserSyncMapFromRequest(r *http.Request) *PBSCookie {
+// ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
+func ParsePBSCookieFromRequest(r *http.Request) *PBSCookie {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err != nil {
-		return NewSyncMap()
+		return NewPBSCookie()
 	}
 
-	return ParseUserSyncMap(cookie)
+	return ParsePBSCookie(cookie)
 }
 
-// ParseUserSyncMap parses the UserSync cookie from a raw HTTP cookie.
-func ParseUserSyncMap(cookie *http.Cookie) *PBSCookie {
-	return parseCookieImpl(cookie)
-}
-
-// NewSyncMap returns an empty UserSyncMap
-func NewSyncMap() *PBSCookie {
-	return &PBSCookie{
-		uids:     make(map[string]string),
-		birthday: timestamp(),
-	}
-}
-
-// parseCookieImpl parses the PBSCookie from a raw HTTP cookie.
-// This exists for testing. Callers should use ParseUserSyncMap.
-func parseCookieImpl(cookie *http.Cookie) *PBSCookie {
+// ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.
+func ParsePBSCookie(cookie *http.Cookie) *PBSCookie {
 	pc := PBSCookie{
 		uids:     make(map[string]string),
 		birthday: timestamp(),
@@ -90,15 +76,17 @@ func parseCookieImpl(cookie *http.Cookie) *PBSCookie {
 	return &pc
 }
 
-type pbsCookieJson struct {
-	UIDs     map[string]string `json:"uids,omitempty"`
-	OptOut   bool              `json:"optout,omitempty"`
-	Birthday *time.Time        `json:"bday,omitempty"`
+// NewPBSCookie returns an empty PBSCookie
+func NewPBSCookie() *PBSCookie {
+	return &PBSCookie{
+		uids:     make(map[string]string),
+		birthday: timestamp(),
+	}
 }
 
-// PBSCookie is cookie which stores the user sync info for all of our bidders.
+// PBSCookie is the cookie used in Prebid Server.
 //
-// To get an instance of this from a request, use ParseUserSyncMapFromRequest.
+// To get an instance of this from a request, use ParsePBSCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type PBSCookie struct {
 	uids     map[string]string
@@ -106,6 +94,7 @@ type PBSCookie struct {
 	birthday *time.Time
 }
 
+// AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 func (cookie *PBSCookie) AllowSyncs() bool {
 	if cookie == nil {
 		return false
@@ -114,6 +103,7 @@ func (cookie *PBSCookie) AllowSyncs() bool {
 	}
 }
 
+// SetPreference is used to change whether or not we're allowed to sync cookies for this user.
 func (cookie *PBSCookie) SetPreference(allow bool) {
 	if allow {
 		cookie.optOut = false
@@ -123,6 +113,7 @@ func (cookie *PBSCookie) SetPreference(allow bool) {
 	}
 }
 
+// Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
 func (cookie *PBSCookie) ToHTTPCookie() *http.Cookie {
 	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
@@ -134,6 +125,7 @@ func (cookie *PBSCookie) ToHTTPCookie() *http.Cookie {
 	}
 }
 
+// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
 func (cookie *PBSCookie) GetUID(familyName string) (string, bool) {
 	if cookie == nil {
 		return "", false
@@ -143,6 +135,7 @@ func (cookie *PBSCookie) GetUID(familyName string) (string, bool) {
 	}
 }
 
+// SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string) {
 	httpCookie := cookie.ToHTTPCookie()
 	if domain != "" {
@@ -151,10 +144,12 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain strin
 	http.SetCookie(w, httpCookie)
 }
 
+// Unsync removes the user's ID for the given family from this cookie.
 func (cookie *PBSCookie) Unsync(familyName string) {
 	delete(cookie.uids, familyName)
 }
 
+// HasSync returns true if we have a UID for the given family, and false otherwise.
 func (cookie *PBSCookie) HasSync(familyName string) bool {
 	if cookie == nil {
 		return false
@@ -164,6 +159,7 @@ func (cookie *PBSCookie) HasSync(familyName string) bool {
 	}
 }
 
+// SyncCount returns the number of families which have UIDs for this user.
 func (cookie *PBSCookie) SyncCount() int {
 	if cookie == nil {
 		return 0
@@ -172,6 +168,7 @@ func (cookie *PBSCookie) SyncCount() int {
 	}
 }
 
+// TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
 func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 	if !cookie.AllowSyncs() {
 		return errors.New("The user has opted out of prebid server PBSCookie syncs.")
@@ -185,6 +182,15 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 
 	cookie.uids[familyName] = uid
 	return nil
+}
+
+// pbsCookieJson defines the JSON contract for the cookie data's storage format.
+//
+// This exists so that PBSCookie can have private fields.
+type pbsCookieJson struct {
+	UIDs     map[string]string `json:"uids,omitempty"`
+	OptOut   bool              `json:"optout,omitempty"`
+	Birthday *time.Time        `json:"bday,omitempty"`
 }
 
 func (cookie *PBSCookie) MarshalJSON() ([]byte, error) {
@@ -209,7 +215,7 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseUserSyncMapFromRequest(r)
+	pc := ParsePBSCookieFromRequest(r)
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)
 	json.NewEncoder(w).Encode(pc)
 	return
@@ -230,7 +236,7 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParseUserSyncMapFromRequest(r)
+	pc := ParsePBSCookieFromRequest(r)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
@@ -306,7 +312,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := ParseUserSyncMapFromRequest(r)
+	pc := ParsePBSCookieFromRequest(r)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, deps.Cookie_domain)

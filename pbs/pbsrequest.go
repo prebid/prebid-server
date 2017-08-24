@@ -84,7 +84,7 @@ type PBSRequest struct {
 
 	// internal
 	Bidders []*PBSBidder `json:"-"`
-	SyncMap *PBSCookie   `json:"-"`
+	Cookie  *PBSCookie   `json:"-"`
 	Url     string       `json:"-"`
 	Domain  string       `json:"-"`
 	Start   time.Time
@@ -129,12 +129,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pc := ParseUserSyncMapFromRequest(r)
-		pbsReq.SyncMap = pc
+		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.SyncMap.TrySync("adnxs", anid.Value)
+			pbsReq.Cookie.TrySync("adnxs", anid.Value)
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -230,7 +229,7 @@ func (req PBSRequest) Elapsed() int {
 }
 
 func (req *PBSRequest) GetUserID(BidderCode string) string {
-	uid, _ := req.SyncMap.GetUID(BidderCode)
+	uid, _ := req.Cookie.GetUID(BidderCode)
 	return uid
 }
 

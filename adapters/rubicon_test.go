@@ -259,7 +259,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := pbs.ParseUserSyncMapFromRequest(req)
+	pc := pbs.ParsePBSCookieFromRequest(req)
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")

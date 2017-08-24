@@ -54,7 +54,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		optOut:   false,
 		birthday: timestamp(),
 	}
-	parsed := ParseUserSyncMap(raw.ToHTTPCookie())
+	parsed := ParsePBSCookie(raw.ToHTTPCookie())
 	if parsed.HasSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
@@ -104,7 +104,7 @@ func TestParseCorruptedCookie(t *testing.T) {
 		Name:  "uids",
 		Value: "bad base64 encoding",
 	}
-	parsed := ParseUserSyncMap(&raw)
+	parsed := ParsePBSCookie(&raw)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -114,7 +114,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 		Name:  "uids",
 		Value: cookieData,
 	}
-	parsed := ParseUserSyncMap(&raw)
+	parsed := ParsePBSCookie(&raw)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -125,7 +125,7 @@ func TestParseNilSyncMap(t *testing.T) {
 		Name:  COOKIE_NAME,
 		Value: cookieData,
 	}
-	parsed := ParseUserSyncMap(&raw)
+	parsed := ParsePBSCookie(&raw)
 	ensureEmptyMap(t, parsed)
 	ensureConsistency(t, parsed)
 }
@@ -138,7 +138,7 @@ func writeThenRead(t *testing.T, cookie *PBSCookie) *PBSCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParseUserSyncMapFromRequest(&request)
+	return ParsePBSCookieFromRequest(&request)
 }
 
 func TestCookieReadWrite(t *testing.T) {
@@ -208,7 +208,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		}
 	}
 
-	cookieImpl := parseCookieImpl(cookie.ToHTTPCookie())
+	cookieImpl := ParsePBSCookie(cookie.ToHTTPCookie())
 	if cookieImpl.optOut == cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
