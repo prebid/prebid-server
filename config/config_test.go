@@ -54,14 +54,17 @@ func TestDefaults(t *testing.T) {
 
 }
 
-var fullConfig = []byte(`cookie_domain: ".adnxs.com"
-external_url: http://prebid.adnxs.com/
+var fullConfig = []byte(`host_cookie_domain: ".prebid.org"
+host_cookie_name: userid
+host_cookie_family: prebid
+host_opt_out_url: http://prebid.org/optout
+host_opt_in_url: http://prebid.org/optin
+external_url: http://prebid-server.prebid.org/
 host: prebid.adnxs.com
 port: 1234
 admin_port: 5678
 default_timeout_ms: 123
 prebid_cache_url: http://prebidcache.net/test/a1?qs=something
-require_uuid2: true
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
   host: upstream:8232
@@ -111,8 +114,12 @@ func TestFullConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	cmpStrings(t, "cookie domain", cfg.CookieDomain, ".adnxs.com")
-	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid.adnxs.com/")
+	cmpStrings(t, "cookie domain", cfg.HostCookieDomain, ".prebid.org")
+	cmpStrings(t, "cookie name", cfg.HostCookieName, "userid")
+	cmpStrings(t, "cookie family", cfg.HostCookieFamily, "prebid")
+	cmpStrings(t, "opt out", cfg.HostOptOutURL, "http://prebid.org/optout")
+	cmpStrings(t, "opt in", cfg.HostOptInURL, "http://prebid.org/optin")
+	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid-server.prebid.org/")
 	cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
@@ -120,9 +127,6 @@ func TestFullConfig(t *testing.T) {
 		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
 	}
 	cmpStrings(t, "prebid_cache_url", cfg.CacheURL, "http://prebidcache.net/test/a1?qs=something")
-	if cfg.RequireUUID2 != true {
-		t.Errorf("RequireUUID2 was false")
-	}
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
 	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
 	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")

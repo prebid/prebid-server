@@ -17,6 +17,8 @@ import (
 )
 
 var cookie_domain string
+var optout_url string
+var optin_url string
 var external_url string
 var recaptcha_secret string
 
@@ -172,16 +174,18 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	SetUIDCookie(w, pc)
 	if optout == "" {
-		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
+		http.Redirect(w, r, optin_url, 301)
 	} else {
-		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
+		http.Redirect(w, r, optout_url, 301)
 	}
 }
 
 // split this for testability
-func InitUsersyncHandlers(router *httprouter.Router, metricsRegistry metrics.Registry, cdomain string,
+func InitUsersyncHandlers(router *httprouter.Router, metricsRegistry metrics.Registry, cdomain string, optout string, optin string,
 	xternal_url string, captcha_secret string) {
 	cookie_domain = cdomain
+	optout_url = optout
+	optin_url = optin
 	external_url = xternal_url
 	recaptcha_secret = captcha_secret
 
