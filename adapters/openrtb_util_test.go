@@ -86,7 +86,6 @@ func TestOpenRTBVideo(t *testing.T) {
 	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}, true)
 
 	assert.Equal(t, err, nil)
-
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
 	assert.EqualValues(t, resp.Imp[0].Video.MinDuration, 15)
@@ -269,7 +268,6 @@ func TestOpenRTBNoSize(t *testing.T) {
 		},
 	}
 	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
-	//	assert.Equal(t, resp.Imp[0].ID, "")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp, []openrtb.Imp(nil))
 }

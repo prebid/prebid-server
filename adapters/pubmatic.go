@@ -49,7 +49,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	pbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
 
 	if err != nil {
-		return pbs.PBSBidSlice{}, err
+		return nil, err
 	}
 
 	for i, unit := range bidder.AdUnits {

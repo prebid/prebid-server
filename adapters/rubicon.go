@@ -220,8 +220,6 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if err != nil {
 			continue
 		}
-		// TODO: Implement special video handling for Rubicon
-
 		// only grab this ad unit
 		rubiReq.Imp = rubiReq.Imp[i : i+1]
 

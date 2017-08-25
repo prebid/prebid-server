@@ -72,7 +72,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	anReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
 
 	if err != nil {
-		return pbs.PBSBidSlice{}, err
+		return nil, err
 	}
 	uri := a.URI
 	for i, unit := range bidder.AdUnits {
