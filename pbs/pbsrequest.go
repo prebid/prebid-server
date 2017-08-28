@@ -46,6 +46,12 @@ type PBSAdUnit struct {
 	Params   json.RawMessage
 }
 
+type SDK struct {
+	Version  string `json:"version"`
+	Source   string `json:"source"`
+	Platform string `json:"platform"`
+}
+
 type PBSBidder struct {
 	BidderCode   string         `json:"bidder"`
 	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
@@ -81,12 +87,15 @@ type PBSRequest struct {
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
 	Device        *openrtb.Device `json:"device"`
+	PBSUser       json.RawMessage `json:"user"`
+	SDK           *SDK            `json:"sdk"`
 
 	// internal
-	Bidders []*PBSBidder `json:"-"`
-	Cookie  *PBSCookie   `json:"-"`
-	Url     string       `json:"-"`
-	Domain  string       `json:"-"`
+	Bidders []*PBSBidder  `json:"-"`
+	User    *openrtb.User `json:"-"`
+	Cookie  *PBSCookie    `json:"-"`
+	Url     string        `json:"-"`
+	Domain  string        `json:"-"`
 	Start   time.Time
 }
 
@@ -125,6 +134,20 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
+	}
+	if pbsReq.SDK == nil {
+		pbsReq.SDK = &SDK{}
+	}
+	if pbsReq.SDK.Version != "0.0.1" {
+		if pbsReq.PBSUser != nil {
+			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if pbsReq.User == nil {
+		pbsReq.User = &openrtb.User{}
 	}
 
 	// use client-side data for web requests
@@ -179,7 +202,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			bidders, err = ConfigGet(cache, unit.ConfigID)
 			if err != nil {
 				// proceed with other ad units
-				glog.Infof("Unable to load config '%s': %v", unit.ConfigID, err)
+				glog.Warningf("Failed to load config '%s' from cache: %v", unit.ConfigID, err)
 				continue
 			}
 		}
