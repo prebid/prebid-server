@@ -45,6 +45,14 @@ type anBidInfo struct {
 	delay     time.Duration
 }
 
+type rpExtensionTargetingObject struct {
+	rp rpTargetingObject
+}
+
+type rpTargetingObject struct {
+	targeting []string
+}
+
 var andata anBidInfo
 
 func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
