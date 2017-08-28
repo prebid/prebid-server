@@ -76,8 +76,11 @@ var (
 	accountMetrics        map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
 	accountMetricsRWMutex sync.RWMutex
 
-	requireUUID2 bool
-	cookieDomain string
+	hostCookieDomain string
+	hostCookieFamily string
+	hostCookieName   string
+	hostOptOutURL    string
+	hostOptInURL     string
 )
 
 var exchanges map[string]adapters.Adapter
@@ -182,7 +185,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || len(cookies.UIDs) == 0 {
+	if len(cookies.UIDs) == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -230,6 +233,13 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	// Host company has right to leverage private cookie store for user ID
+	if pbs_req.GetUserID(hostCookieFamily) == "" && hostCookieFamily != "" && hostCookieName != "" {
+		if hostCookie, err := r.Cookie(hostCookieName); err == nil {
+			pbs_req.SetUserID(hostCookieFamily, hostCookie.Value)
+		}
+	}
+
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
@@ -239,17 +249,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			mSafariNoCookieMeter.Mark(1)
 		}
 		status = "no_cookie"
-		if requireUUID2 {
-			uuid2 := fmt.Sprintf("%d", rand.Int63())
-			c := http.Cookie{
-				Name:    "uuid2",
-				Value:   uuid2,
-				Domain:  cookieDomain,
-				Expires: time.Now().Add(180 * 24 * time.Hour),
-			}
-			http.SetCookie(w, &c)
-			pbs_req.UserIDs["adnxs"] = uuid2
-		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
@@ -593,8 +592,12 @@ func main() {
 		glog.Errorf("Viper was unable to read configurations: %v", err)
 	}
 	// we need to set this global variable so it can be used by other methods
-	requireUUID2 = cfg.RequireUUID2
-	cookieDomain = cfg.CookieDomain
+	hostCookieDomain = cfg.HostCookieDomain
+	hostCookieFamily = cfg.HostCookieFamily
+	hostCookieName = cfg.HostCookieName
+	hostOptOutURL = cfg.HostOptOutURL
+	hostOptInURL = cfg.HostOptInURL
+
 	if err := serve(cfg); err != nil {
 		glog.Fatalf("PreBid Server encountered an error: %v", err)
 	}
@@ -694,7 +697,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	pbs.InitUsersyncHandlers(router, metricsRegistry, cfg.CookieDomain, cfg.ExternalURL, cfg.RecaptchaSecret)
+	pbs.InitUsersyncHandlers(router, metricsRegistry, hostCookieDomain, hostOptOutURL, hostOptInURL, cfg.ExternalURL, cfg.RecaptchaSecret)
 
 	pbc.InitPrebidCache(cfg.CacheURL)
 

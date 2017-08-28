@@ -155,11 +155,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		pc := ParseUIDCookie(r)
 		pbsReq.UserIDs = pc.UIDs
 
-		// this would be for the shared adnxs.com domain
-		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.UserIDs["adnxs"] = anid.Value
-		}
-
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 		pbsReq.Device.IP = prebid.GetIP(r)
 
@@ -257,6 +252,10 @@ func (req PBSRequest) GetUserID(BidderCode string) string {
 		return uid
 	}
 	return ""
+}
+
+func (req PBSRequest) SetUserID(BidderCode string, UserID string) {
+	req.UserIDs[BidderCode] = UserID
 }
 
 func (p PBSRequest) String() string {
