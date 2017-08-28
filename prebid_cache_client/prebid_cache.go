@@ -31,25 +31,19 @@ type response struct {
 	Responses []responseObject `json:"responses"`
 }
 
-var (
-	client  *http.Client
-	baseURL string
-	putURL  string
-)
+var putURL string
 
 // InitPrebidCache setup the global prebid cache
-func InitPrebidCache(baseurl string) {
-	baseURL = baseurl
+func InitPrebidCache(baseURL string) {
 	putURL = fmt.Sprintf("%s/put", baseURL)
+}
 
-	ts := &http.Transport{
+// httpClient constructs a new http.Client for each Put request
+var httpClient = &http.Client{
+	Transport: &http.Transport{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 65,
-	}
-
-	client = &http.Client{
-		Transport: ts,
-	}
+	},
 }
 
 // Put will send the array of objs and update each with a UUID
@@ -71,7 +65,7 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
-	anResp, err := ctxhttp.Do(ctx, client, httpReq)
+	anResp, err := ctxhttp.Do(ctx, httpClient, httpReq)
 	if err != nil {
 		return err
 	}
