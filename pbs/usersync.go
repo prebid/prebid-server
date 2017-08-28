@@ -157,7 +157,9 @@ func OptOut(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	err := VerifyRecaptcha(rr)
 	if err != nil {
-		glog.Infof("Optout failed recaptcha: %v", err)
+		if glog.V(2) {
+			glog.Infof("Optout failed recaptcha: %v", err)
+		}
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

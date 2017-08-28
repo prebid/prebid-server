@@ -184,7 +184,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			bidders, err = ConfigGet(cache, unit.ConfigID)
 			if err != nil {
 				// proceed with other ad units
-				glog.Infof("Unable to load config '%s': %v", unit.ConfigID, err)
+				glog.Warningf("Failed to load config '%s' from cache: %v", unit.ConfigID, err)
 				continue
 			}
 		}
