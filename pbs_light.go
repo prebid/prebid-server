@@ -96,7 +96,14 @@ type bidResult struct {
 	bid_list pbs.PBSBidSlice
 }
 
-const DEFAULT_PRICE_GRANULARITY = "med"
+const defaultPriceGranularity = "med"
+
+const hbCreativeLoadMethodDemandSDK = "demand_sdk"
+const hbCreativeLoadMethodHTML = "html"
+const hbpbConstantKey = "hb_pb"
+const hbCreativeLoadMethodConstantKey = "hb_creative_load_method"
+const hbBidderConstantKey = "hb_bidder"
+const hbCacheIdConstantKey = "hb_cache_id"
 
 func min(x, y int) int {
 	if x < y {
@@ -413,9 +420,12 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mRequestTimer.UpdateSince(pbs_req.Start)
 }
 
+// sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
+// The bids are sorted by cpm to find the highest bid.
+// The ad server targeting keywords are added to all bids, with specific keywords for the highest bid.
 func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting string) {
 	if priceGranularitySetting == "" {
-		priceGranularitySetting = DEFAULT_PRICE_GRANULARITY
+		priceGranularitySetting = defaultPriceGranularity
 	}
 
 	// record bids by ad unit code for sorting
@@ -441,9 +451,9 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
 			roundedCpm := priceBucketStringMap[priceGranularitySetting]
 
-			hbPbBidderKey := "hb_pb_" + bid.BidderCode
-			hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
-			hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
+			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
+			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
+			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
@@ -456,13 +466,13 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
-				pbs_kvs["hb_pb"] = roundedCpm
-				pbs_kvs["hb_bidder"] = bid.BidderCode
-				pbs_kvs["hb_cache_id"] = bid.CacheID
+				pbs_kvs[hbpbConstantKey] = roundedCpm
+				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
+				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
 				if bid.BidderCode == "audienceNetwork" {
-					pbs_kvs["hb_creative_load_method"] = "demand_sdk"
+					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
-					pbs_kvs["hb_creative_load_method"] = "html"
+					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
 				}
 			}
 			bid.AdServerTargeting = pbs_kvs
