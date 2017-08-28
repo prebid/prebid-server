@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/constants"
 )
 
 type IndexAdapter struct {
@@ -29,8 +30,8 @@ func (a *IndexAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *IndexAdapter) FamilyName() string {
-	return "indexExchange"
+func (a *IndexAdapter) FamilyName() constants.FamilyName {
+	return constants.FNIndex
 }
 
 func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {

@@ -31,6 +31,7 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/constants"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
@@ -190,7 +191,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+			if _, ok := cookies.UIDs[ex.FamilyName().String()]; !ok {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
@@ -248,7 +249,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				Expires: time.Now().Add(180 * 24 * time.Hour),
 			}
 			http.SetCookie(w, &c)
-			pbs_req.UserIDs["adnxs"] = uuid2
+			pbs_req.UserIDs[constants.FNAppnexus] = uuid2
 		}
 	}
 

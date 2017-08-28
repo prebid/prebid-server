@@ -15,6 +15,7 @@ import (
 
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/constants"
 	"github.com/prebid/prebid-server/prebid"
 )
 
@@ -84,10 +85,10 @@ type PBSRequest struct {
 	User          *openrtb.User   `json:"user"`
 
 	// internal
-	Bidders []*PBSBidder      `json:"-"`
-	UserIDs map[string]string `json:"-"`
-	Url     string            `json:"-"`
-	Domain  string            `json:"-"`
+	Bidders []*PBSBidder `json:"-"`
+	UserIDs []string     `json:"-"`
+	Url     string       `json:"-"`
+	Domain  string       `json:"-"`
 	Start   time.Time
 }
 
@@ -134,11 +135,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	// use client-side data for web requests
 	if pbsReq.App == nil {
 		pc := ParseUIDCookie(r)
-		pbsReq.UserIDs = pc.UIDs
+		pbsReq.UserIDs = constants.UIDsToArray(pc.UIDs)
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.UserIDs["adnxs"] = anid.Value
+			pbsReq.UserIDs[constants.FNAppnexus] = anid.Value
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -233,9 +234,9 @@ func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
 }
 
-func (req PBSRequest) GetUserID(BidderCode string) string {
-	if uid, ok := req.UserIDs[BidderCode]; ok {
-		return uid
+func (req PBSRequest) GetUserID(BidderCode constants.FamilyName) string {
+	if int(BidderCode) < len(req.UserIDs) {
+		return req.UserIDs[BidderCode]
 	}
 	return ""
 }

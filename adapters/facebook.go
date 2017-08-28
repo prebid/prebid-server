@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/constants"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -28,8 +29,8 @@ func (a *FacebookAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *FacebookAdapter) FamilyName() string {
-	return "audienceNetwork"
+func (a *FacebookAdapter) FamilyName() constants.FamilyName {
+	return constants.FNFacebook
 }
 
 // Facebook likes to parallelize to minimize latency

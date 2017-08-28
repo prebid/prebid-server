@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"crypto/tls"
+	"github.com/prebid/prebid-server/constants"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/ssl"
 	"net/http"
@@ -17,7 +18,7 @@ type Adapter interface {
 	Name() string
 	// FamilyName identifies the space of cookies which this adapter accesses. For example, an adapter
 	// using the adnxs.com cookie space should return "adnxs".
-	FamilyName() string
+	FamilyName() constants.FamilyName
 	// Determines whether this adapter should get callouts if there is not a synched user ID
 	SkipNoCookies() bool
 	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.

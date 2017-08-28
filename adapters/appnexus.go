@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/constants"
 )
 
 type AppNexusAdapter struct {
@@ -30,8 +31,8 @@ func (a *AppNexusAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *AppNexusAdapter) FamilyName() string {
-	return "adnxs"
+func (a *AppNexusAdapter) FamilyName() constants.FamilyName {
+	return constants.FNAppnexus
 }
 
 func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {

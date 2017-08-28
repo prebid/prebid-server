@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/prebid/openrtb"
+	"github.com/prebid/prebid-server/constants"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -29,8 +30,8 @@ func (a *PulsePointAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *PulsePointAdapter) FamilyName() string {
-	return "pulsepoint"
+func (a *PulsePointAdapter) FamilyName() constants.FamilyName {
+	return constants.FNPulsepoint
 }
 
 func (a *PulsePointAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
