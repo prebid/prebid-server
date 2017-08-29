@@ -21,6 +21,10 @@ import (
 const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
 const COOKIE_NAME = "uids"
 
+// customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
+// If a bidder does a cookie sync *without* listing a rule here, then the UID's TTL will be 7 days.
+var customBidderTTLs = map[string]time.Duration{}
+
 const (
 	USERSYNC_OPT_OUT     = "usersync.opt_outs"
 	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
@@ -33,6 +37,7 @@ const (
 // To write an instance onto a response, use SetCookieOnResponse.
 type PBSCookie struct {
 	uids     map[string]string
+	newUIDs  map[string]temporaryUid
 	optOut   bool
 	birthday *time.Time
 }
@@ -42,6 +47,15 @@ type UserSyncDeps struct {
 	External_url     string
 	Recaptcha_secret string
 	Metrics          metrics.Registry
+}
+
+// temporaryUid bundles the UID with an Expiration date.
+// After the expiration, the UID is no longer valid.
+type temporaryUid struct {
+	// UID is the ID given to a user by a particular bidder
+	UID string `json:"uid"`
+	// Expires is the time at which this UID should no longer apply.
+	Expires time.Time `json:"expires"`
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -57,7 +71,7 @@ func ParsePBSCookieFromRequest(r *http.Request) *PBSCookie {
 // ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.
 func ParsePBSCookie(cookie *http.Cookie) *PBSCookie {
 	pc := PBSCookie{
-		uids:     make(map[string]string),
+		newUIDs:  make(map[string]temporaryUid),
 		birthday: timestamp(),
 	}
 
@@ -72,16 +86,31 @@ func ParsePBSCookie(cookie *http.Cookie) *PBSCookie {
 		return &pc
 	}
 	if pc.optOut || pc.uids == nil {
-		pc.uids = make(map[string]string) // empty map
+		pc.newUIDs = make(map[string]temporaryUid)
 	}
 
 	// Facebook sends us a sentinel value of 0 if the user isn't logged in.
 	// As a result, we've stored  "0" as the UID for many users in the audienceNetwork so far.
 	// Since users log in and out of facebook all the time, this will cause re-sync attempts until
 	// we get a non-zero value.
+	//
+	// If you're seeing this message after February 2018, this block of logic is safe to delete.
 	if pc.uids["audienceNetwork"] == "0" {
 		delete(pc.uids, "audienceNetwork")
 	}
+
+	// This exists to help migrate a "legacy" cookie format onto the new one. Originally, cookies did not
+	// allow per-bidder expiration dates. Now, they do.
+	// This block attaches an expired date so that we re-sync asap, since there's no telling how long
+	// ago the UID from the old format was generated.
+	// If you're seeing this message after February 2018, this block of logic is safe to delete.
+	for bidder, uid := range pc.uids {
+		pc.newUIDs[bidder] = temporaryUid{
+			UID:     uid,
+			Expires: time.Now().Add(-5 * time.Minute),
+		}
+	}
+	pc.uids = nil
 
 	return &pc
 }
@@ -90,6 +119,7 @@ func ParsePBSCookie(cookie *http.Cookie) *PBSCookie {
 func NewPBSCookie() *PBSCookie {
 	return &PBSCookie{
 		uids:     make(map[string]string),
+		newUIDs:  make(map[string]temporaryUid),
 		birthday: timestamp(),
 	}
 }
@@ -149,7 +179,7 @@ func (cookie *PBSCookie) Unsync(familyName string) {
 	delete(cookie.uids, familyName)
 }
 
-// HasSync returns true if we have a UID for the given family, and false otherwise.
+// HasSync returns true if we have an active UID for the given family, and false otherwise.
 func (cookie *PBSCookie) HasSync(familyName string) bool {
 	if cookie == nil {
 		return false
@@ -188,7 +218,8 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 //
 // This exists so that PBSCookie can have private fields.
 type pbsCookieJson struct {
-	UIDs     map[string]string `json:"uids,omitempty"`
+	UIDs          map[string]string `json:"uids,omitempty"`
+	TemporaryUIDs map[string]string `json:"uids,omitempty"`
 	OptOut   bool              `json:"optout,omitempty"`
 	Birthday *time.Time        `json:"bday,omitempty"`
 }
