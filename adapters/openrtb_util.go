@@ -43,7 +43,6 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		}
 	}
 	if req.User != nil {
-		req.User.ID = req.GetUserID("adnxs")
 		req.User.BuyerUID = req.GetUserID(bidderFamily)
 	}
 
