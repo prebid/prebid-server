@@ -176,6 +176,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
+	an.nonSecureUri = server.URL
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),

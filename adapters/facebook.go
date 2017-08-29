@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"strings"
 
-	"net/url"
-
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
@@ -21,6 +19,7 @@ import (
 type FacebookAdapter struct {
 	http         *HTTPAdapter
 	URI          string
+	nonSecureUri string
 	usersyncInfo *pbs.UsersyncInfo
 	platformJSON openrtb.RawJSON
 }
@@ -61,13 +60,12 @@ func coinFlip() bool {
 }
 
 func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+	url := a.URI
 	if coinFlip() {
-		url, _ := url.Parse(a.URI)
 		//50% of traffic to non-secure endpoint
-		url.Scheme = "http"
-		a.URI = url.String()
+		url = a.nonSecureUri
 	}
-	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
+	httpReq, _ := http.NewRequest("POST", url, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
 
@@ -201,8 +199,10 @@ func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL
 	}
 
 	return &FacebookAdapter{
-		http:         a,
-		URI:          "https://an.facebook.com/placementbid.ortb",
+		http: a,
+		URI:  "https://an.facebook.com/placementbid.ortb",
+		//for AB test
+		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
 		usersyncInfo: info,
 		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
 	}
