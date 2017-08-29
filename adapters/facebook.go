@@ -160,11 +160,11 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 
 		// VIDEO
-		fbReqV, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_BANNER, pubId, i)
-		if err != nil {
+		fbReqV, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_VIDEO, pubId, i)
+		if err == nil {
 			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReqV)
 			reqIndex = reqIndex + 1
-			if err == nil {
+			if err != nil {
 				return nil, err
 			}
 		}

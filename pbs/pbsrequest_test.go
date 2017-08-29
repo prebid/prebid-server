@@ -47,6 +47,7 @@ func TestParseSimpleRequest(t *testing.T) {
             {
                 "code": "second",
                 "sizes": [{"w": 728, "h": 90}],
+                "media_types" :["banner", "video"],
                 "bids": [
                     {
                         "bidder": "indexExchange"
@@ -56,6 +57,7 @@ func TestParseSimpleRequest(t *testing.T) {
                     }
                 ]
             }
+
         ]
     }
     `)
@@ -102,6 +104,13 @@ func TestParseSimpleRequest(t *testing.T) {
 	if pbs_req.Bidders[2].AdUnits[0].BidID == "" {
 		t.Errorf("ID should have been generated for empty BidID")
 	}
+	if pbs_req.AdUnits[1].MediaTypes[0] != "banner" {
+		t.Errorf("Instead of banner MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+	if pbs_req.AdUnits[1].MediaTypes[1] != "video" {
+		t.Errorf("Instead of video MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+
 }
 
 func TestHeaderParsing(t *testing.T) {
