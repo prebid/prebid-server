@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
+
+	"net/url"
 
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/pbs"
@@ -49,7 +52,23 @@ type facebookParams struct {
 	PlacementId string `json:"placementId"`
 }
 
+func coinFlip() bool {
+	random := rand.Intn(2)
+	if random == 0 {
+		return false
+	}
+	return true
+}
+
 func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+	fmt.Println(a.URI)
+	if coinFlip() {
+		url, _ := url.Parse(a.URI)
+		//50% of traffic to non-secure endpoint
+		url.Scheme = "http"
+		a.URI = url.String()
+	}
+
 	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
