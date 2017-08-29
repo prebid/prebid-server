@@ -68,8 +68,12 @@ type appnexusImpExt struct {
 }
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	anReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	anReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
 
+	if err != nil {
+		return pbs.PBSBidSlice{}, err
+	}
 	uri := a.URI
 	for i, unit := range bidder.AdUnits {
 		var params appnexusParams
