@@ -98,12 +98,17 @@ type bidResult struct {
 
 const defaultPriceGranularity = "med"
 
-const hbCreativeLoadMethodDemandSDK = "demand_sdk"
-const hbCreativeLoadMethodHTML = "html"
+// Constant keys for ad server targeting for responses to Prebid Mobile
 const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_load_method"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+
+// hb_creative_load_method key can be one of `demand_sdk` or `html`
+// default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
+// `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
+const hbCreativeLoadMethodHTML = "html"
+const hbCreativeLoadMethodDemandSDK = "demand_sdk"
 
 func min(x, y int) int {
 	if x < y {
