@@ -61,14 +61,12 @@ func coinFlip() bool {
 }
 
 func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
-	fmt.Println(a.URI)
 	if coinFlip() {
 		url, _ := url.Parse(a.URI)
 		//50% of traffic to non-secure endpoint
 		url.Scheme = "http"
 		a.URI = url.String()
 	}
-
 	httpReq, _ := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json")
 	httpReq.Header.Add("Accept", "application/json")
