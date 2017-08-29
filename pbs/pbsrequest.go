@@ -91,11 +91,11 @@ type PBSRequest struct {
 	SDK           *SDK            `json:"sdk"`
 
 	// internal
-	Bidders []*PBSBidder      `json:"-"`
-	User    *openrtb.User     `json:"-"`
-	UserIDs map[string]string `json:"-"`
-	Url     string            `json:"-"`
-	Domain  string            `json:"-"`
+	Bidders []*PBSBidder  `json:"-"`
+	User    *openrtb.User `json:"-"`
+	Cookie  *PBSCookie    `json:"-"`
+	Url     string        `json:"-"`
+	Domain  string        `json:"-"`
 	Start   time.Time
 }
 
@@ -152,12 +152,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pc := ParseUIDCookie(r)
-		pbsReq.UserIDs = pc.UIDs
+		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
 
 		// this would be for the shared adnxs.com domain
 		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.UserIDs["adnxs"] = anid.Value
+			pbsReq.Cookie.TrySync("adnxs", anid.Value)
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -252,11 +251,9 @@ func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
 }
 
-func (req PBSRequest) GetUserID(BidderCode string) string {
-	if uid, ok := req.UserIDs[BidderCode]; ok {
-		return uid
-	}
-	return ""
+func (req *PBSRequest) GetUserID(BidderCode string) string {
+	uid, _ := req.Cookie.GetUID(BidderCode)
+	return uid
 }
 
 func (p PBSRequest) String() string {
