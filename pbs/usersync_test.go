@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestOptOutCookie(t *testing.T) {
 	cookie := &PBSCookie{
-		uids:     make(map[string]string),
+		uids:     make(map[string]temporaryUid),
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -18,7 +19,7 @@ func TestOptOutCookie(t *testing.T) {
 
 func TestEmptyOptOutCookie(t *testing.T) {
 	cookie := &PBSCookie{
-		uids:     make(map[string]string),
+		uids:     make(map[string]temporaryUid),
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -27,7 +28,7 @@ func TestEmptyOptOutCookie(t *testing.T) {
 
 func TestEmptyCookie(t *testing.T) {
 	cookie := &PBSCookie{
-		uids:     make(map[string]string, 0),
+		uids:     make(map[string]temporaryUid, 0),
 		optOut:   false,
 		birthday: timestamp(),
 	}
@@ -36,9 +37,9 @@ func TestEmptyCookie(t *testing.T) {
 
 func TestCookieWithData(t *testing.T) {
 	cookie := &PBSCookie{
-		uids: map[string]string{
-			"adnxs":           "123",
-			"audienceNetwork": "456",
+		uids: map[string]temporaryUid{
+			"adnxs":           newTempId("123"),
+			"audienceNetwork": newTempId("456"),
 		},
 		optOut:   false,
 		birthday: timestamp(),
@@ -48,8 +49,8 @@ func TestCookieWithData(t *testing.T) {
 
 func TestRejectAudienceNetworkCookie(t *testing.T) {
 	raw := &PBSCookie{
-		uids: map[string]string{
-			"audienceNetwork": "0",
+		uids: map[string]temporaryUid{
+			"audienceNetwork": newTempId("0"),
 		},
 		optOut:   false,
 		birthday: timestamp(),
@@ -70,9 +71,9 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 
 func TestOptOutReset(t *testing.T) {
 	cookie := &PBSCookie{
-		uids: map[string]string{
-			"adnxs":           "123",
-			"audienceNetwork": "456",
+		uids: map[string]temporaryUid{
+			"adnxs":           newTempId("123"),
+			"audienceNetwork": newTempId("456"),
 		},
 		optOut:   false,
 		birthday: timestamp(),
@@ -87,7 +88,7 @@ func TestOptOutReset(t *testing.T) {
 
 func TestOptIn(t *testing.T) {
 	cookie := &PBSCookie{
-		uids:     make(map[string]string),
+		uids:     make(map[string]temporaryUid),
 		optOut:   true,
 		birthday: timestamp(),
 	}
@@ -130,28 +131,17 @@ func TestParseNilSyncMap(t *testing.T) {
 	ensureConsistency(t, parsed)
 }
 
-func writeThenRead(t *testing.T, cookie *PBSCookie) *PBSCookie {
-	w := httptest.NewRecorder()
-	cookie.SetCookieOnResponse(w, "mock-domain")
-	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-
-	header := http.Header{}
-	header.Add("Cookie", writtenCookie)
-	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request)
-}
-
 func TestCookieReadWrite(t *testing.T) {
 	cookie := &PBSCookie{
-		uids: map[string]string{
-			"adnxs":           "123",
-			"audienceNetwork": "456",
+		uids: map[string]temporaryUid{
+			"adnxs":           newTempId("123"),
+			"audienceNetwork": newTempId("456"),
 		},
 		optOut:   false,
 		birthday: timestamp(),
 	}
 
-	received := writeThenRead(t, cookie)
+	received := writeThenRead(cookie)
 	uid, exists := received.GetUID("adnxs")
 	if !exists || uid != "123" {
 		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
@@ -233,15 +223,15 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		}
 	}
 
-	cookieImpl := ParsePBSCookie(cookie.ToHTTPCookie())
-	if cookieImpl.optOut == cookie.AllowSyncs() {
+	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie())
+	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
-	if cookie.SyncCount() != len(cookieImpl.uids) {
-		t.Errorf("Incorrect sync count. Expected %d, got %d", len(cookieImpl.uids), cookie.SyncCount())
+	if cookie.SyncCount() != copiedCookie.SyncCount() {
+		t.Errorf("Incorrect sync count. Expected %d, got %d", copiedCookie.SyncCount(), cookie.SyncCount())
 	}
 
-	for family, uid := range cookieImpl.uids {
+	for family, uid := range copiedCookie.uids {
 		if !cookie.HasSync(family) {
 			t.Errorf("Cookie is missing sync for family %s", family)
 		}
@@ -249,8 +239,26 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		if !hadSync {
 			t.Error("The GetUID function should return true when it has a sync. Got false")
 		}
-		if savedUID != uid {
+		if savedUID != uid.UID {
 			t.Errorf("Wrong UID saved for family %s. Expected %s, got %s", family, uid, savedUID)
 		}
+	}
+}
+
+func writeThenRead(cookie *PBSCookie) *PBSCookie {
+	w := httptest.NewRecorder()
+	cookie.SetCookieOnResponse(w, "mock-domain")
+	writtenCookie := w.HeaderMap.Get("Set-Cookie")
+
+	header := http.Header{}
+	header.Add("Cookie", writtenCookie)
+	request := http.Request{Header: header}
+	return ParsePBSCookieFromRequest(&request)
+}
+
+func newTempId(uid string) temporaryUid {
+	return temporaryUid{
+		UID:     uid,
+		Expires: time.Now().Add(10 * time.Minute),
 	}
 }
