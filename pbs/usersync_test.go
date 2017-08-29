@@ -2,6 +2,7 @@ package pbs
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -152,6 +153,32 @@ func TestCookieReadWrite(t *testing.T) {
 	}
 	if received.SyncCount() != 2 {
 		t.Errorf("Expected 2 user syncs. Got %d", received.SyncCount())
+	}
+}
+
+func TestPopulatedLegacyCookieRead(t *testing.T) {
+	legacyJson := `{"uids":{"adnxs":"123","audienceNetwork":"456"},"bday":"2017-08-03T21:04:52.629198911Z"}`
+	var cookie PBSCookie
+	json.Unmarshal([]byte(legacyJson), &cookie)
+
+	if cookie.SyncCount() != 0 {
+		t.Errorf("Expected 0 user syncs. Got %d", cookie.SyncCount())
+	}
+	if cookie.HasSync("adnxs") {
+		t.Errorf("Received cookie should act like it has no ID for adnxs.")
+	}
+	if cookie.HasSync("audienceNetwork") {
+		t.Errorf("Received cookie should act like it has no ID for audienceNetwork.")
+	}
+}
+
+func TestEmptyLegacyCookieRead(t *testing.T) {
+	legacyJson := `{"bday":"2017-08-29T18:54:18.393925772Z"}`
+	var cookie PBSCookie
+	json.Unmarshal([]byte(legacyJson), &cookie)
+
+	if cookie.SyncCount() != 0 {
+		t.Errorf("Expected 0 user syncs. Got %d", cookie.SyncCount())
 	}
 }
 

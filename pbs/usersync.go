@@ -227,6 +227,10 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 		} else {
 			cookie.uids = cookieContract.UIDs
 
+			if cookie.uids == nil {
+				cookie.uids = make(map[string]temporaryUid, len(cookieContract.LegacyUIDs))
+			}
+
 			// Interpret "legacy" UIDs as having been expired already.
 			// This should cause us to re-sync, since it would be time for a new one.
 			for bidder, uid := range cookieContract.LegacyUIDs {
