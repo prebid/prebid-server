@@ -97,7 +97,7 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 
 	result.bid = &pbs.PBSBid{
 		AdUnitCode: bid.ImpID,
-		Price:      bid.Price / 100, // convert from cents to dollars
+		Price:      bid.Price,
 		Adm:        bid.AdM,
 		Width:      300, // hard code as it's all FB supports
 		Height:     250, // hard code as it's all FB supports
