@@ -96,7 +96,19 @@ type bidResult struct {
 	bid_list pbs.PBSBidSlice
 }
 
-const DEFAULT_PRICE_GRANULARITY = "med"
+const defaultPriceGranularity = "med"
+
+// Constant keys for ad server targeting for responses to Prebid Mobile
+const hbpbConstantKey = "hb_pb"
+const hbCreativeLoadMethodConstantKey = "hb_creative_load_method"
+const hbBidderConstantKey = "hb_bidder"
+const hbCacheIdConstantKey = "hb_cache_id"
+
+// hb_creative_load_method key can be one of `demand_sdk` or `html`
+// default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
+// `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
+const hbCreativeLoadMethodHTML = "html"
+const hbCreativeLoadMethodDemandSDK = "demand_sdk"
 
 func min(x, y int) int {
 	if x < y {
@@ -378,56 +390,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	if pbs_req.SortBids == 1 {
-		priceGranularitySetting := account.PriceGranularity
-		if priceGranularitySetting == "" {
-			priceGranularitySetting = DEFAULT_PRICE_GRANULARITY
-		}
-
-		// record bids by ad unit code for sorting
-		code_bids := make(map[string]pbs.PBSBidSlice, len(pbs_resp.Bids))
-		for _, bid := range pbs_resp.Bids {
-			code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
-		}
-
-		// loop through ad units to find top bid
-		for _, unit := range pbs_req.AdUnits {
-			bar := code_bids[unit.Code]
-
-			if len(bar) == 0 {
-				if glog.V(3) {
-					glog.Infof("No bids for ad unit '%s'", unit.Code)
-				}
-				continue
-			}
-			sort.Sort(bar)
-
-			// after sorting we need to add the ad targeting keywords
-			for i, bid := range bar {
-				priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
-				roundedCpm := priceBucketStringMap[priceGranularitySetting]
-
-				hbPbBidderKey := "hb_pb_" + bid.BidderCode
-				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
-				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
-				if pbs_req.MaxKeyLength != 0 {
-					hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
-					hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
-					hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
-				}
-				pbs_kvs := map[string]string{
-					hbPbBidderKey:      roundedCpm,
-					hbBidderBidderKey:  bid.BidderCode,
-					hbCacheIdBidderKey: bid.CacheID,
-				}
-				// For the top bid, we want to add the following additional keys
-				if i == 0 {
-					pbs_kvs["hb_pb"] = roundedCpm
-					pbs_kvs["hb_bidder"] = bid.BidderCode
-					pbs_kvs["hb_cache_id"] = bid.CacheID
-				}
-				bid.AdServerTargeting = pbs_kvs
-			}
-		}
+		sortBidsAddKeywordsMobile(pbs_resp.Bids, pbs_req, account.PriceGranularity)
 	}
 
 	if glog.V(2) {
@@ -438,6 +401,66 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
+// The bids are sorted by cpm to find the highest bid.
+// The ad server targeting keywords are added to all bids, with specific keywords for the highest bid.
+func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting string) {
+	if priceGranularitySetting == "" {
+		priceGranularitySetting = defaultPriceGranularity
+	}
+
+	// record bids by ad unit code for sorting
+	code_bids := make(map[string]pbs.PBSBidSlice, len(bids))
+	for _, bid := range bids {
+		code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
+	}
+
+	// loop through ad units to find top bid
+	for _, unit := range pbs_req.AdUnits {
+		bar := code_bids[unit.Code]
+
+		if len(bar) == 0 {
+			if glog.V(3) {
+				glog.Infof("No bids for ad unit '%s'", unit.Code)
+			}
+			continue
+		}
+		sort.Sort(bar)
+
+		// after sorting we need to add the ad targeting keywords
+		for i, bid := range bar {
+			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
+			roundedCpm := priceBucketStringMap[priceGranularitySetting]
+
+			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
+			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
+			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			if pbs_req.MaxKeyLength != 0 {
+				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
+				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
+				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+			}
+			pbs_kvs := map[string]string{
+				hbPbBidderKey:      roundedCpm,
+				hbBidderBidderKey:  bid.BidderCode,
+				hbCacheIdBidderKey: bid.CacheID,
+			}
+			// For the top bid, we want to add the following additional keys
+			if i == 0 {
+				pbs_kvs[hbpbConstantKey] = roundedCpm
+				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
+				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if bid.BidderCode == "audienceNetwork" {
+					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+				} else {
+					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+				}
+			}
+			bid.AdServerTargeting = pbs_kvs
+		}
+	}
 }
 
 func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
