@@ -52,11 +52,7 @@ type facebookParams struct {
 }
 
 func coinFlip() bool {
-	random := rand.Intn(2)
-	if random == 0 {
-		return false
-	}
-	return true
+	return rand.Intn(2) != 0
 }
 
 func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
