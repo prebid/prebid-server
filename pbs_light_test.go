@@ -192,8 +192,8 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			t.Errorf("Ad server targeting should not be nil")
 		}
 		if bid.BidderCode == "audienceNetwork" {
-			if bid.AdServerTargeting["hb_creative_load_method"] != "demand_sdk" {
-				t.Errorf("Facebook bid should have demand_sdk as hb_creative_load_method in ad server targeting")
+			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
+				t.Errorf("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
 			}
 		}
 	}
