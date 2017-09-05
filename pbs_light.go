@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/gosigar"
+	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rcrowley/go-metrics"
@@ -599,7 +600,10 @@ func init() {
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
 	viper.SetDefault("datacache.type", "dummy")
-	// no metrics configured by default (metrics{host|database|username|password})
+
+	// Configure metrics defaults
+	viper.SetDefault("metrics.interval", 10)
+	viper.SetDefault("metrics.prefix", "prebidserver.")
 
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
@@ -635,7 +639,7 @@ func setupExchanges(cfg *config.Configuration) {
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
 	}
 
-	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
+	metricsRegistry = metrics.NewPrefixedRegistry(cfg.Metrics.Prefix)
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
 	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
 	mNoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry)
@@ -679,14 +683,28 @@ func serve(cfg *config.Configuration) error {
 	setupExchanges(cfg)
 
 	if cfg.Metrics.Host != "" {
-		go influxdb.InfluxDB(
-			metricsRegistry,      // metrics registry
-			time.Second*10,       // interval
-			cfg.Metrics.Host,     // the InfluxDB url
-			cfg.Metrics.Database, // your InfluxDB database
-			cfg.Metrics.Username, // your InfluxDB user
-			cfg.Metrics.Password, // your InfluxDB password
-		)
+		if cfg.Metrics.Type == "influxdb" {
+			go influxdb.InfluxDB(
+				metricsRegistry,                  // metrics registry
+				time.Second*cfg.Metrics.Interval, // interval
+				cfg.Metrics.Host,                 // the InfluxDB url
+				cfg.Metrics.Database,             // your InfluxDB database
+				cfg.Metrics.Username,             // your InfluxDB user
+				cfg.Metrics.Password,             // your InfluxDB password
+			)
+		} else if cfg.Metrics.Type == "graphite" {
+			addr, err := net.ResolveTCPAddr("tcp", cfg.Metrics.Host)
+			if err == nil {
+				go graphite.Graphite(
+					metricsRegistry,                  // metrics registry
+					time.Second*cfg.Metrics.Interval, // interval
+					"",                               // prefix - leave blank because we prefixed the metricsRegistry object!
+					addr,                             // graphite host
+				)
+			} else {
+				glog.Info(err)
+			}
+		}
 	}
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")

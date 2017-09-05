@@ -64,6 +64,8 @@ prebid_cache_url: http://prebidcache.net/test/a1?qs=something
 require_uuid2: true
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
+  type: influxdb
+  prefix: prebid-server.
   host: upstream:8232
   database: metricsdb
   username: admin
@@ -124,6 +126,8 @@ func TestFullConfig(t *testing.T) {
 		t.Errorf("RequireUUID2 was false")
 	}
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
+	cmpStrings(t, "metrics.host", cfg.Metrics.Type, "influxdb")
+	cmpStrings(t, "metrics.prefix", cfg.Metrics.Prefix, "prebid-server.")
 	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
 	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
 	cmpStrings(t, "metrics.username", cfg.Metrics.Username, "admin")
