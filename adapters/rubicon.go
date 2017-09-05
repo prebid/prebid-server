@@ -310,13 +310,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func appendTrackerToUrl(uri string) (res string) {
+func appendTrackerToUrl(uri string, tracker string) (res string) {
 	// Append integration method. Adapter init happens once
 	urlObject, err := url.Parse(uri)
 	// No other exception throwing mechanism in this stack, so ignoring parse errors.
 	if err == nil {
 		values := urlObject.Query()
-		values.Add("tk_xint", "prebid")
+		values.Add("tk_xint", tracker)
 		urlObject.RawQuery = values.Encode()
 		res = urlObject.String()
 	} else {
@@ -325,10 +325,10 @@ func appendTrackerToUrl(uri string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
+func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
 	a := NewHTTPAdapter(config)
 
-	uri = appendTrackerToUrl(uri)
+	uri = appendTrackerToUrl(uri, tracker)
 
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,
