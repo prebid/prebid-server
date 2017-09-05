@@ -21,6 +21,7 @@ import (
 
 type rubiAppendTrackerUrlTestScenario struct {
 	source   string
+	tracker  string
 	expected string
 }
 
@@ -230,7 +231,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	}
 
 	conf := *DefaultHTTPAdapterConfig
-	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "localhost/usersync")
+	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "localhost/usersync")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -272,10 +273,10 @@ func TestRubiconBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := pbs.ParseUIDCookie(req)
-	pc.UIDs["rubicon"] = rubidata.buyerUID
+	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pbs.SetUIDCookie(fakewriter, pc)
+	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
@@ -336,7 +337,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 func TestRubiconUserSyncInfo(t *testing.T) {
 	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
-	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", url)
+	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker", url)
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}
@@ -419,16 +420,18 @@ func TestAppendTracker(t *testing.T) {
 	testScenarios := []rubiAppendTrackerUrlTestScenario{
 		{
 			source:   "http://test.url/",
+			tracker:  "prebid",
 			expected: "http://test.url/?tk_xint=prebid",
 		},
 		{
 			source:   "http://test.url/?hello=true",
+			tracker:  "prebid",
 			expected: "http://test.url/?hello=true&tk_xint=prebid",
 		},
 	}
 
 	for _, scenario := range testScenarios {
-		res := appendTrackerToUrl(scenario.source)
+		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		if res != scenario.expected {
 			t.Fatalf("Failed to convert '%s' to '%s'", res, scenario.expected)
 		}

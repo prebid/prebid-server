@@ -104,3 +104,40 @@ func TestOpenRTBMobile(t *testing.T) {
 	assert.EqualValues(t, resp.Device.Model, "test_model")
 	assert.EqualValues(t, resp.Device.IFA, "test_ifa")
 }
+
+func TestOpenRTBEmptyUser(t *testing.T) {
+	pbReq := pbs.PBSRequest{
+		User: &openrtb.User{},
+	}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code: "unitCode",
+			},
+		},
+	}
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+
+	assert.EqualValues(t, resp.User, &openrtb.User{})
+}
+
+func TestOpenRTBUserWithCookie(t *testing.T) {
+	pbsCookie := pbs.NewPBSCookie()
+	pbsCookie.TrySync("test", "abcde")
+	pbReq := pbs.PBSRequest{
+		User: &openrtb.User{},
+	}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code: "unitCode",
+			},
+		},
+	}
+	pbReq.Cookie = pbsCookie
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
+
+	assert.EqualValues(t, resp.User.BuyerUID, "abcde")
+}
