@@ -698,7 +698,7 @@ func serve(cfg *config.Configuration) error {
 				go graphite.Graphite(
 					metricsRegistry,                  // metrics registry
 					time.Second*cfg.Metrics.Interval, // interval
-					cfg.Metrics.Prefix,               // prefix
+					"",                               // prefix - leave blank because we prefixed the metricsRegistry object!
 					addr,                             // graphite host
 				)
 			} else {
