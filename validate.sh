@@ -2,6 +2,8 @@
 
 set -e
 
+die() { echo -e "$@" 1>&2 ; exit 1;  }
+
 AUTOFMT=true
 
 while true; do
