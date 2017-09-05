@@ -2,8 +2,6 @@
 
 set -e
 
-die() { echo -e "$@" 1>&2 ; exit 1;  }
-
 AUTOFMT=true
 
 while true; do
@@ -13,6 +11,7 @@ while true; do
   esac
 done
 
+die() { echo -e "$@" 1>&2 ; exit 1;  }
 
 # check there are no formatting issues
 GOFMT_LINES=`gofmt -l *.go pbs adapters config | wc -l | xargs`
