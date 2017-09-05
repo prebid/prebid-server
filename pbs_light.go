@@ -696,10 +696,10 @@ func serve(cfg *config.Configuration) error {
 			addr, err := net.ResolveTCPAddr("tcp", cfg.Metrics.Host)
 			if err == nil {
 				go graphite.Graphite(
-					metricsRegistry,                    // metrics registry
-					time.Second*cfg.Metrics.Interval,   // interval
-					cfg.Metrics.Prefix,                 // prefix
-					addr,                               // graphite host
+					metricsRegistry,                  // metrics registry
+					time.Second*cfg.Metrics.Interval, // interval
+					cfg.Metrics.Prefix,               // prefix
+					addr,                             // graphite host
 				)
 			} else {
 				glog.Info(err)
