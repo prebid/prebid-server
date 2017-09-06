@@ -2,6 +2,7 @@ package pbs
 
 import (
 	"bytes"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -420,5 +421,42 @@ func TestParseMobileRequest(t *testing.T) {
 	}
 	if pbs_req.SDK.Platform != "iOS" {
 		t.Errorf("Parse sdk platform failed")
+	}
+}
+
+func TestParsePBSRequestAddsAdnxsCookie(t *testing.T) {
+	body := []byte(`{
+        "tid": "abcd",
+        "ad_units": [
+            {
+                "code": "first",
+                "sizes": [{"w": 300, "h": 250}],
+                "bidders": [
+                {
+                    "bidder": "indexExchange",
+                    "params": {
+                        "id": "417",
+                        "siteID": "test-site"
+                    }
+                }
+                ]
+            }
+        ]
+    }
+    `)
+	r, err := http.NewRequest("POST", "/auction", bytes.NewBuffer(body))
+	r.Header.Add("Referer", "http://nytimes.com/cool.html")
+	if err != nil {
+		t.Fatalf("new request failed")
+	}
+	r.AddCookie(&http.Cookie{Name: "uuid2", Value: "testcookie"})
+	d, _ := dummycache.New()
+
+	pbs_req, err2 := ParsePBSRequest(r, d)
+	if err2 != nil {
+		t.Fatalf("Parse simple request failed %v", err2)
+	}
+	if pbs_req.User.ID != "testcookie" {
+		t.Errorf("Failed to pull URL from referrer")
 	}
 }
