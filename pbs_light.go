@@ -282,13 +282,16 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
-			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
-				bidder.NoCookie = true
-				bidder.UsersyncInfo = ex.GetUsersyncInfo()
-				ametrics.NoCookieMeter.Mark(1)
-				accountAdapterMetric.NoCookieMeter.Mark(1)
-				if ex.SkipNoCookies() {
-					continue
+			if pbs_req.App == nil {
+				_, _, isLive := pbs_req.Cookie.GetUID(ex.FamilyName())
+				if !isLive {
+					bidder.NoCookie = true
+					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					ametrics.NoCookieMeter.Mark(1)
+					accountAdapterMetric.NoCookieMeter.Mark(1)
+					if ex.SkipNoCookies() {
+						continue
+					}
 				}
 			}
 			sentBids++

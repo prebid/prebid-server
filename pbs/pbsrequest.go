@@ -251,11 +251,6 @@ func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
 }
 
-func (req *PBSRequest) GetUserID(BidderCode string) string {
-	uid, _ := req.Cookie.GetUID(BidderCode)
-	return uid
-}
-
 func (p PBSRequest) String() string {
 	b, _ := json.MarshalIndent(p, "", "    ")
 	return string(b)

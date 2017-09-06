@@ -43,6 +43,8 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		}
 	}
 
+	buyerUID, _, _ := req.Cookie.GetUID(bidderFamily)
+	id, _, _ := req.Cookie.GetUID("adnxs")
 	return openrtb.BidRequest{
 		ID:  req.Tid,
 		Imp: imps,
@@ -52,8 +54,8 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		},
 		Device: req.Device,
 		User: &openrtb.User{
-			BuyerUID: req.GetUserID(bidderFamily),
-			ID:       req.GetUserID("adnxs"),
+			BuyerUID: buyerUID,
+			ID:       id,
 		},
 		Source: &openrtb.Source{
 			FD:  1, // upstream, aka header

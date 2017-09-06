@@ -36,14 +36,14 @@ const (
 // To get an instance of this from a request, use ParsePBSCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type PBSCookie struct {
-	uids     map[string]temporaryUid
+	uids     map[string]uidWithExpiry
 	optOut   bool
 	birthday *time.Time
 }
 
-// temporaryUid bundles the UID with an Expiration date.
+// uidWithExpiry bundles the UID with an Expiration date.
 // After the expiration, the UID is no longer valid.
-type temporaryUid struct {
+type uidWithExpiry struct {
 	// UID is the ID given to a user by a particular bidder
 	UID string `json:"uid"`
 	// Expires is the time at which this UID should no longer apply.
@@ -86,7 +86,7 @@ func ParsePBSCookie(cookie *http.Cookie) *PBSCookie {
 // NewPBSCookie returns an empty PBSCookie
 func NewPBSCookie() *PBSCookie {
 	return &PBSCookie{
-		uids:     make(map[string]temporaryUid),
+		uids:     make(map[string]uidWithExpiry),
 		birthday: timestamp(),
 	}
 }
@@ -106,7 +106,7 @@ func (cookie *PBSCookie) SetPreference(allow bool) {
 		cookie.optOut = false
 	} else {
 		cookie.optOut = true
-		cookie.uids = make(map[string]temporaryUid)
+		cookie.uids = make(map[string]uidWithExpiry)
 	}
 }
 
@@ -122,16 +122,19 @@ func (cookie *PBSCookie) ToHTTPCookie() *http.Cookie {
 	}
 }
 
-// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
-func (cookie *PBSCookie) GetUID(familyName string) (string, bool) {
+// GetUID Gets this user's ID for the given family.
+// The first returned value is the user's ID.
+// The second returned value is true if we had a value stored, and false if we didn't.
+// The third returned value is true if that value is "active", and false if it's expired.
+//
+// If no value was stored, then the "isActive" return value will be false.
+func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
 	if cookie != nil {
 		if uid, ok := cookie.uids[familyName]; ok {
-			if time.Now().Before(uid.Expires) {
-				return uid.UID, true
-			}
+			return uid.UID, true, time.Now().Before(uid.Expires)
 		}
 	}
-	return "", false
+	return "", false, false
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
@@ -150,11 +153,11 @@ func (cookie *PBSCookie) Unsync(familyName string) {
 
 // HasSync returns true if we have an active UID for the given family, and false otherwise.
 func (cookie *PBSCookie) HasSync(familyName string) bool {
-	_, ok := cookie.GetUID(familyName)
-	return ok
+	_, _, isLive := cookie.GetUID(familyName)
+	return isLive
 }
 
-// SyncCount returns the number of families which have UIDs for this user.
+// SyncCount returns the number of families which have active UIDs for this user.
 func (cookie *PBSCookie) SyncCount() int {
 	now := time.Now()
 	numSyncs := 0
@@ -180,7 +183,7 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
-	cookie.uids[familyName] = temporaryUid{
+	cookie.uids[familyName] = uidWithExpiry{
 		UID:     uid,
 		Expires: getExpiry(familyName),
 	}
@@ -193,10 +196,10 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 // This exists so that PBSCookie (which is public) can have private fields, and the rest of
 // PBS doesn't have to worry about the cookie data storage format.
 type pbsCookieJson struct {
-	LegacyUIDs map[string]string       `json:"uids,omitempty"`
-	UIDs       map[string]temporaryUid `json:"tempUIDs,omitempty"`
-	OptOut     bool                    `json:"optout,omitempty"`
-	Birthday   *time.Time              `json:"bday,omitempty"`
+	LegacyUIDs map[string]string        `json:"uids,omitempty"`
+	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
+	OptOut     bool                     `json:"optout,omitempty"`
+	Birthday   *time.Time               `json:"bday,omitempty"`
 }
 
 func (cookie *PBSCookie) MarshalJSON() ([]byte, error) {
@@ -223,19 +226,19 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 		cookie.birthday = cookieContract.Birthday
 
 		if cookie.optOut {
-			cookie.uids = make(map[string]temporaryUid)
+			cookie.uids = make(map[string]uidWithExpiry)
 		} else {
 			cookie.uids = cookieContract.UIDs
 
 			if cookie.uids == nil {
-				cookie.uids = make(map[string]temporaryUid, len(cookieContract.LegacyUIDs))
+				cookie.uids = make(map[string]uidWithExpiry, len(cookieContract.LegacyUIDs))
 			}
 
 			// Interpret "legacy" UIDs as having been expired already.
 			// This should cause us to re-sync, since it would be time for a new one.
 			for bidder, uid := range cookieContract.LegacyUIDs {
 				if _, ok := cookie.uids[bidder]; !ok {
-					cookie.uids[bidder] = temporaryUid{
+					cookie.uids[bidder] = uidWithExpiry{
 						UID:     uid,
 						Expires: time.Now().Add(-5 * time.Minute),
 					}
