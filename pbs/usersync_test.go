@@ -57,7 +57,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		birthday: timestamp(),
 	}
 	parsed := ParsePBSCookie(raw.ToHTTPCookie())
-	if parsed.HasSync("audienceNetwork") {
+	if parsed.HasLiveSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
 
@@ -65,7 +65,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 	if err == nil {
 		t.Errorf("Cookie should reject audienceNetwork values of 0.")
 	}
-	if parsed.HasSync("audienceNetwork") {
+	if parsed.HasLiveSync("audienceNetwork") {
 		t.Errorf("Cookie The cookie should have rejected the audienceNetwork sync.")
 	}
 }
@@ -151,8 +151,8 @@ func TestCookieReadWrite(t *testing.T) {
 	if !exists || !isLive || uid != "456" {
 		t.Errorf("Received cookie should have the audienceNetwork ID=456. Got %s", uid)
 	}
-	if received.SyncCount() != 2 {
-		t.Errorf("Expected 2 user syncs. Got %d", received.SyncCount())
+	if received.LiveSyncCount() != 2 {
+		t.Errorf("Expected 2 user syncs. Got %d", received.LiveSyncCount())
 	}
 }
 
@@ -161,13 +161,13 @@ func TestPopulatedLegacyCookieRead(t *testing.T) {
 	var cookie PBSCookie
 	json.Unmarshal([]byte(legacyJson), &cookie)
 
-	if cookie.SyncCount() != 0 {
-		t.Errorf("Expected 0 user syncs. Got %d", cookie.SyncCount())
+	if cookie.LiveSyncCount() != 0 {
+		t.Errorf("Expected 0 user syncs. Got %d", cookie.LiveSyncCount())
 	}
-	if cookie.HasSync("adnxs") {
+	if cookie.HasLiveSync("adnxs") {
 		t.Errorf("Received cookie should act like it has no ID for adnxs.")
 	}
-	if cookie.HasSync("audienceNetwork") {
+	if cookie.HasLiveSync("audienceNetwork") {
 		t.Errorf("Received cookie should act like it has no ID for audienceNetwork.")
 	}
 }
@@ -177,19 +177,19 @@ func TestEmptyLegacyCookieRead(t *testing.T) {
 	var cookie PBSCookie
 	json.Unmarshal([]byte(legacyJson), &cookie)
 
-	if cookie.SyncCount() != 0 {
-		t.Errorf("Expected 0 user syncs. Got %d", cookie.SyncCount())
+	if cookie.LiveSyncCount() != 0 {
+		t.Errorf("Expected 0 user syncs. Got %d", cookie.LiveSyncCount())
 	}
 }
 
 func TestNilCookie(t *testing.T) {
 	var nilCookie *PBSCookie = nil
 
-	if nilCookie.HasSync("anything") {
+	if nilCookie.HasLiveSync("anything") {
 		t.Error("nil cookies should respond with false when asked if they have a sync")
 	}
 
-	if nilCookie.SyncCount() != 0 {
+	if nilCookie.LiveSyncCount() != 0 {
 		t.Error("nil cookies shouldn't have any syncs.")
 	}
 
@@ -214,8 +214,8 @@ func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
 	}
-	if cookie.SyncCount() != 0 {
-		t.Errorf("Empty cookies shouldn't have any user syncs. Found %d.", cookie.SyncCount())
+	if cookie.LiveSyncCount() != 0 {
+		t.Errorf("Empty cookies shouldn't have any user syncs. Found %d.", cookie.LiveSyncCount())
 	}
 }
 
@@ -225,7 +225,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		if err != nil {
 			t.Errorf("Cookie sync should succeed if the user has opted in.")
 		}
-		if !cookie.HasSync("pulsepoint") {
+		if !cookie.HasLiveSync("pulsepoint") {
 			t.Errorf("The PBSCookie should have a usersync after a successful call to TrySync")
 		}
 		savedUID, hadSync, isLive := cookie.GetUID("pulsepoint")
@@ -239,15 +239,15 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 			t.Errorf("The PBSCookie isn't saving syncs correctly. Expected %s, got %s", "1", savedUID)
 		}
 		cookie.Unsync("pulsepoint")
-		if cookie.HasSync("pulsepoint") {
+		if cookie.HasLiveSync("pulsepoint") {
 			t.Errorf("The PBSCookie should not have have a usersync after a call to Unsync")
 		}
 		if value, hadValue, isLive := cookie.GetUID("pulsepoint"); value != "" || hadValue || isLive {
 			t.Error("PBSCookie.GetUID() should return empty strings if it doesn't have a sync")
 		}
 	} else {
-		if cookie.SyncCount() != 0 {
-			t.Errorf("If the user opted out, the PBSCookie should have no user syncs. Got %d", cookie.SyncCount())
+		if cookie.LiveSyncCount() != 0 {
+			t.Errorf("If the user opted out, the PBSCookie should have no user syncs. Got %d", cookie.LiveSyncCount())
 		}
 
 		err := cookie.TrySync("adnxs", "123")
@@ -260,12 +260,12 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
-	if cookie.SyncCount() != copiedCookie.SyncCount() {
-		t.Errorf("Incorrect sync count. Expected %d, got %d", copiedCookie.SyncCount(), cookie.SyncCount())
+	if cookie.LiveSyncCount() != copiedCookie.LiveSyncCount() {
+		t.Errorf("Incorrect sync count. Expected %d, got %d", copiedCookie.LiveSyncCount(), cookie.LiveSyncCount())
 	}
 
 	for family, uid := range copiedCookie.uids {
-		if !cookie.HasSync(family) {
+		if !cookie.HasLiveSync(family) {
 			t.Errorf("Cookie is missing sync for family %s", family)
 		}
 		savedUID, hadSync, isLive := cookie.GetUID(family)

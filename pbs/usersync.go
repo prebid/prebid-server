@@ -151,14 +151,14 @@ func (cookie *PBSCookie) Unsync(familyName string) {
 	delete(cookie.uids, familyName)
 }
 
-// HasSync returns true if we have an active UID for the given family, and false otherwise.
-func (cookie *PBSCookie) HasSync(familyName string) bool {
+// HasLiveSync returns true if we have an active UID for the given family, and false otherwise.
+func (cookie *PBSCookie) HasLiveSync(familyName string) bool {
 	_, _, isLive := cookie.GetUID(familyName)
 	return isLive
 }
 
-// SyncCount returns the number of families which have active UIDs for this user.
-func (cookie *PBSCookie) SyncCount() int {
+// LiveSyncCount returns the number of families which have active UIDs for this user.
+func (cookie *PBSCookie) LiveSyncCount() int {
 	now := time.Now()
 	numSyncs := 0
 	if cookie != nil {

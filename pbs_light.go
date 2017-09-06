@@ -194,7 +194,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || userSyncCookie.SyncCount() == 0 {
+	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || userSyncCookie.LiveSyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -202,7 +202,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if !userSyncCookie.HasSync(ex.FamilyName()) {
+			if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
@@ -245,7 +245,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if pbs_req.Cookie.SyncCount() == 0 {
+	} else if pbs_req.Cookie.LiveSyncCount() == 0 {
 		mNoCookieMeter.Mark(1)
 		if isSafari {
 			mSafariNoCookieMeter.Mark(1)
