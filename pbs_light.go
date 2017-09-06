@@ -295,8 +295,8 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil {
-				_, _, isLive := pbs_req.Cookie.GetUID(ex.FamilyName())
-				if !isLive {
+				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				if uid == "" {
 					bidder.NoCookie = true
 					bidder.UsersyncInfo = ex.GetUsersyncInfo()
 					ametrics.NoCookieMeter.Mark(1)
