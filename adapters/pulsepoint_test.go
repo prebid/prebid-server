@@ -264,14 +264,16 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	// setup a http request
 	httpReq := httptest.NewRequest("POST", CreateService(BidOnTags("")).Server.URL, body)
 	httpReq.Header.Add("Referer", "http://news.pub/topnews")
-	pc := pbs.ParseUIDCookie(httpReq)
-	pc.UIDs["pulsepoint"] = "pulsepointUser123"
+	pc := pbs.ParsePBSCookieFromRequest(httpReq)
+	pc.TrySync("pulsepoint", "pulsepointUser123")
 	fakewriter := httptest.NewRecorder()
-	pbs.SetUIDCookie(fakewriter, pc)
+	pc.SetCookieOnResponse(fakewriter, "")
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 	// parse the http request
 	cacheClient, _ := dummycache.New()
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient)
+	hcs := pbs.HostCookieSettings{}
+
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

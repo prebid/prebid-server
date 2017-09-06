@@ -6,21 +6,25 @@ import (
 
 // Configuration
 type Configuration struct {
-	HostCookieDomain string             `mapstructure:"host_cookie_domain"`
-	HostCookieFamily string             `mapstructure:"host_cookie_family"`
-	HostCookieName   string             `mapstructure:"host_cookie_name"`
-	HostOptOutURL	 string             `mapstructure:"host_opt_out_url"`
-	HostOptInURL     string             `mapstructure:"host_opt_in_url"`
-	ExternalURL      string             `mapstructure:"external_url"`
-	Host             string             `mapstructure:"host"`
-	Port             int                `mapstructure:"port"`
-	AdminPort        int                `mapstructure:"admin_port"`
-	DefaultTimeout   uint64             `mapstructure:"default_timeout_ms"`
-	CacheURL         string             `mapstructure:"prebid_cache_url"`
-	RecaptchaSecret  string             `mapstructure:"recaptcha_secret"`
-	Metrics          Metrics            `mapstructure:"metrics"`
-	DataCache        DataCache          `mapstructure:"datacache"`
-	Adapters         map[string]Adapter `mapstructure:"adapters"`
+	ExternalURL     string             `mapstructure:"external_url"`
+	Host            string             `mapstructure:"host"`
+	Port            int                `mapstructure:"port"`
+	AdminPort       int                `mapstructure:"admin_port"`
+	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
+	CacheURL        string             `mapstructure:"prebid_cache_url"`
+	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie         `mapstructure:"host_cookie"`
+	Metrics         Metrics            `mapstructure:"metrics"`
+	DataCache       DataCache          `mapstructure:"datacache"`
+	Adapters        map[string]Adapter `mapstructure:"adapters"`
+}
+
+type HostCookie struct {
+	Domain     string `mapstructure:"domain"`
+	Family     string `mapstructure:"family"`
+	CookieName string `mapstructure:"cookie_name"`
+	OptOutURL  string `mapstructure:"opt_out_url"`
+	OptInURL   string `mapstructure:"opt_in_url"`
 }
 
 type Adapter struct {
@@ -30,6 +34,7 @@ type Adapter struct {
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
+		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
 }
 

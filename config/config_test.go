@@ -54,13 +54,15 @@ func TestDefaults(t *testing.T) {
 
 }
 
-var fullConfig = []byte(`host_cookie_domain: ".prebid.org"
-host_cookie_name: userid
-host_cookie_family: prebid
-host_opt_out_url: http://prebid.org/optout
-host_opt_in_url: http://prebid.org/optin
+var fullConfig = []byte(`
+host_cookie:
+  cookie_name: userid
+  family: prebid
+  domain: cookies.prebid.org
+  opt_out_url: http://prebid.org/optout
+  opt_in_url: http://prebid.org/optin
 external_url: http://prebid-server.prebid.org/
-host: prebid.adnxs.com
+host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
 default_timeout_ms: 123
@@ -114,13 +116,13 @@ func TestFullConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	cmpStrings(t, "cookie domain", cfg.HostCookieDomain, ".prebid.org")
-	cmpStrings(t, "cookie name", cfg.HostCookieName, "userid")
-	cmpStrings(t, "cookie family", cfg.HostCookieFamily, "prebid")
-	cmpStrings(t, "opt out", cfg.HostOptOutURL, "http://prebid.org/optout")
-	cmpStrings(t, "opt in", cfg.HostOptInURL, "http://prebid.org/optin")
+	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
+	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
+	cmpStrings(t, "cookie family", cfg.HostCookie.Family, "prebid")
+	cmpStrings(t, "opt out", cfg.HostCookie.OptOutURL, "http://prebid.org/optout")
+	cmpStrings(t, "opt in", cfg.HostCookie.OptInURL, "http://prebid.org/optin")
 	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid-server.prebid.org/")
-	cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
+	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
 	if cfg.DefaultTimeout != 123 {

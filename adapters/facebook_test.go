@@ -176,6 +176,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
+	an.nonSecureUri = server.URL
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
@@ -212,14 +213,16 @@ func TestFacebookBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", fbdata.deviceUA)
 	req.Header.Add("X-Real-IP", fbdata.deviceIP)
 
-	pc := pbs.ParseUIDCookie(req)
-	pc.UIDs["audienceNetwork"] = fbdata.buyerUID
+	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc.TrySync("audienceNetwork", fbdata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pbs.SetUIDCookie(fakewriter, pc)
+	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	hcs := pbs.HostCookieSettings{}
+
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}

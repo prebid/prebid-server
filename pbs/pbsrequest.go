@@ -46,6 +46,12 @@ type PBSAdUnit struct {
 	Params   json.RawMessage
 }
 
+type SDK struct {
+	Version  string `json:"version"`
+	Source   string `json:"source"`
+	Platform string `json:"platform"`
+}
+
 type PBSBidder struct {
 	BidderCode   string         `json:"bidder"`
 	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
@@ -81,13 +87,15 @@ type PBSRequest struct {
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
 	Device        *openrtb.Device `json:"device"`
-	User          *openrtb.User   `json:"user"`
+	PBSUser       json.RawMessage `json:"user"`
+	SDK           *SDK            `json:"sdk"`
 
 	// internal
-	Bidders []*PBSBidder      `json:"-"`
-	UserIDs map[string]string `json:"-"`
-	Url     string            `json:"-"`
-	Domain  string            `json:"-"`
+	Bidders []*PBSBidder  `json:"-"`
+	User    *openrtb.User `json:"-"`
+	Cookie  *PBSCookie    `json:"-"`
+	Url     string        `json:"-"`
+	Domain  string        `json:"-"`
 	Start   time.Time
 }
 
@@ -106,7 +114,7 @@ func ConfigGet(cache cache.Cache, id string) ([]Bids, error) {
 	return bids, nil
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -127,14 +135,33 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
 	}
+	if pbsReq.SDK == nil {
+		pbsReq.SDK = &SDK{}
+	}
+	if pbsReq.SDK.Version != "0.0.1" {
+		if pbsReq.PBSUser != nil {
+			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	if pbsReq.User == nil {
 		pbsReq.User = &openrtb.User{}
 	}
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pc := ParseUIDCookie(r)
-		pbsReq.UserIDs = pc.UIDs
+		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
+
+		// Host has right to leverage private cookie store for user ID
+		if pbsReq.GetUserID(hostCookieSettings.Family) == "" && hostCookieSettings.CookieName != "" {
+			if hostCookie, err := r.Cookie(hostCookieSettings.CookieName); err == nil {
+				pbsReq.Cookie.TrySync(hostCookieSettings.Family, hostCookie.Value)
+			}
+		}
+
+		pbsReq.User.ID = pbsReq.GetUserID(hostCookieSettings.Family)
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 		pbsReq.Device.IP = prebid.GetIP(r)
@@ -179,7 +206,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			bidders, err = ConfigGet(cache, unit.ConfigID)
 			if err != nil {
 				// proceed with other ad units
-				glog.Infof("Unable to load config '%s': %v", unit.ConfigID, err)
+				glog.Warningf("Failed to load config '%s' from cache: %v", unit.ConfigID, err)
 				continue
 			}
 		}
@@ -228,15 +255,9 @@ func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
 }
 
-func (req PBSRequest) GetUserID(BidderCode string) string {
-	if uid, ok := req.UserIDs[BidderCode]; ok {
-		return uid
-	}
-	return ""
-}
-
-func (req PBSRequest) SetUserID(BidderCode string, UserID string) {
-	req.UserIDs[BidderCode] = UserID
+func (req *PBSRequest) GetUserID(BidderCode string) string {
+	uid, _ := req.Cookie.GetUID(BidderCode)
+	return uid
 }
 
 func (p PBSRequest) String() string {
