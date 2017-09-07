@@ -146,7 +146,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 func NewIndexAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *IndexAdapter {
 	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=", externalURL)
 	usersyncURI := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
 
 	info := &pbs.UsersyncInfo{
