@@ -338,12 +338,13 @@ func TestOpenRTBEmptyUser(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
-
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	assert.Equal(t, err, nil)
 	assert.EqualValues(t, resp.User, &openrtb.User{})
 }
 
@@ -357,12 +358,13 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 			},
 		},
 	}
 	pbReq.Cookie = pbsCookie
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, "test")
-
+	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	assert.Equal(t, err, nil)
 	assert.EqualValues(t, resp.User.BuyerUID, "abcde")
 }
