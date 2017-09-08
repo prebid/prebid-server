@@ -200,6 +200,16 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				Height:      bid.H,
 				DealId:      bid.DealID,
 			}
+			mediaType := "banner"
+			// Test for video
+
+			for _, v := range bid.Attr {
+				if v == 6 || v == 7 {
+					// If it is in-banner video (see OpenRTB list 5.3)
+					mediaType = "video"
+				}
+			}
+			pbid.CreativeMediaType = mediaType
 			bids = append(bids, &pbid)
 		}
 	}
