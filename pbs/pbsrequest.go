@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
 )
@@ -82,7 +82,7 @@ type PBSRequest struct {
 	SortBids      int8            `json:"sort_bids"`
 	MaxKeyLength  int8            `json:"max_key_length"`
 	Secure        int8            `json:"secure"`
-	TimeoutMillis int64           `json:"timeout_millis"`
+	TimeoutMillis uint64          `json:"timeout_millis"`
 	AdUnits       []AdUnit        `json:"ad_units"`
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
@@ -129,7 +129,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	}
 
 	if pbsReq.TimeoutMillis == 0 || pbsReq.TimeoutMillis > 2000 {
-		pbsReq.TimeoutMillis = int64(viper.GetInt("default_timeout_ms"))
+		pbsReq.TimeoutMillis = uint64(viper.GetInt("default_timeout_ms"))
 	}
 
 	if pbsReq.Device == nil {

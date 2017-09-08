@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb"
 )
 
 type RubiconAdapter struct {

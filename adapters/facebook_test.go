@@ -15,7 +15,7 @@ import (
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb"
 )
 
 type tagInfo struct {
