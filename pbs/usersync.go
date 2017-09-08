@@ -37,11 +37,21 @@ type PBSCookie struct {
 	birthday *time.Time
 }
 
+type HostCookieSettings struct {
+	Domain     string
+	Family     string
+	CookieName string
+	OptOutURL  string
+	OptInURL   string
+}
+
 type UserSyncDeps struct {
-	Cookie_domain    string
-	External_url     string
-	Recaptcha_secret string
-	Metrics          metrics.Registry
+	ExternalUrl        string
+	RecaptchaSecret    string
+	OptOutUrl          string
+	OptInUrl           string
+	HostCookieSettings *HostCookieSettings
+	Metrics            metrics.Registry
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -216,7 +226,7 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParsePBSCookieFromRequest(r)
-	pc.SetCookieOnResponse(w, deps.Cookie_domain)
+	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -263,7 +273,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
 	}
 
-	pc.SetCookieOnResponse(w, deps.Cookie_domain)
+	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 }
 
 // Struct for parsing json in google's response
@@ -281,7 +291,7 @@ func (deps *UserSyncDeps) VerifyRecaptcha(response string) error {
 		Transport: ts,
 	}
 	resp, err := client.PostForm(RECAPTCHA_URL,
-		url.Values{"secret": {deps.Recaptcha_secret}, "response": {response}})
+		url.Values{"secret": {deps.RecaptchaSecret}, "response": {response}})
 	if err != nil {
 		return err
 	}
@@ -301,14 +311,14 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	rr := r.FormValue("g-recaptcha-response")
 
 	if rr == "" {
-		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.External_url), 301)
+		http.Redirect(w, r, fmt.Sprintf("%s/static/optout.html", deps.ExternalUrl), 301)
 		return
 	}
 
 	err := deps.VerifyRecaptcha(rr)
 	if err != nil {
 		if glog.V(2) {
-			glog.Infof("Optout failed recaptcha: %v", err)
+			glog.Infof("Opt Out failed recaptcha: %v", err)
 		}
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -317,11 +327,11 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := ParsePBSCookieFromRequest(r)
 	pc.SetPreference(optout == "")
 
-	pc.SetCookieOnResponse(w, deps.Cookie_domain)
+	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	if optout == "" {
-		http.Redirect(w, r, "https://ib.adnxs.com/optin", 301)
+		http.Redirect(w, r, deps.OptInUrl, 301)
 	} else {
-		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
+		http.Redirect(w, r, deps.OptOutUrl, 301)
 	}
 }
 

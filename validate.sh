@@ -19,7 +19,7 @@ GOFMT_LINES=`gofmt -l *.go pbs adapters | wc -l | xargs`
 if $AUTOFMT; then
   # if there are files with formatting issues, they will be automatically corrected using the gofmt -w <file> command
   if [[ $GOFMT_LINES -ne 0 ]]; then
-    FMT_FILES=`gofmt -l *.go pbs adapters | xargs`
+    FMT_FILES=`gofmt -l *.go pbs adapters prebid config | xargs`
     for FILE in $FMT_FILES; do
         echo "Running: gofmt -w $FILE"
         `gofmt -w $FILE`

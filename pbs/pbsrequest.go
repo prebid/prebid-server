@@ -114,7 +114,7 @@ func ConfigGet(cache cache.Cache, id string) ([]Bids, error) {
 	return bids, nil
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -154,11 +154,14 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.App == nil {
 		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
 
-		// this would be for the shared adnxs.com domain
-		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.Cookie.TrySync("adnxs", anid.Value)
+		// Host has right to leverage private cookie store for user ID
+		if pbsReq.GetUserID(hostCookieSettings.Family) == "" && hostCookieSettings.CookieName != "" {
+			if hostCookie, err := r.Cookie(hostCookieSettings.CookieName); err == nil {
+				pbsReq.Cookie.TrySync(hostCookieSettings.Family, hostCookie.Value)
+			}
 		}
-		pbsReq.User.ID = pbsReq.GetUserID("adnxs")
+
+		pbsReq.User.ID = pbsReq.GetUserID(hostCookieSettings.Family)
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 		pbsReq.Device.IP = prebid.GetIP(r)

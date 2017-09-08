@@ -43,8 +43,9 @@ func TestParseSimpleRequest(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d, _ := dummycache.New()
+	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -109,10 +110,11 @@ func TestHeaderParsing(t *testing.T) {
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	r.Header.Add("User-Agent", "Mozilla/")
 	d, _ := dummycache.New()
+	hcs := HostCookieSettings{}
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed")
 	}
@@ -190,10 +192,11 @@ func TestParseConfig(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d, _ := dummycache.New()
+	hcs := HostCookieSettings{}
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -272,8 +275,9 @@ func TestParseMobileRequestFirstVersion(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
+	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -367,8 +371,9 @@ func TestParseMobileRequest(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
+	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d)
+	pbs_req, err := ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -424,7 +429,7 @@ func TestParseMobileRequest(t *testing.T) {
 	}
 }
 
-func TestParsePBSRequestAddsAdnxsCookie(t *testing.T) {
+func TestParsePBSRequestAddsHostCookie(t *testing.T) {
 	body := []byte(`{
         "tid": "abcd",
         "ad_units": [
@@ -449,14 +454,58 @@ func TestParsePBSRequestAddsAdnxsCookie(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new request failed")
 	}
-	r.AddCookie(&http.Cookie{Name: "uuid2", Value: "testcookie"})
+	r.AddCookie(&http.Cookie{Name: "key", Value: "testcookie"})
 	d, _ := dummycache.New()
+	hcs := HostCookieSettings{
+		CookieName: "key",
+	}
 
-	pbs_req, err2 := ParsePBSRequest(r, d)
+	pbs_req, err2 := ParsePBSRequest(r, d, &hcs)
 	if err2 != nil {
 		t.Fatalf("Parse simple request failed %v", err2)
 	}
 	if pbs_req.User.ID != "testcookie" {
-		t.Errorf("Failed to pull URL from referrer")
+		t.Errorf("Failed to set user.id exchange cookie")
+	}
+}
+
+func TestParsePBSRequestUsesHostCookie(t *testing.T) {
+	body := []byte(`{
+        "tid": "abcd",
+        "ad_units": [
+            {
+                "code": "first",
+                "sizes": [{"w": 300, "h": 250}],
+                "bidders": [
+                {
+                    "bidder": "indexExchange",
+                    "params": {
+                        "id": "417",
+                        "siteID": "test-site"
+                    }
+                }
+                ]
+            }
+        ]
+    }
+    `)
+	r, err := http.NewRequest("POST", "/auction", bytes.NewBuffer(body))
+	r.Header.Add("Referer", "http://nytimes.com/cool.html")
+	if err != nil {
+		t.Fatalf("new request failed")
+	}
+	r.AddCookie(&http.Cookie{Name: "key", Value: "testcookie"})
+	d, _ := dummycache.New()
+	hcs := HostCookieSettings{
+		CookieName: "key",
+		Family:     "family",
+	}
+
+	pbs_req, err2 := ParsePBSRequest(r, d, &hcs)
+	if err2 != nil {
+		t.Fatalf("Parse simple request failed %v", err2)
+	}
+	if pbs_req.GetUserID("family") != "testcookie" {
+		t.Errorf("Failed to leverage host cookie space for user identifier")
 	}
 }
