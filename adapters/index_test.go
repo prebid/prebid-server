@@ -12,7 +12,7 @@ import (
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb"
 )
 
 func TestIndexInvalidCall(t *testing.T) {

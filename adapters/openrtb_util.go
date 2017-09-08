@@ -3,7 +3,7 @@ package adapters
 import (
 	"github.com/prebid/prebid-server/pbs"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/openrtb"
 )
 
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
@@ -22,7 +22,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				Format:   unit.Sizes,
 				TopFrame: unit.TopFrame,
 			},
-			Secure: &req.Secure,
+			Secure: req.Secure,
 			// pmp
 			// ext
 		}
