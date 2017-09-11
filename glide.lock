@@ -1,5 +1,5 @@
-hash: 816883f9cf9dad193a07f8cae22a71445252d90c01923683af5e44d6fd32db89
-updated: 2017-08-16T17:37:57.612106597-07:00
+hash: 95ff13c52ce1d068e75ec5517fa527dcbe9cfa527a7cf94daa541465ea208262
+updated: 2017-09-11T13:39:36.675790672-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -50,6 +50,8 @@ imports:
   version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
 - name: github.com/prebid/openrtb
   version: 4abcf757715a1a5e13211dd6c67c8e21c73b4668
+- name: github.com/pubnub/go-metrics-statsd
+  version: 7da61f429d6bdaa79d5d5746998e0db9622c56fc
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors

@@ -10,6 +10,7 @@ import:
   version: ~3.0.3
 - package: github.com/rcrowley/go-metrics
 - package: github.com/cyberdelia/go-metrics-graphite
+- package: github.com/pubnub/go-metrics-statsd
 - package: github.com/spf13/viper
 - package: github.com/vrischmann/go-metrics-influxdb
 - package: github.com/xeipuuv/gojsonschema

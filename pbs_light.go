@@ -19,6 +19,7 @@ import (
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/pubnub/go-metrics-statsd"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
@@ -639,7 +640,11 @@ func setupExchanges(cfg *config.Configuration) {
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
 	}
 
-	metricsRegistry = metrics.NewPrefixedRegistry(cfg.Metrics.Prefix)
+	if cfg.Metrics.Type == "influx" {
+		metricsRegistry = metrics.NewPrefixedRegistry(cfg.Metrics.Prefix)
+	} else {
+		metricsRegistry = metrics.NewPrefixedRegistry("")
+	}
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
 	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
 	mNoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry)
@@ -698,8 +703,20 @@ func serve(cfg *config.Configuration) error {
 				go graphite.Graphite(
 					metricsRegistry,                  // metrics registry
 					time.Second*cfg.Metrics.Interval, // interval
-					"",   // prefix - leave blank because we prefixed the metricsRegistry object!
-					addr, // graphite host
+					cfg.Metrics.Prefix,               // prefix
+					addr,                             // graphite host
+				)
+			} else {
+				glog.Info(err)
+			}
+		} else if cfg.Metrics.Type == "statsd" {
+			addr, err := net.ResolveUDPAddr("udp", cfg.Metrics.Host)
+			if err == nil {
+				go statsd.StatsD(
+					metricsRegistry,                  // metrics registry
+					time.Second*cfg.Metrics.Interval, // interval
+					cfg.Metrics.Prefix,               // prefix
+					addr,                             // graphite host
 				)
 			} else {
 				glog.Info(err)
