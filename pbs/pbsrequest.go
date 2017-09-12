@@ -158,7 +158,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		if anid, err := r.Cookie("uuid2"); err == nil {
 			pbsReq.Cookie.TrySync("adnxs", anid.Value)
 		}
-		pbsReq.User.ID = pbsReq.GetUserID("adnxs")
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 		pbsReq.Device.IP = prebid.GetIP(r)
