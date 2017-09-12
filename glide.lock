@@ -1,5 +1,5 @@
-hash: 254023165c0bb49bce2dcdc276d754d2dc5fc6592d19e9d40a9358323faf8ba9
-updated: 2017-06-21T17:00:58.66496526-04:00
+hash: 95ff13c52ce1d068e75ec5517fa527dcbe9cfa527a7cf94daa541465ea208262
+updated: 2017-09-11T13:39:36.675790672-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -7,6 +7,8 @@ imports:
   version: dfaa4d491586af21e1ce06028df3926389a99654
 - name: github.com/coocood/freecache
   version: c7b48416d80a1707d94a9aeb37b4b11125ffef7e
+- name: github.com/cyberdelia/go-metrics-graphite
+  version: 39f87cc3b432bbb898d7c643c0e93cac2bc865ad
 - name: github.com/fsnotify/fsnotify
   version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/golang/glog
@@ -48,12 +50,12 @@ imports:
   version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
 - name: github.com/prebid/openrtb
   version: 4abcf757715a1a5e13211dd6c67c8e21c73b4668
+- name: github.com/pubnub/go-metrics-statsd
+  version: 7da61f429d6bdaa79d5d5746998e0db9622c56fc
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
-  version: a62a804a8a009876ca59105f7899938a1349f4b3
-- name: github.com/rs/xhandler
-  version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
+  version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
 - name: github.com/spaolacci/murmur3
   version: 0d12bf811670bf6a1a63828dfbd003eded177fce
 - name: github.com/spf13/afero
