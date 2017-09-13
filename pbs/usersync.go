@@ -23,6 +23,7 @@ const COOKIE_NAME = "uids"
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the UID's TTL will be 7 days.
+const DEFAULT_TTL = 14 * 24 * time.Hour
 var customBidderTTLs = map[string]time.Duration{}
 
 const (
@@ -372,7 +373,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 // getExpiry gets an expiry date for the cookie, assuming it was generated right now.
 func getExpiry(familyName string) time.Time {
-	ttl := 14 * 24 * time.Hour
+	ttl := DEFAULT_TTL
 	if customTTL, ok := customBidderTTLs[familyName]; ok {
 		ttl = customTTL
 	}
