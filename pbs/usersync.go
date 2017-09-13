@@ -23,6 +23,7 @@ const COOKIE_NAME = "uids"
 
 // DEFAULT_TTL is the default amount of time which a cookie is considered valid.
 const DEFAULT_TTL = 14 * 24 * time.Hour
+
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
 var customBidderTTLs = map[string]time.Duration{}
