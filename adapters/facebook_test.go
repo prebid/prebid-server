@@ -15,7 +15,7 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type tagInfo struct {
@@ -114,7 +114,7 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 			bid = &openrtb.Bid{
 				ID:    "random-id",
 				ImpID: breq.Imp[0].ID,
-				Price: tag.bid * 100, // facebook bids in
+				Price: tag.bid,
 				AdM:   tag.content,
 			}
 			if tag.delay > 0 {

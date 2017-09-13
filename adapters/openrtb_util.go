@@ -3,7 +3,7 @@ package adapters
 import (
 	"github.com/prebid/prebid-server/pbs"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string) openrtb.BidRequest {
@@ -22,7 +22,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				Format:   unit.Sizes,
 				TopFrame: unit.TopFrame,
 			},
-			Secure: req.Secure,
+			Secure: &req.Secure,
 			// pmp
 			// ext
 		}
@@ -42,9 +42,9 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			TMax: req.TimeoutMillis,
 		}
 	}
-	if req.User != nil {
-		req.User.BuyerUID, _, _ = req.Cookie.GetUID(bidderFamily)
-	}
+
+	buyerUID, _, _ := req.Cookie.GetUID(bidderFamily)
+	id, _, _ := req.Cookie.GetUID("adnxs")
 
 	return openrtb.BidRequest{
 		ID:  req.Tid,
@@ -54,7 +54,10 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			Page:   req.Url,
 		},
 		Device: req.Device,
-		User:   req.User,
+		User: &openrtb.User{
+			BuyerUID: buyerUID,
+			ID:       id,
+		},
 		Source: &openrtb.Source{
 			FD:  1, // upstream, aka header
 			TID: req.Tid,
