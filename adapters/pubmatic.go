@@ -79,12 +79,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
+	userId, _, _ := req.Cookie.GetUID(a.FamilyName())
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.AddCookie(&http.Cookie{
 		Name:  "KADUSERCOOKIE",
-		Value: req.GetUserID(a.FamilyName()),
+		Value: userId,
 	})
 
 	pbResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
