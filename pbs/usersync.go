@@ -372,7 +372,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 // getExpiry gets an expiry date for the cookie, assuming it was generated right now.
 func getExpiry(familyName string) time.Time {
-	ttl := 7 * 24 * time.Hour
+	ttl := 14 * 24 * time.Hour
 	if customTTL, ok := customBidderTTLs[familyName]; ok {
 		ttl = customTTL
 	}
