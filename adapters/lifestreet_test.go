@@ -15,7 +15,7 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type lsTagInfo struct {
@@ -222,9 +222,9 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	req.Header.Add("Referer", lsdata.referrer)
 	req.Header.Add("X-Real-IP", lsdata.deviceIP)
 
-	pc := pbs.ParseUIDCookie(req)
+	pc := pbs.ParsePBSCookieFromRequest(req)
 	fakewriter := httptest.NewRecorder()
-	pbs.SetUIDCookie(fakewriter, pc)
+	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
