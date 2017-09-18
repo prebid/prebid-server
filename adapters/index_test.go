@@ -12,7 +12,7 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 func TestIndexInvalidCall(t *testing.T) {
@@ -242,8 +242,8 @@ func TestIndexBasicResponse(t *testing.T) {
 
 func TestIndexUserSyncInfo(t *testing.T) {
 
-	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "localhost")
-	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D__UID__" {
+	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D" {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {

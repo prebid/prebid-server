@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type AppNexusAdapter struct {

@@ -46,8 +46,8 @@ imports:
   version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml
   version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
-- name: github.com/prebid/openrtb
-  version: 4abcf757715a1a5e13211dd6c67c8e21c73b4668
+- name: github.com/mxmCherry/openrtb
+  version: af5bbec3623c8140b3f381af8ddcb1fce268d7d2
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors

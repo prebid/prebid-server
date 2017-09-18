@@ -4,7 +4,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 
 	"errors"
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 func min(x, y int) int {
@@ -83,7 +83,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			for _, mType := range unitMediaTypes {
 				newImp := openrtb.Imp{
 					ID:     unit.Code,
-					Secure: req.Secure,
+					Secure: &req.Secure,
 				}
 				switch mType {
 				case pbs.MEDIA_TYPE_BANNER:
@@ -105,7 +105,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		} else {
 			newImp := openrtb.Imp{
 				ID:     unit.Code,
-				Secure: req.Secure,
+				Secure: &req.Secure,
 			}
 			for _, mType := range unitMediaTypes {
 				switch mType {
@@ -143,9 +143,9 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			TMax: req.TimeoutMillis,
 		}, nil
 	}
-	if req.User != nil {
-		req.User.BuyerUID = req.GetUserID(bidderFamily)
-	}
+
+	buyerUID, _, _ := req.Cookie.GetUID(bidderFamily)
+	id, _, _ := req.Cookie.GetUID("adnxs")
 
 	return openrtb.BidRequest{
 		ID:  req.Tid,
@@ -155,7 +155,10 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			Page:   req.Url,
 		},
 		Device: req.Device,
-		User:   req.User,
+		User: &openrtb.User{
+			BuyerUID: buyerUID,
+			ID:       id,
+		},
 		Source: &openrtb.Source{
 			FD:  1, // upstream, aka header
 			TID: req.Tid,
