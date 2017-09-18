@@ -1,5 +1,5 @@
-hash: 95ff13c52ce1d068e75ec5517fa527dcbe9cfa527a7cf94daa541465ea208262
-updated: 2017-09-11T13:39:36.675790672-04:00
+hash: 4b7a4e23ac8a6688b131126c8da1609cd52d8ee6190eeb11a4c8277828b79277
+updated: 2017-09-15T21:28:14.196930091-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -50,12 +50,12 @@ imports:
   version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
 - name: github.com/prebid/openrtb
   version: 4abcf757715a1a5e13211dd6c67c8e21c73b4668
-- name: github.com/pubnub/go-metrics-statsd
-  version: 7da61f429d6bdaa79d5d5746998e0db9622c56fc
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
   version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
+- name: github.com/rubicon-project/go-metrics-statsd
+  version: 0578b6967ff52d8b1cd3867e7966272839e827fa
 - name: github.com/spaolacci/murmur3
   version: 0d12bf811670bf6a1a63828dfbd003eded177fce
 - name: github.com/spf13/afero
