@@ -52,7 +52,8 @@ func TestPubmaticTimeout(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -86,7 +87,8 @@ func TestPubmaticInvalidJson(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -121,7 +123,8 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -156,7 +159,8 @@ func TestPubmaticMissingPublisherId(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -191,7 +195,8 @@ func TestPubmaticMissingAdSlot(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -250,8 +255,9 @@ func TestPubmaticBasicResponse(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code:  "unitCode",
-				BidID: "bidid",
+				Code:       "unitCode",
+				BidID:      "bidid",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,

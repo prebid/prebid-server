@@ -5,8 +5,27 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/magiconair/properties/assert"
 	"github.com/prebid/prebid-server/cache/dummycache"
 )
+
+func TestParseMediaTypes(t *testing.T) {
+	types1 := []string{"Banner"}
+	t1 := ParseMediaTypes(types1)
+	assert.Equal(t, len(t1), 1)
+	assert.Equal(t, t1[0], MEDIA_TYPE_BANNER)
+
+	types2 := []string{"Banner", "Video"}
+	t2 := ParseMediaTypes(types2)
+	assert.Equal(t, len(t2), 2)
+	assert.Equal(t, t2[0], MEDIA_TYPE_BANNER)
+	assert.Equal(t, t2[1], MEDIA_TYPE_VIDEO)
+
+	types3 := []string{"Banner", "Vo"}
+	t3 := ParseMediaTypes(types3)
+	assert.Equal(t, len(t3), 1)
+	assert.Equal(t, t3[0], MEDIA_TYPE_BANNER)
+}
 
 func TestParseSimpleRequest(t *testing.T) {
 	body := []byte(`{
@@ -27,6 +46,7 @@ func TestParseSimpleRequest(t *testing.T) {
             {
                 "code": "second",
                 "sizes": [{"w": 728, "h": 90}],
+                "media_types" :["banner", "video"],
                 "bids": [
                     {
                         "bidder": "indexExchange"
@@ -36,6 +56,7 @@ func TestParseSimpleRequest(t *testing.T) {
                     }
                 ]
             }
+
         ]
     }
     `)
@@ -82,6 +103,13 @@ func TestParseSimpleRequest(t *testing.T) {
 	if pbs_req.Bidders[2].AdUnits[0].BidID == "" {
 		t.Errorf("ID should have been generated for empty BidID")
 	}
+	if pbs_req.AdUnits[1].MediaTypes[0] != "banner" {
+		t.Errorf("Instead of banner MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+	if pbs_req.AdUnits[1].MediaTypes[1] != "video" {
+		t.Errorf("Instead of video MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+
 }
 
 func TestHeaderParsing(t *testing.T) {
