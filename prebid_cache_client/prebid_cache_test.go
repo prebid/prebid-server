@@ -50,10 +50,20 @@ func TestPrebidClient(t *testing.T) {
 	cobj := make([]*CacheObject, 2)
 
 	cobj[0] = &CacheObject{
-		Value: "random",
+		Value: &BidCache {
+					Adm: "adm",
+					NURL: "nurl",
+					Width: 300,
+					Height: 250,
+				},
 	}
 	cobj[1] = &CacheObject{
-		Value: "totally awesome value!",
+		Value: &BidCache {
+					Adm: "adm1",
+					NURL: "nurl1",
+					Width: 300,
+					Height: 250,
+				},
 	}
 
 	InitPrebidCache(server.URL)

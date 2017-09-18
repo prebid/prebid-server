@@ -11,13 +11,21 @@ import (
 )
 
 type CacheObject struct {
-	Value string
+	Value *BidCache
 	UUID  string
+}
+
+type BidCache struct {
+	Adm    string `json:"adm,omitempty"`
+	NURL   string `json:"nurl,omitempty"`
+	Width  uint64 `json:"width,omitempty"`
+	Height uint64 `json:"height,omitempty"`
 }
 
 // internal protocol objects
 type putObject struct {
-	Value string `json:"value"`
+	Type  string  `json:"type"`
+	Value *BidCache `json:"value"`
 }
 
 type putRequest struct {
@@ -40,7 +48,7 @@ var (
 // InitPrebidCache setup the global prebid cache
 func InitPrebidCache(baseurl string) {
 	baseURL = baseurl
-	putURL = fmt.Sprintf("%s/put", baseURL)
+	putURL = fmt.Sprintf("%s/cache", baseURL)
 
 	ts := &http.Transport{
 		MaxIdleConns:    10,
@@ -56,6 +64,7 @@ func InitPrebidCache(baseurl string) {
 func Put(ctx context.Context, objs []*CacheObject) error {
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
+		pr.Puts[i].Type = "json"
 		pr.Puts[i].Value = obj.Value
 	}
 
