@@ -310,6 +310,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				Sizes:      unit.Sizes,
 				TopFrame:   unit.TopFrame,
 				Code:       unit.Code,
+				Instl:    	unit.Instl,
 				Params:     b.Params,
 				BidID:      b.BidID,
 				MediaTypes: mtypes,
