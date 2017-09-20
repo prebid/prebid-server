@@ -71,6 +71,7 @@ type AdUnit struct {
 	Bids       []Bids           `json:"bids"`
 	ConfigID   string           `json:"config_id"`
 	MediaTypes []string         `json:"media_types"`
+	Instl      int8             `json:"instl"`
 }
 
 type PBSAdUnit struct {
@@ -81,6 +82,7 @@ type PBSAdUnit struct {
 	Params     json.RawMessage
 	Video      PBSVideo
 	MediaTypes []MediaType
+	Instl      int8
 }
 
 func ParseMediaType(s string) (MediaType, error) {
