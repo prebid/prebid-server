@@ -449,4 +449,7 @@ func TestParseMobileRequest(t *testing.T) {
 	if pbs_req.SDK.Platform != "iOS" {
 		t.Errorf("Parse sdk platform failed")
 	}
+	if pbs_req.Device.IP == "" {
+		t.Errorf("Parse device ip failed %s", pbs_req.Device.IP)
+	}
 }

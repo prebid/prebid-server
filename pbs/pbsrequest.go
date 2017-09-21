@@ -206,6 +206,8 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
 	}
+	pbsReq.Device.IP = prebid.GetIP(r)
+
 	if pbsReq.SDK == nil {
 		pbsReq.SDK = &SDK{}
 	}
@@ -231,7 +233,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
-		pbsReq.Device.IP = prebid.GetIP(r)
 
 		pbsReq.Url = r.Header.Get("Referer") // must be specified in the header
 		// TODO: this should explicitly put us in test mode
