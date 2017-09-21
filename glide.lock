@@ -1,5 +1,5 @@
-hash: 4b7a4e23ac8a6688b131126c8da1609cd52d8ee6190eeb11a4c8277828b79277
-updated: 2017-09-15T21:28:14.196930091-04:00
+hash: 193166669d376c07b172c4d7d57b10c3c687ea058273d01df8d129edfa9acfa6
+updated: 2017-09-20T13:56:00.077358147-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -54,6 +54,8 @@ imports:
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
   version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
+- name: github.com/rubicon-project/go-metrics-graphite
+  version: 647fe7538378d96d544700b134a076ebc680ad52
 - name: github.com/rubicon-project/go-metrics-statsd
   version: 0578b6967ff52d8b1cd3867e7966272839e827fa
 - name: github.com/spaolacci/murmur3

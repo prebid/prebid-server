@@ -16,11 +16,11 @@ import (
 	"time"
 
 	"github.com/cloudfoundry/gosigar"
-	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
+	"github.com/rubicon-project/go-metrics-graphite"
 	"github.com/rubicon-project/go-metrics-statsd"
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
