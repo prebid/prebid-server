@@ -18,6 +18,7 @@ import (
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
@@ -242,6 +243,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	glog.Infof("test log message")
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
@@ -328,6 +330,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
 				} else if bid_list != nil {
+					bid_list = checkForValidBidSize(bid_list, bidder)
 					bidder.NumBids = len(bid_list)
 					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
@@ -404,6 +407,44 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
+// determine the num of ad unit sizes that were used in corresponding bid request
+// if num_adunit_sizes == 1, assign the height and/or width to bid's height/width
+// if num_adunit_sizes > 1, reject the bid (remove from list) and return an error
+// return updated bid list object for next steps in auction
+func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBidSlice {
+	var finalValidBids pbs.PBSBidSlice
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "banner" && (bid.Height == 0 || bid.Width == 0) {
+			for _, adunit := range bidder.AdUnits {
+				var bidSizes []openrtb.Format
+				if adunit.BidID == bid.BidID {
+					for _, tmpSizes := range adunit.Sizes {
+						bidSizes = append(bidSizes, tmpSizes)
+					}
+				}
+
+				if len(bidSizes) == 1 {
+					bid.Width, bid.Height = bidSizes[0].W, bidSizes[0].H
+					finalValidBids = append(finalValidBids, bid)
+				} else if len(bidSizes) > 1 {
+					msg := `Detected WxH sizes in bid response were undefined for a bid request utilizing multiple adunit sizes.  
+					This bid has been rejected.
+					Below are some details about the bid for further review:
+					%+v
+					`
+					glog.Warningf(msg, *bid)
+				}
+
+			}
+
+		} else {
+			finalValidBids = append(finalValidBids, bid)
+		}
+	}
+	return finalValidBids
 }
 
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
