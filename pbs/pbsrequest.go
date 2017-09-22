@@ -213,7 +213,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 	// only parse user object for SDK version 0.0.2 and up
 	if CompareVersions(pbsReq.SDK.Version, "0.0.2") >= 0 {
-		// if pbsReq.SDK.Version != "0.0.1" {
 		if pbsReq.PBSUser != nil {
 			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
 			if err != nil {
