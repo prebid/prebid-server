@@ -708,13 +708,19 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
+	stopSignals := make(chan os.Signal)
+	signal.Notify(stopSignals, syscall.SIGTERM)
+	signal.Notify(stopSignals, syscall.SIGINT)
+
 	/* Run admin on different port thats not exposed */
 	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
 	adminServer := &http.Server{Addr: adminURI}
-	go func() {
+	go (func() {
 		fmt.Println("Admin running on: ", adminURI)
-		glog.Errorf("Admin server: %v", adminServer.ListenAndServe())
-	}()
+		err := adminServer.ListenAndServe()
+		glog.Errorf("Admin server: %v", err)
+		stopSignals <- syscall.SIGTERM
+	})()
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
@@ -753,24 +759,23 @@ func serve(cfg *config.Configuration) error {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	stopSignals := make(chan os.Signal)
-	signal.Notify(stopSignals, syscall.SIGTERM)
-	signal.Notify(stopSignals, syscall.SIGINT)
 	go (func() {
-		<-stopSignals
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := server.Shutdown(ctx); err != nil {
-			glog.Errorf("Main server shutdown: %v", err)
-		}
-		if err := adminServer.Shutdown(ctx); err != nil {
-			glog.Errorf("Admin server shutdown: %v", err)
-		}
+		fmt.Printf("Main server running on: %s\n", server.Addr)
+		serverErr := server.ListenAndServe()
+		glog.Errorf("Main server: %v", serverErr)
+		stopSignals <- syscall.SIGTERM
 	})()
 
-	fmt.Printf("Main server running on: %s\n", server.Addr)
-	serverErr := server.ListenAndServe()
-	glog.Errorf("Main server: %v", serverErr)
-	return serverErr
+	<-stopSignals
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		glog.Errorf("Main server shutdown: %v", err)
+	}
+	if err := adminServer.Shutdown(ctx); err != nil {
+		glog.Errorf("Admin server shutdown: %v", err)
+	}
+
+	return nil
 }
