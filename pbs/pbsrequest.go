@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
+	"github.com/blang/semver"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
@@ -212,7 +212,9 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	}
 
 	// only parse user object for SDK version 0.0.2 and up
-	if CompareVersions(pbsReq.SDK.Version, "0.0.2") >= 0 {
+	v1, err := semver.Make(pbsReq.SDK.Version)
+	v2, err := semver.Make("0.0.2")
+	if v1.Compare(v2) >= 0 {
 		if pbsReq.PBSUser != nil {
 			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
 			if err != nil {
@@ -331,73 +333,4 @@ func (req PBSRequest) Elapsed() int {
 func (p PBSRequest) String() string {
 	b, _ := json.MarshalIndent(p, "", "    ")
 	return string(b)
-}
-
-func CompareVersions(v1, v2 string) int {
-	var x, r, l int = 0, 0, 0
-	v1Digits := strings.Split(v1, ".")
-	v2Digits := strings.Split(v2, ".")
-	len1, len2 := len(v1Digits), len(v2Digits)
-
-	if len1 > len2 {
-		x = len1
-	} else {
-		x = len2
-	}
-
-	for i := 0; i < x; i++ {
-		if i < len1 && i < len2 {
-			if v1Digits[i] == v2Digits[i] {
-				continue
-			}
-		}
-
-		r = 0
-		if i < len1 {
-			r = NumVersion(v1Digits[i])
-		}
-
-		l = 0
-		if i < len2 {
-			l = NumVersion(v2Digits[i])
-		}
-
-		if r < l {
-			return -1
-		} else if r > l {
-			return 1
-		}
-	}
-
-	return 0
-
-}
-
-var specialForms = map[string]int{
-	"dev":   -6,
-	"alpha": -5,
-	"a":     -5,
-	"beta":  -4,
-	"b":     -4,
-	"RC":    -3,
-	"rc":    -3,
-	"#":     -2,
-	"p":     1,
-	"pl":    1,
-}
-
-func NumVersion(value string) int {
-	if value == "" {
-		return 0
-	}
-
-	if number, err := strconv.Atoi(value); err == nil {
-		return number
-	}
-
-	if special, ok := specialForms[value]; ok {
-		return special
-	}
-
-	return -7
 }

@@ -538,24 +538,3 @@ func TestParseMalformedMobileRequest(t *testing.T) {
 		t.Errorf("Parse device model failed")
 	}
 }
-
-func TestCompareVersions(t *testing.T) {
-	res := CompareVersions("0.0.1", "0.0.2")
-	if res != -1 {
-		t.Errorf("Wrong comparison of versions, 0.0.1 should be smaller than 0.0.2")
-	}
-
-	res = CompareVersions("0.0.3", "0.0.2")
-	if res != 1 {
-		t.Errorf("Wrong comparison of versions, 0.0.3 should be greater than 0.0.2")
-	}
-
-	res = CompareVersions("0.0.2", "0.0.2")
-	if res != 0 {
-		t.Errorf("Wrong comparison of versions, 0.0.2 should equal 0.0.2")
-	}
-	res = CompareVersions("", "0.0.2")
-	if res != -1 {
-		t.Errorf("Wrong comparison of versions, zero value should be smaller than 0.0.2")
-	}
-}
