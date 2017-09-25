@@ -67,13 +67,16 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 		pr.Puts[i].Type = "json"
 		pr.Puts[i].Value = obj.Value
 	}
-
-	reqJSON, err := json.Marshal(pr)
+	// Don't want to escape the HTML for adm and nurl
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	err := enc.Encode(pr)
 	if err != nil {
 		return err
 	}
 
-	httpReq, err := http.NewRequest("POST", putURL, bytes.NewBuffer(reqJSON))
+	httpReq, err := http.NewRequest("POST", putURL, buf)
 	if err != nil {
 		return err
 	}
