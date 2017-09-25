@@ -15,7 +15,7 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type anTagInfo struct {
@@ -172,12 +172,17 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		resp.SeatBid[0].Bid = append(resp.SeatBid[0].Bid, openrtb.Bid{
+		resBid := openrtb.Bid{
 			ID:    "random-id",
 			ImpID: imp.ID,
 			Price: andata.tags[i].bid,
 			AdM:   andata.tags[i].content,
-		})
+		}
+
+		if imp.Video != nil {
+			resBid.Attr = []int8{6}
+		}
+		resp.SeatBid[0].Bid = append(resp.SeatBid[0].Bid, resBid)
 	}
 
 	// TODO: are all of these valid for app?
@@ -276,7 +281,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		}
 
 		pbin.AdUnits[i] = pbs.AdUnit{
-			Code: tag.code,
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
@@ -339,6 +345,9 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		for _, tag := range andata.tags {
 			if bid.AdUnitCode == tag.code {
 				matched = true
+				if bid.CreativeMediaType != "banner" {
+					t.Errorf("Incorrect Creative MediaType '%s'", bid.CreativeMediaType)
+				}
 				if bid.BidderCode != "appnexus" {
 					t.Errorf("Incorrect BidderCode '%s'", bid.BidderCode)
 				}

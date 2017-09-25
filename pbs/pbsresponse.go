@@ -16,6 +16,8 @@ type PBSBid struct {
 	// it helps publishers and bidders identify and communicate about malicious or inappropriate ads.
 	// This project simply passes it along with the bid.
 	Creative_id string `json:"creative_id,omitempty"`
+	// CreativeMediaType shows whether the creative is a video or banner.
+	CreativeMediaType string `json:"media_type,omitempty"`
 	// BidderCode is the PBSBidder.BidderCode of the PBSBidder who made this bid.
 	BidderCode string `json:"bidder"`
 	// BidHash is the hash of the bidder's unique bid identifier for blockchain. It should not be sent to browser.

@@ -300,6 +300,14 @@
                             }
                         }
                     },
+                    "media_types": {
+                        "type": "array",
+                        "description": "Media types accepted by this ad unit",
+                        "items": {
+                            "type": "string",
+                            "enum": ["banner","video"]
+                        }
+                    },
                     "bids": {
                         "type": "array",
                         "minItems": 1,

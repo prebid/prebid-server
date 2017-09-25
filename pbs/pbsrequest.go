@@ -13,12 +13,19 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
 )
 
 const MAX_BIDDERS = 8
+
+type MediaType byte
+
+const (
+	MEDIA_TYPE_BANNER MediaType = iota
+	MEDIA_TYPE_VIDEO
+)
 
 type ConfigCache interface {
 	LoadConfig(string) ([]Bids, error)
@@ -30,20 +37,59 @@ type Bids struct {
 	Params     json.RawMessage `json:"params"`
 }
 
+// Structure for holding video-specific information
+type PBSVideo struct {
+	//Content MIME types supported. Popular MIME types may include “video/x-ms-wmv” for Windows Media and “video/x-flv” for Flash Video.
+	Mimes []string `json:"mimes,omitempty"`
+
+	//Minimum video ad duration in seconds.
+	Minduration int64 `json:"minduration,omitempty"`
+
+	// Maximum video ad duration in seconds.
+	Maxduration int64 `json:"maxduration,omitempty"`
+
+	//Indicates the start delay in seconds for pre-roll, mid-roll, or post-roll ad placements.
+	Startdelay int64 `json:"startdelay,omitempty"`
+
+	// Indicates if the player will allow the video to be skipped ( 0 = no, 1 = yes).
+	Skippable int `json:"skippable,omitempty"`
+
+	// Playback method code Description
+	// 1 - Initiates on Page Load with Sound On
+	// 2 - Initiates on Page Load with Sound Off by Default
+	// 3 - Initiates on Click with Sound On
+	// 4 - Initiates on Mouse-Over with Sound On
+	// 5 - Initiates on Entering Viewport with Sound On
+	// 6 - Initiates on Entering Viewport with Sound Off by Default
+	PlaybackMethod int8 `json:"playback_method,omitempty"`
+}
+
 type AdUnit struct {
-	Code     string           `json:"code"`
-	TopFrame int8             `json:"is_top_frame"`
-	Sizes    []openrtb.Format `json:"sizes"`
-	Bids     []Bids           `json:"bids"`
-	ConfigID string           `json:"config_id"`
+	Code       string           `json:"code"`
+	TopFrame   int8             `json:"is_top_frame"`
+	Sizes      []openrtb.Format `json:"sizes"`
+	Bids       []Bids           `json:"bids"`
+	ConfigID   string           `json:"config_id"`
+	MediaTypes []string         `json:"media_types"`
 }
 
 type PBSAdUnit struct {
-	Sizes    []openrtb.Format
-	TopFrame int8
-	Code     string
-	BidID    string
-	Params   json.RawMessage
+	Sizes      []openrtb.Format
+	TopFrame   int8
+	Code       string
+	BidID      string
+	Params     json.RawMessage
+	Video      PBSVideo
+	MediaTypes []MediaType
+}
+
+func ParseMediaType(s string) (MediaType, error) {
+	mediaTypes := map[string]MediaType{"BANNER": MEDIA_TYPE_BANNER, "VIDEO": MEDIA_TYPE_VIDEO}
+	t, ok := mediaTypes[strings.ToUpper(s)]
+	if !ok {
+		return 0, fmt.Errorf("Invalid MediaType %s", s)
+	}
+	return t, nil
 }
 
 type SDK struct {
@@ -82,7 +128,7 @@ type PBSRequest struct {
 	SortBids      int8            `json:"sort_bids"`
 	MaxKeyLength  int8            `json:"max_key_length"`
 	Secure        int8            `json:"secure"`
-	TimeoutMillis uint64          `json:"timeout_millis"`
+	TimeoutMillis int64           `json:"timeout_millis"`
 	AdUnits       []AdUnit        `json:"ad_units"`
 	IsDebug       bool            `json:"is_debug"`
 	App           *openrtb.App    `json:"app"`
@@ -114,6 +160,31 @@ func ConfigGet(cache cache.Cache, id string) ([]Bids, error) {
 	return bids, nil
 }
 
+func ParseMediaTypes(types []string) []MediaType {
+	var mtypes []MediaType
+	mtmap := make(map[MediaType]bool)
+
+	if types == nil {
+		mtypes = append(mtypes, MEDIA_TYPE_BANNER)
+	} else {
+		for _, t := range types {
+			mt, er := ParseMediaType(t)
+			if er != nil {
+				glog.Infof("Invalid media type: %s", er)
+			} else {
+				if !mtmap[mt] {
+					mtypes = append(mtypes, mt)
+					mtmap[mt] = true
+				}
+			}
+		}
+		if len(mtypes) == 0 {
+			mtypes = append(mtypes, MEDIA_TYPE_BANNER)
+		}
+	}
+	return mtypes
+}
+
 func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	defer r.Body.Close()
 
@@ -129,12 +200,14 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	}
 
 	if pbsReq.TimeoutMillis == 0 || pbsReq.TimeoutMillis > 2000 {
-		pbsReq.TimeoutMillis = uint64(viper.GetInt("default_timeout_ms"))
+		pbsReq.TimeoutMillis = int64(viper.GetInt("default_timeout_ms"))
 	}
 
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
 	}
+	pbsReq.Device.IP = prebid.GetIP(r)
+
 	if pbsReq.SDK == nil {
 		pbsReq.SDK = &SDK{}
 	}
@@ -158,10 +231,8 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		if anid, err := r.Cookie("uuid2"); err == nil {
 			pbsReq.Cookie.TrySync("adnxs", anid.Value)
 		}
-		pbsReq.User.ID = pbsReq.GetUserID("adnxs")
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
-		pbsReq.Device.IP = prebid.GetIP(r)
 
 		pbsReq.Url = r.Header.Get("Referer") // must be specified in the header
 		// TODO: this should explicitly put us in test mode
@@ -212,6 +283,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			glog.Infof("Ad unit %s has %d bidders for %d sizes", unit.Code, len(bidders), len(unit.Sizes))
 		}
 
+		mtypes := ParseMediaTypes(unit.MediaTypes)
 		for _, b := range bidders {
 			var bidder *PBSBidder
 			// index requires a different request for each ad unit
@@ -234,11 +306,12 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			}
 
 			pau := PBSAdUnit{
-				Sizes:    unit.Sizes,
-				TopFrame: unit.TopFrame,
-				Code:     unit.Code,
-				Params:   b.Params,
-				BidID:    b.BidID,
+				Sizes:      unit.Sizes,
+				TopFrame:   unit.TopFrame,
+				Code:       unit.Code,
+				Params:     b.Params,
+				BidID:      b.BidID,
+				MediaTypes: mtypes,
 			}
 
 			bidder.AdUnits = append(bidder.AdUnits, pau)
@@ -250,11 +323,6 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 
 func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
-}
-
-func (req *PBSRequest) GetUserID(BidderCode string) string {
-	uid, _ := req.Cookie.GetUID(BidderCode)
-	return uid
 }
 
 func (p PBSRequest) String() string {

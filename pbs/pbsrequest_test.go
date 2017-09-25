@@ -2,12 +2,30 @@ package pbs
 
 import (
 	"bytes"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/magiconair/properties/assert"
 	"github.com/prebid/prebid-server/cache/dummycache"
 )
+
+func TestParseMediaTypes(t *testing.T) {
+	types1 := []string{"Banner"}
+	t1 := ParseMediaTypes(types1)
+	assert.Equal(t, len(t1), 1)
+	assert.Equal(t, t1[0], MEDIA_TYPE_BANNER)
+
+	types2 := []string{"Banner", "Video"}
+	t2 := ParseMediaTypes(types2)
+	assert.Equal(t, len(t2), 2)
+	assert.Equal(t, t2[0], MEDIA_TYPE_BANNER)
+	assert.Equal(t, t2[1], MEDIA_TYPE_VIDEO)
+
+	types3 := []string{"Banner", "Vo"}
+	t3 := ParseMediaTypes(types3)
+	assert.Equal(t, len(t3), 1)
+	assert.Equal(t, t3[0], MEDIA_TYPE_BANNER)
+}
 
 func TestParseSimpleRequest(t *testing.T) {
 	body := []byte(`{
@@ -28,6 +46,7 @@ func TestParseSimpleRequest(t *testing.T) {
             {
                 "code": "second",
                 "sizes": [{"w": 728, "h": 90}],
+                "media_types" :["banner", "video"],
                 "bids": [
                     {
                         "bidder": "indexExchange"
@@ -37,6 +56,7 @@ func TestParseSimpleRequest(t *testing.T) {
                     }
                 ]
             }
+
         ]
     }
     `)
@@ -83,6 +103,13 @@ func TestParseSimpleRequest(t *testing.T) {
 	if pbs_req.Bidders[2].AdUnits[0].BidID == "" {
 		t.Errorf("ID should have been generated for empty BidID")
 	}
+	if pbs_req.AdUnits[1].MediaTypes[0] != "banner" {
+		t.Errorf("Instead of banner MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+	if pbs_req.AdUnits[1].MediaTypes[1] != "video" {
+		t.Errorf("Instead of video MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+
 }
 
 func TestHeaderParsing(t *testing.T) {
@@ -422,41 +449,7 @@ func TestParseMobileRequest(t *testing.T) {
 	if pbs_req.SDK.Platform != "iOS" {
 		t.Errorf("Parse sdk platform failed")
 	}
-}
-
-func TestParsePBSRequestAddsAdnxsCookie(t *testing.T) {
-	body := []byte(`{
-        "tid": "abcd",
-        "ad_units": [
-            {
-                "code": "first",
-                "sizes": [{"w": 300, "h": 250}],
-                "bidders": [
-                {
-                    "bidder": "indexExchange",
-                    "params": {
-                        "id": "417",
-                        "siteID": "test-site"
-                    }
-                }
-                ]
-            }
-        ]
-    }
-    `)
-	r, err := http.NewRequest("POST", "/auction", bytes.NewBuffer(body))
-	r.Header.Add("Referer", "http://nytimes.com/cool.html")
-	if err != nil {
-		t.Fatalf("new request failed")
-	}
-	r.AddCookie(&http.Cookie{Name: "uuid2", Value: "testcookie"})
-	d, _ := dummycache.New()
-
-	pbs_req, err2 := ParsePBSRequest(r, d)
-	if err2 != nil {
-		t.Fatalf("Parse simple request failed %v", err2)
-	}
-	if pbs_req.User.ID != "testcookie" {
-		t.Errorf("Failed to pull URL from referrer")
+	if pbs_req.Device.IP == "" {
+		t.Errorf("Parse device ip failed %s", pbs_req.Device.IP)
 	}
 }
