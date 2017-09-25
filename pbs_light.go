@@ -709,8 +709,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	stopSignals := make(chan os.Signal)
-	signal.Notify(stopSignals, syscall.SIGTERM)
-	signal.Notify(stopSignals, syscall.SIGINT)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
 	/* Run admin on different port thats not exposed */
 	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
