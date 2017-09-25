@@ -34,6 +34,9 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type DomainMetrics struct {
@@ -623,7 +626,7 @@ func main() {
 	requireUUID2 = cfg.RequireUUID2
 	cookieDomain = cfg.CookieDomain
 	if err := serve(cfg); err != nil {
-		glog.Fatalf("PreBid Server encountered an error: %v", err)
+		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
 
@@ -705,13 +708,18 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
+	stopSignals := make(chan os.Signal)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
+
 	/* Run admin on different port thats not exposed */
-	go func() {
-		// Todo -- make configurable
-		adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminServer := &http.Server{Addr: adminURI}
+	go (func() {
 		fmt.Println("Admin running on: ", adminURI)
-		glog.Fatal(http.ListenAndServe(adminURI, nil))
-	}()
+		err := adminServer.ListenAndServe()
+		glog.Errorf("Admin server: %v", err)
+		stopSignals <- syscall.SIGTERM
+	})()
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
@@ -750,9 +758,23 @@ func serve(cfg *config.Configuration) error {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	fmt.Printf("Server running on: %s\n", server.Addr)
-	if err := server.ListenAndServe(); err != nil {
-		return err
+	go (func() {
+		fmt.Printf("Main server running on: %s\n", server.Addr)
+		serverErr := server.ListenAndServe()
+		glog.Errorf("Main server: %v", serverErr)
+		stopSignals <- syscall.SIGTERM
+	})()
+
+	<-stopSignals
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		glog.Errorf("Main server shutdown: %v", err)
 	}
+	if err := adminServer.Shutdown(ctx); err != nil {
+		glog.Errorf("Admin server shutdown: %v", err)
+	}
+
 	return nil
 }
