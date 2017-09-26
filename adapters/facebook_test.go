@@ -266,7 +266,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 
 	// same test but with one request timing out
 	fbdata.tags[0].delay = 20 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	defer cancel()
 
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
