@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/constants"
+	"github.com/prebid/prebid-server/family"
 )
 
 func TestOpenRTB(t *testing.T) {
@@ -27,7 +27,7 @@ func TestOpenRTB(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, constants.FNRubicon)
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, family.Rubicon)
 
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
@@ -45,6 +45,6 @@ func TestOpenRTBNoSize(t *testing.T) {
 			},
 		},
 	}
-	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, constants.FNIndex)
+	resp := makeOpenRTBGeneric(&pbReq, &pbBidder, family.Index)
 	assert.Equal(t, resp.Imp[0].ID, "")
 }

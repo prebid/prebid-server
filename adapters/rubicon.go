@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/constants"
+	"github.com/prebid/prebid-server/family"
 )
 
 type RubiconAdapter struct {
@@ -32,8 +32,8 @@ func (a *RubiconAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *RubiconAdapter) FamilyName() constants.FamilyName {
-	return constants.FNRubicon
+func (a *RubiconAdapter) FamilyName() family.Name {
+	return family.Rubicon
 }
 
 func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {

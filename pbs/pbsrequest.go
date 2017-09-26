@@ -15,7 +15,7 @@ import (
 
 	"github.com/prebid/openrtb"
 	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/constants"
+	"github.com/prebid/prebid-server/family"
 	"github.com/prebid/prebid-server/prebid"
 )
 
@@ -230,7 +230,7 @@ func (req PBSRequest) Elapsed() int {
 	return int(time.Since(req.Start) / 1000000)
 }
 
-func (req PBSRequest) GetUserID(BidderCode constants.FamilyName) string {
+func (req PBSRequest) GetUserID(BidderCode family.Name) string {
 	if uid, ok := req.UserIDs[BidderCode.String()]; ok { // TODO: consider moving UserIDs to an array indexed by the FamilyName int.
 		return uid
 	}
