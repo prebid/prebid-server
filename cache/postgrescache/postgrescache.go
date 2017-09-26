@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/gob"
 	"fmt"
+
 	_ "github.com/lib/pq"
 
 	"github.com/coocood/freecache"
@@ -76,11 +77,8 @@ func newShared(conf PostgresConfig) (*shared, error) {
 
 // Cache postgres
 type Cache struct {
-	shared *shared
-
+	shared   *shared
 	accounts *accountService
-	domains  *domainService
-	apps     *appsService
 	config   *configService
 }
 
@@ -94,20 +92,12 @@ func New(cfg PostgresConfig) (*Cache, error) {
 	return &Cache{
 		shared:   shared,
 		accounts: &accountService{shared: shared},
-		domains:  &domainService{shared: shared},
-		apps:     &appsService{shared: shared},
 		config:   &configService{shared: shared},
 	}, nil
 }
 
 func (c *Cache) Accounts() cache.AccountsService {
 	return c.accounts
-}
-func (c *Cache) Domains() cache.DomainsService {
-	return c.domains
-}
-func (c *Cache) Apps() cache.AppsService {
-	return c.apps
 }
 func (c *Cache) Config() cache.ConfigService {
 	return c.config
@@ -164,83 +154,6 @@ func decodeAccount(b []byte) *cache.Account {
 // Set the account in postgres and the lru cache
 func (s *accountService) Set(account *cache.Account) error {
 	return nil
-}
-
-// DomainService handles the domain information
-type domainService struct {
-	shared *shared
-}
-
-// Set
-func (s *domainService) Set(domain *cache.Domain) error {
-	return nil
-}
-
-func (s *domainService) Get(key string) (*cache.Domain, error) {
-	var domain string
-	var d cache.Domain
-
-	b, err := s.shared.lru.Get([]byte(key))
-	if err == nil {
-		buf := bytes.NewReader(b)
-		if err = gob.NewDecoder(buf).Decode(&d); err != nil {
-			panic(err)
-		}
-		return &d, nil
-	}
-
-	if err := s.shared.db.QueryRow("SELECT domain FROM domains_domain where domain = $1 LIMIT 1", key).Scan(&domain); err != nil {
-		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
-		return nil, err
-	}
-
-	d.Domain = domain
-
-	buf := bytes.Buffer{}
-	if err := gob.NewEncoder(&buf).Encode(&d); err != nil {
-		panic(err)
-	}
-
-	s.shared.lru.Set([]byte(key), buf.Bytes(), s.shared.ttlSeconds)
-	return &d, nil
-}
-
-// AppsService handles apps information
-type appsService struct {
-	shared *shared
-}
-
-func (s *appsService) Set(app *cache.App) error {
-	return nil
-}
-
-func (s *appsService) Get(key string) (*cache.App, error) {
-	var bundle string
-	var app cache.App
-
-	b, err := s.shared.lru.Get([]byte(key))
-	if err == nil {
-		buf := bytes.NewReader(b)
-		if err = gob.NewDecoder(buf).Decode(&app); err != nil {
-			panic(err)
-		}
-		return &app, nil
-	}
-
-	if err := s.shared.db.QueryRow("SELECT bundle FROM mobile_bundle where bundle = $1 LIMIT 1", key).Scan(&bundle); err != nil {
-		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
-		return nil, err
-	}
-
-	app.Bundle = bundle
-
-	buf := bytes.Buffer{}
-	if err := gob.NewEncoder(&buf).Encode(&app); err != nil {
-		panic(err)
-	}
-
-	s.shared.lru.Set([]byte(key), buf.Bytes(), s.shared.ttlSeconds)
-	return &app, nil
 }
 
 // ConfigService
