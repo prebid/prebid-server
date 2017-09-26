@@ -211,7 +211,9 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		pbsReq.SDK = &SDK{}
 	}
 
-	// only parse user object for SDK version 0.0.2 and up
+	// Early versions of prebid mobile are sending requests with gender indicated by numbers,
+	// those traffic can't be parsed by latest Prebid Server after the change of gender to use string so clients using early versions can't be monetized.
+	// To handle those traffic, adding a check here to ignore the sent gender for versions lower than 0.0.2.
 	v1, err := semver.Make(pbsReq.SDK.Version)
 	v2, err := semver.Make("0.0.2")
 	if v1.Compare(v2) >= 0 {
