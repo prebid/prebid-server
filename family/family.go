@@ -1,15 +1,15 @@
-package constants
+package family
 
 // Family Name type to verify and centralize FamilyName usage
-type FamilyName int
+type Name int
 
 const (
-	FNAppnexus FamilyName = iota
-	FNFacebook
-	FNIndex
-	FNPubmatic
-	FNPulsepoint
-	FNRubicon
+	Appnexus Name = iota
+	Facebook
+	Index
+	Pubmatic
+	Pulsepoint
+	Rubicon
 )
 
 var validFamilyNames = [...]string{
@@ -21,6 +21,6 @@ var validFamilyNames = [...]string{
 	"rubicon",
 }
 
-func (n FamilyName) String() string {
+func (n Name) String() string {
 	return validFamilyNames[int(n)]
 }
