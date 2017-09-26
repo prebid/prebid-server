@@ -231,7 +231,7 @@ func (req PBSRequest) Elapsed() int {
 }
 
 func (req PBSRequest) GetUserID(BidderCode family.Name) string {
-	if uid, ok := req.UserIDs[BidderCode.String()]; ok { // TODO: consider moving UserIDs to an array indexed by the FamilyName int.
+	if uid, ok := req.UserIDs[string(BidderCode)]; ok { // TODO: consider moving UserIDs to an array indexed by the FamilyName int.
 		return uid
 	}
 	return ""
