@@ -4,10 +4,9 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/family"
 )
 
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily family.Name) openrtb.BidRequest {
+func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily FamilyName) openrtb.BidRequest {
 
 	imps := make([]openrtb.Imp, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
@@ -52,8 +51,8 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		},
 		Device: req.Device,
 		User: &openrtb.User{ // Make the family name conversion to string here.
-			BuyerUID: req.GetUserID(bidderFamily),
-			ID:       req.GetUserID(family.Appnexus),
+			BuyerUID: req.GetUserID(string(bidderFamily)),
+			ID:       req.GetUserID("adnxs"),
 		},
 		Source: &openrtb.Source{
 			FD:  1, // upstream, aka header

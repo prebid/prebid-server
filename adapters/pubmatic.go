@@ -11,7 +11,6 @@ import (
 	"net/url"
 
 	"github.com/prebid/openrtb"
-	"github.com/prebid/prebid-server/family"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -28,8 +27,8 @@ func (a *PubmaticAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *PubmaticAdapter) FamilyName() family.Name {
-	return family.Pubmatic
+func (a *PubmaticAdapter) FamilyName() FamilyName {
+	return FNpubmatic
 }
 
 func (a *PubmaticAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
@@ -85,7 +84,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.AddCookie(&http.Cookie{
 		Name:  "KADUSERCOOKIE",
-		Value: req.GetUserID(a.FamilyName()),
+		Value: req.GetUserID(string(a.FamilyName())),
 	})
 
 	pbResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
