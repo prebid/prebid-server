@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type RubiconAdapter struct {
@@ -81,6 +81,19 @@ type rubiconBannerExtRP struct {
 
 type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
+}
+
+type rubiconTargetingExt struct {
+	RP rubiconTargetingExtRP `json:"rp"`
+}
+
+type rubiconTargetingExtRP struct {
+	Targeting []rubiconTargetingObj `json:"targeting"`
+}
+
+type rubiconTargetingObj struct {
+	Key    string   `json:"key"`
+	Values []string `json:"values"`
 }
 
 type rubiSize struct {
@@ -210,19 +223,37 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 		Height:      bid.H,
 		DealId:      bid.DealID,
 	}
+
+	// Pull out any server-side determined targeting
+	var rpExtTrg rubiconTargetingExt
+
+	if err := json.Unmarshal([]byte(bid.Ext), &rpExtTrg); err == nil {
+		// Converting string => array(string) to string => string
+		targeting := make(map[string]string)
+
+		// Only pick off the first for now
+		for _, target := range rpExtTrg.RP.Targeting {
+			targeting[target.Key] = target.Values[0]
+		}
+
+		result.bid.AdServerTargeting = targeting
+	}
+
 	return
 }
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
-		rubiReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
-
+		rubiReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+		if err != nil {
+			continue
+		}
 		// only grab this ad unit
 		rubiReq.Imp = rubiReq.Imp[i : i+1]
 
 		var params rubiconParams
-		err := json.Unmarshal(unit.Params, &params)
+		err = json.Unmarshal(unit.Params, &params)
 		if err != nil {
 			return nil, err
 		}
@@ -310,13 +341,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	return bids, nil
 }
 
-func appendTrackerToUrl(uri string) (res string) {
+func appendTrackerToUrl(uri string, tracker string) (res string) {
 	// Append integration method. Adapter init happens once
 	urlObject, err := url.Parse(uri)
 	// No other exception throwing mechanism in this stack, so ignoring parse errors.
 	if err == nil {
 		values := urlObject.Query()
-		values.Add("tk_xint", "prebid")
+		values.Add("tk_xint", tracker)
 		urlObject.RawQuery = values.Encode()
 		res = urlObject.String()
 	} else {
@@ -325,10 +356,10 @@ func appendTrackerToUrl(uri string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, usersyncURL string) *RubiconAdapter {
+func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
 	a := NewHTTPAdapter(config)
 
-	uri = appendTrackerToUrl(uri)
+	uri = appendTrackerToUrl(uri, tracker)
 
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,

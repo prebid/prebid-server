@@ -6,18 +6,18 @@ Server side component to offload prebid processing to the cloud
 # Discussion group for development / adapter testing
 http://redditadops.slack.com channel headerbidding-dev
 
-# Current Status of Adapters (May 15, 2017)
+# Current Status of Adapters (Aug 21, 2017)
 Working on live sites:
-- AppNexus web
+- AppNexus Web
+- Audience Network (Facebook) Web
+- Rubicon Web
+- Index Exchange Web
 
 In testing:
-- Facebook web
-- Rubicon web
 
-Under development / pending testing:
-- Pubmatic (waiting for clean & stable usersync endpoint and param compatibility with client-side prebid)
-- Index Exchange (waiting for stable endpoint)
-- PulsePoint (in code review)
+Under development/ testing
+- Pubmatic web
+- PulsePoint Web
 
 # How it works
 The client (typically prebid.js) sends a JSON request to Prebid Server at `/auction`. See static/pbs_request.json for the format.

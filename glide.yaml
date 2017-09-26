@@ -6,8 +6,8 @@ import:
   - proto
 - package: github.com/julienschmidt/httprouter
   version: ~1.1.0
-- package: github.com/prebid/openrtb
-  version: ~3.0.3
+- package: github.com/mxmCherry/openrtb
+  version: ~6.0.0
 - package: github.com/rcrowley/go-metrics
 - package: github.com/spf13/viper
 - package: github.com/vrischmann/go-metrics-influxdb

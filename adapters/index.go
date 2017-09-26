@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type IndexAdapter struct {
@@ -49,7 +48,13 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	if req.App != nil {
 		return nil, fmt.Errorf("Index doesn't support apps")
 	}
-	indexReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	indexReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+
+	if err != nil {
+		return nil, err
+	}
+
 	for i, unit := range bidder.AdUnits {
 		var params indexParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -144,13 +149,11 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	return bids, nil
 }
 
-func NewIndexAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *IndexAdapter {
+func NewIndexAdapter(config *HTTPAdapterConfig, uri string, userSyncURL string) *IndexAdapter {
 	a := NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=indexExchange&uid=__UID__", externalURL)
-	usersyncURI := "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb="
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURI, url.QueryEscape(redirect_uri)),
+		URL:         userSyncURL,
 		Type:        "redirect",
 		SupportCORS: false,
 	}

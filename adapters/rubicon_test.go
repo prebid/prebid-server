@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -15,19 +16,21 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
 	source   string
+	tracker  string
 	expected string
 }
 
 type rubiTagInfo struct {
-	code    string
-	zoneID  int
-	bid     float64
-	content string
+	code              string
+	zoneID            int
+	bid               float64
+	content           string
+	adServerTargeting map[string]string
 }
 
 type rubiBidInfo struct {
@@ -122,11 +125,15 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	targeting := "{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"
+	rawTargeting := openrtb.RawJSON(targeting)
+
 	resp.SeatBid[0].Bid[0] = openrtb.Bid{
 		ID:    "random-id",
 		ImpID: imp.ID,
 		Price: rubidata.tags[ix].bid,
 		AdM:   rubidata.tags[ix].content,
+		Ext:   rawTargeting,
 	}
 
 	if breq.Site == nil {
@@ -205,19 +212,26 @@ func TestRubiconBasicResponse(t *testing.T) {
 		deviceUA:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
 		buyerUID:  "need-an-actual-fb-id",
 	}
+
+	targeting := make(map[string]string, 2)
+	targeting["key1"] = "value1"
+	targeting["key2"] = "value2"
+
 	rubidata.tags[0] = rubiTagInfo{
-		code:   "first-tag",
-		zoneID: 8394,
-		bid:    1.67,
+		code:              "first-tag",
+		zoneID:            8394,
+		bid:               1.67,
+		adServerTargeting: targeting,
 	}
 	rubidata.tags[1] = rubiTagInfo{
-		code:   "second-tag",
-		zoneID: 8395,
-		bid:    3.22,
+		code:              "second-tag",
+		zoneID:            8395,
+		bid:               3.22,
+		adServerTargeting: targeting,
 	}
 
 	conf := *DefaultHTTPAdapterConfig
-	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "localhost/usersync")
+	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "localhost/usersync")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -225,7 +239,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 	}
 	for i, tag := range rubidata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
-			Code: tag.code,
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
@@ -259,10 +274,10 @@ func TestRubiconBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := pbs.ParseUIDCookie(req)
-	pc.UIDs["rubicon"] = rubidata.buyerUID
+	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pbs.SetUIDCookie(fakewriter, pc)
+	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
@@ -299,6 +314,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 				if bid.Adm != tag.content {
 					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
 				}
+				if !reflect.DeepEqual(bid.AdServerTargeting, tag.adServerTargeting) {
+					t.Errorf("Incorrect targeting '%+v' expected '%+v'", bid.AdServerTargeting, tag.adServerTargeting)
+				}
 			}
 		}
 		if !matched {
@@ -320,7 +338,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 func TestRubiconUserSyncInfo(t *testing.T) {
 	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
-	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", url)
+	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker", url)
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}
@@ -403,16 +421,18 @@ func TestAppendTracker(t *testing.T) {
 	testScenarios := []rubiAppendTrackerUrlTestScenario{
 		{
 			source:   "http://test.url/",
+			tracker:  "prebid",
 			expected: "http://test.url/?tk_xint=prebid",
 		},
 		{
 			source:   "http://test.url/?hello=true",
+			tracker:  "prebid",
 			expected: "http://test.url/?hello=true&tk_xint=prebid",
 		},
 	}
 
 	for _, scenario := range testScenarios {
-		res := appendTrackerToUrl(scenario.source)
+		res := appendTrackerToUrl(scenario.source, scenario.tracker)
 		if res != scenario.expected {
 			t.Fatalf("Failed to convert '%s' to '%s'", res, scenario.expected)
 		}

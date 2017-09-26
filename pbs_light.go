@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -34,6 +33,9 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type DomainMetrics struct {
@@ -84,19 +86,24 @@ var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
 
-type BidCache struct {
-	Adm    string `json:"adm,omitempty"`
-	NURL   string `json:"nurl,omitempty"`
-	Width  uint64 `json:"width,omitempty"`
-	Height uint64 `json:"height,omitempty"`
-}
-
 type bidResult struct {
 	bidder   *pbs.PBSBidder
 	bid_list pbs.PBSBidSlice
 }
 
-const DEFAULT_PRICE_GRANULARITY = "med"
+const defaultPriceGranularity = "med"
+
+// Constant keys for ad server targeting for responses to Prebid Mobile
+const hbpbConstantKey = "hb_pb"
+const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
+const hbBidderConstantKey = "hb_bidder"
+const hbCacheIdConstantKey = "hb_cache_id"
+
+// hb_creative_loadtype key can be one of `demand_sdk` or `html`
+// default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
+// `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
+const hbCreativeLoadMethodHTML = "html"
+const hbCreativeLoadMethodDemandSDK = "demand_sdk"
 
 func min(x, y int) int {
 	if x < y {
@@ -114,7 +121,7 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	}
 	b, err := json.Marshal(&resp)
 	if err != nil {
-		glog.Errorf("Error marshalling error: %s", err)
+		glog.Errorf("Failed to marshal auction error JSON: %s", err)
 	} else {
 		w.Write(b)
 	}
@@ -160,8 +167,8 @@ type cookieSyncResponse struct {
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	cookies := pbs.ParseUIDCookie(r)
-	if cookies.OptOut {
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
+	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
 	}
@@ -171,7 +178,9 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	csReq := &cookieSyncRequest{}
 	err := json.NewDecoder(r.Body).Decode(&csReq)
 	if err != nil {
-		glog.Infof("Read cookie sync request failed: %v", err)
+		if glog.V(2) {
+			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
+		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
@@ -180,7 +189,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || len(cookies.UIDs) == 0 {
+	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || userSyncCookie.LiveSyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -188,7 +197,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if _, ok := cookies.UIDs[ex.FamilyName()]; !ok {
+			if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
@@ -220,7 +229,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
 	if err != nil {
-		glog.Info("error parsing request", err)
+		if glog.V(2) {
+			glog.Infof("Failed to parse /auction request: %v", err)
+		}
 		writeAuctionError(w, "Error parsing request", err)
 		mErrorMeter.Mark(1)
 		return
@@ -229,7 +240,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if len(pbs_req.UserIDs) == 0 {
+	} else if pbs_req.Cookie.LiveSyncCount() == 0 {
 		mNoCookieMeter.Mark(1)
 		if isSafari {
 			mSafariNoCookieMeter.Mark(1)
@@ -244,7 +255,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				Expires: time.Now().Add(180 * 24 * time.Hour),
 			}
 			http.SetCookie(w, &c)
-			pbs_req.UserIDs["adnxs"] = uuid2
+			pbs_req.Cookie.TrySync("adnxs", uuid2)
 		}
 	}
 
@@ -253,7 +264,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	account, err := dataCache.Accounts().Get(pbs_req.AccountID)
 	if err != nil {
-		glog.Info("Invalid account id: ", err)
+		if glog.V(2) {
+			glog.Infof("Invalid account id: %v", err)
+		}
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
 		mErrorMeter.Mark(1)
 		return
@@ -276,13 +289,16 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
-			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
-				bidder.NoCookie = true
-				bidder.UsersyncInfo = ex.GetUsersyncInfo()
-				ametrics.NoCookieMeter.Mark(1)
-				accountAdapterMetric.NoCookieMeter.Mark(1)
-				if ex.SkipNoCookies() {
-					continue
+			if pbs_req.App == nil {
+				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				if uid == "" {
+					bidder.NoCookie = true
+					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					ametrics.NoCookieMeter.Mark(1)
+					accountAdapterMetric.NoCookieMeter.Mark(1)
+					if ex.SkipNoCookies() {
+						continue
+					}
 				}
 			}
 			sentBids++
@@ -304,7 +320,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 						ametrics.ErrorMeter.Mark(1)
 						accountAdapterMetric.ErrorMeter.Mark(1)
 						bidder.Error = err.Error()
-						glog.Infof("Error from bidder: %v : %v", bidder.BidderCode, err)
+						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
 				} else if bid_list != nil {
 					bidder.NumBids = len(bid_list)
@@ -344,18 +360,14 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if pbs_req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
 		for i, bid := range pbs_resp.Bids {
-			bc := BidCache{
+			bc := &pbc.BidCache{
 				Adm:    bid.Adm,
 				NURL:   bid.NURL,
 				Width:  bid.Width,
 				Height: bid.Height,
 			}
-			buf := new(bytes.Buffer)
-			enc := json.NewEncoder(buf)
-			enc.SetEscapeHTML(false)
-			enc.Encode(bc)
 			cobjs[i] = &pbc.CacheObject{
-				Value: buf.String(),
+				Value: bc,
 			}
 		}
 		err = pbc.Put(ctx, cobjs)
@@ -372,94 +384,77 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	if pbs_req.SortBids == 1 {
-		priceGranularitySetting := account.PriceGranularity
-		if priceGranularitySetting == "" {
-			priceGranularitySetting = DEFAULT_PRICE_GRANULARITY
-		}
-
-		// record bids by ad unit code for sorting
-		code_bids := make(map[string]pbs.PBSBidSlice, len(pbs_resp.Bids))
-		for _, bid := range pbs_resp.Bids {
-			code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
-		}
-
-		// loop through ad units to find top bid
-		for _, unit := range pbs_req.AdUnits {
-			bar := code_bids[unit.Code]
-
-			if len(bar) == 0 {
-				if glog.V(1) {
-					glog.Infof("No bids for ad unit '%s'", unit.Code)
-				}
-				continue
-			}
-			sort.Sort(bar)
-
-			// after sorting we need to add the ad targeting keywords
-			for i, bid := range bar {
-				priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
-				roundedCpm := priceBucketStringMap[priceGranularitySetting]
-
-				hbPbBidderKey := "hb_pb_" + bid.BidderCode
-				hbBidderBidderKey := "hb_bidder_" + bid.BidderCode
-				hbCacheIdBidderKey := "hb_cache_id_" + bid.BidderCode
-				if pbs_req.MaxKeyLength != 0 {
-					hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
-					hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
-					hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
-				}
-				pbs_kvs := map[string]string{
-					hbPbBidderKey:      roundedCpm,
-					hbBidderBidderKey:  bid.BidderCode,
-					hbCacheIdBidderKey: bid.CacheID,
-				}
-				// For the top bid, we want to add the following additional keys
-				if i == 0 {
-					pbs_kvs["hb_pb"] = roundedCpm
-					pbs_kvs["hb_bidder"] = bid.BidderCode
-					pbs_kvs["hb_cache_id"] = bid.CacheID
-				}
-				bid.AdServerTargeting = pbs_kvs
-			}
-		}
+		sortBidsAddKeywordsMobile(pbs_resp.Bids, pbs_req, account.PriceGranularity)
 	}
 
-	if glog.V(1) {
+	if glog.V(2) {
 		glog.Infof("Request for %d ad units on url %s by account %s got %d bids", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID, len(pbs_resp.Bids))
 	}
 
-	/*
-		    // record bids by code
-		    // code_bids := make(map[string]PBSBidSlice)
-
-		        for _, bid :=  range result.bid_list {
-		            code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
-		        }
-
-			// loop through ad units to find top bid
-			for adunit := range pbs_req.AdUnits {
-				bar := code_bids[adunit.Code]
-
-				if len(bar) == 0 {
-					if glog.V(1) {
-						glog.Infof("No bids for ad unit '%s'", code)
-					}
-					continue
-				}
-				sort.Sort(bar)
-
-				if glog.V(1) {
-					glog.Infof("Ad unit %s got %d bids. Highest CPM $%.2f, second CPM $%.2f, from bidder %s", code, len(bar), bar[0].Price.First,
-						bar[0].Price.Second, bar[0].BidderCode)
-				}
-			}
-	*/
-
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	//enc.SetIndent("", "  ")
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
+// The bids are sorted by cpm to find the highest bid.
+// The ad server targeting keywords are added to all bids, with specific keywords for the highest bid.
+func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting string) {
+	if priceGranularitySetting == "" {
+		priceGranularitySetting = defaultPriceGranularity
+	}
+
+	// record bids by ad unit code for sorting
+	code_bids := make(map[string]pbs.PBSBidSlice, len(bids))
+	for _, bid := range bids {
+		code_bids[bid.AdUnitCode] = append(code_bids[bid.AdUnitCode], bid)
+	}
+
+	// loop through ad units to find top bid
+	for _, unit := range pbs_req.AdUnits {
+		bar := code_bids[unit.Code]
+
+		if len(bar) == 0 {
+			if glog.V(3) {
+				glog.Infof("No bids for ad unit '%s'", unit.Code)
+			}
+			continue
+		}
+		sort.Sort(bar)
+
+		// after sorting we need to add the ad targeting keywords
+		for i, bid := range bar {
+			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
+			roundedCpm := priceBucketStringMap[priceGranularitySetting]
+
+			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
+			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
+			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			if pbs_req.MaxKeyLength != 0 {
+				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
+				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
+				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+			}
+			pbs_kvs := map[string]string{
+				hbPbBidderKey:      roundedCpm,
+				hbBidderBidderKey:  bid.BidderCode,
+				hbCacheIdBidderKey: bid.CacheID,
+			}
+			// For the top bid, we want to add the following additional keys
+			if i == 0 {
+				pbs_kvs[hbpbConstantKey] = roundedCpm
+				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
+				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if bid.BidderCode == "audienceNetwork" {
+					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+				} else {
+					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+				}
+			}
+			bid.AdServerTargeting = pbs_kvs
+		}
+	}
 }
 
 func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -604,6 +599,7 @@ func init() {
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -618,7 +614,7 @@ func main() {
 	requireUUID2 = cfg.RequireUUID2
 	cookieDomain = cfg.CookieDomain
 	if err := serve(cfg); err != nil {
-		glog.Fatalf("PreBid Server encountered an error: %v", err)
+		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
 
@@ -626,12 +622,13 @@ func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.ExternalURL),
+		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
 		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
 		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].UserSyncURL),
+			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -699,13 +696,18 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
+	stopSignals := make(chan os.Signal)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
+
 	/* Run admin on different port thats not exposed */
-	go func() {
-		// Todo -- make configurable
-		adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminServer := &http.Server{Addr: adminURI}
+	go (func() {
 		fmt.Println("Admin running on: ", adminURI)
-		glog.Fatal(http.ListenAndServe(adminURI, nil))
-	}()
+		err := adminServer.ListenAndServe()
+		glog.Errorf("Admin server: %v", err)
+		stopSignals <- syscall.SIGTERM
+	})()
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
@@ -716,7 +718,17 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	pbs.InitUsersyncHandlers(router, metricsRegistry, cfg.CookieDomain, cfg.ExternalURL, cfg.RecaptchaSecret)
+	userSyncDeps := &pbs.UserSyncDeps{
+		Cookie_domain:    cfg.CookieDomain,
+		External_url:     cfg.ExternalURL,
+		Recaptcha_secret: cfg.RecaptchaSecret,
+		Metrics:          metricsRegistry,
+	}
+
+	router.GET("/getuids", userSyncDeps.GetUIDs)
+	router.GET("/setuid", userSyncDeps.SetUID)
+	router.POST("/optout", userSyncDeps.OptOut)
+	router.GET("/optout", userSyncDeps.OptOut)
 
 	pbc.InitPrebidCache(cfg.CacheURL)
 
@@ -734,9 +746,23 @@ func serve(cfg *config.Configuration) error {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	fmt.Printf("Server running on: %s\n", server.Addr)
-	if err := server.ListenAndServe(); err != nil {
-		return err
+	go (func() {
+		fmt.Printf("Main server running on: %s\n", server.Addr)
+		serverErr := server.ListenAndServe()
+		glog.Errorf("Main server: %v", serverErr)
+		stopSignals <- syscall.SIGTERM
+	})()
+
+	<-stopSignals
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		glog.Errorf("Main server shutdown: %v", err)
 	}
+	if err := adminServer.Shutdown(ctx); err != nil {
+		glog.Errorf("Admin server shutdown: %v", err)
+	}
+
 	return nil
 }
