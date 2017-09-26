@@ -11,6 +11,8 @@ import (
 
 type shared struct {
 	Configs  map[string]string
+	Domains  map[string]bool
+	Apps     map[string]bool
 	Accounts map[string]bool
 }
 
@@ -18,6 +20,8 @@ type shared struct {
 type Cache struct {
 	shared   *shared
 	accounts *accountService
+	domains  *domainService
+	apps     *appsService
 	config   *configService
 }
 
@@ -28,6 +32,8 @@ type fileConfig struct {
 
 type fileCacheFile struct {
 	Configs  []fileConfig `yaml:"configs"`
+	Domains  []string     `yaml:"domains"`
+	Apps     []string     `yaml:"apps"`
 	Accounts []string     `yaml:"accounts"`
 }
 
@@ -63,6 +69,18 @@ func New(filename string) (*Cache, error) {
 	}
 	glog.Infof("Loaded %d configs", len(u.Configs))
 
+	s.Domains = make(map[string]bool, len(u.Domains))
+	for _, domain := range u.Domains {
+		s.Domains[domain] = true
+	}
+	glog.Infof("Loaded %d domains", len(u.Domains))
+
+	s.Apps = make(map[string]bool, len(u.Apps))
+	for _, app := range u.Apps {
+		s.Apps[app] = true
+	}
+	glog.Infof("Loaded %d apps", len(u.Apps))
+
 	s.Accounts = make(map[string]bool, len(u.Accounts))
 	for _, Account := range u.Accounts {
 		s.Accounts[Account] = true
@@ -72,6 +90,8 @@ func New(filename string) (*Cache, error) {
 	return &Cache{
 		shared:   s,
 		accounts: &accountService{s},
+		domains:  &domainService{s},
+		apps:     &appsService{s},
 		config:   &configService{s},
 	}, nil
 }
@@ -84,6 +104,12 @@ func (c *Cache) Close() error {
 
 func (c *Cache) Accounts() cache.AccountsService {
 	return c.accounts
+}
+func (c *Cache) Domains() cache.DomainsService {
+	return c.domains
+}
+func (c *Cache) Apps() cache.AppsService {
+	return c.apps
 }
 func (c *Cache) Config() cache.ConfigService {
 	return c.config
@@ -106,6 +132,46 @@ func (s *accountService) Get(id string) (*cache.Account, error) {
 
 // Set will always return nil since this is a dummy service
 func (s *accountService) Set(account *cache.Account) error {
+	return nil
+}
+
+// DomainService handles the domain information
+type domainService struct {
+	shared *shared
+}
+
+// Get will return back the domain if it exists in memory
+func (s *domainService) Get(id string) (*cache.Domain, error) {
+	if _, ok := s.shared.Domains[id]; !ok {
+		return nil, fmt.Errorf("Not found")
+	}
+	return &cache.Domain{
+		Domain: id,
+	}, nil
+}
+
+// Set will always return nil since this is a dummy service
+func (s *domainService) Set(domain *cache.Domain) error {
+	return nil
+}
+
+// AppsService handles apps information
+type appsService struct {
+	shared *shared
+}
+
+// Get will return the App if it exists
+func (s *appsService) Get(id string) (*cache.App, error) {
+	if _, ok := s.shared.Apps[id]; !ok {
+		return nil, fmt.Errorf("Not found")
+	}
+	return &cache.App{
+		Bundle: id,
+	}, nil
+}
+
+// Set will always return nil since this is a dummy service
+func (s *appsService) Set(app *cache.App) error {
 	return nil
 }
 

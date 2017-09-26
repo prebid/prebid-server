@@ -9,6 +9,8 @@ import (
 // Cache dummy config that will echo back results
 type Cache struct {
 	accounts *accountService
+	domains  *domainService
+	apps     *appsService
 	config   *configService
 }
 
@@ -16,12 +18,20 @@ type Cache struct {
 func New() (*Cache, error) {
 	return &Cache{
 		accounts: &accountService{},
+		domains:  &domainService{},
+		apps:     &appsService{},
 		config:   &configService{},
 	}, nil
 }
 
 func (c *Cache) Accounts() cache.AccountsService {
 	return c.accounts
+}
+func (c *Cache) Domains() cache.DomainsService {
+	return c.domains
+}
+func (c *Cache) Apps() cache.AppsService {
+	return c.apps
 }
 func (c *Cache) Config() cache.ConfigService {
 	return c.config
@@ -40,6 +50,38 @@ func (s *accountService) Get(id string) (*cache.Account, error) {
 
 // Set will always return nil since this is a dummy service
 func (s *accountService) Set(account *cache.Account) error {
+	return nil
+}
+
+// DomainService handles the domain information
+type domainService struct {
+}
+
+// Get echos back the domain
+func (s *domainService) Get(id string) (*cache.Domain, error) {
+	return &cache.Domain{
+		Domain: id,
+	}, nil
+}
+
+// Set will always return nil since this is a dummy service
+func (s *domainService) Set(domain *cache.Domain) error {
+	return nil
+}
+
+// AppsService handles apps information
+type appsService struct {
+}
+
+// Get echos back the app
+func (s *appsService) Get(id string) (*cache.App, error) {
+	return &cache.App{
+		Bundle: id,
+	}, nil
+}
+
+// Set will always return nil since this is a dummy service
+func (s *appsService) Set(app *cache.App) error {
 	return nil
 }
 

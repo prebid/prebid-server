@@ -6,6 +6,24 @@ func TestDummyCache(t *testing.T) {
 
 	c, _ := New()
 
+	domain, err := c.Domains().Get("one.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if domain.Domain != "one.com" {
+		t.Error("Wrong domain returned")
+	}
+
+	app, err := c.Apps().Get("com.app.one")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if app.Bundle != "com.app.one" {
+		t.Error("Wrong app returned")
+	}
+
 	account, err := c.Accounts().Get("account1")
 	if err != nil {
 		t.Fatal(err)
