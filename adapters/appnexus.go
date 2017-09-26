@@ -30,8 +30,8 @@ func (a *AppNexusAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *AppNexusAdapter) FamilyName() FamilyName {
-	return FNappnexus
+func (a *AppNexusAdapter) FamilyName() string {
+	return "adnxs"
 }
 
 func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {

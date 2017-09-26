@@ -28,8 +28,8 @@ func (a *FacebookAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *FacebookAdapter) FamilyName() FamilyName {
-	return FNfacebook
+func (a *FacebookAdapter) FamilyName() string {
+	return "audienceNetwork"
 }
 
 // Facebook likes to parallelize to minimize latency

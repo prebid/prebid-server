@@ -29,8 +29,8 @@ func (a *PulsePointAdapter) Name() string {
 }
 
 // used for cookies and such
-func (a *PulsePointAdapter) FamilyName() FamilyName {
-	return FNpulsepoint
+func (a *PulsePointAdapter) FamilyName() string {
+	return "pulsepoint"
 }
 
 func (a *PulsePointAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
