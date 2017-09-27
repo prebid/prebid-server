@@ -368,3 +368,18 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.EqualValues(t, resp.User.BuyerUID, "abcde")
 }
+
+func TestNoImpBid(t *testing.T) {
+	adUnits := []pbs.AdUnit{{
+		MediaTypes: []string{"video"},
+	}}
+
+	req := pbs.PBSRequest{
+		AdUnits: adUnits,
+	}
+
+	_, err := makeOpenRTBGeneric(&req, &pbs.PBSBidder{}, "family", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	if err == nil {
+		t.Errorf("Bids without impressions should not be allowed.")
+	}
+}

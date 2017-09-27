@@ -65,7 +65,6 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 }
 
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
-
 	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(allowedMediatypes))
 	ind := 0
 	impsPresent := false
@@ -146,6 +145,10 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 
 	buyerUID, _, _ := req.Cookie.GetUID(bidderFamily)
 	id, _, _ := req.Cookie.GetUID("adnxs")
+
+	if len(newImps) < 1 {
+		return openrtb.BidRequest{}, errors.New("openRTB bids need at least one Imp")
+	}
 
 	return openrtb.BidRequest{
 		ID:  req.Tid,
