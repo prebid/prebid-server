@@ -4,6 +4,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 
 	"errors"
+
 	"github.com/mxmCherry/openrtb"
 )
 
@@ -52,7 +53,12 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	mimes := make([]string, len(unit.Video.Mimes))
 	copy(mimes, unit.Video.Mimes)
 	pbm := make([]int8, 1)
+	//this will become int8 soon, so we only care about the first index in the array
 	pbm[0] = unit.Video.PlaybackMethod
+	if pbm[0] == 0 {
+		// slice of [0] = 0 will be considered non empty and sent, even though 0 is invalid per the spec.
+		pbm = append(pbm[:0], pbm[1:]...)
+	}
 	return &openrtb.Video{
 		MIMEs:          mimes,
 		MinDuration:    unit.Video.Minduration,
@@ -61,6 +67,7 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 		H:              unit.Sizes[0].H,
 		StartDelay:     unit.Video.Startdelay,
 		PlaybackMethod: pbm,
+		Protocols:      unit.Video.Protocols,
 	}
 }
 

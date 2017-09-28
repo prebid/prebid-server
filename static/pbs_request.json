@@ -245,7 +245,7 @@
                 }
             }
         },
-        "user" : {
+        "user": {
             "type": "object",
             "properties": {
                 "id": {
@@ -276,8 +276,16 @@
                     "code"
                 ],
                 "oneOf": [
-                    {"required": ["bids"]},
-                    {"required": ["config_id"]}
+                    {
+                        "required": [
+                            "bids"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "config_id"
+                        ]
+                    }
                 ],
                 "properties": {
                     "code": {
@@ -305,7 +313,47 @@
                         "description": "Media types accepted by this ad unit",
                         "items": {
                             "type": "string",
-                            "enum": ["banner","video"]
+                            "enum": [
+                                "banner",
+                                "video"
+                            ]
+                        }
+                    },
+                    "video": {
+                        "type": "object",
+                        "description": "Video attributes of this ad Unit",
+                        "properties": {
+                            "mimes": {
+                                "type": "array",
+                                "description": "Mime types as defined by ORTB - ex: video/mp4",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "minduration": {
+                                "type": "integer",
+                                "description": "Minimum video ad duration in seconds."
+                            },
+                            "maxduration": {
+                                "type": "integer",
+                                "description": "Maximum video ad duration in seconds."
+                            },
+                            "startdelay": {
+                                "type": "integer",
+                                "description": "	//Indicates the start delay in seconds for pre-roll, mid-roll, or post-roll ad placements."
+                            },
+                            "skippable": {
+                                "type": "integer",
+                                "description": "Indicates if the player will allow the video to be skipped ( 0 = no, 1 = yes)."
+                            },
+                            "playback_method": {
+                                "type": "integer",
+                                "description": "Playback method code as defined by ORTB."
+                            },
+                            "protocols": {
+                                "type": "integer",
+                                "description": "protocols as specified in ORTB 2.5 spec: 5.8"
+                            }
                         }
                     },
                     "bids": {
