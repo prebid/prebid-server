@@ -17,13 +17,16 @@ import (
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
 	"github.com/xojoc/useragent"
+
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
@@ -34,9 +37,6 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type DomainMetrics struct {
@@ -238,7 +238,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	glog.Infof("test log message")
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
@@ -410,25 +409,14 @@ func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBi
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "banner" && (bid.Height == 0 || bid.Width == 0) {
 			for _, adunit := range bidder.AdUnits {
-				var bidSizes []openrtb.Format
 				if adunit.BidID == bid.BidID {
-					for _, tmpSizes := range adunit.Sizes {
-						bidSizes = append(bidSizes, tmpSizes)
+					if len(adunit.Sizes) == 1 {
+						bid.Width, bid.Height = adunit.Sizes[0].W, adunit.Sizes[0].H
+						finalValidBids = append(finalValidBids, bid)
+					} else if len(adunit.Sizes) > 1 {
+						glog.Errorf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
 					}
 				}
-
-				if len(bidSizes) == 1 {
-					bid.Width, bid.Height = bidSizes[0].W, bidSizes[0].H
-					finalValidBids = append(finalValidBids, bid)
-				} else if len(bidSizes) > 1 {
-					msg := `Detected WxH sizes in bid response were undefined for a bid request utilizing multiple adunit sizes.  
-					This bid has been rejected.
-					Below are some details about the bid for further review:
-					%+v
-					`
-					glog.Warningf(msg, *bid)
-				}
-
 			}
 
 		} else {
