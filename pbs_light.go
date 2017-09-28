@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -35,6 +34,9 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type DomainMetrics struct {
@@ -84,13 +86,6 @@ var (
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
-
-type BidCache struct {
-	Adm    string `json:"adm,omitempty"`
-	NURL   string `json:"nurl,omitempty"`
-	Width  uint64 `json:"width,omitempty"`
-	Height uint64 `json:"height,omitempty"`
-}
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -368,18 +363,14 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if pbs_req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
 		for i, bid := range pbs_resp.Bids {
-			bc := BidCache{
+			bc := &pbc.BidCache{
 				Adm:    bid.Adm,
 				NURL:   bid.NURL,
 				Width:  bid.Width,
 				Height: bid.Height,
 			}
-			buf := new(bytes.Buffer)
-			enc := json.NewEncoder(buf)
-			enc.SetEscapeHTML(false)
-			enc.Encode(bc)
 			cobjs[i] = &pbc.CacheObject{
-				Value: buf.String(),
+				Value: bc,
 			}
 		}
 		err = pbc.Put(ctx, cobjs)
@@ -664,7 +655,7 @@ func main() {
 	requireUUID2 = cfg.RequireUUID2
 	cookieDomain = cfg.CookieDomain
 	if err := serve(cfg); err != nil {
-		glog.Fatalf("PreBid Server encountered an error: %v", err)
+		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
 
@@ -678,6 +669,7 @@ func setupExchanges(cfg *config.Configuration) {
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -745,13 +737,18 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
+	stopSignals := make(chan os.Signal)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
+
 	/* Run admin on different port thats not exposed */
-	go func() {
-		// Todo -- make configurable
-		adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminServer := &http.Server{Addr: adminURI}
+	go (func() {
 		fmt.Println("Admin running on: ", adminURI)
-		glog.Fatal(http.ListenAndServe(adminURI, nil))
-	}()
+		err := adminServer.ListenAndServe()
+		glog.Errorf("Admin server: %v", err)
+		stopSignals <- syscall.SIGTERM
+	})()
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
@@ -790,9 +787,23 @@ func serve(cfg *config.Configuration) error {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	fmt.Printf("Server running on: %s\n", server.Addr)
-	if err := server.ListenAndServe(); err != nil {
-		return err
+	go (func() {
+		fmt.Printf("Main server running on: %s\n", server.Addr)
+		serverErr := server.ListenAndServe()
+		glog.Errorf("Main server: %v", serverErr)
+		stopSignals <- syscall.SIGTERM
+	})()
+
+	<-stopSignals
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		glog.Errorf("Main server shutdown: %v", err)
 	}
+	if err := adminServer.Shutdown(ctx); err != nil {
+		glog.Errorf("Admin server shutdown: %v", err)
+	}
+
 	return nil
 }

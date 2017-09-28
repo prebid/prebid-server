@@ -83,6 +83,19 @@ type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
 }
 
+type rubiconTargetingExt struct {
+	RP rubiconTargetingExtRP `json:"rp"`
+}
+
+type rubiconTargetingExtRP struct {
+	Targeting []rubiconTargetingObj `json:"targeting"`
+}
+
+type rubiconTargetingObj struct {
+	Key    string   `json:"key"`
+	Values []string `json:"values"`
+}
+
 type rubiSize struct {
 	w uint16
 	h uint16
@@ -210,6 +223,22 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 		Height:      bid.H,
 		DealId:      bid.DealID,
 	}
+
+	// Pull out any server-side determined targeting
+	var rpExtTrg rubiconTargetingExt
+
+	if err := json.Unmarshal([]byte(bid.Ext), &rpExtTrg); err == nil {
+		// Converting string => array(string) to string => string
+		targeting := make(map[string]string)
+
+		// Only pick off the first for now
+		for _, target := range rpExtTrg.RP.Targeting {
+			targeting[target.Key] = target.Values[0]
+		}
+
+		result.bid.AdServerTargeting = targeting
+	}
+
 	return
 }
 
