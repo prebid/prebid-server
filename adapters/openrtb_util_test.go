@@ -46,6 +46,7 @@ func TestOpenRTB(t *testing.T) {
 						H: 12,
 					},
 				},
+				Instl: 1,
 			},
 		},
 	}
@@ -55,6 +56,7 @@ func TestOpenRTB(t *testing.T) {
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
 	assert.EqualValues(t, resp.Imp[0].Banner.H, 12)
+	assert.EqualValues(t, resp.Imp[0].Instl, 1)
 }
 
 func TestOpenRTBVideo(t *testing.T) {

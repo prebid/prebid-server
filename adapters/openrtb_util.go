@@ -84,6 +84,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				newImp := openrtb.Imp{
 					ID:     unit.Code,
 					Secure: &req.Secure,
+					Instl:  unit.Instl,
 				}
 				switch mType {
 				case pbs.MEDIA_TYPE_BANNER:
@@ -106,6 +107,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			newImp := openrtb.Imp{
 				ID:     unit.Code,
 				Secure: &req.Secure,
+				Instl:  unit.Instl,
 			}
 			for _, mType := range unitMediaTypes {
 				switch mType {
