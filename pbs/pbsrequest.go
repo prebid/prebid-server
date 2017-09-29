@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
+	"github.com/blang/semver"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
@@ -211,7 +212,13 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.SDK == nil {
 		pbsReq.SDK = &SDK{}
 	}
-	if pbsReq.SDK.Version != "0.0.1" {
+
+	// Early versions of prebid mobile are sending requests with gender indicated by numbers,
+	// those traffic can't be parsed by latest Prebid Server after the change of gender to use string so clients using early versions can't be monetized.
+	// To handle those traffic, adding a check here to ignore the sent gender for versions lower than 0.0.2.
+	v1, err := semver.Make(pbsReq.SDK.Version)
+	v2, err := semver.Make("0.0.2")
+	if v1.Compare(v2) >= 0 {
 		if pbsReq.PBSUser != nil {
 			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
 			if err != nil {
@@ -219,6 +226,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			}
 		}
 	}
+
 	if pbsReq.User == nil {
 		pbsReq.User = &openrtb.User{}
 	}

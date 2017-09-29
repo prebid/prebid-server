@@ -453,3 +453,91 @@ func TestParseMobileRequest(t *testing.T) {
 		t.Errorf("Parse device ip failed %s", pbs_req.Device.IP)
 	}
 }
+
+func TestParseMalformedMobileRequest(t *testing.T) {
+	body := []byte(`{
+	   "max_key_length":20,
+	   "user":{
+	      "gender":0,
+	      "buyeruid":"test_buyeruid"
+	   },
+	   "prebid_version":"0.21.0-pre",
+	   "sort_bids":1,
+	   "ad_units":[
+	      {
+	         "sizes":[
+	            {
+	               "w":300,
+	               "h":250
+	            }
+	         ],
+	         "config_id":"ad5ffb41-3492-40f3-9c25-ade093eb4e5f",
+	         "code":"5d748364ee9c46a2b112892fc3551b6f"
+	      }
+	   ],
+	   "cache_markup":1,
+	   "app":{
+	      "bundle":"AppNexus.PrebidMobileDemo",
+	      "ver":"0.0.1"
+	   },
+	   "device":{
+	      "ifa":"test_device_ifa",
+	      "osv":"9.3.5",
+	      "os":"iOS",
+	      "make":"Apple",
+	      "model":"iPhone6,1"
+	   },
+	   "tid":"abcd",
+	   "account_id":"aecd6ef7-b992-4e99-9bb8-65e2d984e1dd"
+	}
+    `)
+	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
+	d, _ := dummycache.New()
+
+	pbs_req, err := ParsePBSRequest(r, d)
+	if err != nil {
+		t.Fatalf("Parse simple request failed: %v", err)
+	}
+	if pbs_req.Tid != "abcd" {
+		t.Errorf("Parse TID failed")
+	}
+	if len(pbs_req.AdUnits) != 1 {
+		t.Errorf("Parse ad units failed")
+	}
+	// We are expecting all user fields to be nil. Since no SDK version is passed in
+	if pbs_req.User.BuyerUID != "" {
+		t.Errorf("Parse user buyeruid failed %s", pbs_req.User.BuyerUID)
+	}
+	if pbs_req.User.Gender != "" {
+		t.Errorf("Parse user gender failed %s", pbs_req.User.Gender)
+	}
+	if pbs_req.User.Yob != 0 {
+		t.Errorf("Parse user year of birth failed %d", pbs_req.User.Yob)
+	}
+	if pbs_req.User.ID != "" {
+		t.Errorf("Parse user id failed %s", pbs_req.User.ID)
+	}
+
+	if pbs_req.App.Bundle != "AppNexus.PrebidMobileDemo" {
+		t.Errorf("Parse app bundle failed")
+	}
+	if pbs_req.App.Ver != "0.0.1" {
+		t.Errorf("Parse app version failed")
+	}
+
+	if pbs_req.Device.IFA != "test_device_ifa" {
+		t.Errorf("Parse device ifa failed")
+	}
+	if pbs_req.Device.OSV != "9.3.5" {
+		t.Errorf("Parse device osv failed")
+	}
+	if pbs_req.Device.OS != "iOS" {
+		t.Errorf("Parse device os failed")
+	}
+	if pbs_req.Device.Make != "Apple" {
+		t.Errorf("Parse device make failed")
+	}
+	if pbs_req.Device.Model != "iPhone6,1" {
+		t.Errorf("Parse device model failed")
+	}
+}
