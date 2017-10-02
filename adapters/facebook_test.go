@@ -276,7 +276,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
 				}
 				if bid.Width != tag.W || bid.Height != tag.H {
-					t.Errorf("Incorrect bid size %dx%d, expected 300x250", bid.Width, bid.Height)
+					t.Errorf("Incorrect bid size %dx%d, expected %dx%d", bid.Width, bid.Height, tag.W, tag.H)
 				}
 				if bid.Adm != tag.content {
 					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
@@ -396,7 +396,7 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
 				}
 				if bid.Width != tag.W || bid.Height != tag.H {
-					t.Errorf("Incorrect bid size %dx%d, expected 300x250", bid.Width, bid.Height)
+					t.Errorf("Incorrect bid size %dx%d, expected %dx%d", bid.Width, bid.Height, tag.W, tag.H)
 				}
 				if bid.Adm != tag.content {
 					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
