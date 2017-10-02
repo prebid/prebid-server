@@ -34,10 +34,8 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"log"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 )
 
