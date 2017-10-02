@@ -1,10 +1,10 @@
 package decorators
 
 import (
-	"github.com/prebid/prebid-server/pbs"
 	"context"
 	"fmt"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 func PreventPanics(delegate adapters.Adapter) adapters.Adapter {
@@ -13,7 +13,7 @@ func PreventPanics(delegate adapters.Adapter) adapters.Adapter {
 	}
 }
 
-type panicProofAdapter struct{
+type panicProofAdapter struct {
 	delegate adapters.Adapter
 }
 

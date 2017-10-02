@@ -25,6 +25,7 @@ import (
 	"github.com/xojoc/useragent"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/decorators"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -33,12 +34,11 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"log"
 	"os"
 	"os/signal"
-	"syscall"
-	"log"
 	"runtime"
-	"github.com/prebid/prebid-server/adapters/decorators"
+	"syscall"
 )
 
 type DomainMetrics struct {
@@ -623,8 +623,8 @@ func main() {
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
-		"appnexus":      decorators.PreventPanics(adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL)),
-		"districtm":     decorators.PreventPanics(adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL)),
+		"appnexus":  decorators.PreventPanics(adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL)),
+		"districtm": decorators.PreventPanics(adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL)),
 		"indexExchange": decorators.PreventPanics(adapters.NewIndexAdapter(
 			adapters.DefaultHTTPAdapterConfig,
 			cfg.Adapters["indexexchange"].Endpoint,

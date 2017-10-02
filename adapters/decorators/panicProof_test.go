@@ -1,9 +1,9 @@
 package decorators
 
 import (
-	"testing"
-	"github.com/prebid/prebid-server/pbs"
 	"context"
+	"github.com/prebid/prebid-server/pbs"
+	"testing"
 )
 
 type brokenAdapter struct{}
