@@ -36,6 +36,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"log"
+	"runtime"
 )
 
 type DomainMetrics struct {
@@ -303,6 +305,24 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			}
 			sentBids++
 			go func(bidder *pbs.PBSBidder) {
+				defer func(req pbs.PBSRequest) {
+					if r := recover(); r != nil {
+						log.Printf("panic from bidder: %v\n", bidder.BidderCode)
+						log.Printf("pbsrequest is: %#v\n", req)
+						if req.App != nil {
+							log.Printf("app is: %#v\n", *req.App)
+						} else {
+							log.Printf("App is nil.\n")
+						}
+						if _, ok := r.(runtime.Error); ok {
+							panic(r)
+						}
+						if s, ok := r.(string); ok {
+							panic(s)
+						}
+					}
+				}(*pbs_req)
+
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
