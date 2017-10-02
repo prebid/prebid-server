@@ -132,10 +132,13 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	}
 
 	if req.App != nil {
+		appCopy := *req.App
+		appCopy.Ext = make([]byte, len(req.App.Ext))
+		copy(appCopy.Ext, req.App.Ext)
 		return openrtb.BidRequest{
 			ID:     req.Tid,
 			Imp:    newImps,
-			App:    req.App,
+			App:    &appCopy,
 			Device: req.Device,
 			User:   req.User,
 			Source: &openrtb.Source{
