@@ -55,7 +55,7 @@ func coinFlip() bool {
 	return rand.Intn(2) != 0
 }
 
-func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+func (a *FacebookAdapter) callOne(ctx context.Context, adUnit pbs.PBSAdUnit, reqJSON bytes.Buffer) (result callOneResult, err error) {
 	url := a.URI
 	if coinFlip() {
 		//50% of traffic to non-secure endpoint
@@ -99,8 +99,8 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 		AdUnitCode: bid.ImpID,
 		Price:      bid.Price,
 		Adm:        bid.AdM,
-		Width:      300, // hard code as it's all FB supports
-		Height:     250, // hard code as it's all FB supports
+		Width:      adUnit.Sizes[0].W,
+		Height:     adUnit.Sizes[0].H,
 	}
 	return
 }
@@ -128,6 +128,24 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 			fbReq.App = &appCopy
 		}
 		fbReq.Imp[0].TagID = placementId
+
+		// if instl = 1 sent in, pass size (0,0) to facebook
+		if fbReq.Imp[0].Instl == 1 && fbReq.Imp[0].Banner != nil {
+			fbReq.Imp[0].Banner.W = 0
+			fbReq.Imp[0].Banner.H = 0
+		}
+		// if instl = 0 and type is banner, do not send non supported size
+		if fbReq.Imp[0].Instl == 0 && fbReq.Imp[0].Banner != nil {
+			supportedHeight := map[uint64]bool{
+				50:  true,
+				90:  true,
+				250: true,
+			}
+			if !supportedHeight[fbReq.Imp[0].Banner.H] {
+				return fbReq, errors.New("Facebook do not support banner height other than 50, 90 and 250")
+			}
+		}
+		// native is not supported yet
 
 		return fbReq, nil
 	} else {
@@ -176,9 +194,10 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	ch := make(chan callOneResult)
+
 	for i, _ := range bidder.AdUnits {
-		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.callOne(ctx, req, reqJSON)
+		go func(bidder *pbs.PBSBidder, adUnit pbs.PBSAdUnit, reqJSON bytes.Buffer) {
+			result, err := a.callOne(ctx, adUnit, reqJSON)
 			result.Error = err
 			if result.bid != nil {
 				result.bid.BidderCode = bidder.BidderCode
@@ -189,7 +208,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				}
 			}
 			ch <- result
-		}(bidder, requests[i])
+		}(bidder, bidder.AdUnits[i], requests[i])
 	}
 
 	var err error

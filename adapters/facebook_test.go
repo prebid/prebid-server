@@ -24,6 +24,8 @@ type tagInfo struct {
 	bid         float64
 	content     string
 	delay       time.Duration
+	W           uint64
+	H           uint64
 }
 
 type bidInfo struct {
@@ -106,10 +108,26 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("No banner object sent"), http.StatusInternalServerError)
 			return
 		}
-		if breq.Imp[0].Banner.W != 300 || breq.Imp[0].Banner.H != 250 {
-			http.Error(w, fmt.Sprintf("Size '%dx%d' not supported", breq.Imp[0].Banner.W, breq.Imp[0].Banner.H), http.StatusInternalServerError)
+		if breq.Imp[0].Instl == 0 {
+			supportedHeight := map[uint64]bool{
+				50:  true,
+				90:  true,
+				250: true,
+			}
+			if !supportedHeight[breq.Imp[0].Banner.H] {
+				http.Error(w, fmt.Sprintf("Height '%d' not supported", breq.Imp[0].Banner.H), http.StatusInternalServerError)
+				return
+			}
+		} else if breq.Imp[0].Instl == 1 {
+			if breq.Imp[0].Banner.H != 0 || breq.Imp[0].Banner.W != 0 {
+				http.Error(w, fmt.Sprintf("Width and height should be 0, 0 for instl type"), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			http.Error(w, fmt.Sprintf("Invalid Instl sent"), http.StatusInternalServerError)
 			return
 		}
+
 		if breq.Imp[0].TagID == tag.placementID {
 			bid = &openrtb.Bid{
 				ID:    "random-id",
@@ -166,11 +184,15 @@ func TestFacebookBasicResponse(t *testing.T) {
 		code:        "first-tag",
 		placementID: fmt.Sprintf("%s_999998888", fbdata.publisherID),
 		bid:         1.67,
+		W:           300,
+		H:           250,
 	}
 	fbdata.tags[1] = tagInfo{
 		code:        "second-tag",
 		placementID: fmt.Sprintf("%s_66775544", fbdata.publisherID),
 		bid:         3.22,
+		W:           300,
+		H:           250,
 	}
 
 	conf := *DefaultHTTPAdapterConfig
@@ -187,8 +209,8 @@ func TestFacebookBasicResponse(t *testing.T) {
 			MediaTypes: []string{"BANNER"},
 			Sizes: []openrtb.Format{
 				{
-					W: 300,
-					H: 250,
+					W: tag.W,
+					H: tag.H,
 				},
 			},
 			Bids: []pbs.Bids{
@@ -253,7 +275,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 				if bid.Price != tag.bid {
 					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
 				}
-				if bid.Width != 300 || bid.Height != 250 {
+				if bid.Width != tag.W || bid.Height != tag.H {
 					t.Errorf("Incorrect bid size %dx%d, expected 300x250", bid.Width, bid.Height)
 				}
 				if bid.Adm != tag.content {
@@ -284,6 +306,220 @@ func TestFacebookBasicResponse(t *testing.T) {
 	}
 	if bids[0].Price != fbdata.tags[1].bid {
 		t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bids[0].Price, fbdata.tags[1].bid)
+	}
+}
+
+func TestFacebookInterstitialResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(DummyFacebookServer))
+	defer server.Close()
+
+	fbdata = bidInfo{
+		partnerID:   12345678,
+		domain:      "nytimes.com",
+		page:        "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		publisherID: "987654321",
+		tags:        make([]tagInfo, 1),
+		deviceIP:    "25.91.96.36",
+		deviceUA:    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:    "need-an-actual-fb-id",
+	}
+	fbdata.tags[0] = tagInfo{
+		code:        "first-tag",
+		placementID: fmt.Sprintf("%s_999998888", fbdata.publisherID),
+		bid:         1.67,
+		W:           300,
+		H:           250,
+	}
+
+	conf := *DefaultHTTPAdapterConfig
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an.URI = server.URL
+	an.nonSecureUri = server.URL
+
+	pbin := pbs.PBSRequest{
+		AdUnits: make([]pbs.AdUnit, 2),
+	}
+	for i, tag := range fbdata.tags {
+		pbin.AdUnits[i] = pbs.AdUnit{
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
+			Sizes: []openrtb.Format{
+				{
+					W: tag.W,
+					H: tag.H,
+				},
+			},
+			Bids: []pbs.Bids{
+				pbs.Bids{
+					BidderCode: "audienceNetwork",
+					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
+					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),
+				},
+			},
+			Instl: 1,
+		}
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(pbin)
+	if err != nil {
+		t.Fatalf("Json encoding failed: %v", err)
+	}
+
+	fmt.Println("body", body)
+
+	req := httptest.NewRequest("POST", server.URL, body)
+	req.Header.Add("Referer", fbdata.page)
+	req.Header.Add("User-Agent", fbdata.deviceUA)
+	req.Header.Add("X-Real-IP", fbdata.deviceIP)
+
+	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc.TrySync("audienceNetwork", fbdata.buyerUID)
+	fakewriter := httptest.NewRecorder()
+	pc.SetCookieOnResponse(fakewriter, "")
+	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
+
+	cacheClient, _ := dummycache.New()
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+
+	ctx := context.TODO()
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	for _, bid := range bids {
+		matched := false
+		for _, tag := range fbdata.tags {
+			if bid.AdUnitCode == tag.code {
+				matched = true
+				if bid.BidderCode != "audienceNetwork" {
+					t.Errorf("Incorrect BidderCode '%s'", bid.BidderCode)
+				}
+				if bid.Price != tag.bid {
+					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
+				}
+				if bid.Width != tag.W || bid.Height != tag.H {
+					t.Errorf("Incorrect bid size %dx%d, expected 300x250", bid.Width, bid.Height)
+				}
+				if bid.Adm != tag.content {
+					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
+				}
+			}
+		}
+		if !matched {
+			t.Errorf("Received bid for unknown ad unit '%s'", bid.AdUnitCode)
+		}
+	}
+}
+
+func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(DummyFacebookServer))
+	defer server.Close()
+
+	fbdata = bidInfo{
+		partnerID:   12345678,
+		domain:      "nytimes.com",
+		page:        "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		publisherID: "987654321",
+		tags:        make([]tagInfo, 3),
+		deviceIP:    "25.91.96.36",
+		deviceUA:    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:    "need-an-actual-fb-id",
+	}
+	fbdata.tags[0] = tagInfo{
+		code:        "first-tag",
+		placementID: fmt.Sprintf("%s_999998888", fbdata.publisherID),
+		bid:         1.67,
+		W:           300,
+		H:           250,
+	}
+	fbdata.tags[1] = tagInfo{
+		code:        "second-tag",
+		placementID: fmt.Sprintf("%s_948884228", fbdata.publisherID),
+		bid:         3.24,
+		W:           320,
+		H:           50,
+	}
+	fbdata.tags[2] = tagInfo{
+		code:        "third-tag",
+		placementID: fmt.Sprintf("%s_122213422", fbdata.publisherID),
+		bid:         1.51,
+		W:           720,
+		H:           90,
+	}
+
+	conf := *DefaultHTTPAdapterConfig
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an.URI = server.URL
+	an.nonSecureUri = server.URL
+
+	pbin := pbs.PBSRequest{
+		AdUnits: make([]pbs.AdUnit, 3),
+	}
+	for i, tag := range fbdata.tags {
+		pbin.AdUnits[i] = pbs.AdUnit{
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
+			Sizes: []openrtb.Format{
+				{
+					W: tag.W,
+					H: tag.H,
+				},
+			},
+			Bids: []pbs.Bids{
+				pbs.Bids{
+					BidderCode: "audienceNetwork",
+					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
+					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),
+				},
+			},
+			Instl: 0,
+		}
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(pbin)
+	if err != nil {
+		t.Fatalf("Json encoding failed: %v", err)
+	}
+
+	fmt.Println("body", body)
+
+	req := httptest.NewRequest("POST", server.URL, body)
+	req.Header.Add("Referer", fbdata.page)
+	req.Header.Add("User-Agent", fbdata.deviceUA)
+	req.Header.Add("X-Real-IP", fbdata.deviceIP)
+
+	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc.TrySync("audienceNetwork", fbdata.buyerUID)
+	fakewriter := httptest.NewRecorder()
+	pc.SetCookieOnResponse(fakewriter, "")
+	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
+
+	cacheClient, _ := dummycache.New()
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+
+	ctx := context.TODO()
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	for _, bid := range bids {
+		matched := false
+		for _, tag := range fbdata.tags {
+			if bid.AdUnitCode == tag.code {
+				matched = true
+				if bid.BidderCode != "audienceNetwork" {
+					t.Errorf("Incorrect BidderCode '%s'", bid.BidderCode)
+				}
+				if bid.Price != tag.bid {
+					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.bid)
+				}
+				if bid.Width != tag.W || bid.Height != tag.H {
+					t.Errorf("Incorrect bid size %dx%d, expected %dx%d", bid.Width, bid.Height, tag.W, tag.H)
+				}
+				if bid.Adm != tag.content {
+					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
+				}
+			}
+		}
+		if !matched {
+			t.Errorf("Received bid for unknown ad unit '%s'", bid.AdUnitCode)
+		}
 	}
 }
 
