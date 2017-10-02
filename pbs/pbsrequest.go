@@ -266,6 +266,10 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Invalid URL '%s': %v", url.Host, err)
 		}
+	} else {
+		appExt := make([]byte, len(pbsReq.App.Ext))
+		copy(appExt, pbsReq.App.Ext)
+		pbsReq.App.Ext = appExt
 	}
 
 	if r.FormValue("debug") == "1" {
