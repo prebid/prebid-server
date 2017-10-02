@@ -191,7 +191,7 @@ func ParseMediaTypes(types []string) []MediaType {
 func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	defer r.Body.Close()
 
-	pbsReq := &PBSRequest{}
+	var pbsReq PBSRequest
 	err := json.NewDecoder(r.Body).Decode(&pbsReq)
 	if err != nil {
 		return nil, err
@@ -329,7 +329,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 		}
 	}
 
-	return pbsReq, nil
+	return &pbsReq, nil
 }
 
 func (req PBSRequest) Elapsed() int {
