@@ -74,9 +74,13 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		ppReq.Imp[i].TagID = strconv.Itoa(params.TagId)
 		publisher := &openrtb.Publisher{ID: strconv.Itoa(params.PublisherId)}
 		if ppReq.Site != nil {
-			ppReq.Site.Publisher = publisher
+			siteCopy := *ppReq.Site
+			siteCopy.Publisher = publisher
+			ppReq.Site = &siteCopy
 		} else {
-			ppReq.App.Publisher = publisher
+			appCopy := *ppReq.App
+			appCopy.Publisher = publisher
+			ppReq.App = &appCopy
 		}
 		if ppReq.Imp[i].Banner != nil {
 			var size = strings.Split(strings.ToLower(params.AdSize), "x")

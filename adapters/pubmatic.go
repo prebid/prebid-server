@@ -69,10 +69,14 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		} // pubmatic doesn't support
 		pbReq.Imp[i].TagID = params.AdSlot
 		if pbReq.Site != nil {
-			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			siteCopy := *pbReq.Site
+			siteCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			pbReq.Site = &siteCopy
 		}
 		if pbReq.App != nil {
-			pbReq.App.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			appCopy := *pbReq.App
+			appCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			pbReq.App = &appCopy
 		}
 	}
 

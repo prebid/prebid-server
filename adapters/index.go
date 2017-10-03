@@ -69,7 +69,9 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		// Index spec says "adunit path representing ad server inventory" but we don't have this
 		// ext is DFP div ID and KV pairs if avail
 		//indexReq.Imp[i].Ext = openrtb.RawJSON("{}")
-		indexReq.Site.Publisher = &openrtb.Publisher{ID: fmt.Sprintf("%d", params.SiteID)}
+		siteCopy := *indexReq.Site
+		siteCopy.Publisher = &openrtb.Publisher{ID: fmt.Sprintf("%d", params.SiteID)}
+		indexReq.Site = &siteCopy
 	}
 	// spec also asks for publisher id if set
 	// ext object on request for prefetch

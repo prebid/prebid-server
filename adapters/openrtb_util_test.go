@@ -1,13 +1,10 @@
 package adapters
 
 import (
-	"github.com/prebid/prebid-server/pbs"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"bytes"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestCommonMediaTypes(t *testing.T) {
@@ -370,65 +367,4 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 	assert.Equal(t, err, nil)
 	assert.EqualValues(t, resp.User.BuyerUID, "abcde")
-}
-
-func TestAppCopy(t *testing.T) {
-	pbReq := pbs.PBSRequest{
-		AccountID:     "test_account_id",
-		Tid:           "test_tid",
-		CacheMarkup:   1,
-		SortBids:      1,
-		MaxKeyLength:  20,
-		Secure:        1,
-		TimeoutMillis: 1000,
-		App: &openrtb.App{
-			Bundle: "AppNexus.PrebidMobileDemo",
-			Publisher: &openrtb.Publisher{
-				ID: "1995257847363113",
-			},
-			Ext: openrtb.RawJSON([]byte{0x15, 0x16}),
-		},
-		Device: &openrtb.Device{
-			UA:    "test_ua",
-			IP:    "test_ip",
-			Make:  "test_make",
-			Model: "test_model",
-			IFA:   "test_ifa",
-			Ext:   openrtb.RawJSON([]byte{0x17}),
-		},
-		User: &openrtb.User{
-			BuyerUID: "test_buyeruid",
-		},
-	}
-	pbBidder := pbs.PBSBidder{
-		BidderCode: "bannerCode",
-		AdUnits: []pbs.PBSAdUnit{
-			{
-				Code:       "unitCode",
-				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-				Sizes: []openrtb.Format{
-					{
-						W: 300,
-						H: 250,
-					},
-				},
-			},
-		},
-	}
-	req, _ := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
-	if req.App.Bundle != pbReq.App.Bundle {
-		t.Errorf("Bundles not equal")
-	}
-	if req.App.Publisher.ID != pbReq.App.Publisher.ID {
-		t.Errorf("PubIDs not equal")
-	}
-	if !bytes.Equal(req.App.Ext, pbReq.App.Ext) {
-		t.Errorf("Ext values not equal")
-	}
-	if req.App == pbReq.App {
-		t.Errorf("App struct was not copied")
-	}
-	if &req.App.Ext[0] == &pbReq.App.Ext[0] {
-		t.Errorf("Ext bytes were not copied")
-	}
 }

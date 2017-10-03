@@ -39,7 +39,7 @@ func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 	return &openrtb.Banner{
 		W:        unit.Sizes[0].W,
 		H:        unit.Sizes[0].H,
-		Format:   unit.Sizes,
+		Format:   unit.Sizes, // TODO: Copy, if the bidder is shared at all
 		TopFrame: unit.TopFrame,
 	}
 }
@@ -64,8 +64,11 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 }
 
+// makeOpenRTBGeneric makes an openRTB request from the PBS-specific structs.
+//
+// Any objects pointed to by the returned BidRequest *must not be mutated*, or we will get race conditions.
+// The only exception is the Imp property, whose objects will be created new by this method and can be mutated freely.
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
-
 	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(allowedMediatypes))
 	ind := 0
 	impsPresent := false
@@ -132,13 +135,10 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	}
 
 	if req.App != nil {
-		appCopy := *req.App
-		appCopy.Ext = make([]byte, len(req.App.Ext))
-		copy(appCopy.Ext, req.App.Ext)
 		return openrtb.BidRequest{
 			ID:     req.Tid,
 			Imp:    newImps,
-			App:    &appCopy,
+			App:    req.App,
 			Device: req.Device,
 			User:   req.User,
 			Source: &openrtb.Source{
