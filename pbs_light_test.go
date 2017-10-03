@@ -351,10 +351,6 @@ func TestBidSizeValidate(t *testing.T) {
 		},
 	}
 
-	//	multiple pbsadunits with same bidID but different adunitcodes
-	//  multiple pbsadunits with same adunitcode but different bidIDs
-	//
-
 	bids = checkForValidBidSize(bids, &mybidder)
 
 	testdata, _ := json.MarshalIndent(bids, "", "   ")
