@@ -39,7 +39,7 @@ func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 	return &openrtb.Banner{
 		W:        unit.Sizes[0].W,
 		H:        unit.Sizes[0].H,
-		Format:   unit.Sizes, // TODO: Copy, if the bidder is shared at all
+		Format:   copyFormats(unit.Sizes), // defensive copy because adapters may mutate Imps, and this is shared data
 		TopFrame: unit.TopFrame,
 	}
 }
@@ -171,4 +171,13 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		AT:   1,
 		TMax: req.TimeoutMillis,
 	}, nil
+}
+
+func copyFormats(sizes []openrtb.Format) []openrtb.Format {
+	sizesCopy := make([]openrtb.Format, len(sizes))
+	for i := 0; i < len(sizes); i++ {
+		sizesCopy[i] = sizes[i]
+		sizesCopy[i].Ext = append([]byte(nil), sizes[i].Ext...)
+	}
+	return sizesCopy
 }
