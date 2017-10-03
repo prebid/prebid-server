@@ -405,25 +405,31 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // if num_adunit_sizes > 1, reject the bid (remove from list) and return an error
 // return updated bid list object for next steps in auction
 func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBidSlice {
-	var finalValidBids pbs.PBSBidSlice
+	//var finalValidBids pbs.PBSBidSlice
+	//finalValidBids := make(pbs.PBSBidSlice, len(bids))
+	finalValidBids := make([]*pbs.PBSBid, len(bids))
+	finalBidCounter := 0
+bidLoop:
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "banner" && (bid.Height == 0 || bid.Width == 0) {
 			for _, adunit := range bidder.AdUnits {
-				if adunit.BidID == bid.BidID {
+				if adunit.BidID == bid.BidID && adunit.Code == bid.AdUnitCode {
 					if len(adunit.Sizes) == 1 {
 						bid.Width, bid.Height = adunit.Sizes[0].W, adunit.Sizes[0].H
-						finalValidBids = append(finalValidBids, bid)
+						finalValidBids[finalBidCounter] = bid
+						finalBidCounter = finalBidCounter + 1
 					} else if len(adunit.Sizes) > 1 {
-						glog.Errorf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
+						glog.Warningf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
 					}
+					continue bidLoop
 				}
 			}
-
 		} else {
-			finalValidBids = append(finalValidBids, bid)
+			finalValidBids[finalBidCounter] = bid
+			finalBidCounter = finalBidCounter + 1
 		}
 	}
-	return finalValidBids
+	return finalValidBids[:finalBidCounter]
 }
 
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.

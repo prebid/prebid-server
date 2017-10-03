@@ -209,7 +209,7 @@ func TestBidSizeValidate(t *testing.T) {
 	//bid_1 will be rejected due to undefined size when adunit has multiple sizes
 	bid_1 := pbs.PBSBid{
 		BidID:      "test_bidid1",
-		AdUnitCode: "test_adunitcode",
+		AdUnitCode: "test_adunitcode1",
 		BidderCode: "randNetwork",
 		Price:      1.05,
 		Adm:        "test_adm",
@@ -251,7 +251,7 @@ func TestBidSizeValidate(t *testing.T) {
 	//bid_4 will be ignored as it's a video creative type
 	bid_4 := pbs.PBSBid{
 		BidID:      "test_bidid_video",
-		AdUnitCode: "test_adunitcode2",
+		AdUnitCode: "test_adunitcode_video",
 		BidderCode: "randNetwork",
 		Price:      1.05,
 		Adm:        "test_adm",
@@ -278,7 +278,7 @@ func TestBidSizeValidate(t *testing.T) {
 						H: 50,
 					},
 				},
-				Code: "sample_test_code",
+				Code: "test_adunitcode1",
 				MediaTypes: []pbs.MediaType{
 					pbs.MEDIA_TYPE_BANNER,
 				},
@@ -291,7 +291,7 @@ func TestBidSizeValidate(t *testing.T) {
 						H: 100,
 					},
 				},
-				Code: "sample_test_code",
+				Code: "test_adunitcode2",
 				MediaTypes: []pbs.MediaType{
 					pbs.MEDIA_TYPE_BANNER,
 				},
@@ -304,7 +304,7 @@ func TestBidSizeValidate(t *testing.T) {
 						H: 200,
 					},
 				},
-				Code: "sample_test_code",
+				Code: "test_adunitcode3",
 				MediaTypes: []pbs.MediaType{
 					pbs.MEDIA_TYPE_BANNER,
 				},
@@ -317,13 +317,43 @@ func TestBidSizeValidate(t *testing.T) {
 						H: 400,
 					},
 				},
-				Code: "sample_test_code",
+				Code: "test_adunitcode_video",
 				MediaTypes: []pbs.MediaType{
 					pbs.MEDIA_TYPE_VIDEO,
 				},
 			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid3",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 150,
+						H: 150,
+					},
+				},
+				Code: "test_adunitcode_x",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid_y",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 150,
+						H: 150,
+					},
+				},
+				Code: "test_adunitcode_3",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
 		},
 	}
+
+	//	multiple pbsadunits with same bidID but different adunitcodes
+	//  multiple pbsadunits with same adunitcode but different bidIDs
+	//
 
 	bids = checkForValidBidSize(bids, &mybidder)
 
