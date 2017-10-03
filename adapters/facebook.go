@@ -118,10 +118,14 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 		fbReq.Imp = fbReq.Imp[unitInd : unitInd+1]
 
 		if fbReq.Site != nil {
-			fbReq.Site.Publisher = &openrtb.Publisher{ID: pubId}
+			siteCopy := *fbReq.Site
+			siteCopy.Publisher = &openrtb.Publisher{ID: pubId}
+			fbReq.Site = &siteCopy
 		}
 		if fbReq.App != nil {
-			fbReq.App.Publisher = &openrtb.Publisher{ID: pubId}
+			appCopy := *fbReq.App
+			appCopy.Publisher = &openrtb.Publisher{ID: pubId}
+			fbReq.App = &appCopy
 		}
 		fbReq.Imp[0].TagID = placementId
 
