@@ -29,4 +29,5 @@ else
   test $GOFMT_LINES -eq 0 || die "gofmt needs to be run, ${GOFMT_LINES} files have issues.  Below is a list of files to review:\n`gofmt -l *.go pbs adapters`"
 fi
 
-go test $(go list ./... | grep -v /vendor/)
+#go test $(go list ./... | grep -v /vendor/)
+./scripts/check_coverage.sh
