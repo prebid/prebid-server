@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -49,7 +49,13 @@ type PulsepointParams struct {
 }
 
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	ppReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	ppReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+
+	if err != nil {
+		return nil, err
+	}
+
 	for i, unit := range bidder.AdUnits {
 		var params PulsepointParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -68,9 +74,13 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		ppReq.Imp[i].TagID = strconv.Itoa(params.TagId)
 		publisher := &openrtb.Publisher{ID: strconv.Itoa(params.PublisherId)}
 		if ppReq.Site != nil {
-			ppReq.Site.Publisher = publisher
+			siteCopy := *ppReq.Site
+			siteCopy.Publisher = publisher
+			ppReq.Site = &siteCopy
 		} else {
-			ppReq.App.Publisher = publisher
+			appCopy := *ppReq.App
+			appCopy.Publisher = publisher
+			ppReq.App = &appCopy
 		}
 		if ppReq.Imp[i].Banner != nil {
 			var size = strings.Split(strings.ToLower(params.AdSize), "x")

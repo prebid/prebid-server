@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type AppNexusAdapter struct {
@@ -68,8 +68,12 @@ type appnexusImpExt struct {
 }
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	anReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	anReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
 
+	if err != nil {
+		return nil, err
+	}
 	uri := a.URI
 	for i, unit := range bidder.AdUnits {
 		var params appnexusParams
@@ -196,6 +200,16 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				Height:      bid.H,
 				DealId:      bid.DealID,
 			}
+			mediaType := "banner"
+			// Test for video
+
+			for _, v := range bid.Attr {
+				if v == 6 || v == 7 {
+					// If it is in-banner video (see OpenRTB list 5.3)
+					mediaType = "video"
+				}
+			}
+			pbid.CreativeMediaType = mediaType
 			bids = append(bids, &pbid)
 		}
 	}

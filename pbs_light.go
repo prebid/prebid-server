@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -34,6 +33,9 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type DomainMetrics struct {
@@ -82,13 +84,6 @@ var (
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
-
-type BidCache struct {
-	Adm    string `json:"adm,omitempty"`
-	NURL   string `json:"nurl,omitempty"`
-	Width  uint64 `json:"width,omitempty"`
-	Height uint64 `json:"height,omitempty"`
-}
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -194,7 +189,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
 
-	if userSyncCookie.SyncCount() == 0 {
+	if userSyncCookie.LiveSyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -202,7 +197,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	for _, bidder := range csReq.Bidders {
 		if ex, ok := exchanges[bidder]; ok {
-			if !userSyncCookie.HasSync(ex.FamilyName()) {
+			if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
@@ -245,7 +240,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	status := "OK"
 	if pbs_req.App != nil {
 		mAppRequestMeter.Mark(1)
-	} else if pbs_req.Cookie.SyncCount() == 0 {
+	} else if pbs_req.Cookie.LiveSyncCount() == 0 {
 		mNoCookieMeter.Mark(1)
 		if isSafari {
 			mSafariNoCookieMeter.Mark(1)
@@ -283,13 +278,16 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
-			if pbs_req.App == nil && pbs_req.GetUserID(ex.FamilyName()) == "" {
-				bidder.NoCookie = true
-				bidder.UsersyncInfo = ex.GetUsersyncInfo()
-				ametrics.NoCookieMeter.Mark(1)
-				accountAdapterMetric.NoCookieMeter.Mark(1)
-				if ex.SkipNoCookies() {
-					continue
+			if pbs_req.App == nil {
+				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				if uid == "" {
+					bidder.NoCookie = true
+					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					ametrics.NoCookieMeter.Mark(1)
+					accountAdapterMetric.NoCookieMeter.Mark(1)
+					if ex.SkipNoCookies() {
+						continue
+					}
 				}
 			}
 			sentBids++
@@ -351,18 +349,14 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if pbs_req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
 		for i, bid := range pbs_resp.Bids {
-			bc := BidCache{
+			bc := &pbc.BidCache{
 				Adm:    bid.Adm,
 				NURL:   bid.NURL,
 				Width:  bid.Width,
 				Height: bid.Height,
 			}
-			buf := new(bytes.Buffer)
-			enc := json.NewEncoder(buf)
-			enc.SetEscapeHTML(false)
-			enc.Encode(bc)
 			cobjs[i] = &pbc.CacheObject{
-				Value: buf.String(),
+				Value: bc,
 			}
 		}
 		err = pbc.Put(ctx, cobjs)
@@ -594,6 +588,7 @@ func init() {
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -606,7 +601,7 @@ func main() {
 	}
 
 	if err := serve(cfg); err != nil {
-		glog.Fatalf("PreBid Server encountered an error: %v", err)
+		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
 
@@ -614,12 +609,13 @@ func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.ExternalURL),
+		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
 		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
 		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
 		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -687,13 +683,18 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
+	stopSignals := make(chan os.Signal)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
+
 	/* Run admin on different port thats not exposed */
-	go func() {
-		// Todo -- make configurable
-		adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
+	adminServer := &http.Server{Addr: adminURI}
+	go (func() {
 		fmt.Println("Admin running on: ", adminURI)
-		glog.Fatal(http.ListenAndServe(adminURI, nil))
-	}()
+		err := adminServer.ListenAndServe()
+		glog.Errorf("Admin server: %v", err)
+		stopSignals <- syscall.SIGTERM
+	})()
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
@@ -740,9 +741,23 @@ func serve(cfg *config.Configuration) error {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	fmt.Printf("Server running on: %s\n", server.Addr)
-	if err := server.ListenAndServe(); err != nil {
-		return err
+	go (func() {
+		fmt.Printf("Main server running on: %s\n", server.Addr)
+		serverErr := server.ListenAndServe()
+		glog.Errorf("Main server: %v", serverErr)
+		stopSignals <- syscall.SIGTERM
+	})()
+
+	<-stopSignals
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		glog.Errorf("Main server shutdown: %v", err)
 	}
+	if err := adminServer.Shutdown(ctx); err != nil {
+		glog.Errorf("Admin server shutdown: %v", err)
+	}
+
 	return nil
 }

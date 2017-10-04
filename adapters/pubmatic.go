@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -45,7 +45,13 @@ type pubmaticParams struct {
 }
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	pbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
+	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	pbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+
+	if err != nil {
+		return nil, err
+	}
+
 	for i, unit := range bidder.AdUnits {
 		var params pubmaticParams
 		err := json.Unmarshal(unit.Params, &params)
@@ -58,13 +64,19 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if params.AdSlot == "" {
 			return nil, errors.New("Missing adSlot param")
 		}
-		pbReq.Imp[i].Banner.Format = nil // pubmatic doesn't support
+		if pbReq.Imp[i].Banner != nil {
+			pbReq.Imp[i].Banner.Format = nil
+		} // pubmatic doesn't support
 		pbReq.Imp[i].TagID = params.AdSlot
 		if pbReq.Site != nil {
-			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			siteCopy := *pbReq.Site
+			siteCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			pbReq.Site = &siteCopy
 		}
 		if pbReq.App != nil {
-			pbReq.App.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			appCopy := *pbReq.App
+			appCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId}
+			pbReq.App = &appCopy
 		}
 	}
 
@@ -79,12 +91,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
+	userId, _, _ := req.Cookie.GetUID(a.FamilyName())
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 	httpReq.AddCookie(&http.Cookie{
 		Name:  "KADUSERCOOKIE",
-		Value: req.GetUserID(a.FamilyName()),
+		Value: userId,
 	})
 
 	pbResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)

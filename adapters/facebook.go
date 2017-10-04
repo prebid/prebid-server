@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -97,7 +97,7 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 
 	result.bid = &pbs.PBSBid{
 		AdUnitCode: bid.ImpID,
-		Price:      bid.Price / 100, // convert from cents to dollars
+		Price:      bid.Price,
 		Adm:        bid.AdM,
 		Width:      300, // hard code as it's all FB supports
 		Height:     250, // hard code as it's all FB supports
@@ -105,15 +105,40 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 	return
 }
 
+func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, placementId string, mtype pbs.MediaType, pubId string, unitInd int) (openrtb.BidRequest, error) {
+	fbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+
+	if err != nil {
+		return openrtb.BidRequest{}, err
+	}
+
+	fbReq.Ext = a.platformJSON
+
+	if fbReq.Imp != nil && len(fbReq.Imp) > 0 {
+		fbReq.Imp = fbReq.Imp[unitInd : unitInd+1]
+
+		if fbReq.Site != nil {
+			siteCopy := *fbReq.Site
+			siteCopy.Publisher = &openrtb.Publisher{ID: pubId}
+			fbReq.Site = &siteCopy
+		}
+		if fbReq.App != nil {
+			appCopy := *fbReq.App
+			appCopy.Publisher = &openrtb.Publisher{ID: pubId}
+			fbReq.App = &appCopy
+		}
+		fbReq.Imp[0].TagID = placementId
+
+		return fbReq, nil
+	} else {
+		return fbReq, errors.New("No supported impressions")
+	}
+}
+
 func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	requests := make([]bytes.Buffer, len(bidder.AdUnits))
+	requests := make([]bytes.Buffer, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
+	reqIndex := 0
 	for i, unit := range bidder.AdUnits {
-		fbReq := makeOpenRTBGeneric(req, bidder, a.FamilyName())
-		fbReq.Ext = a.platformJSON
-
-		// only grab this ad unit
-		fbReq.Imp = fbReq.Imp[i : i+1]
-
 		var params facebookParams
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
@@ -126,18 +151,28 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if len(s) != 2 {
 			return nil, fmt.Errorf("Invalid placementId param '%s'", params.PlacementId)
 		}
-		if fbReq.Site != nil {
-			fbReq.Site.Publisher = &openrtb.Publisher{ID: s[0]}
-		}
-		if fbReq.App != nil {
-			fbReq.App.Publisher = &openrtb.Publisher{ID: s[0]}
-		}
-		fbReq.Imp[0].TagID = params.PlacementId
+		pubId := s[0]
 
-		err = json.NewEncoder(&requests[i]).Encode(fbReq)
-		if err != nil {
-			return nil, err
+		// BANNER
+		fbReqB, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_BANNER, pubId, i)
+		if err == nil {
+			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReqB)
+			reqIndex = reqIndex + 1
+			if err != nil {
+				return nil, err
+			}
 		}
+
+		// VIDEO
+		fbReqV, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_VIDEO, pubId, i)
+		if err == nil {
+			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReqV)
+			reqIndex = reqIndex + 1
+			if err != nil {
+				return nil, err
+			}
+		}
+
 	}
 
 	ch := make(chan callOneResult)

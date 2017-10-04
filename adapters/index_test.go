@@ -12,7 +12,7 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 func TestIndexInvalidCall(t *testing.T) {
@@ -52,7 +52,8 @@ func TestIndexTimeout(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -86,7 +87,8 @@ func TestIndexInvalidJson(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -121,7 +123,8 @@ func TestIndexInvalidStatusCode(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -156,7 +159,8 @@ func TestIndexMissingSiteId(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code: "unitCode",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -214,8 +218,9 @@ func TestIndexBasicResponse(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code:  "unitCode",
-				BidID: "bidid",
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				BidID:      "bidid",
 				Sizes: []openrtb.Format{
 					{
 						W: 10,
@@ -237,8 +242,8 @@ func TestIndexBasicResponse(t *testing.T) {
 
 func TestIndexUserSyncInfo(t *testing.T) {
 
-	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "localhost")
-	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D__UID__" {
+	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D" {
 		t.Fatalf("should have matched")
 	}
 	if an.usersyncInfo.Type != "redirect" {
