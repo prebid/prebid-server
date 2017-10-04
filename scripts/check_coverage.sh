@@ -31,6 +31,6 @@ while read -r LINE; do
 done < scripts/results.tmp
 
 if $CHECKCOV; then
-  echo "Detected at least one package had less than 80% code coverage.  Please review results below or from your terminal run ./scripts/coverage.sh --html for more detailed results"
+  echo "Detected at least one package had less than 20% code coverage.  Please review results below or from your terminal run ./scripts/coverage.sh --html for more detailed results"
   exit 1
 fi
