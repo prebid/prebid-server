@@ -152,11 +152,11 @@ func (a *SovrnAdapter) SkipNoCookies() bool {
 func NewSovrnAdapter(config *HTTPAdapterConfig, endpoint string, usersyncURL string, externalURL string) *SovrnAdapter {
 	a := NewHTTPAdapter(config)
 
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=$UID", externalURL)
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=[SOVRNID]", externalURL)
 	//usersyncURL := "http://ap.lijit.dev:9080/userSync?"
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%sredir=%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		URL:         fmt.Sprintf("%slocation=%s", usersyncURL, url.QueryEscape(redirect_uri)),
 		Type:        "redirect",
 		SupportCORS: false,
 	}
