@@ -15,7 +15,7 @@ import (
 
 	"fmt"
 
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 )
 
 type tagInfo struct {
@@ -114,7 +114,7 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 			bid = &openrtb.Bid{
 				ID:    "random-id",
 				ImpID: breq.Imp[0].ID,
-				Price: tag.bid * 100, // facebook bids in
+				Price: tag.bid,
 				AdM:   tag.content,
 			}
 			if tag.delay > 0 {
@@ -183,7 +183,8 @@ func TestFacebookBasicResponse(t *testing.T) {
 	}
 	for i, tag := range fbdata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
-			Code: tag.code,
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
@@ -265,7 +266,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 
 	// same test but with one request timing out
 	fbdata.tags[0].delay = 20 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	defer cancel()
 
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])

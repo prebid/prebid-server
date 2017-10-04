@@ -21,6 +21,13 @@ import (
 const RECAPTCHA_URL = "https://www.google.com/recaptcha/api/siteverify"
 const COOKIE_NAME = "uids"
 
+// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
+const DEFAULT_TTL = 14 * 24 * time.Hour
+
+// customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
+// If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
+var customBidderTTLs = map[string]time.Duration{}
+
 const (
 	USERSYNC_OPT_OUT     = "usersync.opt_outs"
 	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
@@ -32,9 +39,18 @@ const (
 // To get an instance of this from a request, use ParsePBSCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type PBSCookie struct {
-	uids     map[string]string
+	uids     map[string]uidWithExpiry
 	optOut   bool
 	birthday *time.Time
+}
+
+// uidWithExpiry bundles the UID with an Expiration date.
+// After the expiration, the UID is no longer valid.
+type uidWithExpiry struct {
+	// UID is the ID given to a user by a particular bidder
+	UID string `json:"uid"`
+	// Expires is the time at which this UID should no longer apply.
+	Expires time.Time `json:"expires"`
 }
 
 type UserSyncDeps struct {
@@ -56,40 +72,24 @@ func ParsePBSCookieFromRequest(r *http.Request) *PBSCookie {
 
 // ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.
 func ParsePBSCookie(cookie *http.Cookie) *PBSCookie {
-	pc := PBSCookie{
-		uids:     make(map[string]string),
-		birthday: timestamp(),
-	}
+	pc := NewPBSCookie()
 
 	j, err := base64.URLEncoding.DecodeString(cookie.Value)
 	if err != nil {
 		// corrupted cookie; we should reset
-		return &pc
+		return pc
 	}
-	err = json.Unmarshal(j, &pc)
-	if err != nil {
-		// corrupted cookie; we should reset
-		return &pc
-	}
-	if pc.optOut || pc.uids == nil {
-		pc.uids = make(map[string]string) // empty map
-	}
+	err = json.Unmarshal(j, pc)
 
-	// Facebook sends us a sentinel value of 0 if the user isn't logged in.
-	// As a result, we've stored  "0" as the UID for many users in the audienceNetwork so far.
-	// Since users log in and out of facebook all the time, this will cause re-sync attempts until
-	// we get a non-zero value.
-	if pc.uids["audienceNetwork"] == "0" {
-		delete(pc.uids, "audienceNetwork")
-	}
-
-	return &pc
+	// The error on Unmarshal here isn't terribly important.
+	// If the cookie has been corrupted, we should reset to an empty one anyway.
+	return pc
 }
 
 // NewPBSCookie returns an empty PBSCookie
 func NewPBSCookie() *PBSCookie {
 	return &PBSCookie{
-		uids:     make(map[string]string),
+		uids:     make(map[string]uidWithExpiry),
 		birthday: timestamp(),
 	}
 }
@@ -109,7 +109,7 @@ func (cookie *PBSCookie) SetPreference(allow bool) {
 		cookie.optOut = false
 	} else {
 		cookie.optOut = true
-		cookie.uids = make(map[string]string)
+		cookie.uids = make(map[string]uidWithExpiry)
 	}
 }
 
@@ -125,14 +125,19 @@ func (cookie *PBSCookie) ToHTTPCookie() *http.Cookie {
 	}
 }
 
-// GetUID Gets this user's ID for the given family, if present. If not present, this returns ("", false).
-func (cookie *PBSCookie) GetUID(familyName string) (string, bool) {
-	if cookie == nil {
-		return "", false
-	} else {
-		uid, ok := cookie.uids[familyName]
-		return uid, ok
+// GetUID Gets this user's ID for the given family.
+// The first returned value is the user's ID.
+// The second returned value is true if we had a value stored, and false if we didn't.
+// The third returned value is true if that value is "active", and false if it's expired.
+//
+// If no value was stored, then the "isActive" return value will be false.
+func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
+	if cookie != nil {
+		if uid, ok := cookie.uids[familyName]; ok {
+			return uid.UID, true, time.Now().Before(uid.Expires)
+		}
 	}
+	return "", false, false
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
@@ -149,23 +154,24 @@ func (cookie *PBSCookie) Unsync(familyName string) {
 	delete(cookie.uids, familyName)
 }
 
-// HasSync returns true if we have a UID for the given family, and false otherwise.
-func (cookie *PBSCookie) HasSync(familyName string) bool {
-	if cookie == nil {
-		return false
-	} else {
-		_, ok := cookie.uids[familyName]
-		return ok
-	}
+// HasLiveSync returns true if we have an active UID for the given family, and false otherwise.
+func (cookie *PBSCookie) HasLiveSync(familyName string) bool {
+	_, _, isLive := cookie.GetUID(familyName)
+	return isLive
 }
 
-// SyncCount returns the number of families which have UIDs for this user.
-func (cookie *PBSCookie) SyncCount() int {
-	if cookie == nil {
-		return 0
-	} else {
-		return len(cookie.uids)
+// LiveSyncCount returns the number of families which have active UIDs for this user.
+func (cookie *PBSCookie) LiveSyncCount() int {
+	now := time.Now()
+	numSyncs := 0
+	if cookie != nil {
+		for _, value := range cookie.uids {
+			if now.Before(value.Expires) {
+				numSyncs++
+			}
+		}
 	}
+	return numSyncs
 }
 
 // TrySync tries to set the UID for some family name. It returns an error if the set didn't happen.
@@ -180,17 +186,23 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
-	cookie.uids[familyName] = uid
+	cookie.uids[familyName] = uidWithExpiry{
+		UID:     uid,
+		Expires: getExpiry(familyName),
+	}
+
 	return nil
 }
 
 // pbsCookieJson defines the JSON contract for the cookie data's storage format.
 //
-// This exists so that PBSCookie can have private fields.
+// This exists so that PBSCookie (which is public) can have private fields, and the rest of
+// PBS doesn't have to worry about the cookie data storage format.
 type pbsCookieJson struct {
-	UIDs     map[string]string `json:"uids,omitempty"`
-	OptOut   bool              `json:"optout,omitempty"`
-	Birthday *time.Time        `json:"bday,omitempty"`
+	LegacyUIDs map[string]string        `json:"uids,omitempty"`
+	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
+	OptOut     bool                     `json:"optout,omitempty"`
+	Birthday   *time.Time               `json:"bday,omitempty"`
 }
 
 func (cookie *PBSCookie) MarshalJSON() ([]byte, error) {
@@ -201,17 +213,53 @@ func (cookie *PBSCookie) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON holds some transition code.
+//
+// "Legacy" cookies had UIDs *without* expiration dates, and recognized "0" as a legitimate UID for audienceNetwork.
+// "Current" cookies always include UIDs with expiration dates, and never allow "0" for audienceNetwork.
+//
+// This Unmarshal method interprets both data formats, and does some conversions on legacy data to make it current.
+// If you're seeing this message after March 2018, it's safe to assume that all the legacy cookies have been
+// updated and remove the legacy logic.
 func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 	var cookieContract pbsCookieJson
 	err := json.Unmarshal(b, &cookieContract)
 	if err == nil {
-		cookie.uids = cookieContract.UIDs
-		cookie.birthday = cookieContract.Birthday
 		cookie.optOut = cookieContract.OptOut
-		return nil
-	} else {
-		return err
+		cookie.birthday = cookieContract.Birthday
+
+		if cookie.optOut {
+			cookie.uids = make(map[string]uidWithExpiry)
+		} else {
+			cookie.uids = cookieContract.UIDs
+
+			if cookie.uids == nil {
+				cookie.uids = make(map[string]uidWithExpiry, len(cookieContract.LegacyUIDs))
+			}
+
+			// Interpret "legacy" UIDs as having been expired already.
+			// This should cause us to re-sync, since it would be time for a new one.
+			for bidder, uid := range cookieContract.LegacyUIDs {
+				if _, ok := cookie.uids[bidder]; !ok {
+					cookie.uids[bidder] = uidWithExpiry{
+						UID:     uid,
+						Expires: time.Now().Add(-5 * time.Minute),
+					}
+				}
+			}
+
+			// Any "0" values from audienceNetwork really meant "no ID available." This happens if they've never
+			// logged into Facebook. However... once we know a user's ID, we stop trying to re-sync them until the
+			// expiration date has passed.
+			//
+			// Since users may log into facebook later, this is a bad strategy.
+			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
+			if id, ok := cookie.uids["audienceNetwork"]; ok && id.UID == "0" {
+				delete(cookie.uids, "audienceNetwork")
+			}
+		}
 	}
+	return err
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -323,6 +371,15 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	} else {
 		http.Redirect(w, r, "https://ib.adnxs.com/optout", 301)
 	}
+}
+
+// getExpiry gets an expiry date for the cookie, assuming it was generated right now.
+func getExpiry(familyName string) time.Time {
+	ttl := DEFAULT_TTL
+	if customTTL, ok := customBidderTTLs[familyName]; ok {
+		ttl = customTTL
+	}
+	return time.Now().Add(ttl)
 }
 
 func timestamp() *time.Time {
