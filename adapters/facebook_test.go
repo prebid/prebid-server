@@ -221,7 +221,9 @@ func TestFacebookBasicResponse(t *testing.T) {
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	hcs := pbs.HostCookieSettings{}
+
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
