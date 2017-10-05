@@ -405,8 +405,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // if num_adunit_sizes > 1, reject the bid (remove from list) and return an error
 // return updated bid list object for next steps in auction
 func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBidSlice {
-	//var finalValidBids pbs.PBSBidSlice
-	//finalValidBids := make(pbs.PBSBidSlice, len(bids))
 	finalValidBids := make([]*pbs.PBSBid, len(bids))
 	finalBidCounter := 0
 bidLoop:
