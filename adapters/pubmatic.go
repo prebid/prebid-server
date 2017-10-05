@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -132,11 +131,14 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 
 		if pbReq.Site != nil {
-			pbReq.Site.Publisher = &openrtb.Publisher{ID: params.PublisherId, Domain: req.Domain}
+			siteCopy := *pbReq.Site
+			siteCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId, Domain: req.Domain}
+			pbReq.Site = &siteCopy
 		}
-
 		if pbReq.App != nil {
-			pbReq.App.Publisher = &openrtb.Publisher{ID: params.PublisherId, Domain: req.Domain}
+			appCopy := *pbReq.App
+			appCopy.Publisher = &openrtb.Publisher{ID: params.PublisherId, Domain: req.Domain}
+			pbReq.App = &appCopy
 		}
 	}
 
@@ -195,7 +197,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 
-	bidInfo := make(map[string]pbs.PBSBidSlice, 0)
+	bids := make(pbs.PBSBidSlice, 0)
 
 	numBids := 0
 	for _, sb := range bidResp.SeatBid {
@@ -218,24 +220,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				Height:      bid.H,
 				DealId:      bid.DealID,
 			}
-			pbid.CreativeMediaType = "banner"
 
-			bidInfo[pbid.AdUnitCode] = append(bidInfo[pbid.AdUnitCode], &pbid)
-
-			glog.Infof("[PUBMATIC] Received Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
-				pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
+			bids = append(bids, &pbid)
+			if glog.V(2) {
+				glog.Infof("[PUBMATIC] Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
+					pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
+			}
 		}
-	}
-
-	bids := make(pbs.PBSBidSlice, 0)
-	for _, bids_list := range bidInfo {
-
-		if len(bids_list) > 1 {
-			sort.Sort(bids_list)
-		}
-		bids = append(bids, bids_list[0])
-		glog.Infof("[PUBMATIC] Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
-			pubId, bids_list[0].AdUnitCode, bids_list[0].BidID, bids_list[0].Width, bids_list[0].Height, bids_list[0].Price)
 	}
 
 	return bids, nil

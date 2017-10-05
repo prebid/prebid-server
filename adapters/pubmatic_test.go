@@ -380,8 +380,8 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
-	if len(bids) != 1 {
-		t.Fatalf("Should have received one bid")
+	if len(bids) != 2 {
+		t.Fatalf("Should have received two bids")
 	}
 }
 
