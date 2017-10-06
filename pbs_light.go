@@ -485,7 +485,10 @@ func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// could add more logic here, but doing nothing means 200 OK
 }
 
-func NewBidderParamHandler() func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+// NewBidderParamHandler returns a Handle which provides JSON-schemas for all the bidder params supported by
+// prebid-server. If the JSON-schema files can't be read, it will cause the program to quit.
+func NewBidderParamHandler() httprouter.Handle {
+	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
@@ -503,6 +506,7 @@ func NewBidderParamHandler() func(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}
+
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(response)
