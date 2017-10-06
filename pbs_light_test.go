@@ -383,7 +383,6 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 }
 
 func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
-	t.Helper()
 	if _, ok := data[key]; !ok {
 		t.Errorf("Expected map to produce a schema for adapter: %s", key)
 	}
