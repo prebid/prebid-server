@@ -85,7 +85,7 @@ func TestPubmaticInvalidCall(t *testing.T) {
 		t.Fatal("Missing name")
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
@@ -142,7 +142,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -178,7 +178,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -206,7 +206,7 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, "http://localhost/test", "localhost")
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -308,7 +308,7 @@ func TestPubmaticBasicResponse(t *testing.T) {
 
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -345,7 +345,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -393,7 +393,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -442,7 +442,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -498,7 +498,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -529,7 +529,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	conf := *DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
