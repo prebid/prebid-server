@@ -115,16 +115,16 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 				250: true,
 			}
 			if !supportedHeight[breq.Imp[0].Banner.H] {
-				http.Error(w, fmt.Sprintf("Height '%d' not supported", breq.Imp[0].Banner.H), http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("Height '%d' not supported", breq.Imp[0].Banner.H), http.StatusBadRequest)
 				return
 			}
 		} else if breq.Imp[0].Instl == 1 {
 			if breq.Imp[0].Banner.H != 0 || breq.Imp[0].Banner.W != 0 {
-				http.Error(w, fmt.Sprintf("Width and height should be 0, 0 for instl type"), http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("Width and height should be 0, 0 for instl type"), http.StatusBadRequest)
 				return
 			}
 		} else {
-			http.Error(w, fmt.Sprintf("Invalid Instl sent"), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Invalid Instl sent"), http.StatusBadRequest)
 			return
 		}
 
@@ -229,8 +229,6 @@ func TestFacebookBasicResponse(t *testing.T) {
 		t.Fatalf("Json encoding failed: %v", err)
 	}
 
-	fmt.Println("body", body)
-
 	req := httptest.NewRequest("POST", server.URL, body)
 	req.Header.Add("Referer", fbdata.page)
 	req.Header.Add("User-Agent", fbdata.deviceUA)
@@ -256,7 +254,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 		t.Fatalf("ParsePBSRequest returned invalid bidder")
 	}
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -366,8 +364,6 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 		t.Fatalf("Json encoding failed: %v", err)
 	}
 
-	fmt.Println("body", body)
-
 	req := httptest.NewRequest("POST", server.URL, body)
 	req.Header.Add("Referer", fbdata.page)
 	req.Header.Add("User-Agent", fbdata.deviceUA)
@@ -382,7 +378,7 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	for _, bid := range bids {
 		matched := false
@@ -480,8 +476,6 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 		t.Fatalf("Json encoding failed: %v", err)
 	}
 
-	fmt.Println("body", body)
-
 	req := httptest.NewRequest("POST", server.URL, body)
 	req.Header.Add("Referer", fbdata.page)
 	req.Header.Add("User-Agent", fbdata.deviceUA)
@@ -496,7 +490,7 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	for _, bid := range bids {
 		matched := false

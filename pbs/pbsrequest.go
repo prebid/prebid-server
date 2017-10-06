@@ -124,6 +124,15 @@ func (bidder *PBSBidder) LookupBidID(Code string) string {
 	return ""
 }
 
+func (bidder *PBSBidder) LookupAdUnit(Code string) (unit *PBSAdUnit) {
+	for _, unit := range bidder.AdUnits {
+		if unit.Code == Code {
+			return &unit
+		}
+	}
+	return nil
+}
+
 type PBSRequest struct {
 	AccountID     string          `json:"account_id"`
 	Tid           string          `json:"tid"`
