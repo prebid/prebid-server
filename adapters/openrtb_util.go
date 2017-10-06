@@ -39,7 +39,7 @@ func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 	return &openrtb.Banner{
 		W:        unit.Sizes[0].W,
 		H:        unit.Sizes[0].H,
-		Format:   unit.Sizes,
+		Format:   copyFormats(unit.Sizes), // defensive copy because adapters may mutate Imps, and this is shared data
 		TopFrame: unit.TopFrame,
 	}
 }
@@ -64,6 +64,10 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 }
 
+// makeOpenRTBGeneric makes an openRTB request from the PBS-specific structs.
+//
+// Any objects pointed to by the returned BidRequest *must not be mutated*, or we will get race conditions.
+// The only exception is the Imp property, whose objects will be created new by this method and can be mutated freely.
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
 	imps := make([]openrtb.Imp, 0, len(bidder.AdUnits)*len(allowedMediatypes))
 	for _, unit := range bidder.AdUnits {
@@ -80,6 +84,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				newImp := openrtb.Imp{
 					ID:     unit.Code,
 					Secure: &req.Secure,
+					Instl:  unit.Instl,
 				}
 				switch mType {
 				case pbs.MEDIA_TYPE_BANNER:
@@ -100,6 +105,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			newImp := openrtb.Imp{
 				ID:     unit.Code,
 				Secure: &req.Secure,
+				Instl:  unit.Instl,
 			}
 			for _, mType := range unitMediaTypes {
 				switch mType {
@@ -157,4 +163,13 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 		AT:   1,
 		TMax: req.TimeoutMillis,
 	}, nil
+}
+
+func copyFormats(sizes []openrtb.Format) []openrtb.Format {
+	sizesCopy := make([]openrtb.Format, len(sizes))
+	for i := 0; i < len(sizes); i++ {
+		sizesCopy[i] = sizes[i]
+		sizesCopy[i].Ext = append([]byte(nil), sizes[i].Ext...)
+	}
+	return sizesCopy
 }

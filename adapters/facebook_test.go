@@ -221,7 +221,9 @@ func TestFacebookBasicResponse(t *testing.T) {
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	hcs := pbs.HostCookieSettings{}
+
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
@@ -266,7 +268,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 
 	// same test but with one request timing out
 	fbdata.tags[0].delay = 20 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	defer cancel()
 
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])

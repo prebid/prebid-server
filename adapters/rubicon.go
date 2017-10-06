@@ -279,14 +279,18 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
 		if rubiReq.Site != nil {
-			rubiReq.Site.Ext, err = json.Marshal(&siteExt)
-			rubiReq.Site.Publisher = &openrtb.Publisher{}
-			rubiReq.Site.Publisher.Ext, err = json.Marshal(&pubExt)
+			siteCopy := *rubiReq.Site
+			siteCopy.Ext, err = json.Marshal(&siteExt)
+			siteCopy.Publisher = &openrtb.Publisher{}
+			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			rubiReq.Site = &siteCopy
 		}
 		if rubiReq.App != nil {
-			rubiReq.App.Ext, err = json.Marshal(&siteExt)
-			rubiReq.App.Publisher = &openrtb.Publisher{}
-			rubiReq.App.Publisher.Ext, err = json.Marshal(&pubExt)
+			appCopy := *rubiReq.App
+			appCopy.Ext, err = json.Marshal(&siteExt)
+			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			rubiReq.App = &appCopy
 		}
 
 		err = json.NewEncoder(&requests[i]).Encode(rubiReq)

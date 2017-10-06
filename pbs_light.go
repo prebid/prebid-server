@@ -24,6 +24,10 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 	"github.com/xojoc/useragent"
 
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -33,9 +37,6 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type DomainMetrics struct {
@@ -78,8 +79,7 @@ var (
 	accountMetrics        map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
 	accountMetricsRWMutex sync.RWMutex
 
-	requireUUID2 bool
-	cookieDomain string
+	hostCookieSettings pbs.HostCookieSettings
 )
 
 var exchanges map[string]adapters.Adapter
@@ -189,7 +189,8 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || userSyncCookie.LiveSyncCount() == 0 {
+
+	if userSyncCookie.LiveSyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -227,7 +228,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /auction request: %v", err)
@@ -246,17 +247,6 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			mSafariNoCookieMeter.Mark(1)
 		}
 		status = "no_cookie"
-		if requireUUID2 {
-			uuid2 := fmt.Sprintf("%d", rand.Int63())
-			c := http.Cookie{
-				Name:    "uuid2",
-				Value:   uuid2,
-				Domain:  cookieDomain,
-				Expires: time.Now().Add(180 * 24 * time.Hour),
-			}
-			http.SetCookie(w, &c)
-			pbs_req.Cookie.TrySync("adnxs", uuid2)
-		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
@@ -323,6 +313,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
 				} else if bid_list != nil {
+					bid_list = checkForValidBidSize(bid_list, bidder)
 					bidder.NumBids = len(bid_list)
 					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
@@ -395,6 +386,37 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
+// determine the num of ad unit sizes that were used in corresponding bid request
+// if num_adunit_sizes == 1, assign the height and/or width to bid's height/width
+// if num_adunit_sizes > 1, reject the bid (remove from list) and return an error
+// return updated bid list object for next steps in auction
+func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBidSlice {
+	finalValidBids := make([]*pbs.PBSBid, len(bids))
+	finalBidCounter := 0
+bidLoop:
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "banner" && (bid.Height == 0 || bid.Width == 0) {
+			for _, adunit := range bidder.AdUnits {
+				if adunit.BidID == bid.BidID && adunit.Code == bid.AdUnitCode {
+					if len(adunit.Sizes) == 1 {
+						bid.Width, bid.Height = adunit.Sizes[0].W, adunit.Sizes[0].H
+						finalValidBids[finalBidCounter] = bid
+						finalBidCounter = finalBidCounter + 1
+					} else if len(adunit.Sizes) > 1 {
+						glog.Warningf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
+					}
+					continue bidLoop
+				}
+			}
+		} else {
+			finalValidBids[finalBidCounter] = bid
+			finalBidCounter = finalBidCounter + 1
+		}
+	}
+	return finalValidBids[:finalBidCounter]
 }
 
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
@@ -610,9 +632,7 @@ func main() {
 	if err != nil {
 		glog.Errorf("Viper was unable to read configurations: %v", err)
 	}
-	// we need to set this global variable so it can be used by other methods
-	requireUUID2 = cfg.RequireUUID2
-	cookieDomain = cfg.CookieDomain
+
 	if err := serve(cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
@@ -718,11 +738,19 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
+	hostCookieSettings := &pbs.HostCookieSettings{
+		Domain:     cfg.HostCookie.Domain,
+		Family:     cfg.HostCookie.Family,
+		CookieName: cfg.HostCookie.CookieName,
+		OptOutURL:  cfg.HostCookie.OptOutURL,
+		OptInURL:   cfg.HostCookie.OptInURL,
+	}
+
 	userSyncDeps := &pbs.UserSyncDeps{
-		Cookie_domain:    cfg.CookieDomain,
-		External_url:     cfg.ExternalURL,
-		Recaptcha_secret: cfg.RecaptchaSecret,
-		Metrics:          metricsRegistry,
+		HostCookieSettings: hostCookieSettings,
+		ExternalUrl:        cfg.ExternalURL,
+		RecaptchaSecret:    cfg.RecaptchaSecret,
+		Metrics:            metricsRegistry,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)

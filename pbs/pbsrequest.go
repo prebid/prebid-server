@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
+	"github.com/blang/semver"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
@@ -71,6 +72,7 @@ type AdUnit struct {
 	Bids       []Bids           `json:"bids"`
 	ConfigID   string           `json:"config_id"`
 	MediaTypes []string         `json:"media_types"`
+	Instl      int8             `json:"instl"`
 }
 
 type PBSAdUnit struct {
@@ -81,6 +83,7 @@ type PBSAdUnit struct {
 	Params     json.RawMessage
 	Video      PBSVideo
 	MediaTypes []MediaType
+	Instl      int8
 }
 
 func ParseMediaType(s string) (MediaType, error) {
@@ -185,7 +188,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -211,7 +214,13 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.SDK == nil {
 		pbsReq.SDK = &SDK{}
 	}
-	if pbsReq.SDK.Version != "0.0.1" {
+
+	// Early versions of prebid mobile are sending requests with gender indicated by numbers,
+	// those traffic can't be parsed by latest Prebid Server after the change of gender to use string so clients using early versions can't be monetized.
+	// To handle those traffic, adding a check here to ignore the sent gender for versions lower than 0.0.2.
+	v1, err := semver.Make(pbsReq.SDK.Version)
+	v2, err := semver.Make("0.0.2")
+	if v1.Compare(v2) >= 0 {
 		if pbsReq.PBSUser != nil {
 			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
 			if err != nil {
@@ -219,6 +228,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 			}
 		}
 	}
+
 	if pbsReq.User == nil {
 		pbsReq.User = &openrtb.User{}
 	}
@@ -227,9 +237,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.App == nil {
 		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
 
-		// this would be for the shared adnxs.com domain
-		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.Cookie.TrySync("adnxs", anid.Value)
+		// Host has right to leverage private cookie store for user ID
+		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {
+			if hostCookie, err := r.Cookie(hostCookieSettings.CookieName); err == nil {
+				pbsReq.Cookie.TrySync(hostCookieSettings.Family, hostCookie.Value)
+			}
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -309,6 +321,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				Sizes:      unit.Sizes,
 				TopFrame:   unit.TopFrame,
 				Code:       unit.Code,
+				Instl:      unit.Instl,
 				Params:     b.Params,
 				BidID:      b.BidID,
 				MediaTypes: mtypes,

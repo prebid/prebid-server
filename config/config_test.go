@@ -54,14 +54,19 @@ func TestDefaults(t *testing.T) {
 
 }
 
-var fullConfig = []byte(`cookie_domain: ".adnxs.com"
-external_url: http://prebid.adnxs.com/
-host: prebid.adnxs.com
+var fullConfig = []byte(`
+host_cookie:
+  cookie_name: userid
+  family: prebid
+  domain: cookies.prebid.org
+  opt_out_url: http://prebid.org/optout
+  opt_in_url: http://prebid.org/optin
+external_url: http://prebid-server.prebid.org/
+host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
 default_timeout_ms: 123
 prebid_cache_url: http://prebidcache.net/test/a1?qs=something
-require_uuid2: true
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
   host: upstream:8232
@@ -111,18 +116,19 @@ func TestFullConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	cmpStrings(t, "cookie domain", cfg.CookieDomain, ".adnxs.com")
-	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid.adnxs.com/")
-	cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
+	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
+	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
+	cmpStrings(t, "cookie family", cfg.HostCookie.Family, "prebid")
+	cmpStrings(t, "opt out", cfg.HostCookie.OptOutURL, "http://prebid.org/optout")
+	cmpStrings(t, "opt in", cfg.HostCookie.OptInURL, "http://prebid.org/optin")
+	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid-server.prebid.org/")
+	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
 	if cfg.DefaultTimeout != 123 {
 		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
 	}
 	cmpStrings(t, "prebid_cache_url", cfg.CacheURL, "http://prebidcache.net/test/a1?qs=something")
-	if cfg.RequireUUID2 != true {
-		t.Errorf("RequireUUID2 was false")
-	}
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
 	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
 	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
