@@ -8,5 +8,6 @@
       "type": "string",
       "description": "An ID which identifies this placement"
     }
-  }
+  },
+  "required": ["placementId"]
 }
