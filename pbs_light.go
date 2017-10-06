@@ -738,7 +738,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	hostCookieSettings := &pbs.HostCookieSettings{
+	hostCookieSettings = pbs.HostCookieSettings{
 		Domain:     cfg.HostCookie.Domain,
 		Family:     cfg.HostCookie.Family,
 		CookieName: cfg.HostCookie.CookieName,
@@ -747,7 +747,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{
-		HostCookieSettings: hostCookieSettings,
+		HostCookieSettings: &hostCookieSettings,
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		Metrics:            metricsRegistry,
