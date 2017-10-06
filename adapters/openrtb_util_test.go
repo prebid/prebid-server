@@ -1,12 +1,10 @@
 package adapters
 
 import (
-	"github.com/prebid/prebid-server/pbs"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestCommonMediaTypes(t *testing.T) {
@@ -46,6 +44,7 @@ func TestOpenRTB(t *testing.T) {
 						H: 12,
 					},
 				},
+				Instl: 1,
 			},
 		},
 	}
@@ -55,6 +54,7 @@ func TestOpenRTB(t *testing.T) {
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
 	assert.EqualValues(t, resp.Imp[0].Banner.H, 12)
+	assert.EqualValues(t, resp.Imp[0].Instl, 1)
 }
 
 func TestOpenRTBVideo(t *testing.T) {
@@ -367,4 +367,35 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 	assert.Equal(t, err, nil)
 	assert.EqualValues(t, resp.User.BuyerUID, "abcde")
+}
+
+func TestSizesCopy(t *testing.T) {
+	formats := []openrtb.Format{
+		{
+			W: 10,
+		},
+		{
+			Ext: []byte{0x5},
+		},
+	}
+	clone := copyFormats(formats)
+
+	if len(clone) != 2 {
+		t.Error("The copy should have 2 elements")
+	}
+	if clone[0].W != 10 {
+		t.Error("The Format's width should be preserved.")
+	}
+	if len(clone[1].Ext) != 1 || clone[1].Ext[0] != 0x5 {
+		t.Error("The Format's Ext should be preserved.")
+	}
+	if &formats[0] == &clone[0] || &formats[1] == &clone[1] {
+		t.Error("The Format elements should not point to the same instance")
+	}
+	if &formats[0] == &clone[0] || &formats[1] == &clone[1] {
+		t.Error("The Format elements should not point to the same instance")
+	}
+	if &formats[1].Ext[0] == &clone[1].Ext[0] {
+		t.Error("The Format.Ext property should point to two different instances")
+	}
 }

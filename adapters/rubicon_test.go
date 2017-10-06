@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -25,10 +26,11 @@ type rubiAppendTrackerUrlTestScenario struct {
 }
 
 type rubiTagInfo struct {
-	code    string
-	zoneID  int
-	bid     float64
-	content string
+	code              string
+	zoneID            int
+	bid               float64
+	content           string
+	adServerTargeting map[string]string
 }
 
 type rubiBidInfo struct {
@@ -123,11 +125,15 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	targeting := "{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"
+	rawTargeting := openrtb.RawJSON(targeting)
+
 	resp.SeatBid[0].Bid[0] = openrtb.Bid{
 		ID:    "random-id",
 		ImpID: imp.ID,
 		Price: rubidata.tags[ix].bid,
 		AdM:   rubidata.tags[ix].content,
+		Ext:   rawTargeting,
 	}
 
 	if breq.Site == nil {
@@ -206,15 +212,22 @@ func TestRubiconBasicResponse(t *testing.T) {
 		deviceUA:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
 		buyerUID:  "need-an-actual-fb-id",
 	}
+
+	targeting := make(map[string]string, 2)
+	targeting["key1"] = "value1"
+	targeting["key2"] = "value2"
+
 	rubidata.tags[0] = rubiTagInfo{
-		code:   "first-tag",
-		zoneID: 8394,
-		bid:    1.67,
+		code:              "first-tag",
+		zoneID:            8394,
+		bid:               1.67,
+		adServerTargeting: targeting,
 	}
 	rubidata.tags[1] = rubiTagInfo{
-		code:   "second-tag",
-		zoneID: 8395,
-		bid:    3.22,
+		code:              "second-tag",
+		zoneID:            8395,
+		bid:               3.22,
+		adServerTargeting: targeting,
 	}
 
 	conf := *DefaultHTTPAdapterConfig
@@ -268,7 +281,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	hcs := pbs.HostCookieSettings{}
+
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
@@ -300,6 +315,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 				}
 				if bid.Adm != tag.content {
 					t.Errorf("Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
+				}
+				if !reflect.DeepEqual(bid.AdServerTargeting, tag.adServerTargeting) {
+					t.Errorf("Incorrect targeting '%+v' expected '%+v'", bid.AdServerTargeting, tag.adServerTargeting)
 				}
 			}
 		}

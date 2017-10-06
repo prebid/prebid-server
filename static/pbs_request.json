@@ -346,6 +346,12 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 1
+                    },
+                    "instl":{
+                        "description": "1 = the ad is interstitial or full screen, 0 = not interstitial",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1
                     }
                 }
             }

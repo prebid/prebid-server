@@ -271,7 +271,9 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 	// parse the http request
 	cacheClient, _ := dummycache.New()
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient)
+	hcs := pbs.HostCookieSettings{}
+
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}
