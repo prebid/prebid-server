@@ -367,3 +367,24 @@ func TestBidSizeValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestNewJsonDirectoryServer(t *testing.T) {
+	handler := NewJsonDirectoryServer(schemaDirectory)
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/whatever", nil)
+	handler(recorder, request, nil)
+
+	var data map[string]json.RawMessage
+	json.Unmarshal(recorder.Body.Bytes(), &data)
+
+	// TODO: Add schemas for all other bidders, and then produce these assertions by reading out of the adapters directory
+	ensureHasKey(t, data, "appnexus")
+	ensureHasKey(t, data, "facebook")
+}
+
+func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
+	t.Helper()
+	if _, ok := data[key]; !ok {
+		t.Errorf("Expected map to produce a schema for adapter: %s", key)
+	}
+}

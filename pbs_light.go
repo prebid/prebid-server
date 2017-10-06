@@ -485,9 +485,17 @@ func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// could add more logic here, but doing nothing means 200 OK
 }
 
-// NewBidderParamHandler returns a Handle which provides JSON-schemas for all the bidder params supported by
-// prebid-server. If the JSON-schema files can't be read, it will cause the program to quit.
-func NewBidderParamHandler() httprouter.Handle {
+// NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
+// given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
+//
+// {
+//   "a": { ... content from the file a.json ... },
+//   "b": { ... content from the file b.json ... }
+// }
+//
+// This function stores the file contents in memory, and should not be used on large directories.
+// If the root directory, or any of the files in it, cannot be read, then the program will exit.
+func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
@@ -761,7 +769,7 @@ func serve(cfg *config.Configuration) error {
 
 	router := httprouter.New()
 	router.POST("/auction", auction)
-	router.GET("/bidders/params", NewBidderParamHandler())
+	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
