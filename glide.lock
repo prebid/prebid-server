@@ -1,5 +1,5 @@
-hash: 254023165c0bb49bce2dcdc276d754d2dc5fc6592d19e9d40a9358323faf8ba9
-updated: 2017-06-21T17:00:58.66496526-04:00
+hash: bbcb2501de5b89169fcba133707aaa1ece150de1f4ffade394e628fbe7fdf6f2
+updated: 2017-10-06T09:04:36.014507258-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -40,20 +40,20 @@ imports:
   - oid
 - name: github.com/magiconair/properties
   version: 51463bfca2576e06c62a8504b5c0f06d61312647
+  subpackages:
+  - assert
 - name: github.com/mitchellh/mapstructure
   version: cc8532a8e9a55ea36402aa21efdf403a60d34096
+- name: github.com/mxmCherry/openrtb
+  version: af5bbec3623c8140b3f381af8ddcb1fce268d7d2
 - name: github.com/pelletier/go-buffruneio
   version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml
   version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
-- name: github.com/mxmCherry/openrtb
-  version: af5bbec3623c8140b3f381af8ddcb1fce268d7d2
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
-  version: a62a804a8a009876ca59105f7899938a1349f4b3
-- name: github.com/rs/xhandler
-  version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
+  version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
 - name: github.com/spaolacci/murmur3
   version: 0d12bf811670bf6a1a63828dfbd003eded177fce
 - name: github.com/spf13/afero
@@ -76,8 +76,6 @@ imports:
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
   version: a55c211c418162597a32c74c7230f81adb5ad616
-- name: github.com/xojoc/useragent
-  version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
 - name: golang.org/x/net
   version: 84f0e6f92b10139f986b1756e149a7d9de270cdc
   subpackages:
@@ -97,6 +95,8 @@ imports:
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
 - name: gopkg.in/yaml.v2
   version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+- name: xojoc.pw/useragent
+  version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
 testImports:
 - name: github.com/davecgh/go-spew
   version: 346938d642f2ec3594ed81d874461961cd0faa76
