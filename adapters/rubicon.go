@@ -44,17 +44,28 @@ func (a *RubiconAdapter) SkipNoCookies() bool {
 }
 
 type rubiconParams struct {
-	AccountId int `json:"accountId"`
-	SiteId    int `json:"siteId"`
-	ZoneId    int `json:"zoneId"`
+	AccountId int             `json:"accountId"`
+	SiteId    int             `json:"siteId"`
+	ZoneId    int             `json:"zoneId"`
+	Inventory json.RawMessage `json:"inventory"`
+	Visitor   json.RawMessage `json:"visitor"`
 }
 
 type rubiconImpExtRP struct {
-	ZoneID int `json:"zone_id"`
+	ZoneID int             `json:"zone_id"`
+	Target json.RawMessage `json:"target"`
 }
 
 type rubiconImpExt struct {
 	RP rubiconImpExtRP `json:"rp"`
+}
+
+type rubiconUserExtRP struct {
+	Target json.RawMessage `json:"target"`
+}
+
+type rubiconUserExt struct {
+	RP rubiconUserExtRP `json:"rp"`
 }
 
 type rubiconSiteExtRP struct {
@@ -249,9 +260,11 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if err != nil {
 			continue
 		}
-		// only grab this ad unit
+
+		// Only grab this ad unit
 		rubiReq.Imp = rubiReq.Imp[i : i+1]
 
+		// Amend it with RP-specific information
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
 		if err != nil {
@@ -266,8 +279,16 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if params.ZoneId == 0 {
 			return nil, errors.New("Missing zoneId param")
 		}
-		impExt := rubiconImpExt{RP: rubiconImpExtRP{ZoneID: params.ZoneId}}
+
+		impExt := rubiconImpExt{RP: rubiconImpExtRP{
+			ZoneID: params.ZoneId,
+			Target: params.Inventory,
+		}}
 		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
+
+		// Amend the $.user object with $.user.ext.rp.target
+		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: params.Visitor}}
+		rubiReq.User.Ext, err = json.Marshal(&userExt)
 
 		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 		if err != nil {
