@@ -10,6 +10,9 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 )
 
+const mimeVideoMp4 = "video/mp4"
+const mimeVideoFlv = "video/x-flv"
+
 func TestParseMediaTypes(t *testing.T) {
 	types1 := []string{"Banner"}
 	t1 := ParseMediaTypes(types1)
@@ -48,6 +51,9 @@ func TestParseSimpleRequest(t *testing.T) {
                 "code": "second",
                 "sizes": [{"w": 728, "h": 90}],
                 "media_types" :["banner", "video"],
+				"video" : {
+					"mimes" : ["video/mp4", "video/x-flv"]
+				},
                 "bids": [
                     {
                         "bidder": "indexExchange"
@@ -110,6 +116,12 @@ func TestParseSimpleRequest(t *testing.T) {
 	}
 	if pbs_req.AdUnits[1].MediaTypes[1] != "video" {
 		t.Errorf("Instead of video MediaType received %s", pbs_req.AdUnits[1].MediaTypes[0])
+	}
+	if pbs_req.AdUnits[1].Video.Mimes[0] != mimeVideoMp4 {
+		t.Errorf("Instead of video/mp4 mimes received %s", pbs_req.AdUnits[1].Video.Mimes)
+	}
+	if pbs_req.AdUnits[1].Video.Mimes[1] != mimeVideoFlv {
+		t.Errorf("Instead of video/flv mimes received %s", pbs_req.AdUnits[1].Video.Mimes)
 	}
 
 }
