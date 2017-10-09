@@ -29,6 +29,7 @@ import (
 	"syscall"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/decorators"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -640,15 +641,34 @@ func main() {
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
-		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
-		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
-		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
-		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
-		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"appnexus":  decorators.PreventPanics(adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL)),
+		"districtm": decorators.PreventPanics(adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL)),
+		"indexExchange": decorators.PreventPanics(adapters.NewIndexAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters["indexexchange"].Endpoint,
+			cfg.Adapters["indexexchange"].UserSyncURL)),
+		"pubmatic": decorators.PreventPanics(adapters.NewPubmaticAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters["pubmatic"].Endpoint,
+			cfg.ExternalURL)),
+		"pulsepoint": decorators.PreventPanics(adapters.NewPulsePointAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters["pulsepoint"].Endpoint,
+			cfg.ExternalURL)),
+		"rubicon": decorators.PreventPanics(adapters.NewRubiconAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters["rubicon"].Endpoint,
+			cfg.Adapters["rubicon"].XAPI.Username,
+			cfg.Adapters["rubicon"].XAPI.Password,
+			cfg.Adapters["rubicon"].XAPI.Tracker,
+			cfg.Adapters["rubicon"].UserSyncURL)),
+		"audienceNetwork": decorators.PreventPanics(adapters.NewFacebookAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.Adapters["facebook"].PlatformID,
+			cfg.Adapters["facebook"].UserSyncURL)),
+		"lifestreet": decorators.PreventPanics(adapters.NewLifestreetAdapter(
+			adapters.DefaultHTTPAdapterConfig,
+			cfg.ExternalURL)),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
