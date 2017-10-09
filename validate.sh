@@ -3,10 +3,12 @@
 set -e
 
 AUTOFMT=true
+COVERAGE=false
 
 while true; do
   case "$1" in
      --nofmt ) AUTOFMT=false; shift ;;
+     --cov ) COVERAGE=true; shift ;;
      * ) break ;;
   esac
 done
@@ -29,5 +31,8 @@ else
   test $GOFMT_LINES -eq 0 || die "gofmt needs to be run, ${GOFMT_LINES} files have issues.  Below is a list of files to review:\n`gofmt -l *.go pbs adapters`"
 fi
 
-#go test $(go list ./... | grep -v /vendor/)
-./scripts/check_coverage.sh
+if $COVERAGE; then
+  ./scripts/check_coverage.sh
+else
+  go test $(go list ./... | grep -v /vendor/)
+fi
