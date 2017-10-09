@@ -69,12 +69,9 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 // Any objects pointed to by the returned BidRequest *must not be mutated*, or we will get race conditions.
 // The only exception is the Imp property, whose objects will be created new by this method and can be mutated freely.
 func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
-	imps := make([]openrtb.Imp, len(bidder.AdUnits)*len(allowedMediatypes))
-	ind := 0
-	impsPresent := false
+	imps := make([]openrtb.Imp, 0, len(bidder.AdUnits)*len(allowedMediatypes))
 	for _, unit := range bidder.AdUnits {
 		if len(unit.Sizes) <= 0 {
-			ind = ind + 1
 			continue
 		}
 		unitMediaTypes := commonMediaTypes(unit.MediaTypes, allowedMediatypes)
@@ -102,9 +99,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 					// Error - unknown media type
 					continue
 				}
-				imps[ind] = newImp
-				ind = ind + 1
-				impsPresent = true
+				imps = append(imps, newImp)
 			}
 		} else {
 			newImp := openrtb.Imp{
@@ -123,21 +118,18 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 					continue
 				}
 			}
-			imps[ind] = newImp
-			ind = ind + 1
-			impsPresent = true
+			imps = append(imps, newImp)
 		}
 	}
 
-	newImps := imps[:ind]
-	if !impsPresent {
-		newImps = nil
+	if len(imps) < 1 {
+		return openrtb.BidRequest{}, errors.New("openRTB bids need at least one Imp")
 	}
 
 	if req.App != nil {
 		return openrtb.BidRequest{
 			ID:     req.Tid,
-			Imp:    newImps,
+			Imp:    imps,
 			App:    req.App,
 			Device: req.Device,
 			User:   req.User,
@@ -154,7 +146,7 @@ func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 
 	return openrtb.BidRequest{
 		ID:  req.Tid,
-		Imp: newImps,
+		Imp: imps,
 		Site: &openrtb.Site{
 			Domain: req.Domain,
 			Page:   req.Url,
