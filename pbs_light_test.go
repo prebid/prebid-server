@@ -170,10 +170,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		BidID:      "test_bidid",
 		AdUnitCode: "test_adunitcode",
 		BidderCode: "audienceNetwork",
-		Price:      1.05,
+		Price:      2.00,
 		Adm:        "test_adm",
 		Width:      300,
 		Height:     250,
+		CacheID:    "test_cache_id1",
 	}
 	bids = append(bids, &fb_bid)
 	an_bid := pbs.PBSBid{
@@ -182,8 +183,9 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		BidderCode: "appnexus",
 		Price:      1.00,
 		Adm:        "test_adm",
-		Width:      300,
-		Height:     250,
+		Width:      320,
+		Height:     50,
+		CacheID:    "test_cache_id2",
 	}
 	bids = append(bids, &an_bid)
 	pbs_resp := pbs.PBSResponse{
@@ -198,6 +200,35 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		if bid.BidderCode == "audienceNetwork" {
 			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
 				t.Errorf("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
+			}
+			if bid.AdServerTargeting["hb_size"] != "300x250" {
+				t.Errorf("hb_size key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb"] != "2.00" {
+				t.Errorf("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+			}
+			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
+				t.Errorf("hb_cache_id key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
+				t.Errorf("hb_bidder key was not parsed correctly")
+			}
+		}
+		if bid.BidderCode == "appnexus" {
+			if bid.AdServerTargeting["hb_size_appnexus"] != "320x50" {
+				t.Errorf("hb_size key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_cache_id_appnexus"] != "test_cache_id2" {
+				t.Errorf("hb_cache_id key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_bidder_appnexus"] != "appnexus" {
+				t.Errorf("hb_bidder key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb_appnexus"] != "1.00" {
+				t.Errorf("hb_pb key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb"] != "" {
+				t.Errorf("hb_pb key was parsed for two bidders")
 			}
 		}
 	}
