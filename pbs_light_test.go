@@ -188,6 +188,15 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		CacheID:    "test_cache_id2",
 	}
 	bids = append(bids, &an_bid)
+	nosize_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "nosizebidder",
+		Price:      1.00,
+		Adm:        "test_adm",
+		CacheID:    "test_cache_id2",
+	}
+	bids = append(bids, &nosize_bid)
 	pbs_resp := pbs.PBSResponse{
 		Bids: bids,
 	}
@@ -229,6 +238,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			}
 			if bid.AdServerTargeting["hb_pb"] != "" {
 				t.Errorf("hb_pb key was parsed for two bidders")
+			}
+		}
+		if bid.BidderCode == "nosizebidder" {
+			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
+				t.Errorf("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
 			}
 		}
 	}

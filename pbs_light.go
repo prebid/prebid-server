@@ -452,9 +452,12 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
 			roundedCpm := priceBucketStringMap[priceGranularitySetting]
 
-			width := strconv.FormatUint(bid.Width, 10)
-			height := strconv.FormatUint(bid.Height, 10)
-			hbSize := width + "x" + height
+			hbSize := ""
+			if bid.Width != 0 && bid.Height != 0 {
+				width := strconv.FormatUint(bid.Width, 10)
+				height := strconv.FormatUint(bid.Height, 10)
+				hbSize = width + "x" + height
+			}
 
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
@@ -470,14 +473,18 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbPbBidderKey:      roundedCpm,
 				hbBidderBidderKey:  bid.BidderCode,
 				hbCacheIdBidderKey: bid.CacheID,
-				hbSizeBidderKey:    hbSize,
+			}
+			if hbSize != "" {
+				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
-				pbs_kvs[hbSizeConstantKey] = hbSize
+				if hbSize != "" {
+					pbs_kvs[hbSizeConstantKey] = hbSize
+				}
 				if bid.BidderCode == "audienceNetwork" {
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
