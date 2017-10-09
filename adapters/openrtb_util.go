@@ -56,8 +56,7 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	//this will become int8 soon, so we only care about the first index in the array
 	pbm[0] = unit.Video.PlaybackMethod
 	if pbm[0] == 0 {
-		// slice of [0] = 0 will be considered non empty and sent, even though 0 is invalid per the spec.
-		pbm = append(pbm[:0], pbm[1:]...)
+		pbm = nil
 	}
 	return &openrtb.Video{
 		MIMEs:          mimes,
