@@ -156,8 +156,8 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 	}
 }
 
-func (a *FacebookAdapter) GenerateRequestsForFacebook(req *pbs.PBSRequest, bidder *pbs.PBSBidder) ([]openrtb.BidRequest, error) {
-	requests := make([]openrtb.BidRequest, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
+func (a *FacebookAdapter) GenerateRequestsForFacebook(req *pbs.PBSRequest, bidder *pbs.PBSBidder) ([]*openrtb.BidRequest, error) {
+	requests := make([]*openrtb.BidRequest, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
 	reqIndex := 0
 	for i, unit := range bidder.AdUnits {
 		var params facebookParams
@@ -177,14 +177,14 @@ func (a *FacebookAdapter) GenerateRequestsForFacebook(req *pbs.PBSRequest, bidde
 		// BANNER
 		fbReqB, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_BANNER, pubId, i)
 		if err == nil {
-			requests[reqIndex] = fbReqB
+			requests[reqIndex] = &fbReqB
 			reqIndex = reqIndex + 1
 		}
 
 		// VIDEO
 		fbReqV, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_VIDEO, pubId, i)
 		if err == nil {
-			requests[reqIndex] = fbReqV
+			requests[reqIndex] = &fbReqV
 			reqIndex = reqIndex + 1
 
 		}
