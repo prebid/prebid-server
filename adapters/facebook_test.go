@@ -26,6 +26,7 @@ type tagInfo struct {
 	delay       time.Duration
 	W           uint64
 	H           uint64
+	Instl       int8
 }
 
 type bidInfo struct {
@@ -166,6 +167,55 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func GenerateBidRequestForTestData(fbdata bidInfo, url string) (*pbs.PBSRequest, error) {
+	pbin := pbs.PBSRequest{
+		AdUnits: make([]pbs.AdUnit, len(fbdata.tags)),
+	}
+	for i, tag := range fbdata.tags {
+		pbin.AdUnits[i] = pbs.AdUnit{
+			Code:       tag.code,
+			MediaTypes: []string{"BANNER"}, // todo set this in fbdata so we can test video setup
+			Sizes: []openrtb.Format{
+				{
+					W: tag.W,
+					H: tag.H,
+				},
+			},
+			Bids: []pbs.Bids{
+				pbs.Bids{
+					BidderCode: "audienceNetwork",
+					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
+					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),
+				},
+			},
+			Instl: tag.Instl,
+		}
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(pbin)
+	if err != nil {
+		return nil, err
+	}
+
+	req := httptest.NewRequest("POST", url, body)
+	req.Header.Add("Referer", fbdata.page)
+	req.Header.Add("User-Agent", fbdata.deviceUA)
+	req.Header.Add("X-Real-IP", fbdata.deviceIP)
+
+	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc.TrySync("audienceNetwork", fbdata.buyerUID)
+	fakewriter := httptest.NewRecorder()
+	pc.SetCookieOnResponse(fakewriter, "")
+	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
+
+	cacheClient, _ := dummycache.New()
+	hcs := pbs.HostCookieSettings{}
+
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	return pbReq, err
+}
+
 func TestFacebookBasicResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyFacebookServer))
 	defer server.Close()
@@ -200,50 +250,8 @@ func TestFacebookBasicResponse(t *testing.T) {
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
-	pbin := pbs.PBSRequest{
-		AdUnits: make([]pbs.AdUnit, 2),
-	}
-	for i, tag := range fbdata.tags {
-		pbin.AdUnits[i] = pbs.AdUnit{
-			Code:       tag.code,
-			MediaTypes: []string{"BANNER"},
-			Sizes: []openrtb.Format{
-				{
-					W: tag.W,
-					H: tag.H,
-				},
-			},
-			Bids: []pbs.Bids{
-				pbs.Bids{
-					BidderCode: "audienceNetwork",
-					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),
-				},
-			},
-		}
-	}
+	pbReq, err := GenerateBidRequestForTestData(fbdata, server.URL)
 
-	body := new(bytes.Buffer)
-	err := json.NewEncoder(body).Encode(pbin)
-	if err != nil {
-		t.Fatalf("Json encoding failed: %v", err)
-	}
-
-	req := httptest.NewRequest("POST", server.URL, body)
-	req.Header.Add("Referer", fbdata.page)
-	req.Header.Add("User-Agent", fbdata.deviceUA)
-	req.Header.Add("X-Real-IP", fbdata.deviceIP)
-
-	pc := pbs.ParsePBSCookieFromRequest(req)
-	pc.TrySync("audienceNetwork", fbdata.buyerUID)
-	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
-	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
-
-	cacheClient, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
-
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
@@ -334,52 +342,22 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
-	pbin := pbs.PBSRequest{
-		AdUnits: make([]pbs.AdUnit, 2),
-	}
-	for i, tag := range fbdata.tags {
-		pbin.AdUnits[i] = pbs.AdUnit{
-			Code:       tag.code,
-			MediaTypes: []string{"BANNER"},
-			Sizes: []openrtb.Format{
-				{
-					W: tag.W,
-					H: tag.H,
-				},
-			},
-			Bids: []pbs.Bids{
-				pbs.Bids{
-					BidderCode: "audienceNetwork",
-					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),
-				},
-			},
-			Instl: 1,
-		}
-	}
-
-	body := new(bytes.Buffer)
-	err := json.NewEncoder(body).Encode(pbin)
+	pbReq, err := GenerateBidRequestForTestData(fbdata, server.URL)
 	if err != nil {
-		t.Fatalf("Json encoding failed: %v", err)
+		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
-
-	req := httptest.NewRequest("POST", server.URL, body)
-	req.Header.Add("Referer", fbdata.page)
-	req.Header.Add("User-Agent", fbdata.deviceUA)
-	req.Header.Add("X-Real-IP", fbdata.deviceIP)
-
-	pc := pbs.ParsePBSCookieFromRequest(req)
-	pc.TrySync("audienceNetwork", fbdata.buyerUID)
-	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
-	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
-
-	cacheClient, _ := dummycache.New()
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	if len(pbReq.Bidders) != 1 {
+		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(pbReq.Bidders))
+	}
+	if pbReq.Bidders[0].BidderCode != "audienceNetwork" {
+		t.Fatalf("ParsePBSRequest returned invalid bidder")
+	}
 
 	ctx := context.Background()
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
 	for _, bid := range bids {
 		matched := false
 		for _, tag := range fbdata.tags {
@@ -446,52 +424,22 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
-	pbin := pbs.PBSRequest{
-		AdUnits: make([]pbs.AdUnit, 3),
-	}
-	for i, tag := range fbdata.tags {
-		pbin.AdUnits[i] = pbs.AdUnit{
-			Code:       tag.code,
-			MediaTypes: []string{"BANNER"},
-			Sizes: []openrtb.Format{
-				{
-					W: tag.W,
-					H: tag.H,
-				},
-			},
-			Bids: []pbs.Bids{
-				pbs.Bids{
-					BidderCode: "audienceNetwork",
-					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),
-				},
-			},
-			Instl: 0,
-		}
-	}
-
-	body := new(bytes.Buffer)
-	err := json.NewEncoder(body).Encode(pbin)
+	pbReq, err := GenerateBidRequestForTestData(fbdata, server.URL)
 	if err != nil {
-		t.Fatalf("Json encoding failed: %v", err)
+		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
-
-	req := httptest.NewRequest("POST", server.URL, body)
-	req.Header.Add("Referer", fbdata.page)
-	req.Header.Add("User-Agent", fbdata.deviceUA)
-	req.Header.Add("X-Real-IP", fbdata.deviceIP)
-
-	pc := pbs.ParsePBSCookieFromRequest(req)
-	pc.TrySync("audienceNetwork", fbdata.buyerUID)
-	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
-	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
-
-	cacheClient, _ := dummycache.New()
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient)
+	if len(pbReq.Bidders) != 1 {
+		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(pbReq.Bidders))
+	}
+	if pbReq.Bidders[0].BidderCode != "audienceNetwork" {
+		t.Fatalf("ParsePBSRequest returned invalid bidder")
+	}
 
 	ctx := context.Background()
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
 	for _, bid := range bids {
 		matched := false
 		for _, tag := range fbdata.tags {
@@ -515,6 +463,83 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 			t.Errorf("Received bid for unknown ad unit '%s'", bid.AdUnitCode)
 		}
 	}
+}
+
+func TestGenerateRequestsForFacebook(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(DummyFacebookServer))
+	defer server.Close()
+	// todo: only test for banner now, should add video setup to test that it generates 2 imps per ad unit when PBSAdUnit supports video params
+	fbdata = bidInfo{
+		partnerID:   12345678,
+		domain:      "nytimes.com",
+		page:        "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		publisherID: "987654321",
+		tags:        make([]tagInfo, 3),
+		deviceIP:    "25.91.96.36",
+		deviceUA:    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:    "need-an-actual-fb-id",
+	}
+	fbdata.tags[0] = tagInfo{
+		code:        "first-tag",
+		placementID: fmt.Sprintf("%s_999998888", fbdata.publisherID),
+		bid:         1.67,
+		W:           300,
+		H:           250,
+		Instl:       1,
+	}
+	fbdata.tags[1] = tagInfo{
+		code:        "second-tag",
+		placementID: fmt.Sprintf("%s_948884228", fbdata.publisherID),
+		bid:         3.24,
+		W:           320,
+		H:           50,
+		Instl:       0,
+	}
+	fbdata.tags[2] = tagInfo{
+		code:        "third-tag",
+		placementID: fmt.Sprintf("%s_122213422", fbdata.publisherID),
+		bid:         1.51,
+		W:           720,
+		H:           200,
+		Instl:       0,
+	}
+
+	conf := *DefaultHTTPAdapterConfig
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an.URI = server.URL
+	an.nonSecureUri = server.URL
+
+	pbReq, err := GenerateBidRequestForTestData(fbdata, server.URL)
+	if err != nil {
+		t.Fatalf("ParsePBSRequest failed: %v", err)
+	}
+	if len(pbReq.Bidders) != 1 {
+		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(pbReq.Bidders))
+	}
+	if pbReq.Bidders[0].BidderCode != "audienceNetwork" {
+		t.Fatalf("ParsePBSRequest returned invalid bidder")
+	}
+	openrtbRequests, err := an.GenerateRequestsForFacebook(pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatalf("Generating openrtb requests failed: %v", err)
+	}
+	if len(openrtbRequests) != 2 {
+		t.Fatalf("Should only generate 2 openrtb request")
+	}
+	if len(openrtbRequests[0].Imp) != 1 {
+		t.Fatalf("Should only generate 1 imp per ad unit")
+	}
+	if len(openrtbRequests[1].Imp) != 1 {
+		t.Fatalf("Should only generate 1 imp per ad unit")
+	}
+	if openrtbRequests[0].Imp[0].Banner.W != 0 || openrtbRequests[0].Imp[0].Banner.H != 0 {
+		t.Fatalf("Should be generating 0x0 for interstitial type")
+	}
+
+	if openrtbRequests[1].Imp[0].Banner.W != 0 {
+		t.Fatalf("Should be passing width 0 for size 320x50")
+	}
+
 }
 
 func TestFacebookUserSyncInfo(t *testing.T) {
