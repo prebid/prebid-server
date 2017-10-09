@@ -617,7 +617,7 @@ func init() {
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
@@ -738,7 +738,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	hostCookieSettings := &pbs.HostCookieSettings{
+	hostCookieSettings = pbs.HostCookieSettings{
 		Domain:     cfg.HostCookie.Domain,
 		Family:     cfg.HostCookie.Family,
 		CookieName: cfg.HostCookie.CookieName,
@@ -747,7 +747,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{
-		HostCookieSettings: hostCookieSettings,
+		HostCookieSettings: &hostCookieSettings,
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		Metrics:            metricsRegistry,

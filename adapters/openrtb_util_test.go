@@ -142,11 +142,25 @@ func TestOpenRTBVideoFilteredOut(t *testing.T) {
 					PlaybackMethod: 1,
 				},
 			},
+			{
+				Code:       "unitCode2",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 10,
+						H: 12,
+					},
+				},
+			},
 		},
 	}
 	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, resp.Imp, []openrtb.Imp(nil))
+	for i := 0; i < len(resp.Imp); i++ {
+		if resp.Imp[i].Video != nil {
+			t.Errorf("No video impressions should exist.")
+		}
+	}
 }
 
 func TestOpenRTBMultiMediaImp(t *testing.T) {
@@ -267,9 +281,10 @@ func TestOpenRTBNoSize(t *testing.T) {
 			},
 		},
 	}
-	resp, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, resp.Imp, []openrtb.Imp(nil))
+	_, err := makeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+	if err == nil {
+		t.Errorf("Bids without impressions should not be allowed.")
+	}
 }
 
 func TestOpenRTBMobile(t *testing.T) {
@@ -338,8 +353,14 @@ func TestOpenRTBEmptyUser(t *testing.T) {
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
 			{
-				Code:       "unitCode",
+				Code:       "unitCode2",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 10,
+						H: 12,
+					},
+				},
 			},
 		},
 	}
@@ -360,6 +381,12 @@ func TestOpenRTBUserWithCookie(t *testing.T) {
 			{
 				Code:       "unitCode",
 				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 300,
+						H: 250,
+					},
+				},
 			},
 		},
 	}
