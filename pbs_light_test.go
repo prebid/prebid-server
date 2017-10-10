@@ -24,7 +24,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	setupExchanges(cfg)
 	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", NewCookieSyncHandler(m))
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -70,7 +70,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	setupExchanges(cfg)
 	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", NewCookieSyncHandler(m))
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",

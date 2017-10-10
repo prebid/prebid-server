@@ -97,231 +97,235 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-func NewCookieSyncHandler(m *pbsmetrics.Metrics) func(http.ResponseWriter, *http.Request, httprouter.Params) {
-	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		m.CookieSyncMeter.Mark(1)
-		userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
-		if !userSyncCookie.AllowSyncs() {
-			http.Error(w, "User has opted out", http.StatusUnauthorized)
-			return
-		}
-
-		defer r.Body.Close()
-
-		csReq := &cookieSyncRequest{}
-		err := json.NewDecoder(r.Body).Decode(&csReq)
-		if err != nil {
-			if glog.V(2) {
-				glog.Infof("Failed to parse /cookie_sync request body: %v", err)
-			}
-			http.Error(w, "JSON parse failed", http.StatusBadRequest)
-			return
-		}
-
-		csResp := cookieSyncResponse{
-			UUID:         csReq.UUID,
-			BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
-		}
-
-		if userSyncCookie.LiveSyncCount() == 0 {
-			csResp.Status = "no_cookie"
-		} else {
-			csResp.Status = "ok"
-		}
-
-		for _, bidder := range csReq.Bidders {
-			if ex, ok := exchanges[bidder]; ok {
-				if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
-					b := pbs.PBSBidder{
-						BidderCode:   bidder,
-						NoCookie:     true,
-						UsersyncInfo: ex.GetUsersyncInfo(),
-					}
-					csResp.BidderStatus = append(csResp.BidderStatus, &b)
-				}
-			}
-		}
-
-		enc := json.NewEncoder(w)
-		enc.SetEscapeHTML(false)
-		//enc.SetIndent("", "  ")
-		enc.Encode(csResp)
-	}
+type cookieSyncDeps struct {
+	m *pbsmetrics.Metrics
 }
 
-func NewAuctionHandler(m *pbsmetrics.Metrics) func(http.ResponseWriter, *http.Request, httprouter.Params) {
-	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		w.Header().Add("Content-Type", "application/json")
-
-		m.RequestMeter.Mark(1)
-
-		isSafari := false
-		if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
-			if ua.Type == useragent.Browser && ua.Name == "Safari" {
-				isSafari = true
-				m.SafariRequestMeter.Mark(1)
-			}
-		}
-
-		pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
-		if err != nil {
-			if glog.V(2) {
-				glog.Infof("Failed to parse /auction request: %v", err)
-			}
-			writeAuctionError(w, "Error parsing request", err)
-			m.ErrorMeter.Mark(1)
-			return
-		}
-
-		status := "OK"
-		if pbs_req.App != nil {
-			m.AppRequestMeter.Mark(1)
-		} else if pbs_req.Cookie.LiveSyncCount() == 0 {
-			m.NoCookieMeter.Mark(1)
-			if isSafari {
-				m.SafariNoCookieMeter.Mark(1)
-			}
-			status = "no_cookie"
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
-		defer cancel()
-
-		account, err := dataCache.Accounts().Get(pbs_req.AccountID)
-		if err != nil {
-			if glog.V(2) {
-				glog.Infof("Invalid account id: %v", err)
-			}
-			writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
-			m.ErrorMeter.Mark(1)
-			return
-		}
-
-		am := m.GetAccountMetrics(pbs_req.AccountID)
-		am.RequestMeter.Mark(1)
-
-		pbs_resp := pbs.PBSResponse{
-			Status:       status,
-			TID:          pbs_req.Tid,
-			BidderStatus: pbs_req.Bidders,
-		}
-
-		ch := make(chan bidResult)
-		sentBids := 0
-		for _, bidder := range pbs_req.Bidders {
-			if ex, ok := exchanges[bidder.BidderCode]; ok {
-				ametrics := m.AdapterMetrics[bidder.BidderCode]
-				accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
-				ametrics.RequestMeter.Mark(1)
-				accountAdapterMetric.RequestMeter.Mark(1)
-				if pbs_req.App == nil {
-					uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
-					if uid == "" {
-						bidder.NoCookie = true
-						bidder.UsersyncInfo = ex.GetUsersyncInfo()
-						ametrics.NoCookieMeter.Mark(1)
-						accountAdapterMetric.NoCookieMeter.Mark(1)
-						if ex.SkipNoCookies() {
-							continue
-						}
-					}
-				}
-				sentBids++
-				go func(bidder *pbs.PBSBidder) {
-					start := time.Now()
-					bid_list, err := ex.Call(ctx, pbs_req, bidder)
-					bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
-					ametrics.RequestTimer.UpdateSince(start)
-					accountAdapterMetric.RequestTimer.UpdateSince(start)
-					if err != nil {
-						switch err {
-						case context.DeadlineExceeded:
-							ametrics.TimeoutMeter.Mark(1)
-							accountAdapterMetric.TimeoutMeter.Mark(1)
-							bidder.Error = "Timed out"
-						case context.Canceled:
-							fallthrough
-						default:
-							ametrics.ErrorMeter.Mark(1)
-							accountAdapterMetric.ErrorMeter.Mark(1)
-							bidder.Error = err.Error()
-							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-						}
-					} else if bid_list != nil {
-						bid_list = checkForValidBidSize(bid_list, bidder)
-						bidder.NumBids = len(bid_list)
-						am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
-						accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
-						for _, bid := range bid_list {
-							var cpm = int64(bid.Price * 1000)
-							ametrics.PriceHistogram.Update(cpm)
-							am.PriceHistogram.Update(cpm)
-							accountAdapterMetric.PriceHistogram.Update(cpm)
-							bid.ResponseTime = bidder.ResponseTime
-						}
-					} else {
-						bidder.NoBid = true
-						ametrics.NoBidMeter.Mark(1)
-						accountAdapterMetric.NoBidMeter.Mark(1)
-					}
-
-					ch <- bidResult{
-						bidder:   bidder,
-						bid_list: bid_list,
-					}
-				}(bidder)
-
-			} else {
-				bidder.Error = "Unsupported bidder"
-			}
-		}
-
-		for i := 0; i < sentBids; i++ {
-			result := <-ch
-
-			for _, bid := range result.bid_list {
-				pbs_resp.Bids = append(pbs_resp.Bids, bid)
-			}
-		}
-		if pbs_req.CacheMarkup == 1 {
-			cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
-			for i, bid := range pbs_resp.Bids {
-				bc := &pbc.BidCache{
-					Adm:    bid.Adm,
-					NURL:   bid.NURL,
-					Width:  bid.Width,
-					Height: bid.Height,
-				}
-				cobjs[i] = &pbc.CacheObject{
-					Value: bc,
-				}
-			}
-			err = pbc.Put(ctx, cobjs)
-			if err != nil {
-				writeAuctionError(w, "Prebid cache failed", err)
-				m.ErrorMeter.Mark(1)
-				return
-			}
-			for i, bid := range pbs_resp.Bids {
-				bid.CacheID = cobjs[i].UUID
-				bid.NURL = ""
-				bid.Adm = ""
-			}
-		}
-
-		if pbs_req.SortBids == 1 {
-			sortBidsAddKeywordsMobile(pbs_resp.Bids, pbs_req, account.PriceGranularity)
-		}
-
-		if glog.V(2) {
-			glog.Infof("Request for %d ad units on url %s by account %s got %d bids", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID, len(pbs_resp.Bids))
-		}
-
-		enc := json.NewEncoder(w)
-		enc.SetEscapeHTML(false)
-		enc.Encode(pbs_resp)
-		m.RequestTimer.UpdateSince(pbs_req.Start)
+func (deps *cookieSyncDeps) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.m.CookieSyncMeter.Mark(1)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
+	if !userSyncCookie.AllowSyncs() {
+		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		return
 	}
+
+	defer r.Body.Close()
+
+	csReq := &cookieSyncRequest{}
+	err := json.NewDecoder(r.Body).Decode(&csReq)
+	if err != nil {
+		if glog.V(2) {
+			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
+		}
+		http.Error(w, "JSON parse failed", http.StatusBadRequest)
+		return
+	}
+
+	csResp := cookieSyncResponse{
+		UUID:         csReq.UUID,
+		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
+	}
+
+	if userSyncCookie.LiveSyncCount() == 0 {
+		csResp.Status = "no_cookie"
+	} else {
+		csResp.Status = "ok"
+	}
+
+	for _, bidder := range csReq.Bidders {
+		if ex, ok := exchanges[bidder]; ok {
+			if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
+				b := pbs.PBSBidder{
+					BidderCode:   bidder,
+					NoCookie:     true,
+					UsersyncInfo: ex.GetUsersyncInfo(),
+				}
+				csResp.BidderStatus = append(csResp.BidderStatus, &b)
+			}
+		}
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	//enc.SetIndent("", "  ")
+	enc.Encode(csResp)
+}
+
+type auctionDeps struct {
+	m *pbsmetrics.Metrics
+}
+
+func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Add("Content-Type", "application/json")
+
+	deps.m.RequestMeter.Mark(1)
+
+	isSafari := false
+	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
+		if ua.Type == useragent.Browser && ua.Name == "Safari" {
+			isSafari = true
+			deps.m.SafariRequestMeter.Mark(1)
+		}
+	}
+
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
+	if err != nil {
+		if glog.V(2) {
+			glog.Infof("Failed to parse /auction request: %v", err)
+		}
+		writeAuctionError(w, "Error parsing request", err)
+		deps.m.ErrorMeter.Mark(1)
+		return
+	}
+
+	status := "OK"
+	if pbs_req.App != nil {
+		deps.m.AppRequestMeter.Mark(1)
+	} else if pbs_req.Cookie.LiveSyncCount() == 0 {
+		deps.m.NoCookieMeter.Mark(1)
+		if isSafari {
+			deps.m.SafariNoCookieMeter.Mark(1)
+		}
+		status = "no_cookie"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
+	defer cancel()
+
+	account, err := dataCache.Accounts().Get(pbs_req.AccountID)
+	if err != nil {
+		if glog.V(2) {
+			glog.Infof("Invalid account id: %v", err)
+		}
+		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
+		deps.m.ErrorMeter.Mark(1)
+		return
+	}
+
+	am := deps.m.GetAccountMetrics(pbs_req.AccountID)
+	am.RequestMeter.Mark(1)
+
+	pbs_resp := pbs.PBSResponse{
+		Status:       status,
+		TID:          pbs_req.Tid,
+		BidderStatus: pbs_req.Bidders,
+	}
+
+	ch := make(chan bidResult)
+	sentBids := 0
+	for _, bidder := range pbs_req.Bidders {
+		if ex, ok := exchanges[bidder.BidderCode]; ok {
+			ametrics := deps.m.AdapterMetrics[bidder.BidderCode]
+			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
+			ametrics.RequestMeter.Mark(1)
+			accountAdapterMetric.RequestMeter.Mark(1)
+			if pbs_req.App == nil {
+				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				if uid == "" {
+					bidder.NoCookie = true
+					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					ametrics.NoCookieMeter.Mark(1)
+					accountAdapterMetric.NoCookieMeter.Mark(1)
+					if ex.SkipNoCookies() {
+						continue
+					}
+				}
+			}
+			sentBids++
+			go func(bidder *pbs.PBSBidder) {
+				start := time.Now()
+				bid_list, err := ex.Call(ctx, pbs_req, bidder)
+				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
+				ametrics.RequestTimer.UpdateSince(start)
+				accountAdapterMetric.RequestTimer.UpdateSince(start)
+				if err != nil {
+					switch err {
+					case context.DeadlineExceeded:
+						ametrics.TimeoutMeter.Mark(1)
+						accountAdapterMetric.TimeoutMeter.Mark(1)
+						bidder.Error = "Timed out"
+					case context.Canceled:
+						fallthrough
+					default:
+						ametrics.ErrorMeter.Mark(1)
+						accountAdapterMetric.ErrorMeter.Mark(1)
+						bidder.Error = err.Error()
+						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
+					}
+				} else if bid_list != nil {
+					bid_list = checkForValidBidSize(bid_list, bidder)
+					bidder.NumBids = len(bid_list)
+					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
+					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
+					for _, bid := range bid_list {
+						var cpm = int64(bid.Price * 1000)
+						ametrics.PriceHistogram.Update(cpm)
+						am.PriceHistogram.Update(cpm)
+						accountAdapterMetric.PriceHistogram.Update(cpm)
+						bid.ResponseTime = bidder.ResponseTime
+					}
+				} else {
+					bidder.NoBid = true
+					ametrics.NoBidMeter.Mark(1)
+					accountAdapterMetric.NoBidMeter.Mark(1)
+				}
+
+				ch <- bidResult{
+					bidder:   bidder,
+					bid_list: bid_list,
+				}
+			}(bidder)
+
+		} else {
+			bidder.Error = "Unsupported bidder"
+		}
+	}
+
+	for i := 0; i < sentBids; i++ {
+		result := <-ch
+
+		for _, bid := range result.bid_list {
+			pbs_resp.Bids = append(pbs_resp.Bids, bid)
+		}
+	}
+	if pbs_req.CacheMarkup == 1 {
+		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
+		for i, bid := range pbs_resp.Bids {
+			bc := &pbc.BidCache{
+				Adm:    bid.Adm,
+				NURL:   bid.NURL,
+				Width:  bid.Width,
+				Height: bid.Height,
+			}
+			cobjs[i] = &pbc.CacheObject{
+				Value: bc,
+			}
+		}
+		err = pbc.Put(ctx, cobjs)
+		if err != nil {
+			writeAuctionError(w, "Prebid cache failed", err)
+			deps.m.ErrorMeter.Mark(1)
+			return
+		}
+		for i, bid := range pbs_resp.Bids {
+			bid.CacheID = cobjs[i].UUID
+			bid.NURL = ""
+			bid.Adm = ""
+		}
+	}
+
+	if pbs_req.SortBids == 1 {
+		sortBidsAddKeywordsMobile(pbs_resp.Bids, pbs_req, account.PriceGranularity)
+	}
+
+	if glog.V(2) {
+		glog.Infof("Request for %d ad units on url %s by account %s got %d bids", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID, len(pbs_resp.Bids))
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	enc.Encode(pbs_resp)
+	deps.m.RequestTimer.UpdateSince(pbs_req.Start)
 }
 
 // checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
@@ -640,8 +644,8 @@ func serve(cfg *config.Configuration) error {
 	})()
 
 	router := httprouter.New()
-	router.POST("/auction", NewAuctionHandler(m))
-	router.POST("/cookie_sync", NewCookieSyncHandler(m))
+	router.POST("/auction", (&auctionDeps{m}).auction)
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
