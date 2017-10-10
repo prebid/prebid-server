@@ -13,8 +13,8 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/ssl"
-	"github.com/rcrowley/go-metrics"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -67,7 +67,7 @@ type UserSyncDeps struct {
 	OptOutUrl          string
 	OptInUrl           string
 	HostCookieSettings *HostCookieSettings
-	Metrics            metrics.Registry
+	Metrics            *pbsmetrics.Metrics
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -297,7 +297,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := ParsePBSCookieFromRequest(r)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
-		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
+		deps.Metrics.UserSyncMetrics.OptOutMeter.Mark(1)
 		return
 	}
 
@@ -305,7 +305,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	bidder := query["bidder"]
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
+		deps.Metrics.UserSyncMetrics.BadRequestMeter.Mark(1)
 		return
 	}
 
@@ -318,7 +318,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	if err == nil {
-		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
+		deps.Metrics.UserSyncMetrics.SuccessMeter(bidder).Mark(1)
 	}
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
