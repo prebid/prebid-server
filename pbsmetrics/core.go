@@ -74,14 +74,16 @@ type Metrics struct{
 	exchanges []string
 }
 
+// Export begins exporting all the metrics to the database. This blocks indefinitely, so it should
+// probably be run inside a goroutine.
 func (m *Metrics) Export(cfg *config.Configuration) {
 	influxdb.InfluxDB(
 		m.metricsRegistry,      // metrics registry
-		time.Second*10,       // interval
-		cfg.Metrics.Host,     // the InfluxDB url
-		cfg.Metrics.Database, // your InfluxDB database
-		cfg.Metrics.Username, // your InfluxDB user
-		cfg.Metrics.Password, // your InfluxDB password
+		time.Second*10,         // interval
+		cfg.Metrics.Host,       // the InfluxDB url
+		cfg.Metrics.Database,   // your InfluxDB database
+		cfg.Metrics.Username,   // your InfluxDB user
+		cfg.Metrics.Password,   // your InfluxDB password
 	)
 }
 
