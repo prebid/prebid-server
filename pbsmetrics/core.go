@@ -42,17 +42,15 @@ type UserSyncMetrics struct {
 	registry        metrics.Registry
 	BadRequestMeter metrics.Meter
 	OptOutMeter     metrics.Meter
-	successMeters   map[string]metrics.Meter
+	successMeters   *sync.Map  // This is a *map[string]metrics.Meter
 }
 
 func (u *UserSyncMetrics) SuccessMeter(bidder string) metrics.Meter {
-	// TODO: synchronize
-	meter, ok := u.successMeters[bidder]
-	if !ok {
-		u.successMeters[bidder] = metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), u.registry)
-		meter = u.successMeters[bidder]
+	meter, loaded := u.successMeters.LoadOrStore(bidder, metrics.NewMeter())
+	if !loaded {
+		u.registry.Register(fmt.Sprintf(USERSYNC_SUCCESS, bidder), meter)
 	}
-	return meter
+	return meter.(metrics.Meter)
 }
 
 type Metrics struct{
@@ -132,7 +130,7 @@ func NewMetrics(exchanges []string) *Metrics {
 			registry: registry,
 			BadRequestMeter: metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, registry),
 			OptOutMeter: metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, registry),
-			successMeters: make(map[string]metrics.Meter, 10),
+			successMeters: &sync.Map{},
 		},
 
 		accountMetrics: make(map[string]*AccountMetrics),

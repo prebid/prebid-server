@@ -28,12 +28,6 @@ const DEFAULT_TTL = 14 * 24 * time.Hour
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
 var customBidderTTLs = map[string]time.Duration{}
 
-const (
-	USERSYNC_OPT_OUT     = "usersync.opt_outs"
-	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
-	USERSYNC_SUCCESS     = "usersync.%s.sets"
-)
-
 // PBSCookie is the cookie used in Prebid Server.
 //
 // To get an instance of this from a request, use ParsePBSCookieFromRequest.
