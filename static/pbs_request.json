@@ -340,7 +340,7 @@
                             },
                             "startdelay": {
                                 "type": "integer",
-                                "description": "	//Indicates the start delay in seconds for pre-roll, mid-roll, or post-roll ad placements."
+                                "description": "Indicates the start delay in seconds for pre-roll, mid-roll, or post-roll ad placements."
                             },
                             "skippable": {
                                 "type": "integer",
@@ -395,7 +395,7 @@
                         "minimum": 0,
                         "maximum": 1
                     },
-                    "instl":{
+                    "instl": {
                         "description": "1 = the ad is interstitial or full screen, 0 = not interstitial",
                         "type": "integer",
                         "minimum": 0,
