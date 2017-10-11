@@ -11,6 +11,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -100,6 +101,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
 // default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
@@ -452,24 +454,39 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
 			roundedCpm := priceBucketStringMap[priceGranularitySetting]
 
+			hbSize := ""
+			if bid.Width != 0 && bid.Height != 0 {
+				width := strconv.FormatUint(bid.Width, 10)
+				height := strconv.FormatUint(bid.Height, 10)
+				hbSize = width + "x" + height
+			}
+
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
 			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
 				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 			pbs_kvs := map[string]string{
 				hbPbBidderKey:      roundedCpm,
 				hbBidderBidderKey:  bid.BidderCode,
 				hbCacheIdBidderKey: bid.CacheID,
 			}
+			if hbSize != "" {
+				pbs_kvs[hbSizeBidderKey] = hbSize
+			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if hbSize != "" {
+					pbs_kvs[hbSizeConstantKey] = hbSize
+				}
 				if bid.BidderCode == "audienceNetwork" {
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
@@ -655,7 +672,7 @@ func init() {
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
@@ -777,7 +794,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	hostCookieSettings := &pbs.HostCookieSettings{
+	hostCookieSettings = pbs.HostCookieSettings{
 		Domain:     cfg.HostCookie.Domain,
 		Family:     cfg.HostCookie.Family,
 		CookieName: cfg.HostCookie.CookieName,
@@ -786,7 +803,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{
-		HostCookieSettings: hostCookieSettings,
+		HostCookieSettings: &hostCookieSettings,
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		Metrics:            metricsRegistry,
