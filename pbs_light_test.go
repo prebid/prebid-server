@@ -13,7 +13,11 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"io/ioutil"
+	"strings"
 )
+
+const adapterDirectory = "adapters"
 
 func TestCookieSyncNoCookies(t *testing.T) {
 	cfg, err := config.New()
@@ -414,6 +418,7 @@ func TestBidSizeValidate(t *testing.T) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
+
 	handler := NewJsonDirectoryServer(schemaDirectory)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
@@ -422,9 +427,30 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	var data map[string]json.RawMessage
 	json.Unmarshal(recorder.Body.Bytes(), &data)
 
-	// TODO: Add schemas for all other bidders, and then produce these assertions by reading out of the adapters directory
-	ensureHasKey(t, data, "appnexus")
-	ensureHasKey(t, data, "facebook")
+	// Make sure that every adapter has a json schema file associated with it
+	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	if err != nil {
+		t.Fatalf("Failed to open the adapters directory: %v", err)
+	}
+
+	var nonAdapterFiles = []string{"adapter.go", "openrtb_util.go"}
+
+	for _, adapterFile := range adapterFiles {
+		if contains(nonAdapterFiles, adapterFile.Name()) || strings.HasSuffix(adapterFile.Name(), "_test.go") {
+			continue
+		}
+		adapterName := adapterFile.Name()[0 : len(adapterFile.Name())-3] // transform "index.go" into "index"
+		ensureHasKey(t, data, adapterName)
+	}
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
