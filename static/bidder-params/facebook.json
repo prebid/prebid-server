@@ -6,7 +6,7 @@
   "properties": {
     "placementId": {
       "type": "string",
-      "description": "An ID which identifies this placement"
+      "description": "An ID which identifies the placement selling the impression"
     }
   },
   "required": ["placementId"]

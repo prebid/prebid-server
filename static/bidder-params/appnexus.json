@@ -7,15 +7,15 @@
   "properties": {
     "placementId": {
       "type": "integer",
-      "description": "An ID which identifies this placement"
+      "description": "An ID which identifies this placement of the impression"
     },
     "invCode": {
       "type": "string",
-      "description": "The placement code, aka inventory code, for this placement."
+      "description": "A code identifying the inventory of this placement."
     },
     "member": {
       "type": "string",
-      "description": "The member ID from AppNexus."
+      "description": "An ID which identifies the member selling the impression."
     },
     "keywords": {
       "type": "array",
