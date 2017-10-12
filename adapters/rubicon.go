@@ -286,9 +286,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}}
 		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
 
-		// Amend the $.user object with $.user.ext.rp.target
+		// Copy the $.user object and amend with $.user.ext.rp.target
+		// Copy avoids race condition since it points to ref & shared with other adapters
+		userCopy := *rubiReq.User
 		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: params.Visitor}}
-		rubiReq.User.Ext, err = json.Marshal(&userExt)
+		userCopy.Ext, err = json.Marshal(&userExt)
+		// Assign back our copy
+		rubiReq.User = &userCopy
 
 		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 		if err != nil {
