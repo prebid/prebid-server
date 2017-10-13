@@ -15,6 +15,20 @@
     "zoneId": {
       "type": "integer",
       "description": "An ID which identifies the sub-section of the site where the impression is located"
+    },
+    "inventory": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the page",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "visitor": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the visitor",
+      "additionalProperties": {
+        "type": "string"
+      }
     }
   },
   "required": ["accountId", "siteId", "zoneId"]
