@@ -34,17 +34,19 @@ type rubiTagInfo struct {
 }
 
 type rubiBidInfo struct {
-	domain    string
-	page      string
-	accountID int
-	siteID    int
-	tags      []rubiTagInfo
-	deviceIP  string
-	deviceUA  string
-	buyerUID  string
-	xapiuser  string
-	xapipass  string
-	delay     time.Duration
+	domain             string
+	page               string
+	accountID          int
+	siteID             int
+	tags               []rubiTagInfo
+	deviceIP           string
+	deviceUA           string
+	buyerUID           string
+	xapiuser           string
+	xapipass           string
+	delay              time.Duration
+	visitorTargeting   string
+	inventoryTargeting string
 }
 
 var rubidata rubiBidInfo
@@ -77,6 +79,11 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	impTargetingString, _ := json.Marshal(&rix.RP.Target)
+	if string(impTargetingString) != rubidata.inventoryTargeting {
+		http.Error(w, fmt.Sprintf("Inventory FPD targeting '%s' doesn't match '%s'", string(impTargetingString), rubidata.inventoryTargeting), http.StatusInternalServerError)
+		return
+	}
 
 	ix := -1
 
@@ -96,7 +103,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		Cur:   "USD",
 		SeatBid: []openrtb.SeatBid{
 			{
-				Seat: "FBAN",
+				Seat: "RUBICON",
 				Bid:  make([]openrtb.Bid, 2),
 			},
 		},
@@ -169,19 +176,31 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if rpx.RP.AccountID != rubidata.accountID {
-		http.Error(w, fmt.Sprintf("AccountID '%d' doesn't match '%d", rpx.RP.AccountID, rubidata.accountID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("AccountID '%d' doesn't match '%d'", rpx.RP.AccountID, rubidata.accountID), http.StatusInternalServerError)
 		return
 	}
 	if breq.Device.UA != rubidata.deviceUA {
-		http.Error(w, fmt.Sprintf("UA '%s' doesn't match '%s", breq.Device.UA, rubidata.deviceUA), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("UA '%s' doesn't match '%s'", breq.Device.UA, rubidata.deviceUA), http.StatusInternalServerError)
 		return
 	}
 	if breq.Device.IP != rubidata.deviceIP {
-		http.Error(w, fmt.Sprintf("IP '%s' doesn't match '%s", breq.Device.IP, rubidata.deviceIP), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("IP '%s' doesn't match '%s'", breq.Device.IP, rubidata.deviceIP), http.StatusInternalServerError)
 		return
 	}
 	if breq.User.BuyerUID != rubidata.buyerUID {
-		http.Error(w, fmt.Sprintf("User ID '%s' doesn't match '%s", breq.User.BuyerUID, rubidata.buyerUID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("User ID '%s' doesn't match '%s'", breq.User.BuyerUID, rubidata.buyerUID), http.StatusInternalServerError)
+		return
+	}
+
+	var rux rubiconUserExt
+	err = json.Unmarshal(breq.User.Ext, &rux)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	userTargetingString, _ := json.Marshal(&rux.RP.Target)
+	if string(userTargetingString) != rubidata.visitorTargeting {
+		http.Error(w, fmt.Sprintf("User FPD targeting '%s' doesn't match '%s'", string(userTargetingString), rubidata.visitorTargeting), http.StatusInternalServerError)
 		return
 	}
 
@@ -203,14 +222,16 @@ func TestRubiconBasicResponse(t *testing.T) {
 	defer server.Close()
 
 	rubidata = rubiBidInfo{
-		domain:    "nytimes.com",
-		page:      "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
-		accountID: 7891,
-		siteID:    283282,
-		tags:      make([]rubiTagInfo, 2),
-		deviceIP:  "25.91.96.36",
-		deviceUA:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
-		buyerUID:  "need-an-actual-fb-id",
+		domain:             "nytimes.com",
+		page:               "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		accountID:          7891,
+		siteID:             283282,
+		tags:               make([]rubiTagInfo, 2),
+		deviceIP:           "25.91.96.36",
+		deviceUA:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:           "need-an-actual-rp-id",
+		visitorTargeting:   "[\"v1\",\"v2\"]",
+		inventoryTargeting: "[\"i1\",\"i2\"]",
 	}
 
 	targeting := make(map[string]string, 2)
@@ -255,7 +276,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 				pbs.Bids{
 					BidderCode: "rubicon",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d}", tag.zoneID, rubidata.siteID, rubidata.accountID)),
+					Params:     json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", tag.zoneID, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting)),
 				},
 			},
 		}
