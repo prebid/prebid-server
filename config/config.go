@@ -6,18 +6,25 @@ import (
 
 // Configuration
 type Configuration struct {
-	CookieDomain    string             `mapstructure:"cookie_domain"`
 	ExternalURL     string             `mapstructure:"external_url"`
 	Host            string             `mapstructure:"host"`
 	Port            int                `mapstructure:"port"`
 	AdminPort       int                `mapstructure:"admin_port"`
 	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
 	CacheURL        string             `mapstructure:"prebid_cache_url"`
-	RequireUUID2    bool               `mapstructure:"require_uuid2"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
+}
+
+type HostCookie struct {
+	Domain     string `mapstructure:"domain"`
+	Family     string `mapstructure:"family"`
+	CookieName string `mapstructure:"cookie_name"`
+	OptOutURL  string `mapstructure:"opt_out_url"`
+	OptInURL   string `mapstructure:"opt_in_url"`
 }
 
 type Adapter struct {

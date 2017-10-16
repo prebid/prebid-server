@@ -104,7 +104,9 @@ func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *p
 	if lsReq.Imp != nil && len(lsReq.Imp) > 0 {
 		lsReq.Imp = lsReq.Imp[unitInd : unitInd+1]
 
-		lsReq.Imp[0].Banner.Format = nil
+		if lsReq.Imp[0].Banner != nil {
+			lsReq.Imp[0].Banner.Format = nil
+		}
 		lsReq.Imp[0].TagID = slotTag
 
 		return lsReq, nil

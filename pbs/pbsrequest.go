@@ -63,6 +63,19 @@ type PBSVideo struct {
 	// 5 - Initiates on Entering Viewport with Sound On
 	// 6 - Initiates on Entering Viewport with Sound Off by Default
 	PlaybackMethod int8 `json:"playback_method,omitempty"`
+
+	//protocols as specified in ORTB 5.8
+	// 1 VAST 1.0
+	// 2 VAST 2.0
+	// 3 VAST 3.0
+	// 4 VAST 1.0 Wrapper
+	// 5 VAST 2.0 Wrapper
+	// 6 VAST 3.0 Wrapper
+	// 7 VAST 4.0
+	// 8 VAST 4.0 Wrapper
+	// 9 DAAST 1.0
+	// 10 DAAST 1.0 Wrapper
+	Protocols []int8 `json:"protocols,omitempty"`
 }
 
 type AdUnit struct {
@@ -73,6 +86,7 @@ type AdUnit struct {
 	ConfigID   string           `json:"config_id"`
 	MediaTypes []string         `json:"media_types"`
 	Instl      int8             `json:"instl"`
+	Video      PBSVideo         `json:"video"`
 }
 
 type PBSAdUnit struct {
@@ -122,6 +136,15 @@ func (bidder *PBSBidder) LookupBidID(Code string) string {
 		}
 	}
 	return ""
+}
+
+func (bidder *PBSBidder) LookupAdUnit(Code string) (unit *PBSAdUnit) {
+	for _, unit := range bidder.AdUnits {
+		if unit.Code == Code {
+			return &unit
+		}
+	}
+	return nil
 }
 
 type PBSRequest struct {
@@ -188,7 +211,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -237,9 +260,11 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 	if pbsReq.App == nil {
 		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
 
-		// this would be for the shared adnxs.com domain
-		if anid, err := r.Cookie("uuid2"); err == nil {
-			pbsReq.Cookie.TrySync("adnxs", anid.Value)
+		// Host has right to leverage private cookie store for user ID
+		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {
+			if hostCookie, err := r.Cookie(hostCookieSettings.CookieName); err == nil {
+				pbsReq.Cookie.TrySync(hostCookieSettings.Family, hostCookie.Value)
+			}
 		}
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
@@ -323,6 +348,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache) (*PBSRequest, error) {
 				Params:     b.Params,
 				BidID:      b.BidID,
 				MediaTypes: mtypes,
+				Video:      unit.Video,
 			}
 
 			bidder.AdUnits = append(bidder.AdUnits, pau)

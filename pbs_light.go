@@ -11,18 +11,20 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"sort"
-	"sync"
+	"strconv"
 	"time"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
-	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
-	"github.com/xojoc/useragent"
+	"xojoc.pw/useragent"
+
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
@@ -31,56 +33,12 @@ import (
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
-type DomainMetrics struct {
-	RequestMeter metrics.Meter
-}
-
-type AccountMetrics struct {
-	RequestMeter      metrics.Meter
-	BidsReceivedMeter metrics.Meter
-	PriceHistogram    metrics.Histogram
-	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
-	AdapterMetrics map[string]*AdapterMetrics
-}
-
-type AdapterMetrics struct {
-	NoCookieMeter     metrics.Meter
-	ErrorMeter        metrics.Meter
-	NoBidMeter        metrics.Meter
-	TimeoutMeter      metrics.Meter
-	RequestMeter      metrics.Meter
-	RequestTimer      metrics.Timer
-	PriceHistogram    metrics.Histogram
-	BidsReceivedMeter metrics.Meter
-}
-
-var (
-	metricsRegistry      metrics.Registry
-	mRequestMeter        metrics.Meter
-	mAppRequestMeter     metrics.Meter
-	mNoCookieMeter       metrics.Meter
-	mSafariRequestMeter  metrics.Meter
-	mSafariNoCookieMeter metrics.Meter
-	mErrorMeter          metrics.Meter
-	mInvalidMeter        metrics.Meter
-	mRequestTimer        metrics.Timer
-	mCookieSyncMeter     metrics.Meter
-
-	adapterMetrics map[string]*AdapterMetrics
-
-	accountMetrics        map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
-	accountMetricsRWMutex sync.RWMutex
-
-	requireUUID2 bool
-	cookieDomain string
-)
+var hostCookieSettings pbs.HostCookieSettings
 
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
@@ -98,6 +56,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
 // default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
@@ -127,33 +86,6 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	}
 }
 
-func getAccountMetrics(id string) *AccountMetrics {
-	var am *AccountMetrics
-	var ok bool
-
-	accountMetricsRWMutex.RLock()
-	am, ok = accountMetrics[id]
-	accountMetricsRWMutex.RUnlock()
-
-	if ok {
-		return am
-	}
-
-	accountMetricsRWMutex.Lock()
-	am, ok = accountMetrics[id]
-	if !ok {
-		am = &AccountMetrics{}
-		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
-		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
-		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		am.AdapterMetrics = makeExchangeMetrics(fmt.Sprintf("account.%s", id))
-		accountMetrics[id] = am
-	}
-	accountMetricsRWMutex.Unlock()
-
-	return am
-}
-
 type cookieSyncRequest struct {
 	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
@@ -165,8 +97,12 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	mCookieSyncMeter.Mark(1)
+type cookieSyncDeps struct {
+	m *pbsmetrics.Metrics
+}
+
+func (deps *cookieSyncDeps) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.m.CookieSyncMeter.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
@@ -189,7 +125,8 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
-	if _, err := r.Cookie("uuid2"); (requireUUID2 && err != nil) || userSyncCookie.LiveSyncCount() == 0 {
+
+	if userSyncCookie.LiveSyncCount() == 0 {
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
@@ -214,49 +151,42 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.Encode(csResp)
 }
 
-func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+type auctionDeps struct {
+	m *pbsmetrics.Metrics
+}
+
+func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
-	mRequestMeter.Mark(1)
+	deps.m.RequestMeter.Mark(1)
 
 	isSafari := false
 	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
 		if ua.Type == useragent.Browser && ua.Name == "Safari" {
 			isSafari = true
-			mSafariRequestMeter.Mark(1)
+			deps.m.SafariRequestMeter.Mark(1)
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache)
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /auction request: %v", err)
 		}
 		writeAuctionError(w, "Error parsing request", err)
-		mErrorMeter.Mark(1)
+		deps.m.ErrorMeter.Mark(1)
 		return
 	}
 
 	status := "OK"
 	if pbs_req.App != nil {
-		mAppRequestMeter.Mark(1)
+		deps.m.AppRequestMeter.Mark(1)
 	} else if pbs_req.Cookie.LiveSyncCount() == 0 {
-		mNoCookieMeter.Mark(1)
+		deps.m.NoCookieMeter.Mark(1)
 		if isSafari {
-			mSafariNoCookieMeter.Mark(1)
+			deps.m.SafariNoCookieMeter.Mark(1)
 		}
 		status = "no_cookie"
-		if requireUUID2 {
-			uuid2 := fmt.Sprintf("%d", rand.Int63())
-			c := http.Cookie{
-				Name:    "uuid2",
-				Value:   uuid2,
-				Domain:  cookieDomain,
-				Expires: time.Now().Add(180 * 24 * time.Hour),
-			}
-			http.SetCookie(w, &c)
-			pbs_req.Cookie.TrySync("adnxs", uuid2)
-		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
@@ -268,11 +198,11 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			glog.Infof("Invalid account id: %v", err)
 		}
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
-		mErrorMeter.Mark(1)
+		deps.m.ErrorMeter.Mark(1)
 		return
 	}
 
-	am := getAccountMetrics(pbs_req.AccountID)
+	am := deps.m.GetAccountMetrics(pbs_req.AccountID)
 	am.RequestMeter.Mark(1)
 
 	pbs_resp := pbs.PBSResponse{
@@ -285,7 +215,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	sentBids := 0
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
-			ametrics := adapterMetrics[bidder.BidderCode]
+			ametrics := deps.m.AdapterMetrics[bidder.BidderCode]
 			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
@@ -323,6 +253,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
 				} else if bid_list != nil {
+					bid_list = checkForValidBidSize(bid_list, bidder)
 					bidder.NumBids = len(bid_list)
 					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
 					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
@@ -373,7 +304,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		err = pbc.Put(ctx, cobjs)
 		if err != nil {
 			writeAuctionError(w, "Prebid cache failed", err)
-			mErrorMeter.Mark(1)
+			deps.m.ErrorMeter.Mark(1)
 			return
 		}
 		for i, bid := range pbs_resp.Bids {
@@ -394,7 +325,38 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
-	mRequestTimer.UpdateSince(pbs_req.Start)
+	deps.m.RequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
+// determine the num of ad unit sizes that were used in corresponding bid request
+// if num_adunit_sizes == 1, assign the height and/or width to bid's height/width
+// if num_adunit_sizes > 1, reject the bid (remove from list) and return an error
+// return updated bid list object for next steps in auction
+func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBidSlice {
+	finalValidBids := make([]*pbs.PBSBid, len(bids))
+	finalBidCounter := 0
+bidLoop:
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "banner" && (bid.Height == 0 || bid.Width == 0) {
+			for _, adunit := range bidder.AdUnits {
+				if adunit.BidID == bid.BidID && adunit.Code == bid.AdUnitCode {
+					if len(adunit.Sizes) == 1 {
+						bid.Width, bid.Height = adunit.Sizes[0].W, adunit.Sizes[0].H
+						finalValidBids[finalBidCounter] = bid
+						finalBidCounter = finalBidCounter + 1
+					} else if len(adunit.Sizes) > 1 {
+						glog.Warningf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
+					}
+					continue bidLoop
+				}
+			}
+		} else {
+			finalValidBids[finalBidCounter] = bid
+			finalBidCounter = finalBidCounter + 1
+		}
+	}
+	return finalValidBids[:finalBidCounter]
 }
 
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
@@ -428,24 +390,39 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
 			roundedCpm := priceBucketStringMap[priceGranularitySetting]
 
+			hbSize := ""
+			if bid.Width != 0 && bid.Height != 0 {
+				width := strconv.FormatUint(bid.Width, 10)
+				height := strconv.FormatUint(bid.Height, 10)
+				hbSize = width + "x" + height
+			}
+
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
 			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
 				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 			pbs_kvs := map[string]string{
 				hbPbBidderKey:      roundedCpm,
 				hbBidderBidderKey:  bid.BidderCode,
 				hbCacheIdBidderKey: bid.CacheID,
 			}
+			if hbSize != "" {
+				pbs_kvs[hbSizeBidderKey] = hbSize
+			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if hbSize != "" {
+					pbs_kvs[hbSizeConstantKey] = hbSize
+				}
 				if bid.BidderCode == "audienceNetwork" {
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
@@ -595,7 +572,7 @@ func init() {
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
@@ -613,9 +590,7 @@ func main() {
 	if err != nil {
 		glog.Errorf("Viper was unable to read configurations: %v", err)
 	}
-	// we need to set this global variable so it can be used by other methods
-	requireUUID2 = cfg.RequireUUID2
-	cookieDomain = cfg.CookieDomain
+
 	if err := serve(cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
@@ -634,41 +609,6 @@ func setupExchanges(cfg *config.Configuration) {
 		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"sovrn":           adapters.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint, cfg.Adapters["sovrn"].UserSyncURL, cfg.ExternalURL),
 	}
-
-	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
-	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
-	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
-	mNoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry)
-	mSafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", metricsRegistry)
-	mSafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", metricsRegistry)
-	mErrorMeter = metrics.GetOrRegisterMeter("error_requests", metricsRegistry)
-	mInvalidMeter = metrics.GetOrRegisterMeter("invalid_requests", metricsRegistry)
-	mRequestTimer = metrics.GetOrRegisterTimer("request_time", metricsRegistry)
-	mCookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", metricsRegistry)
-
-	accountMetrics = make(map[string]*AccountMetrics)
-	adapterMetrics = makeExchangeMetrics("adapter")
-
-}
-
-func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
-	var adapterMetrics = make(map[string]*AdapterMetrics)
-	for exchange := range exchanges {
-		a := AdapterMetrics{}
-		a.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.error_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), metricsRegistry)
-		a.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_bid_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.timeout_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), metricsRegistry)
-		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		if adapterOrAccount != "adapter" {
-			a.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), metricsRegistry)
-		}
-
-		adapterMetrics[exchange] = &a
-	}
-	return adapterMetrics
 }
 
 func serve(cfg *config.Configuration) error {
@@ -678,15 +618,9 @@ func serve(cfg *config.Configuration) error {
 
 	setupExchanges(cfg)
 
+	m := pbsmetrics.NewMetrics(keys(exchanges))
 	if cfg.Metrics.Host != "" {
-		go influxdb.InfluxDB(
-			metricsRegistry,      // metrics registry
-			time.Second*10,       // interval
-			cfg.Metrics.Host,     // the InfluxDB url
-			cfg.Metrics.Database, // your InfluxDB database
-			cfg.Metrics.Username, // your InfluxDB user
-			cfg.Metrics.Password, // your InfluxDB password
-		)
+		go m.Export(cfg)
 	}
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
@@ -714,19 +648,27 @@ func serve(cfg *config.Configuration) error {
 	})()
 
 	router := httprouter.New()
-	router.POST("/auction", auction)
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/auction", (&auctionDeps{m}).auction)
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
 	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
+	hostCookieSettings = pbs.HostCookieSettings{
+		Domain:     cfg.HostCookie.Domain,
+		Family:     cfg.HostCookie.Family,
+		CookieName: cfg.HostCookie.CookieName,
+		OptOutURL:  cfg.HostCookie.OptOutURL,
+		OptInURL:   cfg.HostCookie.OptInURL,
+	}
+
 	userSyncDeps := &pbs.UserSyncDeps{
-		Cookie_domain:    cfg.CookieDomain,
-		External_url:     cfg.ExternalURL,
-		Recaptcha_secret: cfg.RecaptchaSecret,
-		Metrics:          metricsRegistry,
+		HostCookieSettings: &hostCookieSettings,
+		ExternalUrl:        cfg.ExternalURL,
+		RecaptchaSecret:    cfg.RecaptchaSecret,
+		Metrics:            m,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)
@@ -769,4 +711,15 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	return nil
+}
+
+func keys(m map[string]adapters.Adapter) []string {
+	keys := make([]string, len(m))
+
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
 }

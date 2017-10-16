@@ -3,13 +3,17 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/mxmCherry/openrtb"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
-	"net/http"
-	"net/http/httptest"
-	"testing"
+	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {
@@ -18,8 +22,9 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
+	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -63,8 +68,9 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
+	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -154,8 +160,9 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
+	hcs := pbs.HostCookieSettings{}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, d)
+	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}
@@ -166,10 +173,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		BidID:      "test_bidid",
 		AdUnitCode: "test_adunitcode",
 		BidderCode: "audienceNetwork",
-		Price:      1.05,
+		Price:      2.00,
 		Adm:        "test_adm",
 		Width:      300,
 		Height:     250,
+		CacheID:    "test_cache_id1",
 	}
 	bids = append(bids, &fb_bid)
 	an_bid := pbs.PBSBid{
@@ -178,10 +186,20 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		BidderCode: "appnexus",
 		Price:      1.00,
 		Adm:        "test_adm",
-		Width:      300,
-		Height:     250,
+		Width:      320,
+		Height:     50,
+		CacheID:    "test_cache_id2",
 	}
 	bids = append(bids, &an_bid)
+	nosize_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "nosizebidder",
+		Price:      1.00,
+		Adm:        "test_adm",
+		CacheID:    "test_cache_id2",
+	}
+	bids = append(bids, &nosize_bid)
 	pbs_resp := pbs.PBSResponse{
 		Bids: bids,
 	}
@@ -194,6 +212,205 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		if bid.BidderCode == "audienceNetwork" {
 			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
 				t.Errorf("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
+			}
+			if bid.AdServerTargeting["hb_size"] != "300x250" {
+				t.Errorf("hb_size key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb"] != "2.00" {
+				t.Errorf("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+			}
+			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
+				t.Errorf("hb_cache_id key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
+				t.Errorf("hb_bidder key was not parsed correctly")
+			}
+		}
+		if bid.BidderCode == "appnexus" {
+			if bid.AdServerTargeting["hb_size_appnexus"] != "320x50" {
+				t.Errorf("hb_size key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_cache_id_appnexus"] != "test_cache_id2" {
+				t.Errorf("hb_cache_id key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_bidder_appnexus"] != "appnexus" {
+				t.Errorf("hb_bidder key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb_appnexus"] != "1.00" {
+				t.Errorf("hb_pb key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb"] != "" {
+				t.Errorf("hb_pb key was parsed for two bidders")
+			}
+		}
+		if bid.BidderCode == "nosizebidder" {
+			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
+				t.Errorf("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+			}
+		}
+	}
+}
+
+func TestBidSizeValidate(t *testing.T) {
+
+	bids := make(pbs.PBSBidSlice, 0)
+
+	//bid_1 will be rejected due to undefined size when adunit has multiple sizes
+	bid_1 := pbs.PBSBid{
+		BidID:      "test_bidid1",
+		AdUnitCode: "test_adunitcode1",
+		BidderCode: "randNetwork",
+		Price:      1.05,
+		Adm:        "test_adm",
+		//Width:             100,
+		//Height:            100,
+		CreativeMediaType: "banner",
+	}
+
+	bids = append(bids, &bid_1)
+
+	//bid_2 will be considered a normal ideal banner bid
+	bid_2 := pbs.PBSBid{
+		BidID:             "test_bidid2",
+		AdUnitCode:        "test_adunitcode2",
+		BidderCode:        "randNetwork",
+		Price:             1.05,
+		Adm:               "test_adm",
+		Width:             100,
+		Height:            100,
+		CreativeMediaType: "banner",
+	}
+
+	bids = append(bids, &bid_2)
+
+	//bid_3 will have it's dimensions set based on sizes defined in request
+	bid_3 := pbs.PBSBid{
+		BidID:      "test_bidid3",
+		AdUnitCode: "test_adunitcode3",
+		BidderCode: "randNetwork",
+		Price:      1.05,
+		Adm:        "test_adm",
+		//Width:             200,
+		//Height:            200,
+		CreativeMediaType: "banner",
+	}
+
+	bids = append(bids, &bid_3)
+
+	//bid_4 will be ignored as it's a video creative type
+	bid_4 := pbs.PBSBid{
+		BidID:      "test_bidid_video",
+		AdUnitCode: "test_adunitcode_video",
+		BidderCode: "randNetwork",
+		Price:      1.05,
+		Adm:        "test_adm",
+		//Width:             400,
+		//Height:            400,
+		CreativeMediaType: "video",
+	}
+
+	bids = append(bids, &bid_4)
+
+	mybidder := pbs.PBSBidder{
+		BidderCode: "randNetwork",
+		AdUnitCode: "test_adunitcode",
+		AdUnits: []pbs.PBSAdUnit{
+			pbs.PBSAdUnit{
+				BidID: "test_bidid1",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 350,
+						H: 250,
+					},
+					openrtb.Format{
+						W: 300,
+						H: 50,
+					},
+				},
+				Code: "test_adunitcode1",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid2",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 100,
+						H: 100,
+					},
+				},
+				Code: "test_adunitcode2",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid3",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 200,
+						H: 200,
+					},
+				},
+				Code: "test_adunitcode3",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid_video",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 400,
+						H: 400,
+					},
+				},
+				Code: "test_adunitcode_video",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_VIDEO,
+				},
+			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid3",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 150,
+						H: 150,
+					},
+				},
+				Code: "test_adunitcode_x",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
+			pbs.PBSAdUnit{
+				BidID: "test_bidid_y",
+				Sizes: []openrtb.Format{
+					openrtb.Format{
+						W: 150,
+						H: 150,
+					},
+				},
+				Code: "test_adunitcode_3",
+				MediaTypes: []pbs.MediaType{
+					pbs.MEDIA_TYPE_BANNER,
+				},
+			},
+		},
+	}
+
+	bids = checkForValidBidSize(bids, &mybidder)
+
+	testdata, _ := json.MarshalIndent(bids, "", "   ")
+	if len(bids) != 3 {
+		t.Errorf("Detected returned bid list did not contain only 3 bid objects as expected.\nBelow is the contents of the bid list\n%v", string(testdata))
+	}
+
+	for _, bid := range bids {
+		if bid.BidID == "test_bidid3" {
+			if bid.Width == 0 && bid.Height == 0 {
+				t.Errorf("Detected the Width & Height attributes in test bidID %v were not set to the dimensions used from the mybidder object", bid.BidID)
 			}
 		}
 	}
