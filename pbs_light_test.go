@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"strings"
 )
@@ -25,8 +26,9 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
+	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -70,8 +72,9 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
+	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
