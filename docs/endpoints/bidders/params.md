@@ -16,7 +16,7 @@ For example:
 }
 ```
 
-The exact contents of the json-schema values can be found [here](./../../static/bidder-params).
+The exact contents of the json-schema values can be found [here](../../../static/bidder-params).
 
 ### See also
 
