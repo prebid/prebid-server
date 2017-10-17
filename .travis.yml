@@ -8,4 +8,4 @@ install:
     - glide install
 
 script:
-    - ./validate.sh --nofmt
+    - ./validate.sh --nofmt --cov

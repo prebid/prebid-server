@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
-	"github.com/prebid/prebid-server/adapters"
 )
 
 type LifestreetAdapter struct {
@@ -82,7 +82,7 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
-	result.Båid = &pbs.PBSBid{
+	result.Bid = &pbs.PBSBid{
 		AdUnitCode:  bid.ImpID,
 		Price:       bid.Price,
 		Adm:         bid.AdM,
@@ -105,7 +105,9 @@ func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *p
 	if lsReq.Imp != nil && len(lsReq.Imp) > 0 {
 		lsReq.Imp = lsReq.Imp[unitInd : unitInd+1]
 
-		lsReq.Imp[0].Banner.Format = nil
+		if lsReq.Imp[0].Banner != nil {
+			lsReq.Imp[0].Banner.Format = nil
+		}
 		lsReq.Imp[0].TagID = slotTag
 
 		return lsReq, nil

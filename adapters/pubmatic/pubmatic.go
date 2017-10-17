@@ -14,9 +14,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
-	"github.com/prebid/prebid-server/adapters"
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
