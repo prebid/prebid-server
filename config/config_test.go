@@ -66,7 +66,8 @@ host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
 default_timeout_ms: 123
-prebid_cache_url: http://prebidcache.net/test/a1?qs=something
+prebid_cache_host: http://prebidcache.net
+prebid_cache_macros: uuid=%PBS_CACHE_UUID%
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
   host: upstream:8232
@@ -128,7 +129,8 @@ func TestFullConfig(t *testing.T) {
 	if cfg.DefaultTimeout != 123 {
 		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
 	}
-	cmpStrings(t, "prebid_cache_url", cfg.CacheURL, "http://prebidcache.net/test/a1?qs=something")
+	cmpStrings(t, "prebid_cache_host", cfg.CacheHost, "http://prebidcache.net")
+	cmpStrings(t, "prebid_cache_macros", cfg.CacheMacro, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
 	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
 	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
