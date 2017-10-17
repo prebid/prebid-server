@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -387,6 +388,110 @@ func TestAppNexusUserSyncInfo(t *testing.T) {
 	}
 	if an.usersyncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
+	}
+
+}
+
+func TestCollectImpData(t *testing.T) {
+
+	//platform vars
+	oreq_site := openrtb.BidRequest{
+		Site: &openrtb.Site{
+			ID:     "site1",
+			Domain: "www.site1.com",
+		},
+	}
+
+	oreq_mobile := openrtb.BidRequest{
+		App: &openrtb.App{
+			ID:     "app1",
+			Domain: "myapp",
+		},
+	}
+
+	//sdk vars
+	pbsreq_ios := pbs.PBSRequest{
+		SDK: &pbs.SDK{
+			Version:  "1.2.3",
+			Platform: "iOS",
+		},
+	}
+
+	pbsreq_android := pbs.PBSRequest{
+		SDK: &pbs.SDK{
+			Version:  "4.5.6",
+			Platform: "android",
+		},
+	}
+
+	pbsreq_web := pbs.PBSRequest{
+		SDK: &pbs.SDK{
+			Platform: "web",
+		},
+	}
+
+	//format vars
+	unit_ban := pbs.PBSAdUnit{
+		MediaTypes: []pbs.MediaType{
+			pbs.MEDIA_TYPE_BANNER,
+		},
+	}
+
+	unit_vid := pbs.PBSAdUnit{
+		MediaTypes: []pbs.MediaType{
+			pbs.MEDIA_TYPE_VIDEO,
+		},
+	}
+
+	//temp test value until pbs.MEDIA_TYPE_NATIVE media type is implemented
+	var nativeMediaType pbs.MediaType = 3
+
+	unit_nat := pbs.PBSAdUnit{
+		MediaTypes: []pbs.MediaType{
+			nativeMediaType,
+		},
+	}
+
+	data := CollectImpData(oreq_mobile, &pbsreq_ios, unit_ban)
+	dataSlice := strings.Split(data, ";")
+	if len(dataSlice) != 4 {
+		t.Errorf("Detected the concatenated test string did not contain 4 data points.\nReturned string [%v]", data)
+	}
+
+	if dataSlice[0] != "plat:1" {
+		t.Errorf("Detected unexpected test value for the platform data point.\nReturned test string [%v]", data)
+	}
+
+	if dataSlice[1] != "fmt:0" {
+		t.Errorf("Detected unexpected test value for the format data point.\nReturned test string [%v]", data)
+	}
+
+	if dataSlice[2] != "sdk:0" {
+		t.Errorf("Detected unexpected test value for the sdk data point.\nReturned test string [%v]", data)
+	}
+
+	if dataSlice[3] != "sdkv:1.2.3" {
+		t.Errorf("Detected unexpected test value for the sdk ver data point.\nReturned test string [%v]", data)
+	}
+
+	data = CollectImpData(oreq_mobile, &pbsreq_android, unit_vid)
+	dataSlice = strings.Split(data, ";")
+	if len(dataSlice) != 4 {
+		t.Errorf("Detected the concatnated test did not contain 4 data points.\nReturned string [%v]", data)
+	}
+
+	if data != "plat:1;fmt:1;sdk:1;sdkv:4.5.6" {
+		t.Errorf("Detected unexpected value in the impression log string.\nReturned test string [%v]", data)
+	}
+
+	data = CollectImpData(oreq_site, &pbsreq_web, unit_nat)
+	dataSlice = strings.Split(data, ";")
+	if len(dataSlice) != 3 {
+		t.Errorf("Detected the concatnated test did not contain 3 data points.\nReturned string [%v]", data)
+	}
+
+	if data != "plat:0;fmt:2;sdk:2" {
+		t.Errorf("Detected unexpected value in the impression log string.\nReturned test string [%v]", data)
 	}
 
 }
