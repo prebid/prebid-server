@@ -1,4 +1,4 @@
-package adapters
+package pulsepoint
 
 import (
 	"bytes"
@@ -15,10 +15,11 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type PulsePointAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -50,7 +51,7 @@ type PulsepointParams struct {
 
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	ppReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	ppReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
 
 	if err != nil {
 		return nil, err
@@ -173,8 +174,8 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
-	a := NewHTTPAdapter(config)
+func NewPulsePointAdapter(config *adapters.HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
+	a := adapters.NewHTTPAdapter(config)
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
 	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
 

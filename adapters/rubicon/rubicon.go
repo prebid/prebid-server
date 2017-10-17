@@ -1,4 +1,4 @@
-package adapters
+package rubicon
 
 import (
 	"bytes"
@@ -15,10 +15,11 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type RubiconAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 	XAPIUsername string
@@ -173,7 +174,7 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	return
 }
 
-func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
 	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
@@ -188,16 +189,16 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 
 	defer rubiResp.Body.Close()
 	body, _ := ioutil.ReadAll(rubiResp.Body)
-	result.responseBody = string(body)
+	result.ResponseBody = string(body)
 
-	result.statusCode = rubiResp.StatusCode
+	result.StatusCode = rubiResp.StatusCode
 
 	if rubiResp.StatusCode == 204 {
 		return
 	}
 
 	if rubiResp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP status %d; body: %s", rubiResp.StatusCode, result.responseBody)
+		err = fmt.Errorf("HTTP status %d; body: %s", rubiResp.StatusCode, result.ResponseBody)
 		return
 	}
 
@@ -214,7 +215,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
-	result.bid = &pbs.PBSBid{
+	result.Bid = &pbs.PBSBid{
 		AdUnitCode:  bid.ImpID,
 		Price:       bid.Price,
 		Adm:         bid.AdM,
@@ -236,7 +237,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 			targeting[target.Key] = target.Values[0]
 		}
 
-		result.bid.AdServerTargeting = targeting
+		result.Bid.AdServerTargeting = targeting
 	}
 
 	return
@@ -245,7 +246,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	for i, unit := range bidder.AdUnits {
-		rubiReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+		rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 		if err != nil {
 			continue
 		}
@@ -299,17 +300,17 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 	}
 
-	ch := make(chan callOneResult)
+	ch := make(chan adapters.CallOneResult)
 	for i, _ := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err
-			if result.bid != nil {
-				result.bid.BidderCode = bidder.BidderCode
-				result.bid.BidID = bidder.LookupBidID(result.bid.AdUnitCode)
-				if result.bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.bid.AdUnitCode)
-					result.bid = nil
+			if result.Bid != nil {
+				result.Bid.BidderCode = bidder.BidderCode
+				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
+				if result.Bid.BidID == "" {
+					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
+					result.Bid = nil
 				}
 			}
 			ch <- result
@@ -321,15 +322,15 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	bids := make(pbs.PBSBidSlice, 0)
 	for i := 0; i < len(bidder.AdUnits); i++ {
 		result := <-ch
-		if result.bid != nil {
-			bids = append(bids, result.bid)
+		if result.Bid != nil {
+			bids = append(bids, result.Bid)
 		}
 		if req.IsDebug {
 			debug := &pbs.BidderDebug{
 				RequestURI:   a.URI,
 				RequestBody:  requests[i].String(),
-				StatusCode:   result.statusCode,
-				ResponseBody: result.responseBody,
+				StatusCode:   result.StatusCode,
+				ResponseBody: result.ResponseBody,
 			}
 			bidder.Debug = append(bidder.Debug, debug)
 		}
@@ -360,8 +361,8 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
-	a := NewHTTPAdapter(config)
+func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
+	a := adapters.NewHTTPAdapter(config)
 
 	uri = appendTrackerToUrl(uri, tracker)
 

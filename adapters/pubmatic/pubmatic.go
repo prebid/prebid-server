@@ -1,4 +1,4 @@
-package adapters
+package pubmatic
 
 import (
 	"bytes"
@@ -16,12 +16,13 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
 
 type PubmaticAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -56,7 +57,7 @@ func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...inte
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	pbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
 
 	if err != nil {
 		glog.Warningf("[PUBMATIC] Failed to make ortb request for request id [%s] \n", pbReq.ID)
@@ -232,8 +233,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewPubmaticAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
-	a := NewHTTPAdapter(config)
+func NewPubmaticAdapter(config *adapters.HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
+	a := adapters.NewHTTPAdapter(config)
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
 	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
 
