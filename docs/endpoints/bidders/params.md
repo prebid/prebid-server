@@ -1,6 +1,6 @@
 ## GET /bidders/params
 
-This endpoint gets informatoin about all the custom bidders params that Prebid Server supports.
+This endpoint gets information about all the custom bidders params that Prebid Server supports.
 
 ### Returns
 
