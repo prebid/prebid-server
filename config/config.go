@@ -11,7 +11,8 @@ type Configuration struct {
 	Port            int                `mapstructure:"port"`
 	AdminPort       int                `mapstructure:"admin_port"`
 	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheURL        string             `mapstructure:"prebid_cache_url"`
+	CacheUrl        string             `mapstructure:"prebid_cache_url"`
+	Macros          string             `mapstructure:"macros"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
