@@ -3,6 +3,9 @@
 # Prebid Server
 
 Prebid Server is an open source implementation of Server-Side Header Bidding.
+It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
+and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
+
 For more information, see:
 
 - [A Beginner's Guide to Header Bidding](http://adprofs.co/beginners-guide-to-header-bidding/)
