@@ -313,7 +313,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 		for i, bid := range pbs_resp.Bids {
 			bid.CacheID = cobjs[i].UUID
-			bid.CacheUrl = deps.cfg.CacheUrl + "/cache?" + strings.Replace(deps.cfg.Macros, "%PBS_CACHE_UUID%", bid.CacheID, 1);
+			bid.CacheUrl = deps.cfg.CacheUrl + "/cache?" + strings.Replace(deps.cfg.Macros, "%PBS_CACHE_UUID%", bid.CacheID, 1)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
