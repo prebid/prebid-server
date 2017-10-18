@@ -21,7 +21,7 @@ while read -r LINE; do
   echo -e "$LINE"
   if [[ $LINE =~ "%" ]]; then
     PERCENT=$(echo "$LINE"|cut -d: -f2-|cut -d% -f1|cut -d. -f1|tr -d ' ')
-    if [[ $PERCENT -lt 20 ]]; then
+    if [[ $PERCENT -lt 30 ]]; then
       CHECKCOV=true
     fi
   fi
