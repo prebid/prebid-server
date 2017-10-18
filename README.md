@@ -24,7 +24,7 @@ cd src/github.com/prebid/prebid-server
 glide install
 ```
 
-Build the project and run the automated tests:
+Run the automated tests:
 
 ```bash
 ./validate.sh
