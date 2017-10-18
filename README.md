@@ -11,6 +11,8 @@ For more information, see:
 - [A Beginner's Guide to Header Bidding](http://adprofs.co/beginners-guide-to-header-bidding/)
 - [Server-side Header Bidding Explained](http://www.adopsinsider.com/header-bidding/server-side-header-bidding/)
 
+If you're familiar with [Prebid.JS](https://github.com/prebid/Prebid.js), see the [getting started guide](http://prebid.org/dev-docs/get-started-with-prebid-server.html).
+
 ## Installation
 
 First install [Go 1.9.1](https://golang.org/doc/install) and [Glide](https://github.com/Masterminds/glide#install).
