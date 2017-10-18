@@ -46,6 +46,6 @@ For the full API reference, see [docs/endpoints](docs/endpoints)
 Want to add an adapter? Found a bug? Great! This project is in its infancy, and many things
 can be improved.
 
-Report bugs, feature requests, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
+Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
 
 Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
