@@ -74,19 +74,11 @@ docker container, and must be specifically be compiled for the target
 architecture (alpine).
 
 ```
-$ docker run --rm -v "$PWD":/go/src/github.com/prebid/prebid-server \
--w /go/src/github.com/prebid/prebid-server \
-billyteves/alpine-golang-glide:1.2.0 \
-/bin/bash -c 'glide install; go build -v'
+$ docker build -t prebid-server .
 ```
 
 The above command will run a container with the necessary dependencies (alpine,
 go 1.8, glide) and compile an alpine compatible binary.
-
-### Build prebid-server docker container
-```
-# make image
-```
 
 ### Run container
 This command will run a prebid-server container in interactive mode and map the
