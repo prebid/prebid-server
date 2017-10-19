@@ -125,6 +125,8 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			Keywords:          keywordStr,
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
+
+		anReq.Imp[i].DisplayManagerVer = fmt.Sprintf("pbs;%v%v%v", collectPlatformData(anReq), collectFormatData(unit), collectSDKData(req))
 	}
 
 	reqJSON, err := json.Marshal(anReq)
@@ -234,4 +236,45 @@ func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexus
 		URI:          "http://ib.adnxs.com/openrtb2",
 		usersyncInfo: info,
 	}
+}
+
+func collectPlatformData(oreq openrtb.BidRequest) string {
+	if oreq.Site != nil {
+		return "platform:web"
+	} else {
+		return "platform:mobile"
+	}
+}
+
+func collectFormatData(unit pbs.PBSAdUnit) string {
+	switch unit.MediaTypes[0] {
+	case pbs.MEDIA_TYPE_BANNER:
+		return ";format:banner"
+	case pbs.MEDIA_TYPE_VIDEO:
+		return ";format:video"
+	default: //todo change to/add case for pbs.MEDIA_TYPE_NATIVE when it's implemented
+		return ";format:unknown"
+	}
+}
+
+func collectSDKData(req *pbs.PBSRequest) string {
+	sdk, sdkv := "", ""
+	if req.SDK != nil {
+		switch req.SDK.Platform {
+		case "ios":
+			sdk = ";sdk:ios"
+		case "android":
+			sdk = ";sdk:android"
+		case "web":
+			sdk = ";sdk:web"
+		default:
+			sdk = ";sdk:other"
+		}
+
+		if req.SDK.Platform != "web" {
+			sdkv = ";sdk_version:" + req.SDK.Version
+		}
+	}
+
+	return fmt.Sprintf("%v%v", sdk, sdkv)
 }

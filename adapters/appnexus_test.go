@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -387,6 +388,109 @@ func TestAppNexusUserSyncInfo(t *testing.T) {
 	}
 	if an.usersyncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
+	}
+
+}
+
+func TestCollectPlatformFormatSDKData(t *testing.T) {
+
+	//platform vars
+	oreq_site := openrtb.BidRequest{
+		Site: &openrtb.Site{
+			ID:     "site1",
+			Domain: "www.site1.com",
+		},
+	}
+
+	oreq_mobile := openrtb.BidRequest{
+		App: &openrtb.App{
+			ID:     "app1",
+			Domain: "myapp",
+		},
+	}
+
+	//sdk vars
+	pbsreq_ios := pbs.PBSRequest{
+		SDK: &pbs.SDK{
+			Version:  "1.2.3",
+			Platform: "ios",
+		},
+	}
+
+	pbsreq_android := pbs.PBSRequest{
+		SDK: &pbs.SDK{
+			Version:  "4.5.6",
+			Platform: "android",
+		},
+	}
+
+	pbsreq_web := pbs.PBSRequest{
+		SDK: &pbs.SDK{
+			Platform: "web",
+		},
+	}
+
+	//format vars
+	unit_ban := pbs.PBSAdUnit{
+		MediaTypes: []pbs.MediaType{
+			pbs.MEDIA_TYPE_BANNER,
+		},
+	}
+
+	unit_vid := pbs.PBSAdUnit{
+		MediaTypes: []pbs.MediaType{
+			pbs.MEDIA_TYPE_VIDEO,
+		},
+	}
+
+	//temp test value until pbs.MEDIA_TYPE_NATIVE media type is implemented
+	var nativeMediaType pbs.MediaType = 3
+
+	unit_nat := pbs.PBSAdUnit{
+		MediaTypes: []pbs.MediaType{
+			nativeMediaType,
+		},
+	}
+
+	//start of tests
+	value := collectPlatformData(oreq_mobile)
+	if value != "platform:mobile" {
+		t.Errorf("Detected unexpected test value for the platform data point.\nReturned test string [%v]", value)
+	}
+
+	value = collectFormatData(unit_ban)
+	if value != ";format:banner" {
+		t.Errorf("Detected unexpected test value for the format data point.\nReturned test string [%v]", value)
+	}
+
+	value = collectSDKData(&pbsreq_ios)
+	if value != ";sdk:ios;sdk_version:1.2.3" {
+		t.Errorf("Detected unexpected test value for the sdk/sdkver data point.\nReturned test string [%v]", value)
+	}
+
+	value = collectPlatformData(oreq_site)
+	if value != "platform:web" {
+		t.Errorf("Detected unexpected test value for the platform data point.\nReturned test string [%v]", value)
+	}
+
+	value = collectFormatData(unit_nat)
+	if value != ";format:unknown" {
+		t.Errorf("Detected unexpected test value for the format data point.\nReturned test string [%v]", value)
+	}
+
+	value = collectSDKData(&pbsreq_web)
+	if value != ";sdk:web" {
+		t.Errorf("Detected unexpected test value for the sdk/sdkver data point.\nReturned test string [%v]", value)
+	}
+
+	data := fmt.Sprintf("pbs;%v%v%v", collectPlatformData(oreq_mobile), collectFormatData(unit_vid), collectSDKData(&pbsreq_android))
+	dataSlice := strings.Split(data, ";")
+	if len(dataSlice) != 5 {
+		t.Errorf("Detected the concatenated test did not contain 5 data points.\nReturned string [%v]", data)
+	}
+
+	if data != "pbs;platform:mobile;format:video;sdk:android;sdk_version:4.5.6" {
+		t.Errorf("Detected unexpected value in the impression log string.\nReturned test string [%v]", data)
 	}
 
 }
