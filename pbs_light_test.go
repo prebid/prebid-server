@@ -15,7 +15,6 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
-	"strings"
 )
 
 const adapterDirectory = "adapters"
@@ -436,14 +435,10 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
 
-	var nonAdapterFiles = []string{"adapter.go", "openrtb_util.go"}
-
 	for _, adapterFile := range adapterFiles {
-		if contains(nonAdapterFiles, adapterFile.Name()) || strings.HasSuffix(adapterFile.Name(), "_test.go") {
-			continue
+		if adapterFile.IsDir() {
+			ensureHasKey(t, data, adapterFile.Name())
 		}
-		adapterName := adapterFile.Name()[0 : len(adapterFile.Name())-3] // transform "index.go" into "index"
-		ensureHasKey(t, data, adapterName)
 	}
 }
 
