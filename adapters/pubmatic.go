@@ -115,8 +115,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner.H = uint64(height)
-					pbReq.Imp[i].Banner.W = uint64(width)
+					pbReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
+					pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 					adSlotFlag = true
 				} else {
 					glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,

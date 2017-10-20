@@ -99,9 +99,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		if anReq.Imp[i].Banner != nil && params.Position != "" {
 			if params.Position == "above" {
-				anReq.Imp[i].Banner.Pos = 1
+				anReq.Imp[i].Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
 			} else if params.Position == "below" {
-				anReq.Imp[i].Banner.Pos = 3
+				anReq.Imp[i].Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
 			}
 		}
 
