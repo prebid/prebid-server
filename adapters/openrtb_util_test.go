@@ -426,3 +426,31 @@ func TestSizesCopy(t *testing.T) {
 		t.Error("The Format.Ext property should point to two different instances")
 	}
 }
+
+func TestMakeVideo(t *testing.T) {
+	adUnit := pbs.PBSAdUnit{
+		Code:       "unitCode",
+		MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
+		Sizes: []openrtb.Format{
+			{
+				W: 10,
+				H: 12,
+			},
+		},
+		Video: pbs.PBSVideo{
+			Mimes:          []string{"video/mp4"},
+			Minduration:    15,
+			Maxduration:    30,
+			Startdelay:     5,
+			Skippable:      0,
+			PlaybackMethod: 1,
+			Protocols:      []int8{1, 2, 5, 6},
+		},
+	}
+	video := makeVideo(adUnit)
+	assert.EqualValues(t, video.MinDuration, 15)
+	assert.EqualValues(t, video.MaxDuration, 30)
+	assert.EqualValues(t, *video.StartDelay, openrtb.StartDelay(5))
+	assert.EqualValues(t, len(video.PlaybackMethod), 1)
+	assert.EqualValues(t, len(video.Protocols), 4)
+}

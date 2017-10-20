@@ -56,7 +56,7 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	//this will become int8 soon, so we only care about the first index in the array
 	pbm[0] = openrtb.PlaybackMethod(unit.Video.PlaybackMethod)
 
-	protocols := make([]openrtb.Protocol, len(unit.Video.Protocols))
+	protocols := make([]openrtb.Protocol, 0, len(unit.Video.Protocols))
 	for _, protocol := range unit.Video.Protocols {
 		protocols = append(protocols, openrtb.Protocol(protocol))
 	}
