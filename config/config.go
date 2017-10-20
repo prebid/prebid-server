@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 // Configuration
@@ -11,8 +13,7 @@ type Configuration struct {
 	Port            int                `mapstructure:"port"`
 	AdminPort       int                `mapstructure:"admin_port"`
 	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheUrl        string             `mapstructure:"prebid_cache_url"`
-	Macros          string             `mapstructure:"macros"`
+	CacheUrl        Cache              `mapstructure:"cache"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
@@ -57,6 +58,11 @@ type DataCache struct {
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
 
+type Cache struct {
+	Host  string `mapstructure:"host"`
+	Query string `mapstructure:"query"`
+}
+
 // New uses viper to get our server configurations
 func New() (*Configuration, error) {
 	var c Configuration
@@ -64,4 +70,12 @@ func New() (*Configuration, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+func (cfg *Configuration) GetCacheUrl(uuid string) string {
+	var buffer bytes.Buffer
+	buffer.WriteString(cfg.CacheUrl.Host)
+	buffer.WriteString("/cache?")
+	buffer.WriteString(strings.Replace(cfg.CacheUrl.Query, "%PBS_CACHE_UUID%", uuid, 1))
+	return buffer.String()
 }
