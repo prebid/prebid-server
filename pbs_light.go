@@ -27,6 +27,13 @@ import (
 	"syscall"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/facebook"
+	"github.com/prebid/prebid-server/adapters/index"
+	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
+	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -48,6 +55,8 @@ type bidResult struct {
 	bidder   *pbs.PBSBidder
 	bid_list pbs.PBSBidSlice
 }
+
+const schemaDirectory = "./static/bidder-params"
 
 const defaultPriceGranularity = "med"
 
@@ -438,6 +447,42 @@ func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// could add more logic here, but doing nothing means 200 OK
 }
 
+// NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
+// given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
+//
+// {
+//   "a": { ... content from the file a.json ... },
+//   "b": { ... content from the file b.json ... }
+// }
+//
+// This function stores the file contents in memory, and should not be used on large directories.
+// If the root directory, or any of the files in it, cannot be read, then the program will exit.
+func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
+	// Slurp the files into memory first, since they're small and it minimizes request latency.
+	files, err := ioutil.ReadDir(schemaDirectory)
+	if err != nil {
+		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
+	}
+
+	data := make(map[string]json.RawMessage, len(files))
+	for _, file := range files {
+		bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, file.Name()))
+		if err != nil {
+			glog.Fatalf("Failed to read file %s/%s: %v", schemaDirectory, file.Name(), err)
+		}
+		data[file.Name()[0:len(file.Name())-5]] = json.RawMessage(bytes)
+	}
+	response, err := json.Marshal(data)
+	if err != nil {
+		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(response)
+	}
+}
+
 func serveIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	http.ServeFile(w, r, "static/index.html")
 }
@@ -598,15 +643,15 @@ func main() {
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
-		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
-		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
-		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
-		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"indexExchange": index.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
-		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"audienceNetwork": facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"sovrn":           adapters.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint, cfg.Adapters["sovrn"].UserSyncURL, cfg.ExternalURL),
 	}
 }
@@ -649,6 +694,7 @@ func serve(cfg *config.Configuration) error {
 
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{m}).auction)
+	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)

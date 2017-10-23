@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Rubicon Adapter Params",
+  "description": "A schema which validates params accepted by the Rubicon adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "integer",
+      "description": "An ID which identifies the publisher's account"
+    },
+    "siteId": {
+      "type": "integer",
+      "description": "An ID which identifies the site selling the impression"
+    },
+    "zoneId": {
+      "type": "integer",
+      "description": "An ID which identifies the sub-section of the site where the impression is located"
+    },
+    "inventory": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the page",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "visitor": {
+      "type": "object",
+      "description": "An object defining arbitrary targeting key/value pairs related to the visitor",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["accountId", "siteId", "zoneId"]
+}

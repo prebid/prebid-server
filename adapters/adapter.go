@@ -71,9 +71,9 @@ func NewHTTPAdapter(c *HTTPAdapterConfig) *HTTPAdapter {
 }
 
 // used for callOne (possibly pull all of the shared code here)
-type callOneResult struct {
-	statusCode   int
-	responseBody string
-	bid          *pbs.PBSBid
+type CallOneResult struct {
+	StatusCode   int
+	ResponseBody string
+	Bid          *pbs.PBSBid
 	Error        error
 }

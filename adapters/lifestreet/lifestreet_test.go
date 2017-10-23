@@ -1,4 +1,4 @@
-package adapters
+package lifestreet
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type lsTagInfo struct {
@@ -172,7 +173,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 		bid:     1.11,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewLifestreetAdapter(&conf, server.URL)
 	an.URI = server.URL
 
@@ -286,7 +287,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 func TestLifestreetUserSyncInfo(t *testing.T) {
 	url := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl=localhost%2Fsetuid%3Fbidder%3Dlifestreet%26uid%3D%24%24visitor_cookie%24%24"
 
-	an := NewLifestreetAdapter(DefaultHTTPAdapterConfig, "localhost")
+	an := NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("User Sync Info URL '%s' doesn't match '%s'", an.usersyncInfo.URL, url)
 	}

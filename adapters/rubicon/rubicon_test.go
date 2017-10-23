@@ -1,4 +1,4 @@
-package adapters
+package rubicon
 
 import (
 	"bytes"
@@ -17,6 +17,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -251,7 +252,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 		adServerTargeting: targeting,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "localhost/usersync")
 	an.URI = server.URL
 
@@ -361,7 +362,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 func TestRubiconUserSyncInfo(t *testing.T) {
 	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
-	an := NewRubiconAdapter(DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker", url)
+	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker", url)
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}

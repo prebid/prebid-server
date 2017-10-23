@@ -1,4 +1,4 @@
-package adapters
+package appnexus
 
 import (
 	"bytes"
@@ -16,10 +16,11 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type AppNexusAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -69,7 +70,7 @@ type appnexusImpExt struct {
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	anReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
+	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
 
 	if err != nil {
 		return nil, err
@@ -217,8 +218,8 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewAppNexusAdapter(config *HTTPAdapterConfig, externalURL string) *AppNexusAdapter {
-	a := NewHTTPAdapter(config)
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *AppNexusAdapter {
+	a := adapters.NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
 	usersyncURL := "//ib.adnxs.com/getuid?"

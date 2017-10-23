@@ -1,4 +1,4 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type tagInfo struct {
@@ -245,7 +246,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 		H:           250,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -337,7 +338,7 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 		H:           250,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -419,7 +420,7 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 		H:           90,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -504,7 +505,7 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 		Instl:       0,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -545,7 +546,7 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 func TestFacebookUserSyncInfo(t *testing.T) {
 	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
 
-	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", url)
+	an := NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, "partnerId", url)
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}

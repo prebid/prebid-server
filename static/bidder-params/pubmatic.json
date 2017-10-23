@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Pubmatic Adapter Params",
+  "description": "A schema which validates params accepted by the Pubmatic adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "An ID which identifies the publisher"
+    },
+    "adSlot": {
+      "type": "string",
+      "description": "An ID which identifies the ad slot"
+    }
+  },
+  "required": ["publisherId", "adSlot"]
+}
