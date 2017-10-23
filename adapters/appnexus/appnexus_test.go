@@ -1,4 +1,4 @@
-package adapters
+package appnexus
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type anTagInfo struct {
@@ -261,7 +262,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		position:          "above",
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewAppNexusAdapter(&conf, server.URL)
 	an.URI = server.URL
 
@@ -378,7 +379,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 }
 
 func TestAppNexusUserSyncInfo(t *testing.T) {
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
+	an := NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
 	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}

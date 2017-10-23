@@ -1,4 +1,4 @@
-package adapters
+package index
 
 import (
 	"context"
@@ -13,11 +13,12 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 func TestIndexInvalidCall(t *testing.T) {
 
-	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "localhost")
+	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "localhost")
 	an.URI = "blah"
 	s := an.Name()
 	if s == "" {
@@ -42,7 +43,7 @@ func TestIndexTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewIndexAdapter(&conf, server.URL, "localhost")
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
@@ -79,7 +80,7 @@ func TestIndexInvalidJson(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewIndexAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -115,7 +116,7 @@ func TestIndexInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewIndexAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -151,7 +152,7 @@ func TestIndexMissingSiteId(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewIndexAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -210,7 +211,7 @@ func TestIndexBasicResponse(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewIndexAdapter(&conf, server.URL, "localhost")
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -242,7 +243,7 @@ func TestIndexBasicResponse(t *testing.T) {
 
 func TestIndexUserSyncInfo(t *testing.T) {
 
-	an := NewIndexAdapter(DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D" {
 		t.Fatalf("should have matched")
 	}

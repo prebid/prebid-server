@@ -72,11 +72,11 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 }
 
-// makeOpenRTBGeneric makes an openRTB request from the PBS-specific structs.
+// adapters.MakeOpenRTBGeneric makes an openRTB request from the PBS-specific structs.
 //
 // Any objects pointed to by the returned BidRequest *must not be mutated*, or we will get race conditions.
 // The only exception is the Imp property, whose objects will be created new by this method and can be mutated freely.
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
+func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
 	imps := make([]openrtb.Imp, 0, len(bidder.AdUnits)*len(allowedMediatypes))
 	for _, unit := range bidder.AdUnits {
 		if len(unit.Sizes) <= 0 {

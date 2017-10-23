@@ -1,4 +1,4 @@
-package adapters
+package pubmatic
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
 )
@@ -78,7 +79,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "blah", "localhost")
+	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah", "localhost")
 
 	s := an.Name()
 	if s == "" {
@@ -103,7 +104,7 @@ func TestPubmaticTimeout(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
@@ -140,7 +141,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -176,7 +177,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	)
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -204,7 +205,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 
 func TestPubmaticInvalidInputParameters(t *testing.T) {
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, "http://localhost/test", "localhost")
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -306,7 +307,7 @@ func TestPubmaticBasicResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -342,7 +343,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
 	ctx := context.Background()
@@ -390,7 +391,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
 	ctx := context.Background()
@@ -439,7 +440,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
 	ctx := context.Background()
@@ -478,7 +479,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 
 func TestPubmaticUserSyncInfo(t *testing.T) {
 
-	an := NewPubmaticAdapter(DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
+	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
 	if an.usersyncInfo.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
 		t.Fatalf("should have matched")
 	}
@@ -495,7 +496,7 @@ func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
 	ctx := context.Background()
@@ -526,7 +527,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
 
 	ctx := context.Background()
