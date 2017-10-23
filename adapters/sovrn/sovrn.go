@@ -1,11 +1,11 @@
-package adapters
+package sovrn
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/openrtb"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
@@ -14,10 +14,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type SovrnAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -41,7 +42,12 @@ func (a *SovrnAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 }
 
 func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	sReq := makeOpenRTBGeneric(req, bidder, s.FamilyName())
+	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
+	sReq, err := adapters.MakeOpenRTBGeneric(req, bidder, s.FamilyName(), supportedMediaTypes, true)
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Sovrn only needs a few things from the entire RTB request
 	sovrnReq := openrtb.BidRequest{
@@ -149,11 +155,10 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 func (a *SovrnAdapter) SkipNoCookies() bool {
 	return false
 }
-func NewSovrnAdapter(config *HTTPAdapterConfig, endpoint string, usersyncURL string, externalURL string) *SovrnAdapter {
-	a := NewHTTPAdapter(config)
+func NewSovrnAdapter(config *adapters.HTTPAdapterConfig, endpoint string, usersyncURL string, externalURL string) *SovrnAdapter {
+	a := adapters.NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=[SOVRNID]", externalURL)
-	//usersyncURL := "http://ap.lijit.dev:9080/userSync?"
 
 	info := &pbs.UsersyncInfo{
 		URL:         fmt.Sprintf("%slocation=%s", usersyncURL, url.QueryEscape(redirect_uri)),
