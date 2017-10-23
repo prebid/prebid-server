@@ -312,7 +312,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 		for i, bid := range pbs_resp.Bids {
 			bid.CacheID = cobjs[i].UUID
-			bid.CacheUrl = deps.cfg.GetCacheUrl(bid.CacheID)
+			bid.CacheURL = deps.cfg.GetCacheURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
@@ -713,7 +713,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.CacheUrl.Host)
+	pbc.InitPrebidCache(cfg.CacheURL.Host)
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})

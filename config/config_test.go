@@ -130,8 +130,8 @@ func TestFullConfig(t *testing.T) {
 	if cfg.DefaultTimeout != 123 {
 		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
 	}
-	cmpStrings(t, "cache.host", cfg.CacheUrl.Host, "http://prebidcache.net")
-	cmpStrings(t, "cache.query", cfg.CacheUrl.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "http://prebidcache.net")
+	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
 	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
 	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")

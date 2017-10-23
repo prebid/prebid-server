@@ -13,7 +13,7 @@ type Configuration struct {
 	Port            int                `mapstructure:"port"`
 	AdminPort       int                `mapstructure:"admin_port"`
 	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheUrl        Cache              `mapstructure:"cache"`
+	CacheURL        Cache              `mapstructure:"cache"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
@@ -72,10 +72,10 @@ func New() (*Configuration, error) {
 	return &c, nil
 }
 
-func (cfg *Configuration) GetCacheUrl(uuid string) string {
+func (cfg *Configuration) GetCacheURL(uuid string) string {
 	var buffer bytes.Buffer
-	buffer.WriteString(cfg.CacheUrl.Host)
+	buffer.WriteString(cfg.CacheURL.Host)
 	buffer.WriteString("/cache?")
-	buffer.WriteString(strings.Replace(cfg.CacheUrl.Query, "%PBS_CACHE_UUID%", uuid, 1))
+	buffer.WriteString(strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 	return buffer.String()
 }
