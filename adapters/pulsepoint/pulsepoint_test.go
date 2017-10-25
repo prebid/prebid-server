@@ -93,8 +93,8 @@ func TestPulsePointOpenRTBRequest(t *testing.T) {
 	VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
 	VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "1001", t)
 	VerifyStringValue(service.LastBidRequest.Site.Publisher.ID, "2001", t)
-	VerifyIntValue(int(service.LastBidRequest.Imp[0].Banner.W), 728, t)
-	VerifyIntValue(int(service.LastBidRequest.Imp[0].Banner.H), 90, t)
+	VerifyIntValue(int(*service.LastBidRequest.Imp[0].Banner.W), 728, t)
+	VerifyIntValue(int(*service.LastBidRequest.Imp[0].Banner.H), 90, t)
 }
 
 /**
@@ -305,7 +305,7 @@ func CreateService(tagsToBid map[string]bool) PulsePointOrtbMockService {
 		var bids []openrtb.Bid
 		for i, imp := range breq.Imp {
 			if tagsToBid[imp.TagID] {
-				bids = append(bids, SampleBid(int(imp.Banner.W), int(imp.Banner.H), imp.ID, i+1))
+				bids = append(bids, SampleBid(int(*imp.Banner.W), int(*imp.Banner.H), imp.ID, i+1))
 			}
 		}
 		// no bids were produced, pulsepoint service returns 204

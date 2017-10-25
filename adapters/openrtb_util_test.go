@@ -52,8 +52,8 @@ func TestOpenRTB(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
-	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
-	assert.EqualValues(t, resp.Imp[0].Banner.H, 12)
+	assert.EqualValues(t, *resp.Imp[0].Banner.W, 10)
+	assert.EqualValues(t, *resp.Imp[0].Banner.H, 12)
 	assert.EqualValues(t, resp.Imp[0].Instl, 1)
 }
 
@@ -89,8 +89,8 @@ func TestOpenRTBVideo(t *testing.T) {
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
 	assert.EqualValues(t, resp.Imp[0].Video.MinDuration, 15)
-	assert.EqualValues(t, resp.Imp[0].Video.StartDelay, 5)
-	assert.EqualValues(t, resp.Imp[0].Video.PlaybackMethod, []int8{1})
+	assert.EqualValues(t, *resp.Imp[0].Video.StartDelay, openrtb.StartDelay(5))
+	assert.EqualValues(t, resp.Imp[0].Video.PlaybackMethod, []openrtb.PlaybackMethod{openrtb.PlaybackMethod(1)})
 	assert.EqualValues(t, resp.Imp[0].Video.MIMEs, []string{"video/mp4"})
 }
 
@@ -193,7 +193,7 @@ func TestOpenRTBMultiMediaImp(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(resp.Imp), 1)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
-	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
+	assert.EqualValues(t, *resp.Imp[0].Banner.W, 10)
 	assert.EqualValues(t, resp.Imp[0].Video.W, 10)
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
 	assert.EqualValues(t, resp.Imp[0].Video.MinDuration, 15)
@@ -229,7 +229,7 @@ func TestOpenRTBMultiMediaImpFiltered(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(resp.Imp), 1)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
-	assert.EqualValues(t, resp.Imp[0].Banner.W, 10)
+	assert.EqualValues(t, *resp.Imp[0].Banner.W, 10)
 	assert.EqualValues(t, resp.Imp[0].Video, (*openrtb.Video)(nil))
 }
 
@@ -266,7 +266,7 @@ func TestOpenRTBSingleMediaImp(t *testing.T) {
 	assert.EqualValues(t, resp.Imp[0].Video.MaxDuration, 30)
 	assert.EqualValues(t, resp.Imp[0].Video.MinDuration, 15)
 	assert.Equal(t, resp.Imp[1].ID, "unitCode")
-	assert.EqualValues(t, resp.Imp[1].Banner.W, 10)
+	assert.EqualValues(t, *resp.Imp[1].Banner.W, 10)
 }
 
 func TestOpenRTBNoSize(t *testing.T) {
@@ -331,8 +331,8 @@ func TestOpenRTBMobile(t *testing.T) {
 	resp, err := MakeOpenRTBGeneric(&pbReq, &pbBidder, "test", []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, resp.Imp[0].ID, "unitCode")
-	assert.EqualValues(t, resp.Imp[0].Banner.W, 300)
-	assert.EqualValues(t, resp.Imp[0].Banner.H, 250)
+	assert.EqualValues(t, *resp.Imp[0].Banner.W, 300)
+	assert.EqualValues(t, *resp.Imp[0].Banner.H, 250)
 
 	assert.EqualValues(t, resp.App.Bundle, "AppNexus.PrebidMobileDemo")
 	assert.EqualValues(t, resp.App.Publisher.ID, "1995257847363113")
@@ -425,4 +425,32 @@ func TestSizesCopy(t *testing.T) {
 	if &formats[1].Ext[0] == &clone[1].Ext[0] {
 		t.Error("The Format.Ext property should point to two different instances")
 	}
+}
+
+func TestMakeVideo(t *testing.T) {
+	adUnit := pbs.PBSAdUnit{
+		Code:       "unitCode",
+		MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO},
+		Sizes: []openrtb.Format{
+			{
+				W: 10,
+				H: 12,
+			},
+		},
+		Video: pbs.PBSVideo{
+			Mimes:          []string{"video/mp4"},
+			Minduration:    15,
+			Maxduration:    30,
+			Startdelay:     5,
+			Skippable:      0,
+			PlaybackMethod: 1,
+			Protocols:      []int8{1, 2, 5, 6},
+		},
+	}
+	video := makeVideo(adUnit)
+	assert.EqualValues(t, video.MinDuration, 15)
+	assert.EqualValues(t, video.MaxDuration, 30)
+	assert.EqualValues(t, *video.StartDelay, openrtb.StartDelay(5))
+	assert.EqualValues(t, len(video.PlaybackMethod), 1)
+	assert.EqualValues(t, len(video.Protocols), 4)
 }

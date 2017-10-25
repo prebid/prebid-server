@@ -61,8 +61,8 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 			AdID:   fmt.Sprintf("adID-%d", i),
 			AdM:    "AdContent",
 			CrID:   fmt.Sprintf("creative-%d", i),
-			W:      imp.Banner.W,
-			H:      imp.Banner.H,
+			W:      *imp.Banner.W,
+			H:      *imp.Banner.H,
 			DealID: fmt.Sprintf("DealID_%d", i),
 		})
 	}

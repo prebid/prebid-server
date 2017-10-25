@@ -88,13 +88,13 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			if len(size) == 2 {
 				width, err := strconv.Atoi(size[0])
 				if err == nil {
-					ppReq.Imp[i].Banner.W = uint64(width)
+					ppReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 				} else {
 					return nil, fmt.Errorf("Invalid Width param %s", size[0])
 				}
 				height, err := strconv.Atoi(size[1])
 				if err == nil {
-					ppReq.Imp[i].Banner.H = uint64(height)
+					ppReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
 				} else {
 					return nil, fmt.Errorf("Invalid Height param %s", size[1])
 				}

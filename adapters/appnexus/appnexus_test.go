@@ -146,11 +146,11 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, fmt.Sprintf("Empty imp.banner.format array"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == "above" && imp.Banner.Pos != 1 {
+			if andata.tags[i].position == "above" && *imp.Banner.Pos != openrtb.AdPosition(1) {
 				http.Error(w, fmt.Sprintf("Mismatch in position - expected 1 for atf"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == "below" && imp.Banner.Pos != 3 {
+			if andata.tags[i].position == "below" && *imp.Banner.Pos != openrtb.AdPosition(3) {
 				http.Error(w, fmt.Sprintf("Mismatch in position - expected 3 for btf"), http.StatusInternalServerError)
 				return
 			}
@@ -181,7 +181,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if imp.Video != nil {
-			resBid.Attr = []int8{6}
+			resBid.Attr = []openrtb.CreativeAttribute{openrtb.CreativeAttribute(6)}
 		}
 		resp.SeatBid[0].Bid = append(resp.SeatBid[0].Bid, resBid)
 	}
