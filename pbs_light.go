@@ -36,7 +36,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
-	"strings"
 )
 
 var hostCookieSettings pbs.HostCookieSettings
@@ -313,7 +312,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 		for i, bid := range pbs_resp.Bids {
 			bid.CacheID = cobjs[i].UUID
-			bid.CacheUrl = deps.cfg.CacheUrl + "/cache?" + strings.Replace(deps.cfg.Macros, "%PBS_CACHE_UUID%", bid.CacheID, 1)
+			bid.CacheURL = deps.cfg.GetCacheURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
@@ -714,7 +713,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.CacheUrl)
+	pbc.InitPrebidCache(cfg.CacheURL.Host)
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})
