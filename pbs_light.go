@@ -161,7 +161,8 @@ func (deps *cookieSyncDeps) cookieSync(w http.ResponseWriter, r *http.Request, _
 }
 
 type auctionDeps struct {
-	m *pbsmetrics.Metrics
+	m   *pbsmetrics.Metrics
+	cfg *config.Configuration
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -318,6 +319,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 		for i, bid := range pbs_resp.Bids {
 			bid.CacheID = cobjs[i].UUID
+			bid.CacheURL = deps.cfg.GetCacheURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
@@ -689,7 +691,7 @@ func serve(cfg *config.Configuration) error {
 	})()
 
 	router := httprouter.New()
-	router.POST("/auction", (&auctionDeps{m}).auction)
+	router.POST("/auction", (&auctionDeps{m, cfg}).auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
 	router.POST("/validate", validate)
@@ -718,7 +720,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.CacheURL)
+	pbc.InitPrebidCache(cfg.CacheURL.Host)
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})
