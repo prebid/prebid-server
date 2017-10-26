@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/spf13/viper"
 	"strings"
+	"fmt"
 )
 
 // Configuration
@@ -59,6 +60,7 @@ type DataCache struct {
 }
 
 type Cache struct {
+	Scheme string `mapstructure:"scheme"`
 	Host  string `mapstructure:"host"`
 	Query string `mapstructure:"query"`
 }
@@ -74,8 +76,6 @@ func New() (*Configuration, error) {
 
 func (cfg *Configuration) GetCacheURL(uuid string) string {
 	var buffer bytes.Buffer
-	buffer.WriteString(cfg.CacheURL.Host)
-	buffer.WriteString("/cache?")
-	buffer.WriteString(strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
+	fmt.Fprintf(&buffer, "%s://%s/cache?%s", cfg.CacheURL.Scheme,cfg.CacheURL.Host, strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 	return buffer.String()
 }
