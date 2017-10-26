@@ -13,8 +13,8 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/ssl"
+	"github.com/rcrowley/go-metrics"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -27,6 +27,12 @@ const DEFAULT_TTL = 14 * 24 * time.Hour
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
 var customBidderTTLs = map[string]time.Duration{}
+
+const (
+	USERSYNC_OPT_OUT     = "usersync.opt_outs"
+	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
+	USERSYNC_SUCCESS     = "usersync.%s.sets"
+)
 
 // PBSCookie is the cookie used in Prebid Server.
 //
@@ -61,7 +67,7 @@ type UserSyncDeps struct {
 	OptOutUrl          string
 	OptInUrl           string
 	HostCookieSettings *HostCookieSettings
-	Metrics            *pbsmetrics.Metrics
+	Metrics            metrics.Registry
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -291,7 +297,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := ParsePBSCookieFromRequest(r)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
-		deps.Metrics.UserSyncMetrics.OptOutMeter.Mark(1)
+		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
 		return
 	}
 
@@ -299,7 +305,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	bidder := query["bidder"]
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		deps.Metrics.UserSyncMetrics.BadRequestMeter.Mark(1)
+		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
 		return
 	}
 
@@ -312,7 +318,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	if err == nil {
-		deps.Metrics.UserSyncMetrics.SuccessMeter(bidder).Mark(1)
+		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
 	}
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
