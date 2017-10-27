@@ -75,13 +75,14 @@ func New() (*Configuration, error) {
 
 //Allows for protocol relative URL if scheme is empty
 func (cfg *Configuration) GetCacheBaseURL() string {
-	if len(cfg.CacheURL.Scheme) == 0 {
-		return fmt.Sprintf("//%s", cfg.CacheURL.Host)
+	cfg.CacheURL.Scheme = strings.ToLower(cfg.CacheURL.Scheme)
+	if strings.Contains(cfg.CacheURL.Scheme, "https"){
+		return fmt.Sprintf("https://%s", cfg.CacheURL.Host)
 	}
-	if strings.Contains(cfg.CacheURL.Scheme, "://") {
-		return fmt.Sprintf("%s%s", strings.ToLower(cfg.CacheURL.Scheme), cfg.CacheURL.Host)
+	if strings.Contains(cfg.CacheURL.Scheme, "http"){
+		return fmt.Sprintf("http://%s", cfg.CacheURL.Host)
 	}
-	return fmt.Sprintf("%s://%s", strings.ToLower(cfg.CacheURL.Scheme), cfg.CacheURL.Host)
+	return fmt.Sprintf("//%s", cfg.CacheURL.Host)
 }
 
 func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
