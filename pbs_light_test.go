@@ -439,6 +439,24 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	}
 }
 
+func TestWriteAuctionError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	writeAuctionError(recorder, "some error message", nil)
+	var resp pbs.PBSResponse
+	json.Unmarshal(recorder.Body.Bytes(), &resp)
+
+	if len(resp.Bids) != 0 {
+		t.Errorf("Error responses should return no bids.")
+	}
+	if resp.Status != "some error message" {
+		t.Errorf("The response status should be the error message. Got: %s", resp.Status)
+	}
+
+	if len(resp.BidderStatus) != 0 {
+		t.Errorf("Error responses shouldn't have any BidderStatus elements. Got %d", len(resp.BidderStatus))
+	}
+}
+
 func contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
