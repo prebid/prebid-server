@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"fmt"
-	"strings"
-	"github.com/prebid/prebid-server/config"
 )
 
 var delay time.Duration
@@ -111,12 +109,7 @@ func TestPrebidClient(t *testing.T) {
 				},
 	}
 
-	var serverURL = strings.Split(server.URL, "://")
-	var cache = config.Cache{
-		serverURL[0],
-		serverURL[1],
-		""}
-	InitPrebidCache(cache)
+	InitPrebidCache(server.URL)
 
 	ctx := context.TODO()
 	err := Put(ctx, cobj)

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/prebid/prebid-server/config"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -25,7 +24,7 @@ type BidCache struct {
 
 // internal protocol objects
 type putObject struct {
-	Type  string    `json:"type"`
+	Type  string  `json:"type"`
 	Value *BidCache `json:"value"`
 }
 
@@ -41,13 +40,15 @@ type response struct {
 }
 
 var (
-	client *http.Client
-	putURL string
+	client  *http.Client
+	baseURL string
+	putURL  string
 )
 
 // InitPrebidCache setup the global prebid cache
-func InitPrebidCache(cacheURL config.Cache) {
-	putURL = fmt.Sprintf("%s://%s/cache", cacheURL.Scheme, cacheURL.Host)
+func InitPrebidCache(baseurl string) {
+	baseURL = baseurl
+	putURL = fmt.Sprintf("%s/cache", baseURL)
 
 	ts := &http.Transport{
 		MaxIdleConns:    10,

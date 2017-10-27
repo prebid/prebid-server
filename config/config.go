@@ -2,9 +2,9 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/spf13/viper"
 	"strings"
-	"fmt"
 )
 
 // Configuration
@@ -61,8 +61,8 @@ type DataCache struct {
 
 type Cache struct {
 	Scheme string `mapstructure:"scheme"`
-	Host  string `mapstructure:"host"`
-	Query string `mapstructure:"query"`
+	Host   string `mapstructure:"host"`
+	Query  string `mapstructure:"query"`
 }
 
 // New uses viper to get our server configurations
@@ -76,6 +76,6 @@ func New() (*Configuration, error) {
 
 func (cfg *Configuration) GetCacheURL(uuid string) string {
 	var buffer bytes.Buffer
-	fmt.Fprintf(&buffer, "%s://%s/cache?%s", cfg.CacheURL.Scheme,cfg.CacheURL.Host, strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
+	fmt.Fprintf(&buffer, "%s://%s/cache?%s", cfg.CacheURL.Scheme, cfg.CacheURL.Host, strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 	return buffer.String()
 }
