@@ -138,17 +138,17 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 
 		// if instl = 1 sent in, pass size (0,0) to facebook
 		if fbReq.Imp[0].Instl == 1 && fbReq.Imp[0].Banner != nil {
-			fbReq.Imp[0].Banner.W = 0
-			fbReq.Imp[0].Banner.H = 0
+			fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
+			fbReq.Imp[0].Banner.H = openrtb.Uint64Ptr(0)
 		}
 		// if instl = 0 and type is banner, do not send non supported size
 		if fbReq.Imp[0].Instl == 0 && fbReq.Imp[0].Banner != nil {
-			if !supportedHeight[fbReq.Imp[0].Banner.H] {
+			if !supportedHeight[*fbReq.Imp[0].Banner.H] {
 				return fbReq, errors.New("Facebook do not support banner height other than 50, 90 and 250")
 			}
 			// do not send legacy 320x50 size to facebook, instead use 0x50
-			if fbReq.Imp[0].Banner.W == 320 && fbReq.Imp[0].Banner.H == 50 {
-				fbReq.Imp[0].Banner.W = 0
+			if *fbReq.Imp[0].Banner.W == 320 && *fbReq.Imp[0].Banner.H == 50 {
+				fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
 			}
 		}
 		return fbReq, nil
