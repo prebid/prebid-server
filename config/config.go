@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/spf13/viper"
 	"strings"
@@ -74,8 +73,17 @@ func New() (*Configuration, error) {
 	return &c, nil
 }
 
-func (cfg *Configuration) GetCacheURL(uuid string) string {
-	var buffer bytes.Buffer
-	fmt.Fprintf(&buffer, "%s://%s/cache?%s", cfg.CacheURL.Scheme, cfg.CacheURL.Host, strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
-	return buffer.String()
+//Allows for protocol relative URL if scheme is empty
+func (cfg *Configuration) GetCacheBaseURL() string {
+	if len(cfg.CacheURL.Scheme) == 0 {
+		return fmt.Sprintf("//%s", cfg.CacheURL.Host)
+	}
+	if strings.Contains(cfg.CacheURL.Scheme, "://") {
+		return fmt.Sprintf("%s%s", strings.ToLower(cfg.CacheURL.Scheme), cfg.CacheURL.Host)
+	}
+	return fmt.Sprintf("%s://%s", strings.ToLower(cfg.CacheURL.Scheme), cfg.CacheURL.Host)
+}
+
+func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
+	return fmt.Sprintf("%s/cache?%s", cfg.GetCacheBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 }
