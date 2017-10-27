@@ -713,7 +713,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.CacheURL.Host)
+	pbc.InitPrebidCache(cfg.CacheURL)
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})
