@@ -38,8 +38,8 @@ func commonMediaTypes(l1 []pbs.MediaType, l2 []pbs.MediaType) []pbs.MediaType {
 
 func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 	return &openrtb.Banner{
-		W:        unit.Sizes[0].W,
-		H:        unit.Sizes[0].H,
+		W:        openrtb.Uint64Ptr(unit.Sizes[0].W),
+		H:        openrtb.Uint64Ptr(unit.Sizes[0].H),
 		Format:   copyFormats(unit.Sizes), // defensive copy because adapters may mutate Imps, and this is shared data
 		TopFrame: unit.TopFrame,
 	}
@@ -52,11 +52,13 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 	mimes := make([]string, len(unit.Video.Mimes))
 	copy(mimes, unit.Video.Mimes)
-	pbm := make([]int8, 1)
+	pbm := make([]openrtb.PlaybackMethod, 1)
 	//this will become int8 soon, so we only care about the first index in the array
-	pbm[0] = unit.Video.PlaybackMethod
-	if pbm[0] == 0 {
-		pbm = nil
+	pbm[0] = openrtb.PlaybackMethod(unit.Video.PlaybackMethod)
+
+	protocols := make([]openrtb.Protocol, 0, len(unit.Video.Protocols))
+	for _, protocol := range unit.Video.Protocols {
+		protocols = append(protocols, openrtb.Protocol(protocol))
 	}
 	return &openrtb.Video{
 		MIMEs:          mimes,
@@ -64,17 +66,17 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 		MaxDuration:    unit.Video.Maxduration,
 		W:              unit.Sizes[0].W,
 		H:              unit.Sizes[0].H,
-		StartDelay:     unit.Video.Startdelay,
+		StartDelay:     openrtb.StartDelay(unit.Video.Startdelay).Ptr(),
 		PlaybackMethod: pbm,
-		Protocols:      unit.Video.Protocols,
+		Protocols:      protocols,
 	}
 }
 
-// makeOpenRTBGeneric makes an openRTB request from the PBS-specific structs.
+// adapters.MakeOpenRTBGeneric makes an openRTB request from the PBS-specific structs.
 //
 // Any objects pointed to by the returned BidRequest *must not be mutated*, or we will get race conditions.
 // The only exception is the Imp property, whose objects will be created new by this method and can be mutated freely.
-func makeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
+func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
 	imps := make([]openrtb.Imp, 0, len(bidder.AdUnits)*len(allowedMediatypes))
 	for _, unit := range bidder.AdUnits {
 		if len(unit.Sizes) <= 0 {

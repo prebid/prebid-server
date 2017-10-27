@@ -13,9 +13,7 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
-	"strings"
 )
 
 const adapterDirectory = "adapters"
@@ -26,9 +24,8 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
-	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -72,9 +69,8 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
-	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -436,14 +432,28 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
 	}
 
-	var nonAdapterFiles = []string{"adapter.go", "openrtb_util.go"}
-
 	for _, adapterFile := range adapterFiles {
-		if contains(nonAdapterFiles, adapterFile.Name()) || strings.HasSuffix(adapterFile.Name(), "_test.go") {
-			continue
+		if adapterFile.IsDir() {
+			ensureHasKey(t, data, adapterFile.Name())
 		}
-		adapterName := adapterFile.Name()[0 : len(adapterFile.Name())-3] // transform "index.go" into "index"
-		ensureHasKey(t, data, adapterName)
+	}
+}
+
+func TestWriteAuctionError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	writeAuctionError(recorder, "some error message", nil)
+	var resp pbs.PBSResponse
+	json.Unmarshal(recorder.Body.Bytes(), &resp)
+
+	if len(resp.Bids) != 0 {
+		t.Errorf("Error responses should return no bids.")
+	}
+	if resp.Status != "some error message" {
+		t.Errorf("The response status should be the error message. Got: %s", resp.Status)
+	}
+
+	if len(resp.BidderStatus) != 0 {
+		t.Errorf("Error responses shouldn't have any BidderStatus elements. Got %d", len(resp.BidderStatus))
 	}
 }
 

@@ -1,4 +1,4 @@
-package adapters
+package appnexus
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type anTagInfo struct {
@@ -29,10 +30,10 @@ type anTagInfo struct {
 	position          string
 	bid               float64
 	content           string
+	mediaType         string
 }
 
 type anBidInfo struct {
-	impType   string
 	memberID  string
 	domain    string
 	page      string
@@ -131,11 +132,11 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("No banner or app object sent"), http.StatusInternalServerError)
 			return
 		}
-		if (imp.Banner == nil && andata.impType == "banner") || (imp.Banner != nil && andata.impType != "banner") {
+		if (imp.Banner == nil && andata.tags[i].mediaType == "banner") || (imp.Banner != nil && andata.tags[i].mediaType != "banner") {
 			http.Error(w, fmt.Sprintf("Invalid impression type - banner"), http.StatusInternalServerError)
 			return
 		}
-		if (imp.Video == nil && andata.impType == "video") || (imp.Video != nil && andata.impType != "video") {
+		if (imp.Video == nil && andata.tags[i].mediaType == "video") || (imp.Video != nil && andata.tags[i].mediaType != "video") {
 			http.Error(w, fmt.Sprintf("Invalid impression type - video"), http.StatusInternalServerError)
 			return
 		}
@@ -145,11 +146,11 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, fmt.Sprintf("Empty imp.banner.format array"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == "above" && imp.Banner.Pos != 1 {
+			if andata.tags[i].position == "above" && *imp.Banner.Pos != openrtb.AdPosition(1) {
 				http.Error(w, fmt.Sprintf("Mismatch in position - expected 1 for atf"), http.StatusInternalServerError)
 				return
 			}
-			if andata.tags[i].position == "below" && imp.Banner.Pos != 3 {
+			if andata.tags[i].position == "below" && *imp.Banner.Pos != openrtb.AdPosition(3) {
 				http.Error(w, fmt.Sprintf("Mismatch in position - expected 3 for btf"), http.StatusInternalServerError)
 				return
 			}
@@ -180,7 +181,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if imp.Video != nil {
-			resBid.Attr = []int8{6}
+			resBid.Attr = []openrtb.CreativeAttribute{openrtb.CreativeAttribute(6)}
 		}
 		resp.SeatBid[0].Bid = append(resp.SeatBid[0].Bid, resBid)
 	}
@@ -229,7 +230,6 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	defer server.Close()
 
 	andata = anBidInfo{
-		impType:  "banner",
 		domain:   "nytimes.com",
 		page:     "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
 		tags:     make([]anTagInfo, 2),
@@ -248,6 +248,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		out_keywords:      "genre=jazz,genre=pop,myEmptyKey",
 		reserve:           1.50,
 		position:          "below",
+		mediaType:         "banner",
 	}
 	andata.tags[1] = anTagInfo{
 		code:              "second-tag",
@@ -259,9 +260,10 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		out_keywords:      "genre=rock,genre=pop,myKey=myVal",
 		reserve:           0.75,
 		position:          "above",
+		mediaType:         "video",
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewAppNexusAdapter(&conf, server.URL)
 	an.URI = server.URL
 
@@ -282,7 +284,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code:       tag.code,
-			MediaTypes: []string{"BANNER"},
+			MediaTypes: []string{tag.mediaType},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
@@ -300,6 +302,17 @@ func TestAppNexusBasicResponse(t *testing.T) {
 					Params:     params,
 				},
 			},
+		}
+		if tag.mediaType == "video" {
+			pbin.AdUnits[i].Video = pbs.PBSVideo{
+				Mimes:          []string{"video/mp4"},
+				Minduration:    15,
+				Maxduration:    30,
+				Startdelay:     5,
+				Skippable:      0,
+				PlaybackMethod: 1,
+				Protocols:      []int8{2, 3},
+			}
 		}
 	}
 
@@ -347,7 +360,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 		for _, tag := range andata.tags {
 			if bid.AdUnitCode == tag.code {
 				matched = true
-				if bid.CreativeMediaType != "banner" {
+				if bid.CreativeMediaType != tag.mediaType {
 					t.Errorf("Incorrect Creative MediaType '%s'", bid.CreativeMediaType)
 				}
 				if bid.BidderCode != "appnexus" {
@@ -378,7 +391,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 }
 
 func TestAppNexusUserSyncInfo(t *testing.T) {
-	an := NewAppNexusAdapter(DefaultHTTPAdapterConfig, "localhost")
+	an := NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
 	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Fatalf("should have matched")
 	}

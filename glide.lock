@@ -1,5 +1,5 @@
-hash: bbcb2501de5b89169fcba133707aaa1ece150de1f4ffade394e628fbe7fdf6f2
-updated: 2017-10-06T09:04:36.014507258-04:00
+hash: feca4c103cd7b2467d1af455bd9f78334868740d70da29b48023f0d55db80808
+updated: 2017-10-19T15:37:35.714422661-04:00
 imports:
 - name: github.com/blang/semver
   version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
@@ -45,7 +45,7 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: cc8532a8e9a55ea36402aa21efdf403a60d34096
 - name: github.com/mxmCherry/openrtb
-  version: af5bbec3623c8140b3f381af8ddcb1fce268d7d2
+  version: 53a357476a774def318ed6c4d8d4105787d3bd90
 - name: github.com/pelletier/go-buffruneio
   version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml

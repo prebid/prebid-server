@@ -1,4 +1,4 @@
-package adapters
+package index
 
 import (
 	"bytes"
@@ -14,10 +14,11 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type IndexAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -49,7 +50,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		return nil, fmt.Errorf("Index doesn't support apps")
 	}
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	indexReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	indexReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
 
 	if err != nil {
 		return nil, err
@@ -151,8 +152,8 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	return bids, nil
 }
 
-func NewIndexAdapter(config *HTTPAdapterConfig, uri string, userSyncURL string) *IndexAdapter {
-	a := NewHTTPAdapter(config)
+func NewIndexAdapter(config *adapters.HTTPAdapterConfig, uri string, userSyncURL string) *IndexAdapter {
+	a := adapters.NewHTTPAdapter(config)
 
 	info := &pbs.UsersyncInfo{
 		URL:         userSyncURL,

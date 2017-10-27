@@ -1,4 +1,4 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type tagInfo struct {
@@ -115,12 +116,12 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 				90:  true,
 				250: true,
 			}
-			if !supportedHeight[breq.Imp[0].Banner.H] {
+			if !supportedHeight[*breq.Imp[0].Banner.H] {
 				http.Error(w, fmt.Sprintf("Height '%d' not supported", breq.Imp[0].Banner.H), http.StatusBadRequest)
 				return
 			}
 		} else if breq.Imp[0].Instl == 1 {
-			if breq.Imp[0].Banner.H != 0 || breq.Imp[0].Banner.W != 0 {
+			if *breq.Imp[0].Banner.H != 0 || *breq.Imp[0].Banner.W != 0 {
 				http.Error(w, fmt.Sprintf("Width and height should be 0, 0 for instl type"), http.StatusBadRequest)
 				return
 			}
@@ -245,7 +246,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 		H:           250,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -337,7 +338,7 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 		H:           250,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -419,7 +420,7 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 		H:           90,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -504,7 +505,7 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 		Instl:       0,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
@@ -532,11 +533,11 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 	if len(openrtbRequests[1].Imp) != 1 {
 		t.Fatalf("Should only generate 1 imp per ad unit")
 	}
-	if openrtbRequests[0].Imp[0].Banner.W != 0 || openrtbRequests[0].Imp[0].Banner.H != 0 {
+	if *openrtbRequests[0].Imp[0].Banner.W != 0 || *openrtbRequests[0].Imp[0].Banner.H != 0 {
 		t.Fatalf("Should be generating 0x0 for interstitial type")
 	}
 
-	if openrtbRequests[1].Imp[0].Banner.W != 0 {
+	if *openrtbRequests[1].Imp[0].Banner.W != 0 {
 		t.Fatalf("Should be passing width 0 for size 320x50")
 	}
 
@@ -545,7 +546,7 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 func TestFacebookUserSyncInfo(t *testing.T) {
 	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
 
-	an := NewFacebookAdapter(DefaultHTTPAdapterConfig, "partnerId", url)
+	an := NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, "partnerId", url)
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("should have matched")
 	}

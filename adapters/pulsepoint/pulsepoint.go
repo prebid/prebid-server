@@ -1,4 +1,4 @@
-package adapters
+package pulsepoint
 
 import (
 	"bytes"
@@ -13,12 +13,13 @@ import (
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 type PulsePointAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -50,7 +51,7 @@ type PulsepointParams struct {
 
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	ppReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	ppReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
 
 	if err != nil {
 		return nil, err
@@ -87,13 +88,13 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			if len(size) == 2 {
 				width, err := strconv.Atoi(size[0])
 				if err == nil {
-					ppReq.Imp[i].Banner.W = uint64(width)
+					ppReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 				} else {
 					return nil, fmt.Errorf("Invalid Width param %s", size[0])
 				}
 				height, err := strconv.Atoi(size[1])
 				if err == nil {
-					ppReq.Imp[i].Banner.H = uint64(height)
+					ppReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
 				} else {
 					return nil, fmt.Errorf("Invalid Height param %s", size[1])
 				}
@@ -173,8 +174,8 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewPulsePointAdapter(config *HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
-	a := NewHTTPAdapter(config)
+func NewPulsePointAdapter(config *adapters.HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
+	a := adapters.NewHTTPAdapter(config)
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
 	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
 
