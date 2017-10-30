@@ -1,22 +1,22 @@
-hash: feca4c103cd7b2467d1af455bd9f78334868740d70da29b48023f0d55db80808
-updated: 2017-10-19T15:37:35.714422661-04:00
+hash: 7aebc4b175ff5e33fdc070e16360095703382b0d5986ff38d6f1d98adfa89671
+updated: 2017-10-30T14:14:39.478466077-04:00
 imports:
 - name: github.com/blang/semver
-  version: 4a1e882c79dcf4ec00d2e29fac74b9c8938d5052
+  version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/cloudfoundry/gosigar
-  version: dfaa4d491586af21e1ce06028df3926389a99654
+  version: 14c0a766933d517675369dae6f551f5c1a10f0d8
 - name: github.com/coocood/freecache
-  version: c7b48416d80a1707d94a9aeb37b4b11125ffef7e
+  version: a47e26eb67ac2657e4b5a62b1975bb2b65e0b8b3
 - name: github.com/fsnotify/fsnotify
   version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: fec3b39b059c0f88fa6b20f5ed012b1aa203a8b4
+  version: 1643683e1b54a9e88ad26d98f81400c8c9d9f4f9
   subpackages:
   - proto
 - name: github.com/hashicorp/hcl
-  version: 392dba7d905ed5d04a5794ba89f558b27e2ba1ca
+  version: 23c074d0eceb2b8a5bfdbb271ab780cde70f05a8
   subpackages:
   - hcl/ast
   - hcl/parser
@@ -27,7 +27,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/influxdata/influxdb
-  version: 3b700863eaa3fae65a995ce65ca12fc85c0a6995
+  version: 895b45385f4d4e3363e1dd6cb5360fe89967195a
   subpackages:
   - client
   - models
@@ -35,39 +35,39 @@ imports:
 - name: github.com/julienschmidt/httprouter
   version: 8c199fb6259ffc1af525cc3ad52ee60ba8359669
 - name: github.com/lib/pq
-  version: 2704adc878c21e1329f46f6e56a1c387d788ff94
+  version: b609790bd85edf8e9ab7e0f8912750a786177bcf
   subpackages:
   - oid
 - name: github.com/magiconair/properties
-  version: 51463bfca2576e06c62a8504b5c0f06d61312647
+  version: 8d7837e64d3c1ee4e54a880c5a920ab4316fc90a
   subpackages:
   - assert
 - name: github.com/mitchellh/mapstructure
-  version: cc8532a8e9a55ea36402aa21efdf403a60d34096
+  version: 06020f85339e21b2478f756a78e295255ffa4d6a
+- name: github.com/mssola/user_agent
+  version: a2f39d5a9b15ecc1fa1005b6aae73cd83da240ef
 - name: github.com/mxmCherry/openrtb
   version: 53a357476a774def318ed6c4d8d4105787d3bd90
-- name: github.com/pelletier/go-buffruneio
-  version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml
-  version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
+  version: 4e9e0ee19b60b13eb79915933f44d8ed5f268bdd
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
   version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
 - name: github.com/spaolacci/murmur3
-  version: 0d12bf811670bf6a1a63828dfbd003eded177fce
+  version: 9f5d223c60793748f04a9d5b4b4eacddfc1f755d
 - name: github.com/spf13/afero
-  version: 9be650865eab0c12963d8753212f4f9c66cdcf12
+  version: 5660eeed305fe5f69c8fc6cf899132a459a97064
   subpackages:
   - mem
 - name: github.com/spf13/cast
   version: acbeb36b902d72a7a4c18e8f3241075e7ab763e4
 - name: github.com/spf13/jwalterweatherman
-  version: 8f07c835e5cc1450c082fe3a439cf87b0cbb2d99
+  version: 12bd96e66386c1960ab0f74ced1362f66f552f7b
 - name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+  version: 97afa5e7ca8a08a383cb259e06636b5e2cc7897f
 - name: github.com/spf13/viper
-  version: 0967fc9aceab2ce9da34061253ac10fb99bba5b2
+  version: 8ef37cbca71638bf32f3d5e194117d4cb46da163
 - name: github.com/vrischmann/go-metrics-influxdb
   version: 43af8332c303f62ef62663b02b3b7d8a9802002a
 - name: github.com/xeipuuv/gojsonpointer
@@ -75,28 +75,26 @@ imports:
 - name: github.com/xeipuuv/gojsonreference
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
-  version: a55c211c418162597a32c74c7230f81adb5ad616
+  version: 212d8a0df7acfab8bdd190a7a69f0ab7376edcc8
 - name: golang.org/x/net
-  version: 84f0e6f92b10139f986b1756e149a7d9de270cdc
+  version: c73622c77280266305273cb545f54516ced95b93
   subpackages:
   - context
   - context/ctxhttp
   - publicsuffix
 - name: golang.org/x/sys
-  version: f845067cf72a21fb4929b0e6a35273bd83b56396
+  version: 661970f62f5897bc0cd5fdca7e087ba8a98a8fa1
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 19e51611da83d6be54ddafce4a4af510cb3e9ea4
+  version: 6eab0e8f74e86c598ec3b6fad4888e0c11482d48
   subpackages:
   - transform
   - unicode/norm
 - name: gopkg.in/mgo.v2
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
 - name: gopkg.in/yaml.v2
-  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
-- name: xojoc.pw/useragent
-  version: 52903803fc66eef0fce52f158ea57bb3b3feacfe
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 testImports:
 - name: github.com/davecgh/go-spew
   version: 346938d642f2ec3594ed81d874461961cd0faa76
