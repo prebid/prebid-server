@@ -5,18 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
 
+// SovrnAdapter adapter to send/receive bid requests/responses to/from sovrn
 type SovrnAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
@@ -24,23 +26,25 @@ type SovrnAdapter struct {
 }
 
 type sovrnParams struct {
-	TagId int `json:"tagid"`
+	TagID int `json:"tagid"`
 }
 
-/* Name - export adapter name */
+// Name - export adapter name */
 func (a *SovrnAdapter) Name() string {
 	return "sovrn"
 }
 
-// used for cookies and such
+// FamilyName used for cookies and such
 func (a *SovrnAdapter) FamilyName() string {
 	return "sovrn"
 }
 
+// GetUsersyncInfo get the UsersyncInfo object defining sovrn user sync parameters
 func (a *SovrnAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+// Call send bid requests to sovrn and receive responses
 func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
 	sReq, err := adapters.MakeOpenRTBGeneric(req, bidder, s.FamilyName(), supportedMediaTypes, true)
@@ -59,11 +63,11 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	// add tag ids to impressions
 	for i, unit := range bidder.AdUnits {
 		var params sovrnParams
-		err := json.Unmarshal(unit.Params, &params)
+		err = json.Unmarshal(unit.Params, &params)
 		if err != nil {
 			return nil, err
 		}
-		sovrnReq.Imp[i].TagID = strconv.Itoa(params.TagId)
+		sovrnReq.Imp[i].TagID = strconv.Itoa(params.TagID)
 		sovrnReq.Imp[i].Banner.Format = nil
 
 	}
@@ -82,11 +86,11 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
-	httpReq, err := http.NewRequest("POST", s.URI, bytes.NewReader(reqJSON))
+	httpReq, _ := http.NewRequest("POST", s.URI, bytes.NewReader(reqJSON))
 	httpReq.Header.Set("Content-Type", "application/json")
-	userId := strings.TrimSpace(sReq.User.ID)
-	if len(userId) > 0 {
-		httpReq.AddCookie(&http.Cookie{Name: "ljt_reader", Value: userId})
+	userID := strings.TrimSpace(sReq.User.ID)
+	if len(userID) > 0 {
+		httpReq.AddCookie(&http.Cookie{Name: "ljt_reader", Value: userID})
 	}
 	sResp, err := ctxhttp.Do(ctx, s.http.Client, httpReq)
 	if err != nil {
@@ -152,16 +156,20 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	sort.Sort(bids)
 	return bids, nil
 }
+
+// SkipNoCookies whether or not to send bids to sovrn in the absence of cookies
 func (a *SovrnAdapter) SkipNoCookies() bool {
 	return false
 }
+
+// NewSovrnAdapter create a new SovrnAdapter instance
 func NewSovrnAdapter(config *adapters.HTTPAdapterConfig, endpoint string, usersyncURL string, externalURL string) *SovrnAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=[SOVRNID]", externalURL)
+	redirectURI := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=[SOVRNID]", externalURL)
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%slocation=%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		URL:         fmt.Sprintf("%slocation=%s", usersyncURL, url.QueryEscape(redirectURI)),
 		Type:        "redirect",
 		SupportCORS: false,
 	}

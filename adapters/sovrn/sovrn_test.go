@@ -1,30 +1,31 @@
 package sovrn
 
 import (
-	"testing"
-	"github.com/prebid/prebid-server/pbs"
-	"fmt"
-	"encoding/json"
-	"github.com/mxmCherry/openrtb"
 	"bytes"
-	"net/http/httptest"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http/httptest"
+	"testing"
 
-	"net/http"
-	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/pbs"
+
 	"context"
+	"net/http"
+
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/test"
+	"github.com/prebid/prebid-server/cache/dummycache"
 )
 
 func TestSovrnUserSyncInfo(t *testing.T) {
 	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/userSync?", "http://localhost:8000")
-	test.VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
-	test.VerifyStringValue(adapter.GetUsersyncInfo().URL, "http://sovrn/userSync?location=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsovrn%26uid%3D%5BSOVRNID%5D", t)
+	adapters.VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
+	adapters.VerifyStringValue(adapter.GetUsersyncInfo().URL, "http://sovrn/userSync?location=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsovrn%26uid%3D%5BSOVRNID%5D", t)
 }
 
 func TestSovrnOpenRtbRequest(t *testing.T) {
-	service := CreateSovrnService(test.BidOnTags(""))
+	service := CreateSovrnService(adapters.BidOnTags(""))
 	server := service.Server
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
@@ -32,28 +33,27 @@ func TestSovrnOpenRtbRequest(t *testing.T) {
 	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
 	adapter.Call(ctx, req, bidder)
 
-	test.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
-	test.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "123456", t)
-	test.VerifyIntValue(int(service.LastBidRequest.Imp[0].Banner.W), 728, t)
-	test.VerifyIntValue(int(service.LastBidRequest.Imp[0].Banner.H), 90, t)
+	adapters.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
+	adapters.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "123456", t)
+	adapters.VerifyBannerSize(service.LastBidRequest.Imp[0].Banner, 728, 90, t)
 }
 
 func TestSovrnBiddingBehavior(t *testing.T) {
-	server := CreateSovrnService(test.BidOnTags("123456")).Server
+	server := CreateSovrnService(adapters.BidOnTags("123456")).Server
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
 	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
 	bids, _ := adapter.Call(ctx, req, bidder)
 
-	test.VerifyIntValue(len(bids), 1, t)
-	test.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
-	test.VerifyStringValue(bids[0].BidderCode, "sovrn", t)
-	test.VerifyStringValue(bids[0].Adm, "<div>This is an Ad</div>", t)
-	test.VerifyStringValue(bids[0].Creative_id, "Cr-234", t)
-	test.VerifyIntValue(int(bids[0].Width), 728, t)
-	test.VerifyIntValue(int(bids[0].Height), 90, t)
-	test.VerifyIntValue(int(bids[0].Price*100), 210, t)
+	adapters.VerifyIntValue(len(bids), 1, t)
+	adapters.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
+	adapters.VerifyStringValue(bids[0].BidderCode, "sovrn", t)
+	adapters.VerifyStringValue(bids[0].Adm, "<div>This is an Ad</div>", t)
+	adapters.VerifyStringValue(bids[0].Creative_id, "Cr-234", t)
+	adapters.VerifyIntValue(int(bids[0].Width), 728, t)
+	adapters.VerifyIntValue(int(bids[0].Height), 90, t)
+	adapters.VerifyIntValue(int(bids[0].Price*100), 210, t)
 }
 
 /**
@@ -61,7 +61,7 @@ func TestSovrnBiddingBehavior(t *testing.T) {
  */
 func TestSovrntMultiImpPartialBidding(t *testing.T) {
 	// setup server endpoint to return bid.
-	service := CreateSovrnService(test.BidOnTags("123456"))
+	service := CreateSovrnService(adapters.BidOnTags("123456"))
 	server := service.Server
 	ctx := context.TODO()
 	req := SampleSovrnRequest(2, t)
@@ -70,9 +70,9 @@ func TestSovrntMultiImpPartialBidding(t *testing.T) {
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
-	test.VerifyIntValue(len(service.LastBidRequest.Imp), 2, t)
-	test.VerifyIntValue(len(bids), 1, t)
-	test.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
+	adapters.VerifyIntValue(len(service.LastBidRequest.Imp), 2, t)
+	adapters.VerifyIntValue(len(bids), 1, t)
+	adapters.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
 }
 
 /**
@@ -80,7 +80,7 @@ func TestSovrntMultiImpPartialBidding(t *testing.T) {
  */
 func TestSovrnMultiImpAllBid(t *testing.T) {
 	// setup server endpoint to return bid.
-	service := CreateSovrnService(test.BidOnTags("123456,123457"))
+	service := CreateSovrnService(adapters.BidOnTags("123456,123457"))
 	server := service.Server
 	ctx := context.TODO()
 	req := SampleSovrnRequest(2, t)
@@ -89,18 +89,18 @@ func TestSovrnMultiImpAllBid(t *testing.T) {
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
-	test.VerifyIntValue(len(service.LastBidRequest.Imp), 2, t)
-	test.VerifyIntValue(len(bids), 2, t)
-	test.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
-	test.VerifyStringValue(bids[1].AdUnitCode, "div-adunit-2", t)
+	adapters.VerifyIntValue(len(service.LastBidRequest.Imp), 2, t)
+	adapters.VerifyIntValue(len(bids), 2, t)
+	adapters.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
+	adapters.VerifyStringValue(bids[1].AdUnitCode, "div-adunit-2", t)
 }
 
 func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	req := pbs.PBSRequest{
 		AccountID: "1",
-		AdUnits: make([]pbs.AdUnit, 2),
+		AdUnits:   make([]pbs.AdUnit, 2),
 	}
-	tagId := 123456
+	tagID := 123456
 
 	for i := 0; i < numberOfImpressions; i++ {
 		req.AdUnits[i] = pbs.AdUnit{
@@ -115,7 +115,7 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 				{
 					BidderCode: "sovrn",
 					BidID:      fmt.Sprintf("Bid-%d", i+1),
-					Params:     json.RawMessage(fmt.Sprintf("{\"tagid\": %d }", tagId+i)),
+					Params:     json.RawMessage(fmt.Sprintf("{\"tagid\": %d }", tagID+i)),
 				},
 			},
 		}
@@ -128,7 +128,7 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 		t.Fatalf("Error when serializing request")
 	}
 
-	httpReq := httptest.NewRequest("POST", CreateSovrnService(test.BidOnTags("")).Server.URL, body)
+	httpReq := httptest.NewRequest("POST", CreateSovrnService(adapters.BidOnTags("")).Server.URL, body)
 	httpReq.Header.Add("Referer", "http://news.pub/topnews")
 	pc := pbs.ParsePBSCookieFromRequest(httpReq)
 	pc.TrySync("sovrn", "sovrnUser123")
@@ -147,8 +147,8 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 
 }
 
-func CreateSovrnService(tagsToBid map[string]bool) test.OrtbMockService {
-	service := test.OrtbMockService{}
+func CreateSovrnService(tagsToBid map[string]bool) adapters.OrtbMockService {
+	service := adapters.OrtbMockService{}
 	var lastBidRequest openrtb.BidRequest
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +168,7 @@ func CreateSovrnService(tagsToBid map[string]bool) test.OrtbMockService {
 		var bids []openrtb.Bid
 		for i, imp := range breq.Imp {
 			if tagsToBid[imp.TagID] {
-				bids = append(bids, test.SampleBid(int(imp.Banner.W), int(imp.Banner.H), imp.ID, i+1))
+				bids = append(bids, adapters.SampleBid(imp.Banner.W, imp.Banner.H, imp.ID, i+1))
 			}
 		}
 
