@@ -18,12 +18,12 @@ import (
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
-	"xojoc.pw/useragent"
 
 	"os"
 	"os/signal"
@@ -232,8 +232,9 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mRequestMeter.Mark(1)
 
 	isSafari := false
-	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
-		if ua.Type == useragent.Browser && ua.Name == "Safari" {
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
 			isSafari = true
 			mSafariRequestMeter.Mark(1)
 		}
@@ -562,7 +563,7 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // https://blog.golang.org/context/userip/userip.go
 func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	if ua := useragent.Parse(req.Header.Get("User-Agent")); ua != nil {
+	if ua := user_agent.New(req.Header.Get("User-Agent")); ua != nil {
 		fmt.Fprintf(w, "User Agent: %v\n", ua)
 	}
 	ip, port, err := net.SplitHostPort(req.RemoteAddr)
