@@ -1,8 +1,6 @@
 package openrtb_ext
 
 // ExtSeatBid defines the contract for bidresponse.seatbid.ext
-// ExtSeatBid defines the Prebid extensions to openrtb's SeatBid.
-// Bidders must json.Marshal one of these to create the JSON which they return in seatbid.ext.
 type ExtSeatBid struct {
 	Prebid ExtSeatBidPrebid `json:"prebid"`
 }
@@ -21,15 +19,17 @@ type ExtSeatBidCookie struct {
 	Status CookieStatus `json:"status"`
 }
 
-// SeatBidCookieExt defines the contract for bidresponse.seatbid.ext.prebid.debug
+// ExtSeatBidDebug defines the contract for bidresponse.seatbid.ext.prebid.debug
 type ExtSeatBidDebug struct {
 	ServerCalls []ExtServerCall `json:"servercalls"`
 }
 
+// ExtUserSyncs defines the contract for bidresponse.seatbid.ext.prebid.usersync
 type ExtUserSyncs struct {
 	Syncs []ExtUserSync
 }
 
+// ExtUserSyncs defines the contract for bidresponse.seatbid.ext.prebid.usersync.syncs[i]
 type ExtUserSync struct {
 	Url  string       `json:"url"`
 	Type UserSyncType `json:"type"`
