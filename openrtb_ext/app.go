@@ -7,6 +7,6 @@ type ExtApp struct {
 
 // ExtApp defines the contract for bidrequest.app.ext.prebid
 type ExtAppPrebid struct {
-	AppSource string `json:"source"`
+	AppSource  string `json:"source"`
 	AppVersion string `json:"version"`
 }

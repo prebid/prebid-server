@@ -9,11 +9,11 @@ type ExtSeatBid struct {
 
 // ExtSeatBidPrebid defines the contract for bidresponse.seatbid.ext.prebid
 type ExtSeatBidPrebid struct {
-	Cookie ExtSeatBidCookie `json:"cookie"`
-	Debug  ExtSeatBidDebug  `json:"debug"`
-	Errors []string         `json:"errors"`
-	ResponseTimeMillis int  `json:"responsetimemillis"`
-	UserSync ExtUserSyncs   `json:"usersync"`
+	Cookie             ExtSeatBidCookie `json:"cookie"`
+	Debug              ExtSeatBidDebug  `json:"debug"`
+	Errors             []string         `json:"errors"`
+	ResponseTimeMillis int              `json:"responsetimemillis"`
+	UserSync           ExtUserSyncs     `json:"usersync"`
 }
 
 // ExtSeatBidCookie defines the contract for bidresponse.seatbid.ext.prebid.cookie
@@ -31,7 +31,7 @@ type ExtUserSyncs struct {
 }
 
 type ExtUserSync struct {
-	Url string        `json:"url"`
+	Url  string       `json:"url"`
 	Type UserSyncType `json:"type"`
 }
 
@@ -45,14 +45,16 @@ type ExtServerCall struct {
 
 // CookieStatus describes the allowed values for bidresponse.seatbid.ext.prebid.cookie.status
 type CookieStatus string
+
 const (
-	CookieNone CookieStatus = "none"
-	CookieExpired           = "expired"
-	CookieAvailable         = "available"
+	CookieNone      CookieStatus = "none"
+	CookieExpired                = "expired"
+	CookieAvailable              = "available"
 )
 
 // UserSyncType describes the allowed values for bidresponse.seatbid.ext.prebid.usersync.syncs[i].type
 type UserSyncType string
+
 const (
 	UserSyncIframe UserSyncType = "iframe"
 	UserSyncPixel               = "pixel"

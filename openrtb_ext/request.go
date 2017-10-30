@@ -12,7 +12,7 @@ type ExtRequestPrebid struct {
 
 // ExtRequestCache defines the contract for bidrequest.ext.prebid.cache
 type ExtRequestCache struct {
-  Markup CacheMarkup `json:"markup"`
+	Markup CacheMarkup `json:"markup"`
 }
 
 // ExtRequestSort defines the contract for bidrequest.ext.prebid.sort
@@ -23,29 +23,32 @@ type ExtRequestSort struct {
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
 	PriceGranularity PriceGranularity `json:"pricegranularity"`
-	MaxLength int `json:"lengthmax"`
+	MaxLength        int              `json:"lengthmax"`
 }
 
 // CacheMarkup defines the allowed values for bidrequest.ext.prebid.cache.markup
 type CacheMarkup int
+
 const (
-  No CacheMarkup = 0
-  Yes = 1
+	No  CacheMarkup = 0
+	Yes             = 1
 )
 
 // SortType defines the allowed values for bidrequest.ext.sort.type
 type SortType string
+
 const (
 	None SortType = "none"
-	Cpm SortType = "cpm"
+	Cpm  SortType = "cpm"
 )
 
 // PriceGranularity defines the allowed values for bidrequest.ext.targeting.pricegranularity
 type PriceGranularity string
+
 const (
-	PriceGranularityLow PriceGranularity = "low"
-	PriceGranularityMedium               = "med"
-	PriceGranularityHigh                 = "high"
-	PriceGranularityAuto                 = "auto"
-	PriceGranularityDense                = "dense"
+	PriceGranularityLow    PriceGranularity = "low"
+	PriceGranularityMedium                  = "med"
+	PriceGranularityHigh                    = "high"
+	PriceGranularityAuto                    = "auto"
+	PriceGranularityDense                   = "dense"
 )
