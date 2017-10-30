@@ -1,5 +1,6 @@
 package openrtb_ext
 
+// ExtSeatBid defines the contract for bidresponse.seatbid.ext
 // ExtSeatBid defines the Prebid extensions to openrtb's SeatBid.
 // Bidders must json.Marshal one of these to create the JSON which they return in seatbid.ext.
 type ExtSeatBid struct {

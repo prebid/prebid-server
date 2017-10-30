@@ -1,6 +1,6 @@
 package openrtb_ext
 
-// ExtRequest defines the Prebid extensions to openrtb's BidRequest.
+// ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtSeatBidPrebid `json:"prebid"`
 }
