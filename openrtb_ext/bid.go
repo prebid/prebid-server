@@ -16,6 +16,7 @@ type ExtBidPrebid struct {
 // ExtResponseCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
 type ExtResponseCache struct {
 	Key string `json:"key"`
+	Url string `json:"url"`
 }
 
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type
