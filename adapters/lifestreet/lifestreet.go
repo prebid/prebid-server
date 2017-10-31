@@ -1,4 +1,4 @@
-package adapters
+package lifestreet
 
 import (
 	"bytes"
@@ -12,12 +12,13 @@ import (
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 type LifestreetAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	usersyncInfo *pbs.UsersyncInfo
 }
@@ -45,7 +46,7 @@ type lifestreetParams struct {
 	SlotTag string `json:"slot_tag"`
 }
 
-func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
 	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
@@ -58,16 +59,16 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 
 	defer lsmResp.Body.Close()
 	body, _ := ioutil.ReadAll(lsmResp.Body)
-	result.responseBody = string(body)
+	result.ResponseBody = string(body)
 
-	result.statusCode = lsmResp.StatusCode
+	result.StatusCode = lsmResp.StatusCode
 
 	if lsmResp.StatusCode == 204 {
 		return
 	}
 
 	if lsmResp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP status %d; body: %s", lsmResp.StatusCode, result.responseBody)
+		err = fmt.Errorf("HTTP status %d; body: %s", lsmResp.StatusCode, result.ResponseBody)
 		return
 	}
 
@@ -81,7 +82,7 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
-	result.bid = &pbs.PBSBid{
+	result.Bid = &pbs.PBSBid{
 		AdUnitCode:  bid.ImpID,
 		Price:       bid.Price,
 		Adm:         bid.AdM,
@@ -95,7 +96,7 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 }
 
 func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, slotTag string, mtype pbs.MediaType, unitInd int) (openrtb.BidRequest, error) {
-	lsReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+	lsReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
 
 	if err != nil {
 		return openrtb.BidRequest{}, err
@@ -104,7 +105,9 @@ func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *p
 	if lsReq.Imp != nil && len(lsReq.Imp) > 0 {
 		lsReq.Imp = lsReq.Imp[unitInd : unitInd+1]
 
-		lsReq.Imp[0].Banner.Format = nil
+		if lsReq.Imp[0].Banner != nil {
+			lsReq.Imp[0].Banner.Format = nil
+		}
 		lsReq.Imp[0].TagID = slotTag
 
 		return lsReq, nil
@@ -151,17 +154,17 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 	}
 
-	ch := make(chan callOneResult)
+	ch := make(chan adapters.CallOneResult)
 	for i, _ := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err
-			if result.bid != nil {
-				result.bid.BidderCode = bidder.BidderCode
-				result.bid.BidID = bidder.LookupBidID(result.bid.AdUnitCode)
-				if result.bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.bid.AdUnitCode)
-					result.bid = nil
+			if result.Bid != nil {
+				result.Bid.BidderCode = bidder.BidderCode
+				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
+				if result.Bid.BidID == "" {
+					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
+					result.Bid = nil
 				}
 			}
 			ch <- result
@@ -173,15 +176,15 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	bids := make(pbs.PBSBidSlice, 0)
 	for i := 0; i < len(bidder.AdUnits); i++ {
 		result := <-ch
-		if result.bid != nil {
-			bids = append(bids, result.bid)
+		if result.Bid != nil {
+			bids = append(bids, result.Bid)
 		}
 		if req.IsDebug {
 			debug := &pbs.BidderDebug{
 				RequestURI:   a.URI,
 				RequestBody:  requests[i].String(),
-				StatusCode:   result.statusCode,
-				ResponseBody: result.responseBody,
+				StatusCode:   result.StatusCode,
+				ResponseBody: result.ResponseBody,
 			}
 			bidder.Debug = append(bidder.Debug, debug)
 		}
@@ -196,8 +199,8 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewLifestreetAdapter(config *HTTPAdapterConfig, externalURL string) *LifestreetAdapter {
-	a := NewHTTPAdapter(config)
+func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *LifestreetAdapter {
+	a := adapters.NewHTTPAdapter(config)
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=lifestreet&uid=$$visitor_cookie$$", externalURL)
 	usersyncURL := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl="

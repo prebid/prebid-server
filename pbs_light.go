@@ -11,24 +11,32 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
-	"github.com/xojoc/useragent"
 
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/facebook"
+	"github.com/prebid/prebid-server/adapters/index"
+	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
+	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -91,6 +99,8 @@ type bidResult struct {
 	bid_list pbs.PBSBidSlice
 }
 
+const schemaDirectory = "./static/bidder-params"
+
 const defaultPriceGranularity = "med"
 
 // Constant keys for ad server targeting for responses to Prebid Mobile
@@ -98,6 +108,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
 // default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
@@ -215,14 +226,19 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.Encode(csResp)
 }
 
-func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+type auctionDeps struct {
+	cfg *config.Configuration
+}
+
+func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
 	mRequestMeter.Mark(1)
 
 	isSafari := false
-	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
-		if ua.Type == useragent.Browser && ua.Name == "Safari" {
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
 			isSafari = true
 			mSafariRequestMeter.Mark(1)
 		}
@@ -369,6 +385,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 		for i, bid := range pbs_resp.Bids {
 			bid.CacheID = cobjs[i].UUID
+			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
@@ -450,24 +467,39 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
 			roundedCpm := priceBucketStringMap[priceGranularitySetting]
 
+			hbSize := ""
+			if bid.Width != 0 && bid.Height != 0 {
+				width := strconv.FormatUint(bid.Width, 10)
+				height := strconv.FormatUint(bid.Height, 10)
+				hbSize = width + "x" + height
+			}
+
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
 			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
 				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 			pbs_kvs := map[string]string{
 				hbPbBidderKey:      roundedCpm,
 				hbBidderBidderKey:  bid.BidderCode,
 				hbCacheIdBidderKey: bid.CacheID,
 			}
+			if hbSize != "" {
+				pbs_kvs[hbSizeBidderKey] = hbSize
+			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if hbSize != "" {
+					pbs_kvs[hbSizeConstantKey] = hbSize
+				}
 				if bid.BidderCode == "audienceNetwork" {
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
@@ -481,6 +513,42 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// could add more logic here, but doing nothing means 200 OK
+}
+
+// NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
+// given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
+//
+// {
+//   "a": { ... content from the file a.json ... },
+//   "b": { ... content from the file b.json ... }
+// }
+//
+// This function stores the file contents in memory, and should not be used on large directories.
+// If the root directory, or any of the files in it, cannot be read, then the program will exit.
+func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
+	// Slurp the files into memory first, since they're small and it minimizes request latency.
+	files, err := ioutil.ReadDir(schemaDirectory)
+	if err != nil {
+		glog.Fatalf("Failed to read directory %s: %v", schemaDirectory, err)
+	}
+
+	data := make(map[string]json.RawMessage, len(files))
+	for _, file := range files {
+		bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, file.Name()))
+		if err != nil {
+			glog.Fatalf("Failed to read file %s/%s: %v", schemaDirectory, file.Name(), err)
+		}
+		data[file.Name()[0:len(file.Name())-5]] = json.RawMessage(bytes)
+	}
+	response, err := json.Marshal(data)
+	if err != nil {
+		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(response)
+	}
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -500,7 +568,7 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // https://blog.golang.org/context/userip/userip.go
 func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	if ua := useragent.Parse(req.Header.Get("User-Agent")); ua != nil {
+	if ua := user_agent.New(req.Header.Get("User-Agent")); ua != nil {
 		fmt.Fprintf(w, "User Agent: %v\n", ua)
 	}
 	ip, port, err := net.SplitHostPort(req.RemoteAddr)
@@ -640,15 +708,15 @@ func main() {
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
-		"appnexus":      adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"districtm":     adapters.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": adapters.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
-		"pubmatic":      adapters.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
-		"pulsepoint":    adapters.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
-		"rubicon": adapters.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"indexExchange": index.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
-		"audienceNetwork": adapters.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
-		"lifestreet":      adapters.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"audienceNetwork": facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -730,7 +798,8 @@ func serve(cfg *config.Configuration) error {
 	})()
 
 	router := httprouter.New()
-	router.POST("/auction", auction)
+	router.POST("/auction", (&auctionDeps{cfg}).auction)
+	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
@@ -758,7 +827,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.CacheURL)
+	pbc.InitPrebidCache(cfg.GetCacheBaseURL())
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})

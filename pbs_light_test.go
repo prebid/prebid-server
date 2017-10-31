@@ -13,7 +13,10 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"io/ioutil"
 )
+
+const adapterDirectory = "adapters"
 
 func TestCookieSyncNoCookies(t *testing.T) {
 	cfg, err := config.New()
@@ -170,10 +173,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		BidID:      "test_bidid",
 		AdUnitCode: "test_adunitcode",
 		BidderCode: "audienceNetwork",
-		Price:      1.05,
+		Price:      2.00,
 		Adm:        "test_adm",
 		Width:      300,
 		Height:     250,
+		CacheID:    "test_cache_id1",
 	}
 	bids = append(bids, &fb_bid)
 	an_bid := pbs.PBSBid{
@@ -182,10 +186,20 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		BidderCode: "appnexus",
 		Price:      1.00,
 		Adm:        "test_adm",
-		Width:      300,
-		Height:     250,
+		Width:      320,
+		Height:     50,
+		CacheID:    "test_cache_id2",
 	}
 	bids = append(bids, &an_bid)
+	nosize_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "nosizebidder",
+		Price:      1.00,
+		Adm:        "test_adm",
+		CacheID:    "test_cache_id2",
+	}
+	bids = append(bids, &nosize_bid)
 	pbs_resp := pbs.PBSResponse{
 		Bids: bids,
 	}
@@ -198,6 +212,40 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		if bid.BidderCode == "audienceNetwork" {
 			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
 				t.Errorf("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
+			}
+			if bid.AdServerTargeting["hb_size"] != "300x250" {
+				t.Errorf("hb_size key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb"] != "2.00" {
+				t.Errorf("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+			}
+			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
+				t.Errorf("hb_cache_id key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
+				t.Errorf("hb_bidder key was not parsed correctly")
+			}
+		}
+		if bid.BidderCode == "appnexus" {
+			if bid.AdServerTargeting["hb_size_appnexus"] != "320x50" {
+				t.Errorf("hb_size key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_cache_id_appnexus"] != "test_cache_id2" {
+				t.Errorf("hb_cache_id key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_bidder_appnexus"] != "appnexus" {
+				t.Errorf("hb_bidder key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb_appnexus"] != "1.00" {
+				t.Errorf("hb_pb key for appnexus bidder was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_pb"] != "" {
+				t.Errorf("hb_pb key was parsed for two bidders")
+			}
+		}
+		if bid.BidderCode == "nosizebidder" {
+			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
+				t.Errorf("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
 			}
 		}
 	}
@@ -365,5 +413,61 @@ func TestBidSizeValidate(t *testing.T) {
 				t.Errorf("Detected the Width & Height attributes in test bidID %v were not set to the dimensions used from the mybidder object", bid.BidID)
 			}
 		}
+	}
+}
+
+func TestNewJsonDirectoryServer(t *testing.T) {
+
+	handler := NewJsonDirectoryServer(schemaDirectory)
+	recorder := httptest.NewRecorder()
+	request, _ := http.NewRequest("GET", "/whatever", nil)
+	handler(recorder, request, nil)
+
+	var data map[string]json.RawMessage
+	json.Unmarshal(recorder.Body.Bytes(), &data)
+
+	// Make sure that every adapter has a json schema file associated with it
+	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
+	if err != nil {
+		t.Fatalf("Failed to open the adapters directory: %v", err)
+	}
+
+	for _, adapterFile := range adapterFiles {
+		if adapterFile.IsDir() {
+			ensureHasKey(t, data, adapterFile.Name())
+		}
+	}
+}
+
+func TestWriteAuctionError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	writeAuctionError(recorder, "some error message", nil)
+	var resp pbs.PBSResponse
+	json.Unmarshal(recorder.Body.Bytes(), &resp)
+
+	if len(resp.Bids) != 0 {
+		t.Errorf("Error responses should return no bids.")
+	}
+	if resp.Status != "some error message" {
+		t.Errorf("The response status should be the error message. Got: %s", resp.Status)
+	}
+
+	if len(resp.BidderStatus) != 0 {
+		t.Errorf("Error responses shouldn't have any BidderStatus elements. Got %d", len(resp.BidderStatus))
+	}
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
+	if _, ok := data[key]; !ok {
+		t.Errorf("Expected map to produce a schema for adapter: %s", key)
 	}
 }

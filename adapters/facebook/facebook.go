@@ -1,4 +1,4 @@
-package adapters
+package facebook
 
 import (
 	"bytes"
@@ -12,16 +12,23 @@ import (
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 type FacebookAdapter struct {
-	http         *HTTPAdapter
+	http         *adapters.HTTPAdapter
 	URI          string
 	nonSecureUri string
 	usersyncInfo *pbs.UsersyncInfo
 	platformJSON openrtb.RawJSON
+}
+
+var supportedHeight = map[uint64]bool{
+	50:  true,
+	90:  true,
+	250: true,
 }
 
 /* Name - export adapter name */
@@ -55,7 +62,7 @@ func coinFlip() bool {
 	return rand.Intn(2) != 0
 }
 
-func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result callOneResult, err error) {
+func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
 	url := a.URI
 	if coinFlip() {
 		//50% of traffic to non-secure endpoint
@@ -71,14 +78,14 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 		return
 	}
 
-	result.statusCode = anResp.StatusCode
+	result.StatusCode = anResp.StatusCode
 
 	defer anResp.Body.Close()
 	body, _ := ioutil.ReadAll(anResp.Body)
-	result.responseBody = string(body)
+	result.ResponseBody = string(body)
 
 	if anResp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, result.responseBody)
+		err = fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, result.ResponseBody)
 		return
 	}
 
@@ -95,18 +102,17 @@ func (a *FacebookAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJ
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
-	result.bid = &pbs.PBSBid{
+	result.Bid = &pbs.PBSBid{
 		AdUnitCode: bid.ImpID,
 		Price:      bid.Price,
 		Adm:        bid.AdM,
-		Width:      300, // hard code as it's all FB supports
-		Height:     250, // hard code as it's all FB supports
 	}
 	return
 }
 
 func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, placementId string, mtype pbs.MediaType, pubId string, unitInd int) (openrtb.BidRequest, error) {
-	fbReq, err := makeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+	// this method creates imps for all ad units for the bidder with a single media type
+	fbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
 
 	if err != nil {
 		return openrtb.BidRequest{}, err
@@ -115,6 +121,7 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 	fbReq.Ext = a.platformJSON
 
 	if fbReq.Imp != nil && len(fbReq.Imp) > 0 {
+		// only returns 1 imp for requested ad unit
 		fbReq.Imp = fbReq.Imp[unitInd : unitInd+1]
 
 		if fbReq.Site != nil {
@@ -129,14 +136,29 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 		}
 		fbReq.Imp[0].TagID = placementId
 
+		// if instl = 1 sent in, pass size (0,0) to facebook
+		if fbReq.Imp[0].Instl == 1 && fbReq.Imp[0].Banner != nil {
+			fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
+			fbReq.Imp[0].Banner.H = openrtb.Uint64Ptr(0)
+		}
+		// if instl = 0 and type is banner, do not send non supported size
+		if fbReq.Imp[0].Instl == 0 && fbReq.Imp[0].Banner != nil {
+			if !supportedHeight[*fbReq.Imp[0].Banner.H] {
+				return fbReq, errors.New("Facebook do not support banner height other than 50, 90 and 250")
+			}
+			// do not send legacy 320x50 size to facebook, instead use 0x50
+			if *fbReq.Imp[0].Banner.W == 320 && *fbReq.Imp[0].Banner.H == 50 {
+				fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
+			}
+		}
 		return fbReq, nil
 	} else {
 		return fbReq, errors.New("No supported impressions")
 	}
 }
 
-func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	requests := make([]bytes.Buffer, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
+func (a *FacebookAdapter) GenerateRequestsForFacebook(req *pbs.PBSRequest, bidder *pbs.PBSBidder) ([]*openrtb.BidRequest, error) {
+	requests := make([]*openrtb.BidRequest, len(bidder.AdUnits)*2) // potentially we can for eachadUnit have 2 imps - BANNER and VIDEO
 	reqIndex := 0
 	for i, unit := range bidder.AdUnits {
 		var params facebookParams
@@ -156,36 +178,54 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		// BANNER
 		fbReqB, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_BANNER, pubId, i)
 		if err == nil {
-			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReqB)
+			requests[reqIndex] = &fbReqB
 			reqIndex = reqIndex + 1
-			if err != nil {
-				return nil, err
-			}
 		}
 
 		// VIDEO
 		fbReqV, err := a.MakeOpenRtbBidRequest(req, bidder, params.PlacementId, pbs.MEDIA_TYPE_VIDEO, pubId, i)
 		if err == nil {
-			err = json.NewEncoder(&requests[reqIndex]).Encode(fbReqV)
+			requests[reqIndex] = &fbReqV
 			reqIndex = reqIndex + 1
-			if err != nil {
-				return nil, err
-			}
+
 		}
 
 	}
+	return requests[:reqIndex], nil
+}
 
-	ch := make(chan callOneResult)
-	for i, _ := range bidder.AdUnits {
+func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	ortbRequests, e := a.GenerateRequestsForFacebook(req, bidder)
+
+	if e != nil {
+		return nil, e
+	}
+
+	requests := make([]bytes.Buffer, len(ortbRequests))
+	for i, ortbRequest := range ortbRequests {
+		e = json.NewEncoder(&requests[i]).Encode(ortbRequest)
+		if e != nil {
+			return nil, e
+		}
+	}
+
+	ch := make(chan adapters.CallOneResult)
+
+	for i, _ := range requests {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.callOne(ctx, req, reqJSON)
+			result, err := a.callOne(ctx, reqJSON)
 			result.Error = err
-			if result.bid != nil {
-				result.bid.BidderCode = bidder.BidderCode
-				result.bid.BidID = bidder.LookupBidID(result.bid.AdUnitCode)
-				if result.bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.bid.AdUnitCode)
-					result.bid = nil
+			if result.Bid != nil {
+				result.Bid.BidderCode = bidder.BidderCode
+				unit := bidder.LookupAdUnit(result.Bid.AdUnitCode)
+				if unit != nil {
+					result.Bid.Width = unit.Sizes[0].W
+					result.Bid.Height = unit.Sizes[0].H
+				}
+				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
+				if result.Bid.BidID == "" {
+					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
+					result.Bid = nil
 				}
 			}
 			ch <- result
@@ -195,17 +235,17 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	var err error
 
 	bids := make(pbs.PBSBidSlice, 0)
-	for i := 0; i < len(bidder.AdUnits); i++ {
+	for i := 0; i < len(requests); i++ {
 		result := <-ch
-		if result.bid != nil {
-			bids = append(bids, result.bid)
+		if result.Bid != nil {
+			bids = append(bids, result.Bid)
 		}
 		if req.IsDebug {
 			debug := &pbs.BidderDebug{
 				RequestURI:   a.URI,
 				RequestBody:  requests[i].String(),
-				StatusCode:   result.statusCode,
-				ResponseBody: result.responseBody,
+				StatusCode:   result.StatusCode,
+				ResponseBody: result.ResponseBody,
 			}
 			bidder.Debug = append(bidder.Debug, debug)
 		}
@@ -220,8 +260,8 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
-	a := NewHTTPAdapter(config)
+func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
+	a := adapters.NewHTTPAdapter(config)
 
 	info := &pbs.UsersyncInfo{
 		URL:         usersyncURL,

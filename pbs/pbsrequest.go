@@ -63,6 +63,19 @@ type PBSVideo struct {
 	// 5 - Initiates on Entering Viewport with Sound On
 	// 6 - Initiates on Entering Viewport with Sound Off by Default
 	PlaybackMethod int8 `json:"playback_method,omitempty"`
+
+	//protocols as specified in ORTB 5.8
+	// 1 VAST 1.0
+	// 2 VAST 2.0
+	// 3 VAST 3.0
+	// 4 VAST 1.0 Wrapper
+	// 5 VAST 2.0 Wrapper
+	// 6 VAST 3.0 Wrapper
+	// 7 VAST 4.0
+	// 8 VAST 4.0 Wrapper
+	// 9 DAAST 1.0
+	// 10 DAAST 1.0 Wrapper
+	Protocols []int8 `json:"protocols,omitempty"`
 }
 
 type AdUnit struct {
@@ -73,6 +86,7 @@ type AdUnit struct {
 	ConfigID   string           `json:"config_id"`
 	MediaTypes []string         `json:"media_types"`
 	Instl      int8             `json:"instl"`
+	Video      PBSVideo         `json:"video"`
 }
 
 type PBSAdUnit struct {
@@ -122,6 +136,15 @@ func (bidder *PBSBidder) LookupBidID(Code string) string {
 		}
 	}
 	return ""
+}
+
+func (bidder *PBSBidder) LookupAdUnit(Code string) (unit *PBSAdUnit) {
+	for _, unit := range bidder.AdUnits {
+		if unit.Code == Code {
+			return &unit
+		}
+	}
+	return nil
 }
 
 type PBSRequest struct {
@@ -325,6 +348,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 				Params:     b.Params,
 				BidID:      b.BidID,
 				MediaTypes: mtypes,
+				Video:      unit.Video,
 			}
 
 			bidder.AdUnits = append(bidder.AdUnits, pau)

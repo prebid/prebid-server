@@ -1,4 +1,4 @@
-package adapters
+package lifestreet
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 type lsTagInfo struct {
@@ -81,8 +82,8 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Model '%s' doesn't match '%s", breq.Device.Model, lsdata.deviceModel), http.StatusInternalServerError)
 		return
 	}
-	if breq.Device.Connectiontype != lsdata.deviceConnectiontype {
-		http.Error(w, fmt.Sprintf("Connectiontype '%s' doesn't match '%s", breq.Device.Connectiontype, lsdata.deviceConnectiontype), http.StatusInternalServerError)
+	if *breq.Device.ConnectionType != openrtb.ConnectionType(lsdata.deviceConnectiontype) {
+		http.Error(w, fmt.Sprintf("Connectiontype '%s' doesn't match '%s", breq.Device.ConnectionType, lsdata.deviceConnectiontype), http.StatusInternalServerError)
 		return
 	}
 	if breq.Device.IFA != lsdata.deviceIfa {
@@ -99,7 +100,7 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("No banner object sent"), http.StatusInternalServerError)
 			return
 		}
-		if breq.Imp[0].Banner.W != lsdata.width || breq.Imp[0].Banner.H != lsdata.height {
+		if *breq.Imp[0].Banner.W != lsdata.width || *breq.Imp[0].Banner.H != lsdata.height {
 			http.Error(w, fmt.Sprintf("Size '%dx%d' doesn't match '%dx%d", breq.Imp[0].Banner.W, breq.Imp[0].Banner.H, lsdata.width, lsdata.height), http.StatusInternalServerError)
 			return
 		}
@@ -172,7 +173,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 		bid:     1.11,
 	}
 
-	conf := *DefaultHTTPAdapterConfig
+	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewLifestreetAdapter(&conf, server.URL)
 	an.URI = server.URL
 
@@ -186,7 +187,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 			IP:             lsdata.deviceIP,
 			Make:           lsdata.deviceMake,
 			Model:          lsdata.deviceModel,
-			Connectiontype: lsdata.deviceConnectiontype,
+			ConnectionType: openrtb.ConnectionType(lsdata.deviceConnectiontype).Ptr(),
 			IFA:            lsdata.deviceIfa,
 		},
 	}
@@ -286,7 +287,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 func TestLifestreetUserSyncInfo(t *testing.T) {
 	url := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl=localhost%2Fsetuid%3Fbidder%3Dlifestreet%26uid%3D%24%24visitor_cookie%24%24"
 
-	an := NewLifestreetAdapter(DefaultHTTPAdapterConfig, "localhost")
+	an := NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
 	if an.usersyncInfo.URL != url {
 		t.Fatalf("User Sync Info URL '%s' doesn't match '%s'", an.usersyncInfo.URL, url)
 	}
