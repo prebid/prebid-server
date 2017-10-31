@@ -41,6 +41,9 @@ type PBSBid struct {
 	// CacheId is an ID in prebid-cache which can be used to fetch this ad's content.
 	// This supports prebid-mobile, which requires that the content be available from a URL.
 	CacheID string `json:"cache_id,omitempty"`
+	// Complete cache url returned from the prebid-cache.
+	// more flexible than a design that assumes the UUID is always appended to the end of the URL.
+	CacheURL string `json:"cache_url,omitempty"`
 	// ResponseTime is the number of milliseconds it took for the adapter to return a bid.
 	ResponseTime      int               `json:"response_time_ms,omitempty"`
 	AdServerTargeting map[string]string `json:"ad_server_targeting,omitempty"`
