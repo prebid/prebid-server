@@ -3,13 +3,57 @@ package adapters
 import (
 	"context"
 	"crypto/tls"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+type BidderLeaf interface {
+	// MakeHttpRequests makes the HTTP requests which should be made to fetch bids.
+	//
+	// The requests can be nil (if no external calls are needed), but should not contain nil elements.
+	//
+	// The errors should contain a list of errors which explain why this bidder's bids will be
+	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
+	MakeHttpRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
+
+	// MakeBids unpacks the server's response into Bids.
+	// This method **should not** close the response body. The caller will fully read and close it so that the
+	// connections get reused properly.
+	//
+	// The bids can be nil (for no bids), but should not contain nil elements.
+	//
+	// The errors should contain a list of errors which explain why this bidder's bids will be
+	// "subpar" in some way. For example: the server response didn't have the expected format.
+	MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*BidData, []error)
+}
+
+// RequestData packages together the fields needed to make an http.Request.
+//
+// This exists so that prebid-server core code can implement its "debug" API uniformly across all adapters.
+type RequestData struct {
+	Method  string
+	Uri     string
+	Body    []byte
+	Headers http.Header
+}
+
+// ResponseData packages together information from the server's http.Response.
+//
+// This exists so that prebid-server core code can implement its "debug" API uniformly across all adapters.
+type ResponseData struct {
+	StatusCode int
+	Body       []byte
+	Headers    http.Header
+}
+
+type BidData struct {
+	Bid  *openrtb.Bid
+	Type openrtb_ext.BidType
+}
 
 // Bidders participate in prebid-server auctions.
 type Bidder interface {
