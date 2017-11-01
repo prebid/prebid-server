@@ -211,7 +211,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings, optOutCookieName string) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -258,7 +258,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
+		pbsReq.Cookie = ParsePBSCookieFromRequest(r, optOutCookieName)
 
 		// Host has right to leverage private cookie store for user ID
 		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {

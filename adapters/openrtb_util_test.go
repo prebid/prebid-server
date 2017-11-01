@@ -370,7 +370,7 @@ func TestOpenRTBEmptyUser(t *testing.T) {
 }
 
 func TestOpenRTBUserWithCookie(t *testing.T) {
-	pbsCookie := pbs.NewPBSCookie()
+	pbsCookie := pbs.NewPBSCookie(false)
 	pbsCookie.TrySync("test", "abcde")
 	pbReq := pbs.PBSRequest{
 		User: &openrtb.User{},

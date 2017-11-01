@@ -19,6 +19,7 @@ type Configuration struct {
 	Metrics         Metrics            `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
+	OptOutCookieName string            `mapstructure:"optout_cookie_name"`
 }
 
 type HostCookie struct {

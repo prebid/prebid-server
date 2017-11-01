@@ -176,9 +176,10 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *ConfigDeps) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.cfg.OptOutCookieName)
+	userSyncCookie.SetCookieOnResponse(w, hostCookieSettings.Domain)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -226,11 +227,11 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.Encode(csResp)
 }
 
-type auctionDeps struct {
+type ConfigDeps struct {
 	cfg *config.Configuration
 }
 
-func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *ConfigDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
 	mRequestMeter.Mark(1)
@@ -244,7 +245,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings, deps.cfg.OptOutCookieName)
+	pbs_req.Cookie.SetCookieOnResponse(w, hostCookieSettings.Domain)
+
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /auction request: %v", err)
@@ -797,10 +800,12 @@ func serve(cfg *config.Configuration) error {
 		stopSignals <- syscall.SIGTERM
 	})()
 
+	cfgDeps := ConfigDeps{cfg}
+
 	router := httprouter.New()
-	router.POST("/auction", (&auctionDeps{cfg}).auction)
+	router.POST("/auction", (&cfgDeps).auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cfgDeps).cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
@@ -816,6 +821,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{
+		OptOutCookieName:   cfg.OptOutCookieName,
 		HostCookieSettings: &hostCookieSettings,
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,

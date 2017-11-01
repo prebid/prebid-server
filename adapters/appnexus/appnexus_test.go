@@ -327,7 +327,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", andata.deviceUA)
 	req.Header.Add("X-Real-IP", andata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc := pbs.ParsePBSCookieFromRequest(req, "trp_optout")
 	pc.TrySync("adnxs", andata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
@@ -336,7 +336,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs, "trp_optout")
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
