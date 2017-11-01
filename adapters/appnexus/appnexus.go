@@ -271,6 +271,11 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
 func preprocess(imp *openrtb.Imp) (string, error) {
+	// We only support banner and video impressions for now.
+	if imp.Native != nil || imp.Audio != nil {
+		return "", fmt.Errorf("Appnexus doesn't support audio or native Imps. Ignoring Imp ID=%s", imp.ID)
+	}
+
 	var parsedExt openrtb_ext.ExtImpAppnexus
 	if err := json.Unmarshal(imp.Ext, &parsedExt); err != nil {
 		return "", err
@@ -355,6 +360,8 @@ func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapte
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	// This is safe-ish for multi-type impressions because the AN server prioritizes video over banner.
+	// A project exists to return the media type in the bid response, at which point we can delete this.
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
