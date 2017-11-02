@@ -17,6 +17,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
+	"github.com/prebid/prebid-server/config"
 )
 
 const MAX_BIDDERS = 8
@@ -211,7 +212,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings, optOutCookieName string) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings, optOutCookie config.Cookie) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -258,7 +259,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = ParsePBSCookieFromRequest(r, optOutCookieName)
+		pbsReq.Cookie = ParsePBSCookieFromRequest(r, optOutCookie)
 
 		// Host has right to leverage private cookie store for user ID
 		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {

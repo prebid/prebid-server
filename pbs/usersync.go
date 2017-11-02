@@ -15,6 +15,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/rcrowley/go-metrics"
+	"log"
+	"github.com/prebid/prebid-server/config"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -62,7 +64,7 @@ type uidWithExpiry struct {
 }
 
 type UserSyncDeps struct {
-	OptOutCookieName   string
+	OptOutCookie       config.Cookie
 	ExternalUrl        string
 	RecaptchaSecret    string
 	OptOutUrl          string
@@ -72,33 +74,44 @@ type UserSyncDeps struct {
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParsePBSCookieFromRequest(r *http.Request, optOutCookieName string) *PBSCookie {
-	optOutCookie, err1 := r.Cookie(optOutCookieName)
+func ParsePBSCookieFromRequest(r *http.Request, optoutCookie config.Cookie) *PBSCookie {
+	if optoutCookie.Name != "" {
+		optOutCookie, err1 := r.Cookie(optoutCookie.Name)
+		if err1 == nil && optOutCookie.Value == optoutCookie.Value {
+			pc := NewPBSCookie()
+			log.Print("Found trp_optout cookie with value: ", optOutCookie.Value)
+			pc.SetPreference(false)
+			return pc
+		}
+	}
 	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
-
-	//Sets optout to true if the cookie explicitly sets it positive. Defaults to false
-	if err1 == nil && optOutCookie.Value == "true" {
-		return NewPBSCookie(true)
+	if err2 == nil {
+		log.Print("Found uids cookie with value: ", uidCookie.Value)
 	}
 	if err2 != nil {
-		return NewPBSCookie(false)
+		return NewPBSCookie()
 	}
 	return ParsePBSCookie(uidCookie)
 }
 
 // ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.
 func ParsePBSCookie(uidCookie *http.Cookie) *PBSCookie {
-	pc := NewPBSCookie(false)
+	pc := NewPBSCookie()
 
 	j, err := base64.URLEncoding.DecodeString(uidCookie.Value)
 	if err != nil {
 		// corrupted cookie; we should reset
 		return pc
 	}
-	err = json.Unmarshal(j, pc)
+
+	log.Print("Before unmarshal: uid cookie = ", string(j), uidCookie.Value)
+	//	err = json.Unmarshal(j, pc)
+	log.Print("After json.Unmarshal: uid cookie=  ", string(j))
 
 	// Need to explicitly set to false again because Unmarshal defaults it to true
 	pc.SetPreference(true)
+
+	printCookie(*pc)
 
 	// The error on Unmarshal here isn't terribly important.
 	// If the cookie has been corrupted, we should reset to an empty one anyway.
@@ -106,11 +119,10 @@ func ParsePBSCookie(uidCookie *http.Cookie) *PBSCookie {
 }
 
 // NewPBSCookie returns an empty PBSCookie
-func NewPBSCookie(optedOut bool) *PBSCookie {
+func NewPBSCookie() *PBSCookie {
 	return &PBSCookie{
 		uids:     make(map[string]uidWithExpiry),
 		birthday: timestamp(),
-		optOut:   optedOut,
 	}
 }
 
@@ -176,10 +188,18 @@ func (cookie *PBSCookie) HasLiveSync(familyName string) bool {
 	return isLive
 }
 
+func printCookie(cookie PBSCookie) {
+	log.Print("Printing parsed PBS cookie: optout and length ", cookie.optOut, len(cookie.uids))
+	for uid := range cookie.uids {
+		log.Print("uid is ", uid)
+	}
+}
+
 // LiveSyncCount returns the number of families which have active UIDs for this user.
 func (cookie *PBSCookie) LiveSyncCount() int {
 	now := time.Now()
 	numSyncs := 0
+	printCookie(*cookie)
 	if cookie != nil {
 		for _, value := range cookie.uids {
 			if now.Before(value.Expires) {
@@ -279,7 +299,7 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookieName)
+	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookie)
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	json.NewEncoder(w).Encode(pc)
 	return
@@ -300,7 +320,7 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookieName)
+	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookie)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
@@ -378,7 +398,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookieName)
+	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookie)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)

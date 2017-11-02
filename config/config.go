@@ -19,7 +19,7 @@ type Configuration struct {
 	Metrics         Metrics            `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
-	OptOutCookieName string            `mapstructure:"optout_cookie_name"`
+	OptOutCookie    Cookie             `mapstructure:"optout_cookie"`
 }
 
 type HostCookie struct {
@@ -34,11 +34,11 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	XAPI        struct {
+	XAPI struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
-	} `mapstructure:"xapi"` // needed for Rubicon
+	} `mapstructure:"xapi"`                         // needed for Rubicon
 }
 
 type Metrics struct {
@@ -65,6 +65,11 @@ type Cache struct {
 	Query  string `mapstructure:"query"`
 }
 
+type Cookie struct {
+	Name  string `mapstructure:"name"`
+	Value string `mapstructure:"value"`
+}
+
 // New uses viper to get our server configurations
 func New() (*Configuration, error) {
 	var c Configuration
@@ -77,10 +82,10 @@ func New() (*Configuration, error) {
 //Allows for protocol relative URL if scheme is empty
 func (cfg *Configuration) GetCacheBaseURL() string {
 	cfg.CacheURL.Scheme = strings.ToLower(cfg.CacheURL.Scheme)
-	if strings.Contains(cfg.CacheURL.Scheme, "https"){
+	if strings.Contains(cfg.CacheURL.Scheme, "https") {
 		return fmt.Sprintf("https://%s", cfg.CacheURL.Host)
 	}
-	if strings.Contains(cfg.CacheURL.Scheme, "http"){
+	if strings.Contains(cfg.CacheURL.Scheme, "http") {
 		return fmt.Sprintf("http://%s", cfg.CacheURL.Host)
 	}
 	return fmt.Sprintf("//%s", cfg.CacheURL.Host)
