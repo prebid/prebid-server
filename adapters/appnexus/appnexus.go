@@ -213,7 +213,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	memberIds := make([]string, 0, len(request.Imp))
 	errs := make([]error, 0, len(request.Imp))
 
@@ -258,13 +258,11 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	return []*adapters.RequestData{
-		{
-			Method:  "POST",
-			Uri:     uri,
-			Body:    reqJSON,
-			Headers: headers,
-		},
+	return &adapters.RequestData{
+		Method:  "POST",
+		Uri:     uri,
+		Body:    reqJSON,
+		Headers: headers,
 	}, errs
 }
 
