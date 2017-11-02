@@ -226,6 +226,7 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 		if errs != nil {
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i-- // TODO: Test this, and do it better
 		}
 	}
 
@@ -328,7 +329,7 @@ func makeKeywordStr(keywords []openrtb_ext.ExtImpAppnexusKeyVal) string {
 	return strings.Join(kvs, ",")
 }
 
-func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.BidData, []error) {
+func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	if response.StatusCode == 204 {
 		return nil, nil
 	}
@@ -342,26 +343,25 @@ func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapte
 		return nil, []error{err}
 	}
 
-	bids := make([]*adapters.BidData, 5)
+	bids := make([]*adapters.TypedBid, 5)
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			// TODO: This will be buggy. Imps can allow multiple types, and Appnexus' response doesn't include the
-			// Bid's type. This is some "best guess" code... but not guaranteed to be accurate.
-			//
-			// There's a ticket for this... but until then, this is a "best guess".
-			bids = append(bids, &adapters.BidData{
-				Bid:  &bid,
-				Type: getMediaTypeForImp(bid.ImpID, request.Imp),
+			bids = append(bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
 			})
 		}
 	}
 	return bids, nil
 }
 
+// getMediaTypeForImp figures out which media type this bid is for.
+//
+// This is only safe for multi-type impressions because the AN server prioritizes video over banner,
+// and we duplicate that logic here. A ticket exists to return the media type in the bid response,
+// at which point we can delete this.
 func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	// This is safe-ish for multi-type impressions because the AN server prioritizes video over banner.
-	// A project exists to return the media type in the bid response, at which point we can delete this.
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
