@@ -2,22 +2,18 @@ package openrtb_ext
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtSeatBidPrebid `json:"prebid"`
+	Prebid ExtRequestPrebid `json:"prebid"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Cache *ExtRequestCache `json:"cache,omitempty"`
+	Cache *ExtRequestCache        `json:"cache"`
+	Targeting *ExtRequestTargeting`json:"targeting"`
 }
 
 // ExtRequestCache defines the contract for bidrequest.ext.prebid.cache
 type ExtRequestCache struct {
 	Markup CacheMarkup `json:"markup"`
-}
-
-// ExtRequestSort defines the contract for bidrequest.ext.prebid.sort
-type ExtRequestSort struct {
-	Type SortType `json:"type"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
@@ -31,7 +27,7 @@ type CacheMarkup int
 
 const (
 	No  CacheMarkup = 0
-	Yes             = 1
+	Yes CacheMarkup = 1
 )
 
 // SortType defines the allowed values for bidrequest.ext.sort.type
@@ -47,8 +43,8 @@ type PriceGranularity string
 
 const (
 	PriceGranularityLow    PriceGranularity = "low"
-	PriceGranularityMedium                  = "med"
-	PriceGranularityHigh                    = "high"
-	PriceGranularityAuto                    = "auto"
-	PriceGranularityDense                   = "dense"
+	PriceGranularityMedium PriceGranularity = "med"
+	PriceGranularityHigh   PriceGranularity = "high"
+	PriceGranularityAuto   PriceGranularity = "auto"
+	PriceGranularityDense  PriceGranularity = "dense"
 )

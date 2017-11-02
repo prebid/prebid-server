@@ -3,7 +3,6 @@ package adapters
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
@@ -105,75 +104,62 @@ type singleBidderAdapter struct {
 	Client     *http.Client
 }
 
-func (bidder *singleBidderAdapter) Bid(ctx context.Context, request *openrtb.BidRequest) *BidderResponse {
+func (bidder *singleBidderAdapter) Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error) {
 	start := time.Now()
 	reqData, errs := bidder.Bidder.MakeHttpRequests(request)
 
-	bidderResponse := &BidderResponse{
-		Errors: errs,
-	}
-
 	if reqData == nil {
-		return bidderResponse
+		return nil, errs
 	}
 
 	httpReq, err := http.NewRequest("POST", reqData.Uri, bytes.NewBuffer(reqData.Body))
 	if err != nil {
-		bidderResponse.Errors = append(bidderResponse.Errors, err)
-		return bidderResponse
+		return nil, append(errs, err)
 	}
 	httpReq.Header = reqData.Headers
 
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
-	bidderResponse.ServerCalls = []*openrtb_ext.ExtServerCall{
-		{
-			Uri:         reqData.Uri,
-			RequestBody: string(reqData.Body),
-			Status:      -1,
+	seatBid := &PBSOrtbSeatBid{
+		ServerCalls: []*openrtb_ext.ExtServerCall{
+			{
+				Uri:         reqData.Uri,
+				RequestBody: string(reqData.Body),
+				Status:      -1,
+			},
 		},
 	}
 	if err != nil {
-		bidderResponse.Errors = append(bidderResponse.Errors, err)
-		return bidderResponse
+		return seatBid, append(errs, err)
 	}
 
 	respBody, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		bidderResponse.Errors = append(bidderResponse.Errors, err)
-		return bidderResponse
+		return seatBid, append(errs, err)
 	}
 	defer httpResp.Body.Close()
-	bidderResponse.ServerCalls[0].Status = httpResp.StatusCode
-	bidderResponse.ServerCalls[0].Responsebody = string(respBody)
+	seatBid.ServerCalls[0].Status = httpResp.StatusCode
+	seatBid.ServerCalls[0].ResponseBody = string(respBody)
 
 	bids, moreErrs := bidder.Bidder.MakeBids(request, &ResponseData{
 		StatusCode: httpResp.StatusCode,
 		Body:       respBody,
 		Headers:    httpResp.Header,
 	})
-	bidderResponse.Errors = append(bidderResponse.Errors, moreErrs...)
+	errs = append(errs, moreErrs...)
 	if len(bids) == 0 {
-		return bidderResponse
+		return seatBid, errs
 	}
 
 	responseTime := int(time.Since(start) / time.Millisecond)
-	finalBids := make([]*openrtb.Bid, 0, len(bids))
+	pbsBids := make([]*PBSOrtbBid, 0, len(bids))
 	for i := 0; i < len(bids); i++ {
-		bidExt := openrtb_ext.ExtBid{
-			Prebid: &openrtb_ext.ExtBidPrebid{
-				ResponseTimeMillis: responseTime,
-				Type:               bids[i].BidType,
-			},
-			Bidder: bids[i].Bid.Ext,
-		}
-		bidExtBytes, err := json.Marshal(bidExt)
-		if err != nil {
-			bidderResponse.Errors = append(bidderResponse.Errors, err)
-		} else {
-			bids[i].Bid.Ext = bidExtBytes
-			finalBids = append(finalBids, bids[i].Bid)
-		}
+		pbsBids = append(pbsBids, &PBSOrtbBid{
+			Bid:                bids[i].Bid,
+			Cache:              nil, // TODO: Cache properly
+			Type:               bids[i].BidType,
+			ResponseTimeMillis: responseTime,
+		})
 	}
-	bidderResponse.Bids = finalBids
-	return bidderResponse
+	seatBid.Bids = pbsBids
+	return seatBid, errs
 }

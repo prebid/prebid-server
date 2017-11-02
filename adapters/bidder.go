@@ -12,26 +12,18 @@ type Bidder interface {
 	//
 	// Per the OpenRTB spec, a SeatBid may not be empty. If so, then any errors which contribute
 	// to the "no bid" bid should be returned here instead.
-	Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error)
-}
-
-// BidderResponse carries all the data needed for a Bidder's response.
-type BidderResponse struct {
-	SeatBid *openrtb.SeatBid
-
-	// Bids contains all the bids that the Bidder wants to enter.
-	// This can be nil (for no bids), but should not contain nil elements.
-	Bids []*openrtb.Bid
-	// ServerCalls stores some debugging info.
-	// This is only required if the input request.Test was 1.
-	ServerCalls []*openrtb_ext.ExtServerCall
-	// Errors should contain a list of errors which occurred internally. These should report
-	// any conditions which result in "no" or "subpar" bids. For example:
 	//
-	// 1. The openrtb request needs an ad type which this bidder doesn't support.
-	// 2. The auction timed out before all the bids were entered.
-	// 3. The remote server returned unexpected input.
-	Errors []error
+	// A Bidder *may* return two non-nil values here. Errors should describe situations which
+	// make the bid (or no-bid) "less than ideal." Common examples include:
+	//
+	// 1. HTTP connection issues.
+	// 2. Imps with Media Types which this Bidder doesn't support.
+	// 3. The Context timeout expired before all expected bids were returned.
+	// 4. The Server sent back an unexpected Response, so some bids were ignored.
+	//
+	// Any errors will be user-facing... so the error messages should help publishers understand
+	// what might account for "bad" bids.
+	Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error)
 }
 
 // PBSOrtbBid is a Bid returned by a Bidder.
@@ -40,16 +32,21 @@ type BidderResponse struct {
 type PBSOrtbBid struct {
 	Bid *openrtb.Bid
 	// Cache must not be nil if request.ext.prebid.cache.markup was 1
-	Cache *openrtb_ext.ExtResponseCache
-	Type openrtb_ext.BidType
+	Cache              *openrtb_ext.ExtResponseCache
+	Type               openrtb_ext.BidType
 	ResponseTimeMillis int
 }
 
 // PBSOrtbBid is a SeatBid returned by a Bidder.
 //
-// PBS does not support the "Group" option from the OpenRTB SeatBid.
-// All bids must be winnable independently.
+// PBS does not support the "Group" option from the OpenRTB SeatBid. All bids must be winnable independently.
 type PBSOrtbSeatBid struct {
-	Bid []*PBSOrtbBid
-	Ext *openrtb_ext.ExtSeatBid
+	// Bids is the list of bids in this SeatBid. If len(Bids) == 0, no SeatBid will be entered for this bidder.
+	// This is because the OpenRTB 2.5 spec requires at least one bid for each SeatBid.
+	Bids []*PBSOrtbBid
+	// ServerCalls will become response.ext.debug.servercalls.{bidder} on the final Response.
+	ServerCalls []*openrtb_ext.ExtServerCall
+	// Ext will become response.seatbid[i].ext.{bidder} on the final Response, *only if* len(Bids) > 0.
+	// If len(Bids) == 0, no SeatBid will be entered, and this field will be ignored.
+	Ext openrtb.RawJSON
 }
