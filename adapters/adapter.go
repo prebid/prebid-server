@@ -36,11 +36,3 @@ type BidderResponse struct {
 	// 3. The remote server returned unexpected input.
 	Errors []error
 }
-
-// BidData packages the Bidder's openrtb Bid with the Prebid extension.
-// When a HttpBidder returns this, the only PrebidExt field it **must** populate is the Type.
-// The other fields will be populated in the prebid core.
-type BidData struct {
-	Bid       *openrtb.Bid
-	PrebidExt *openrtb_ext.ExtBidPrebid
-}
