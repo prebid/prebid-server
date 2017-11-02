@@ -60,4 +60,5 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) []*openrt
         new_req.Imp = new_Imp
         clean_reqs[i] = new_req
     }
+    return clean_reqs
 }
