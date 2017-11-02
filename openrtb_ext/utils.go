@@ -10,10 +10,15 @@ import (
 // beyond this context, so this will not be compatible with any other uses of the extension area. That is, this routine
 // will work, but the adapters will not see any other extension fields.
 
+// NOTE: the return map will only contain entries for bidders that both have the extension field in at least one Imp,
+// and are listed in the adapters string. wseats and bseats can be implimented by passing the bseats list as adapters,
+// or after return removing any adapters listed in wseats. Or removing all adapters in wseats from the adapters list
+// before submitting.
+
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) []*openrtb.BidRequest {
+func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) map[string]*openrtb.BidRequest {
     // This is the clean array of openrtb requests we will be returning
-    clean_reqs := make([]*openrtb.BidRequest, len(adapters))
+    cleanReqs := map[string]*openrtb.BidRequest{}
 
     // Decode the Imp extensions once to save time. We store the results here
     imp_exts := make([]map[string]interface{}, len(orig.Imp) )
@@ -27,38 +32,43 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) []*openrt
 
     // Loop over every adapter we want to create a clean openrtb request for.
     for i := 0 ; i < len(adapters); i++ {
-        // Create a new BidRequest
-        new_req := new(openrtb.BidRequest)
-        // Make a shallow copy of the original request
-        *new_req = *orig
         // Go deeper into Imp array
-        new_Imp := make([]openrtb.Imp, len(orig.Imp))
-        copy(new_Imp, orig.Imp)
+        newImps := make([]openrtb.Imp, 0, len(orig.Imp))
 
         // Overwrite each extension field with a cleanly built subset
         // We are looping over every impression in the Imp array
         for j := 0 ; j < len(orig.Imp) ; j++ {
-            // Start with a new, empty unpacked extention
-            new_ext := map[string]interface{}{}
-            // Need to do some consistency checking to verify these fields exist. Especially the adapters one.
-            if val, ok := imp_exts[j]["prebid"]; ok {
-                new_ext["prebid"] = val
-            }
+            // Don't do anything if the current bidder's field is not present.
             if val, ok := imp_exts[j][adapters[i]]; ok {
-                new_ext[adapters[i]] = val
+                // Start with a new, empty unpacked extention
+                newExts := map[string]interface{}{}
+                // Need to do some consistency checking to verify these fields exist. Especially the adapters one.
+                if val, ok := imp_exts[j]["prebid"]; ok {
+                    newExts["prebid"] = val
+                }
+                newExts[adapters[i]] = val
+                // Create a "clean" byte array for this Imp's extension
+                // Note, if the "prebid" or "<adapter>" field is missing from the source, it will be missing here as well
+                // The adapters should test that their field is present rather than assuming it will be there if they are
+                // called
+                b, err := json.Marshal(newExts)
+                // Need error handling here
+                _ = err
+                // Overwrite the extention field with the new cleaned version
+                newImps = append(newImps, orig.Imp[j])
+                newImps[len(newImps) - 1].Ext = b
             }
-            // Create a "clean" byte array for this Imp's extension
-            // Note, if the "prebid" or "<adapter>" field is missing from the source, it will be missing here as well
-            // The adapters should test that their field is present rather than assuming it will be there if they are
-            // called
-            b, err := json.Marshal(new_ext)
-            // Need error handling here
-            _ = err
-            // Overwrite the extention field with the new cleaned version
-            new_Imp[j].Ext = b
         }
-        new_req.Imp = new_Imp
-        clean_reqs[i] = new_req
+
+        // Only add a BidRequest if there exist Imp(s) for this adapter
+        if len(newImps) > 0 {
+            // Create a new BidRequest
+            newReq := new(openrtb.BidRequest)
+            // Make a shallow copy of the original request
+            *newReq = *orig
+            newReq.Imp = newImps
+            cleanReqs[adapters[i]] = newReq
+        }
     }
-    return clean_reqs
+    return cleanReqs
 }
