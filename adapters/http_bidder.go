@@ -47,7 +47,8 @@ type bidderAdapter struct {
 }
 
 func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error) {
-	start := time.Now()
+	// Commenting out per bid response time tracking
+	// start := time.Now()
 	reqData, errs := bidder.Bidder.MakeHttpRequests(request)
 
 	if len(reqData) == 0 {
@@ -83,14 +84,13 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 
 		if httpInfo.err == nil {
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.response)
-			responseTime := int(time.Since(start) / time.Millisecond)
+			// responseTime := int(time.Since(start) / time.Millisecond)
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
 				seatBid.Bids = append(seatBid.Bids, &PBSOrtbBid{
-					Bid:                bid.Bid,
-					Cache:              nil, // TODO: Support the cache
-					Type:               bid.BidType,
-					ResponseTimeMillis: responseTime,
+					Bid:   bid.Bid,
+					Cache: nil, // TODO: Support the cache
+					Type:  bid.BidType,
 				})
 			}
 		} else {

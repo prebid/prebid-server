@@ -7,12 +7,19 @@ import (
 	"context"
 	"time"
 	"net/http"
+	"encoding/json"
 )
 
 type Exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters []string
 	adapterMap map[string]adapters.Bidder
+}
+
+// Container to pass out response ext data from the GetAllBids goroutines back into the main thread
+type seatResponseExtra struct {
+	ResponseTimeMillis int
+	Errors []string
 }
 
 func NewExchange(client *http.Client) *Exchange {
@@ -42,14 +49,16 @@ func (e *Exchange) HoldAuction(bidRequest *openrtb.BidRequest, ctx context.Conte
 	// Currently just implementing randomize
 	openrtb_ext.RandomizeList(liveAdapters)
 
-    adapterBids := e.GetAllBids(ctx, liveAdapters, cleanRequests)
+	adapterExtra := make(map[string]*seatResponseExtra)
+
+    adapterBids := e.GetAllBids(ctx, liveAdapters, cleanRequests, adapterExtra)
 
 	// Build the response
 	return e.BuildBidResponse(liveAdapters, adapterBids, bidRequest)
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *Exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanRequests map[string]*openrtb.BidRequest) map[string]*adapters.PBSOrtbSeatBid {
+func (e *Exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanRequests map[string]*openrtb.BidRequest, adapterExtra map[string]*seatResponseExtra) map[string]*adapters.PBSOrtbSeatBid {
 	// Set up pointers to the bid results
 	adapterBids := map[string]*adapters.PBSOrtbSeatBid{}
 	chBids := make(chan int, len(liveAdapters))
@@ -60,11 +69,16 @@ func (e *Exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanR
 			start := time.Now()
 			sb, err := e.adapterMap[aName].Bid(ctx, cleanRequests[aName])
 			// TODO: Error handling
-			_ = err
 
 			// Add in time reporting
 			elapsed := time.Since(start)
-			sb.responsetimemillis = elapsed/time.Millisecond
+			ae := new(seatResponseExtra)
+			ae.ResponseTimeMillis = int(elapsed/time.Millisecond)
+			serr := make([]string, len(err))
+			for i :=0; i<len(err); i++ {
+				serr[i] = err[i].Error()
+			}
+			ae.Errors = serr
 			adapterBids[aName] = sb
 			chBids <- 1
 		}(a)
@@ -78,7 +92,7 @@ func (e *Exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanR
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *Exchange) BuildBidResponse(liveAdapters []string, adapterBids map[string]*adapters.PBSOrtbSeatBid, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
+func (e *Exchange) BuildBidResponse(liveAdapters []string, adapterBids map[string]*adapters.PBSOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[string]*seatResponseExtra) *openrtb.BidResponse {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -87,5 +101,30 @@ func (e *Exchange) BuildBidResponse(liveAdapters []string, adapterBids map[strin
 		bidResponse.NBR = openrtb.NoBidReasonCode.Ptr(openrtb.NoBidReasonCodeInvalidRequest)
 	}
 
+	bidResponseExt := e.MakeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test)
+	ext, err := json.Marshal(bidResponseExt)
+	// TODO: handle errors
+	_ = err
+	bidResponse.Ext = ext
+
 	return bidResponse
+}
+
+// Extract all the data from the SeatBids and build the ExtBidResponse
+func (e *Exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSeatBid, adapterExtra map[string]*seatResponseExtra, test int8) openrtb_ext.ExtBidResponse {
+	bidResponseExt := new(openrtb_ext.ExtBidResponse)
+	if test == 1 {
+		bidResponseExt.Debug = new(openrtb_ext.ExtResponseDebug)
+	}
+
+	for a, b := range adapterBids {
+		if test == 1 {
+			// Fill debug info
+			bidResponseExt.Debug.ServerCalls[a] = b.ServerCalls
+		}
+		bidResponseExt.Errors[a] = adapterExtra[a].Errors
+		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
+		// Defering the filling of bidResponseExt.Usersync[a] until later
+
+	}
 }

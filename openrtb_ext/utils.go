@@ -3,7 +3,19 @@ package openrtb_ext
 import (
     "github.com/mxmCherry/openrtb"
     "encoding/json"
+    "math/rand"
 )
+
+// Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
+func RandomizeList(list []string) {
+    l := len(list)
+    perm := rand.Perm(l)
+    var j int
+    for i :=0; i < l; i++ {
+        j = perm[i]
+        list[i], list[j] = list[j], list[i]
+    }
+}
 
 // This will copy the openrtb BidRequest into an array of requests, where the BidRequest.Imp[].Ext field will only
 // consist of the "prebid" field and the field for the appropriate bidder parameters. We will drop all extended fields
