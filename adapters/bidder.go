@@ -34,7 +34,6 @@ type PBSOrtbBid struct {
 	// Cache must not be nil if request.ext.prebid.cache.markup was 1
 	Cache              *openrtb_ext.ExtResponseCache
 	Type               openrtb_ext.BidType
-	ResponseTimeMillis int
 }
 
 // PBSOrtbBid is a SeatBid returned by a Bidder.
@@ -49,4 +48,5 @@ type PBSOrtbSeatBid struct {
 	// Ext will become response.seatbid[i].ext.{bidder} on the final Response, *only if* len(Bids) > 0.
 	// If len(Bids) == 0, no SeatBid will be entered, and this field will be ignored.
 	Ext openrtb.RawJSON
+	ResponseTimeMillis int
 }
