@@ -34,18 +34,16 @@ type HttpBidder interface {
 }
 
 // AdaptHttpBidder bridges the APIs between a Bidder and an HttpBidder.
-func AdaptHttpBidder(bidderCode string, bidder HttpBidder, client *http.Client) Bidder {
+func AdaptHttpBidder(bidder HttpBidder, client *http.Client) Bidder {
 	return &bidderAdapter{
-		Bidder:     bidder,
-		BidderCode: bidderCode,
-		Client:     client,
+		Bidder: bidder,
+		Client: client,
 	}
 }
 
 type bidderAdapter struct {
-	Bidder     HttpBidder
-	BidderCode string
-	Client     *http.Client
+	Bidder HttpBidder
+	Client *http.Client
 }
 
 func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error) {
@@ -63,9 +61,9 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 		responseChannel <- bidder.doRequest(ctx, reqData[0])
 	} else {
 		for _, oneReqData := range reqData {
-			go func() {
-				responseChannel <- bidder.doRequest(ctx, oneReqData)
-			}()
+			go func(data *RequestData) {
+				responseChannel <- bidder.doRequest(ctx, data)
+			}(oneReqData) // Method arg avoids a race condition on oneReqData
 		}
 	}
 
@@ -112,11 +110,12 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtServerCall {
 			ResponseBody: string(httpInfo.response.Body),
 			Status:       httpInfo.response.StatusCode,
 		}
+	} else if httpInfo.request == nil {
+		return &openrtb_ext.ExtServerCall{}
 	} else {
 		return &openrtb_ext.ExtServerCall{
 			Uri:         httpInfo.request.Uri,
 			RequestBody: string(httpInfo.request.Body),
-			Status:      -1,
 		}
 	}
 }
@@ -124,7 +123,7 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtServerCall {
 // doRequest makes a request, handles the response, and returns the data needed by the
 // HttpBidder interface.
 func (bidder *bidderAdapter) doRequest(ctx context.Context, req *RequestData) *httpCallInfo {
-	httpReq, err := http.NewRequest("POST", req.Uri, bytes.NewBuffer(req.Body))
+	httpReq, err := http.NewRequest(req.Method, req.Uri, bytes.NewBuffer(req.Body))
 	if err != nil {
 		return &httpCallInfo{
 			request: req,
