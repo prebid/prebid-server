@@ -13,10 +13,9 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/rcrowley/go-metrics"
-	"log"
-	"github.com/prebid/prebid-server/config"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -79,15 +78,11 @@ func ParsePBSCookieFromRequest(r *http.Request, optoutCookie config.Cookie) *PBS
 		optOutCookie, err1 := r.Cookie(optoutCookie.Name)
 		if err1 == nil && optOutCookie.Value == optoutCookie.Value {
 			pc := NewPBSCookie()
-			log.Print("Found trp_optout cookie with value: ", optOutCookie.Value)
 			pc.SetPreference(false)
 			return pc
 		}
 	}
 	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
-	if err2 == nil {
-		log.Print("Found uids cookie with value: ", uidCookie.Value)
-	}
 	if err2 != nil {
 		return NewPBSCookie()
 	}
@@ -103,15 +98,7 @@ func ParsePBSCookie(uidCookie *http.Cookie) *PBSCookie {
 		// corrupted cookie; we should reset
 		return pc
 	}
-
-	log.Print("Before unmarshal: uid cookie = ", string(j), uidCookie.Value)
-	//	err = json.Unmarshal(j, pc)
-	log.Print("After json.Unmarshal: uid cookie=  ", string(j))
-
-	// Need to explicitly set to false again because Unmarshal defaults it to true
-	pc.SetPreference(true)
-
-	printCookie(*pc)
+	err = json.Unmarshal(j, pc)
 
 	// The error on Unmarshal here isn't terribly important.
 	// If the cookie has been corrupted, we should reset to an empty one anyway.
@@ -188,18 +175,10 @@ func (cookie *PBSCookie) HasLiveSync(familyName string) bool {
 	return isLive
 }
 
-func printCookie(cookie PBSCookie) {
-	log.Print("Printing parsed PBS cookie: optout and length ", cookie.optOut, len(cookie.uids))
-	for uid := range cookie.uids {
-		log.Print("uid is ", uid)
-	}
-}
-
 // LiveSyncCount returns the number of families which have active UIDs for this user.
 func (cookie *PBSCookie) LiveSyncCount() int {
 	now := time.Now()
 	numSyncs := 0
-	printCookie(*cookie)
 	if cookie != nil {
 		for _, value := range cookie.uids {
 			if now.Before(value.Expires) {

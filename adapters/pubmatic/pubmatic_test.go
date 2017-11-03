@@ -15,6 +15,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 )
 
@@ -644,7 +645,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 
 	httpReq := httptest.NewRequest("POST", server.URL, body)
 	httpReq.Header.Add("Referer", "http://test.com/sports")
-	pc := pbs.ParsePBSCookieFromRequest(httpReq, "trp_optout")
+	pc := pbs.ParsePBSCookieFromRequest(httpReq, config.Cookie{"", ""})
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
@@ -653,7 +654,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	_, err = pbs.ParsePBSRequest(httpReq, cacheClient, &hcs, "trp_optout")
+	_, err = pbs.ParsePBSRequest(httpReq, cacheClient, &hcs, config.Cookie{"", ""})
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

@@ -3,6 +3,7 @@ package pbs
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -289,7 +290,7 @@ func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request, "trp_optout")
+	return ParsePBSCookieFromRequest(&request, config.Cookie{"", ""})
 }
 
 func newTempId(uid string) uidWithExpiry {

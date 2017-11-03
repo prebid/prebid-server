@@ -26,7 +26,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	setupExchanges(cfg)
 	router := httprouter.New()
 
-	router.POST("/cookie_sync", (&ConfigDeps{cfg}).cookieSync)
+	router.POST("/cookie_sync", (&CookieSyncDeps{cfg.OptOutCookie}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -71,7 +71,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 	setupExchanges(cfg)
 	router := httprouter.New()
-	router.POST("/cookie_sync", (&ConfigDeps{cfg}).cookieSync)
+	router.POST("/cookie_sync", (&CookieSyncDeps{cfg.OptOutCookie}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -85,7 +85,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
 
-	pcs := pbs.ParsePBSCookieFromRequest(req, cfg.OptOutCookieName)
+	pcs := pbs.ParsePBSCookieFromRequest(req, cfg.OptOutCookie)
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
 	req.AddCookie(pcs.ToHTTPCookie())
@@ -163,7 +163,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs, "trp_optout")
+	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs, config.Cookie{"", ""})
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}

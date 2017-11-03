@@ -18,6 +18,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -296,7 +297,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req, "trp_optout")
+	pc := pbs.ParsePBSCookieFromRequest(req, config.Cookie{"", ""})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
@@ -305,7 +306,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs, "trp_optout")
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs, config.Cookie{"", ""})
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
