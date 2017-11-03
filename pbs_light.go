@@ -18,12 +18,12 @@ import (
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
-	"xojoc.pw/useragent"
 
 	"os"
 	"os/signal"
@@ -227,14 +227,19 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.Encode(csResp)
 }
 
-func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+type auctionDeps struct {
+	cfg *config.Configuration
+}
+
+func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
 	mRequestMeter.Mark(1)
 
 	isSafari := false
-	if ua := useragent.Parse(r.Header.Get("User-Agent")); ua != nil {
-		if ua.Type == useragent.Browser && ua.Name == "Safari" {
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
 			isSafari = true
 			mSafariRequestMeter.Mark(1)
 		}
@@ -381,6 +386,7 @@ func auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 		for i, bid := range pbs_resp.Bids {
 			bid.CacheID = cobjs[i].UUID
+			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
@@ -563,7 +569,7 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // https://blog.golang.org/context/userip/userip.go
 func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	if ua := useragent.Parse(req.Header.Get("User-Agent")); ua != nil {
+	if ua := user_agent.New(req.Header.Get("User-Agent")); ua != nil {
 		fmt.Fprintf(w, "User Agent: %v\n", ua)
 	}
 	ip, port, err := net.SplitHostPort(req.RemoteAddr)
@@ -797,7 +803,7 @@ func serve(cfg *config.Configuration) error {
 	})()
 
 	router := httprouter.New()
-	router.POST("/auction", auction)
+	router.POST("/auction", (&auctionDeps{cfg}).auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
@@ -826,7 +832,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.CacheURL)
+	pbc.InitPrebidCache(cfg.GetCacheBaseURL())
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})

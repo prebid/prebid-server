@@ -25,7 +25,7 @@ import:
 - package: github.com/coocood/freecache
 - package: github.com/spaolacci/murmur3
 - package: github.com/cloudfoundry/gosigar
-- package: xojoc.pw/useragent
+- package: github.com/mssola/user_agent
 testImport:
 - package: github.com/erikstmartin/go-testdb
 - package: github.com/stretchr/testify

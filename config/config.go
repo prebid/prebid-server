@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 // Configuration
@@ -11,7 +13,7 @@ type Configuration struct {
 	Port            int                `mapstructure:"port"`
 	AdminPort       int                `mapstructure:"admin_port"`
 	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheURL        string             `mapstructure:"prebid_cache_url"`
+	CacheURL        Cache              `mapstructure:"cache"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
@@ -56,6 +58,12 @@ type DataCache struct {
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
 
+type Cache struct {
+	Scheme string `mapstructure:"scheme"`
+	Host   string `mapstructure:"host"`
+	Query  string `mapstructure:"query"`
+}
+
 // New uses viper to get our server configurations
 func New() (*Configuration, error) {
 	var c Configuration
@@ -63,4 +71,20 @@ func New() (*Configuration, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+//Allows for protocol relative URL if scheme is empty
+func (cfg *Configuration) GetCacheBaseURL() string {
+	cfg.CacheURL.Scheme = strings.ToLower(cfg.CacheURL.Scheme)
+	if strings.Contains(cfg.CacheURL.Scheme, "https"){
+		return fmt.Sprintf("https://%s", cfg.CacheURL.Host)
+	}
+	if strings.Contains(cfg.CacheURL.Scheme, "http"){
+		return fmt.Sprintf("http://%s", cfg.CacheURL.Host)
+	}
+	return fmt.Sprintf("//%s", cfg.CacheURL.Host)
+}
+
+func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
+	return fmt.Sprintf("%s/cache?%s", cfg.GetCacheBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 }
