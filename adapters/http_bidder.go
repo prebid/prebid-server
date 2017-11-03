@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 // HttpBidder is the interface which almost all bidders implement.
@@ -47,8 +46,6 @@ type bidderAdapter struct {
 }
 
 func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error) {
-	// Commenting out per bid response time tracking
-	// start := time.Now()
 	reqData, errs := bidder.Bidder.MakeHttpRequests(request)
 
 	if len(reqData) == 0 {
@@ -84,7 +81,6 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 
 		if httpInfo.err == nil {
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.response)
-			// responseTime := int(time.Since(start) / time.Millisecond)
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
 				seatBid.Bids = append(seatBid.Bids, &PBSOrtbBid{
