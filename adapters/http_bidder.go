@@ -56,6 +56,8 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 		return nil, errs
 	}
 
+	// Make any HTTP requests in parallel.
+	// If the bidder only needs to make one, save some cycles by just using the current one.
 	responseChannel := make(chan *httpCallInfo, len(reqData))
 	if len(reqData) == 1 {
 		responseChannel <- bidder.doRequest(ctx, reqData[0])
@@ -71,19 +73,25 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 		Bids:        make([]*PBSOrtbBid, 0, len(reqData)),
 		ServerCalls: make([]*openrtb_ext.ExtServerCall, 0, len(reqData)),
 	}
+
+	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
+	// even if the timeout occurs sometime halfway through.
 	for i := 0; i < len(reqData); i++ {
 		httpInfo := <-responseChannel
-		seatBid.ServerCalls = append(seatBid.ServerCalls, makeExt(httpInfo))
+		// If this is a test bid, capture debugging info from the requests.
+		if request.Test == 1 {
+			seatBid.ServerCalls = append(seatBid.ServerCalls, makeExt(httpInfo))
+		}
 
 		if httpInfo.err == nil {
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.response)
-			errs = append(errs, moreErrs...)
 			responseTime := int(time.Since(start) / time.Millisecond)
-			for i := 0; i < len(bids); i++ {
+			errs = append(errs, moreErrs...)
+			for _, bid := range bids {
 				seatBid.Bids = append(seatBid.Bids, &PBSOrtbBid{
-					Bid:                bids[i].Bid,
-					Cache:              nil, // TODO: Cache properly
-					Type:               bids[i].BidType,
+					Bid:                bid.Bid,
+					Cache:              nil, // TODO: Support the cache
+					Type:               bid.BidType,
 					ResponseTimeMillis: responseTime,
 				})
 			}
@@ -95,6 +103,7 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 	return seatBid, errs
 }
 
+// makeExt transforms information about the HTTP call into the contract class for the PBS response.
 func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtServerCall {
 	if httpInfo.err == nil {
 		return &openrtb_ext.ExtServerCall{
@@ -112,6 +121,8 @@ func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtServerCall {
 	}
 }
 
+// doRequest makes a request, handles the response, and returns the data needed by the
+// HttpBidder interface.
 func (bidder *bidderAdapter) doRequest(ctx context.Context, req *RequestData) *httpCallInfo {
 	httpReq, err := http.NewRequest("POST", req.Uri, bytes.NewBuffer(req.Body))
 	if err != nil {
