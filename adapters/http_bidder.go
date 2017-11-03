@@ -55,40 +55,6 @@ type MultiHttpBidder interface {
 	MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error)
 }
 
-// RequestData packages together the fields needed to make an http.Request.
-//
-// This exists so that prebid-server core code can implement its "debug" API uniformly across all adapters.
-// It will also let us test valyala/vasthttp vs. net/http without changing all the adapters
-type RequestData struct {
-	Method  string
-	Uri     string
-	Body    []byte
-	Headers http.Header
-}
-
-// TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an
-// openrtb_ext.ExtBidPrebid.
-//
-// PBS will use TypedBid.Bid.Ext to populate "response.seatbid[i].bid.ext.bidder" in the final PBS response,
-// and the TypedBid.BidType to populate "response.seatbid[i].bid.ext.prebid.type".
-//
-// All other fields from the openrtb_ext.ExtBidPrebid can be built uniformly across all HttpBidders...
-// so there's no reason that each individual bidder needs to send them.
-type TypedBid struct {
-	Bid     *openrtb.Bid
-	BidType openrtb_ext.BidType
-}
-
-// ResponseData packages together information from the server's http.Response.
-//
-// This exists so that prebid-server core code can implement its "debug" API uniformly across all adapters.
-// It will also let us test valyala/vasthttp vs. net/http without changing all the adapters
-type ResponseData struct {
-	StatusCode int
-	Body       []byte
-	Headers    http.Header
-}
-
 // AdaptSingleHttpBidder bridges the APIs between a Bidder and a SingleHttpBidder.
 func AdaptSingleHttpBidder(bidderCode string, bidder SingleHttpBidder, client *http.Client) Bidder {
 	return &singleBidderAdapter{
