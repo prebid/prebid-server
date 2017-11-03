@@ -9,14 +9,19 @@ import (
 	"net/http"
 )
 
-type Exchange struct {
+// Exchange runs an OpenRTB Auction
+type Exchange interface {
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) *openrtb.BidResponse
+}
+
+type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters []string
 	adapterMap map[string]adapters.Bidder
 }
 
-func NewExchange(client *http.Client) *Exchange {
-	e := new(Exchange)
+func NewExchange(client *http.Client) Exchange {
+	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client)
 	e.adapters = make([]string, 0, len(e.adapterMap))
@@ -25,9 +30,10 @@ func NewExchange(client *http.Client) *Exchange {
 		e.adapters[i] = a
 		i++
 	}
+	return e
 }
 
-func (e *Exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	// TODO: modify adapters locally to impliment bseats and wseats
 	cleanRequests := openrtb_ext.CleanOpenRTBRequests(bidRequest, e.adapters)
@@ -49,7 +55,7 @@ func (e *Exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *Exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanRequests map[string]*openrtb.BidRequest) map[string]*adapters.PBSOrtbSeatBid {
+func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanRequests map[string]*openrtb.BidRequest) map[string]*adapters.PBSOrtbSeatBid {
 	// Set up pointers to the bid results
 	adapterBids := map[string]*adapters.PBSOrtbSeatBid{}
 	chBids := make(chan int, len(liveAdapters))
@@ -78,7 +84,7 @@ func (e *Exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanR
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *Exchange) BuildBidResponse(liveAdapters []string, adapterBids map[string]*adapters.PBSOrtbSeatBid, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
+func (e *exchange) BuildBidResponse(liveAdapters []string, adapterBids map[string]*adapters.PBSOrtbSeatBid, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
