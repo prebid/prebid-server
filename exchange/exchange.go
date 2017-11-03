@@ -27,7 +27,7 @@ func NewExchange(client *http.Client) *Exchange {
 	}
 }
 
-func (e *Exchange) HoldAuction(bidRequest *openrtb.BidRequest, ctx context.Context) *openrtb.BidResponse {
+func (e *Exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	// TODO: modify adapters locally to impliment bseats and wseats
 	cleanRequests := openrtb_ext.CleanOpenRTBRequests(bidRequest, e.adapters)
