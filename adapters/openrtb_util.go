@@ -38,8 +38,8 @@ func commonMediaTypes(l1 []pbs.MediaType, l2 []pbs.MediaType) []pbs.MediaType {
 
 func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 	return &openrtb.Banner{
-		W:        unit.Sizes[0].W,
-		H:        unit.Sizes[0].H,
+		W:        openrtb.Uint64Ptr(unit.Sizes[0].W),
+		H:        openrtb.Uint64Ptr(unit.Sizes[0].H),
 		Format:   copyFormats(unit.Sizes), // defensive copy because adapters may mutate Imps, and this is shared data
 		TopFrame: unit.TopFrame,
 	}
@@ -52,11 +52,13 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 	}
 	mimes := make([]string, len(unit.Video.Mimes))
 	copy(mimes, unit.Video.Mimes)
-	pbm := make([]int8, 1)
+	pbm := make([]openrtb.PlaybackMethod, 1)
 	//this will become int8 soon, so we only care about the first index in the array
-	pbm[0] = unit.Video.PlaybackMethod
-	if pbm[0] == 0 {
-		pbm = nil
+	pbm[0] = openrtb.PlaybackMethod(unit.Video.PlaybackMethod)
+
+	protocols := make([]openrtb.Protocol, 0, len(unit.Video.Protocols))
+	for _, protocol := range unit.Video.Protocols {
+		protocols = append(protocols, openrtb.Protocol(protocol))
 	}
 	return &openrtb.Video{
 		MIMEs:          mimes,
@@ -64,9 +66,9 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 		MaxDuration:    unit.Video.Maxduration,
 		W:              unit.Sizes[0].W,
 		H:              unit.Sizes[0].H,
-		StartDelay:     unit.Video.Startdelay,
+		StartDelay:     openrtb.StartDelay(unit.Video.Startdelay).Ptr(),
 		PlaybackMethod: pbm,
-		Protocols:      unit.Video.Protocols,
+		Protocols:      protocols,
 	}
 }
 

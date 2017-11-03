@@ -100,9 +100,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 		if anReq.Imp[i].Banner != nil && params.Position != "" {
 			if params.Position == "above" {
-				anReq.Imp[i].Banner.Pos = 1
+				anReq.Imp[i].Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
 			} else if params.Position == "below" {
-				anReq.Imp[i].Banner.Pos = 3
+				anReq.Imp[i].Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
 			}
 		}
 
@@ -200,22 +200,28 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				Width:       bid.W,
 				Height:      bid.H,
 				DealId:      bid.DealID,
+				NURL:        bid.NURL,
 			}
-			mediaType := "banner"
-			// Test for video
 
-			for _, v := range bid.Attr {
-				if v == 6 || v == 7 {
-					// If it is in-banner video (see OpenRTB list 5.3)
-					mediaType = "video"
-				}
-			}
+			mediaType := getMediaTypeForImp(bid.ImpID, anReq.Imp)
 			pbid.CreativeMediaType = mediaType
 			bids = append(bids, &pbid)
 		}
 	}
 
 	return bids, nil
+}
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) string {
+	mediaType := "banner"
+	for _, imp := range imps {
+		if imp.ID == impId {
+			if imp.Video != nil {
+				mediaType = "video"
+			}
+			return mediaType
+		}
+	}
+	return mediaType
 }
 
 func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *AppNexusAdapter {

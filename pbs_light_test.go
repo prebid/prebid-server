@@ -13,7 +13,6 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 )
 
@@ -25,9 +24,8 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
-	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -71,9 +69,8 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
-	m := pbsmetrics.NewMetrics(keys(exchanges))
 	router := httprouter.New()
-	router.POST("/cookie_sync", (&cookieSyncDeps{m}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -439,6 +436,24 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 		if adapterFile.IsDir() {
 			ensureHasKey(t, data, adapterFile.Name())
 		}
+	}
+}
+
+func TestWriteAuctionError(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	writeAuctionError(recorder, "some error message", nil)
+	var resp pbs.PBSResponse
+	json.Unmarshal(recorder.Body.Bytes(), &resp)
+
+	if len(resp.Bids) != 0 {
+		t.Errorf("Error responses should return no bids.")
+	}
+	if resp.Status != "some error message" {
+		t.Errorf("The response status should be the error message. Got: %s", resp.Status)
+	}
+
+	if len(resp.BidderStatus) != 0 {
+		t.Errorf("Error responses shouldn't have any BidderStatus elements. Got %d", len(resp.BidderStatus))
 	}
 }
 
