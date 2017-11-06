@@ -15,5 +15,3 @@ func newAdapterMap(client *http.Client) map[openrtb_ext.BidderName]adapters.Bidd
 		openrtb_ext.BidderAppnexus: adapters.AdaptHttpBidder(new(appnexus.AppNexusAdapter), client),
 	}
 }
-
-
