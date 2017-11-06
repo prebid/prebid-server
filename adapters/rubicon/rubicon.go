@@ -52,9 +52,15 @@ type rubiconParams struct {
 	Visitor   json.RawMessage `json:"visitor"`
 }
 
+type rubiconImpExtRPTrack struct {
+	Mint        string `json:"mint"`
+	MintVersion string `json:"mint_version"`
+}
+
 type rubiconImpExtRP struct {
-	ZoneID int             `json:"zone_id"`
-	Target json.RawMessage `json:"target"`
+	ZoneID int                  `json:"zone_id"`
+	Target json.RawMessage      `json:"target"`
+	Track  rubiconImpExtRPTrack `json:"track"`
 }
 
 type rubiconImpExt struct {
@@ -106,6 +112,18 @@ type rubiconTargetingExtRP struct {
 type rubiconTargetingObj struct {
 	Key    string   `json:"key"`
 	Values []string `json:"values"`
+}
+
+type rubiconDeviceExtRP struct {
+	PixelRatio float64 `json:"pixelratio"`
+}
+
+type rubiconDeviceExt struct {
+	RP rubiconDeviceExtRP `json:"rp"`
+}
+
+type rubiconUser struct {
+	Language string `json:"language"`
 }
 
 type rubiSize struct {
@@ -268,6 +286,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		// Amend it with RP-specific information
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
+
 		if err != nil {
 			return nil, err
 		}
@@ -281,9 +300,15 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			return nil, errors.New("Missing zoneId param")
 		}
 
+		var mint, mintVersion string
+		mint = "prebid"
+		mintVersion = req.SDK.Source + "_" + req.SDK.Platform + "_" + req.SDK.Version
+		track := rubiconImpExtRPTrack{Mint: mint, MintVersion: mintVersion}
+
 		impExt := rubiconImpExt{RP: rubiconImpExtRP{
 			ZoneID: params.ZoneId,
 			Target: params.Inventory,
+			Track:  track,
 		}}
 		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
 
@@ -295,6 +320,11 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		// Assign back our copy
 		rubiReq.User = &userCopy
 
+		deviceCopy := *rubiReq.Device
+		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: rubiReq.Device.PxRatio}}
+		deviceCopy.Ext, err = json.Marshal(&deviceExt)
+		rubiReq.Device = &deviceCopy
+
 		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 		if err != nil {
 			return nil, err
@@ -304,13 +334,22 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
+
 		if rubiReq.Site != nil {
 			siteCopy := *rubiReq.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			rubiReq.Site = &siteCopy
+		} else {
+			var rubiconUser rubiconUser
+			err = json.Unmarshal(req.PBSUser, &rubiconUser)
+			site := &openrtb.Site{}
+			site.Content = &openrtb.Content{}
+			site.Content.Language = rubiconUser.Language
+			rubiReq.Site = site
 		}
+
 		if rubiReq.App != nil {
 			appCopy := *rubiReq.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
