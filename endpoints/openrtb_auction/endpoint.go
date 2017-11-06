@@ -43,27 +43,32 @@ func (deps *EndpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // the same request can be sent in a better way which agrees with the recommendations.
 func (deps *EndpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, error) {
 	var ortbRequest openrtb.BidRequest
-	err := json.NewDecoder(httpRequest.Body).Decode(&ortbRequest)
-	if err != nil {
+	if err := json.NewDecoder(httpRequest.Body).Decode(&ortbRequest); err != nil {
 		return nil, err
 	}
 
-	// Request validation. This code intends to enforce the OpenRTB 2.5 spec
-	if ortbRequest.ID == "" {
-		return nil, errors.New("request missing required field: \"id\"")
-	}
-
-	if len(ortbRequest.Imp) < 1 {
-		return nil, errors.New("request.imp must contain at least one element.")
-	}
-
-	for index, imp := range ortbRequest.Imp {
-		if err := validateImp(&imp, index); err != nil {
-			return nil, err
-		}
+	if err := validateRequest(&ortbRequest); err != nil {
+		return nil, err
 	}
 
 	return &ortbRequest, nil
+}
+
+func validateRequest(req *openrtb.BidRequest) error {
+	if req.ID == "" {
+		return errors.New("request missing required field: \"id\"")
+	}
+
+	if len(req.Imp) < 1 {
+		return errors.New("request.imp must contain at least one element.")
+	}
+
+	for index, imp := range req.Imp {
+		if err := validateImp(&imp, index); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func validateImp(imp *openrtb.Imp, index int) error {
@@ -79,10 +84,8 @@ func validateImp(imp *openrtb.Imp, index int) error {
 		return errors.New("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"")
 	}
 
-	if imp.Banner != nil {
-		if err := validateBanner(imp.Banner, index); err != nil {
-			return err
-		}
+	if err := validateBanner(imp.Banner, index); err != nil {
+		return err
 	}
 
 	if imp.Video != nil {
@@ -103,18 +106,18 @@ func validateImp(imp *openrtb.Imp, index int) error {
 		}
 	}
 
-	if imp.PMP != nil {
-		for dealIndex, deal := range imp.PMP.Deals {
-			if deal.ID == "" {
-				return fmt.Errorf("request.imp[%d].pmp.deals[%d] missing required field: \"id\"", index, dealIndex)
-			}
-		}
+	if err := validatePmp(imp.PMP, index); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func validateBanner(banner *openrtb.Banner, impIndex int) error {
+	if banner == nil {
+		return nil
+	}
+
 	// Although these are only deprecated in the spec... since this is a new endpoint, we know nobody uses them yet.
 	// Let's start things off by pointing callers in the right direction.
 	if banner.WMin != 0 {
@@ -152,6 +155,19 @@ func validateFormat(format *openrtb.Format, impIndex int, formatIndex int) error
 	}
 	if usesRatios && (format.WMin == 0 || format.WRatio == 0 || format.HRatio == 0) {
 		return fmt.Errorf("Request imp[%d].banner.format[%d] must define non-zero \"wmin\", \"wratio\", and \"hratio\" properties.", impIndex, formatIndex)
+	}
+	return nil
+}
+
+func validatePmp(pmp *openrtb.PMP, impIndex int) error {
+	if pmp == nil {
+		return nil
+	}
+
+	for dealIndex, deal := range pmp.Deals {
+		if deal.ID == "" {
+			return fmt.Errorf("request.imp[%d].pmp.deals[%d] missing required field: \"id\"", impIndex, dealIndex)
+		}
 	}
 	return nil
 }
