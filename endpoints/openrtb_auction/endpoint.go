@@ -11,16 +11,16 @@ import (
 )
 
 type EndpointDeps struct {
-	exchange exchange.Exchange
+	Exchange exchange.Exchange
 }
 
-func (deps *EndpointDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *EndpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, err := deps.parseRequest(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("Invalid request format: %s", err.Error())))
 	}
-	response := deps.exchange.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
+	response := deps.Exchange.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
 	responseBytes, err := json.Marshal(response)
 	if err == nil {
 		w.WriteHeader(200)
