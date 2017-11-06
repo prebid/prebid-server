@@ -176,13 +176,11 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-type CookieSyncDeps struct {
-	OptOutCookie config.Cookie
-}
+type CookieSyncDeps config.Cookie
 
-func (deps *CookieSyncDeps) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (c CookieSyncDeps) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.OptOutCookie)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, config.Cookie(c))
 	userSyncCookie.SetCookieOnResponse(w, hostCookieSettings.Domain)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
@@ -807,7 +805,7 @@ func serve(cfg *config.Configuration) error {
 	router := httprouter.New()
 	router.POST("/auction", (&ConfigDeps{cfg}).auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
-	router.POST("/cookie_sync", (&CookieSyncDeps{cfg.OptOutCookie}).cookieSync)
+	router.POST("/cookie_sync", (CookieSyncDeps(cfg.OptOutCookie)).cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
