@@ -33,7 +33,7 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) map[strin
     cleanReqs := map[string]*openrtb.BidRequest{}
 
     // Decode the Imp extensions once to save time. We store the results here
-    imp_exts := make([]map[string]interface{}, len(orig.Imp) )
+    imp_exts := make([]map[string]interface{}, len(orig.Imp))
     // Loop over every impression in the request
     for i := 0 ; i < len(orig.Imp) ; i++ {
         // Unpack each set of extensions found in the Imp array

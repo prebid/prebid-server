@@ -29,6 +29,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"crypto/tls"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/facebook"
@@ -42,9 +43,12 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/endpoints/openrtb_auction"
+	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/ssl"
 )
 
 type DomainMetrics struct {
@@ -797,8 +801,19 @@ func serve(cfg *config.Configuration) error {
 		stopSignals <- syscall.SIGTERM
 	})()
 
+	theExchange := exchange.NewExchange(
+		&http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:        400,
+				MaxIdleConnsPerHost: 10,
+				IdleConnTimeout:     60 * time.Second,
+				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+			},
+		})
+
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
+	router.POST("/openrtb2/auction", (&openrtb_auction.EndpointDeps{theExchange}).Auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
