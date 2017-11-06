@@ -73,10 +73,10 @@ type UserSyncDeps struct {
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParsePBSCookieFromRequest(r *http.Request, optoutCookie config.Cookie) *PBSCookie {
-	if optoutCookie.Name != "" {
-		optOutCookie, err1 := r.Cookie(optoutCookie.Name)
-		if err1 == nil && optOutCookie.Value == optoutCookie.Value {
+func ParsePBSCookieFromRequest(r *http.Request, configuredOptoutCookie config.Cookie) *PBSCookie {
+	if configuredOptoutCookie.Name != "" {
+		optOutCookie, err1 := r.Cookie(configuredOptoutCookie.Name)
+		if err1 == nil && optOutCookie.Value == configuredOptoutCookie.Value {
 			pc := NewPBSCookie()
 			pc.SetPreference(false)
 			return pc
