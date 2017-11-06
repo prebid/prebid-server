@@ -7,7 +7,7 @@ import (
 )
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
-func RandomizeList(list []string) {
+func RandomizeList(list []BidderName) {
     l := len(list)
     perm := rand.Perm(l)
     var j int
@@ -28,9 +28,9 @@ func RandomizeList(list []string) {
 // before submitting.
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) map[string]*openrtb.BidRequest {
+func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[BidderName]*openrtb.BidRequest {
     // This is the clean array of openrtb requests we will be returning
-    cleanReqs := map[string]*openrtb.BidRequest{}
+    cleanReqs := map[BidderName]*openrtb.BidRequest{}
 
     // Decode the Imp extensions once to save time. We store the results here
     imp_exts := make([]map[string]interface{}, len(orig.Imp))
@@ -51,7 +51,7 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []string) map[strin
         // We are looping over every impression in the Imp array
         for j := 0 ; j < len(orig.Imp) ; j++ {
             // Don't do anything if the current bidder's field is not present.
-            if val, ok := imp_exts[j][adapters[i]]; ok {
+            if val, ok := imp_exts[j][adapters[i].String()]; ok {
                 // Start with a new, empty unpacked extention
                 newExts := map[string]interface{}{}
                 // Need to do some consistency checking to verify these fields exist. Especially the adapters one.

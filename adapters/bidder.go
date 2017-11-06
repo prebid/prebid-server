@@ -52,9 +52,9 @@ type PBSOrtbSeatBid struct {
 
 // ExtImpBidder is a struct which can be used by Bidders to unmarshal any request.imp[i].ext.
 type ExtImpBidder struct {
-	Prebid   *openrtb_ext.ExtBidPrebid `json:"prebid"`
+	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid"`
 
 	// Bidder will contain the data for the bidder-specific extension.
 	// Bidders should unmarshal this using their corresponding openrtb_ext.ExtImp{Bidder} struct.
-	Bidder   openrtb.RawJSON `json:"bidder"`
+	Bidder openrtb.RawJSON `json:"bidder"`
 }

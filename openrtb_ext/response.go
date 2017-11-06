@@ -4,17 +4,17 @@ package openrtb_ext
 type ExtBidResponse struct {
 	Debug *ExtResponseDebug `json:"debug,omitempty"`
 	// ExtResponseErrors defines the contract for bidresponse.ext.errors
- 	Errors map[string][]string `json:"errors,omitempty"`
+ 	Errors map[BidderName][]string `json:"errors,omitempty"`
 	// ExtResponseTimeMillis defines the contract for bidresponse.ext.responsetimemillis
-	ResponseTimeMillis map[string]int `json:"responsetimemillis,omitempty"`
+	ResponseTimeMillis map[BidderName]int `json:"responsetimemillis,omitempty"`
 	// ExtResponseUserSync defines the contract for bidresponse.ext.usersync
-	Usersync map[string]*ExtResponseSyncData `json:"usersync,omitempty"`
+	Usersync map[BidderName]*ExtResponseSyncData `json:"usersync,omitempty"`
 }
 
 // ExtResponseDebug defines the contract for bidresponse.ext.debug
 type ExtResponseDebug struct {
 	// ExtResponseServerCalls defines the contract for bidresponse.ext.debug.servercalls
-	ServerCalls map[string][]*ExtServerCall `json:"servercalls,omitempty"`
+	ServerCalls map[BidderName][]*ExtServerCall `json:"servercalls,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}

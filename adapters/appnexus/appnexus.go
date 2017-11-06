@@ -20,7 +20,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-
 const uri = "http://ib.adnxs.com/openrtb2"
 
 type AppNexusAdapter struct {
