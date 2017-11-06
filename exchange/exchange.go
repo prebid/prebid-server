@@ -60,7 +60,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
     adapterBids := e.GetAllBids(ctx, liveAdapters, cleanRequests, adapterExtra)
 
 	// Build the response
-	return e.BuildBidResponse(liveAdapters, adapterBids, bidRequest)
+	return e.BuildBidResponse(liveAdapters, adapterBids, bidRequest, adapterExtra)
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
@@ -113,11 +113,25 @@ func (e *exchange) BuildBidResponse(liveAdapters []string, adapterBids map[strin
 	_ = err
 	bidResponse.Ext = ext
 
+	// Create the SeatBids. We use a zero sized slice so that we can append non-zero seat bids, and not include seatBid
+	// objects for seatBids without any bids. Preallocate the max possible size to avoid reallocating the array as we go.
+	seatBids := make([]openrtb.SeatBid, 0, len(liveAdapters))
+	for _, a := range liveAdapters {
+		if len(adapterBids[a].Bids) > 0 {
+			// Only add non-null seat bids
+			// Possible performance improvement by grabbing a pointer to the current seatBid element, passing it to
+			// MakeSeatBid, and then building the seatBid in place, rather than copying. Probably more confusing than
+			// its worth
+			sb := e.MakeSeatBid(adapterBids[a], a)
+			seatBids = append(seatBids, *sb)
+		}
+	}
+
 	return bidResponse
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *Exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSeatBid, adapterExtra map[string]*seatResponseExtra, test int8) openrtb_ext.ExtBidResponse {
+func (e *exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSeatBid, adapterExtra map[string]*seatResponseExtra, test int8) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := new(openrtb_ext.ExtBidResponse)
 	if test == 1 {
 		bidResponseExt.Debug = new(openrtb_ext.ExtResponseDebug)
@@ -133,4 +147,45 @@ func (e *Exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSe
 		// Defering the filling of bidResponseExt.Usersync[a] until later
 
 	}
+	return bidResponseExt
+}
+
+// Return an openrtb seatBid for a bidder
+// BuildBidResponse is responsible for ensuring nil bid seatbids are not included
+func (e *exchange) MakeSeatBid(adapterBid *adapters.PBSOrtbSeatBid, adapter string) *openrtb.SeatBid {
+	seatBid := new(openrtb.SeatBid)
+	seatBid.Seat = adapter
+	// Prebid cannot support roadblocking
+	seatBid.Group = 0
+	sbExt := make(map[string]openrtb.RawJSON)
+	sbExt["bidder"] = adapterBid.Ext
+
+	ext, err := json.Marshal(sbExt)
+	// TODO: handle errors
+	_ = err
+	seatBid.Ext = ext
+
+	seatBid.Bid = e.MakeBid(adapterBid.Bids)
+
+	return seatBid
+}
+
+// Create the Bid array inside of SeatBid
+func (e *exchange) MakeBid(Bids []*adapters.PBSOrtbBid) []openrtb.Bid {
+	bids := make([]openrtb.Bid, len(Bids))
+	for i := 0; i < len(Bids); i++ {
+		bids[i] = *Bids[i].Bid
+		bidExt := new(openrtb_ext.ExtBid)
+		bidExt.Bidder = bids[i].Ext
+		bidPrebid := new(openrtb_ext.ExtBidPrebid)
+		bidPrebid.Cache = Bids[i].Cache
+		bidPrebid.Type = Bids[i].Type
+		// TODO: Support targeting
+
+		ext, err := json.Marshal(bidExt)
+		// TODO: handle errors
+		_ = err
+		bids[i].Ext = ext
+	}
+	return bids
 }
