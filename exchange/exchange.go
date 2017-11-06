@@ -115,7 +115,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []string, adapterBids map[strin
 	// objects for seatBids without any bids. Preallocate the max possible size to avoid reallocating the array as we go.
 	seatBids := make([]openrtb.SeatBid, 0, len(liveAdapters))
 	for _, a := range liveAdapters {
-		if len(adapterBids[a].Bids) > 0 {
+		if adapterBids[a] != nil && len(adapterBids[a].Bids) > 0 {
 			// Only add non-null seat bids
 			// Possible performance improvement by grabbing a pointer to the current seatBid element, passing it to
 			// MakeSeatBid, and then building the seatBid in place, rather than copying. Probably more confusing than
@@ -141,13 +141,15 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSe
 	}
 
 	for a, b := range adapterBids {
-		if test == 1 {
-			// Fill debug info
-			bidResponseExt.Debug.ServerCalls[a] = b.ServerCalls
+		if b != nil {
+			if test == 1 {
+				// Fill debug info
+				bidResponseExt.Debug.ServerCalls[a] = b.ServerCalls
+			}
+			bidResponseExt.Errors[a] = adapterExtra[a].Errors
+			bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
+			// Defering the filling of bidResponseExt.Usersync[a] until later
 		}
-		bidResponseExt.Errors[a] = adapterExtra[a].Errors
-		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
-		// Defering the filling of bidResponseExt.Usersync[a] until later
 	}
 	return bidResponseExt
 }
