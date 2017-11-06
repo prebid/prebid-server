@@ -2,24 +2,24 @@ package openrtb_ext
 
 // ExtImp defines the contract for bidrequest.imp[i].ext
 type ExtImp struct {
-	Prebid   ExtBidPrebid   `json:"prebid"`
-	Appnexus ExtImpAppnexus `json:"appnexus"`
+	Prebid   *ExtBidPrebid   `json:"prebid"`
+	Appnexus *ExtImpAppnexus `json:"appnexus"`
 }
 
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
-	Config ExtConfig `json:"managedconfig"`
+	Config *ExtConfig `json:"managedconfig"`
 }
 
 // ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.appnexus
 type ExtImpAppnexus struct {
-	PlacementId       int                    `json:"placementId"`
-	InvCode           string                 `json:"invCode"`
-	Member            string                 `json:"member"`
-	Keywords          []ExtImpAppnexusKeyVal `json:"keywords"`
-	TrafficSourceCode string                 `json:"trafficSourceCode"`
-	Reserve           float64                `json:"reserve"`
-	Position          string                 `json:"position"`
+	PlacementId       int                     `json:"placementId"`
+	InvCode           string                  `json:"invCode"`
+	Member            string                  `json:"member"`
+	Keywords          []*ExtImpAppnexusKeyVal `json:"keywords"`
+	TrafficSourceCode string                  `json:"trafficSourceCode"`
+	Reserve           float64                 `json:"reserve"`
+	Position          string                  `json:"position"`
 }
 
 // ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]

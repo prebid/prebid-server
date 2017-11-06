@@ -20,6 +20,9 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+
+const uri = "http://ib.adnxs.com/openrtb2"
+
 type AppNexusAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
@@ -223,20 +226,21 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 			memberIds = append(memberIds, memberId)
 		}
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		if errs != nil {
+		if err != nil {
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
 			i-- // TODO: Test this, and do it better
 		}
 	}
 
+	thisUri := uri
+
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
-	uri := a.URI
 	if len(memberIds) > 0 {
 		memberId := memberIds[0]
-		uri = fmt.Sprintf("%s?member_id=%s", a.URI, memberId)
+		thisUri = fmt.Sprintf("%s?member_id=%s", thisUri, memberId)
 		for i := 1; i < len(memberIds); i++ {
 			if memberId != memberIds[i] {
 				errs = append(errs, fmt.Errorf("All request.imp[i].ext.appnexus.member params must match. Request contained \"%s\" and \"%s\"", memberId, memberIds[i]))
@@ -260,7 +264,7 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     uri,
+		Uri:     thisUri,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -275,43 +279,48 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		return "", fmt.Errorf("Appnexus doesn't support audio or native Imps. Ignoring Imp ID=%s", imp.ID)
 	}
 
-	var parsedExt openrtb_ext.ExtImpAppnexus
-	if err := json.Unmarshal(imp.Ext, &parsedExt); err != nil {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", err
 	}
 
-	if parsedExt.PlacementId == 0 && (parsedExt.InvCode == "" || parsedExt.Member == "") {
+	var appnexusExt openrtb_ext.ExtImpAppnexus
+	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
+		return "", err
+	}
+
+	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
 		return "", errors.New("No placement or member+invcode provided")
 	}
 
-	if parsedExt.InvCode != "" {
-		imp.TagID = parsedExt.InvCode
+	if appnexusExt.InvCode != "" {
+		imp.TagID = appnexusExt.InvCode
 	}
-	if parsedExt.Reserve > 0 {
-		imp.BidFloor = parsedExt.Reserve // TODO: we need to factor in currency here if non-USD
+	if appnexusExt.Reserve > 0 {
+		imp.BidFloor = appnexusExt.Reserve // TODO: we need to factor in currency here if non-USD
 	}
-	if imp.Banner != nil && parsedExt.Position != "" {
-		if parsedExt.Position == "above" {
+	if imp.Banner != nil && appnexusExt.Position != "" {
+		if appnexusExt.Position == "above" {
 			imp.Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
-		} else if parsedExt.Position == "below" {
+		} else if appnexusExt.Position == "below" {
 			imp.Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
 		}
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
-		PlacementID:       parsedExt.PlacementId,
-		TrafficSourceCode: parsedExt.TrafficSourceCode,
-		Keywords:          makeKeywordStr(parsedExt.Keywords),
+		PlacementID:       appnexusExt.PlacementId,
+		TrafficSourceCode: appnexusExt.TrafficSourceCode,
+		Keywords:          makeKeywordStr(appnexusExt.Keywords),
 	}}
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
-		return parsedExt.Member, err
+		return appnexusExt.Member, err
 	}
 
-	return parsedExt.Member, nil
+	return appnexusExt.Member, nil
 }
 
-func makeKeywordStr(keywords []openrtb_ext.ExtImpAppnexusKeyVal) string {
+func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 	kvs := make([]string, 0, len(keywords)*2)
 	for _, kv := range keywords {
 		if len(kv.Values) == 0 {
@@ -320,7 +329,6 @@ func makeKeywordStr(keywords []openrtb_ext.ExtImpAppnexusKeyVal) string {
 			for _, val := range kv.Values {
 				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
 			}
-
 		}
 	}
 
@@ -341,7 +349,7 @@ func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapte
 		return nil, []error{err}
 	}
 
-	bids := make([]*adapters.TypedBid, 5)
+	bids := make([]*adapters.TypedBid, 0, 5)
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
@@ -386,7 +394,7 @@ func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) 
 
 	return &AppNexusAdapter{
 		http:         a,
-		URI:          "http://ib.adnxs.com/openrtb2",
+		URI:          uri,
 		usersyncInfo: info,
 	}
 }
