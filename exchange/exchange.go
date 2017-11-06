@@ -83,6 +83,7 @@ func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []string, cleanR
 				serr[i] = err[i].Error()
 			}
 			ae.Errors = serr
+			adapterExtra[aName] = ae
 			adapterBids[aName] = sb
 			chBids <- 1
 		}(a)
