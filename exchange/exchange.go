@@ -146,10 +146,11 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSe
 				// Fill debug info
 				bidResponseExt.Debug.ServerCalls[a] = b.ServerCalls
 			}
-			bidResponseExt.Errors[a] = adapterExtra[a].Errors
-			bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
-			// Defering the filling of bidResponseExt.Usersync[a] until later
 		}
+		bidResponseExt.Errors[a] = adapterExtra[a].Errors
+		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
+		// Defering the filling of bidResponseExt.Usersync[a] until later
+
 	}
 	return bidResponseExt
 }
