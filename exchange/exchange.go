@@ -57,10 +57,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	adapterExtra := make(map[string]*seatResponseExtra)
 
-    adapterBids := e.GetAllBids(ctx, liveAdapters, cleanRequests, adapterExtra)
+	adapterBids := e.GetAllBids(ctx, liveAdapters, cleanRequests, adapterExtra)
 
 	// Build the response
-	return e.BuildBidResponse(liveAdapters, adapterBids, bidRequest)
+	return e.BuildBidResponse(liveAdapters, adapterBids, bidRequest, adapterExtra)
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
@@ -117,7 +117,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []string, adapterBids map[strin
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *Exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSeatBid, adapterExtra map[string]*seatResponseExtra, test int8) openrtb_ext.ExtBidResponse {
+func (e *exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSeatBid, adapterExtra map[string]*seatResponseExtra, test int8) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := new(openrtb_ext.ExtBidResponse)
 	if test == 1 {
 		bidResponseExt.Debug = new(openrtb_ext.ExtResponseDebug)
@@ -131,6 +131,6 @@ func (e *Exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSe
 		bidResponseExt.Errors[a] = adapterExtra[a].Errors
 		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
 		// Defering the filling of bidResponseExt.Usersync[a] until later
-
 	}
+	return bidResponseExt
 }
