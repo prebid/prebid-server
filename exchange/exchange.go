@@ -32,10 +32,8 @@ func NewExchange(client *http.Client) Exchange {
 
 	e.adapterMap = newAdapterMap(client)
 	e.adapters = make([]string, 0, len(e.adapterMap))
-	i :=0
 	for a, _ := range e.adapterMap {
-		e.adapters[i] = a
-		i++
+		e.adapters = append(e.adapters, a)
 	}
 	return e
 }
