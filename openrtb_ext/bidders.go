@@ -6,10 +6,6 @@ const (
 	BidderAppnexus BidderName = "appnexus"
 )
 
-var bidderMap = map[string]BidderName {
-	"appnexus": BidderAppnexus,
-}
-
 func (name BidderName) MarshalJSON() ([]byte, error) {
 	return []byte(name.String()), nil
 }
