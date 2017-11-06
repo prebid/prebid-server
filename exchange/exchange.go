@@ -116,9 +116,14 @@ func (e *exchange) BuildBidResponse(liveAdapters []string, adapterBids map[strin
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
 func (e *exchange) MakeExtBidResponse(adapterBids map[string]*adapters.PBSOrtbSeatBid, adapterExtra map[string]*seatResponseExtra, test int8) *openrtb_ext.ExtBidResponse {
-	bidResponseExt := new(openrtb_ext.ExtBidResponse)
+	bidResponseExt := &openrtb_ext.ExtBidResponse{
+		Errors: make(map[string][]string, len(adapterBids)),
+		ResponseTimeMillis: make(map[string]int, len(adapterBids)),
+	}
 	if test == 1 {
-		bidResponseExt.Debug = new(openrtb_ext.ExtResponseDebug)
+		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
+			ServerCalls: make(map[string][]*openrtb_ext.ExtServerCall),
+		}
 	}
 
 	for a, b := range adapterBids {
