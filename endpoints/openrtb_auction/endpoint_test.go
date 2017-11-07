@@ -13,17 +13,14 @@ import (
 	"errors"
 )
 
-// TestGoodRequest makes sure that the auction runs a properly-formatted bid correctly.
-func TestGoodRequest(t *testing.T) {
-	endpoint := &endpointDeps{
-		ex: &nobidExchange{},
-		paramsValidator: &bidderParamValidator{},
-	}
+// TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
+func TestGoodRequests(t *testing.T) {
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{})
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
 		recorder := httptest.NewRecorder()
-		endpoint.Auction(recorder, request, nil)
+		endpoint(recorder, request, nil)
 
 		if recorder.Code != http.StatusOK {
 			t.Errorf("Expected status %d. Got %d. Request data was %s", http.StatusOK, recorder.Code, requestData)
@@ -46,16 +43,14 @@ func TestGoodRequest(t *testing.T) {
 	}
 }
 
+// TestBadRequests makes sure we return 400's on bad requests
 func TestBadRequests(t *testing.T) {
-	endpoint := &endpointDeps{
-		ex: &nobidExchange{},
-		paramsValidator: &bidderParamValidator{},
-	}
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{})
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
 
-		endpoint.Auction(recorder, request, nil)
+		endpoint(recorder, request, nil)
 
 		if recorder.Code != http.StatusBadRequest {
 			t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusBadRequest, recorder.Code, badRequest)
@@ -63,7 +58,23 @@ func TestBadRequests(t *testing.T) {
 	}
 }
 
-// nobidExchange is a well-behaved exchange so that we can test the endpoint code directly.
+// TestNilExchange makes sure we fail when given nil for the Exchange
+func TestNilExchange(t *testing.T) {
+	_, err := NewEndpoint(nil, &bidderParamValidator{})
+	if err == nil {
+		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
+	}
+}
+
+// TestNilValidator makes sure we fail when given nil for the BidderParamValidator
+func TestNilValidator(t *testing.T) {
+	_, err := NewEndpoint(&nobidExchange{}, nil)
+	if err == nil {
+		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
+	}
+}
+
+// nobidExchange is a well-behaved exchange which always bids "no bid"
 type nobidExchange struct {}
 
 func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
@@ -74,6 +85,8 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 	}
 }
 
+// bidderParamValidator expects the extension format for all bidders to be the JSON string "good".
+// Substantive tests for bidder param validation should go in openrtb_ext/bidders_test.go
 type bidderParamValidator struct{}
 
 func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
@@ -129,6 +142,10 @@ var invalidRequests = []string{
 	`{"id":"req-id"}`,
 	`{"id":"req-id","imp":[]}`,
 	`{"id":"req-id","imp":[{}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"metric": [{}]
+	}]}`,
 	`{"id":"req-id","imp":[{
 		"id":"imp-id"
 	}]}`,
@@ -212,11 +229,38 @@ var invalidRequests = []string{
 	}]}`,
 	`{"id":"req-id","imp":[{
 		"id":"imp-id",
-		"banner":{
-			"format":[{"w":30,"h":50}]
+		"video":{
+		  "mimes":["video/mp4"]
 		},
 		"pmp":{
-		  "deals"[{}]
+		  "deals":[{"private_auction":1, "id":""}]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"video":{
+			"mimes":["video/mp4"]
+		},
+		"ext": {}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"audio":{
+			"mimes":["video/mp4"]
+		},
+		"ext": {
+			"noBidderShouldEverHaveThisName": {
+			  "bogusParam":5
+			}
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"audio":{
+			"mimes":["video/mp4"]
+		},
+		"ext": {
+			"appnexus": "invalidParams"
 		}
 	}]}`,
 }

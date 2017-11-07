@@ -10,14 +10,13 @@ import (
 	"context"
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/golang/glog"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
 	if ex == nil || validator == nil {
-		glog.Fatal("OpenRTB endpoints need a non-nil Exchange and BidderParamValidator to function.")
+		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
-	return (&endpointDeps{ex, validator}).Auction
+	return httprouter.Handle((&endpointDeps{ex, validator}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -203,6 +202,8 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
 			}
+		} else {
+			return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s", impIndex, bidder)
 		}
 	}
 
