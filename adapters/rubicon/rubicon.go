@@ -286,7 +286,6 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		// Amend it with RP-specific information
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
-
 		if err != nil {
 			return nil, err
 		}
