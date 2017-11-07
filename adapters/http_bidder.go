@@ -66,8 +66,8 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 	}
 
 	seatBid := &PBSOrtbSeatBid{
-		Bids:        make([]*PBSOrtbBid, 0, len(reqData)),
-		ServerCalls: make([]*openrtb_ext.ExtServerCall, 0, len(reqData)),
+		Bids:      make([]*PBSOrtbBid, 0, len(reqData)),
+		HttpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
 
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
@@ -76,7 +76,7 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
 		if request.Test == 1 {
-			seatBid.ServerCalls = append(seatBid.ServerCalls, makeExt(httpInfo))
+			seatBid.HttpCalls = append(seatBid.HttpCalls, makeExt(httpInfo))
 		}
 
 		if httpInfo.err == nil {
@@ -98,18 +98,18 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
-func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtServerCall {
+func makeExt(httpInfo *httpCallInfo) *openrtb_ext.ExtHttpCall {
 	if httpInfo.err == nil {
-		return &openrtb_ext.ExtServerCall{
+		return &openrtb_ext.ExtHttpCall{
 			Uri:          httpInfo.request.Uri,
 			RequestBody:  string(httpInfo.request.Body),
 			ResponseBody: string(httpInfo.response.Body),
 			Status:       httpInfo.response.StatusCode,
 		}
 	} else if httpInfo.request == nil {
-		return &openrtb_ext.ExtServerCall{}
+		return &openrtb_ext.ExtHttpCall{}
 	} else {
-		return &openrtb_ext.ExtServerCall{
+		return &openrtb_ext.ExtHttpCall{
 			Uri:         httpInfo.request.Uri,
 			RequestBody: string(httpInfo.request.Body),
 		}

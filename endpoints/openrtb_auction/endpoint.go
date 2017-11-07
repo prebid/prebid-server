@@ -101,7 +101,8 @@ func validateImp(imp *openrtb.Imp, index int) error {
 	}
 
 	if imp.Native != nil {
-		if len(imp.Native.Request) == 1 {
+		// TODO: Parse and validate this here too.
+		if imp.Native.Request == "" {
 			return fmt.Errorf("request.imp[%d].native.request must be a JSON encoded string conforming to the openrtb 1.2 Native spec", index)
 		}
 	}

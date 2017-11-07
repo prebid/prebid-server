@@ -31,6 +31,7 @@ type Bidder interface {
 // PBSOrtbBid.Bid.Ext will become "response.seatbid[bidder].bid[i].ext.bidder" in the final PBS response.
 type PBSOrtbBid struct {
 	Bid *openrtb.Bid
+	// TODO: The cache's existance is up in the air. Revisit this after Mobile finishes their investigation.
 	// Cache must not be nil if request.ext.prebid.cache.markup was 1
 	Cache *openrtb_ext.ExtResponseCache
 	Type  openrtb_ext.BidType
@@ -43,8 +44,8 @@ type PBSOrtbSeatBid struct {
 	// Bids is the list of bids in this SeatBid. If len(Bids) == 0, no SeatBid will be entered for this bidder.
 	// This is because the OpenRTB 2.5 spec requires at least one bid for each SeatBid.
 	Bids []*PBSOrtbBid
-	// ServerCalls will become response.ext.debug.servercalls.{bidder} on the final Response.
-	ServerCalls []*openrtb_ext.ExtServerCall
+	// HttpCalls will become response.ext.debug.httpcalls.{bidder} on the final Response.
+	HttpCalls []*openrtb_ext.ExtHttpCall
 	// Ext will become response.seatbid[i].ext.{bidder} on the final Response, *only if* len(Bids) > 0.
 	// If len(Bids) == 0, no SeatBid will be entered, and this field will be ignored.
 	Ext openrtb.RawJSON

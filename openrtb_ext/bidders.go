@@ -7,7 +7,7 @@ const (
 )
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
-	return []byte(name.String()), nil
+	return []byte(name), nil
 }
 
 func (name *BidderName) String() string {
