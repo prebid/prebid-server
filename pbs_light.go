@@ -804,7 +804,7 @@ func serve(cfg *config.Configuration) error {
 		stopSignals <- syscall.SIGTERM
 	})()
 
-	paramsValidator, err := openrtb_ext.NewBidderParams()
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
