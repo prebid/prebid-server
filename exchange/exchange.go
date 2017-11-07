@@ -127,6 +127,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 			seatBids = append(seatBids, *sb)
 		}
 	}
+	bidResponse.SeatBid = seatBids
 
 	return bidResponse
 }
@@ -150,7 +151,10 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*ad
 				bidResponseExt.Debug.HttpCalls[a] = b.HttpCalls
 			}
 		}
-		bidResponseExt.Errors[a] = adapterExtra[a].Errors
+		// Only make an entry for bidder errors if the bidder reported any.
+		if len(adapterExtra[a].Errors) > 0 {
+			bidResponseExt.Errors[a] = adapterExtra[a].Errors
+		}
 		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
 		// Defering the filling of bidResponseExt.Usersync[a] until later
 

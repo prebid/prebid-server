@@ -38,27 +38,30 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[B
     for i := 0 ; i < len(orig.Imp) ; i++ {
         // Unpack each set of extensions found in the Imp array
         err := json.Unmarshal(orig.Imp[i].Ext, &imp_exts[i])
-        _ = err
-        // Need to do some error handling here here
+        if err != nil {
+            return nil
+        }
+        // TODO: Need to do some error handling here here
     }
 
     // Loop over every adapter we want to create a clean openrtb request for.
     for i := 0 ; i < len(adapters); i++ {
         // Go deeper into Imp array
         newImps := make([]openrtb.Imp, 0, len(orig.Imp))
+        bn := adapters[i].String()
 
         // Overwrite each extension field with a cleanly built subset
         // We are looping over every impression in the Imp array
         for j := 0 ; j < len(orig.Imp) ; j++ {
             // Don't do anything if the current bidder's field is not present.
-            if val, ok := imp_exts[j][adapters[i].String()]; ok {
+            if val, ok := imp_exts[j][bn]; ok {
                 // Start with a new, empty unpacked extention
                 newExts := map[string]interface{}{}
                 // Need to do some consistency checking to verify these fields exist. Especially the adapters one.
-                if val, ok := imp_exts[j]["prebid"]; ok {
-                    newExts["prebid"] = val
+                if pb, ok := imp_exts[j]["prebid"]; ok {
+                    newExts["prebid"] = pb
                 }
-                newExts["bidder"] = val
+                newExts[bn] = val
                 // Create a "clean" byte array for this Imp's extension
                 // Note, if the "prebid" or "<adapter>" field is missing from the source, it will be missing here as well
                 // The adapters should test that their field is present rather than assuming it will be there if they are
