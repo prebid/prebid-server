@@ -22,8 +22,6 @@ type HttpBidder interface {
 	MakeHttpRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
-	// This method **should not** close the response body. The caller will fully read and close it so that the
-	// connections get reused properly.
 	//
 	// The bids can be nil (for no bids), but should not contain nil elements.
 	//

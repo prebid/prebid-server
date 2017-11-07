@@ -4,7 +4,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
-	"github.com/golang/glog"
 	"strings"
 	"fmt"
 	"net/http"
@@ -64,13 +63,13 @@ type BidderParamValidator interface {
 	Schema(name BidderName) string
 }
 
-// NewBidderParams makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
+// NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
-func NewBidderParams() (BidderParamValidator, error) {
+func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
 	filesystem := http.Dir(schemaDirectory)
 	fileInfos, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
-		glog.Fatalf("Failed to read JSON schemas from directory: %s", schemaDirectory)
+		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
 	}
 
 	schemaContents := make(map[BidderName]string, 50)
@@ -84,7 +83,7 @@ func NewBidderParams() (BidderParamValidator, error) {
 		schemaLoader := gojsonschema.NewReferenceLoaderFileSystem(fmt.Sprintf("file:///%s", fileInfo.Name()), filesystem)
 		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
 		if err != nil {
-			glog.Fatalf("Failed to load json schema at %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
+			return nil, fmt.Errorf("Failed to load json schema at %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
 		}
 
 		fileBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))

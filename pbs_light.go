@@ -804,7 +804,7 @@ func serve(cfg *config.Configuration) error {
 		stopSignals <- syscall.SIGTERM
 	})()
 
-	paramsValidator, err := openrtb_ext.NewBidderParams()
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
@@ -819,9 +819,14 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
+	openrtbEndpoint, err := openrtb_auction.NewEndpoint(theExchange, paramsValidator)
+	if err != nil {
+		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
+	}
+
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
-	router.POST("/openrtb2/auction", openrtb_auction.NewEndpoint(theExchange, paramsValidator))
+	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
