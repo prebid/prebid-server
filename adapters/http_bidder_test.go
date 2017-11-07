@@ -73,8 +73,8 @@ func TestSingleBidder(t *testing.T) {
 			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.Bids[index].Type)
 		}
 	}
-	if len(seatBid.ServerCalls) != 0 {
-		t.Errorf("The bidder shouldn't log ServerCalls when request.test == 0. Found %d", len(seatBid.ServerCalls))
+	if len(seatBid.HttpCalls) != 0 {
+		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.HttpCalls))
 	}
 
 	if len(seatBid.Ext) != 0 {
@@ -334,20 +334,20 @@ func TestServerCallDebugging(t *testing.T) {
 		Test: 1,
 	})
 
-	if len(bids.ServerCalls) != 1 {
-		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.ServerCalls))
+	if len(bids.HttpCalls) != 1 {
+		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.HttpCalls))
 	}
-	if bids.ServerCalls[0].Uri != reqUrl {
-		t.Errorf("Wrong servercalls URI. Expected %s, got %s", reqUrl, bids.ServerCalls[0].Uri)
+	if bids.HttpCalls[0].Uri != reqUrl {
+		t.Errorf("Wrong httpcalls URI. Expected %s, got %s", reqUrl, bids.HttpCalls[0].Uri)
 	}
-	if bids.ServerCalls[0].RequestBody != reqBody {
-		t.Errorf("Wrong servercalls RequestBody. Expected %s, got %s", reqBody, bids.ServerCalls[0].RequestBody)
+	if bids.HttpCalls[0].RequestBody != reqBody {
+		t.Errorf("Wrong httpcalls RequestBody. Expected %s, got %s", reqBody, bids.HttpCalls[0].RequestBody)
 	}
-	if bids.ServerCalls[0].ResponseBody != respBody {
-		t.Errorf("Wrong servercalls ResponseBody. Expected %s, got %s", respBody, bids.ServerCalls[0].ResponseBody)
+	if bids.HttpCalls[0].ResponseBody != respBody {
+		t.Errorf("Wrong httpcalls ResponseBody. Expected %s, got %s", respBody, bids.HttpCalls[0].ResponseBody)
 	}
-	if bids.ServerCalls[0].Status != respStatus {
-		t.Errorf("Wrong servercalls Status. Expected %d, got %d", respStatus, bids.ServerCalls[0].Status)
+	if bids.HttpCalls[0].Status != respStatus {
+		t.Errorf("Wrong httpcalls Status. Expected %d, got %d", respStatus, bids.HttpCalls[0].Status)
 	}
 }
 

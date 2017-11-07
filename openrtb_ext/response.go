@@ -13,8 +13,8 @@ type ExtBidResponse struct {
 
 // ExtResponseDebug defines the contract for bidresponse.ext.debug
 type ExtResponseDebug struct {
-	// ExtResponseServerCalls defines the contract for bidresponse.ext.debug.servercalls
-	ServerCalls map[BidderName][]*ExtServerCall `json:"servercalls,omitempty"`
+	// HttpCalls defines the contract for bidresponse.ext.debug.httpcalls
+	HttpCalls map[BidderName][]*ExtHttpCall `json:"httpcalls,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}
@@ -30,8 +30,8 @@ type ExtUserSync struct {
 	Type UserSyncType `json:"type"`
 }
 
-// ExtServerCall defines the contract for a bidresponse.ext.debug.servercalls.{bidder}[i]
-type ExtServerCall struct {
+// ExtHttpCall defines the contract for a bidresponse.ext.debug.httpcalls.{bidder}[i]
+type ExtHttpCall struct {
 	Uri          string `json:"uri"`
 	RequestBody  string `json:"requestbody"`
 	ResponseBody string `json:"responsebody"`

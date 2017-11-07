@@ -44,8 +44,8 @@ type PBSOrtbSeatBid struct {
 	// Bids is the list of bids in this SeatBid. If len(Bids) == 0, no SeatBid will be entered for this bidder.
 	// This is because the OpenRTB 2.5 spec requires at least one bid for each SeatBid.
 	Bids []*PBSOrtbBid
-	// ServerCalls will become response.ext.debug.servercalls.{bidder} on the final Response.
-	ServerCalls []*openrtb_ext.ExtServerCall
+	// HttpCalls will become response.ext.debug.httpcalls.{bidder} on the final Response.
+	HttpCalls []*openrtb_ext.ExtHttpCall
 	// Ext will become response.seatbid[i].ext.{bidder} on the final Response, *only if* len(Bids) > 0.
 	// If len(Bids) == 0, no SeatBid will be entered, and this field will be ignored.
 	Ext openrtb.RawJSON

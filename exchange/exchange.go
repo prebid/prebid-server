@@ -139,7 +139,7 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*ad
 	}
 	if test == 1 {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
-			ServerCalls: make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtServerCall),
+			HttpCalls: make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
 		}
 	}
 
@@ -147,7 +147,7 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*ad
 		if b != nil {
 			if test == 1 {
 				// Fill debug info
-				bidResponseExt.Debug.ServerCalls[a] = b.ServerCalls
+				bidResponseExt.Debug.HttpCalls[a] = b.HttpCalls
 			}
 		}
 		bidResponseExt.Errors[a] = adapterExtra[a].Errors
