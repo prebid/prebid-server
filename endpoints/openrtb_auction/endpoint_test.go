@@ -8,12 +8,16 @@ import (
 	"strings"
 	"net/http"
 	"encoding/json"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"bytes"
+	"errors"
 )
 
 // TestGoodRequest makes sure that the auction runs a properly-formatted bid correctly.
 func TestGoodRequest(t *testing.T) {
-	endpoint := &EndpointDeps{
-		Exchange: &nobidExchange{},
+	endpoint := &endpointDeps{
+		ex: &nobidExchange{},
+		paramsValidator: &bidderParamValidator{},
 	}
 
 	reqData := `
@@ -38,9 +42,7 @@ func TestGoodRequest(t *testing.T) {
         ]
       },
       "ext": {
-        "appnexus": {
-          "placementId": "10433394"
-        }
+        "appnexus": "good"
       }
     }
   ],
@@ -73,252 +75,20 @@ func TestGoodRequest(t *testing.T) {
 	}
 }
 
-// TestBadRequestBody makes sure we return 400s if we cant turn the request body into an openrtb.BidRequest
-func TestBadRequestBody(t *testing.T) {
-	endpoint := &EndpointDeps{
-		Exchange: &nobidExchange{},
+func TestBadRequests(t *testing.T) {
+	endpoint := &endpointDeps{
+		ex: &nobidExchange{},
+		paramsValidator: &bidderParamValidator{},
 	}
+	for _, badRequest := range invalidRequests {
+		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
+		recorder := httptest.NewRecorder()
 
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("5"))
-	recorder := httptest.NewRecorder()
+		endpoint.Auction(recorder, request, nil)
 
-	endpoint.Auction(recorder, request, nil)
-
-	if recorder.Code != http.StatusBadRequest {
-		t.Errorf("Expected status %d. Got %d", http.StatusBadRequest, recorder.Code)
-	}
-}
-
-// TestInvalidRequestBody makes sure we return 400s if the body has a valid form, but invalid contents.
-func TestInvalidRequestBody(t *testing.T) {
-	endpoint := &EndpointDeps{
-		Exchange: &nobidExchange{},
-	}
-
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader("{}"))
-	recorder := httptest.NewRecorder()
-
-	endpoint.Auction(recorder, request, nil)
-
-	if recorder.Code != http.StatusBadRequest {
-		t.Errorf("Expected status %d. Got %d", http.StatusBadRequest, recorder.Code)
-	}
-}
-
-// TestMissingRequestID makes sure we return 400s if the request has no ID.
-// This also intends to prove that we return 400s if the request doesn't pass validation in our code.
-// This will make future tests easy
-func TestMissingRequestID(t *testing.T) {
-	endpoint := &EndpointDeps{
-		Exchange: &nobidExchange{},
-	}
-
-	reqData := `
-{
-  "imp": [
-    {
-      "id": "my-imp-id",
-      "banner": {
-    	  "format": [
-    	    {
-    	      "w": 300,
-    	      "h": 600
-    	    }
-    	  ]
-      },
-      "ext": {
-        "appnexus": {
-          "placementId": "10433394"
-        }
-      }
-    }
-  ],
-  "test": 1,
-  "tmax": 500`
-
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqData))
-	recorder := httptest.NewRecorder()
-
-	endpoint.Auction(recorder, request, nil)
-
-	if recorder.Code != http.StatusBadRequest {
-		t.Errorf("Expected status %d. Got %d", http.StatusBadRequest, recorder.Code)
-	}
-}
-
-func TestNoImpId(t *testing.T) {
-	req := openrtb.BidRequest{}
-	if err := validateRequest(&req); err == nil {
-		t.Error("We should require bidrequest.imp[i].id to be defined.")
-	}
-}
-
-func TestNoImps(t *testing.T) {
-	req := openrtb.BidRequest{
-		ID: "some-id",
-	}
-	if err := validateRequest(&req); err == nil {
-		t.Error("We should require a BidRequest to have at least one Imp.")
-	}
-}
-
-func TestInvalidImp(t *testing.T) {
-	req := openrtb.BidRequest{
-		ID: "some-id",
-		Imp: []openrtb.Imp{{}},
-	}
-	if err := validateRequest(&req); err == nil {
-		t.Error("The validateRequest function should reject inputs with malformed imp values.")
-	}
-}
-
-func TestImpMetric(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-		Metric: []openrtb.Metric{{}},
-	}
-
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should reject requests which define imp.metric[j].")
-	}
-}
-
-func TestSomeMediaTypes(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-	}
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should require imps to define one of banner, video, audio, or native.")
-	}
-}
-
-func TestInvalidBanner(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-		Banner: &openrtb.Banner{
-			WMin: 15,
-		},
-	}
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should reject imps with an invalid banner object.")
-	}
-}
-
-func TestBannerWmax(t *testing.T) {
-	banner := openrtb.Banner{
-		WMax: 15,
-	}
-	if err := validateBanner(&banner, 0); err == nil {
-		t.Error("We should reject banners which define wmax.")
-	}
-}
-
-func TestBannerHMin(t *testing.T) {
-	banner := openrtb.Banner{
-		HMin: 15,
-	}
-	if err := validateBanner(&banner, 0); err == nil {
-		t.Error("We should reject banners which define him.")
-	}
-}
-
-func TestBannerHMax(t *testing.T) {
-	banner := openrtb.Banner{
-		HMax: 15,
-	}
-	if err := validateBanner(&banner, 0); err == nil {
-		t.Error("We should reject banners which define hmax.")
-	}
-}
-
-func TestBannerFormat(t *testing.T) {
-	banner := openrtb.Banner{
-		Format: []openrtb.Format{{
-			W: 1,
-			H: 2,
-			WMin: 14,
-			WRatio: 15,
-			HRatio: 20,
-		}},
-	}
-	if err := validateBanner(&banner, 0); err == nil {
-		t.Error("We should reject banners with invalid formats.")
-	}
-}
-
-func TestIncompleteFixedFormat(t *testing.T) {
-	format := openrtb.Format{
-		W: 1,
-	}
-	if err := validateFormat(&format, 0, 0); err == nil {
-		t.Error("We should reject fixed formats which exclude width or height.")
-	}
-}
-
-func TestIncompleteFlexFormat(t *testing.T) {
-	format := openrtb.Format{
-		WMin: 2,
-	}
-	if err := validateFormat(&format, 0, 0); err == nil {
-		t.Error("We should reject flex formats which exclude the required properties.")
-	}
-}
-
-func TestEmptyFormat(t *testing.T) {
-	format := openrtb.Format{}
-	if err := validateFormat(&format, 0, 0); err == nil {
-		t.Error("We should reject empty formats.")
-	}
-}
-
-func TestInvalidVideo(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-		Video: &openrtb.Video{},
-	}
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should reject imps which define no acceptable video MIME types.")
-	}
-}
-
-func TestInvalidAudio(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-		Audio: &openrtb.Audio{},
-	}
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should reject imps which define no acceptable audio MIME types.")
-	}
-}
-
-func TestEmptyNative(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-		Native: &openrtb.Native{},
-	}
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should reject imps which define empty native request strings.")
-	}
-}
-
-func TestInvalidPmps(t *testing.T) {
-	imp := openrtb.Imp{
-		ID: "imp-id",
-		Video: &openrtb.Video{
-			MIMEs: []string{"abc"},
-		},
-		PMP: &openrtb.PMP{
-			Deals: []openrtb.Deal{{}},
-		},
-	}
-	if err := validateImp(&imp, 0); err == nil {
-		t.Error("We should reject imps which define malformed PMPs.")
-	}
-}
-
-func TestNilPmps(t *testing.T) {
-	if err := validatePmp(nil, 0); err != nil {
-		t.Error("We should allow requests which don't define a PMP.")
+		if recorder.Code != http.StatusBadRequest {
+			t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusBadRequest, recorder.Code, badRequest)
+		}
 	}
 }
 
@@ -331,4 +101,122 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 		BidID: "test bid id",
 		NBR: openrtb.NoBidReasonCodeUnknownError.Ptr(),
 	}
+}
+
+type bidderParamValidator struct{}
+
+func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
+  if bytes.Equal(ext, []byte("\"good\"")) {
+		return nil
+	} else {
+		return errors.New("Bidder params failed validation.")
+	}
+}
+
+func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
+	return "{}"
+}
+
+
+var invalidRequests = []string{
+	"5",
+	"6.3",
+	"null",
+	"false",
+	"",
+	"[]",
+	"{}",
+	`{"id":"req-id"}`,
+	`{"id":"req-id","imp":[]}`,
+	`{"id":"req-id","imp":[{}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id"
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":null
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+		  "wmin":50
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"wmax":50
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"hmin":50
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"hmax":50
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"format":[]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"format":[{}]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"format":[{"w":30,"wratio":23}]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"format":[{"w":30,"h":0}]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"format":[{"wratio":30}]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"video":{}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"video":{
+			"mimes":[]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"audio":{
+			"mimes":[]
+		}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"native":{}
+	}]}`,
+	`{"id":"req-id","imp":[{
+		"id":"imp-id",
+		"banner":{
+			"format":[{"w":30,"h":50}]
+		},
+		"pmp":{
+		  "deals"[{}]
+		}
+	}]}`,
 }

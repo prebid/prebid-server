@@ -9,13 +9,23 @@ import (
 	"fmt"
 	"context"
 	"errors"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
 )
 
-type EndpointDeps struct {
-	Exchange exchange.Exchange
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+	if ex == nil || validator == nil {
+		glog.Fatal("OpenRTB endpoints need a non-nil Exchange and BidderParamValidator to function.")
+	}
+	return (&endpointDeps{ex, validator}).Auction
 }
 
-func (deps *EndpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+type endpointDeps struct {
+	ex exchange.Exchange
+	paramsValidator openrtb_ext.BidderParamValidator
+}
+
+func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, err := deps.parseRequest(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -23,7 +33,7 @@ func (deps *EndpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response := deps.Exchange.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
+	response := deps.ex.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
 	responseBytes, err := json.Marshal(response)
 	if err == nil {
 		w.WriteHeader(200)
@@ -41,20 +51,20 @@ func (deps *EndpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 //
 // It will also return errors for some of the "strong recommendations" in the spec, as long as
 // the same request can be sent in a better way which agrees with the recommendations.
-func (deps *EndpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, error) {
 	var ortbRequest openrtb.BidRequest
 	if err := json.NewDecoder(httpRequest.Body).Decode(&ortbRequest); err != nil {
 		return nil, err
 	}
 
-	if err := validateRequest(&ortbRequest); err != nil {
+	if err := deps.validateRequest(&ortbRequest); err != nil {
 		return nil, err
 	}
 
 	return &ortbRequest, nil
 }
 
-func validateRequest(req *openrtb.BidRequest) error {
+func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	if req.ID == "" {
 		return errors.New("request missing required field: \"id\"")
 	}
@@ -64,14 +74,14 @@ func validateRequest(req *openrtb.BidRequest) error {
 	}
 
 	for index, imp := range req.Imp {
-		if err := validateImp(&imp, index); err != nil {
+		if err := deps.validateImp(&imp, index); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateImp(imp *openrtb.Imp, index int) error {
+func (deps *endpointDeps) validateImp(imp *openrtb.Imp, index int) error {
 	if imp.ID == "" {
 		return fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
 	}
@@ -108,6 +118,10 @@ func validateImp(imp *openrtb.Imp, index int) error {
 	}
 
 	if err := validatePmp(imp.PMP, index); err != nil {
+		return err
+	}
+
+	if err := deps.validateImpExt(imp.Ext, index); err != nil {
 		return err
 	}
 
@@ -170,5 +184,27 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 			return fmt.Errorf("request.imp[%d].pmp.deals[%d] missing required field: \"id\"", impIndex, dealIndex)
 		}
 	}
+	return nil
+}
+
+func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) error {
+	var bidderExts map[string]openrtb.RawJSON
+	if err := json.Unmarshal(ext, &bidderExts); err != nil {
+		return err
+	}
+
+	if len(bidderExts) < 1 {
+		return fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex)
+	}
+
+	for bidder, ext := range bidderExts {
+		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		if isValid {
+			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
+				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
+			}
+		}
+	}
+
 	return nil
 }

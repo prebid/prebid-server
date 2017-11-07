@@ -45,10 +45,12 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/openrtb_auction"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
+	"strings"
 )
 
 type DomainMetrics struct {
@@ -529,7 +531,7 @@ func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
-func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
+func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
@@ -538,11 +540,12 @@ func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
 
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
-		bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, file.Name()))
-		if err != nil {
-			glog.Fatalf("Failed to read file %s/%s: %v", schemaDirectory, file.Name(), err)
+		bidder := strings.TrimSuffix(file.Name(), ".json")
+		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		if !isValid {
+			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
-		data[file.Name()[0:len(file.Name())-5]] = json.RawMessage(bytes)
+		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
 	response, err := json.Marshal(data)
 	if err != nil {
@@ -801,6 +804,11 @@ func serve(cfg *config.Configuration) error {
 		stopSignals <- syscall.SIGTERM
 	})()
 
+	paramsValidator, err := openrtb_ext.NewBidderParams()
+	if err != nil {
+		glog.Fatalf("Failed to create the bidder params validator. %v", err)
+	}
+
 	theExchange := exchange.NewExchange(
 		&http.Client{
 			Transport: &http.Transport{
@@ -813,8 +821,8 @@ func serve(cfg *config.Configuration) error {
 
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
-	router.POST("/openrtb2/auction", (&openrtb_auction.EndpointDeps{theExchange}).Auction)
-	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
+	router.POST("/openrtb2/auction", openrtb_auction.NewEndpoint(theExchange, paramsValidator))
+	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
