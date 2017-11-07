@@ -20,58 +20,29 @@ func TestGoodRequest(t *testing.T) {
 		paramsValidator: &bidderParamValidator{},
 	}
 
-	reqData := `
-{
-  "id": "some-request-id",
-  "imp": [
-    {
-      "id": "my-imp-id",
-      "banner": {
-    		"format": [
-    			{
-    				"w": 300,
-    				"h": 600
-    			}
-    		]
-    	},
-      "pmp": {
-        "deals": [
-          {
-            "id": "some-deal-id"
-          }
-        ]
-      },
-      "ext": {
-        "appnexus": "good"
-      }
-    }
-  ],
-  "test": 1,
-  "tmax": 500
-}`
+	for _, requestData := range validRequests {
+		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
+		recorder := httptest.NewRecorder()
+		endpoint.Auction(recorder, request, nil)
 
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqData))
-	recorder := httptest.NewRecorder()
+		if recorder.Code != http.StatusOK {
+			t.Errorf("Expected status %d. Got %d. Request data was %s", http.StatusOK, recorder.Code, requestData)
+		}
 
-	endpoint.Auction(recorder, request, nil)
+		var response openrtb.BidResponse
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
 
-	if recorder.Code != http.StatusOK {
-		t.Errorf("Expected status %d. Got %d", http.StatusOK, recorder.Code)
-	}
-
-	var response openrtb.BidResponse
-	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
-		t.Fatalf("Error unmarshalling response: %s", err.Error())
-	}
-
-	if response.ID != "some-request-id" {
-		t.Errorf("Bad response.id. Expected %s, got %s.", "some-request-id", response.ID)
-	}
-	if response.BidID != "test bid id" {
-		t.Errorf("Bad response.id. Expected %s, got %s.", "test bid id", response.BidID)
-	}
-	if *response.NBR != openrtb.NoBidReasonCodeUnknownError {
-		t.Errorf("Bad response.nbr. Expected %d, got %d.", openrtb.NoBidReasonCodeUnknownError, response.NBR)
+		if response.ID != "some-request-id" {
+			t.Errorf("Bad response.id. Expected %s, got %s.", "some-request-id", response.ID)
+		}
+		if response.BidID != "test bid id" {
+			t.Errorf("Bad response.id. Expected %s, got %s.", "test bid id", response.BidID)
+		}
+		if *response.NBR != openrtb.NoBidReasonCodeUnknownError {
+			t.Errorf("Bad response.nbr. Expected %d, got %d.", openrtb.NoBidReasonCodeUnknownError, response.NBR)
+		}
 	}
 }
 
@@ -115,6 +86,35 @@ func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
 	return "{}"
+}
+
+var validRequests = []string{
+	`{
+  	"id": "some-request-id",
+  	"imp": [
+  	  {
+  	    "id": "my-imp-id",
+  	    "banner": {
+  	  		"format": [
+  	  			{
+  	  				"w": 300,
+  	  				"h": 600
+  	  			}
+  	  		]
+  	  	},
+  	    "pmp": {
+  	      "deals": [
+  	        {
+  	          "id": "some-deal-id"
+  	        }
+  	      ]
+  	    },
+  	    "ext": {
+  	      "appnexus": "good"
+  	    }
+  	  }
+  	]
+	}`,
 }
 
 
