@@ -127,6 +127,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 			seatBids = append(seatBids, *sb)
 		}
 	}
+	bidResponse.SeatBid = seatBids
 
 	return bidResponse
 }
