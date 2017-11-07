@@ -61,7 +61,7 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[B
                 if pb, ok := imp_exts[j]["prebid"]; ok {
                     newExts["prebid"] = pb
                 }
-                newExts[bn] = val
+                newExts["bidder"] = val
                 // Create a "clean" byte array for this Imp's extension
                 // Note, if the "prebid" or "<adapter>" field is missing from the source, it will be missing here as well
                 // The adapters should test that their field is present rather than assuming it will be there if they are
