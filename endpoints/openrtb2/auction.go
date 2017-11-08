@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"time"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
@@ -31,8 +32,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		w.Write([]byte(fmt.Sprintf("Invalid request format: %s", err.Error())))
 		return
 	}
-
-	response := deps.ex.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
+	ctx := context.Background()
+	cancel := func() { }
+	if req.TMax > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
+		defer cancel()
+	}
+	response := deps.ex.HoldAuction(ctx, req)
 	responseBytes, err := json.Marshal(response)
 	if err == nil {
 		w.WriteHeader(200)
@@ -66,6 +72,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidR
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	if req.ID == "" {
 		return errors.New("request missing required field: \"id\"")
+	}
+
+	if req.TMax < 0 {
+		return fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)
 	}
 
 	if len(req.Imp) < 1 {

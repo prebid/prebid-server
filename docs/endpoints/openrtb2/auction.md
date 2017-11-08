@@ -125,7 +125,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 The _winning_ bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
 (with _no_ {bidderName} suffix).
 
-#### Optimizing Performance
+#### Improving Performance
 
 `response.ext.responsetimemillis.{bidderName}` tells how long each bidder took to respond.
 These can help quantify the performance impact of "the slowest bidder."

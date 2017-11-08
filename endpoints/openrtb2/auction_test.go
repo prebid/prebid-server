@@ -140,6 +140,7 @@ var invalidRequests = []string{
 	"[]",
 	"{}",
 	`{"id":"req-id"}`,
+	`{"id":"req-id","tmax":-2}`,
 	`{"id":"req-id","imp":[]}`,
 	`{"id":"req-id","imp":[{}]}`,
 	`{"id":"req-id","imp":[{
