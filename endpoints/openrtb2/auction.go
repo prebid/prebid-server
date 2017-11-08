@@ -32,7 +32,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response := deps.ex.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
+	response, err := deps.ex.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
 	responseBytes, err := json.Marshal(response)
 	if err == nil {
 		w.WriteHeader(200)

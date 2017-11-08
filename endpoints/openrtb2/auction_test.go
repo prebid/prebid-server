@@ -77,12 +77,12 @@ func TestNilValidator(t *testing.T) {
 // nobidExchange is a well-behaved exchange which always bids "no bid"
 type nobidExchange struct {}
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) *openrtb.BidResponse {
+func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
 	return &openrtb.BidResponse{
 		ID: bidRequest.ID,
 		BidID: "test bid id",
 		NBR: openrtb.NoBidReasonCodeUnknownError.Ptr(),
-	}
+	}, nil
 }
 
 // bidderParamValidator expects the extension format for all bidders to be the JSON string "good".
