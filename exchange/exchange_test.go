@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
 	"encoding/json"
+	"errors"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -125,6 +126,38 @@ func TestGetAllBids(t *testing.T) {
 	if len(adapterExtra) != 3 {
 		t.Errorf("GetAllBids failed to return 3 adapterExtra's, got %d instead", len(adapterExtra))
 	}
+
+	// Now test with an error condition
+	mockAdapterConfigErr1(e.adapterMap[BidderDummy2].(*mockAdapter))
+	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
+		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
+	}
+	adapterBids, adapterExtra = e.GetAllBids(ctx, e.adapters, cleanRequests)
+
+	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
+		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
+	}
+	if len(adapterExtra[BidderDummy2].Errors) !=2 {
+		t.Errorf("GetAllBids failed to report 2 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
+	}
+	if len(adapterExtra[BidderDummy].Errors) !=0 {
+		t.Errorf("GetAllBids found errors on Bidder1, found %d errors", len(adapterExtra[BidderDummy2].Errors))
+	}
+	if len(adapterBids[BidderDummy2].Bids) !=0 {
+		t.Errorf("GetAllBids found bids on Bidder2, found %d bids", len(adapterBids[BidderDummy2].Bids))
+	}
+
+	// Test with null pointer for bid response
+	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
+	adapterBids, adapterExtra = e.GetAllBids(ctx, e.adapters, cleanRequests)
+
+	if len(adapterExtra[BidderDummy2].Errors) !=1 {
+		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
+	}
+	if len(adapterExtra[BidderDummy].Errors) !=0 {
+		t.Errorf("GetAllBids found errors on Bidder1, found %d errors", len(adapterExtra[BidderDummy2].Errors))
+	}
+
 }
 
 func TestBuildBidResponse(t *testing.T) {
@@ -153,20 +186,60 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids := make(map[openrtb_ext.BidderName]*adapters.PBSOrtbSeatBid)
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra)
 
-    adapterBids[BidderDummy], adapterExtra[BidderDummy] = mockDummyBids1()
-	adapterBids[BidderDummy2], adapterExtra[BidderDummy2] = mockDummyBids2()
-	adapterBids[BidderDummy3], adapterExtra[BidderDummy3] = mockDummyBids3()
+	var errs1, errs2, errs3 []error
+    adapterBids[BidderDummy], errs1 = mockDummyBids1()
+	adapterBids[BidderDummy2], errs2 = mockDummyBids2()
+	adapterBids[BidderDummy3], errs3 = mockDummyBids3()
+	adapterExtra[BidderDummy] = &seatResponseExtra{ResponseTimeMillis: 131, Errors:convertErr2Str(errs1)}
+	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
+	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors:convertErr2Str(errs3)}
 
     bidResponse := e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra)
 	bidResponseExt := new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
 	if len(bidResponseExt.ResponseTimeMillis) != 3 {
-		t.Errorf("HoldAuction: Did not find 3 response times. Found %d instead", len(bidResponseExt.ResponseTimeMillis))
+		t.Errorf("BuildBidResponse: Did not find 3 response times. Found %d instead", len(bidResponseExt.ResponseTimeMillis))
 	}
 	if len(bidResponse.SeatBid) != 3 {
-		t.Errorf("HoldAuction: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
+		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
 	}
+	if len(bidResponse.SeatBid) != 3 {
+		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
+	}
+
+	// Now test with an error condition
+	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
+	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
+
+	bidResponse = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra)
+	bidResponseExt = new(openrtb_ext.ExtBidResponse)
+	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
+
+	// This case we know the order of the adapters, as GetAllBids have not scrambled them
+	if len(bidResponse.SeatBid[0].Bid) != 2 {
+		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
+	}
+	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
+		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
+	}
+
+	// Test with null bid response error
+	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
+	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
+
+	bidResponse = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra)
+	bidResponseExt = new(openrtb_ext.ExtBidResponse)
+	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
+
+	// This case we know the order of the adapters, as GetAllBids have not scrambled them
+	if len(bidResponse.SeatBid[0].Bid) != 2 {
+		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
+	}
+	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
+		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
+	}
+
 }
 
 type mockAdapter struct {
@@ -223,36 +296,36 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 }
 
 func mockAdapterConfig1(a *mockAdapter) {
-	sb1, _ := mockDummyBids1()
+	a.seatBid, a.errs = mockDummyBids1()
 
-	a.seatBid = sb1
 	a.delay = 0 * time.Microsecond
 }
 
 func mockAdapterConfig2(a *mockAdapter) {
-	sb1, _ := mockDummyBids2()
+	a.seatBid, a.errs = mockDummyBids2()
 
-	a.seatBid = sb1
 	a.delay = 0 * time.Microsecond
 }
 
 func mockAdapterConfig3(a *mockAdapter) {
-	sb1, _ := mockDummyBids3()
+	a.seatBid, a.errs = mockDummyBids3()
 
-	a.seatBid = sb1
 	a.delay = 0 * time.Microsecond
 }
 
-func mockAdapterConfigErr(a *mockAdapter) {
-	sb1 := new(adapters.PBSOrtbSeatBid)
+func mockAdapterConfigErr1(a *mockAdapter) {
+	a.seatBid, a.errs = mockDummyBidsErr1()
 
-	a.seatBid = sb1
 	a.delay = 0 * time.Microsecond
-	a.errs = append(a.errs, &errorString{ "This was an error" })
-
 }
 
-func mockDummyBids1() (*adapters.PBSOrtbSeatBid, *seatResponseExtra) {
+func mockAdapterConfigErr2(a *mockAdapter) {
+	a.seatBid, a.errs = mockDummyBidsErr2()
+
+	a.delay = 0 * time.Microsecond
+}
+
+func mockDummyBids1() (*adapters.PBSOrtbSeatBid, []error) {
 	sb1 := new(adapters.PBSOrtbSeatBid)
 	sb1.Bids = make([]*adapters.PBSOrtbBid, 2)
 	sb1.Bids[0] = new(adapters.PBSOrtbBid)
@@ -262,14 +335,12 @@ func mockDummyBids1() (*adapters.PBSOrtbSeatBid, *seatResponseExtra) {
 	sb1.Bids[0].Bid.ID = "1234567890"
 	sb1.Bids[1].Bid.ID = "5678901234"
 
-    ae1 := new(seatResponseExtra)
-    ae1.ResponseTimeMillis = 131
-    ae1.Errors = make([]string, 5)
+    errs := make([]error, 0, 5)
 
-    return sb1, ae1
+    return sb1, errs
 }
 
-func mockDummyBids2() (*adapters.PBSOrtbSeatBid, *seatResponseExtra) {
+func mockDummyBids2() (*adapters.PBSOrtbSeatBid, []error) {
 	sb1 := new(adapters.PBSOrtbSeatBid)
 	sb1.Bids = make([]*adapters.PBSOrtbBid, 2)
 	sb1.Bids[0] = new(adapters.PBSOrtbBid)
@@ -279,24 +350,47 @@ func mockDummyBids2() (*adapters.PBSOrtbSeatBid, *seatResponseExtra) {
 	sb1.Bids[0].Bid.ID = "ABC"
 	sb1.Bids[1].Bid.ID = "1234"
 
-	ae1 := new(seatResponseExtra)
-	ae1.ResponseTimeMillis = 142
-	ae1.Errors = make([]string, 5)
+	errs := make([]error, 0, 5)
 
-	return sb1, ae1
+	return sb1, errs
 }
-func mockDummyBids3() (*adapters.PBSOrtbSeatBid, *seatResponseExtra) {
+func mockDummyBids3() (*adapters.PBSOrtbSeatBid, []error) {
 	sb1 := new(adapters.PBSOrtbSeatBid)
 	sb1.Bids = make([]*adapters.PBSOrtbBid, 1)
 	sb1.Bids[0] = new(adapters.PBSOrtbBid)
 	sb1.Bids[0].Bid = new(openrtb.Bid)
 	sb1.Bids[0].Bid.ID = "MyBid"
 
-	ae1 := new(seatResponseExtra)
-	ae1.ResponseTimeMillis = 131
-	ae1.Errors = make([]string, 5)
+	errs := make([]error, 0, 5)
 
-	return sb1, ae1
+	return sb1, errs
+}
+func mockDummyBidsErr1() (*adapters.PBSOrtbSeatBid, []error) {
+	sb1 := new(adapters.PBSOrtbSeatBid)
+	sb1.Bids = nil
+
+	errs := make([]error, 0, 5)
+	errs = append(errs, errors.New("This was an error") )
+	errs = append(errs, errors.New("Another error goes here") )
+
+	return sb1, errs
+}
+func mockDummyBidsErr2() (*adapters.PBSOrtbSeatBid, []error) {
+	var sb1 *adapters.PBSOrtbSeatBid = nil
+
+	errs := make([]error, 0, 5)
+	errs = append(errs, errors.New("This was a FATAL error") )
+
+	return sb1, errs
+}
+
+
+func convertErr2Str(e []error) []string {
+	s := make([]string, len(e))
+	for i :=0; i<len(e); i++ {
+		s[i] = e[i].Error()
+	}
+	return s
 }
 
 // errorString is a trivial implementation of error.

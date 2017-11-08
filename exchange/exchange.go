@@ -86,6 +86,7 @@ func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterBids = bids
+			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed/time.Millisecond)
 			serr := make([]string, len(err))
