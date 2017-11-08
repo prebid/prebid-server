@@ -43,7 +43,7 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/endpoints/openrtb_auction"
+	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
@@ -819,7 +819,7 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	openrtbEndpoint, err := openrtb_auction.NewEndpoint(theExchange, paramsValidator)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
