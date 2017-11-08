@@ -43,7 +43,7 @@ func TestGoodRequests(t *testing.T) {
 	}
 }
 
-// TestBadRequests makes sure we return 400's on bad requests
+// TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{})
 	for _, badRequest := range invalidRequests {
@@ -58,7 +58,7 @@ func TestBadRequests(t *testing.T) {
 	}
 }
 
-// TestNilExchange makes sure we fail when given nil for the Exchange
+// TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
 	_, err := NewEndpoint(nil, &bidderParamValidator{})
 	if err == nil {
@@ -66,7 +66,7 @@ func TestNilExchange(t *testing.T) {
 	}
 }
 
-// TestNilValidator makes sure we fail when given nil for the BidderParamValidator
+// TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
 	_, err := NewEndpoint(&nobidExchange{}, nil)
 	if err == nil {
@@ -74,7 +74,19 @@ func TestNilValidator(t *testing.T) {
 	}
 }
 
-// nobidExchange is a well-behaved exchange which always bids "no bid"
+// TestExchangeError makes sure we return a 500 if the exchange auction fails.
+func TestExchangeError(t *testing.T) {
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{})
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusInternalServerError, recorder.Code, validRequests[0])
+	}
+}
+
+// nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {}
 
 func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
@@ -86,7 +98,7 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 }
 
 // bidderParamValidator expects the extension format for all bidders to be the JSON string "good".
-// Substantive tests for bidder param validation should go in openrtb_ext/bidders_test.go
+// Substantive tests for bidder param validation should go in openrtb_ext/bidders_test.go.
 type bidderParamValidator struct{}
 
 func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
@@ -95,6 +107,12 @@ func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext
 	} else {
 		return errors.New("Bidder params failed validation.")
 	}
+}
+
+type brokenExchange struct {}
+
+func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+	return nil, errors.New("Critical, unrecoverable error.")
 }
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {

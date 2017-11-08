@@ -39,16 +39,21 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		defer cancel()
 	}
 
-	response, _ := deps.ex.HoldAuction(ctx, req)
+	response, err := deps.ex.HoldAuction(ctx, req)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		return
+	}
 
 	responseBytes, err := json.Marshal(response)
-	if err == nil {
-		w.WriteHeader(200)
-		w.Write(responseBytes)
-	} else {
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error transforming response into JSON."))
+		fmt.Fprintf(w, "Failed to marshal auction response: %v", err)
 	}
+
+	w.WriteHeader(200)
+	w.Write(responseBytes)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.
