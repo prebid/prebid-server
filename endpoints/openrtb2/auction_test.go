@@ -1,4 +1,4 @@
-package openrtb_auction
+package openrtb2
 
 import (
 	"testing"
