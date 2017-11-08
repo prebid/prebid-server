@@ -66,7 +66,10 @@ func TestHoldAuction(t *testing.T) {
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
 
-	bidResponse := e.HoldAuction(ctx, bidRequest)
+	bidResponse, err := e.HoldAuction(ctx, bidRequest)
+	if err != nil {
+		t.Errorf("HoldAuction: %s", err.Error())
+	}
 	bidResponseExt := new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
@@ -194,7 +197,11 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors:convertErr2Str(errs3)}
 
-    bidResponse := e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra)
+	errList := make([]error, 0, 1)
+    bidResponse, err := e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	if err != nil {
+		t.Errorf("BuildBidResponse: %s", err.Error())
+	}
 	bidResponseExt := new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
@@ -212,7 +219,10 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra)
+	bidResponse, err = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	if err != nil {
+		t.Errorf("BuildBidResponse: %s", err.Error())
+	}
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
@@ -228,7 +238,10 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra)
+	bidResponse, err = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	if err != nil {
+		t.Errorf("BuildBidResponse: %s", err.Error())
+	}
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 

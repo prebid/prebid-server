@@ -50,8 +50,13 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	adapters[1] = BidderName("dummy2")
 	adapters[2] = BidderName("dummy3")
 
-	cleanRequests := CleanOpenRTBRequests( &bidRequest, adapters)
+	cleanRequests, errList := CleanOpenRTBRequests( &bidRequest, adapters)
 
+	if len(errList) > 0 {
+		for _, e := range errList {
+			t.Errorf("CleanOpenRTBRequests: %s", e.Error())
+		}
+	}
 	if len(cleanRequests) != 3 {
 		t.Errorf("CleanOpenRTBRequests: expected 3 requests, found %d", len(cleanRequests))
 	}

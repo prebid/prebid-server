@@ -38,7 +38,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
 		defer cancel()
 	}
-	response := deps.ex.HoldAuction(ctx, req)
+
+	response, _ := deps.ex.HoldAuction(ctx, req)
+
 	responseBytes, err := json.Marshal(response)
 	if err == nil {
 		w.WriteHeader(200)

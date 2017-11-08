@@ -4,6 +4,7 @@ import (
     "github.com/mxmCherry/openrtb"
     "encoding/json"
     "math/rand"
+    "fmt"
 )
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
@@ -28,9 +29,10 @@ func RandomizeList(list []BidderName) {
 // before submitting.
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[BidderName]*openrtb.BidRequest {
+func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) (map[BidderName]*openrtb.BidRequest, []error) {
     // This is the clean array of openrtb requests we will be returning
     cleanReqs := map[BidderName]*openrtb.BidRequest{}
+    errList := make([]error, 0, 1)
 
     // Decode the Imp extensions once to save time. We store the results here
     imp_exts := make([]map[string]interface{}, len(orig.Imp))
@@ -39,9 +41,8 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[B
         // Unpack each set of extensions found in the Imp array
         err := json.Unmarshal(orig.Imp[i].Ext, &imp_exts[i])
         if err != nil {
-            return nil
+            return nil, []error{fmt.Errorf("Error unpacking extensions for Imp[%d]: %s", i, err.Error())}
         }
-        // TODO: Need to do some error handling here here
     }
 
     // Loop over every adapter we want to create a clean openrtb request for.
@@ -67,8 +68,9 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[B
                 // The adapters should test that their field is present rather than assuming it will be there if they are
                 // called
                 b, err := json.Marshal(newExts)
-                // Need error handling here
-                _ = err
+                if err != nil {
+                    errList = append(errList, fmt.Errorf("Error creating sanitized bidder extents for Imp[%d], bidder %s: %s", j, bn, err.Error()))
+                }
                 // Overwrite the extention field with the new cleaned version
                 newImps = append(newImps, orig.Imp[j])
                 newImps[len(newImps) - 1].Ext = b
@@ -85,5 +87,5 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) map[B
             cleanReqs[adapters[i]] = newReq
         }
     }
-    return cleanReqs
+    return cleanReqs, errList
 }
