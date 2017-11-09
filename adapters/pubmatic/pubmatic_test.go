@@ -645,7 +645,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 
 	httpReq := httptest.NewRequest("POST", server.URL, body)
 	httpReq.Header.Add("Referer", "http://test.com/sports")
-	pc := pbs.ParsePBSCookieFromRequest(httpReq, config.Cookie{})
+	pc := pbs.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
@@ -654,7 +654,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	_, err = pbs.ParsePBSRequest(httpReq, cacheClient, &hcs, config.Cookie{})
+	_, err = pbs.ParsePBSRequest(httpReq, cacheClient, &hcs, &config.Cookie{})
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

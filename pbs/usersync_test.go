@@ -290,7 +290,7 @@ func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request, config.Cookie{})
+	return ParsePBSCookieFromRequest(&request, &config.Cookie{})
 }
 
 func newTempId(uid string) uidWithExpiry {

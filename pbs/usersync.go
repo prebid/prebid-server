@@ -73,7 +73,7 @@ type UserSyncDeps struct {
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParsePBSCookieFromRequest(r *http.Request, configuredOptoutCookie config.Cookie) *PBSCookie {
+func ParsePBSCookieFromRequest(r *http.Request, configuredOptoutCookie *config.Cookie) *PBSCookie {
 	if configuredOptoutCookie.Name != "" {
 		optOutCookie, err1 := r.Cookie(configuredOptoutCookie.Name)
 		if err1 == nil && optOutCookie.Value == configuredOptoutCookie.Value {
@@ -278,7 +278,7 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookie)
+	pc := ParsePBSCookieFromRequest(r, &deps.OptOutCookie)
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	json.NewEncoder(w).Encode(pc)
 	return
@@ -299,7 +299,7 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookie)
+	pc := ParsePBSCookieFromRequest(r, &deps.OptOutCookie)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
@@ -377,7 +377,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := ParsePBSCookieFromRequest(r, deps.OptOutCookie)
+	pc := ParsePBSCookieFromRequest(r, &deps.OptOutCookie)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
