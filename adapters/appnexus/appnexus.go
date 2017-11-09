@@ -228,7 +228,7 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 		if err != nil {
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i-- // TODO: Test this, and do it better
+			i--
 		}
 	}
 
@@ -296,7 +296,7 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		imp.TagID = appnexusExt.InvCode
 	}
 	if appnexusExt.Reserve > 0 {
-		imp.BidFloor = appnexusExt.Reserve // TODO: we need to factor in currency here if non-USD
+		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil && appnexusExt.Position != "" {
 		if appnexusExt.Position == "above" {
