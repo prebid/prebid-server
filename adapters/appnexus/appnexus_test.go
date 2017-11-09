@@ -17,6 +17,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // TestPlacementIdImp makes sure we make the correct HTTP requests when given a placementId
@@ -312,16 +313,44 @@ func TestSurpriseResponse(t *testing.T) {
 
 // TestStandardResponse makes sure we handle normal responses properly.
 func TestStandardResponse(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+				"placementId": 10433394
+			}}`),
+		}},
+	}
+
 	httpResp := &adapters.ResponseData{
-		StatusCode: http.StatusAccepted,
+		StatusCode: http.StatusOK,
+		Body: []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1470007324018331644","impid":"test-imp-id","price": 0.500000,"adid":"29681110","adm":"some ad","adomain":["appnexus.com"],"iurl":"http://nym1-ib.adnxs.com/cr?id=29681110","cid":"958","crid":"29681110","h": 250,"w": 300,"ext":{"appnexus":{"brand_id": 1,"auction_id": 2056774007789312974,"bidder_id": 2}}}],"seat":"958"}],"bidid":"8787902579030770524","cur":"USD"}`),
 	}
+
 	bidder := new(AppNexusAdapter)
-	bids, errs := bidder.MakeBids(nil, httpResp)
-	if len(bids) != 0 {
-		t.Errorf("Expected 0 bids. Got %d", len(bids))
+	bids, errs := bidder.MakeBids(request, httpResp)
+	if len(bids) != 1 {
+		t.Fatalf("Expected 1 bid. Got %d", len(bids))
 	}
-	if len(errs) != 1 {
-		t.Errorf("Expected 1 error. Got %d", len(errs))
+	if len(errs) != 0 {
+		t.Errorf("Expected 0 errors. Got %d", len(errs))
+	}
+	if bids[0].BidType != openrtb_ext.BidTypeBanner {
+		t.Errorf("Expected a banner bid. Got: %s", bids[0].BidType)
+	}
+	theBid := bids[0].Bid
+	if theBid.ID != "1470007324018331644" {
+		t.Errorf("Bad bid ID. Expected %s, got %s", "1470007324018331644", theBid.ID)
 	}
 }
 
@@ -711,5 +740,4 @@ func TestAppNexusUserSyncInfo(t *testing.T) {
 	if an.usersyncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
-
 }
