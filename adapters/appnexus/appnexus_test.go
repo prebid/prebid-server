@@ -334,7 +334,7 @@ func TestStandardResponse(t *testing.T) {
 
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusOK,
-		Body: []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1470007324018331644","impid":"test-imp-id","price": 0.500000,"adid":"29681110","adm":"some ad","adomain":["appnexus.com"],"iurl":"http://nym1-ib.adnxs.com/cr?id=29681110","cid":"958","crid":"29681110","h": 250,"w": 300,"ext":{"appnexus":{"brand_id": 1,"auction_id": 2056774007789312974,"bidder_id": 2}}}],"seat":"958"}],"bidid":"8787902579030770524","cur":"USD"}`),
+		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1470007324018331644","impid":"test-imp-id","price": 0.500000,"adid":"29681110","adm":"some ad","adomain":["appnexus.com"],"iurl":"http://nym1-ib.adnxs.com/cr?id=29681110","cid":"958","crid":"29681110","h": 250,"w": 300,"ext":{"appnexus":{"brand_id": 1,"auction_id": 2056774007789312974,"bidder_id": 2}}}],"seat":"958"}],"bidid":"8787902579030770524","cur":"USD"}`),
 	}
 
 	bidder := new(AppNexusAdapter)
