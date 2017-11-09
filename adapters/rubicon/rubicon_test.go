@@ -48,6 +48,10 @@ type rubiBidInfo struct {
 	delay              time.Duration
 	visitorTargeting   string
 	inventoryTargeting string
+	sdkVersion         string
+	sdkPlatform        string
+	sdkSource          string
+	devicePxRatio      float64
 }
 
 var rubidata rubiBidInfo
@@ -83,6 +87,15 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 	impTargetingString, _ := json.Marshal(&rix.RP.Target)
 	if string(impTargetingString) != rubidata.inventoryTargeting {
 		http.Error(w, fmt.Sprintf("Inventory FPD targeting '%s' doesn't match '%s'", string(impTargetingString), rubidata.inventoryTargeting), http.StatusInternalServerError)
+		return
+	}
+	if rix.RP.Track.Mint != "prebid" {
+		http.Error(w, fmt.Sprintf("Track mint '%s' doesn't match '%s'", rix.RP.Track.Mint, "prebid"), http.StatusInternalServerError)
+		return
+	}
+	mintVersionString := rubidata.sdkSource + "_" + rubidata.sdkPlatform + "_" + rubidata.sdkVersion
+	if rix.RP.Track.MintVersion != mintVersionString {
+		http.Error(w, fmt.Sprintf("Track mint version '%s' doesn't match '%s'", rix.RP.Track.MintVersion, mintVersionString), http.StatusInternalServerError)
 		return
 	}
 
@@ -188,6 +201,10 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("IP '%s' doesn't match '%s'", breq.Device.IP, rubidata.deviceIP), http.StatusInternalServerError)
 		return
 	}
+	if breq.Device.PxRatio != rubidata.devicePxRatio {
+		http.Error(w, fmt.Sprintf("Pixel ratio '%f' doesn't match '%f'", breq.Device.PxRatio, rubidata.devicePxRatio), http.StatusInternalServerError)
+		return
+	}
 	if breq.User.BuyerUID != rubidata.buyerUID {
 		http.Error(w, fmt.Sprintf("User ID '%s' doesn't match '%s'", breq.User.BuyerUID, rubidata.buyerUID), http.StatusInternalServerError)
 		return
@@ -233,6 +250,10 @@ func TestRubiconBasicResponse(t *testing.T) {
 		buyerUID:           "need-an-actual-rp-id",
 		visitorTargeting:   "[\"v1\",\"v2\"]",
 		inventoryTargeting: "[\"i1\",\"i2\"]",
+		sdkVersion:         "2.0.0",
+		sdkPlatform:        "iOS",
+		sdkSource:          "some-sdk",
+		devicePxRatio:      4.0,
 	}
 
 	targeting := make(map[string]string, 2)
@@ -258,7 +279,10 @@ func TestRubiconBasicResponse(t *testing.T) {
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
+		Device:  &openrtb.Device{PxRatio: rubidata.devicePxRatio},
+		SDK:     &pbs.SDK{Source: rubidata.sdkSource, Platform: rubidata.sdkPlatform, Version: rubidata.sdkVersion},
 	}
+
 	for i, tag := range rubidata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code:       tag.code,
