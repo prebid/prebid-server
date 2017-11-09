@@ -335,12 +335,12 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 }
 
 func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
-	if response.StatusCode == 204 {
+	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode != 200 {
-		return nil, []error{fmt.Errorf("Error from server. HTTP status %d; body: %s", response.StatusCode, string(response.Body))}
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
 	var bidResp openrtb.BidResponse
