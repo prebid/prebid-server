@@ -4,6 +4,7 @@ import (
 	"testing"
 	"github.com/xeipuuv/gojsonschema"
 	"os"
+	"github.com/mxmCherry/openrtb"
 )
 
 // TestMain does the expensive setup so we don't keep re-reading the files in static/bidder-params for each test.
@@ -42,5 +43,19 @@ func TestBidderParamSchemas(t *testing.T) {
 		if _, err := gojsonschema.NewBytesLoader([]byte(schema)).LoadJSON(); err != nil {
 			t.Errorf("static/bidder-params/%s.json does not have a valid json-schema. %v", bidderName, err)
 		}
+	}
+}
+
+// TestValidParams and TestInvalidParams overlap with adapters/appnexus/params_test... but those tests
+// from the other packages don't show up in code coverage.
+func TestValidParams(t *testing.T) {
+	if err := validator.Validate(BidderAppnexus, openrtb.RawJSON(`{"placementId":123}`)); err != nil {
+		t.Errorf("These params should be valid. Error was: %v", err)
+	}
+}
+
+func TestInvalidParams(t *testing.T) {
+	if err := validator.Validate(BidderAppnexus, openrtb.RawJSON(`{}`)); err == nil {
+		t.Error("These params should be invalid.")
 	}
 }

@@ -125,7 +125,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 The _winning_ bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
 (with _no_ {bidderName} suffix).
 
-#### Optimizing Performance
+#### Improving Performance
 
 `response.ext.responsetimemillis.{bidderName}` tells how long each bidder took to respond.
 These can help quantify the performance impact of "the slowest bidder."
@@ -168,8 +168,6 @@ A `status` of `expired` means that the a user was synced, but it last happened o
 A `status` of `none` means that no user sync existed for this bidder.
 
 PBS requests new syncs by returning the `response.ext.usersync.{bidderName}.syncs` array.
-
-TODO: Link to a cookie sync explanation page here?
 
 #### Debugging
 

@@ -3,7 +3,6 @@ package exchange
 import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/adapters"
 	"context"
 	"time"
 	"net/http"
@@ -13,8 +12,7 @@ import (
 	"strconv"
 )
 
-// Exchange is capable of running Auctions. It must be threadsafe, and will be shared
-// across many goroutines.
+// Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error)
@@ -23,7 +21,7 @@ type Exchange interface {
 type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters []openrtb_ext.BidderName
-	adapterMap map[openrtb_ext.BidderName]adapters.Bidder
+	adapterMap map[openrtb_ext.BidderName]adaptedBidder
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -33,7 +31,7 @@ type seatResponseExtra struct {
 }
 
 type bidResponseWrapper struct {
-	adapterBids *adapters.PBSOrtbSeatBid
+	adapterBids *pbsOrtbSeatBid
 	adapterExtra *seatResponseExtra
 	bidder openrtb_ext.BidderName
 }
@@ -61,7 +59,6 @@ func NewExchange(client *http.Client) Exchange {
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	// TODO: modify adapters locally to impliment bseats and wseats
 	cleanRequests, errs := openrtb_ext.CleanOpenRTBRequests(bidRequest, e.adapters)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
@@ -70,8 +67,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		liveAdapters[i] = a
 		i++
 	}
-	// TODO: Possibly sort the list of adapters to support publisher's desired call order
-	// Currently just implementing randomize
+	// Randomize the list of adapters to make the auction more fair
 	openrtb_ext.RandomizeList(liveAdapters)
 
 	adapterBids, adapterExtra := e.GetAllBids(ctx, liveAdapters, cleanRequests)
@@ -81,9 +77,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) (map[openrtb_ext.BidderName]*adapters.PBSOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
+func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	// Set up pointers to the bid results
-	adapterBids := map[openrtb_ext.BidderName]*adapters.PBSOrtbSeatBid{}
+	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{}
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra)
 	chBids := make(chan *bidResponseWrapper, len(liveAdapters))
 	for _, a := range liveAdapters {
@@ -93,7 +89,7 @@ func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			brw := new(bidResponseWrapper)
 			brw.bidder = aName
 			start := time.Now()
-			bids, err := e.adapterMap[aName].Bid(ctx, cleanRequests[aName])
+			bids, err := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName])
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -121,7 +117,7 @@ func (e *exchange) GetAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*adapters.PBSOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -156,7 +152,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 	// objects for seatBids without any bids. Preallocate the max possible size to avoid reallocating the array as we go.
 	seatBids := make([]openrtb.SeatBid, 0, len(liveAdapters))
 	for _, a := range liveAdapters {
-		if adapterBids[a] != nil && len(adapterBids[a].Bids) > 0 {
+		if adapterBids[a] != nil && len(adapterBids[a].bids) > 0 {
 			// Only add non-null seat bids
 			// Possible performance improvement by grabbing a pointer to the current seatBid element, passing it to
 			// MakeSeatBid, and then building the seatBid in place, rather than copying. Probably more confusing than
@@ -188,7 +184,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*adapters.PBSOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, test int8, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, test int8, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors: make(map[openrtb_ext.BidderName][]string, len(adapterBids)),
 		ResponseTimeMillis: make(map[openrtb_ext.BidderName]int, len(adapterBids)),
@@ -203,7 +199,7 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*ad
 		if b != nil {
 			if test == 1 {
 				// Fill debug info
-				bidResponseExt.Debug.HttpCalls[a] = b.HttpCalls
+				bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
 			}
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
@@ -226,13 +222,15 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*ad
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) MakeSeatBid(adapterBid *adapters.PBSOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, targData *targetData) *openrtb.SeatBid {
+func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, targData *targetData) *openrtb.SeatBid {
 	seatBid := new(openrtb.SeatBid)
 	seatBid.Seat = adapter.String()
 	// Prebid cannot support roadblocking
 	seatBid.Group = 0
-	sbExt := make(map[string]openrtb.RawJSON)
-	sbExt["bidder"] = adapterBid.Ext
+
+	sbExt := ExtSeatBid{
+		Bidder: adapterBid.ext,
+	}
 
 	ext, err := json.Marshal(sbExt)
 	if err != nil {
@@ -249,16 +247,16 @@ func (e *exchange) MakeSeatBid(adapterBid *adapters.PBSOrtbSeatBid, adapter open
 }
 
 // Create the Bid array inside of SeatBid
-func (e *exchange) MakeBid(Bids []*adapters.PBSOrtbBid, targData *targetData, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []string) {
+func (e *exchange) MakeBid(Bids []*pbsOrtbBid, targData *targetData, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []string) {
 	bids := make([]openrtb.Bid, len(Bids))
 	errList := make([]string, 0, 1)
 	for i := 0; i < len(Bids); i++ {
-		bids[i] = *Bids[i].Bid
+		bids[i] = *Bids[i].bid
 		bidExt := new(openrtb_ext.ExtBid)
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
-		bidPrebid.Cache = Bids[i].Cache
-		bidPrebid.Type = Bids[i].Type
+		//bidPrebid.Cache = Bids[i].Cache
+		bidPrebid.Type = Bids[i].bidType
 		if targData.targetFlag {
 			cpm := bids[i].Price
 			width := bids[i].W

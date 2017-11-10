@@ -1,19 +1,20 @@
-package adapters
+package exchange
 
 import (
-	"context"
-	"errors"
+	"testing"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
+	"errors"
 	"net/http/httptest"
 	"sync/atomic"
-	"testing"
+	"net/http"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"context"
 )
 
-// TestSingleBidder makes sure that the following things work if the HttpBidder needs only one request.
+// TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
 //
-// 1. The HttpBidder implementation is called with the arguments we expect.
+// 1. The Bidder implementation is called with the arguments we expect.
 // 2. The returned values are correct for a non-test bid.
 func TestSingleBidder(t *testing.T) {
 	respStatus := 200
@@ -24,7 +25,7 @@ func TestSingleBidder(t *testing.T) {
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
 
-	mockBids := []*TypedBid{
+	mockBids := []*adapters.TypedBid{
 		{
 			Bid:     &openrtb.Bid{},
 			BidType: openrtb_ext.BidTypeBanner,
@@ -36,7 +37,7 @@ func TestSingleBidder(t *testing.T) {
 	}
 
 	bidderImpl := &goodSingleBidder{
-		httpRequest: &RequestData{
+		httpRequest: &adapters.RequestData{
 			Method:  "POST",
 			Uri:     server.URL,
 			Body:    []byte("{\"key\":\"val\"}"),
@@ -44,12 +45,12 @@ func TestSingleBidder(t *testing.T) {
 		},
 		bids: mockBids,
 	}
-	bidder := AdaptHttpBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.Bid(context.Background(), &openrtb.BidRequest{})
+	bidder := adaptBidder(bidderImpl, server.Client())
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{})
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
-		t.Errorf("The HttpBidder should be called with the server's response.")
+		t.Errorf("The Bidder should be called with the server's response.")
 	}
 	if bidderImpl.httpResponse.StatusCode != respStatus {
 		t.Errorf("Bad response status. Expected %d, got %d", respStatus, string(bidderImpl.httpResponse.StatusCode))
@@ -62,23 +63,23 @@ func TestSingleBidder(t *testing.T) {
 	if len(errs) != 0 {
 		t.Errorf("bidder.Bid returned %d errors. Expected 0", len(errs))
 	}
-	if len(seatBid.Bids) != len(mockBids) {
-		t.Fatalf("Expected %d bids. Got %d", len(mockBids), len(seatBid.Bids))
+	if len(seatBid.bids) != len(mockBids) {
+		t.Fatalf("Expected %d bids. Got %d", len(mockBids), len(seatBid.bids))
 	}
 	for index, typedBid := range mockBids {
-		if typedBid.Bid != seatBid.Bids[index].Bid {
+		if typedBid.Bid != seatBid.bids[index].bid {
 			t.Errorf("Bid %d did not point to the same bid returned by the Bidder.", index)
 		}
-		if typedBid.BidType != seatBid.Bids[index].Type {
-			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.Bids[index].Type)
+		if typedBid.BidType != seatBid.bids[index].bidType {
+			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
 		}
 	}
-	if len(seatBid.HttpCalls) != 0 {
-		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.HttpCalls))
+	if len(seatBid.httpCalls) != 0 {
+		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 	}
 
-	if len(seatBid.Ext) != 0 {
-		t.Errorf("The bidder shouldn't define any seatBid.ext. Got %s", string(seatBid.Ext))
+	if len(seatBid.ext) != 0 {
+		t.Errorf("The bidder shouldn't define any seatBid.ext. Got %s", string(seatBid.ext))
 	}
 }
 
@@ -94,7 +95,7 @@ func TestMultiBidder(t *testing.T) {
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
 
-	mockBids := []*TypedBid{
+	mockBids := []*adapters.TypedBid{
 		{
 			Bid:     &openrtb.Bid{},
 			BidType: openrtb_ext.BidTypeBanner,
@@ -106,7 +107,7 @@ func TestMultiBidder(t *testing.T) {
 	}
 
 	bidderImpl := &mixedMultiBidder{
-		httpRequests: []*RequestData{{
+		httpRequests: []*adapters.RequestData{{
 			Method:  "POST",
 			Uri:     server.URL,
 			Body:    []byte("{\"key\":\"val\"}"),
@@ -120,8 +121,8 @@ func TestMultiBidder(t *testing.T) {
 			}},
 		bids: mockBids,
 	}
-	bidder := AdaptHttpBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.Bid(context.Background(), &openrtb.BidRequest{})
+	bidder := adaptBidder(bidderImpl, server.Client())
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{})
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -130,8 +131,8 @@ func TestMultiBidder(t *testing.T) {
 	if len(errs) != 1+len(bidderImpl.httpRequests) {
 		t.Errorf("Expected %d errors. Got %d", 1+len(bidderImpl.httpRequests), len(errs))
 	}
-	if len(seatBid.Bids) != len(bidderImpl.httpResponses)*len(mockBids) {
-		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBids), len(seatBid.Bids))
+	if len(seatBid.bids) != len(bidderImpl.httpResponses)*len(mockBids) {
+		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBids), len(seatBid.bids))
 	}
 }
 
@@ -165,7 +166,7 @@ func TestBidderTimeout(t *testing.T) {
 		Client: server.Client(),
 	}
 
-	callInfo := bidder.doRequest(ctx, &RequestData{
+	callInfo := bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
 	})
@@ -179,7 +180,7 @@ func TestBidderTimeout(t *testing.T) {
 		t.Errorf("The first call should return the body \"postBody\". Got %s", callInfo.response.Body)
 	}
 
-	callInfo = bidder.doRequest(ctx, &RequestData{
+	callInfo = bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
 	})
@@ -190,7 +191,7 @@ func TestBidderTimeout(t *testing.T) {
 		t.Errorf("There should be no response if the request was cancelled.")
 	}
 
-	callInfo = bidder.doRequest(ctx, &RequestData{
+	callInfo = bidder.doRequest(ctx, &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
 	})
@@ -202,7 +203,7 @@ func TestBidderTimeout(t *testing.T) {
 	}
 }
 
-// TestInvalidUri makes sure that bidderAdapter.doRequest returns errors on bad requests.
+// TestInvalidRequest makes sure that bidderAdapter.doRequest returns errors on bad requests.
 func TestInvalidRequest(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "postBody"))
 	bidder := &bidderAdapter{
@@ -210,7 +211,7 @@ func TestInvalidRequest(t *testing.T) {
 		Client: server.Client(),
 	}
 
-	callInfo := bidder.doRequest(context.Background(), &RequestData{
+	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "\"", // force http.NewRequest() to fail
 	})
 	if callInfo.err == nil {
@@ -218,7 +219,7 @@ func TestInvalidRequest(t *testing.T) {
 	}
 }
 
-// TestBadBody makes sure that bidderAdapter.doRequest returns errors if the connection closes unexpectedly.
+// TestConnectionClose makes sure that bidderAdapter.doRequest returns errors if the connection closes unexpectedly.
 func TestConnectionClose(t *testing.T) {
 	var server *httptest.Server
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -231,7 +232,7 @@ func TestConnectionClose(t *testing.T) {
 		Client: server.Client(),
 	}
 
-	callInfo := bidder.doRequest(context.Background(), &RequestData{
+	callInfo := bidder.doRequest(context.Background(), &adapters.RequestData{
 		Method: "POST",
 		Uri:    server.URL,
 	})
@@ -263,7 +264,7 @@ func TestBadRequestLogging(t *testing.T) {
 // TestBadResponseLogging makes sure that openrtb_ext works properly if we don't get a sensible HTTP response.
 func TestBadResponseLogging(t *testing.T) {
 	info := &httpCallInfo{
-		request: &RequestData{
+		request: &adapters.RequestData{
 			Uri:  "test.com",
 			Body: []byte("request body"),
 		},
@@ -287,11 +288,11 @@ func TestBadResponseLogging(t *testing.T) {
 // TestSuccessfulResponseLogging makes sure that openrtb_ext works properly if the HTTP request is successful.
 func TestSuccessfulResponseLogging(t *testing.T) {
 	info := &httpCallInfo{
-		request: &RequestData{
+		request: &adapters.RequestData{
 			Uri:  "test.com",
 			Body: []byte("request body"),
 		},
-		response: &ResponseData{
+		response: &adapters.ResponseData{
 			StatusCode: 200,
 			Body:       []byte("response body"),
 		},
@@ -311,7 +312,7 @@ func TestSuccessfulResponseLogging(t *testing.T) {
 	}
 }
 
-// TestServerCallDebugging makes sure that we log the server calls made by the HttpBidder on test bids.
+// TestServerCallDebugging makes sure that we log the server calls made by the Bidder on test bids.
 func TestServerCallDebugging(t *testing.T) {
 	respBody := "{\"bid\":false}"
 	respStatus := 200
@@ -321,39 +322,39 @@ func TestServerCallDebugging(t *testing.T) {
 	reqBody := "{\"key\":\"val\"}"
 	reqUrl := server.URL
 	bidderImpl := &goodSingleBidder{
-		httpRequest: &RequestData{
+		httpRequest: &adapters.RequestData{
 			Method:  "POST",
 			Uri:     reqUrl,
 			Body:    []byte(reqBody),
 			Headers: http.Header{},
 		},
 	}
-	bidder := AdaptHttpBidder(bidderImpl, server.Client())
+	bidder := adaptBidder(bidderImpl, server.Client())
 
-	bids, _ := bidder.Bid(context.Background(), &openrtb.BidRequest{
+	bids, _ := bidder.requestBid(context.Background(), &openrtb.BidRequest{
 		Test: 1,
 	})
 
-	if len(bids.HttpCalls) != 1 {
-		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.HttpCalls))
+	if len(bids.httpCalls) != 1 {
+		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
 	}
-	if bids.HttpCalls[0].Uri != reqUrl {
-		t.Errorf("Wrong httpcalls URI. Expected %s, got %s", reqUrl, bids.HttpCalls[0].Uri)
+	if bids.httpCalls[0].Uri != reqUrl {
+		t.Errorf("Wrong httpcalls URI. Expected %s, got %s", reqUrl, bids.httpCalls[0].Uri)
 	}
-	if bids.HttpCalls[0].RequestBody != reqBody {
-		t.Errorf("Wrong httpcalls RequestBody. Expected %s, got %s", reqBody, bids.HttpCalls[0].RequestBody)
+	if bids.httpCalls[0].RequestBody != reqBody {
+		t.Errorf("Wrong httpcalls RequestBody. Expected %s, got %s", reqBody, bids.httpCalls[0].RequestBody)
 	}
-	if bids.HttpCalls[0].ResponseBody != respBody {
-		t.Errorf("Wrong httpcalls ResponseBody. Expected %s, got %s", respBody, bids.HttpCalls[0].ResponseBody)
+	if bids.httpCalls[0].ResponseBody != respBody {
+		t.Errorf("Wrong httpcalls ResponseBody. Expected %s, got %s", respBody, bids.httpCalls[0].ResponseBody)
 	}
-	if bids.HttpCalls[0].Status != respStatus {
-		t.Errorf("Wrong httpcalls Status. Expected %d, got %d", respStatus, bids.HttpCalls[0].Status)
+	if bids.httpCalls[0].Status != respStatus {
+		t.Errorf("Wrong httpcalls Status. Expected %d, got %d", respStatus, bids.httpCalls[0].Status)
 	}
 }
 
 func TestErrorReporting(t *testing.T) {
-	bidder := AdaptHttpBidder(&bidRejector{}, nil)
-	bids, errs := bidder.Bid(context.Background(), &openrtb.BidRequest{})
+	bidder := adaptBidder(&bidRejector{}, nil)
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{})
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -364,59 +365,48 @@ func TestErrorReporting(t *testing.T) {
 
 type goodSingleBidder struct {
 	bidRequest   *openrtb.BidRequest
-	httpRequest  *RequestData
-	httpResponse *ResponseData
-	bids         []*TypedBid
+	httpRequest  *adapters.RequestData
+	httpResponse *adapters.ResponseData
+	bids         []*adapters.TypedBid
 }
 
-func (bidder *goodSingleBidder) MakeHttpRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
+func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
-	return []*RequestData{bidder.httpRequest}, nil
+	return []*adapters.RequestData{bidder.httpRequest}, nil
 }
 
-func (bidder *goodSingleBidder) MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error) {
+func (bidder *goodSingleBidder) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	bidder.httpResponse = response
 	return bidder.bids, nil
 }
 
 type mixedMultiBidder struct {
 	bidRequest    *openrtb.BidRequest
-	httpRequests  []*RequestData
-	httpResponses []*ResponseData
-	bids          []*TypedBid
+	httpRequests  []*adapters.RequestData
+	httpResponses []*adapters.ResponseData
+	bids          []*adapters.TypedBid
 }
 
-func (bidder *mixedMultiBidder) MakeHttpRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
+func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return bidder.httpRequests, []error{errors.New("The requests weren't ideal.")}
 }
 
-func (bidder *mixedMultiBidder) MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error) {
+func (bidder *mixedMultiBidder) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	bidder.httpResponses = append(bidder.httpResponses, response)
 	return bidder.bids, []error{errors.New("The bids weren't ideal.")}
 }
 
 type bidRejector struct {
-	httpRequest  *RequestData
-	httpResponse *ResponseData
+	httpRequest  *adapters.RequestData
+	httpResponse *adapters.ResponseData
 }
 
-func (bidder *bidRejector) MakeHttpRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
+func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	return nil, []error{errors.New("Invalid params on BidRequest.")}
 }
 
-func (bidder *bidRejector) MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error) {
+func (bidder *bidRejector) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	bidder.httpResponse = response
 	return nil, []error{errors.New("Can't make a response.")}
-}
-
-func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(statusCode)
-		if r.Method == "GET" {
-			w.Write([]byte(getBody))
-		} else {
-			w.Write([]byte(postBody))
-		}
-	})
 }

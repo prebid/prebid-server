@@ -11,13 +11,12 @@ import (
 
 // This file contains some deprecated, legacy types.
 //
-// These support the `/auction` endpoint, but will be replaced by support for OpenRTB 2.5.
+// These support the `/auction` endpoint, but will be replaced by `/openrtb2/auction`.
+// New demand partners should ignore this file, and implement the Bidder interface.
 
 // Adapter is a deprecated interface which connects prebid-server to a demand partner.
 // PBS is currently being rewritten to use Bidder, and this will be removed after.
 // Their primary purpose is to produce bids in response to Auction requests.
-//
-// For the future, see Bidder.
 type Adapter interface {
 	// Name uniquely identifies this adapter. This must be identical to the code in Prebid.js,
 	// but cannot overlap with any other adapters in prebid-server.

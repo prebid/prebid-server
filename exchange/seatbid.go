@@ -1,4 +1,4 @@
-package openrtb_ext
+package exchange
 
 import "github.com/mxmCherry/openrtb"
 
