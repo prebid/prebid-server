@@ -10,8 +10,7 @@ import (
 	"fmt"
 )
 
-// Exchange is capable of running Auctions. It must be threadsafe, and will be shared
-// across many goroutines.
+// Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error)
@@ -153,7 +152,7 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		if b != nil {
 			if test == 1 {
 				// Fill debug info
-				bidResponseExt.Debug.HttpCalls[a] = b.HttpCalls
+				bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
 			}
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
@@ -182,7 +181,7 @@ func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	// Prebid cannot support roadblocking
 	seatBid.Group = 0
 	sbExt := make(map[string]openrtb.RawJSON)
-	sbExt["bidder"] = adapterBid.Ext
+	sbExt["bidder"] = adapterBid.ext
 
 	ext, err := json.Marshal(sbExt)
 	if err != nil {

@@ -74,12 +74,12 @@ func TestSingleBidder(t *testing.T) {
 			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
 		}
 	}
-	if len(seatBid.HttpCalls) != 0 {
-		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.HttpCalls))
+	if len(seatBid.httpCalls) != 0 {
+		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
 	}
 
-	if len(seatBid.Ext) != 0 {
-		t.Errorf("The bidder shouldn't define any seatBid.ext. Got %s", string(seatBid.Ext))
+	if len(seatBid.ext) != 0 {
+		t.Errorf("The bidder shouldn't define any seatBid.ext. Got %s", string(seatBid.ext))
 	}
 }
 
@@ -203,7 +203,7 @@ func TestBidderTimeout(t *testing.T) {
 	}
 }
 
-// TestInvalidUri makes sure that bidderAdapter.doRequest returns errors on bad requests.
+// TestInvalidRequest makes sure that bidderAdapter.doRequest returns errors on bad requests.
 func TestInvalidRequest(t *testing.T) {
 	server := httptest.NewServer(mockHandler(200, "getBody", "postBody"))
 	bidder := &bidderAdapter{
@@ -219,7 +219,7 @@ func TestInvalidRequest(t *testing.T) {
 	}
 }
 
-// TestBadBody makes sure that bidderAdapter.doRequest returns errors if the connection closes unexpectedly.
+// TestConnectionClose makes sure that bidderAdapter.doRequest returns errors if the connection closes unexpectedly.
 func TestConnectionClose(t *testing.T) {
 	var server *httptest.Server
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -335,20 +335,20 @@ func TestServerCallDebugging(t *testing.T) {
 		Test: 1,
 	})
 
-	if len(bids.HttpCalls) != 1 {
-		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.HttpCalls))
+	if len(bids.httpCalls) != 1 {
+		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
 	}
-	if bids.HttpCalls[0].Uri != reqUrl {
-		t.Errorf("Wrong httpcalls URI. Expected %s, got %s", reqUrl, bids.HttpCalls[0].Uri)
+	if bids.httpCalls[0].Uri != reqUrl {
+		t.Errorf("Wrong httpcalls URI. Expected %s, got %s", reqUrl, bids.httpCalls[0].Uri)
 	}
-	if bids.HttpCalls[0].RequestBody != reqBody {
-		t.Errorf("Wrong httpcalls RequestBody. Expected %s, got %s", reqBody, bids.HttpCalls[0].RequestBody)
+	if bids.httpCalls[0].RequestBody != reqBody {
+		t.Errorf("Wrong httpcalls RequestBody. Expected %s, got %s", reqBody, bids.httpCalls[0].RequestBody)
 	}
-	if bids.HttpCalls[0].ResponseBody != respBody {
-		t.Errorf("Wrong httpcalls ResponseBody. Expected %s, got %s", respBody, bids.HttpCalls[0].ResponseBody)
+	if bids.httpCalls[0].ResponseBody != respBody {
+		t.Errorf("Wrong httpcalls ResponseBody. Expected %s, got %s", respBody, bids.httpCalls[0].ResponseBody)
 	}
-	if bids.HttpCalls[0].Status != respStatus {
-		t.Errorf("Wrong httpcalls Status. Expected %d, got %d", respStatus, bids.HttpCalls[0].Status)
+	if bids.httpCalls[0].Status != respStatus {
+		t.Errorf("Wrong httpcalls Status. Expected %d, got %d", respStatus, bids.httpCalls[0].Status)
 	}
 }
 

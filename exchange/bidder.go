@@ -22,12 +22,9 @@ import (
 // This interface differs from adapters.Bidder to help minimize code duplication across the
 // adapters.Bidder implementations.
 type adaptedBidder interface {
-	// Bid gets the bids from this bidder for the given request.
+	// requestBid fetches bids for the given request.
 	//
-	// Per the OpenRTB spec, a SeatBid may not be empty. If so, then any errors which contribute
-	// to the "no bid" bid should be returned here instead.
-	//
-	// A Bidder *may* return two non-nil values here. Errors should describe situations which
+	// An adaptedBidder *may* return non-nil values here. Errors should describe situations which
 	// make the bid (or no-bid) "less than ideal." Common examples include:
 	//
 	// 1. Connection issues.
@@ -40,26 +37,28 @@ type adaptedBidder interface {
 	requestBid(ctx context.Context, request *openrtb.BidRequest) (*pbsOrtbSeatBid, []error)
 }
 
-// pbsOrtbBid is a Bid returned by a Bidder.
+// pbsOrtbBid is a Bid returned by an adaptedBidder.
 //
-// pbsOrtbBid.Bid.Ext will become "response.seatbid[bidder].bid[i].ext.bidder" in the final PBS response.
+// pbsOrtbBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// pbsOrtbBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 type pbsOrtbBid struct {
 	bid *openrtb.Bid
 	bidType openrtb_ext.BidType
 }
 
-// pbsOrtbBid is a SeatBid returned by a Bidder.
+// pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
 //
-// PBS does not support the "Group" option from the OpenRTB SeatBid. All bids must be winnable independently.
+// This is distinct from the openrtb.SeatBid so that the prebid-server ext can be passed back with typesafety.
 type pbsOrtbSeatBid struct {
-	// Bids is the list of bids in this SeatBid. If len(Bids) == 0, no SeatBid will be entered for this bidder.
-	// This is because the OpenRTB 2.5 spec requires at least one bid for each SeatBid.
+	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
-	// HttpCalls will become response.ext.debug.httpcalls.{bidder} on the final Response.
-	HttpCalls []*openrtb_ext.ExtHttpCall
-	// Ext will become response.seatbid[i].ext.{bidder} on the final Response, *only if* len(Bids) > 0.
-	// If len(Bids) == 0, no SeatBid will be entered, and this field will be ignored.
-	Ext openrtb.RawJSON
+	// httpcalls is the list of debugging info. It should only be populated if the request.test == 1.
+	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
+	httpCalls []*openrtb_ext.ExtHttpCall
+	// ext contains the extension for this seatbid.
+	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
+	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
+	ext openrtb.RawJSON
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
@@ -100,7 +99,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 
 	seatBid := &pbsOrtbSeatBid{
 		bids:      make([]*pbsOrtbBid, 0, len(reqData)),
-		HttpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
+		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
 
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
@@ -109,7 +108,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		httpInfo := <-responseChannel
 		// If this is a test bid, capture debugging info from the requests.
 		if request.Test == 1 {
-			seatBid.HttpCalls = append(seatBid.HttpCalls, makeExt(httpInfo))
+			seatBid.httpCalls = append(seatBid.httpCalls, makeExt(httpInfo))
 		}
 
 		if httpInfo.err == nil {
