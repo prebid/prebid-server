@@ -169,8 +169,6 @@ A `status` of `none` means that no user sync existed for this bidder.
 
 PBS requests new syncs by returning the `response.ext.usersync.{bidderName}.syncs` array.
 
-TODO: Link to a cookie sync explanation page here?
-
 #### Debugging
 
 `response.ext.debug.httpcalls.{bidder}` will be populated **only if** `request.test` **was set to 1**.

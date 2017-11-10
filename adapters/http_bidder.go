@@ -83,9 +83,8 @@ func (bidder *bidderAdapter) Bid(ctx context.Context, request *openrtb.BidReques
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
 				seatBid.Bids = append(seatBid.Bids, &PBSOrtbBid{
-					Bid:   bid.Bid,
-					Cache: nil, // TODO: Support the cache
-					Type:  bid.BidType,
+					Bid:  bid.Bid,
+					Type: bid.BidType,
 				})
 			}
 		} else {

@@ -210,7 +210,6 @@ func (e *exchange) MakeBid(Bids []*adapters.PBSOrtbBid) ([]openrtb.Bid, []string
 		bidExt := new(openrtb_ext.ExtBid)
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
-		bidPrebid.Cache = Bids[i].Cache
 		bidPrebid.Type = Bids[i].Type
 		// TODO: Support targeting
 

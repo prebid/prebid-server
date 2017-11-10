@@ -33,8 +33,7 @@ type PBSOrtbBid struct {
 	Bid *openrtb.Bid
 	// TODO: The cache's existance is up in the air. Revisit this after Mobile finishes their investigation.
 	// Cache must not be nil if request.ext.prebid.cache.markup was 1
-	Cache *openrtb_ext.ExtResponseCache
-	Type  openrtb_ext.BidType
+	Type openrtb_ext.BidType
 }
 
 // PBSOrtbBid is a SeatBid returned by a Bidder.
