@@ -8,8 +8,15 @@ import (
 
 const DEFAULT_PRECISION = 2
 
+// Parameters every price bucket needs.
+type priceBucketParams struct {
+	min       float64
+	max       float64
+	increment float64
+}
+
 // A type to hold the price bucket configurations
-type priceBucketConf []map[string]float64
+type priceBucketConf []priceBucketParams
 
 // A type for the price bucket configuration names
 type PriceGranularity string
@@ -34,61 +41,61 @@ var priceBucketConfigMap = map[PriceGranularity]priceBucketConf{
 }
 var priceBucketLow = priceBucketConf{
 	{
-		"min":       0,
-		"max":       5,
-		"increment": 0.5,
+		min:       0,
+		max:       5,
+		increment: 0.5,
 	},
 }
 
 var priceBucketMed = priceBucketConf{
 	{
-		"min":       0,
-		"max":       20,
-		"increment": 0.1,
+		min:       0,
+		max:       20,
+		increment: 0.1,
 	},
 }
 
 var priceBucketHigh = priceBucketConf{
 	{
-		"min":       0,
-		"max":       20,
-		"increment": 0.01,
+		min:       0,
+		max:       20,
+		increment: 0.01,
 	},
 }
 
 var priceBucketDense = priceBucketConf{
 	{
-		"min":       0,
-		"max":       3,
-		"increment": 0.01,
+		min:       0,
+		max:       3,
+		increment: 0.01,
 	},
 	{
-		"min":       3,
-		"max":       8,
-		"increment": 0.05,
+		min:       3,
+		max:       8,
+		increment: 0.05,
 	},
 	{
-		"min":       8,
-		"max":       20,
-		"increment": 0.5,
+		min:       8,
+		max:       20,
+		increment: 0.5,
 	},
 }
 
 var priceBucketAuto = priceBucketConf{
 	{
-		"min":       0,
-		"max":       5,
-		"increment": 0.05,
+		min:       0,
+		max:       5,
+		increment: 0.05,
 	},
 	{
-		"min":       5,
-		"max":       10,
-		"increment": 0.1,
+		min:       5,
+		max:       10,
+		increment: 0.1,
 	},
 	{
-		"min":       10,
-		"max":       20,
-		"increment": 0.5,
+		min:       10,
+		max:       20,
+		increment: 0.5,
 	},
 }
 
@@ -101,8 +108,8 @@ func getCpmStringValue(cpm float64, config priceBucketConf, precision int) strin
 	}
 	// calculate max of highest bucket
 	for i := 0; i < len(config); i++ {
-		if config[i]["max"] > bucketMax {
-			bucketMax = config[i]["max"]
+		if config[i].max > bucketMax {
+			bucketMax = config[i].max
 		}
 	} // calculate which bucket cpm is in
 	if cpm > bucketMax {
@@ -110,8 +117,8 @@ func getCpmStringValue(cpm float64, config priceBucketConf, precision int) strin
 		return strconv.FormatFloat(bucketMax, 'f', precision, 64)
 	}
 	for i := 0; i < len(config); i++ {
-		if cpm >= config[i]["min"] && cpm <= config[i]["max"] {
-			increment = config[i]["increment"]
+		if cpm >= config[i].min && cpm <= config[i].max {
+			increment = config[i].increment
 		}
 	}
 	if increment > 0 {
@@ -125,18 +132,8 @@ func getCpmTarget(cpm float64, increment float64, precision int) string {
 	if precision == 0 {
 		precision = DEFAULT_PRECISION
 	}
-	d := RoundUp(cpm/increment, precision)
-	roundedCPM := math.Floor(d) * increment
+	roundedCPM := math.Floor(cpm/increment) * increment
 	return strconv.FormatFloat(roundedCPM, 'f', precision, 64)
-}
-
-func RoundUp(input float64, places int) (newVal float64) {
-	// var round float64
-	pow := math.Pow(10, float64(places))
-	digit := pow * input
-	// round = math.Ceil(digit)
-	newVal = digit / pow
-	return
 }
 
 // Externally facing function for computing CPM buckets
