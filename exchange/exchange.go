@@ -49,7 +49,6 @@ func NewExchange(client *http.Client) Exchange {
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	// TODO: modify adapters locally to impliment bseats and wseats
 	cleanRequests, errs := openrtb_ext.CleanOpenRTBRequests(bidRequest, e.adapters)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
@@ -58,8 +57,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		liveAdapters[i] = a
 		i++
 	}
-	// TODO: Possibly sort the list of adapters to support publisher's desired call order
-	// Currently just implementing randomize
+	// Randomize the list of adapters to make the auction more fair
 	openrtb_ext.RandomizeList(liveAdapters)
 
 	adapterBids, adapterExtra := e.GetAllBids(ctx, liveAdapters, cleanRequests)
@@ -211,7 +209,6 @@ func (e *exchange) MakeBid(Bids []*adapters.PBSOrtbBid) ([]openrtb.Bid, []string
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
 		bidPrebid.Type = Bids[i].Type
-		// TODO: Support targeting
 
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
