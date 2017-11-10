@@ -1,58 +1,69 @@
 package adapters
 
 import (
-	"context"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
 )
 
-// Bidders participate in prebid-server auctions.
+// Bidder describes how to connect to external demand.
 type Bidder interface {
-	// Bid gets the bids from this bidder for the given request.
+	// MakeRequests makes the HTTP requests which should be made to fetch bids.
 	//
-	// Per the OpenRTB spec, a SeatBid may not be empty. If so, then any errors which contribute
-	// to the "no bid" bid should be returned here instead.
+	// nil return values are acceptable, but nil elements *inside* those slices are not.
 	//
-	// A Bidder *may* return two non-nil values here. Errors should describe situations which
-	// make the bid (or no-bid) "less than ideal." Common examples include:
+	// The errors should contain a list of errors which explain why this bidder's bids will be
+	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
+	MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
+
+	// MakeBids unpacks the server's response into Bids.
 	//
-	// 1. HTTP connection issues.
-	// 2. Imps with Media Types which this Bidder doesn't support.
-	// 3. The Context timeout expired before all expected bids were returned.
-	// 4. The Server sent back an unexpected Response, so some bids were ignored.
+	// The bids can be nil (for no bids), but should not contain nil elements.
 	//
-	// Any errors will be user-facing... so the error messages should help publishers understand
-	// what might account for "bad" bids.
-	Bid(ctx context.Context, request *openrtb.BidRequest) (*PBSOrtbSeatBid, []error)
+	// The errors should contain a list of errors which explain why this bidder's bids will be
+	// "subpar" in some way. For example: the server response didn't have the expected format.
+	MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error)
 }
 
-// PBSOrtbBid is a Bid returned by a Bidder.
+// TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an
+// openrtb_ext.ExtBidPrebid.
 //
-// PBSOrtbBid.Bid.Ext will become "response.seatbid[bidder].bid[i].ext.bidder" in the final PBS response.
-type PBSOrtbBid struct {
-	Bid *openrtb.Bid
-	Type openrtb_ext.BidType
+// TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+type TypedBid struct {
+	Bid     *openrtb.Bid
+	BidType openrtb_ext.BidType
 }
 
-// PBSOrtbBid is a SeatBid returned by a Bidder.
-//
-// PBS does not support the "Group" option from the OpenRTB SeatBid. All bids must be winnable independently.
-type PBSOrtbSeatBid struct {
-	// Bids is the list of bids in this SeatBid. If len(Bids) == 0, no SeatBid will be entered for this bidder.
-	// This is because the OpenRTB 2.5 spec requires at least one bid for each SeatBid.
-	Bids []*PBSOrtbBid
-	// HttpCalls will become response.ext.debug.httpcalls.{bidder} on the final Response.
-	HttpCalls []*openrtb_ext.ExtHttpCall
-	// Ext will become response.seatbid[i].ext.{bidder} on the final Response, *only if* len(Bids) > 0.
-	// If len(Bids) == 0, no SeatBid will be entered, and this field will be ignored.
-	Ext openrtb.RawJSON
+// RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality
+// uniformly across all Bidders.
+// It will also let us experiment with valyala/vasthttp vs. net/http without changing every adapter (see #152)
+
+// ResponseData packages together information from the server's http.Response.
+type ResponseData struct {
+	StatusCode int
+	Body       []byte
+	Headers    http.Header
 }
 
-// ExtImpBidder is a struct which can be used by Bidders to unmarshal any request.imp[i].ext.
+// RequestData packages together the fields needed to make an http.Request.
+type RequestData struct {
+	Method  string
+	Uri     string
+	Body    []byte
+	Headers http.Header
+}
+
+// ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
 type ExtImpBidder struct {
 	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid"`
 
-	// Bidder will contain the data for the bidder-specific extension.
-	// Bidders should unmarshal this using their corresponding openrtb_ext.ExtImp{Bidder} struct.
+	// Bidder contain the bidder-specific extension. Each bidder should unmarshal this using their
+	// corresponding openrtb_ext.ExtImp{Bidder} struct.
+	//
+	// For example, the Appnexus Bidder should unmarshal this with an openrtb_ext.ExtImpAppnexus object.
+	//
+	// Bidder implementations may safely assume that this JSON has been validated by their
+	// static/bidder-params/{bidder}.json file.
 	Bidder openrtb.RawJSON `json:"bidder"`
 }

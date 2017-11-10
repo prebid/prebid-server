@@ -215,7 +215,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	memberIds := make([]string, 0, len(request.Imp))
 	errs := make([]error, 0, len(request.Imp))
 

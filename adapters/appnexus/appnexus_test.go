@@ -51,7 +51,7 @@ func TestPlacementIdImp(t *testing.T) {
 		}},
 	}
 
-	reqs, errs := bidder.MakeHttpRequests(request)
+	reqs, errs := bidder.MakeRequests(request)
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
 	}
@@ -120,7 +120,7 @@ func TestMemberImp(t *testing.T) {
 		}},
 	}
 
-	reqs, errs := bidder.MakeHttpRequests(request)
+	reqs, errs := bidder.MakeRequests(request)
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
 	}
@@ -220,7 +220,7 @@ func TestBestEffortBid(t *testing.T) {
 	}
 
 	bidder := new(AppNexusAdapter)
-	httpReqs, errs := bidder.MakeHttpRequests(request)
+	httpReqs, errs := bidder.MakeRequests(request)
 	if len(errs) != 2 {
 		t.Errorf("We expect two errors for the unsupported impression types.")
 	}
@@ -242,7 +242,7 @@ func assertNoRequests(t *testing.T, request *openrtb.BidRequest) {
 	t.Helper()
 
 	bidder := new(AppNexusAdapter)
-	httpReqs, errs := bidder.MakeHttpRequests(request)
+	httpReqs, errs := bidder.MakeRequests(request)
 	if len(httpReqs) != 0 {
 		t.Errorf("Expected no http requests. Got %d", len(httpReqs))
 	}
