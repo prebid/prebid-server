@@ -180,8 +180,10 @@ func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	seatBid.Seat = adapter.String()
 	// Prebid cannot support roadblocking
 	seatBid.Group = 0
-	sbExt := make(map[string]openrtb.RawJSON)
-	sbExt["bidder"] = adapterBid.ext
+
+	sbExt := ExtSeatBid{
+		Bidder: adapterBid.ext,
+	}
 
 	ext, err := json.Marshal(sbExt)
 	if err != nil {
