@@ -282,7 +282,7 @@ func NewDummyExchange(client *http.Client) Exchange {
 	c := new(mockAdapter)
 	c.errs = make([]error, 0, 5)
 
-	e.adapterMap = map[openrtb_ext.BidderName]bidder{
+	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
 		BidderDummy: a,
 		BidderDummy2: b,
 		BidderDummy3: c,

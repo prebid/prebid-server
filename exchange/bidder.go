@@ -12,16 +12,16 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 )
 
-// bidder defines the contract needed to participate in an Auction within an Exchange.
+// adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
 //
-// This interface exists to help segregate core auction code.
+// This interface exists to help segregate core auction logic.
 //
-// Any work which can be done _within a single Seat_ goes inside one of these.
-// Any work which _requires responses from all Seats_ goes inside the Exchange.
+// Any logic which can be done _within a single Seat_ goes inside one of these.
+// Any logic which _requires responses from all Seats_ goes inside the Exchange.
 //
 // This interface differs from adapters.Bidder to help minimize code duplication across the
 // adapters.Bidder implementations.
-type bidder interface {
+type adaptedBidder interface {
 	// Bid gets the bids from this bidder for the given request.
 	//
 	// Per the OpenRTB spec, a SeatBid may not be empty. If so, then any errors which contribute
@@ -62,11 +62,11 @@ type pbsOrtbSeatBid struct {
 	Ext openrtb.RawJSON
 }
 
-// adaptBidder converts an adapters.Bidder into an exchange.Bidder.
+// adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
 //
 // The name refers to the "Adapter" architecture pattern, and should not be confused with a Prebid "Adapter"
 // (which is being phased out and replaced by Bidder for OpenRTB auctions)
-func adaptBidder(bidder adapters.Bidder, client *http.Client) bidder {
+func adaptBidder(bidder adapters.Bidder, client *http.Client) adaptedBidder {
 	return &bidderAdapter{
 		Bidder: bidder,
 		Client: client,

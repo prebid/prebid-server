@@ -20,7 +20,7 @@ type Exchange interface {
 type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters []openrtb_ext.BidderName
-	adapterMap map[openrtb_ext.BidderName]bidder
+	adapterMap map[openrtb_ext.BidderName]adaptedBidder
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
