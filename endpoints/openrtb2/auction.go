@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"time"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
@@ -31,16 +32,28 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		w.Write([]byte(fmt.Sprintf("Invalid request format: %s", err.Error())))
 		return
 	}
-
-	response, err := deps.ex.HoldAuction(context.Background(), req) // TODO: Fix the context timeout.
-	responseBytes, err := json.Marshal(response)
-	if err == nil {
-		w.WriteHeader(200)
-		w.Write(responseBytes)
-	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error transforming response into JSON."))
+	ctx := context.Background()
+	cancel := func() { }
+	if req.TMax > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
+		defer cancel()
 	}
+
+	response, err := deps.ex.HoldAuction(ctx, req)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		return
+	}
+
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Failed to marshal auction response: %v", err)
+	}
+
+	w.WriteHeader(200)
+	w.Write(responseBytes)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.
@@ -66,6 +79,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidR
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	if req.ID == "" {
 		return errors.New("request missing required field: \"id\"")
+	}
+
+	if req.TMax < 0 {
+		return fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)
 	}
 
 	if len(req.Imp) < 1 {
@@ -110,7 +127,6 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, index int) error {
 	}
 
 	if imp.Native != nil {
-		// TODO: Parse and validate this here too.
 		if imp.Native.Request == "" {
 			return fmt.Errorf("request.imp[%d].native.request must be a JSON encoded string conforming to the openrtb 1.2 Native spec", index)
 		}

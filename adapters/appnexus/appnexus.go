@@ -215,7 +215,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	memberIds := make([]string, 0, len(request.Imp))
 	errs := make([]error, 0, len(request.Imp))
 
@@ -228,7 +228,7 @@ func (a *AppNexusAdapter) MakeHttpRequests(request *openrtb.BidRequest) ([]*adap
 		if err != nil {
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i-- // TODO: Test this, and do it better
+			i--
 		}
 	}
 
@@ -296,7 +296,7 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		imp.TagID = appnexusExt.InvCode
 	}
 	if appnexusExt.Reserve > 0 {
-		imp.BidFloor = appnexusExt.Reserve // TODO: we need to factor in currency here if non-USD
+		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil && appnexusExt.Position != "" {
 		if appnexusExt.Position == "above" {
@@ -335,12 +335,12 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 }
 
 func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
-	if response.StatusCode == 204 {
+	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if response.StatusCode != 200 {
-		return nil, []error{fmt.Errorf("Error from server. HTTP status %d; body: %s", response.StatusCode, string(response.Body))}
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
 	var bidResp openrtb.BidResponse
