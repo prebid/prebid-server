@@ -13,7 +13,12 @@ For more information, see:
 
 ## Installation
 
-First install [Go 1.9.1](https://golang.org/doc/install) and [Glide](https://github.com/Masterminds/glide#install).
+First install [Go 1.9.1](https://golang.org/doc/install) and [Glide](https://github.com/Masterminds/glide#install). Note that Glide requires an explicit GOPATH to be set.
+
+```bash
+export GOPATH=$(go env GOPATH)
+mkdir -p $GOPATH
+```
 
 Then download and prepare Prebid Server:
 
