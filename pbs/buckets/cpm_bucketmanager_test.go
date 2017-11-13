@@ -29,7 +29,6 @@ func getOnePriceBucket(t *testing.T, granularity PriceGranularity, price float64
 		t.Errorf("GetPriceBucketString: %s", err.Error())
 	}
 	if priceBucket != expected {
-		t.Error("Expected %s, got %s from %f", expected, priceBucket, price)
+		t.Errorf("Expected %s, got %s from %f", expected, priceBucket, price)
 	}
-
 }
