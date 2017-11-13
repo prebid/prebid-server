@@ -43,6 +43,7 @@ import (
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/pbs/buckets"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 )
@@ -439,7 +440,7 @@ bidLoop:
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
 // The bids are sorted by cpm to find the highest bid.
 // The ad server targeting keywords are added to all bids, with specific keywords for the highest bid.
-func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting string) {
+func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting buckets.PriceGranularity) {
 	if priceGranularitySetting == "" {
 		priceGranularitySetting = defaultPriceGranularity
 	}
@@ -464,8 +465,11 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 		// after sorting we need to add the ad targeting keywords
 		for i, bid := range bar {
-			priceBucketStringMap := pbs.GetPriceBucketString(bid.Price)
-			roundedCpm := priceBucketStringMap[priceGranularitySetting]
+			// We should eventually check for the error and do something.
+			roundedCpm, err := buckets.GetPriceBucketString(bid.Price, priceGranularitySetting)
+			if err != nil {
+				glog.Error(err.Error())
+			}
 
 			hbSize := ""
 			if bid.Width != 0 && bid.Height != 0 {
