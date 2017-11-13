@@ -51,7 +51,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	}
 
 	if csresp.UUID != csreq.UUID {
-		t.Errorf("UUIDs didn't match")
+		t.Error("UUIDs didn't match")
 	}
 
 	if csresp.Status != "no_cookie" {
@@ -102,7 +102,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 
 	if csresp.UUID != csreq.UUID {
-		t.Errorf("UUIDs didn't match")
+		t.Error("UUIDs didn't match")
 	}
 
 	if csresp.Status != "ok" {
@@ -207,45 +207,45 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 
 	for _, bid := range bids {
 		if bid.AdServerTargeting == nil {
-			t.Errorf("Ad server targeting should not be nil")
+			t.Error("Ad server targeting should not be nil")
 		}
 		if bid.BidderCode == "audienceNetwork" {
 			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
-				t.Errorf("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
+				t.Error("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
 			}
 			if bid.AdServerTargeting["hb_size"] != "300x250" {
-				t.Errorf("hb_size key was not parsed correctly")
+				t.Error("hb_size key was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb"] != "2.00" {
-				t.Errorf("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+				t.Error("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
 			}
 			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
-				t.Errorf("hb_cache_id key was not parsed correctly")
+				t.Error("hb_cache_id key was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
-				t.Errorf("hb_bidder key was not parsed correctly")
+				t.Error("hb_bidder key was not parsed correctly")
 			}
 		}
 		if bid.BidderCode == "appnexus" {
 			if bid.AdServerTargeting["hb_size_appnexus"] != "320x50" {
-				t.Errorf("hb_size key for appnexus bidder was not parsed correctly")
+				t.Error("hb_size key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_cache_id_appnexus"] != "test_cache_id2" {
-				t.Errorf("hb_cache_id key for appnexus bidder was not parsed correctly")
+				t.Error("hb_cache_id key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_bidder_appnexus"] != "appnexus" {
-				t.Errorf("hb_bidder key for appnexus bidder was not parsed correctly")
+				t.Error("hb_bidder key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb_appnexus"] != "1.00" {
-				t.Errorf("hb_pb key for appnexus bidder was not parsed correctly")
+				t.Error("hb_pb key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb"] != "" {
-				t.Errorf("hb_pb key was parsed for two bidders")
+				t.Error("hb_pb key was parsed for two bidders")
 			}
 		}
 		if bid.BidderCode == "nosizebidder" {
 			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
-				t.Errorf("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+				t.Error("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
 			}
 		}
 	}
@@ -446,7 +446,7 @@ func TestWriteAuctionError(t *testing.T) {
 	json.Unmarshal(recorder.Body.Bytes(), &resp)
 
 	if len(resp.Bids) != 0 {
-		t.Errorf("Error responses should return no bids.")
+		t.Error("Error responses should return no bids.")
 	}
 	if resp.Status != "some error message" {
 		t.Errorf("The response status should be the error message. Got: %s", resp.Status)

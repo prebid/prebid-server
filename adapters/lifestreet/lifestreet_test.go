@@ -83,7 +83,7 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if *breq.Device.ConnectionType != openrtb.ConnectionType(lsdata.deviceConnectiontype) {
-		http.Error(w, fmt.Sprintf("Connectiontype '%s' doesn't match '%s", breq.Device.ConnectionType, lsdata.deviceConnectiontype), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Connectiontype '%d' doesn't match '%d", breq.Device.ConnectionType, lsdata.deviceConnectiontype), http.StatusInternalServerError)
 		return
 	}
 	if breq.Device.IFA != lsdata.deviceIfa {
