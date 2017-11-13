@@ -76,7 +76,7 @@ func TestPlacementIdImp(t *testing.T) {
 		t.Errorf("Bad Request ID. Expected %s, Got %s", request.ID, apnRequest.ID)
 	}
 	if len(apnRequest.Imp) != len(request.Imp) {
-		t.Fatalf("Wrong len(request.Imp). Expected %s, Got %s", len(apnRequest.Imp), len(request.Imp))
+		t.Fatalf("Wrong len(request.Imp). Expected %d, Got %d", len(apnRequest.Imp), len(request.Imp))
 	}
 	assertImpsEqual(t, &apnRequest.Imp[0], &request.Imp[0])
 
@@ -88,7 +88,7 @@ func TestPlacementIdImp(t *testing.T) {
 		t.Errorf("Wrong placement ID. Expected %d, Got %d", 10433394, apnExt.Appnexus.PlacementID)
 	}
 	if apnExt.Appnexus.TrafficSourceCode != "trafficSource" {
-		t.Errorf("Wrong trafficSourceCode. Expected %d, Got %d", "trafficSource", apnExt.Appnexus.TrafficSourceCode)
+		t.Errorf("Wrong trafficSourceCode. Expected %s, Got %s", "trafficSource", apnExt.Appnexus.TrafficSourceCode)
 	}
 	keywordsSent := apnExt.Appnexus.Keywords
 	if keywordsSent != "foo=bar,foo=baz,valueless" {
@@ -265,12 +265,12 @@ func assertImpsEqual(t *testing.T, actual *openrtb.Imp, expected *openrtb.Imp) {
 		t.Errorf("IDs don't match. Expected %s, Got %s", expected.ID, actual.ID)
 	}
 	if (actual.Banner == nil) != (expected.Banner == nil) {
-		t.Errorf("Imp types don't match. Expected banner: %b, Got banner: %b", expected.Banner != nil, actual.Banner != nil)
+		t.Errorf("Imp types don't match. Expected banner: %t, Got banner: %t", expected.Banner != nil, actual.Banner != nil)
 		return
 	}
 	if actual.Banner != nil {
 		if len(actual.Banner.Format) != len(expected.Banner.Format) {
-			t.Errorf("Wrong len(imp.banner.format). Expected %s, Got %s", len(expected.Banner.Format), len(actual.Banner.Format))
+			t.Errorf("Wrong len(imp.banner.format). Expected %d, Got %d", len(expected.Banner.Format), len(actual.Banner.Format))
 			return
 		}
 
