@@ -30,12 +30,9 @@ const ExpectedNURL string = "http://test.dotomi.com"
 const ExpectedAdM string = "<img src=\"test.jpg\"/>"
 const ExpectedCrID string = "98765"
 
-const EmptyParam = "{}"
 const DefaultParam = `{"site_id": "12345"}`
 
-/**
-* Test properties of Adapter interface
- */
+// Test properties of Adapter interface
 
 func TestConversantProperties(t *testing.T) {
 	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync", "localhost")
@@ -45,9 +42,7 @@ func TestConversantProperties(t *testing.T) {
 	assertFalse(t, an.SkipNoCookies(), "SkipNoCookies should be false")
 }
 
-/**
-* Test empty bid requests
- */
+// Test empty bid requests
 
 func TestConversantEmptyBid(t *testing.T) {
 	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync", "localhost")
@@ -59,24 +54,35 @@ func TestConversantEmptyBid(t *testing.T) {
 	assertTrue(t, err != nil, "No error received for an invalid request")
 }
 
-/**
-* Test required parameters, which is just the site id for now
- */
+// Test required parameters, which is just the site id for now
 
 func TestConversantRequiredParameters(t *testing.T) {
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync", "localhost")
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		}),
+	)
+	defer server.Close()
 
+	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "usersync", "localhost")
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(EmptyParam), t)
-	pbBidder := pbReq.Bidders[0]
 
-	_, err := an.Call(ctx, pbReq, pbBidder)
-	assertTrue(t, err != nil, "Failed to catch missing site id")
+	testParams := func(params ...string) (pbs.PBSBidSlice, error) {
+		req, err := CreateBannerRequest(params...)
+		if err != nil {
+			return nil, err
+		}
+		return an.Call(ctx, req, req.Bidders[0])
+	}
+
+	var err error
+
+	if _, err = testParams(`{}`); err == nil {
+		t.Fatal("Failed to catch missing site id")
+	}
 }
 
-/**
-* Test handling of 404
- */
+// Test handling of 404
 
 func TestConversantBadStatus(t *testing.T) {
 	// Create a test http server that returns after 2 milliseconds
@@ -94,16 +100,16 @@ func TestConversantBadStatus(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
 
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(DefaultParam), t)
-	pbBidder := pbReq.Bidders[0]
+	pbReq, err := CreateBannerRequest(DefaultParam)
+	if err != nil {
+		t.Fatal("Failed to create a banner request", err)
+	}
 
-	_, err := an.Call(ctx, pbReq, pbBidder)
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	assertTrue(t, err != nil, "Failed to catch 404 error")
 }
 
-/**
-* Test handling of HTTP timeout
- */
+// Test handling of HTTP timeout
 
 func TestConversantTimeout(t *testing.T) {
 	// Create a test http server that returns after 2 milliseconds
@@ -126,21 +132,21 @@ func TestConversantTimeout(t *testing.T) {
 	defer cancel()
 
 	// Create a basic request
-	pbReq := ParseRequest(CreateRequest(DefaultParam), t)
-	pbBidder := pbReq.Bidders[0]
+	pbReq, err := CreateBannerRequest(DefaultParam)
+	if err != nil {
+		t.Fatal("Failed to create a banner request", err)
+	}
 
 	// Attempt to process the request, which should hit a timeout
 	// immediately
 
-	_, err := an.Call(ctx, pbReq, pbBidder)
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil || err != context.DeadlineExceeded {
-		t.Fatalf("No timeout recevied for timed out request: %v", err)
+		t.Fatal("No timeout recevied for timed out request", err)
 	}
 }
 
-/**
-* Test handling of 204
- */
+// Test handling of 204
 
 func TestConversantNoBid(t *testing.T) {
 	// Create a test http server that returns after 2 milliseconds
@@ -158,18 +164,18 @@ func TestConversantNoBid(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
 
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(DefaultParam), t)
-	pbBidder := pbReq.Bidders[0]
+	pbReq, err := CreateBannerRequest(DefaultParam)
+	if err != nil {
+		t.Fatal("Failed to create a banner request", err)
+	}
 
-	resp, err := an.Call(ctx, pbReq, pbBidder)
+	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if resp != nil || err != nil {
-		t.Fatal("Failed to handle emtpy bid")
+		t.Fatal("Failed to handle emtpy bid", err)
 	}
 }
 
-/**
-* Check user sync information
- */
+// Check user sync information
 
 func TestConversantUserSyncInfo(t *testing.T) {
 	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync?rurl=", "localhost")
@@ -187,12 +193,10 @@ func TestConversantUserSyncInfo(t *testing.T) {
 	}
 }
 
-/**
-* Verify an outgoing openrtp request is created correctly
- */
+// Verify an outgoing openrtp request is created correctly
 
 func TestConversantRequestDefault(t *testing.T) {
-	server, lastReq := CreateServer([]float64{})
+	server, lastReq := CreateServer()
 	if server == nil {
 		t.Fatal("server not created")
 	}
@@ -205,35 +209,37 @@ func TestConversantRequestDefault(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
 
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(DefaultParam), t)
-	pbBidder := pbReq.Bidders[0]
-
-	_, err := an.Call(ctx, pbReq, pbBidder)
+	pbReq, err := CreateBannerRequest(DefaultParam)
 	if err != nil {
-		t.Fatal("Failed to retrieve bids")
+		t.Fatal("Failed to create a banner request", err)
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
 	}
 
 	assertEqual(t, len(lastReq.Imp), 1, "Request number of impressions")
-	assertEqual(t, lastReq.Imp[0].DisplayManager, ExpectedDisplayManager, "Request display manager value")
+	imp := &lastReq.Imp[0]
+
+	assertEqual(t, imp.DisplayManager, ExpectedDisplayManager, "Request display manager value")
 	assertEqual(t, lastReq.Site.ID, ExpectedSiteID, "Request site id")
 	assertEqual(t, int(lastReq.Site.Mobile), 0, "Request site mobile flag")
 	assertEqual(t, lastReq.User.BuyerUID, ExpectedBuyerUID, "Request buyeruid")
-	assertTrue(t, lastReq.Imp[0].Video == nil, "Request video should be nil")
-	assertEqual(t, int(*lastReq.Imp[0].Secure), 0, "Request secure")
-	assertEqual(t, lastReq.Imp[0].BidFloor, 0.0, "Request bid floor")
-	assertEqual(t, lastReq.Imp[0].TagID, "", "Request tag id")
-	assertTrue(t, lastReq.Imp[0].Banner.Pos == nil, "Request pos")
-	assertEqual(t, int(*lastReq.Imp[0].Banner.W), 300, "Request width")
-	assertEqual(t, int(*lastReq.Imp[0].Banner.H), 250, "Request height")
+	assertTrue(t, imp.Video == nil, "Request video should be nil")
+	assertEqual(t, int(*imp.Secure), 0, "Request secure")
+	assertEqual(t, imp.BidFloor, 0.0, "Request bid floor")
+	assertEqual(t, imp.TagID, "", "Request tag id")
+	assertTrue(t, imp.Banner.Pos == nil, "Request pos")
+	assertEqual(t, int(*imp.Banner.W), 300, "Request width")
+	assertEqual(t, int(*imp.Banner.H), 250, "Request height")
 }
 
-/**
-* Verify an outgoing openrtp request with additional conversant parameters is
-* processed correctly
- */
+// Verify an outgoing openrtp request with additional conversant parameters is
+// processed correctly
 
 func TestConversantRequest(t *testing.T) {
-	server, lastReq := CreateServer([]float64{})
+	server, lastReq := CreateServer()
 	if server == nil {
 		t.Fatal("server not created")
 	}
@@ -253,35 +259,37 @@ func TestConversantRequest(t *testing.T) {
 		"mobile": 1 }`
 
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(param), t)
-	pbBidder := pbReq.Bidders[0]
-
-	_, err := an.Call(ctx, pbReq, pbBidder)
+	pbReq, err := CreateBannerRequest(param)
 	if err != nil {
-		t.Fatal("Failed to retrieve bids")
+		t.Fatal("Failed to create a banner request", err)
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
 	}
 
 	assertEqual(t, len(lastReq.Imp), 1, "Request number of impressions")
-	assertEqual(t, lastReq.Imp[0].DisplayManager, ExpectedDisplayManager, "Request display manager value")
+	imp := &lastReq.Imp[0]
+
+	assertEqual(t, imp.DisplayManager, ExpectedDisplayManager, "Request display manager value")
 	assertEqual(t, lastReq.Site.ID, ExpectedSiteID, "Request site id")
 	assertEqual(t, int(lastReq.Site.Mobile), 1, "Request site mobile flag")
 	assertEqual(t, lastReq.User.BuyerUID, ExpectedBuyerUID, "Request buyeruid")
-	assertTrue(t, lastReq.Imp[0].Video == nil, "Request video should be nil")
-	assertEqual(t, int(*lastReq.Imp[0].Secure), 1, "Request secure")
-	assertEqual(t, lastReq.Imp[0].BidFloor, 1.01, "Request bid floor")
-	assertEqual(t, lastReq.Imp[0].TagID, "top", "Request tag id")
-	assertEqual(t, int(*lastReq.Imp[0].Banner.Pos), 2, "Request pos")
-	assertEqual(t, int(*lastReq.Imp[0].Banner.W), 300, "Request width")
-	assertEqual(t, int(*lastReq.Imp[0].Banner.H), 250, "Request height")
+	assertTrue(t, imp.Video == nil, "Request video should be nil")
+	assertEqual(t, int(*imp.Secure), 1, "Request secure")
+	assertEqual(t, imp.BidFloor, 1.01, "Request bid floor")
+	assertEqual(t, imp.TagID, "top", "Request tag id")
+	assertEqual(t, int(*imp.Banner.Pos), 2, "Request pos")
+	assertEqual(t, int(*imp.Banner.W), 300, "Request width")
+	assertEqual(t, int(*imp.Banner.H), 250, "Request height")
 }
 
-/**
-* Verify openrtp responses are converted correctly
- */
+// Verify openrtp responses are converted correctly
 
 func TestConversantResponse(t *testing.T) {
 	prices := []float64{0.01, 0.0, 2.01}
-	server, lastReq := CreateServer(prices)
+	server, lastReq := CreateServer(prices...)
 	if server == nil {
 		t.Fatal("server not created")
 	}
@@ -301,12 +309,14 @@ func TestConversantResponse(t *testing.T) {
 		   "mobile" : 1}`
 
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(param, param, param), t)
-	pbBidder := pbReq.Bidders[0]
-
-	resp, err := an.Call(ctx, pbReq, pbBidder)
+	pbReq, err := CreateBannerRequest(param, param, param)
 	if err != nil {
-		t.Fatal("Failed to retrieve bids")
+		t.Fatal("Failed to create a banner request", err)
+	}
+
+	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
 	}
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
@@ -327,12 +337,10 @@ func TestConversantResponse(t *testing.T) {
 	}
 }
 
-/**
- * Test video request
- */
+// Test video request
 
 func TestConversantBasicVideoRequest(t *testing.T) {
-	server, lastReq := CreateServer([]float64{})
+	server, lastReq := CreateServer()
 	if server == nil {
 		t.Fatal("server not created")
 	}
@@ -350,38 +358,42 @@ func TestConversantBasicVideoRequest(t *testing.T) {
 		   "bidfloor": 1.01 }`
 
 	ctx := context.TODO()
-	pbReq := CreateRequest(param)
-	pbReq = ConvertToVideoRequest(pbReq, t)
-	pbReq = ParseRequest(pbReq, t)
-	pbBidder := pbReq.Bidders[0]
-
-	_, err := an.Call(ctx, pbReq, pbBidder)
+	pbReq, err := CreateVideoRequest(param)
 	if err != nil {
-		t.Fatal("Failed to retrieve bids")
+		t.Fatal("Failed to create a video request", err)
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
 	}
 
 	assertEqual(t, len(lastReq.Imp), 1, "Request number of impressions")
-	assertEqual(t, lastReq.Imp[0].DisplayManager, ExpectedDisplayManager, "Request display manager value")
+	imp := &lastReq.Imp[0]
+
+	assertEqual(t, imp.DisplayManager, ExpectedDisplayManager, "Request display manager value")
 	assertEqual(t, lastReq.Site.ID, ExpectedSiteID, "Request site id")
 	assertEqual(t, int(lastReq.Site.Mobile), 0, "Request site mobile flag")
 	assertEqual(t, lastReq.User.BuyerUID, ExpectedBuyerUID, "Request buyeruid")
-	assertTrue(t, lastReq.Imp[0].Banner == nil, "Request banner should be nil")
-	assertEqual(t, int(*lastReq.Imp[0].Secure), 0, "Request secure")
-	assertEqual(t, lastReq.Imp[0].BidFloor, 1.01, "Request bid floor")
-	assertEqual(t, lastReq.Imp[0].TagID, "bottom left", "Request tag id")
-	assertEqual(t, int(*lastReq.Imp[0].Video.Pos), 3, "Request pos")
-	assertEqual(t, int(lastReq.Imp[0].Video.W), 300, "Request width")
-	assertEqual(t, int(lastReq.Imp[0].Video.H), 250, "Request height")
+	assertTrue(t, imp.Banner == nil, "Request banner should be nil")
+	assertEqual(t, int(*imp.Secure), 0, "Request secure")
+	assertEqual(t, imp.BidFloor, 1.01, "Request bid floor")
+	assertEqual(t, imp.TagID, "bottom left", "Request tag id")
+	assertEqual(t, int(*imp.Video.Pos), 3, "Request pos")
+	assertEqual(t, int(imp.Video.W), 300, "Request width")
+	assertEqual(t, int(imp.Video.H), 250, "Request height")
 
-	assertEqual(t, len(lastReq.Imp[0].Video.MIMEs), 1, "Request video MIMEs entries")
-	assertEqual(t, lastReq.Imp[0].Video.MIMEs[0], "video/mp4", "Requst video MIMEs type")
-	assertTrue(t, lastReq.Imp[0].Video.Protocols == nil, "Request video protocols")
-	assertEqual(t, lastReq.Imp[0].Video.MaxDuration, int64(0), "Request video 0 max duration")
-	assertTrue(t, lastReq.Imp[0].Video.API == nil, "Request video api should be nil")
+	assertEqual(t, len(imp.Video.MIMEs), 1, "Request video MIMEs entries")
+	assertEqual(t, imp.Video.MIMEs[0], "video/mp4", "Requst video MIMEs type")
+	assertTrue(t, imp.Video.Protocols == nil, "Request video protocols")
+	assertEqual(t, imp.Video.MaxDuration, int64(0), "Request video 0 max duration")
+	assertTrue(t, imp.Video.API == nil, "Request video api should be nil")
 }
 
+// Test video request with parameters
+
 func TestConversantVideoRequestWithParams(t *testing.T) {
-	server, lastReq := CreateServer([]float64{})
+	server, lastReq := CreateServer()
 	if server == nil {
 		t.Fatal("server not created")
 	}
@@ -403,43 +415,47 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 		   "maxduration": 90 }`
 
 	ctx := context.TODO()
-	pbReq := CreateRequest(param)
-	pbReq = ConvertToVideoRequest(pbReq, t)
-	pbReq = ParseRequest(pbReq, t)
-	pbBidder := pbReq.Bidders[0]
-
-	_, err := an.Call(ctx, pbReq, pbBidder)
+	pbReq, err := CreateVideoRequest(param)
 	if err != nil {
-		t.Fatal("Failed to retrieve bids")
+		t.Fatal("Failed to create a video request", err)
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
 	}
 
 	assertEqual(t, len(lastReq.Imp), 1, "Request number of impressions")
-	assertEqual(t, lastReq.Imp[0].DisplayManager, ExpectedDisplayManager, "Request display manager value")
+	imp := &lastReq.Imp[0]
+
+	assertEqual(t, imp.DisplayManager, ExpectedDisplayManager, "Request display manager value")
 	assertEqual(t, lastReq.Site.ID, ExpectedSiteID, "Request site id")
 	assertEqual(t, int(lastReq.Site.Mobile), 0, "Request site mobile flag")
 	assertEqual(t, lastReq.User.BuyerUID, ExpectedBuyerUID, "Request buyeruid")
-	assertTrue(t, lastReq.Imp[0].Banner == nil, "Request banner should be nil")
-	assertEqual(t, int(*lastReq.Imp[0].Secure), 0, "Request secure")
-	assertEqual(t, lastReq.Imp[0].BidFloor, 1.01, "Request bid floor")
-	assertEqual(t, lastReq.Imp[0].TagID, "bottom left", "Request tag id")
-	assertEqual(t, int(*lastReq.Imp[0].Video.Pos), 3, "Request pos")
-	assertEqual(t, int(lastReq.Imp[0].Video.W), 300, "Request width")
-	assertEqual(t, int(lastReq.Imp[0].Video.H), 250, "Request height")
+	assertTrue(t, imp.Banner == nil, "Request banner should be nil")
+	assertEqual(t, int(*imp.Secure), 0, "Request secure")
+	assertEqual(t, imp.BidFloor, 1.01, "Request bid floor")
+	assertEqual(t, imp.TagID, "bottom left", "Request tag id")
+	assertEqual(t, int(*imp.Video.Pos), 3, "Request pos")
+	assertEqual(t, int(imp.Video.W), 300, "Request width")
+	assertEqual(t, int(imp.Video.H), 250, "Request height")
 
-	assertEqual(t, len(lastReq.Imp[0].Video.MIMEs), 1, "Request video MIMEs entries")
-	assertEqual(t, lastReq.Imp[0].Video.MIMEs[0], "video/x-ms-wmv", "Requst video MIMEs type")
-	assertEqual(t, len(lastReq.Imp[0].Video.Protocols), 2, "Request video protocols")
-	assertEqual(t, lastReq.Imp[0].Video.Protocols[0], openrtb.Protocol(1), "Request video protocols 1")
-	assertEqual(t, lastReq.Imp[0].Video.Protocols[1], openrtb.Protocol(2), "Request video protocols 2")
-	assertEqual(t, lastReq.Imp[0].Video.MaxDuration, int64(90), "Request video 0 max duration")
-	assertEqual(t, len(lastReq.Imp[0].Video.API), 2, "Request video api should be nil")
-	assertEqual(t, lastReq.Imp[0].Video.API[0], openrtb.APIFramework(1), "Request video api 1")
-	assertEqual(t, lastReq.Imp[0].Video.API[1], openrtb.APIFramework(2), "Request video api 2")
+	assertEqual(t, len(imp.Video.MIMEs), 1, "Request video MIMEs entries")
+	assertEqual(t, imp.Video.MIMEs[0], "video/x-ms-wmv", "Requst video MIMEs type")
+	assertEqual(t, len(imp.Video.Protocols), 2, "Request video protocols")
+	assertEqual(t, imp.Video.Protocols[0], openrtb.Protocol(1), "Request video protocols 1")
+	assertEqual(t, imp.Video.Protocols[1], openrtb.Protocol(2), "Request video protocols 2")
+	assertEqual(t, imp.Video.MaxDuration, int64(90), "Request video 0 max duration")
+	assertEqual(t, len(imp.Video.API), 2, "Request video api should be nil")
+	assertEqual(t, imp.Video.API[0], openrtb.APIFramework(1), "Request video api 1")
+	assertEqual(t, imp.Video.API[1], openrtb.APIFramework(2), "Request video api 2")
 }
+
+// Test video responses
 
 func TestConversantVideoResponse(t *testing.T) {
 	prices := []float64{0.01, 0.0, 2.01}
-	server, lastReq := CreateServer(prices)
+	server, lastReq := CreateServer(prices...)
 	if server == nil {
 		t.Fatal("server not created")
 	}
@@ -459,14 +475,14 @@ func TestConversantVideoResponse(t *testing.T) {
 		   "mobile" : 1}`
 
 	ctx := context.TODO()
-	pbReq := ParseRequest(CreateRequest(param, param, param), t)
-	pbReq = ConvertToVideoRequest(pbReq, t)
-	pbReq = ParseRequest(pbReq, t)
-	pbBidder := pbReq.Bidders[0]
-
-	resp, err := an.Call(ctx, pbReq, pbBidder)
+	pbReq, err := CreateVideoRequest(param, param, param)
 	if err != nil {
-		t.Fatal("Failed to retrieve bids")
+		t.Fatal("Failed to create a video request", err)
+	}
+
+	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
 	}
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
@@ -487,9 +503,7 @@ func TestConversantVideoResponse(t *testing.T) {
 	}
 }
 
-/**
- * Helpers to create a banner and video requests
- */
+// Helpers to create a banner and video requests
 
 func CreateRequest(params ...string) *pbs.PBSRequest {
 	num := len(params)
@@ -522,13 +536,15 @@ func CreateRequest(params ...string) *pbs.PBSRequest {
 	return &req
 }
 
-func ConvertToVideoRequest(req *pbs.PBSRequest, t *testing.T, videoParams ...string) *pbs.PBSRequest {
+// Convert a request to a video request by adding required properties
+
+func ConvertToVideoRequest(req *pbs.PBSRequest, videoParams ...string) (*pbs.PBSRequest, error) {
 	for i := 0; i < len(req.AdUnits); i++ {
 		video := pbs.PBSVideo{}
 		if i < len(videoParams) {
 			err := json.Unmarshal([]byte(videoParams[i]), &video)
 			if err != nil {
-				t.Fatalf("Failed to parse video param: %v", err)
+				return nil, err
 			}
 		}
 
@@ -540,10 +556,13 @@ func ConvertToVideoRequest(req *pbs.PBSRequest, t *testing.T, videoParams ...str
 		req.AdUnits[i].MediaTypes = []string{"video"}
 	}
 
-	return req
+	return req, nil
 }
 
-func ParseRequest(req *pbs.PBSRequest, t *testing.T) *pbs.PBSRequest {
+// Feed the request thru the prebid parser so user id and 
+// other private properties are defined
+
+func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	body := new(bytes.Buffer)
 	json.NewEncoder(body).Encode(req)
 
@@ -559,18 +578,32 @@ func ParseRequest(req *pbs.PBSRequest, t *testing.T) *pbs.PBSRequest {
 
 	parsedReq, err := pbs.ParsePBSRequest(httpReq, cache, &hcs)
 
-	if err != nil {
-		t.Fatalf("Failed to create request: %v", err)
-	}
-
-	return parsedReq
+	return parsedReq, err
 }
 
-/**
-* Helper to create a test http server that receives and generate openrtb requests and responses
- */
+// A helper to create a banner request
 
-func CreateServer(prices []float64) (*httptest.Server, *openrtb.BidRequest) {
+func CreateBannerRequest(params ...string) (*pbs.PBSRequest, error) {
+	req := CreateRequest(params...)
+	req, err := ParseRequest(req)
+	return req, err
+}
+
+// A helper to create a video request
+
+func CreateVideoRequest(params ...string) (*pbs.PBSRequest, error) {
+	req := CreateRequest(params...)
+	req, err := ConvertToVideoRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	req, err = ParseRequest(req)
+	return req, err
+}
+
+// Helper to create a test http server that receives and generate openrtb requests and responses
+
+func CreateServer(prices ...float64) (*httptest.Server, *openrtb.BidRequest) {
 	var lastBidRequest openrtb.BidRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -648,6 +681,8 @@ func CreateServer(prices []float64) (*httptest.Server, *openrtb.BidRequest) {
 	return server, &lastBidRequest
 }
 
+// Helper to remove impressions with $0 bids
+
 func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrtb.Imp) {
 	prices2 := make([]float64, 0)
 	imps2 := make([]openrtb.Imp, 0)
@@ -661,6 +696,8 @@ func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrt
 
 	return prices2, imps2
 }
+
+// Helpers to test equality
 
 func assertEqual(t *testing.T, actual interface{}, expected interface{}, msg string) {
 	if expected != actual {

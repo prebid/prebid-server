@@ -178,6 +178,14 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 	}
 
+	// Do a quick check on required parameters
+
+	if cnvrReq.Site.ID == "" {
+		return nil, fmt.Errorf("Missing site id")
+	}
+
+	// Start capturing debug info
+
 	debug := &pbs.BidderDebug{
 		RequestURI: a.URI,
 	}
