@@ -4,7 +4,6 @@ import (
 	"testing"
 	"github.com/mxmCherry/openrtb"
 	"encoding/json"
-	"fmt"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -36,13 +35,9 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 	// Need extensions for all the bidders so we know to hold auctions for them.
 	impExt := make(map[string]interface{})
-	dummy1Ext := make(map[string]string)
-	dummy1Ext["dummy"] = `{placementId:"5554444"}`
-	dummy1Ext["dummy2"] = `{accountId:"abc"}`
-	impExt["dummy"] = dummy1Ext
+	impExt["dummy"] = make(map[string]string)
 	impExt["dummy2"] = make(map[string]string)
 	impExt["dummy3"] = make(map[string]string)
-
 	b, err := json.Marshal(impExt)
 	if err != nil {
 		t.Errorf("Error Mashalling bidRequest Extants: %s", err.Error())
@@ -64,20 +59,6 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 	if len(cleanRequests) != 3 {
 		t.Errorf("CleanOpenRTBRequests: expected 3 requests, found %d", len(cleanRequests))
-	}
-
-	var cleanImpExt map[string]map[string]string
-	err = json.Unmarshal(cleanRequests[BidderName("dummy")].Imp[0].Ext, &cleanImpExt)
-	fmt.Println(string(cleanRequests[BidderName("dummy")].Imp[0].Ext))
-	if err != nil {
-		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
-	}
-	dummymap, ok := cleanImpExt["dummy"]
-	if ! ok {
-		t.Error("CleanOpenRTBRequests: dummy adapter did not get proper dummy extension")
-	}
-	if dummymap["placementId"] != "5554444" {
-		t.Errorf("CleanOpenRTBRequests: dummy adapter did not get proper placementId, got \"%s\" instead", cleanImpExt["dummy"]["placementId"])
 	}
 }
 

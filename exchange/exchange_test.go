@@ -252,7 +252,6 @@ func TestBuildBidResponse(t *testing.T) {
 		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
 	}
 
-	// Test with
 }
 
 type mockAdapter struct {
