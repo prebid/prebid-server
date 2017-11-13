@@ -102,7 +102,7 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 type bidderParamValidator struct{}
 
 func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
-  if bytes.Equal(ext, []byte("\"good\"")) {
+	if bytes.Equal(ext, []byte("\"good\"")) {
 		return nil
 	} else {
 		return errors.New("Bidder params failed validation.")
@@ -121,30 +121,30 @@ func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) strin
 
 var validRequests = []string{
 	`{
-  	"id": "some-request-id",
-  	"imp": [
-  	  {
-  	    "id": "my-imp-id",
-  	    "banner": {
-  	  		"format": [
-  	  			{
-  	  				"w": 300,
-  	  				"h": 600
-  	  			}
-  	  		]
-  	  	},
-  	    "pmp": {
-  	      "deals": [
-  	        {
-  	          "id": "some-deal-id"
-  	        }
-  	      ]
-  	    },
-  	    "ext": {
-  	      "appnexus": "good"
-  	    }
-  	  }
-  	]
+		"id": "some-request-id",
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
 	}`,
 }
 
@@ -175,7 +175,7 @@ var invalidRequests = []string{
 	`{"id":"req-id","imp":[{
 		"id":"imp-id",
 		"banner":{
-		  "wmin":50
+			"wmin":50
 		}
 	}]}`,
 	`{"id":"req-id","imp":[{
@@ -249,10 +249,10 @@ var invalidRequests = []string{
 	`{"id":"req-id","imp":[{
 		"id":"imp-id",
 		"video":{
-		  "mimes":["video/mp4"]
+			"mimes":["video/mp4"]
 		},
 		"pmp":{
-		  "deals":[{"private_auction":1, "id":""}]
+			"deals":[{"private_auction":1, "id":""}]
 		}
 	}]}`,
 	`{"id":"req-id","imp":[{
@@ -269,7 +269,7 @@ var invalidRequests = []string{
 		},
 		"ext": {
 			"noBidderShouldEverHaveThisName": {
-			  "bogusParam":5
+				"bogusParam":5
 			}
 		}
 	}]}`,
