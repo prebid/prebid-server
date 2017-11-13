@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 )
@@ -417,8 +418,7 @@ func TestBidSizeValidate(t *testing.T) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-
-	handler := NewJsonDirectoryServer(schemaDirectory)
+	handler := NewJsonDirectoryServer(&testValidator{})
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -426,7 +426,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	var data map[string]json.RawMessage
 	json.Unmarshal(recorder.Body.Bytes(), &data)
 
-	// Make sure that every adapter has a json schema file associated with it
+	// Make sure that every adapter has a json schema by the same name associated with it.
 	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
@@ -457,17 +457,22 @@ func TestWriteAuctionError(t *testing.T) {
 	}
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	if _, ok := data[key]; !ok {
 		t.Errorf("Expected map to produce a schema for adapter: %s", key)
+	}
+}
+
+type testValidator struct{}
+
+func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
+	return nil
+}
+
+func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
+	if name == openrtb_ext.BidderAppnexus {
+		return "{\"appnexus\":true}"
+	} else {
+		return "{\"appnexus\":false}"
 	}
 }
