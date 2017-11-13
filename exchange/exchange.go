@@ -168,8 +168,13 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		if err1 == nil {
 			bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[string(hbpbConstantKey+"-"+targData.bidder)]
 			bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[string(hbBidderConstantKey+"-"+targData.bidder)]
-			bidExt.Prebid.Targeting[hbCacheIdConstantKey] = bidExt.Prebid.Targeting[string(hbCacheIdConstantKey+"-"+targData.bidder)]
 			bidExt.Prebid.Targeting[hbSizeConstantKey] = bidExt.Prebid.Targeting[string(hbSizeConstantKey+"-"+targData.bidder)]
+			if targData.bidder == "audienceNetwork" {
+				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+			} else {
+				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+			}
+
 		}
 	}
 	bidResponse.SeatBid = seatBids
@@ -238,7 +243,7 @@ func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	}
 	seatBid.Ext = ext
 	var errList []string
-	seatBid.Bid, errList = e.MakeBid(adapterBid.Bids, targData, adapter)
+	seatBid.Bid, errList = e.MakeBid(adapterBid.bids, targData, adapter)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errList...)
 	}
@@ -285,8 +290,10 @@ func (e *exchange) MakeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 const (
 	hbpbConstantKey = "hb_pb"
 	hbBidderConstantKey = "hb_bidder"
-	hbCacheIdConstantKey = "hb_cache_id"
 	hbSizeConstantKey = "hb_size"
+	hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
+	hbCreativeLoadMethodHTML = "html"
+	hbCreativeLoadMethodDemandSDK = "demand_sdk"
 	)
 
 func min(x, y int) int {
@@ -309,21 +316,19 @@ func (e *exchange) MakePrebidTargets(cpm float64, width uint64, height uint64, c
 
 	hbPbBidderKey := string(hbpbConstantKey + "_" + adapter)
 	hbBidderBidderKey := string(hbBidderConstantKey + "_" + adapter)
-	hbCacheIdBidderKey := string(hbCacheIdConstantKey + "_" + adapter)
 	hbSizeBidderKey := string(hbSizeConstantKey + "_" + adapter)
 	if targData.lengthMax != 0 {
 		hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(targData.lengthMax))]
 		hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(targData.lengthMax))]
-		hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(targData.lengthMax))]
 		hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
 	}
 	pbs_kvs := map[string]string{
 		hbPbBidderKey:      roundedCpm,
 		hbBidderBidderKey:  string(adapter),
-		hbCacheIdBidderKey: cache,
 	}
 	if hbSize != "" {
 		pbs_kvs[hbSizeBidderKey] = hbSize
 	}
+
 	return pbs_kvs
 }

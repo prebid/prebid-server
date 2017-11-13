@@ -4,7 +4,6 @@ import (
 	"testing"
 	"github.com/mxmCherry/openrtb"
 	"encoding/json"
-	"fmt"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -37,11 +36,14 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	// Need extensions for all the bidders so we know to hold auctions for them.
 	impExt := make(map[string]interface{})
 	dummy1Ext := make(map[string]string)
-	dummy1Ext["dummy"] = `{placementId:"5554444"}`
-	dummy1Ext["dummy2"] = `{accountId:"abc"}`
+	dummy2Ext := make(map[string]string)
+	dummy3Ext := make(map[string]string)
+	dummy1Ext["placementId"] = "5554444"
+	dummy2Ext["accountID"] = "abc"
+	dummy3Ext["placementId"] = "1234567"
 	impExt["dummy"] = dummy1Ext
-	impExt["dummy2"] = make(map[string]string)
-	impExt["dummy3"] = make(map[string]string)
+	impExt["dummy2"] = dummy2Ext
+	impExt["dummy3"] = dummy3Ext
 
 	b, err := json.Marshal(impExt)
 	if err != nil {
@@ -68,16 +70,31 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 
 	var cleanImpExt map[string]map[string]string
 	err = json.Unmarshal(cleanRequests[BidderName("dummy")].Imp[0].Ext, &cleanImpExt)
-	fmt.Println(string(cleanRequests[BidderName("dummy")].Imp[0].Ext))
 	if err != nil {
 		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
 	}
-	dummymap, ok := cleanImpExt["dummy"]
+	dummymap, ok := cleanImpExt["bidder"]
 	if ! ok {
-		t.Error("CleanOpenRTBRequests: dummy adapter did not get proper dummy extension")
+		t.Error("CleanOpenRTBRequests: dummy adapter did not get proper bidder extension")
 	}
 	if dummymap["placementId"] != "5554444" {
 		t.Errorf("CleanOpenRTBRequests: dummy adapter did not get proper placementId, got \"%s\" instead", cleanImpExt["dummy"]["placementId"])
 	}
+	_, ok = dummymap["accountID"]
+	if ok {
+		t.Error("CleanOpenRTBRequests: dummy adapter got dummy2 parameter")
+	}
+	err = json.Unmarshal(cleanRequests[BidderName("dummy3")].Imp[0].Ext, &cleanImpExt)
+	if err != nil {
+		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
+	}
+	dummymap, ok = cleanImpExt["bidder"]
+	if ! ok {
+		t.Error("CleanOpenRTBRequests: dummy3 adapter did not get proper bidder extension")
+	}
+	if dummymap["placementId"] != "1234567" {
+		t.Errorf("CleanOpenRTBRequests: dummy3 adapter did not get proper placementId, got \"%s\" instead", cleanImpExt["dummy"]["placementId"])
+	}
+
 }
 
