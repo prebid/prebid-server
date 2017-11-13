@@ -1,6 +1,16 @@
-## POST /openrtb2/auction
+# Prebid Server Auction Endpoint
 
-This endpoint runs an auction with the given OpenRTB 2.5 BidRequest.
+This document describes the behavior of the Prebid Server auction endpoint, including:
+
+- Request/response formats
+- OpenRTB extensions
+- Debugging and performance tips
+- How user syncing works
+- Departures from OpenRTB
+
+## `POST /openrtb2/auction`
+
+This endpoint runs an auction with the given OpenRTB 2.5 bid request.
 
 ### Sample request
 
@@ -38,7 +48,12 @@ The following is a "hello world" request which fetches the [Prebid sample ad](ht
 
 ### Sample Response
 
-An OpenRTB 2.5 BidResponse, or 400 if the request is malformed. The following is a "hello world" response.
+This endpoint will respond with either:
+
+- An OpenRTB 2.5 BidResponse, or
+- An HTTP 400 status code if the request is malformed
+
+See below for a "hello world" response.
 
 ```
 {
@@ -82,16 +97,16 @@ An OpenRTB 2.5 BidResponse, or 400 if the request is malformed. The following is
 #### Conventions
 
 OpenRTB 2.5 permits exchanges to define their own extensions to any object from the spec.
-These fall under the `ext` property of json objects.
+These fall under the `ext` property of JSON objects.
 
-_If_ `ext` is defined on an object, prebid-server uses the following conventions:
+If `ext` is defined on an object, Prebid Server uses the following conventions:
 
-1. `ext` in "Request objects" uses `ext.prebid` and/or `ext.{anyBidderCode}`
+1. `ext` in "Request objects" uses `ext.prebid` and/or `ext.{anyBidderCode}`.
 2. `ext` on "Response objects" uses `ext.prebid` and/or `ext.bidder`.
 The only exception here is the top-level `BidResponse`, because it's bidder-independent.
 
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
-`ext.prebid` extensions are defined by prebid-server.
+`ext.prebid` extensions are defined by Prebid Server.
 
 #### Details
 
@@ -100,15 +115,15 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 Targeting refers to strings which are sent to the adserver to
 [make header bidding possible](http://prebid.org/overview/intro.html#how-does-prebid-work).
 
-`request.ext.prebid.targeting` is an optional property which causes Prebid-Server
+`request.ext.prebid.targeting` is an optional property which causes Prebid Server
 to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.targeting`.
 
 **Request format** (optional param `request.ext.prebid.targeting`)
 
 ```
 {
-  "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']" // Required property
-  "lengthmax": 20 // max characters allowed in a targeting value. If omitted, there is no max.
+  "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']", // Required property.
+  "lengthmax": 20 // Max characters allowed in a targeting value. If omitted, there is no max.
 }
 ```
 
@@ -122,7 +137,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 }
 ```
 
-The _winning_ bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
+The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
 (with _no_ {bidderName} suffix).
 
 #### Improving Performance
@@ -144,7 +159,7 @@ This includes:
 1. Whether a user sync was present for this auction.
 2. URL information to initiate a usersync.
 
-Some sample response data looks like this:
+Some sample response data:
 
 ```
 {
@@ -156,14 +171,14 @@ Some sample response data looks like this:
     ]
   },
   "rubicon": {
-    "status": "available" // If a usersync is available, there are probably no syncs to run
+    "status": "available" // If a usersync is available, there are probably no syncs to run.
   }
 }
 ```
 
 A `status` of `available` means that the user was synced with this bidder for this auction.
 
-A `status` of `expired` means that the a user was synced, but it last happened over 7 days and may be stale.
+A `status` of `expired` means that the a user was synced, but it last happened over 7 days ago and may be stale.
 
 A `status` of `none` means that no user sync existed for this bidder.
 
@@ -178,14 +193,14 @@ It is only returned on `test` bids for performance reasons, but may be useful du
 
 ### OpenRTB Differences
 
-This section describes the ways in which Prebid-Server **breaks** the OpenRTB spec.
+This section describes the ways in which Prebid Server **breaks** the OpenRTB spec.
 
 #### Allowed Bidders
 
-Prebid-Server returns a 400 on requests which define `wseat` or `bseat`.
+Prebid Server returns a 400 on requests which define `wseat` or `bseat`.
 We may add support for these in the future, if there's compelling need.
 
-Instead, an Impression is only offered to a Bidder if `bidrequest.imp[i].ext.{bidderName}` exists.
+Instead, an impression is only offered to a bidder if `bidrequest.imp[i].ext.{bidderName}` exists.
 
 This supports publishers who want to sell different impressions to different bidders.
 
