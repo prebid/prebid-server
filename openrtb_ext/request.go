@@ -21,7 +21,9 @@ type PriceGranularity string
 
 const (
 	PriceGranularityLow    PriceGranularity = "low"
-	PriceGranularityMedium PriceGranularity = "med"
+	PriceGranularityMedium PriceGranularity = "medium"
+	// Seems that PBS was written with medium = "med", so hacking that in
+	PriceGranularityMedPBS PriceGranularity = "med"
 	PriceGranularityHigh   PriceGranularity = "high"
 	PriceGranularityAuto   PriceGranularity = "auto"
 	PriceGranularityDense  PriceGranularity = "dense"

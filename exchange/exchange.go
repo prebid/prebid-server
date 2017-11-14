@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"github.com/prebid/prebid-server/pbs/buckets"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -31,6 +33,16 @@ type seatResponseExtra struct {
 type bidResponseWrapper struct {
 	adapterBids *pbsOrtbSeatBid
 	adapterExtra *seatResponseExtra
+	bidder openrtb_ext.BidderName
+}
+
+// Container for storing a pointer to the winning bid.
+type targetData struct {
+	targetFlag bool
+	lengthMax int
+	priceGranularity openrtb_ext.PriceGranularity
+	cpm float64
+	bid *openrtb.Bid
 	bidder openrtb_ext.BidderName
 }
 
@@ -114,6 +126,28 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		bidResponse.NBR = openrtb.NoBidReasonCode.Ptr(openrtb.NoBidReasonCodeInvalidRequest)
 	}
 
+	// Process the request to check for targeting parameters.
+	targData := &targetData{
+		targetFlag:false,
+		lengthMax:0,
+		priceGranularity:openrtb_ext.PriceGranularityMedium,
+		cpm:0.0,
+		bid:nil,
+		bidder:openrtb_ext.BidderName(""),
+	}
+	requestExt := new(openrtb_ext.ExtRequest)
+	err := json.Unmarshal(bidRequest.Ext, requestExt)
+	if err != nil {
+		errList = append(errList, fmt.Errorf("Error decoding Request.ext : %s", err.Error()))
+	}
+	if requestExt.Prebid.Targeting != nil {
+		if len(requestExt.Prebid.Targeting.PriceGranularity) > 0 {
+			targData.targetFlag = true
+			targData.lengthMax = requestExt.Prebid.Targeting.MaxLength
+			targData.priceGranularity = requestExt.Prebid.Targeting.PriceGranularity
+		}
+	}
+
 	// Create the SeatBids. We use a zero sized slice so that we can append non-zero seat bids, and not include seatBid
 	// objects for seatBids without any bids. Preallocate the max possible size to avoid reallocating the array as we go.
 	seatBids := make([]openrtb.SeatBid, 0, len(liveAdapters))
@@ -123,8 +157,24 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 			// Possible performance improvement by grabbing a pointer to the current seatBid element, passing it to
 			// MakeSeatBid, and then building the seatBid in place, rather than copying. Probably more confusing than
 			// its worth
-			sb := e.MakeSeatBid(adapterBids[a], a, adapterExtra)
+			sb := e.MakeSeatBid(adapterBids[a], a, adapterExtra, targData)
 			seatBids = append(seatBids, *sb)
+		}
+	}
+	var err1 error = nil
+	if targData.targetFlag && targData.bid != nil {
+		bidExt := new(openrtb_ext.ExtBid)
+		err1 = json.Unmarshal(targData.bid.Ext, bidExt)
+		if err1 == nil {
+			bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[string(hbpbConstantKey+"-"+targData.bidder)]
+			bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[string(hbBidderConstantKey+"-"+targData.bidder)]
+			bidExt.Prebid.Targeting[hbSizeConstantKey] = bidExt.Prebid.Targeting[string(hbSizeConstantKey+"-"+targData.bidder)]
+			if targData.bidder == "audienceNetwork" {
+				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+			} else {
+				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+			}
+
 		}
 	}
 	bidResponse.SeatBid = seatBids
@@ -132,7 +182,9 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 	bidResponseExt := e.MakeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)
 	ext, err := json.Marshal(bidResponseExt)
 	bidResponse.Ext = ext
-
+	if err1 != nil {
+		err = err1
+	}
 	return bidResponse, err
 }
 
@@ -175,7 +227,7 @@ func (e *exchange) MakeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.SeatBid {
+func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, targData *targetData) *openrtb.SeatBid {
 	seatBid := new(openrtb.SeatBid)
 	seatBid.Seat = adapter.String()
 	// Prebid cannot support roadblocking
@@ -191,7 +243,7 @@ func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	}
 	seatBid.Ext = ext
 	var errList []string
-	seatBid.Bid, errList = e.MakeBid(adapterBid.bids)
+	seatBid.Bid, errList = e.MakeBid(adapterBid.bids, targData, adapter)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errList...)
 	}
@@ -200,16 +252,33 @@ func (e *exchange) MakeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 }
 
 // Create the Bid array inside of SeatBid
-func (e *exchange) MakeBid(Bids []*pbsOrtbBid) ([]openrtb.Bid, []string) {
+func (e *exchange) MakeBid(Bids []*pbsOrtbBid, targData *targetData, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []string) {
 	bids := make([]openrtb.Bid, len(Bids))
 	errList := make([]string, 0, 1)
 	for i := 0; i < len(Bids); i++ {
+		var err error
 		bids[i] = *Bids[i].bid
 		bidExt := new(openrtb_ext.ExtBid)
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
 		bidPrebid.Type = Bids[i].bidType
-		// TODO: Support targeting
+		if targData.targetFlag {
+			cpm := bids[i].Price
+			width := bids[i].W
+			height := bids[i].H
+			bidPrebid.Targeting, err = e.MakePrebidTargets(cpm, width, height, bidPrebid.Cache.Key, targData, adapter)
+			if err != nil {
+				errList = append(errList, err.Error())
+				// set CPM to 0 if we could not bucket it
+				cpm = 0.0
+			}
+			if cpm > targData.cpm {
+				targData.cpm = cpm
+				targData.bidder = adapter
+				targData.bid = &bids[i]
+			}
+		}
+		bidExt.Prebid = bidPrebid
 
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
@@ -218,4 +287,52 @@ func (e *exchange) MakeBid(Bids []*pbsOrtbBid) ([]openrtb.Bid, []string) {
 		bids[i].Ext = ext
 	}
 	return bids, errList
+}
+
+// The following may move to /pbs/targeting with pbs/buckets going in there as well. But pbs/buckets in not yet in this branch
+// This also duplicates code in pbs_light, which should be moved to /pbs/targeting. But that is beyond the current
+// scope, and likely moot if the non-openrtb endpoint goes away.
+const (
+	hbpbConstantKey = "hb_pb"
+	hbBidderConstantKey = "hb_bidder"
+	hbSizeConstantKey = "hb_size"
+	hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
+	hbCreativeLoadMethodHTML = "html"
+	hbCreativeLoadMethodDemandSDK = "demand_sdk"
+	)
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func (e *exchange) MakePrebidTargets(cpm float64, width uint64, height uint64, cache string, targData *targetData, adapter openrtb_ext.BidderName) (map[string]string, error) {
+	roundedCpm, err := buckets.GetPriceBucketString(cpm, targData.priceGranularity)
+
+	hbSize := ""
+	if width != 0 && height != 0 {
+		w := strconv.FormatUint(width, 10)
+		h := strconv.FormatUint(height, 10)
+		hbSize = w + "x" + h
+	}
+
+	hbPbBidderKey := string(hbpbConstantKey + "_" + adapter)
+	hbBidderBidderKey := string(hbBidderConstantKey + "_" + adapter)
+	hbSizeBidderKey := string(hbSizeConstantKey + "_" + adapter)
+	if targData.lengthMax != 0 {
+		hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(targData.lengthMax))]
+		hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(targData.lengthMax))]
+		hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
+	}
+	pbs_kvs := map[string]string{
+		hbPbBidderKey:      roundedCpm,
+		hbBidderBidderKey:  string(adapter),
+	}
+	if hbSize != "" {
+		pbs_kvs[hbSizeBidderKey] = hbSize
+	}
+
+	return pbs_kvs, err
 }
