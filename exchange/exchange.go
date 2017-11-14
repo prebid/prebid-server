@@ -47,7 +47,7 @@ func NewExchange(client *http.Client) Exchange {
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := openrtb_ext.CleanOpenRTBRequests(bidRequest, e.adapters)
+	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0
@@ -56,7 +56,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		i++
 	}
 	// Randomize the list of adapters to make the auction more fair
-	openrtb_ext.RandomizeList(liveAdapters)
+	randomizeList(liveAdapters)
 
 	adapterBids, adapterExtra := e.GetAllBids(ctx, liveAdapters, cleanRequests)
 

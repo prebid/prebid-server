@@ -1,14 +1,15 @@
-package openrtb_ext
+package exchange
 
 import (
     "github.com/mxmCherry/openrtb"
     "encoding/json"
     "math/rand"
     "fmt"
+    "github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
-func RandomizeList(list []BidderName) {
+func randomizeList(list []openrtb_ext.BidderName) {
     l := len(list)
     perm := rand.Perm(l)
     var j int
@@ -29,9 +30,9 @@ func RandomizeList(list []BidderName) {
 // before submitting.
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) (map[BidderName]*openrtb.BidRequest, []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
     // This is the clean array of openrtb requests we will be returning
-    cleanReqs := map[BidderName]*openrtb.BidRequest{}
+    cleanReqs := map[openrtb_ext.BidderName]*openrtb.BidRequest{}
     errList := make([]error, 0, 1)
 
     // Decode the Imp extensions once to save time. We store the results here
