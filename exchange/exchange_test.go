@@ -114,7 +114,7 @@ func TestGetAllBids(t *testing.T) {
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
 
 	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
-	adapterBids, adapterExtra := e.GetAllBids(ctx, e.adapters, cleanRequests)
+	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests)
 
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
@@ -134,7 +134,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.GetAllBids(ctx, e.adapters, cleanRequests)
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -151,7 +151,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.GetAllBids(ctx, e.adapters, cleanRequests)
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests)
 
 	if len(adapterExtra[BidderDummy2].Errors) !=1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -197,7 +197,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors:convertErr2Str(errs3)}
 
 	errList := make([]error, 0, 1)
-	bidResponse, err := e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err := e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -218,7 +218,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse, err = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -237,7 +237,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse, err = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
