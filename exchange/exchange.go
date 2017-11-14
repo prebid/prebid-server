@@ -209,7 +209,6 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid) ([]openrtb.Bid, []string) {
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
 		bidPrebid.Type = Bids[i].bidType
-		// TODO: Support targeting
 
 		ext, err := json.Marshal(bidExt)
 		if err != nil {

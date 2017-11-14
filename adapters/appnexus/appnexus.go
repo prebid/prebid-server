@@ -216,13 +216,13 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 }
 
 func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	memberIds := make([]string, 0, len(request.Imp))
+	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
 	for i := 0; i < len(request.Imp); i++ {
 		memberId, err := preprocess(&request.Imp[i])
 		if memberId != "" {
-			memberIds = append(memberIds, memberId)
+			memberIds[memberId] = true
 		}
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
 		if err != nil {
@@ -238,12 +238,12 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	// different impressions have different member IDs.
 	// Check for this condition, and log an error if it's a problem.
 	if len(memberIds) > 0 {
-		memberId := memberIds[0]
+		uniqueIds := keys(memberIds)
+		memberId := uniqueIds[0]
 		thisUri = fmt.Sprintf("%s?member_id=%s", thisUri, memberId)
-		for i := 1; i < len(memberIds); i++ {
-			if memberId != memberIds[i] {
-				errs = append(errs, fmt.Errorf("All request.imp[i].ext.appnexus.member params must match. Request contained \"%s\" and \"%s\"", memberId, memberIds[i]))
-			}
+
+		if len(uniqueIds) > 1 {
+			errs = append(errs, fmt.Errorf("All request.imp[i].ext.appnexus.member params must match. Request contained: %v", uniqueIds))
 		}
 	}
 
@@ -267,6 +267,15 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
+}
+
+// get the keys from the map
+func keys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 // preprocess mutates the imp to get it ready to send to appnexus.
