@@ -67,8 +67,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 // This piece sends all the requests to the bidder adapters and gathers the results.
 func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	// Set up pointers to the bid results
-	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{}
-	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra)
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(liveAdapters))
+	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(liveAdapters))
 	chBids := make(chan *bidResponseWrapper, len(liveAdapters))
 	for _, a := range liveAdapters {
 		// Here we actually call the adapters and collect the bids.

@@ -46,7 +46,7 @@ func TestHoldAuction(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	e := NewDummyExchange(server.Client()).(*exchange)
+	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter))
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter))
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
@@ -108,7 +108,7 @@ func TestGetAllBids(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	e := NewDummyExchange(server.Client()).(*exchange)
+	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter))
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter))
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
@@ -169,7 +169,7 @@ func TestBuildBidResponse(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	e := NewDummyExchange(server.Client()).(*exchange)
+	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter))
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter))
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
@@ -271,7 +271,7 @@ const (
 	BidderDummy3 openrtb_ext.BidderName = "dummy3"
 )
 // Tester is responsible for filling bid results into the adapters
-func NewDummyExchange(client *http.Client) Exchange {
+func NewDummyExchange(client *http.Client) *exchange {
 	e := new(exchange)
 	a := new(mockAdapter)
 	a.errs = make([]error, 0, 5)
@@ -403,13 +403,4 @@ func convertErr2Str(e []error) []string {
 		s[i] = e[i].Error()
 	}
 	return s
-}
-
-// errorString is a trivial implementation of error.
-type errorString struct {
-	s string
-}
-
-func (e *errorString) Error() string {
-	return e.s
 }

@@ -32,7 +32,7 @@ func randomizeList(list []openrtb_ext.BidderName) {
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
 func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
     // This is the clean array of openrtb requests we will be returning
-    cleanReqs := map[openrtb_ext.BidderName]*openrtb.BidRequest{}
+    cleanReqs := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(adapters))
     errList := make([]error, 0, 1)
 
     // Decode the Imp extensions once to save time. We store the results here
