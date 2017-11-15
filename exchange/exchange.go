@@ -42,7 +42,7 @@ type targetData struct {
 	lengthMax int
 	priceGranularity openrtb_ext.PriceGranularity
 	cpm float64
-	bid *openrtb.Bid
+	bid map[string]*openrtb.Bid
 	bidder openrtb_ext.BidderName
 }
 
@@ -128,12 +128,12 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 
 	// Process the request to check for targeting parameters.
 	targData := &targetData{
-		targetFlag:false,
-		lengthMax:0,
-		priceGranularity:openrtb_ext.PriceGranularityMedium,
-		cpm:0.0,
-		bid:nil,
-		bidder:openrtb_ext.BidderName(""),
+		targetFlag:	false,
+		lengthMax:	0,
+		priceGranularity:	openrtb_ext.PriceGranularityMedium,
+		cpm:		0.0,
+		bid:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
+		bidder:		openrtb_ext.BidderName(""),
 	}
 	requestExt := new(openrtb_ext.ExtRequest)
 	err := json.Unmarshal(bidRequest.Ext, requestExt)
@@ -162,19 +162,21 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		}
 	}
 	var err1 error = nil
-	if targData.targetFlag && targData.bid != nil {
-		bidExt := new(openrtb_ext.ExtBid)
-		err1 = json.Unmarshal(targData.bid.Ext, bidExt)
-		if err1 == nil {
-			bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[string(hbpbConstantKey+"-"+targData.bidder)]
-			bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[string(hbBidderConstantKey+"-"+targData.bidder)]
-			bidExt.Prebid.Targeting[hbSizeConstantKey] = bidExt.Prebid.Targeting[string(hbSizeConstantKey+"-"+targData.bidder)]
-			if targData.bidder == "audienceNetwork" {
-				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
-			} else {
-				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+	if targData.targetFlag {
+		for _, bid := range targData.bid {
+			bidExt := new(openrtb_ext.ExtBid)
+			err1 = json.Unmarshal(bid.Ext, bidExt)
+			if err1 == nil {
+				bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[string(hbpbConstantKey+"-"+targData.bidder)]
+				bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[string(hbBidderConstantKey+"-"+targData.bidder)]
+				bidExt.Prebid.Targeting[hbSizeConstantKey] = bidExt.Prebid.Targeting[string(hbSizeConstantKey+"-"+targData.bidder)]
+				if targData.bidder == "audienceNetwork" {
+					bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+				} else {
+					bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+				}
+				bid.Ext, err1 = json.Marshal(bidExt)
 			}
-
 		}
 	}
 	bidResponse.SeatBid = seatBids
@@ -261,21 +263,25 @@ func (e *exchange) MakeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 		bidExt := new(openrtb_ext.ExtBid)
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
-		bidPrebid.Type = Bids[i].bidType
+		cacheKey := ""
+		if bidPrebid.Cache != nil {
+			cacheKey = bidPrebid.Cache.Key
+		}
 		if targData.targetFlag {
 			cpm := bids[i].Price
 			width := bids[i].W
 			height := bids[i].H
-			bidPrebid.Targeting, err = e.MakePrebidTargets(cpm, width, height, bidPrebid.Cache.Key, targData, adapter)
+			bidPrebid.Targeting, err = e.MakePrebidTargets(cpm, width, height, cacheKey, targData, adapter)
 			if err != nil {
 				errList = append(errList, err.Error())
 				// set CPM to 0 if we could not bucket it
 				cpm = 0.0
 			}
-			if cpm > targData.cpm {
+			targBid, ok := targData.bid[bids[i].ImpID]
+			if ! ok || cpm > targBid.Price {
 				targData.cpm = cpm
 				targData.bidder = adapter
-				targData.bid = &bids[i]
+				targData.bid[bids[i].ImpID] = &bids[i]
 			}
 		}
 		bidExt.Prebid = bidPrebid

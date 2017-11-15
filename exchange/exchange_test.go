@@ -10,6 +10,7 @@ import (
 	"time"
 	"encoding/json"
 	"errors"
+	openrtb_ext2 "github.com/prebid/prebid-server_real/openrtb_ext"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -175,9 +176,21 @@ func TestBuildBidResponse(t *testing.T) {
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
 
 	// Very simple Bid request. At this point we are just reading these two values
+	// Adding targeting to enable targeting tests
+	bidReqExt := openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			Targeting: &openrtb_ext.ExtRequestTargeting{
+				PriceGranularity: openrtb_ext.PriceGranularityMedium,
+				MaxLength: 20,
+			},
+		},
+	}
+	var bidReqExtRaw openrtb.RawJSON
+	bidReqExtRaw ,err := json.Marshal(bidReqExt)
 	bidRequest := openrtb.BidRequest{
 		ID: "This Bid",
 		Test: 0,
+		Ext: bidReqExtRaw,
 	}
 
 	liveAdapters := make([]openrtb_ext.BidderName, 3)
@@ -213,7 +226,41 @@ func TestBuildBidResponse(t *testing.T) {
 	if len(bidResponse.SeatBid) != 3 {
 		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
 	}
+	// Find the seat index for BidderDummy
+	bidderDummySeat := -1
+	for i, seat := range bidResponse.SeatBid {
+		if seat.Seat == "dummy" {
+			bidderDummySeat = i
+		}
+	}
+	if bidderDummySeat == -1 {
+		t.Error("Could not find the SeatBid for BidderDummy!")
+	} else {
+		bidder1BidExt := make([]openrtb_ext2.ExtBid, 2)
+		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[0].Ext, &bidder1BidExt[0])
+		if err != nil {
+			t.Errorf("Unpacking extensions for bid[0]: %s", err.Error())
+		}
+		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[1].Ext, &bidder1BidExt[1])
+		if err != nil {
+			t.Errorf("Unpacking extensions for bid[1]: %s", err.Error())
+		}
+		assertStringValue(t, "bid[0].Targeting[hb_pb_dummy]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_dummy"])
+		assertStringValue(t, "bid[0]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder_dummy"])
+		assertStringValue(t, "bid[0]Targeting[hb_size_dummy]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_dummy"])
+		// This should be the winning bid
+		assertStringValue(t, "bid[0].Targeting[hb_pb]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb"])
+		assertStringValue(t, "bid[0]Targeting[hb_bidder]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder"])
+		assertStringValue(t, "bid[0]Targeting[hb_size]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size"])
+		assertStringValue(t, "bid[1].Targeting[hb_pb_dummy]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_dummy"])
+		assertStringValue(t, "bid[1]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[1].Prebid.Targeting["hb_bidder_dummy"])
+		assertStringValue(t, "bid[1]Targeting[hb_size_dummy]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_dummy"])
+		_, ok := bidder1BidExt[1].Prebid.Targeting["hb_pb"]
+		if ! ok {
+			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
+		}
 
+	}
 	// Now test with an error condition
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
@@ -252,6 +299,12 @@ func TestBuildBidResponse(t *testing.T) {
 		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
 	}
 
+}
+
+func assertStringValue(t *testing.T, object string, expect string, value string) {
+	if expect != value {
+		t.Errorf("Wrong value for %s, expected \"%s\", got \"%s\"", object, expect, value)
+	}
 }
 
 type mockAdapter struct {
@@ -345,7 +398,15 @@ func mockDummyBids1() (*pbsOrtbSeatBid, []error) {
 	sb1.bids[0].bid = new(openrtb.Bid)
 	sb1.bids[1].bid = new(openrtb.Bid)
 	sb1.bids[0].bid.ID = "1234567890"
-	sb1.bids[1].bid.ID = "5678901234"
+	sb1.bids[0].bid.W = 728
+	sb1.bids[0].bid.H = 90
+	sb1.bids[0].bid.Price = 1.34
+	sb1.bids[0].bid.ImpID = "1stImp"
+	sb1.bids[1].bid.ID = "1234567890"
+	sb1.bids[1].bid.W = 300
+	sb1.bids[1].bid.H = 250
+	sb1.bids[1].bid.Price = 0.73
+	sb1.bids[1].bid.ImpID = "2ndImp"
 
 	errs := make([]error, 0, 5)
 
@@ -360,7 +421,15 @@ func mockDummyBids2() (*pbsOrtbSeatBid, []error) {
 	sb1.bids[0].bid = new(openrtb.Bid)
 	sb1.bids[1].bid = new(openrtb.Bid)
 	sb1.bids[0].bid.ID = "ABC"
+	sb1.bids[0].bid.W = 728
+	sb1.bids[0].bid.H = 90
+	sb1.bids[0].bid.Price = 0.94
+	sb1.bids[0].bid.ImpID = "1stImp"
 	sb1.bids[1].bid.ID = "1234"
+	sb1.bids[1].bid.W = 300
+	sb1.bids[1].bid.H = 250
+	sb1.bids[1].bid.Price = 1.89
+	sb1.bids[1].bid.ImpID = "2ndImp"
 
 	errs := make([]error, 0, 5)
 
@@ -372,6 +441,10 @@ func mockDummyBids3() (*pbsOrtbSeatBid, []error) {
 	sb1.bids[0] = new(pbsOrtbBid)
 	sb1.bids[0].bid = new(openrtb.Bid)
 	sb1.bids[0].bid.ID = "MyBid"
+	sb1.bids[0].bid.W = 728
+	sb1.bids[0].bid.H = 90
+	sb1.bids[0].bid.Price = 0.34
+	sb1.bids[0].bid.ImpID = "1stImp"
 
 	errs := make([]error, 0, 5)
 
