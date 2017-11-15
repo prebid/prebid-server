@@ -136,3 +136,18 @@ func TestPrebidClient(t *testing.T) {
 		t.Fatalf("pbc put succeeded but should have timed out")
 	}
 }
+
+// Prevents #197
+func TestEmptyBids(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("The server should not be called.")
+	})
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	InitPrebidCache(server.URL)
+
+	if err := Put(context.Background(), []*CacheObject{}); err != nil {
+		t.Errorf("Error on Put: %v", err)
+	}
+}
