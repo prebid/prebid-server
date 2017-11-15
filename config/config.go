@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"strings"
+	"time"
 )
 
 // Configuration
@@ -41,10 +42,15 @@ type Adapter struct {
 }
 
 type Metrics struct {
-	Host     string `mapstructure:"host"`
-	Database string `mapstructure:"database"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Type         string        `mapstructure:"type"`
+	Host         string        `mapstructure:"host"`
+	Database     string        `mapstructure:"database"`
+	Username     string        `mapstructure:"username"`
+	Password     string        `mapstructure:"password"`
+	Interval     time.Duration `mapstructure:"interval"`
+	Prefix       string        `mapstructure:"prefix"`
+	MetricType   string        `mapstructure:"metric_type"`
+	ClearCounter bool          //Runtime argument
 }
 
 type DataCache struct {
@@ -76,10 +82,10 @@ func New() (*Configuration, error) {
 //Allows for protocol relative URL if scheme is empty
 func (cfg *Configuration) GetCacheBaseURL() string {
 	cfg.CacheURL.Scheme = strings.ToLower(cfg.CacheURL.Scheme)
-	if strings.Contains(cfg.CacheURL.Scheme, "https"){
+	if strings.Contains(cfg.CacheURL.Scheme, "https") {
 		return fmt.Sprintf("https://%s", cfg.CacheURL.Host)
 	}
-	if strings.Contains(cfg.CacheURL.Scheme, "http"){
+	if strings.Contains(cfg.CacheURL.Scheme, "http") {
 		return fmt.Sprintf("http://%s", cfg.CacheURL.Host)
 	}
 	return fmt.Sprintf("//%s", cfg.CacheURL.Host)
