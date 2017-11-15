@@ -1,5 +1,5 @@
 hash: 7aebc4b175ff5e33fdc070e16360095703382b0d5986ff38d6f1d98adfa89671
-updated: 2017-10-30T14:14:39.478466077-04:00
+updated: 2017-11-15T14:04:33.340998078-08:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -54,6 +54,8 @@ imports:
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
   version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
+- name: github.com/rubicon-project/go-metrics-graphite
+  version: 637ca911c24a09111dc467bf6581ef2abb90a8dd
 - name: github.com/spaolacci/murmur3
   version: 9f5d223c60793748f04a9d5b4b4eacddfc1f755d
 - name: github.com/spf13/afero
