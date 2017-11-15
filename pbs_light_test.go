@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/metrics"
 	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 )
@@ -24,8 +25,10 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
+	met, _ := metrics.SetupMetrics(cfg.Metrics, exchanges)
+
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&CookieSyncDeps{&met}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -69,8 +72,9 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unable to config: %v", err)
 	}
 	setupExchanges(cfg)
+	met, _ := metrics.SetupMetrics(cfg.Metrics, exchanges)
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&CookieSyncDeps{&met}).cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
