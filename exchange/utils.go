@@ -36,7 +36,7 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.Bidde
     errList := make([]error, 0, 1)
 
     // Decode the Imp extensions once to save time. We store the results here
-    imp_exts := make([]map[string]interface{}, len(orig.Imp))
+    imp_exts := make([]map[string]openrtb.RawJSON, len(orig.Imp))
     // Loop over every impression in the request
     for i := 0 ; i < len(orig.Imp) ; i++ {
         // Unpack each set of extensions found in the Imp array
@@ -58,7 +58,7 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.Bidde
             // Don't do anything if the current bidder's field is not present.
             if val, ok := imp_exts[j][bn]; ok {
                 // Start with a new, empty unpacked extention
-                newExts := map[string]interface{}{}
+                newExts := make(map[string]openrtb.RawJSON, len(orig.Imp))
                 // Need to do some consistency checking to verify these fields exist. Especially the adapters one.
                 if pb, ok := imp_exts[j]["prebid"]; ok {
                     newExts["prebid"] = pb
