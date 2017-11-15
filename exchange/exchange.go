@@ -181,15 +181,18 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	// Prebid cannot support roadblocking
 	seatBid.Group = 0
 
-	sbExt := ExtSeatBid{
-		Bidder: adapterBid.ext,
+	if len(adapterBid.ext) > 0 {
+		sbExt := ExtSeatBid{
+			Bidder: adapterBid.ext,
+		}
+
+		ext, err := json.Marshal(sbExt)
+		if err != nil {
+			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()))
+		}
+		seatBid.Ext = ext
 	}
 
-	ext, err := json.Marshal(sbExt)
-	if err != nil {
-		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()))
-	}
-	seatBid.Ext = ext
 	var errList []string
 	seatBid.Bid, errList = e.makeBid(adapterBid.bids)
 	if len(errList) > 0 {
