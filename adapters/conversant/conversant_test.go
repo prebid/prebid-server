@@ -390,7 +390,7 @@ func TestConversantBasicVideoRequest(t *testing.T) {
 	assertTrue(t, imp.Video.API == nil, "Request video api should be nil")
 }
 
-// Test video request with parameters
+// Test video request with parameters in custom params object
 
 func TestConversantVideoRequestWithParams(t *testing.T) {
 	server, lastReq := CreateServer()
@@ -449,6 +449,63 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 	assertEqual(t, len(imp.Video.API), 2, "Request video api should be nil")
 	assertEqual(t, imp.Video.API[0], openrtb.APIFramework(1), "Request video api 1")
 	assertEqual(t, imp.Video.API[1], openrtb.APIFramework(2), "Request video api 2")
+}
+
+// Test video request with parameters in the video object
+
+func TestConversantVideoRequestWithParams2(t *testing.T) {
+	server, lastReq := CreateServer()
+	if server == nil {
+		t.Fatal("server not created")
+	}
+
+	defer server.Close()
+
+	// Create a adapter to test
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+
+	param := `{ "site_id": "12345" }`
+	videoParam := `{ "mimes": ["video/x-ms-wmv"],
+		   "protocols": [1, 2],
+		   "maxduration": 90 }`
+
+	ctx := context.TODO()
+	pbReq := CreateRequest(param)
+	pbReq, err := ConvertToVideoRequest(pbReq, videoParam)
+	if err != nil {
+		t.Fatal("Failed to convert to a video request", err)
+	}
+	pbReq, err = ParseRequest(pbReq)
+	if err != nil {
+		t.Fatal("Failed to parse video request", err)
+	}
+
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatal("Failed to retrieve bids", err)
+	}
+
+	assertEqual(t, len(lastReq.Imp), 1, "Request number of impressions")
+	imp := &lastReq.Imp[0]
+
+	assertEqual(t, imp.DisplayManager, ExpectedDisplayManager, "Request display manager value")
+	assertEqual(t, lastReq.Site.ID, ExpectedSiteID, "Request site id")
+	assertEqual(t, int(lastReq.Site.Mobile), 0, "Request site mobile flag")
+	assertEqual(t, lastReq.User.BuyerUID, ExpectedBuyerUID, "Request buyeruid")
+	assertTrue(t, imp.Banner == nil, "Request banner should be nil")
+	assertEqual(t, int(*imp.Secure), 0, "Request secure")
+	assertEqual(t, imp.BidFloor, 0.0, "Request bid floor")
+	assertEqual(t, int(imp.Video.W), 300, "Request width")
+	assertEqual(t, int(imp.Video.H), 250, "Request height")
+
+	assertEqual(t, len(imp.Video.MIMEs), 1, "Request video MIMEs entries")
+	assertEqual(t, imp.Video.MIMEs[0], "video/x-ms-wmv", "Requst video MIMEs type")
+	assertEqual(t, len(imp.Video.Protocols), 2, "Request video protocols")
+	assertEqual(t, imp.Video.Protocols[0], openrtb.Protocol(1), "Request video protocols 1")
+	assertEqual(t, imp.Video.Protocols[1], openrtb.Protocol(2), "Request video protocols 2")
+	assertEqual(t, imp.Video.MaxDuration, int64(90), "Request video 0 max duration")
 }
 
 // Test video responses
@@ -559,7 +616,7 @@ func ConvertToVideoRequest(req *pbs.PBSRequest, videoParams ...string) (*pbs.PBS
 	return req, nil
 }
 
-// Feed the request thru the prebid parser so user id and 
+// Feed the request thru the prebid parser so user id and
 // other private properties are defined
 
 func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
