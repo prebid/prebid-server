@@ -43,7 +43,7 @@ type targetData struct {
 	priceGranularity openrtb_ext.PriceGranularity
 	cpm float64
 	bid map[string]*openrtb.Bid
-	bidder openrtb_ext.BidderName
+	bidder map[string]openrtb_ext.BidderName
 }
 
 func NewExchange(client *http.Client) Exchange {
@@ -133,7 +133,7 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		priceGranularity:	openrtb_ext.PriceGranularityMedium,
 		cpm:		0.0,
 		bid:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
-		bidder:		openrtb_ext.BidderName(""),
+		bidder:		make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
 	}
 	requestExt := new(openrtb_ext.ExtRequest)
 	err := json.Unmarshal(bidRequest.Ext, requestExt)
@@ -163,14 +163,14 @@ func (e *exchange) BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 	}
 	var err1 error = nil
 	if targData.targetFlag {
-		for _, bid := range targData.bid {
+		for id, bid := range targData.bid {
 			bidExt := new(openrtb_ext.ExtBid)
 			err1 = json.Unmarshal(bid.Ext, bidExt)
 			if err1 == nil {
-				bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[string(hbpbConstantKey+"-"+targData.bidder)]
-				bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[string(hbBidderConstantKey+"-"+targData.bidder)]
-				bidExt.Prebid.Targeting[hbSizeConstantKey] = bidExt.Prebid.Targeting[string(hbSizeConstantKey+"-"+targData.bidder)]
-				if targData.bidder == "audienceNetwork" {
+				bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[string(hbpbConstantKey+"_"+targData.bidder[id])]
+				bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[string(hbBidderConstantKey+"_"+targData.bidder[id])]
+				bidExt.Prebid.Targeting[hbSizeConstantKey] = bidExt.Prebid.Targeting[string(hbSizeConstantKey+"_"+targData.bidder[id])]
+				if targData.bidder[id] == "audienceNetwork" {
 					bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
 					bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
@@ -280,7 +280,7 @@ func (e *exchange) MakeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 			targBid, ok := targData.bid[bids[i].ImpID]
 			if ! ok || cpm > targBid.Price {
 				targData.cpm = cpm
-				targData.bidder = adapter
+				targData.bidder[bids[i].ImpID] = adapter
 				targData.bid[bids[i].ImpID] = &bids[i]
 			}
 		}
