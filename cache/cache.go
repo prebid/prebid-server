@@ -38,8 +38,14 @@ type ConfigService interface {
 	Set(string, string) error
 }
 
-// New services to support config cache for openrtb
-
+// ConfigFetcher knows how to fetch OpenRTB configs by id.
+// Implementations must be safe for concurrent access by multiple goroutines.
+//
+// A config is basically a "partial" OpenRTB request.
+// The Endpoint merges these into the HTTP Request JSON before unmarhsalling it
+// into the OpenRTB Request which gets sent into the Exchange.
 type ConfigFetcher interface {
-	GetConfigs([]string) map[string]json.RawMessage
+	// GetConfigs fetches configs for the given IDs.
+	// The returned map will have keys for every ID, unless errors exist.
+	GetConfigs(ids []string) (map[string]json.RawMessage, []error)
 }
