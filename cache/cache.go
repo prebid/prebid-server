@@ -1,6 +1,9 @@
 package cache
 
-import "github.com/prebid/prebid-server/pbs/buckets"
+import (
+	"github.com/prebid/prebid-server/pbs/buckets"
+	"encoding/json"
+)
 
 type Domain struct {
 	Domain string `json:"domain"`
@@ -33,4 +36,10 @@ type AccountsService interface {
 type ConfigService interface {
 	Get(string) (string, error)
 	Set(string, string) error
+}
+
+// New services to support config cache for openrtb
+
+type ConfigFetcher interface {
+	GetConfigs([]string) map[string]json.RawMessage
 }

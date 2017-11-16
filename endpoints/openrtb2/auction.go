@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
+	"github.com/prebid/prebid-server_real/cache"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
@@ -23,6 +24,8 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 type endpointDeps struct {
 	ex exchange.Exchange
 	paramsValidator openrtb_ext.BidderParamValidator
+	accountFetcher cache.ConfigFetcher
+	configFetcher cache.ConfigFetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
