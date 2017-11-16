@@ -237,7 +237,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
 				t.Error("hb_bidder key was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_deal_id"] != "2345" {
+			if bid.AdServerTargeting["hb_deal"] != "2345" {
 				t.Error("hb_deal_id key was not parsed correctly ")
 			}
 		}
@@ -257,7 +257,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			if bid.AdServerTargeting["hb_pb"] != "" {
 				t.Error("hb_pb key was parsed for two bidders")
 			}
-			if bid.AdServerTargeting["hb_deal_id_appnexus"] != "1234" {
+			if bid.AdServerTargeting["hb_deal_appnexus"] != "1234" {
 				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
 			}
 		}
@@ -267,7 +267,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			}
 		}
 		if bid.BidderCode == "nodeal" {
-			if _, exists := bid.AdServerTargeting["hb_deal_id_nodeal"]; exists {
+			if _, exists := bid.AdServerTargeting["hb_deal_nodeal"]; exists {
 				t.Error("hb_deal_id key for nodeal bidder was not parsed correctly")
 			}
 		}

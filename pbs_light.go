@@ -109,7 +109,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
-const hbDealIdConstantKey = "hb_deal_id"
+const hbDealIdConstantKey = "hb_deal"
 const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
