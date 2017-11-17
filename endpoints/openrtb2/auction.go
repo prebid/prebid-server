@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
 	"github.com/prebid/prebid-server/cache"
+	"github.com/evanphx/json-patch"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount cache.ConfigFetcher, requestsById cache.ConfigFetcher) (httprouter.Handle, error) {
@@ -29,6 +30,10 @@ type endpointDeps struct {
 	configFetcher cache.ConfigFetcher
 }
 
+// Slimmed down Imp.Ext object to just pull the config ID
+type impExtConfig struct {
+	prebid struct { config string }
+}
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, err := deps.parseRequest(r)
 	if err != nil {
@@ -228,4 +233,72 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	}
 
 	return nil
+}
+
+// Check the request for configs, patch in the stored config if found.
+func (deps *endpointDeps) processConfigs(request *openrtb.BidRequest) []error {
+	// Potentially handle Request level configs.
+
+	// Pull the Imp configs.
+	configIds, errList := deps.findImpConfigIds(request.Imp)
+
+	configs, errL := deps.configFetcher.GetConfigs(configIds)
+	if len(errL) > 0 {
+		errList = append(errList, errL...)
+	}
+
+	// Process Imp level configs.
+	for i := 0; i < len(request.Imp); i++ {
+		// Check if a config was requested
+		if len(configIds[i]) > 0 {
+			conf, ok := configs[configIds[i]]
+			if ok && len(conf) > 0 {
+				err := deps.processImpConfig(&request.Imp[i], conf)
+				if err != nil {
+					errList = append(errList, err)
+				}
+			}
+		}
+	}
+	if len(errList) == 0 {
+		return nil
+	}
+	return errList
+}
+
+// Pull the Imp configs.
+func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []error) {
+	errList := make([]error, 0, len(imps))
+	configIds := make([]string, len(imps))
+	for i := 0; i < len(imps); i++ {
+		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
+			eConf := &impExtConfig{}
+			err := json.Unmarshal(imps[i].Ext, eConf)
+			if err == nil {
+				configIds[i] = eConf.prebid.config
+			} else {
+				errList = append(errList, err)
+				configIds[i] = ""
+			}
+		} else{
+			configIds[i] = ""
+		}
+	}
+	return configIds, errList
+}
+
+
+// Process the configs for an Imp. Need to modify the Imp object in place as we cannot simply assign one Imp
+// to another (deep copy)
+func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, conf json.RawMessage) error {
+	impJson, err := json.Marshal(imp)
+	if err != nil {
+		return err
+	}
+	newImp, err := jsonpatch.CreateMergePatch(conf, impJson)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(newImp, imp)
+	return err
 }
