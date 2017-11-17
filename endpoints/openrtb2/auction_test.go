@@ -283,3 +283,29 @@ var invalidRequests = []string{
 		}
 	}]}`,
 }
+
+// Config Cache testing
+
+// Test stored configs
+var testConfigs = map[string]json.RawMessage{
+	"1": 	json.RawMessage(`{
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
+			}
+			}`),
+}
+
+type mockConfigFetcher struct {
+}
+
+func (cf mockConfigFetcher) GetConfigs(ids []string) (map[string]json.RawMessage, []error) {
+	return testConfigs, nil
+}
