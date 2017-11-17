@@ -25,7 +25,9 @@ func NewEagerConfigFetcher(directory string) (cache.ConfigFetcher, error) {
 		if err != nil {
 			return nil, err
 		}
-		configs[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
+		if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
+			configs[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
+		}
 	}
 	return &eagerFetcher{configs}, nil
 }
