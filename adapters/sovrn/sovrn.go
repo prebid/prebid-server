@@ -66,9 +66,9 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		if err != nil {
 			return nil, err
 		}
+		sovrnReq.Imp[i].Secure = sReq.Imp[i].Secure
 		sovrnReq.Imp[i].TagID = strconv.Itoa(params.TagID)
 		sovrnReq.Imp[i].Banner.Format = nil
-
 	}
 
 	reqJSON, err := json.Marshal(sovrnReq)
