@@ -11,13 +11,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"bytes"
 	"errors"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/cache/filecache/filecachetest"
+	"github.com/prebid/prebid-server/cache/emptycache"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
 func TestGoodRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, filecachetest.EmptyFetcher(), filecachetest.EmptyFetcher())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, emptycache.EmptyFetcher(), emptycache.EmptyFetcher())
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
@@ -47,7 +46,7 @@ func TestGoodRequests(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, filecachetest.EmptyFetcher(), filecachetest.EmptyFetcher())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, emptycache.EmptyFetcher(), emptycache.EmptyFetcher())
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
@@ -62,7 +61,7 @@ func TestBadRequests(t *testing.T) {
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
-	_, err := NewEndpoint(nil, &bidderParamValidator{}, filecachetest.EmptyFetcher(), filecachetest.EmptyFetcher())
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, emptycache.EmptyFetcher(), emptycache.EmptyFetcher())
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -70,7 +69,7 @@ func TestNilExchange(t *testing.T) {
 
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
-	_, err := NewEndpoint(&nobidExchange{}, nil, filecachetest.EmptyFetcher(), filecachetest.EmptyFetcher())
+	_, err := NewEndpoint(&nobidExchange{}, nil, emptycache.EmptyFetcher(), emptycache.EmptyFetcher())
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -78,7 +77,7 @@ func TestNilValidator(t *testing.T) {
 
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, filecachetest.EmptyFetcher(), filecachetest.EmptyFetcher())
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, emptycache.EmptyFetcher(), emptycache.EmptyFetcher())
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)

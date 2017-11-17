@@ -40,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/cache/emptycache"
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
@@ -823,7 +824,20 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator)
+	accountConfigs := emptycache.EmptyFetcher()
+	requestConfigs := emptycache.EmptyFetcher()
+	if cfg.ORTB2Config.Files {
+		accountConfigs, err = filecache.NewEagerConfigFetcher("./openrtb2_configs/for_accounts")
+		if err != nil {
+			glog.Fatalf("Failed to make filesystem account config fetcher: %v", err)
+		}
+		requestConfigs, err = filecache.NewEagerConfigFetcher("./openrtb2_configs/for_requests")
+		if err != nil {
+			glog.Fatalf("Failed to make filesystem request config fetcher: %v", err)
+		}
+	}
+
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, requestConfigs, accountConfigs)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}

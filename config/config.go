@@ -18,6 +18,7 @@ type Configuration struct {
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
+	ORTB2Config     OpenRTB2Config     `mapstructure:"ortb2_config"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
 }
 
@@ -56,6 +57,12 @@ type DataCache struct {
 	Password   string `mapstructure:"password"`
 	CacheSize  int    `mapstructure:"cache_size"`
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
+}
+
+// OpenRTB2Config configures the backend used to store Account and Request config data.
+type OpenRTB2Config struct {
+	// Files should be true if we should load from the filesystem, and false if openrtb2 configs are not supported.
+	Files bool `mapstructure:"files"`
 }
 
 type Cache struct {

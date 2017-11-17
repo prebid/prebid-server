@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/http"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/cache/emptycache"
 )
 
 // dummyServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -49,7 +50,7 @@ func newDummyRequest() *http.Request {
 func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client()), &bidderParamValidator{})
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client()), &bidderParamValidator{}, emptycache.EmptyFetcher(), emptycache.EmptyFetcher())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

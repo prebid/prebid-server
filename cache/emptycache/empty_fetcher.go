@@ -1,4 +1,4 @@
-package filecachetest
+package emptycache
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 
 // EmptyFetcher is a nil-object which doesn't support any server-side bid requests.
 func EmptyFetcher() cache.ConfigFetcher {
-	return &instance
+	return & instance
 }
 
 type emptyFetcher struct {}

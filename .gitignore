@@ -7,6 +7,7 @@
 _obj
 _test
 .cover/
+openrtb2_configs
 
 # Architecture specific extensions/prefixes
 *.[568vq]

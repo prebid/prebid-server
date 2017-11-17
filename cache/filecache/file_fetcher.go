@@ -41,5 +41,8 @@ func (fetcher *eagerFetcher) GetConfigs(ids []string) (map[string]json.RawMessag
 			errors = append(errors, fmt.Errorf("No config found for id: %s", id))
 		}
 	}
+
+	// Even though there may be many other IDs here, this still technically obeys
+	// the interface contract. No need to do a partial copy
 	return fetcher.configs, errors
 }
