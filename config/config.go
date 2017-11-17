@@ -19,26 +19,26 @@ type Configuration struct {
 	Metrics         Metrics            `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
-	OptOutCookie    Cookie             `mapstructure:"optout_cookie"`
 }
 
 type HostCookie struct {
-	Domain     string `mapstructure:"domain"`
-	Family     string `mapstructure:"family"`
-	CookieName string `mapstructure:"cookie_name"`
-	OptOutURL  string `mapstructure:"opt_out_url"`
-	OptInURL   string `mapstructure:"opt_in_url"`
+	Domain       string `mapstructure:"domain"`
+	Family       string `mapstructure:"family"`
+	CookieName   string `mapstructure:"cookie_name"`
+	OptOutURL    string `mapstructure:"opt_out_url"`
+	OptInURL     string `mapstructure:"opt_in_url"`
+	OptOutCookie Cookie `mapstructure:"optout_cookie"`
 }
 
 type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	XAPI        struct {
+	XAPI struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
-	} `mapstructure:"xapi"` // needed for Rubicon
+	} `mapstructure:"xapi"`                         // needed for Rubicon
 }
 
 type Metrics struct {
