@@ -1,5 +1,5 @@
-hash: a2b11928aedf45e80e896b5a445c779619583ba44cdc0c5ffce0b167ea2e0e43
-updated: 2017-11-07T14:18:38.797738917-05:00
+hash: a5c067437461b903a90640789c8171d53f63614cc00efbf25fb33c6c424e558c
+updated: 2017-11-17T10:46:43.065015548-05:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -7,6 +7,8 @@ imports:
   version: 14c0a766933d517675369dae6f551f5c1a10f0d8
 - name: github.com/coocood/freecache
   version: a47e26eb67ac2657e4b5a62b1975bb2b65e0b8b3
+- name: github.com/evanphx/json-patch
+  version: 944e07253867aacae43c04b2e6a239005443f33a
 - name: github.com/fsnotify/fsnotify
   version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/golang/glog
