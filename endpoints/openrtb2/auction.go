@@ -11,14 +11,15 @@ import (
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
-	"github.com/prebid/prebid-server_real/cache"
+	"github.com/prebid/prebid-server/cache"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
-	if ex == nil || validator == nil {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount cache.ConfigFetcher, requestsById cache.ConfigFetcher) (httprouter.Handle, error) {
+	if ex == nil || validator == nil || requestsByAccount == nil || requestsById == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
-	return httprouter.Handle((&endpointDeps{ex, validator}).Auction), nil
+
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsByAccount, requestsById}).Auction), nil
 }
 
 type endpointDeps struct {

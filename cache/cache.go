@@ -47,5 +47,7 @@ type ConfigService interface {
 type ConfigFetcher interface {
 	// GetConfigs fetches configs for the given IDs.
 	// The returned map will have keys for every ID, unless errors exist.
+	//
+	// The returned objects should only be read from--never written to.
 	GetConfigs(ids []string) (map[string]json.RawMessage, []error)
 }
