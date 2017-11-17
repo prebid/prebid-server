@@ -1,4 +1,4 @@
-package filecache
+package file_fetcher
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestFileFetcher(t *testing.T) {
-	fetcher, err := NewEagerConfigFetcher("./filecachetest")
+	fetcher, err := NewEagerConfigFetcher("./test")
 	if err != nil {
 		t.Errorf("Failed to create a ConfigFetcher: %v", err)
 	}

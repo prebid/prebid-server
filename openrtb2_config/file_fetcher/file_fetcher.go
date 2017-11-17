@@ -1,11 +1,11 @@
-package filecache
+package file_fetcher
 
 import (
-	"github.com/prebid/prebid-server/cache"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"github.com/prebid/prebid-server/openrtb2_config"
 )
 
 // NewEagerConfigFetcher gets a ConfigFetcher which reads configs from local files.
@@ -14,7 +14,7 @@ import (
 //
 // This expects each file in the directory to be named "{config_id}.json".
 // For example, a file at "directory/23.json" will store the data for the config with ID == "23".
-func NewEagerConfigFetcher(directory string) (cache.ConfigFetcher, error) {
+func NewEagerConfigFetcher(directory string) (openrtb2_config.ConfigFetcher, error) {
 	fileInfos, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err

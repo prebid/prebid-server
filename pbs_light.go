@@ -40,12 +40,13 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/cache/emptycache"
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
+	"github.com/prebid/prebid-server/openrtb2_config/file_fetcher"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
@@ -824,14 +825,14 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	accountConfigs := emptycache.EmptyFetcher()
-	requestConfigs := emptycache.EmptyFetcher()
+	accountConfigs := empty_fetcher.EmptyFetcher()
+	requestConfigs := empty_fetcher.EmptyFetcher()
 	if cfg.ORTB2Config.Files {
-		accountConfigs, err = filecache.NewEagerConfigFetcher("./openrtb2_configs/for_accounts")
+		accountConfigs, err = file_fetcher.NewEagerConfigFetcher("./openrtb2_configs/for_accounts")
 		if err != nil {
 			glog.Fatalf("Failed to make filesystem account config fetcher: %v", err)
 		}
-		requestConfigs, err = filecache.NewEagerConfigFetcher("./openrtb2_configs/for_requests")
+		requestConfigs, err = file_fetcher.NewEagerConfigFetcher("./openrtb2_configs/for_requests")
 		if err != nil {
 			glog.Fatalf("Failed to make filesystem request config fetcher: %v", err)
 		}

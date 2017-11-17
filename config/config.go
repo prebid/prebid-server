@@ -62,7 +62,7 @@ type DataCache struct {
 // OpenRTB2Config configures the backend used to store Account and Request config data.
 type OpenRTB2Config struct {
 	// Files should be true if we should load from the filesystem, and false if openrtb2 configs are not supported.
-	Files bool `mapstructure:"files"`
+	Files bool `mapstructure:"filesystem"`
 }
 
 type Cache struct {
