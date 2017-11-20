@@ -463,6 +463,34 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	}
 }
 
+func TestNewFilesFetcher(t *testing.T) {
+	accountFetcher, requestFetcher, err := NewFetcher(&config.OpenRTB2Config{
+		Files: true,
+	})
+	if err != nil {
+		t.Errorf("Error constructing file fetchers. %v", err)
+	}
+	if accountFetcher == nil || requestFetcher == nil {
+		t.Errorf("Both the file fetchers should be non-nil.")
+	}
+}
+
+func TestNewEmptyFetcher(t *testing.T) {
+	accountFetcher, requestFetcher, err := NewFetcher(&config.OpenRTB2Config{})
+	if err != nil {
+		t.Errorf("Error constructing fetchers. %v", err)
+	}
+	if accountFetcher == nil || requestFetcher == nil {
+		t.Errorf("Both the fetchers should be non-nil for an empty config.")
+	}
+	if _, errs := accountFetcher.GetConfigs([]string{"some-id"}); len(errs) != 1 {
+		t.Errorf("The returned accountFetcher should fail on any ID.")
+	}
+	if _, errs := requestFetcher.GetConfigs([]string{"some-id"}); len(errs) != 1 {
+		t.Errorf("The returned requestFetcher should fail on any ID.")
+	}
+}
+
 type testValidator struct{}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {

@@ -24,7 +24,7 @@ type BidCache struct {
 
 // internal protocol objects
 type putObject struct {
-	Type  string  `json:"type"`
+	Type  string    `json:"type"`
 	Value *BidCache `json:"value"`
 }
 

@@ -45,6 +45,10 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/openrtb2_config"
+	"github.com/prebid/prebid-server/openrtb2_config/db_fetcher"
+	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
+	"github.com/prebid/prebid-server/openrtb2_config/file_fetcher"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
@@ -709,7 +713,7 @@ func init() {
 func main() {
 	cfg, err := config.New()
 	if err != nil {
-		glog.Errorf("Viper was unable to read configurations: %v", err)
+		glog.Fatalf("Viper was unable to read configurations: %v", err)
 	}
 
 	if err := serve(cfg); err != nil {
@@ -823,7 +827,12 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator)
+	accountConfigs, requestConfigs, err := NewFetcher(&cfg.ORTB2Config)
+	if err != nil {
+		glog.Fatalf("Failed to initialize config fetchers. %v", err)
+	}
+
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, requestConfigs, accountConfigs)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -894,4 +903,23 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	return nil
+}
+
+// NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
+// If it can't generate both of those from the given config, then an error will be returned.
+//
+// This function assumes that the argument config has been validated.
+func NewFetcher(cfg *config.OpenRTB2Config) (accountFetcher openrtb2_config.ConfigFetcher, requestFetcher openrtb2_config.ConfigFetcher, err error) {
+	if cfg.Files {
+		accountFetcher, err = file_fetcher.NewEagerConfigFetcher("./openrtb2_configs/for_accounts")
+		requestFetcher, err = file_fetcher.NewEagerConfigFetcher("./openrtb2_configs/for_requests")
+	} else if cfg.Postgres != nil {
+		accountFetcher, err = db_fetcher.NewPostgres(cfg.Postgres)
+		requestFetcher = accountFetcher
+	} else {
+		accountFetcher = empty_fetcher.EmptyFetcher()
+		requestFetcher = empty_fetcher.EmptyFetcher()
+	}
+
+	return
 }

@@ -11,11 +11,11 @@ import (
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
-	"github.com/prebid/prebid-server/cache"
 	"github.com/evanphx/json-patch"
+	"github.com/prebid/prebid-server/openrtb2_config"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount cache.ConfigFetcher, requestsById cache.ConfigFetcher) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount openrtb2_config.ConfigFetcher, requestsById openrtb2_config.ConfigFetcher) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsByAccount == nil || requestsById == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
@@ -26,8 +26,8 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 type endpointDeps struct {
 	ex exchange.Exchange
 	paramsValidator openrtb_ext.BidderParamValidator
-	accountFetcher cache.ConfigFetcher
-	configFetcher cache.ConfigFetcher
+	accountFetcher openrtb2_config.ConfigFetcher
+	configFetcher openrtb2_config.ConfigFetcher
 }
 
 // Slimmed down Imp.Ext object to just pull the config ID

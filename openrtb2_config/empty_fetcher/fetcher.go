@@ -1,13 +1,13 @@
-package filecachetest
+package empty_fetcher
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/openrtb2_config"
 )
 
 // EmptyFetcher is a nil-object which doesn't support any server-side bid requests.
-func EmptyFetcher() cache.ConfigFetcher {
+func EmptyFetcher() openrtb2_config.ConfigFetcher {
 	return &instance
 }
 
