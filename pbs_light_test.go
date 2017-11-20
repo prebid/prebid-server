@@ -26,7 +26,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	setupExchanges(cfg)
 	router := httprouter.New()
 
-	router.POST("/cookie_sync", (&CookieSyncDeps{&cfg.HostCookie.OptOutCookie}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -71,7 +71,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 	setupExchanges(cfg)
 	router := httprouter.New()
-	router.POST("/cookie_sync", (&CookieSyncDeps{&cfg.HostCookie.OptOutCookie}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
@@ -163,7 +163,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs, &config.Cookie{})
+	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs)
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}

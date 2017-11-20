@@ -680,7 +680,7 @@ func init() {
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/config")
 
-	viper.SetDefault("external_url", "http://localhost.rubiconproject.com:8000")
+	viper.SetDefault("external_url", "http://localhost:8000")
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)

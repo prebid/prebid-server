@@ -654,7 +654,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	_, err = pbs.ParsePBSRequest(httpReq, cacheClient, &hcs, &config.Cookie{})
+	_, err = pbs.ParsePBSRequest(httpReq, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

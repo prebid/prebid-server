@@ -214,7 +214,7 @@ func GenerateBidRequestForTestData(fbdata bidInfo, url string) (*pbs.PBSRequest,
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs, &config.Cookie{})
+	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
 	return pbReq, err
 }
 
