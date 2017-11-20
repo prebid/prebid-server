@@ -179,7 +179,7 @@ type cookieSyncResponse struct {
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -246,6 +246,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
+
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /auction request: %v", err)
@@ -812,11 +813,12 @@ func serve(cfg *config.Configuration) error {
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	hostCookieSettings = pbs.HostCookieSettings{
-		Domain:     cfg.HostCookie.Domain,
-		Family:     cfg.HostCookie.Family,
-		CookieName: cfg.HostCookie.CookieName,
-		OptOutURL:  cfg.HostCookie.OptOutURL,
-		OptInURL:   cfg.HostCookie.OptInURL,
+		Domain:       cfg.HostCookie.Domain,
+		Family:       cfg.HostCookie.Family,
+		CookieName:   cfg.HostCookie.CookieName,
+		OptOutURL:    cfg.HostCookie.OptOutURL,
+		OptInURL:     cfg.HostCookie.OptInURL,
+		OptOutCookie: cfg.HostCookie.OptOutCookie,
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{

@@ -25,6 +25,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	}
 	setupExchanges(cfg)
 	router := httprouter.New()
+
 	router.POST("/cookie_sync", cookieSync)
 
 	csreq := cookieSyncRequest{
@@ -84,7 +85,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
 
-	pcs := pbs.ParsePBSCookieFromRequest(req)
+	pcs := pbs.ParsePBSCookieFromRequest(req, &cfg.HostCookie.OptOutCookie)
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
 	req.AddCookie(pcs.ToHTTPCookie())
