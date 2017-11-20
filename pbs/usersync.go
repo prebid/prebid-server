@@ -46,11 +46,12 @@ type PBSCookie struct {
 }
 
 type HostCookieSettings struct {
-	Domain     string
-	Family     string
-	CookieName string
-	OptOutURL  string
-	OptInURL   string
+	Domain       string
+	Family       string
+	CookieName   string
+	OptOutURL    string
+	OptInURL     string
+	OptOutCookie config.Cookie
 }
 
 // uidWithExpiry bundles the UID with an Expiration date.
@@ -63,7 +64,6 @@ type uidWithExpiry struct {
 }
 
 type UserSyncDeps struct {
-	OptOutCookie       config.Cookie
 	ExternalUrl        string
 	RecaptchaSecret    string
 	OptOutUrl          string
@@ -278,7 +278,7 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParsePBSCookieFromRequest(r, &deps.OptOutCookie)
+	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	json.NewEncoder(w).Encode(pc)
 	return
@@ -299,7 +299,7 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := ParsePBSCookieFromRequest(r, &deps.OptOutCookie)
+	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
@@ -377,7 +377,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := ParsePBSCookieFromRequest(r, &deps.OptOutCookie)
+	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	pc.SetPreference(optout == "")
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)

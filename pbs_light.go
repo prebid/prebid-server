@@ -176,13 +176,9 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-type CookieSyncDeps struct {
-	OptOutCookie *config.Cookie
-}
-
-func (c *CookieSyncDeps) cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, c.OptOutCookie)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -248,7 +244,7 @@ func (deps *ConfigDeps) auction(w http.ResponseWriter, r *http.Request, _ httpro
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings, &deps.cfg.HostCookie.OptOutCookie)
+	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
 	pbs_req.Cookie.SetCookieOnResponse(w, hostCookieSettings.Domain)
 
 	if err != nil {
@@ -684,7 +680,7 @@ func init() {
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/config")
 
-	viper.SetDefault("external_url", "http://localhost:8000")
+	viper.SetDefault("external_url", "http://localhost.rubiconproject.com:8000")
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
@@ -806,7 +802,7 @@ func serve(cfg *config.Configuration) error {
 	router := httprouter.New()
 	router.POST("/auction", (&ConfigDeps{cfg}).auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
-	router.POST("/cookie_sync", (&CookieSyncDeps{&cfg.HostCookie.OptOutCookie}).cookieSync)
+	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
@@ -814,11 +810,12 @@ func serve(cfg *config.Configuration) error {
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	hostCookieSettings = pbs.HostCookieSettings{
-		Domain:     cfg.HostCookie.Domain,
-		Family:     cfg.HostCookie.Family,
-		CookieName: cfg.HostCookie.CookieName,
-		OptOutURL:  cfg.HostCookie.OptOutURL,
-		OptInURL:   cfg.HostCookie.OptInURL,
+		Domain:       cfg.HostCookie.Domain,
+		Family:       cfg.HostCookie.Family,
+		CookieName:   cfg.HostCookie.CookieName,
+		OptOutURL:    cfg.HostCookie.OptOutURL,
+		OptInURL:     cfg.HostCookie.OptInURL,
+		OptOutCookie: cfg.HostCookie.OptOutCookie,
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{
