@@ -218,7 +218,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 				t.Errorf("hb_size key was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb"] != "2.00" {
-				t.Errorf("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+				t.Error("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
 			}
 			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
 				t.Errorf("hb_cache_id key was not parsed correctly")
@@ -246,7 +246,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		}
 		if bid.BidderCode == "nosizebidder" {
 			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
-				t.Errorf("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+				t.Error("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
 			}
 		}
 	}
