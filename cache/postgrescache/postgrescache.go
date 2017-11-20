@@ -11,6 +11,7 @@ import (
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/cache"
+	"github.com/prebid/prebid-server/pbs/buckets"
 )
 
 type PostgresConfig struct {
@@ -130,7 +131,7 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 
 	account.ID = id
 	if priceGranularity.Valid {
-		account.PriceGranularity = priceGranularity.String
+		account.PriceGranularity = buckets.PriceGranularity(priceGranularity.String)
 	}
 
 	buf := bytes.Buffer{}
