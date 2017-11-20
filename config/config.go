@@ -1,9 +1,12 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/viper"
 	"strings"
+	"bytes"
+	"strconv"
 )
 
 // Configuration
@@ -20,6 +23,10 @@ type Configuration struct {
 	DataCache       DataCache          `mapstructure:"datacache"`
 	ORTB2Config     OpenRTB2Config     `mapstructure:"ortb2_config"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
+}
+
+func (cfg *Configuration) validate() error {
+	return cfg.ORTB2Config.validate()
 }
 
 type HostCookie struct {
@@ -61,8 +68,55 @@ type DataCache struct {
 
 // OpenRTB2Config configures the backend used to store Account and Request config data.
 type OpenRTB2Config struct {
-	// Files should be true if we should load from the filesystem, and false if openrtb2 configs are not supported.
+	// Files should be true if OpenRTB configs should be loaded from the filesystem
 	Files bool `mapstructure:"filesystem"`
+	// Postgres should be non-nil if OpenRTB configs should be loaded from a Postgres database
+	Postgres *PostgresConfig `mapstructure:"postgres"`
+}
+
+func (cfg *OpenRTB2Config) validate() error {
+	if cfg.Files && cfg.Postgres != nil {
+		return errors.New("Only one of [filesystem, postgres] can be used at the same time.")
+	}
+
+	return nil
+}
+
+type PostgresConfig struct {
+	Database string `mapstructure:"dbname"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+
+	// Query is the Postgres Query which can be used to fetch configs from the database.
+	//
+	// In the simplest case, Prebid Server expects this to be something like:
+	//   SELECT id, config FROM table WHERE id in %ID_LIST%
+	//
+	// The MakeQuery function will transform this query into:
+	//   SELECT id, config FROM table WHERE id in ($1, $2, $3, ...)
+	//
+	// ... where the number of "$x" args depends on how many configs need to be fetched in one request.
+	Query string `mapstructure:"query"`
+}
+
+// MakeQuery gets a config-fetching query which can be used to fetch numConfigs configs at once.
+func (cfg *PostgresConfig) MakeQuery(numConfigs int) (string, error) {
+	if numConfigs < 1 {
+		return "", fmt.Errorf("can't generate query to fetch %d configs", numConfigs)
+	}
+	final := bytes.NewBuffer(make([]byte, 0, 2 + 4 * numConfigs))
+	final.WriteString("(")
+	for i := 1; i < numConfigs; i++ {
+		final.WriteString("$")
+		final.WriteString(strconv.Itoa(i))
+		final.WriteString(", ")
+	}
+	final.WriteString("$")
+	final.WriteString(strconv.Itoa(numConfigs))
+	final.WriteString(")")
+	return strings.Replace(cfg.Query, "%ID_LIST%", final.String(), 1), nil
 }
 
 type Cache struct {
@@ -77,7 +131,7 @@ func New() (*Configuration, error) {
 	if err := viper.Unmarshal(&c); err != nil {
 		return nil, err
 	}
-	return &c, nil
+	return &c, c.validate()
 }
 
 //Allows for protocol relative URL if scheme is empty
