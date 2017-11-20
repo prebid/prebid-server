@@ -226,11 +226,11 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	enc.Encode(csResp)
 }
 
-type ConfigDeps struct {
+type auctionDeps struct {
 	cfg *config.Configuration
 }
 
-func (deps *ConfigDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
 	mRequestMeter.Mark(1)
@@ -799,7 +799,7 @@ func serve(cfg *config.Configuration) error {
 	})()
 
 	router := httprouter.New()
-	router.POST("/auction", (&ConfigDeps{cfg}).auction)
+	router.POST("/auction", (&auctionDeps{cfg}).auction)
 	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
