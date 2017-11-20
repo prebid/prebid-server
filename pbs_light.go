@@ -245,7 +245,6 @@ func (deps *ConfigDeps) auction(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
-	pbs_req.Cookie.SetCookieOnResponse(w, hostCookieSettings.Domain)
 
 	if err != nil {
 		if glog.V(2) {
