@@ -56,7 +56,7 @@ func (flag *FlexBool) ToInt8() int8 {
 
 // Name - export adapter name
 func (a *ConversantAdapter) Name() string {
-	return "Conversant"
+	return "conversant"
 }
 
 // Corresponds to the bidder name in cookies and requests
@@ -96,7 +96,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	// Create a map of impression objects for both request creation
 	// and response parsing.
 
-	impMap := make(map[string]*openrtb.Imp)
+	impMap := make(map[string]*openrtb.Imp, len(cnvrReq.Imp))
 	for idx, _ := range cnvrReq.Imp {
 		impMap[cnvrReq.Imp[idx].ID] = &cnvrReq.Imp[idx]
 	}
@@ -212,6 +212,8 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
 	if req.IsDebug {
 		debug.StatusCode = resp.StatusCode
 	}
@@ -220,7 +222,6 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		return nil, nil
 	}
 
-	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
