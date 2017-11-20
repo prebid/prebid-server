@@ -11,8 +11,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"bytes"
 	"errors"
-	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/filecache/filecachetest"
+	"github.com/evanphx/json-patch"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
@@ -85,6 +85,38 @@ func TestExchangeError(t *testing.T) {
 
 	if recorder.Code != http.StatusInternalServerError {
 		t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusInternalServerError, recorder.Code, validRequests[0])
+	}
+}
+
+// Test the config cache functionality
+func TestConfigCache(t *testing.T) {
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockConfigFetcher{}, &mockConfigFetcher{}}
+
+	for i, requestData := range testRequestConfigs {
+		Request := openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &Request)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+		errList := edep.processConfigs(&Request)
+		if len(errList) != 0 {
+			for _, err := range errList {
+				if err != nil {
+					t.Errorf("processConfigs Error: %s", err.Error())
+				} else {
+					t.Error("processConfigs Error: recieved nil error")
+				}
+			}
+		}
+		expectJson := json.RawMessage(testFinalRequestConfigs[i])
+		requestJson, err := json.Marshal(Request)
+		if err != nil {
+			t.Errorf("Error mashalling bid request: %s", err.Error())
+		}
+		if ! jsonpatch.Equal(requestJson, expectJson) {
+			t.Errorf("Error in processConfigs, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
+		}
+
 	}
 }
 
@@ -290,7 +322,7 @@ var invalidRequests = []string{
 
 // Test stored configs
 var testConfigs = map[string]json.RawMessage{
-	"1": 	json.RawMessage(`{
+	"1": json.RawMessage(`{
 			"id": "adUnit1",
 			"ext": {
 				"appnexus": {
@@ -303,6 +335,127 @@ var testConfigs = map[string]json.RawMessage{
 				}
 			}
 			}`),
+			"": json.RawMessage(""),
+			}
+
+// Incoming requests with configs
+var testRequestConfigs = []string{
+	`{
+  "id": "ThisID",
+  "imp": [
+    {
+      "ext": {
+        "prebid": {
+          "managedconfig": "1"
+        }
+      }
+    }
+  ],
+  "ext": {
+    "prebid": {
+      "cache": {
+        "markup": 1
+      },
+      "targeting": {
+        "lengthmax": 20
+      }
+    }
+  }
+}`,
+	`{
+  "id": "ThisID",
+  "imp": [
+    {
+	  "id": "adUnit2",
+      "ext": {
+        "prebid": {
+          "managedconfig": "1"
+		},
+		"appnexus": {
+			"placementId": "def",
+			"trafficSourceCode": "mysite.com",
+      		"reserve": null
+    	},
+    	"rubicon": null
+      }
+    }
+  ],
+  "ext": {
+    "prebid": {
+      "cache": {
+        "markup": 1
+      },
+      "targeting": {
+        "lengthmax": 20
+      }
+    }
+  }
+}`,
+}
+
+// The expected requests after config processing
+var testFinalRequestConfigs = []string {
+	`{
+"id": "ThisID",
+"imp": [
+	{
+	"id": "adUnit1",
+		"ext": {
+			"appnexus": {
+				"placementId": "abc",
+				"position": "above",
+				"reserve": 0.35
+			},
+			"rubicon": {
+				"accountId": "abc"
+			},
+			"prebid": {
+		  		"managedconfig": "1"
+			}
+  		}
+	}
+],
+"ext": {
+	"prebid": {
+  		"cache": {
+			"markup": 1
+  		},
+  		"targeting": {
+			"lengthmax": 20
+  		}
+	}
+}
+}`,
+	`{
+  "id": "ThisID",
+  "imp": [
+    {
+	  "id": "adUnit2",
+      "ext": {
+        "prebid": {
+          "managedconfig": "1"
+		},
+		"appnexus": {
+			"placementId": "def",
+			"position": "above",
+      		"trafficSourceCode": "mysite.com"
+        }
+      }
+    }
+  ],
+  "ext": {
+    "prebid": {
+      "cache": {
+        "markup": 1
+      },
+      "targeting": {
+        "lengthmax": 20
+      }
+    }
+  }
+}`,
+
+
 }
 
 type mockConfigFetcher struct {
