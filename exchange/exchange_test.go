@@ -10,7 +10,7 @@ import (
 	"time"
 	"encoding/json"
 	"errors"
-	openrtb_ext2 "github.com/prebid/prebid-server_real/openrtb_ext"
+	openrtb_ext2 "github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -47,7 +47,7 @@ func TestHoldAuction(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	e := NewDummyExchange(server.Client()).(*exchange)
+	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter))
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter))
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
@@ -109,13 +109,13 @@ func TestGetAllBids(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	e := NewDummyExchange(server.Client()).(*exchange)
+	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter))
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter))
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
 
 	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
-	adapterBids, adapterExtra := e.GetAllBids(ctx, e.adapters, cleanRequests)
+	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests)
 
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
@@ -135,7 +135,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.GetAllBids(ctx, e.adapters, cleanRequests)
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -152,7 +152,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.GetAllBids(ctx, e.adapters, cleanRequests)
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests)
 
 	if len(adapterExtra[BidderDummy2].Errors) !=1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -170,7 +170,7 @@ func TestBuildBidResponse(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	e := NewDummyExchange(server.Client()).(*exchange)
+	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter))
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter))
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter))
@@ -210,7 +210,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors:convertErr2Str(errs3)}
 
 	errList := make([]error, 0, 1)
-	bidResponse, err := e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err := e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -269,7 +269,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse, err = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -288,7 +288,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse, err = e.BuildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -328,7 +328,7 @@ const (
 	BidderDummy3 openrtb_ext.BidderName = "dummy3"
 )
 // Tester is responsible for filling bid results into the adapters
-func NewDummyExchange(client *http.Client) Exchange {
+func NewDummyExchange(client *http.Client) *exchange {
 	e := new(exchange)
 	a := new(mockAdapter)
 	a.errs = make([]error, 0, 5)
@@ -480,13 +480,4 @@ func convertErr2Str(e []error) []string {
 		s[i] = e[i].Error()
 	}
 	return s
-}
-
-// errorString is a trivial implementation of error.
-type errorString struct {
-	s string
-}
-
-func (e *errorString) Error() string {
-	return e.s
 }

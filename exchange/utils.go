@@ -1,14 +1,15 @@
-package openrtb_ext
+package exchange
 
 import (
     "github.com/mxmCherry/openrtb"
     "encoding/json"
     "math/rand"
     "fmt"
+    "github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
-func RandomizeList(list []BidderName) {
+func randomizeList(list []openrtb_ext.BidderName) {
     l := len(list)
     perm := rand.Perm(l)
     var j int
@@ -29,13 +30,13 @@ func RandomizeList(list []BidderName) {
 // before submitting.
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) (map[BidderName]*openrtb.BidRequest, []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
     // This is the clean array of openrtb requests we will be returning
-    cleanReqs := map[BidderName]*openrtb.BidRequest{}
+    cleanReqs := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(adapters))
     errList := make([]error, 0, 1)
 
     // Decode the Imp extensions once to save time. We store the results here
-    imp_exts := make([]map[string]interface{}, len(orig.Imp))
+    imp_exts := make([]map[string]openrtb.RawJSON, len(orig.Imp))
     // Loop over every impression in the request
     for i := 0 ; i < len(orig.Imp) ; i++ {
         // Unpack each set of extensions found in the Imp array
@@ -57,7 +58,7 @@ func CleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []BidderName) (map[
             // Don't do anything if the current bidder's field is not present.
             if val, ok := imp_exts[j][bn]; ok {
                 // Start with a new, empty unpacked extention
-                newExts := map[string]interface{}{}
+                newExts := make(map[string]openrtb.RawJSON, len(orig.Imp))
                 // Need to do some consistency checking to verify these fields exist. Especially the adapters one.
                 if pb, ok := imp_exts[j]["prebid"]; ok {
                     newExts["prebid"] = pb

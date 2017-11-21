@@ -1,25 +1,26 @@
-package openrtb_ext
+package exchange
 
 import (
 	"testing"
 	"github.com/mxmCherry/openrtb"
 	"encoding/json"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestRandomizeList(t *testing.T) {
-	adapters := make([]BidderName, 3)
-	adapters[0] = BidderName("dummy")
-	adapters[1] = BidderName("dummy2")
-	adapters[2] = BidderName("dummy3")
+	adapters := make([]openrtb_ext.BidderName, 3)
+	adapters[0] = openrtb_ext.BidderName("dummy")
+	adapters[1] = openrtb_ext.BidderName("dummy2")
+	adapters[2] = openrtb_ext.BidderName("dummy3")
 
-	RandomizeList(adapters)
+	randomizeList(adapters)
 
 	if len(adapters) != 3 {
 		t.Errorf("RondomizeList, expected a list of 3, found %d", len(adapters))
 	}
 
 	adapters = adapters[0:1]
-	RandomizeList(adapters)
+	randomizeList(adapters)
 
 	if len(adapters) != 1 {
 		t.Errorf("RondomizeList, expected a list of 1, found %d", len(adapters))
@@ -52,12 +53,12 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
 
-	adapters := make([]BidderName, 3)
-	adapters[0] = BidderName("dummy")
-	adapters[1] = BidderName("dummy2")
-	adapters[2] = BidderName("dummy3")
+	adapters := make([]openrtb_ext.BidderName, 3)
+	adapters[0] = openrtb_ext.BidderName("dummy")
+	adapters[1] = openrtb_ext.BidderName("dummy2")
+	adapters[2] = openrtb_ext.BidderName("dummy3")
 
-	cleanRequests, errList := CleanOpenRTBRequests( &bidRequest, adapters)
+	cleanRequests, errList := cleanOpenRTBRequests( &bidRequest, adapters)
 
 	if len(errList) > 0 {
 		for _, e := range errList {
@@ -69,7 +70,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 	var cleanImpExt map[string]map[string]string
-	err = json.Unmarshal(cleanRequests[BidderName("dummy")].Imp[0].Ext, &cleanImpExt)
+	err = json.Unmarshal(cleanRequests[openrtb_ext.BidderName("dummy")].Imp[0].Ext, &cleanImpExt)
 	if err != nil {
 		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
 	}
@@ -84,7 +85,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	if ok {
 		t.Error("CleanOpenRTBRequests: dummy adapter got dummy2 parameter")
 	}
-	err = json.Unmarshal(cleanRequests[BidderName("dummy3")].Imp[0].Ext, &cleanImpExt)
+	err = json.Unmarshal(cleanRequests[openrtb_ext.BidderName("dummy3")].Imp[0].Ext, &cleanImpExt)
 	if err != nil {
 		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
 	}
