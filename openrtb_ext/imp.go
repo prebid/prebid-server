@@ -8,5 +8,10 @@ type ExtImp struct {
 
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
-	Config string `json:"managedconfig"`
+	Config *ExtConfig `json:"managedconfig"`
+}
+
+// ExtConfig defines the contract for bidrequest.imp[i].ext.prebid.managedconfig
+type ExtConfig struct {
+	ID string `json:"id"`
 }

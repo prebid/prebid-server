@@ -32,8 +32,9 @@ type endpointDeps struct {
 
 // Slimmed down Imp.Ext object to just pull the config ID
 type impExtConfig struct {
-	Prebid struct { Managedconfig string `json:"managedconfig"`} `json:"prebid"`
+	Prebid struct { Managedconfig impId `json:"managedconfig"`} `json:"prebid"`
 }
+
 // Slimmed down to extract just the ID
 type impId struct {
 	ID string `json:"id"`
@@ -295,10 +296,10 @@ func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []stri
 		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
 			eConf := &impExtConfig{}
 			err := json.Unmarshal(imps[i].Ext, eConf)
-			if err == nil && len(eConf.Prebid.Managedconfig) > 0 {
-				configIds[i] = eConf.Prebid.Managedconfig
-				shortIds = append(shortIds, eConf.Prebid.Managedconfig)
-			} else if len(eConf.Prebid.Managedconfig) > 0 {
+			if err == nil && len(eConf.Prebid.Managedconfig.ID) > 0 {
+				configIds[i] = eConf.Prebid.Managedconfig.ID
+				shortIds = append(shortIds, eConf.Prebid.Managedconfig.ID)
+			} else if len(eConf.Prebid.Managedconfig.ID) > 0 {
 				errList = append(errList, err)
 				configIds[i] = ""
 			}

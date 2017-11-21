@@ -346,7 +346,9 @@ var testRequestConfigs = []string{
     {
       "ext": {
         "prebid": {
-          "managedconfig": "1"
+          "managedconfig": {
+            "id": "1"
+          }
         }
       }
     }
@@ -369,14 +371,16 @@ var testRequestConfigs = []string{
 	  "id": "adUnit2",
       "ext": {
         "prebid": {
-          "managedconfig": "1"
-		},
-		"appnexus": {
-			"placementId": "def",
-			"trafficSourceCode": "mysite.com",
+          "managedconfig": {
+            "id": "1"
+          }
+		    },
+		    "appnexus": {
+			    "placementId": "def",
+			    "trafficSourceCode": "mysite.com",
       		"reserve": null
-    	},
-    	"rubicon": null
+        },
+        "rubicon": null
       }
     }
   ],
@@ -410,9 +414,11 @@ var testFinalRequestConfigs = []string {
 				"accountId": "abc"
 			},
 			"prebid": {
-		  		"managedconfig": "1"
+        "managedconfig": {
+            "id": "1"
+          }
 			}
-  		}
+    }
 	}
 ],
 "ext": {
@@ -433,7 +439,9 @@ var testFinalRequestConfigs = []string {
 	  "id": "adUnit2",
       "ext": {
         "prebid": {
-          "managedconfig": "1"
+          "managedconfig": {
+            "id": "1"
+          }
 		},
 		"appnexus": {
 			"placementId": "def",
