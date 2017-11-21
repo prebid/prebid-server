@@ -40,19 +40,14 @@ type impId struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	req, errL := deps.parseRequest(r)
+	req, ctx, cancel, errL := deps.parseRequest(r)
+	defer cancel() // Safe because parseRequest returns a no-op if there's nothing to cancel
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		return
-	}
-	ctx := context.Background()
-	cancel := func() { }
-	if req.TMax > 0 {
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
-		defer cancel()
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req)
@@ -72,32 +67,41 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	w.Write(responseBytes)
 }
 
-// parseRequest turns the HTTP request into an OpenRTB request.
+// parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
 //
-// This will return an error if the request couldn't be parsed, or if the request isn't valid according
-// to the OpenRTB 2.5 spec.
+//   - A context which times out appropriately, given the request.
+//   - A cancellation function which should be called if the auction finishes early.
 //
-// It will also return errors for some of the "strong recommendations" in the spec, as long as
-// the same request can be sent in a better way which agrees with the recommendations.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, []error) {
-	var ortbRequest openrtb.BidRequest
-	errList := make([]error, 1)
-	if err := json.NewDecoder(httpRequest.Body).Decode(&ortbRequest); err != nil {
-		errList[0] = err
-		return nil, errList
+// If the errors list is empty, then the returned request will be valid according to the OpenRTB 2.5 spec.
+// In case of "strong recommendations" in the spec, it tends to be restrictive. If a better workaround is
+// possible, it will return errors with messages that suggest improvements.
+//
+// If the errors list has at least one element, then no guarantees are made about the returned request.
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, ctx context.Context, cancel func(), errs []error) {
+	req = &openrtb.BidRequest{}
+	ctx = context.Background()
+	cancel = func() { }
+
+	if err := json.NewDecoder(httpRequest.Body).Decode(req); err != nil {
+		errs = []error{err}
+		return
+	}
+
+	if req.TMax > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
 	}
 
 	// Process any config directives in the impression objects.
-	if errL := deps.processConfigs(&ortbRequest); len(errL)>0 {
-		return nil, errL
+	if errL := deps.processConfigs(ctx, req); len(errL)>0 {
+		errs = errL
+		return
 	}
 
-	if err := deps.validateRequest(&ortbRequest); err != nil {
-		errList[0] = err
-		return nil, errList
+	if err := deps.validateRequest(req); err != nil {
+		errs = []error{err}
+		return
 	}
-
-	return &ortbRequest, nil
+	return
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
@@ -251,13 +255,13 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 }
 
 // Check the request for configs, patch in the stored config if found.
-func (deps *endpointDeps) processConfigs(request *openrtb.BidRequest) []error {
+func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.BidRequest) []error {
 	// Potentially handle Request level configs.
 
 	// Pull the Imp configs.
 	configIds, shortIds, errList := deps.findImpConfigIds(request.Imp)
 
-	configs, errL := deps.configFetcher.GetConfigs(shortIds)
+	configs, errL := deps.configFetcher.GetConfigs(ctx, shortIds)
 	if len(errL) > 0 {
 		errList = append(errList, errL...)
 	}

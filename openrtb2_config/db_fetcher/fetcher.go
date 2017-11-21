@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"context"
 )
 
 // dbFetcher pulls Configs from a database. This should be instantiated through the NewPostgres() function.
@@ -12,7 +13,7 @@ type dbFetcher struct {
 	queryMaker func(int) (string, error)
 }
 
-func (fetcher *dbFetcher) GetConfigs(ids []string) (map[string]json.RawMessage, []error) {
+func (fetcher *dbFetcher) GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	if len(ids) < 1 {
 		return nil, nil
 	}
@@ -27,7 +28,7 @@ func (fetcher *dbFetcher) GetConfigs(ids []string) (map[string]json.RawMessage, 
 		idInterfaces[i] = ids[i]
 	}
 
-	rows, err := fetcher.db.Query(query, idInterfaces...)
+	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
 	if err != nil {
 		return nil, []error{err}
 	}

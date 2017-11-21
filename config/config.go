@@ -1,12 +1,12 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
-	"strings"
-	"bytes"
 	"strconv"
+	"strings"
 )
 
 // Configuration
@@ -106,7 +106,7 @@ func (cfg *PostgresConfig) MakeQuery(numConfigs int) (string, error) {
 	if numConfigs < 1 {
 		return "", fmt.Errorf("can't generate query to fetch %d configs", numConfigs)
 	}
-	final := bytes.NewBuffer(make([]byte, 0, 2 + 4 * numConfigs))
+	final := bytes.NewBuffer(make([]byte, 0, 2+4*numConfigs))
 	final.WriteString("(")
 	for i := 1; i < numConfigs; i++ {
 		final.WriteString("$")

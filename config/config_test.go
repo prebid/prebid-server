@@ -173,7 +173,7 @@ func TestValidConfig(t *testing.T) {
 func TestInvalidORTBConfig(t *testing.T) {
 	cfg := Configuration{
 		ORTB2Config: OpenRTB2Config{
-			Files: true,
+			Files:    true,
 			Postgres: &PostgresConfig{},
 		},
 	}
@@ -189,7 +189,7 @@ func TestQueryMaker(t *testing.T) {
 	}
 	madeQuery, err := cfg.MakeQuery(3)
 	if err != nil {
-		t.Errorf("Unexpected error making query: %v" ,err)
+		t.Errorf("Unexpected error making query: %v", err)
 	}
 	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3)" {
 		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
@@ -197,7 +197,7 @@ func TestQueryMaker(t *testing.T) {
 
 	madeQuery, err = cfg.MakeQuery(11)
 	if err != nil {
-		t.Errorf("Unexpected error making query: %v" ,err)
+		t.Errorf("Unexpected error making query: %v", err)
 	}
 	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)" {
 		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)

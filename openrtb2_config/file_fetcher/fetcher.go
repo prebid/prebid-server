@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"github.com/prebid/prebid-server/openrtb2_config"
+	"context"
 )
 
 // NewEagerConfigFetcher gets a ConfigFetcher which reads configs from local files.
@@ -36,7 +37,7 @@ type eagerFetcher struct {
 	configs map[string]json.RawMessage
 }
 
-func (fetcher *eagerFetcher) GetConfigs(ids []string) (map[string]json.RawMessage, []error) {
+func (fetcher *eagerFetcher) GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	var errors []error = nil
 	for _, id := range ids {
 		if _, ok := fetcher.configs[id]; !ok {

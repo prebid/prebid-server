@@ -98,7 +98,7 @@ func TestConfigCache(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error unmashalling bid request: %s", err.Error())
 		}
-		errList := edep.processConfigs(&Request)
+		errList := edep.processConfigs(context.Background(), &Request)
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -461,6 +461,6 @@ var testFinalRequestConfigs = []string {
 type mockConfigFetcher struct {
 }
 
-func (cf mockConfigFetcher) GetConfigs(ids []string) (map[string]json.RawMessage, []error) {
+func (cf mockConfigFetcher) GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	return testConfigs, nil
 }

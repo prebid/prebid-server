@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"database/sql/driver"
 	"errors"
+	"context"
 )
 
 func TestEmptyQuery(t *testing.T) {
@@ -21,7 +22,7 @@ func TestEmptyQuery(t *testing.T) {
 		db: db,
 		queryMaker: successfulQueryMaker(""),
 	}
-	configs, errs := fetcher.GetConfigs(nil)
+	configs, errs := fetcher.GetConfigs(context.Background(), nil)
 	if len(errs) != 0 {
 		t.Errorf("Unexpected errors: %v", errs)
 	}
@@ -42,7 +43,7 @@ func TestGoodResponse(t *testing.T) {
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.GetConfigs([]string{"config-id"})
+	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 0, errs)
@@ -62,7 +63,7 @@ func TestPartialResponse(t *testing.T) {
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.GetConfigs([]string{"config-id", "config-id-2"})
+	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id", "config-id-2"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 1, errs)
@@ -81,7 +82,7 @@ func TestEmptyResponse(t *testing.T) {
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.GetConfigs([]string{"config-id", "config-id-2"})
+	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id", "config-id-2"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 2, errs)
@@ -95,7 +96,7 @@ func TestQueryMakerError(t *testing.T) {
 		queryMaker: failedQueryMaker,
 	}
 
-	cfgs, errs := fetcher.GetConfigs([]string{"config-id"})
+	cfgs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 0, cfgs)
 }
@@ -114,7 +115,7 @@ func TestDatabaseError(t *testing.T) {
 		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?, ?)"),
 	}
 
-	cfgs, errs := fetcher.GetConfigs([]string{"config-id"})
+	cfgs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 0, cfgs)
 }

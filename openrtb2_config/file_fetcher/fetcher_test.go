@@ -3,6 +3,7 @@ package file_fetcher
 import (
 	"testing"
 	"encoding/json"
+	"context"
 )
 
 func TestFileFetcher(t *testing.T) {
@@ -11,7 +12,7 @@ func TestFileFetcher(t *testing.T) {
 		t.Errorf("Failed to create a ConfigFetcher: %v", err)
 	}
 
-	configs, errs := fetcher.GetConfigs([]string{"config-1", "config-2"})
+	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-1", "config-2"})
 	if len(errs) != 0 {
 		t.Errorf("There shouldn't be any errors when requesting known configs. Got %v", errs)
 	}

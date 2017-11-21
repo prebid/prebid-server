@@ -2,6 +2,7 @@ package openrtb2_config
 
 import (
 	"encoding/json"
+	"context"
 )
 
 // ConfigFetcher knows how to fetch OpenRTB configs by id.
@@ -13,5 +14,5 @@ type ConfigFetcher interface {
 	// The returned map will have keys for every ID, unless errors exist.
 	//
 	// The returned objects should only be read from--never written to.
-	GetConfigs(ids []string) (map[string]json.RawMessage, []error)
+	GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error)
 }

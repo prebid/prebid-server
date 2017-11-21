@@ -9,6 +9,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 
+	"context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -483,10 +484,10 @@ func TestNewEmptyFetcher(t *testing.T) {
 	if accountFetcher == nil || requestFetcher == nil {
 		t.Errorf("Both the fetchers should be non-nil for an empty config.")
 	}
-	if _, errs := accountFetcher.GetConfigs([]string{"some-id"}); len(errs) != 1 {
+	if _, errs := accountFetcher.GetConfigs(context.Background(), []string{"some-id"}); len(errs) != 1 {
 		t.Errorf("The returned accountFetcher should fail on any ID.")
 	}
-	if _, errs := requestFetcher.GetConfigs([]string{"some-id"}); len(errs) != 1 {
+	if _, errs := requestFetcher.GetConfigs(context.Background(), []string{"some-id"}); len(errs) != 1 {
 		t.Errorf("The returned requestFetcher should fail on any ID.")
 	}
 }
