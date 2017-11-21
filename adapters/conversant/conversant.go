@@ -21,39 +21,6 @@ type ConversantAdapter struct {
 	usersyncInfo *pbs.UsersyncInfo
 }
 
-type FlexBool bool
-
-// Allows boolean values to use either true/false or 1/0
-
-func (flag *FlexBool) UnmarshalJSON(data []byte) (err error) {
-	bval, nval := false, int8(0)
-	// Check if true/false is used
-	if err = json.Unmarshal(data, &bval); err == nil {
-		*flag = FlexBool(bval)
-		return
-	}
-	// Check if a number is used
-	if err = json.Unmarshal(data, &nval); err == nil {
-		if nval != 0 {
-			*flag = true
-		} else {
-			*flag = false
-		}
-		return
-	}
-	// Anything else is an error
-	return
-}
-
-// Return 1/0 for boolean
-
-func (flag *FlexBool) ToInt8() int8 {
-	if *flag == true {
-		return 1
-	}
-	return 0
-}
-
 // Name - export adapter name
 func (a *ConversantAdapter) Name() string {
 	return "conversant"
@@ -73,16 +40,16 @@ func (a *ConversantAdapter) SkipNoCookies() bool {
 }
 
 type conversantParams struct {
-	SiteID      string    `json:"site_id"`
-	Secure      *FlexBool `json:"secure"`
-	TagID       string    `json:"tag_id"`
-	Position    *int8     `json:"position"`
-	BidFloor    float64   `json:"bidfloor"`
-	Mobile      *FlexBool `json:"mobile"`
-	MIMEs       []string  `json:"mimes"`
-	API         []int8    `json:"api"`
-	Protocols   []int8    `json:"protocols"`
-	MaxDuration *int64    `json:"maxduration"`
+	SiteID      string   `json:"site_id"`
+	Secure      *int8    `json:"secure"`
+	TagID       string   `json:"tag_id"`
+	Position    *int8    `json:"position"`
+	BidFloor    float64  `json:"bidfloor"`
+	Mobile      *int8    `json:"mobile"`
+	MIMEs       []string `json:"mimes"`
+	API         []int8   `json:"api"`
+	Protocols   []int8   `json:"protocols"`
+	MaxDuration *int64   `json:"maxduration"`
 }
 
 func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -124,7 +91,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 
 		if params.Mobile != nil {
-			cnvrReq.Site.Mobile = params.Mobile.ToInt8()
+			cnvrReq.Site.Mobile = *params.Mobile
 		}
 
 		// Fill in additional impression info
@@ -174,7 +141,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		// Take care not to override the global secure flag
 
 		if (imp.Secure == nil || *imp.Secure == 0) && params.Secure != nil {
-			imp.Secure = openrtb.Int8Ptr(params.Secure.ToInt8())
+			imp.Secure = params.Secure
 		}
 	}
 

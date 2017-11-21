@@ -252,7 +252,7 @@ func TestConversantRequest(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
 
 	param := `{ "site_id": "12345",
-		"secure": true,
+		"secure": 1,
 		"tag_id": "top",
 		"position": 2,
 		"bidfloor": 1.01,
@@ -302,7 +302,7 @@ func TestConversantResponse(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
 
 	param := `{ "site_id": "12345",
-		   "secure": true,
+		   "secure": 1,
 		   "tag_id": "top",
 		   "position": 2,
 		   "bidfloor": 1.01,
@@ -525,7 +525,7 @@ func TestConversantVideoResponse(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
 
 	param := `{ "site_id": "12345",
-		   "secure": true,
+		   "secure": 1,
 		   "tag_id": "top",
 		   "position": 2,
 		   "bidfloor": 1.01,
