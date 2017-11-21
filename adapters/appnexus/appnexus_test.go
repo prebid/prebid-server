@@ -234,7 +234,20 @@ func TestBestEffortBid(t *testing.T) {
 	}
 
 	if len(apnRequest.Imp) != 2 {
-		t.Errorf("Outgoing request should include two impressions. Got %d", len(apnRequest.Imp))
+		t.Fatalf("Outgoing request should include two impressions. Got %d", len(apnRequest.Imp))
+	}
+
+	seenIds := map[string]bool{
+		"test-imp-id2": false,
+		"test-imp-id4": false,
+	}
+	seenIds[apnRequest.Imp[0].ID] = true
+	seenIds[apnRequest.Imp[1].ID] = true
+	if !seenIds["test-imp-id2"] {
+		t.Errorf("Outgoing request didn't contain expected Imp with ID=test-imp-id2")
+	}
+	if !seenIds["test-imp-id4"] {
+		t.Errorf("Outgoing request didn't contain expected Imp with ID=test-imp-id4")
 	}
 }
 

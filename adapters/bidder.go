@@ -56,7 +56,7 @@ type RequestData struct {
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
 type ExtImpBidder struct {
-	Prebid *openrtb_ext.ExtBidPrebid `json:"prebid"`
+	Prebid *openrtb_ext.ExtImpPrebid `json:"prebid"`
 
 	// Bidder contain the bidder-specific extension. Each bidder should unmarshal this using their
 	// corresponding openrtb_ext.ExtImp{Bidder} struct.

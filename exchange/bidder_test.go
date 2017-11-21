@@ -359,7 +359,10 @@ func TestErrorReporting(t *testing.T) {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
 	if len(errs) != 1 {
-		t.Errorf("Expected 1 error. got %d", len(errs))
+		t.Fatalf("Expected 1 error. got %d", len(errs))
+	}
+	if errs[0].Error() != "Invalid params on BidRequest." {
+		t.Errorf(`Error message was mutated. Expected "%s", Got "%s"`, "Invalid params on BidRequest.", errs[0].Error())
 	}
 }
 
