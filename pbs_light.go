@@ -918,7 +918,7 @@ func NewFetcher(cfg *config.OpenRTB2Config) (accountFetcher openrtb2_config.Conf
 		accountFetcher, err = file_fetcher.NewEagerConfigFetcher(accountConfigPath)
 		requestFetcher, err = file_fetcher.NewEagerConfigFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
-		glog.Infof("Loading OpenRTB2 configs from Postgres with config: %v", cfg.Postgres)
+		glog.Infof("Loading OpenRTB2 configs from Postgres with config: %#v", cfg.Postgres)
 		accountFetcher, err = db_fetcher.NewPostgres(cfg.Postgres)
 		requestFetcher = accountFetcher
 	} else {
