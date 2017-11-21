@@ -81,6 +81,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	req = &openrtb.BidRequest{}
 	ctx = context.Background()
 	cancel = func() { }
+	errs = nil
 
 	if err := json.NewDecoder(httpRequest.Body).Decode(req); err != nil {
 		errs = []error{err}
@@ -246,7 +247,7 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
 			}
-		} else {
+		} else if bidder != "prebid" {
 			return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s", impIndex, bidder)
 		}
 	}
@@ -316,6 +317,7 @@ func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, conf json.RawMessag
 	if err != nil {
 		return err
 	}
+
 	newImp, err := jsonpatch.MergePatch(conf, impJson)
 	if err != nil {
 		return err

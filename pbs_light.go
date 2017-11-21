@@ -827,12 +827,12 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	accountConfigs, requestConfigs, err := NewFetcher(&cfg.ORTB2Config)
+	accountConfigs, requestConfigs, err := NewFetcher(&(cfg.ORTB2Config))
 	if err != nil {
 		glog.Fatalf("Failed to initialize config fetchers. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, requestConfigs, accountConfigs)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, accountConfigs, requestConfigs)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -905,18 +905,24 @@ func serve(cfg *config.Configuration) error {
 	return nil
 }
 
+const accountConfigPath = "./openrtb2_configs/for_accounts"
+const requestConfigPath = "./openrtb2_configs/for_requests"
+
 // NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
 func NewFetcher(cfg *config.OpenRTB2Config) (accountFetcher openrtb2_config.ConfigFetcher, requestFetcher openrtb2_config.ConfigFetcher, err error) {
 	if cfg.Files {
-		accountFetcher, err = file_fetcher.NewEagerConfigFetcher("./openrtb2_configs/for_accounts")
-		requestFetcher, err = file_fetcher.NewEagerConfigFetcher("./openrtb2_configs/for_requests")
+		glog.Info("Reading OpenRTB2 configs from filesystem. Account-scoped: %s Request-scoped: %s.", accountConfigPath, requestConfigPath)
+		accountFetcher, err = file_fetcher.NewEagerConfigFetcher(accountConfigPath)
+		requestFetcher, err = file_fetcher.NewEagerConfigFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
+		glog.Infof("Loading OpenRTB2 configs from Postgres with config: %v", cfg.Postgres)
 		accountFetcher, err = db_fetcher.NewPostgres(cfg.Postgres)
 		requestFetcher = accountFetcher
 	} else {
+		glog.Warning("No OpenRTB2 config support. request.imp[i].ext.prebid.managedconfig will be ignored. If you need this, check your app config")
 		accountFetcher = empty_fetcher.EmptyFetcher()
 		requestFetcher = empty_fetcher.EmptyFetcher()
 	}
