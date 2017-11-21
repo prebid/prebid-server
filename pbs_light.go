@@ -115,6 +115,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+const hbDealIdConstantKey = "hb_deal"
 const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
@@ -487,11 +488,13 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
 			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			hbDealIdBidderKey := hbDealIdConstantKey + "_" + bid.BidderCode
 			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
 				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 			pbs_kvs := map[string]string{
@@ -502,11 +505,17 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
+			if bid.DealId != "" {
+				pbs_kvs[hbDealIdBidderKey] = bid.DealId
+			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if bid.DealId != "" {
+					pbs_kvs[hbDealIdConstantKey] = bid.DealId
+				}
 				if hbSize != "" {
 					pbs_kvs[hbSizeConstantKey] = hbSize
 				}
