@@ -32,13 +32,20 @@ type endpointDeps struct {
 
 // Slimmed down Imp.Ext object to just pull the config ID
 type impExtConfig struct {
-	prebid struct { config string }
+	Prebid struct { Managedconfig string `json:"managedconfig"`} `json:"prebid"`
 }
+// Slimmed down to extract just the ID
+type impId struct {
+	ID string `json:"id"`
+}
+
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	req, err := deps.parseRequest(r)
-	if err != nil {
+	req, errL := deps.parseRequest(r)
+	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Invalid request format: %s", err.Error())))
+		for _, err := range errL {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
 		return
 	}
 	ctx := context.Background()
@@ -72,14 +79,22 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 //
 // It will also return errors for some of the "strong recommendations" in the spec, as long as
 // the same request can be sent in a better way which agrees with the recommendations.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, []error) {
 	var ortbRequest openrtb.BidRequest
+	errList := make([]error, 1)
 	if err := json.NewDecoder(httpRequest.Body).Decode(&ortbRequest); err != nil {
-		return nil, err
+		errList[0] = err
+		return nil, errList
+	}
+
+	// Process any config directives in the impression objects.
+	if errL := deps.processConfigs(&ortbRequest); len(errL)>0 {
+		return nil, errL
 	}
 
 	if err := deps.validateRequest(&ortbRequest); err != nil {
-		return nil, err
+		errList[0] = err
+		return nil, errList
 	}
 
 	return &ortbRequest, nil
@@ -240,9 +255,9 @@ func (deps *endpointDeps) processConfigs(request *openrtb.BidRequest) []error {
 	// Potentially handle Request level configs.
 
 	// Pull the Imp configs.
-	configIds, errList := deps.findImpConfigIds(request.Imp)
+	configIds, shortIds, errList := deps.findImpConfigIds(request.Imp)
 
-	configs, errL := deps.configFetcher.GetConfigs(configIds)
+	configs, errL := deps.configFetcher.GetConfigs(shortIds)
 	if len(errL) > 0 {
 		errList = append(errList, errL...)
 	}
@@ -266,17 +281,19 @@ func (deps *endpointDeps) processConfigs(request *openrtb.BidRequest) []error {
 	return errList
 }
 
-// Pull the Imp configs.
-func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []error) {
+// Pull the Imp configs. Return both ID indexed by Imp array index, and a simple list of existing IDs.
+func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []string, []error) {
 	errList := make([]error, 0, len(imps))
 	configIds := make([]string, len(imps))
+	shortIds := make([]string, 0, len(imps))
 	for i := 0; i < len(imps); i++ {
 		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
 			eConf := &impExtConfig{}
 			err := json.Unmarshal(imps[i].Ext, eConf)
-			if err == nil {
-				configIds[i] = eConf.prebid.config
-			} else {
+			if err == nil && len(eConf.Prebid.Managedconfig) > 0 {
+				configIds[i] = eConf.Prebid.Managedconfig
+				shortIds = append(shortIds, eConf.Prebid.Managedconfig)
+			} else if len(eConf.Prebid.Managedconfig) > 0 {
 				errList = append(errList, err)
 				configIds[i] = ""
 			}
@@ -284,7 +301,7 @@ func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []erro
 			configIds[i] = ""
 		}
 	}
-	return configIds, errList
+	return configIds, shortIds, errList
 }
 
 
@@ -295,10 +312,17 @@ func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, conf json.RawMessag
 	if err != nil {
 		return err
 	}
-	newImp, err := jsonpatch.CreateMergePatch(conf, impJson)
+	newImp, err := jsonpatch.MergePatch(conf, impJson)
 	if err != nil {
 		return err
 	}
 	err = json.Unmarshal(newImp, imp)
+	// Due to the definition of openrtb.Imp, ID will always have a value, even if empty. So we need to restore the ID
+	// from the config if overriden by a blank ID.
+	if imp.ID == "" {
+		confId := &impId{}
+		err = json.Unmarshal(conf, confId)
+		imp.ID = confId.ID
+	}
 	return err
 }
