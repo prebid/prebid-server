@@ -8,7 +8,6 @@ import (
 )
 
 // TestDSNCreation makes sure we turn the config into a string expected by the Postgres driver library.
-// For their docs, see:  https://godoc.org/github.com/lib/pq
 func TestDSNCreation(t *testing.T) {
 	db := "TestDB"
 	host := "somehost.com"

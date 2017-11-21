@@ -20,6 +20,8 @@ func NewPostgres(cfg *config.PostgresConfig) (openrtb2_config.ConfigFetcher, err
 	}, nil
 }
 
+// confToPostgresDSN converts our app config into a string for the pq driver.
+// For their docs, and the intended behavior of this function, see:  https://godoc.org/github.com/lib/pq
 func confToPostgresDSN(cfg *config.PostgresConfig) string {
 	buffer := bytes.NewBuffer(nil)
 
