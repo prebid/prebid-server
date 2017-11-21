@@ -62,6 +62,10 @@ func InitPrebidCache(baseurl string) {
 
 // Put will send the array of objs and update each with a UUID
 func Put(ctx context.Context, objs []*CacheObject) error {
+	// Fixes #197
+	if len(objs) == 0 {
+		return nil
+	}
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
 		pr.Puts[i].Type = "json"
