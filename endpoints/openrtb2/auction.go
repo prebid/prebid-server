@@ -96,6 +96,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		errs = []error{err}
 		return
 	}
+	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
+	if lr.N <= 0 {
+		io.Copy(ioutil.Discard, httpRequest.Body)
+		errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
+		return
+	}
+
 	if err := json.Unmarshal(rawRequest, req); err != nil {
 		errs = []error{err}
 		return
@@ -274,39 +281,36 @@ func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.B
 
 	// Pull the Imp configs.
 	configIds, shortIds, errList := deps.findImpConfigIds(request.Imp)
+	if len(shortIds) == 0 {
+		return nil
+	}
 
 	configs, errL := deps.configFetcher.GetConfigs(ctx, shortIds)
 	if len(errL) > 0 {
-		errList = append(errList, errL...)
-		return errList
+		return append(errList, errL...)
 	}
 
 	// Get the raw JSON for Imps, so we don't have to worry about the effects of an UnMarshal/Mashal round.
 	rawImpsRaw, dt, _, err := jsonparser.Get(rawRequest, "imp")
 	if err != nil {
-		errList = append(errList, err)
-		return errList
+		return append(errList, err)
 	}
 	if dt != jsonparser.Array {
-		errList = append(errList, fmt.Errorf("ERROR: could not parse Imp[] as an array, got %s", string(dt)))
-		return errList
+		return append(errList, fmt.Errorf("ERROR: could not parse Imp[] as an array, got %s", string(dt)))
 	}
-	rawImps := toStringArray(rawImpsRaw)
+	rawImps := getArrayElements(rawImpsRaw)
 	// Process Imp level configs.
 	for i := 0; i < len(request.Imp); i++ {
 		// Check if a config was requested
 		if len(configIds[i]) > 0 {
 			conf, ok := configs[configIds[i]]
 			if ok && len(conf) > 0 {
-				err := deps.processImpConfig(&request.Imp[i], []byte(rawImps[i]), conf)
+				err := deps.processImpConfig(&request.Imp[i], rawImps[i], conf)
 				if err != nil {
 					errList = append(errList, err)
 				}
 			}
 		}
-	}
-	if len(errList) == 0 {
-		return nil
 	}
 	return errList
 }
@@ -347,9 +351,9 @@ func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, impJson []byte, con
 }
 
 // Copied from jsonparser
-func toStringArray(data []byte) (result []string) {
+func getArrayElements(data []byte) (result [][]byte) {
 	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		result = append(result, string(value))
+		result = append(result, value)
 	})
 
 	return

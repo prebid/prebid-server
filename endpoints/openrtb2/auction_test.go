@@ -14,6 +14,7 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
 	"github.com/prebid/prebid-server/config"
+	"io"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
@@ -120,6 +121,30 @@ func TestConfigCache(t *testing.T) {
 			t.Errorf("Error in processConfigs, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
 		}
 
+	}
+}
+
+func TestHugeRequest(t *testing.T) {
+	reqBody := `{"id":"request-id"}`
+	deps := &endpointDeps{
+		&nobidExchange{},
+		&bidderParamValidator{},
+		&mockConfigFetcher{},
+		&mockConfigFetcher{},
+		&config.Configuration{ MaxRequestSize: int64(len(reqBody) - 1) },
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps.Auction(recorder, req, nil)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Errorf("Endpoint should return a 400 if the request exceeds the size max.")
+	}
+
+	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
+		t.Errorf("The request body should still be fully read.")
 	}
 }
 
