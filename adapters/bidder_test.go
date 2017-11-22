@@ -9,7 +9,7 @@ import (
 	"errors"
 )
 
-// TestInfoFile makes sure that every adapter package contains a valid info.yaml file.
+// TestInfoFile makes sure that every bidder contains a valid info.yaml file.
 func TestInfoFile(t *testing.T) {
 	fileInfos, err := ioutil.ReadDir(".")
 	if err != nil {
