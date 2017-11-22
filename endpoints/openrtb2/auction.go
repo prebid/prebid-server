@@ -13,14 +13,18 @@ import (
 	"time"
 	"github.com/evanphx/json-patch"
 	"github.com/prebid/prebid-server/openrtb2_config"
+	"github.com/prebid/prebid-server/config"
+	"io"
+	"io/ioutil"
+	"github.com/buger/jsonparser"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount openrtb2_config.ConfigFetcher, requestsById openrtb2_config.ConfigFetcher) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount openrtb2_config.ConfigFetcher, requestsById openrtb2_config.ConfigFetcher, cfg *config.Configuration) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsByAccount == nil || requestsById == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsByAccount, requestsById}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsByAccount, requestsById, cfg}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -28,6 +32,7 @@ type endpointDeps struct {
 	paramsValidator openrtb_ext.BidderParamValidator
 	accountFetcher openrtb2_config.ConfigFetcher
 	configFetcher openrtb2_config.ConfigFetcher
+	cfg *config.Configuration
 }
 
 // Slimmed down Imp.Ext object to just pull the config ID
@@ -84,7 +89,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	cancel = func() { }
 	errs = nil
 
-	if err := json.NewDecoder(httpRequest.Body).Decode(req); err != nil {
+	// Pull the request body into a buffer, so we have it for later usage.
+	lr := &io.LimitedReader{ httpRequest.Body, deps.cfg.MaxRequestSize }
+	rawRequest, err := ioutil.ReadAll(lr)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+	if err := json.Unmarshal(rawRequest, req); err != nil {
 		errs = []error{err}
 		return
 	}
@@ -94,7 +106,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	}
 
 	// Process any config directives in the impression objects.
-	if errL := deps.processConfigs(ctx, req); len(errL)>0 {
+	if errL := deps.processConfigs(ctx, req, rawRequest); len(errL)>0 {
 		errs = errL
 		return
 	}
@@ -257,7 +269,7 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 }
 
 // Check the request for configs, patch in the stored config if found.
-func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.BidRequest) []error {
+func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
 	// Potentially handle Request level configs.
 
 	// Pull the Imp configs.
@@ -266,15 +278,27 @@ func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.B
 	configs, errL := deps.configFetcher.GetConfigs(ctx, shortIds)
 	if len(errL) > 0 {
 		errList = append(errList, errL...)
+		return errList
 	}
 
+	// Get the raw JSON for Imps, so we don't have to worry about the effects of an UnMarshal/Mashal round.
+	rawImpsRaw, dt, _, err := jsonparser.Get(rawRequest, "imp")
+	if err != nil {
+		errList = append(errList, err)
+		return errList
+	}
+	if dt != jsonparser.Array {
+		errList = append(errList, fmt.Errorf("ERROR: could not parse Imp[] as an array, got %s", string(dt)))
+		return errList
+	}
+	rawImps := toStringArray(rawImpsRaw)
 	// Process Imp level configs.
 	for i := 0; i < len(request.Imp); i++ {
 		// Check if a config was requested
 		if len(configIds[i]) > 0 {
 			conf, ok := configs[configIds[i]]
 			if ok && len(conf) > 0 {
-				err := deps.processImpConfig(&request.Imp[i], conf)
+				err := deps.processImpConfig(&request.Imp[i], []byte(rawImps[i]), conf)
 				if err != nil {
 					errList = append(errList, err)
 				}
@@ -313,23 +337,20 @@ func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []stri
 
 // Process the configs for an Imp. Need to modify the Imp object in place as we cannot simply assign one Imp
 // to another (deep copy)
-func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, conf json.RawMessage) error {
-	impJson, err := json.Marshal(imp)
-	if err != nil {
-		return err
-	}
-
+func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, impJson []byte, conf json.RawMessage) error {
 	newImp, err := jsonpatch.MergePatch(conf, impJson)
 	if err != nil {
 		return err
 	}
 	err = json.Unmarshal(newImp, imp)
-	// Due to the definition of openrtb.Imp, ID will always have a value, even if empty. So we need to restore the ID
-	// from the config if overriden by a blank ID.
-	if imp.ID == "" {
-		confId := &impId{}
-		err = json.Unmarshal(conf, confId)
-		imp.ID = confId.ID
-	}
 	return err
+}
+
+// Copied from jsonparser
+func toStringArray(data []byte) (result []string) {
+	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		result = append(result, string(value))
+	})
+
+	return
 }

@@ -13,11 +13,12 @@ import (
 	"errors"
 	"github.com/evanphx/json-patch"
 	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
+	"github.com/prebid/prebid-server/config"
 )
 
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
 func TestGoodRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
@@ -26,6 +27,7 @@ func TestGoodRequests(t *testing.T) {
 
 		if recorder.Code != http.StatusOK {
 			t.Errorf("Expected status %d. Got %d. Request data was %s", http.StatusOK, recorder.Code, requestData)
+			//t.Errorf("Response body was: %s", recorder.Body)
 		}
 
 		var response openrtb.BidResponse
@@ -47,7 +49,7 @@ func TestGoodRequests(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
@@ -62,7 +64,7 @@ func TestBadRequests(t *testing.T) {
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
-	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher())
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -70,7 +72,7 @@ func TestNilExchange(t *testing.T) {
 
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher())
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -78,7 +80,7 @@ func TestNilValidator(t *testing.T) {
 
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher())
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -90,7 +92,7 @@ func TestExchangeError(t *testing.T) {
 
 // Test the config cache functionality
 func TestConfigCache(t *testing.T) {
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockConfigFetcher{}, &mockConfigFetcher{}}
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockConfigFetcher{}, &mockConfigFetcher{}, &config.Configuration{ MaxRequestSize: 1024*256 }}
 
 	for i, requestData := range testRequestConfigs {
 		Request := openrtb.BidRequest{}
@@ -98,7 +100,8 @@ func TestConfigCache(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error unmashalling bid request: %s", err.Error())
 		}
-		errList := edep.processConfigs(context.Background(), &Request)
+
+		errList := edep.processConfigs(context.Background(), &Request, json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {

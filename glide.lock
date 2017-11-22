@@ -1,8 +1,10 @@
-hash: e3093aeadc35c73068e18f22e1d294b343516821d47bdca3b910dd12c8513891
-updated: 2017-11-17T15:43:55.14482235-05:00
+hash: e580034b35dc3f0c4d82c9f390a643ea2a2c9cb879ea277a473685cf55985050
+updated: 2017-11-22T10:03:12.838157881-05:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
+- name: github.com/buger/jsonparser
+  version: 5096fddd2cca678b0801ece8513a06e580981fd2
 - name: github.com/cloudfoundry/gosigar
   version: 14c0a766933d517675369dae6f551f5c1a10f0d8
 - name: github.com/coocood/freecache

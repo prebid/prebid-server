@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
+	"github.com/prebid/prebid-server/config"
 )
 
 // dummyServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -50,7 +51,7 @@ func newDummyRequest() *http.Request {
 func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client()), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher())
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client()), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

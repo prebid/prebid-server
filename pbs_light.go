@@ -832,7 +832,7 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to initialize config fetchers. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, accountConfigs, requestConfigs)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, accountConfigs, requestConfigs, cfg)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}

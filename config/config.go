@@ -23,6 +23,7 @@ type Configuration struct {
 	DataCache       DataCache          `mapstructure:"datacache"`
 	ORTB2Config     OpenRTB2Config     `mapstructure:"ortb2_config"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
+	MaxRequestSize  int64              `mapstructure:"max_request_size"`
 }
 
 func (cfg *Configuration) validate() error {
