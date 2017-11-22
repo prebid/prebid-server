@@ -1,12 +1,12 @@
 package adapters
 
 import (
-	"testing"
-	"io/ioutil"
-	"os"
+	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
-	"errors"
+	"io/ioutil"
+	"os"
+	"testing"
 )
 
 // TestInfoFile makes sure that every bidder contains a valid info.yaml file.
