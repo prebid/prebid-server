@@ -1,6 +1,6 @@
 # Stored Requests
 
-This document gives a technical overview of the Stored Impressions feature.
+This document gives a technical overview of the Stored Requests feature.
 
 Docs outlining the motivation and uses will be added sometime in the future.
 
