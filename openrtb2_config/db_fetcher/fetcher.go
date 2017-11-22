@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"context"
+	"github.com/golang/glog"
 )
 
 // dbFetcher pulls Configs from a database. This should be instantiated through the NewPostgres() function.
@@ -30,6 +31,13 @@ func (fetcher *dbFetcher) GetConfigs(ctx context.Context, ids []string) (map[str
 
 	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
 	if err != nil {
+		ctxErr := ctx.Err()
+		// This query might fail if the user chose an extremely short timeout.
+		// We don't care about these... but there may also be legit connection issues.
+		// Log any other errors so we have some idea what's going on.
+		if ctxErr == nil || ctxErr != context.DeadlineExceeded {
+			glog.Errorf("Error reading from OpenRTB2 config DB: %s", err.Error())
+		}
 		return nil, []error{err}
 	}
 	defer rows.Close()

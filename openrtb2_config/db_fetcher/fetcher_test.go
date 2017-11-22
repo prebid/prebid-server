@@ -9,6 +9,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"context"
+	"time"
 )
 
 func TestEmptyQuery(t *testing.T) {
@@ -118,6 +119,49 @@ func TestDatabaseError(t *testing.T) {
 	cfgs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 0, cfgs)
+}
+
+// TestContextDeadlines makes sure a hung query returns when the timeout expires.
+func TestContextDeadlines(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock: %v", err)
+	}
+
+	mock.ExpectQuery(".*").WillDelayFor(2 * time.Minute)
+
+	fetcher := &dbFetcher{
+		db: db,
+		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?, ?)"),
+	}
+
+	ctx, _ := context.WithTimeout(context.Background(), 1 * time.Nanosecond)
+	_, errs := fetcher.GetConfigs(ctx, []string{"id"})
+	if len(errs) < 1 {
+		t.Errorf("dbFetcher should return an error when the context times out.")
+	}
+}
+
+// TestContextCancelled makes sure a hung query returns when the context is cancelled.
+func TestContextCancelled(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock: %v", err)
+	}
+
+	mock.ExpectQuery(".*").WillDelayFor(2 * time.Minute)
+
+	fetcher := &dbFetcher{
+		db: db,
+		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?, ?)"),
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, errs := fetcher.GetConfigs(ctx, []string{"id"})
+	if len(errs) < 1 {
+		t.Errorf("dbFetcher should return an error when the context is cancelled.")
+	}
 }
 
 func newFetcher(rows *sqlmock.Rows, query string, args ...driver.Value) (sqlmock.Sqlmock, *dbFetcher, error) {

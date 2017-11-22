@@ -42,7 +42,7 @@ type impId struct {
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
-	defer cancel() // Safe because parseRequest returns a no-op if there's nothing to cancel
+	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
