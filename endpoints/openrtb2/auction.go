@@ -312,6 +312,8 @@ func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []
 	shortIds := make([]string, 0, len(imps))
 	for i := 0; i < len(imps); i++ {
 		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
+			// These keys should be kept in sync with openrtb_ext.ExtStoredRequest.
+			// The jsonparser is much faster than doing a full unmarshal to select a single value
 			storedReqId, _, _, err := jsonparser.Get(imps[i].Ext, "prebid", "storedrequest", "id")
 			storedReqString := string(storedReqId)
 			if err == nil && len(storedReqString) > 0 {
