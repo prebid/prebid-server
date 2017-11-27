@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/evanphx/json-patch"
-	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/config"
 	"io"
 )
@@ -91,34 +91,34 @@ func TestExchangeError(t *testing.T) {
 	}
 }
 
-// Test the config cache functionality
-func TestConfigCache(t *testing.T) {
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockConfigFetcher{}, &mockConfigFetcher{}, &config.Configuration{ MaxRequestSize: 1024*256 }}
+// Test the stored request functionality
+func TestStoredRequests(t *testing.T) {
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: 1024*256 }}
 
-	for i, requestData := range testRequestConfigs {
+	for i, requestData := range testStoredRequests {
 		Request := openrtb.BidRequest{}
 		err := json.Unmarshal(json.RawMessage(requestData), &Request)
 		if err != nil {
 			t.Errorf("Error unmashalling bid request: %s", err.Error())
 		}
 
-		errList := edep.processConfigs(context.Background(), &Request, json.RawMessage(requestData))
+		errList := edep.processStoredRequests(context.Background(), &Request, json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
-					t.Errorf("processConfigs Error: %s", err.Error())
+					t.Errorf("processStoredRequests Error: %s", err.Error())
 				} else {
-					t.Error("processConfigs Error: recieved nil error")
+					t.Error("processStoredRequests Error: recieved nil error")
 				}
 			}
 		}
-		expectJson := json.RawMessage(testFinalRequestConfigs[i])
+		expectJson := json.RawMessage(testFinalRequests[i])
 		requestJson, err := json.Marshal(Request)
 		if err != nil {
 			t.Errorf("Error mashalling bid request: %s", err.Error())
 		}
 		if ! jsonpatch.Equal(requestJson, expectJson) {
-			t.Errorf("Error in processConfigs, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
+			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
 		}
 
 	}
@@ -129,8 +129,8 @@ func TestHugeRequest(t *testing.T) {
 	deps := &endpointDeps{
 		&nobidExchange{},
 		&bidderParamValidator{},
-		&mockConfigFetcher{},
-		&mockConfigFetcher{},
+		&mockStoredReqFetcher{},
+		&mockStoredReqFetcher{},
 		&config.Configuration{ MaxRequestSize: int64(len(reqBody) - 1) },
 	}
 
@@ -346,10 +346,10 @@ var invalidRequests = []string{
 	}]}`,
 }
 
-// Config Cache testing
+// StoredRequest Cache testing
 
-// Test stored configs
-var testConfigs = map[string]json.RawMessage{
+// Test stored request data
+var testStoredRequestData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
 			"id": "adUnit1",
 			"ext": {
@@ -366,15 +366,15 @@ var testConfigs = map[string]json.RawMessage{
 			"": json.RawMessage(""),
 			}
 
-// Incoming requests with configs
-var testRequestConfigs = []string{
+// Incoming requests with stored request IDs
+var testStoredRequests = []string{
 	`{
   "id": "ThisID",
   "imp": [
     {
       "ext": {
         "prebid": {
-          "managedconfig": {
+          "storedrequest": {
             "id": "1"
           }
         }
@@ -399,7 +399,7 @@ var testRequestConfigs = []string{
 	  "id": "adUnit2",
       "ext": {
         "prebid": {
-          "managedconfig": {
+          "storedrequest": {
             "id": "1"
           }
 		    },
@@ -425,8 +425,8 @@ var testRequestConfigs = []string{
 }`,
 }
 
-// The expected requests after config processing
-var testFinalRequestConfigs = []string {
+// The expected requests after stored request processing
+var testFinalRequests = []string {
 	`{
 "id": "ThisID",
 "imp": [
@@ -442,7 +442,7 @@ var testFinalRequestConfigs = []string {
 				"accountId": "abc"
 			},
 			"prebid": {
-        "managedconfig": {
+        "storedrequest": {
             "id": "1"
           }
 			}
@@ -467,7 +467,7 @@ var testFinalRequestConfigs = []string {
 	  "id": "adUnit2",
       "ext": {
         "prebid": {
-          "managedconfig": {
+          "storedrequest": {
             "id": "1"
           }
 		},
@@ -494,9 +494,9 @@ var testFinalRequestConfigs = []string {
 
 }
 
-type mockConfigFetcher struct {
+type mockStoredReqFetcher struct {
 }
 
-func (cf mockConfigFetcher) GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	return testConfigs, nil
+func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+	return testStoredRequestData, nil
 }

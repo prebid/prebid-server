@@ -2,13 +2,13 @@ package db_fetcher
 
 import (
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb2_config"
+	"github.com/prebid/prebid-server/stored_requests"
 	"database/sql"
 	"bytes"
 	"strconv"
 )
 
-func NewPostgres(cfg *config.PostgresConfig) (openrtb2_config.ConfigFetcher, error) {
+func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
 	db, err := sql.Open("postgres", confToPostgresDSN(cfg))
 	if err != nil {
 		return nil, err

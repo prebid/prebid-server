@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"net/http"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/config"
 )
 

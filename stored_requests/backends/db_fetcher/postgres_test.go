@@ -17,12 +17,12 @@ func TestDSNCreation(t *testing.T) {
 	query := "SELECT id, config FROM table WHERE id in %ID_LIST%"
 
 	cfg := &config.PostgresConfig{
-		Database: db,
-		Host: host,
-		Port: port,
-		Username: username,
-		Password: password,
-		Query: query,
+		Database:      db,
+		Host:          host,
+		Port:          port,
+		Username:      username,
+		Password:      password,
+		QueryTemplate: query,
 	}
 
 	dataSourceName := confToPostgresDSN(cfg)

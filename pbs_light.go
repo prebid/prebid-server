@@ -45,16 +45,16 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/openrtb2_config"
-	"github.com/prebid/prebid-server/openrtb2_config/db_fetcher"
-	"github.com/prebid/prebid-server/openrtb2_config/empty_fetcher"
-	"github.com/prebid/prebid-server/openrtb2_config/file_fetcher"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"strings"
 )
 
@@ -700,6 +700,7 @@ func init() {
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
+	viper.SetDefault("stored_requests.filesystem", "true")
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
@@ -830,7 +831,7 @@ func serve(cfg *config.Configuration) error {
 
 	accountConfigs, requestConfigs, err := NewFetcher(&(cfg.ORTB2Config))
 	if err != nil {
-		glog.Fatalf("Failed to initialize config fetchers. %v", err)
+		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, accountConfigs, requestConfigs, cfg)
@@ -906,24 +907,24 @@ func serve(cfg *config.Configuration) error {
 	return nil
 }
 
-const accountConfigPath = "./openrtb2_configs/for_accounts"
-const requestConfigPath = "./openrtb2_configs/for_requests"
+const accountConfigPath = "./stored_requests/data/by_account"
+const requestConfigPath = "./stored_requests/data/by_id"
 
 // NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.OpenRTB2Config) (accountFetcher openrtb2_config.ConfigFetcher, requestFetcher openrtb2_config.ConfigFetcher, err error) {
+func NewFetcher(cfg *config.StoredRequests) (accountFetcher stored_requests.Fetcher, requestFetcher stored_requests.Fetcher, err error) {
 	if cfg.Files {
-		glog.Info("Reading OpenRTB2 configs from filesystem. Account-scoped: %s Request-scoped: %s.", accountConfigPath, requestConfigPath)
-		accountFetcher, err = file_fetcher.NewEagerConfigFetcher(accountConfigPath)
-		requestFetcher, err = file_fetcher.NewEagerConfigFetcher(requestConfigPath)
+		glog.Infof("Reading Stored Requests from filesystem.\nAccount-scoped: %s\nRequest-scoped: %s\n", accountConfigPath, requestConfigPath)
+		accountFetcher, err = file_fetcher.NewEagerFetcher(accountConfigPath)
+		requestFetcher, err = file_fetcher.NewEagerFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
-		glog.Infof("Loading OpenRTB2 configs from Postgres with config: %#v", cfg.Postgres)
+		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
 		accountFetcher, err = db_fetcher.NewPostgres(cfg.Postgres)
 		requestFetcher = accountFetcher
 	} else {
-		glog.Warning("No OpenRTB2 config support. request.imp[i].ext.prebid.managedconfig will be ignored. If you need this, check your app config")
+		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		accountFetcher = empty_fetcher.EmptyFetcher()
 		requestFetcher = empty_fetcher.EmptyFetcher()
 	}

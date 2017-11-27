@@ -465,29 +465,29 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewFilesFetcher(t *testing.T) {
-	accountFetcher, requestFetcher, err := NewFetcher(&config.OpenRTB2Config{
+	accountFetcher, requestFetcher, err := NewFetcher(&config.StoredRequests{
 		Files: true,
 	})
 	if err != nil {
-		t.Errorf("Error constructing file fetchers. %v", err)
+		t.Errorf("Error constructing file backends. %v", err)
 	}
 	if accountFetcher == nil || requestFetcher == nil {
-		t.Errorf("Both the file fetchers should be non-nil.")
+		t.Errorf("Both the file backends should be non-nil.")
 	}
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	accountFetcher, requestFetcher, err := NewFetcher(&config.OpenRTB2Config{})
+	accountFetcher, requestFetcher, err := NewFetcher(&config.StoredRequests{})
 	if err != nil {
-		t.Errorf("Error constructing fetchers. %v", err)
+		t.Errorf("Error constructing backends. %v", err)
 	}
 	if accountFetcher == nil || requestFetcher == nil {
-		t.Errorf("Both the fetchers should be non-nil for an empty config.")
+		t.Errorf("Both the backends should be non-nil for an empty config.")
 	}
-	if _, errs := accountFetcher.GetConfigs(context.Background(), []string{"some-id"}); len(errs) != 1 {
+	if _, errs := accountFetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
 		t.Errorf("The returned accountFetcher should fail on any ID.")
 	}
-	if _, errs := requestFetcher.GetConfigs(context.Background(), []string{"some-id"}); len(errs) != 1 {
+	if _, errs := requestFetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
 		t.Errorf("The returned requestFetcher should fail on any ID.")
 	}
 }

@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
-	"github.com/prebid/prebid-server/openrtb2_config"
+	"github.com/prebid/prebid-server/stored_requests"
 	"context"
 )
 
-// NewEagerConfigFetcher gets a ConfigFetcher which reads configs from local files.
-// As the name suggests, it loads all the files in the directory _immediately_, and keeps
-// them stored in memory for low-latency reads.
+// NewEagerFetcher _immediately_ loads stored request data from local files.
+// These are stored in memory for low-latency reads.
 //
 // This expects each file in the directory to be named "{config_id}.json".
-// For example, a file at "directory/23.json" will store the data for the config with ID == "23".
-func NewEagerConfigFetcher(directory string) (openrtb2_config.ConfigFetcher, error) {
+// For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
+func NewEagerFetcher(directory string) (stored_requests.Fetcher, error) {
 	fileInfos, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err
@@ -37,7 +36,7 @@ type eagerFetcher struct {
 	configs map[string]json.RawMessage
 }
 
-func (fetcher *eagerFetcher) GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	var errors []error = nil
 	for _, id := range ids {
 		if _, ok := fetcher.configs[id]; !ok {
@@ -45,7 +44,7 @@ func (fetcher *eagerFetcher) GetConfigs(ctx context.Context, ids []string) (map[
 		}
 	}
 
-	// Even though there may be many other IDs here, this still technically obeys
-	// the interface contract. No need to do a partial copy
+	// Even though there may be many other IDs here, the interface contract doesn't prohibit this.
+	// Returning the whole slice is much cheaper than making partial copies on each call.
 	return fetcher.configs, errors
 }

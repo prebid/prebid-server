@@ -8,7 +8,7 @@ import (
 func TestErrorLength(t *testing.T) {
 	fetcher := EmptyFetcher()
 
-	cfgs, errs := fetcher.GetConfigs(context.Background(), []string{"a", "b"})
+	cfgs, errs := fetcher.FetchRequests(context.Background(), []string{"a", "b"})
 	if len(cfgs) != 0 {
 		t.Errorf("The empty fetcher should never return configs. Got %d", len(cfgs))
 	}

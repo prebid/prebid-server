@@ -12,14 +12,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
 	"github.com/evanphx/json-patch"
-	"github.com/prebid/prebid-server/openrtb2_config"
+	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/config"
 	"io"
 	"io/ioutil"
 	"github.com/buger/jsonparser"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount openrtb2_config.ConfigFetcher, requestsById openrtb2_config.ConfigFetcher, cfg *config.Configuration) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount stored_requests.Fetcher, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsByAccount == nil || requestsById == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
@@ -28,16 +28,17 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 }
 
 type endpointDeps struct {
-	ex exchange.Exchange
+	ex              exchange.Exchange
 	paramsValidator openrtb_ext.BidderParamValidator
-	accountFetcher openrtb2_config.ConfigFetcher
-	configFetcher openrtb2_config.ConfigFetcher
-	cfg *config.Configuration
+	accountFetcher  stored_requests.Fetcher
+	configFetcher   stored_requests.Fetcher
+	cfg             *config.Configuration
 }
 
-// Slimmed down Imp.Ext object to just pull the config ID
+// impExtConfig is the subset of openrtb_ext.ExtImpPrebid which is needed to resolve Stored Requests.
+// This should produce faster json.Unmarshalling as more bidders get added to the project.
 type impExtConfig struct {
-	Prebid struct { Managedconfig impId `json:"managedconfig"`} `json:"prebid"`
+	Prebid struct { StoredRequest impId `json:"storedrequest"`} `json:"prebid"`
 }
 
 // Slimmed down to extract just the ID
@@ -112,8 +113,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
 	}
 
-	// Process any config directives in the impression objects.
-	if errL := deps.processConfigs(ctx, req, rawRequest); len(errL)>0 {
+	// Process any stored request directives in the impression objects.
+	if errL := deps.processStoredRequests(ctx, req, rawRequest); len(errL)>0 {
 		errs = errL
 		return
 	}
@@ -275,22 +276,22 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	return nil
 }
 
-// Check the request for configs, patch in the stored config if found.
-func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
-	// Potentially handle Request level configs.
+// processStoredRequests merges any data referenced by request.imp[i].ext.prebid.storedrequest.id into the request, if necessary.
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
+	// TODO: Decide on supporting Account-level configs, or drop them totally
 
-	// Pull the Imp configs.
-	configIds, shortIds, errList := deps.findImpConfigIds(request.Imp)
+	// Pull all the Stored Request IDs from the Imps.
+	storedReqIds, shortIds, errList := deps.findStoredRequestIds(request.Imp)
 	if len(shortIds) == 0 {
 		return nil
 	}
 
-	configs, errL := deps.configFetcher.GetConfigs(ctx, shortIds)
+	storedReqs, errL := deps.configFetcher.FetchRequests(ctx, shortIds)
 	if len(errL) > 0 {
 		return append(errList, errL...)
 	}
 
-	// Get the raw JSON for Imps, so we don't have to worry about the effects of an UnMarshal/Mashal round.
+	// Get the raw JSON for Imps, so we don't have to worry about the effects of an UnMarshal/Marshal round.
 	rawImpsRaw, dt, _, err := jsonparser.Get(rawRequest, "imp")
 	if err != nil {
 		return append(errList, err)
@@ -302,10 +303,10 @@ func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.B
 	// Process Imp level configs.
 	for i := 0; i < len(request.Imp); i++ {
 		// Check if a config was requested
-		if len(configIds[i]) > 0 {
-			conf, ok := configs[configIds[i]]
+		if len(storedReqIds[i]) > 0 {
+			conf, ok := storedReqs[storedReqIds[i]]
 			if ok && len(conf) > 0 {
-				err := deps.processImpConfig(&request.Imp[i], rawImps[i], conf)
+				err := deps.mergeStoredData(&request.Imp[i], rawImps[i], conf)
 				if err != nil {
 					errList = append(errList, err)
 				}
@@ -315,34 +316,35 @@ func (deps *endpointDeps) processConfigs(ctx context.Context, request *openrtb.B
 	return errList
 }
 
-// Pull the Imp configs. Return both ID indexed by Imp array index, and a simple list of existing IDs.
-func (deps *endpointDeps) findImpConfigIds(imps []openrtb.Imp) ([]string, []string, []error) {
+// Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
+func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []string, []error) {
 	errList := make([]error, 0, len(imps))
-	configIds := make([]string, len(imps))
+	storedReqIds := make([]string, len(imps))
 	shortIds := make([]string, 0, len(imps))
 	for i := 0; i < len(imps); i++ {
 		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
+			// TODO: Use jsonparser here in place of the contract classes
 			eConf := &impExtConfig{}
 			err := json.Unmarshal(imps[i].Ext, eConf)
-			if err == nil && len(eConf.Prebid.Managedconfig.ID) > 0 {
-				configIds[i] = eConf.Prebid.Managedconfig.ID
-				shortIds = append(shortIds, eConf.Prebid.Managedconfig.ID)
-			} else if len(eConf.Prebid.Managedconfig.ID) > 0 {
+			if err == nil && len(eConf.Prebid.StoredRequest.ID) > 0 {
+				storedReqIds[i] = eConf.Prebid.StoredRequest.ID
+				shortIds = append(shortIds, eConf.Prebid.StoredRequest.ID)
+			} else if len(eConf.Prebid.StoredRequest.ID) > 0 {
 				errList = append(errList, err)
-				configIds[i] = ""
+				storedReqIds[i] = ""
 			}
 		} else{
-			configIds[i] = ""
+			storedReqIds[i] = ""
 		}
 	}
-	return configIds, shortIds, errList
+	return storedReqIds, shortIds, errList
 }
 
 
-// Process the configs for an Imp. Need to modify the Imp object in place as we cannot simply assign one Imp
-// to another (deep copy)
-func (deps *endpointDeps) processImpConfig(imp *openrtb.Imp, impJson []byte, conf json.RawMessage) error {
-	newImp, err := jsonpatch.MergePatch(conf, impJson)
+// Process the stored request data for an Imp.
+// Need to modify the Imp object in place as we cannot simply assign one Imp to another (deep copy)
+func (deps *endpointDeps) mergeStoredData(imp *openrtb.Imp, impJson []byte, storedReqData json.RawMessage) error {
+	newImp, err := jsonpatch.MergePatch(storedReqData, impJson)
 	if err != nil {
 		return err
 	}

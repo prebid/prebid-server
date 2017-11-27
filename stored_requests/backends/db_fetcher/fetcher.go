@@ -8,13 +8,13 @@ import (
 	"github.com/golang/glog"
 )
 
-// dbFetcher pulls Configs from a database. This should be instantiated through the NewPostgres() function.
+// dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewPostgres() function.
 type dbFetcher struct {
 	db *sql.DB
 	queryMaker func(int) (string, error)
 }
 
-func (fetcher *dbFetcher) GetConfigs(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	if len(ids) < 1 {
 		return nil, nil
 	}
@@ -36,7 +36,7 @@ func (fetcher *dbFetcher) GetConfigs(ctx context.Context, ids []string) (map[str
 		// We don't care about these... but there may also be legit connection issues.
 		// Log any other errors so we have some idea what's going on.
 		if ctxErr == nil || ctxErr != context.DeadlineExceeded {
-			glog.Errorf("Error reading from OpenRTB2 config DB: %s", err.Error())
+			glog.Errorf("Error reading from Stored Request DB: %s", err.Error())
 		}
 		return nil, []error{err}
 	}
@@ -58,7 +58,7 @@ func (fetcher *dbFetcher) GetConfigs(ctx context.Context, ids []string) (map[str
 
 	for _, id := range ids {
 		if _, ok := configs[id]; !ok {
-			errs = append(errs, fmt.Errorf("Config ID not found: %s", id))
+			errs = append(errs, fmt.Errorf(`Stored Request with ID="%s" not found.`, id))
 		}
 	}
 

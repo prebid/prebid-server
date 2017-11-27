@@ -160,7 +160,7 @@ func TestFullConfig(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
-		ORTB2Config: OpenRTB2Config{
+		ORTB2Config: StoredRequests{
 			Files: true,
 		},
 	}
@@ -172,7 +172,7 @@ func TestValidConfig(t *testing.T) {
 
 func TestInvalidORTBConfig(t *testing.T) {
 	cfg := Configuration{
-		ORTB2Config: OpenRTB2Config{
+		ORTB2Config: StoredRequests{
 			Files:    true,
 			Postgres: &PostgresConfig{},
 		},
@@ -185,7 +185,7 @@ func TestInvalidORTBConfig(t *testing.T) {
 
 func TestQueryMaker(t *testing.T) {
 	cfg := PostgresConfig{
-		Query: "SELECT id, config FROM table WHERE id in %ID_LIST%",
+		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
 	}
 	madeQuery, err := cfg.MakeQuery(3)
 	if err != nil {
@@ -206,7 +206,7 @@ func TestQueryMaker(t *testing.T) {
 
 func TestQueryMakerInvalid(t *testing.T) {
 	cfg := PostgresConfig{
-		Query: "SELECT id, config FROM table WHERE id in %ID_LIST%",
+		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
 	}
 	if _, err := cfg.MakeQuery(0); err == nil {
 		t.Errorf("MakeQuery function should return an error if given no IDs.")

@@ -193,15 +193,17 @@ It is only returned on `test` bids for performance reasons, but may be useful du
 
 #### Stored Requests
 
-`request.imp[i].ext.prebid.managedconfig` accesses a [Stored Request](../../developers/stored-requests.md).
+`request.imp[i].ext.prebid.storedrequest` incorporates a [Stored Request](../../developers/stored-requests.md) from the server.
 
-A typical `managedconfig` value looks like this:
+A typical `storedrequest` value looks like this:
 
 ```
 {
   "id": "some-id"
 }
 ```
+
+For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
 
 ### OpenRTB Differences
 

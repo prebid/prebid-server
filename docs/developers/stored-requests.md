@@ -9,13 +9,13 @@ Docs outlining the motivation and uses will be added sometime in the future.
 Configure your server to read stored requests from the filesystem:
 
 ```yaml
-ortb2_config:
+stored_requests:
   filesystem: true
 ```
 
 Choose an ID to reference your request. Throughout this doc, replace {id} with the ID you've chosen.
 
-Add the file `openrtb2_configs/for_requests/{id}.json` and populate it with some Impression data.
+Add the file `stored_requests/data/by_id/{id}.json` and populate it with some Impression data.
 
 ```json
 {
@@ -56,7 +56,7 @@ And then `POST` to [`/openrtb2/auction`](../endpoints/openrtb2/auction.md) with 
     {
       "ext": {
         "prebid": {
-          "managedconfig": {
+          "storedrequest": {
             "id": "{id}"
           }
         }
@@ -66,7 +66,7 @@ And then `POST` to [`/openrtb2/auction`](../endpoints/openrtb2/auction.md) with 
 }
 ```
 
-The Auction will occur as if the Request had used the content from `openrtb2_configs/for_requests/{id}.json` instead.
+The Auction will occur as if the Request had used the content from `stored_requests/data/by_id/{id}.json` instead.
 
 ## Partially Stored Requests
 
@@ -106,7 +106,7 @@ For a given HTTP Request to be valid, it must contain these missing properties:
         "id": "test-imp-id",
         "ext": {
           "prebid": {
-            "managedconfig": {
+            "storedrequest": {
               "id": "{id}"
             }
           }
@@ -122,17 +122,17 @@ HTTP Request properties will overwrite the Stored Request ones.
 
 ## Alternate backends
 
-Stored Requests do not need to be saved to files. [Other backends](../../openrtb2_config/) can be selected
-with different [Configuration options](configuration.yaml).
+Stored Requests do not need to be saved to files. [Other backends](../../openrtb2_config/) are supported
+with different [configuration options](configuration.yaml).
 
 ```yaml
-ortb2_config:
+stored_requests:
   postgres:
     host: localhost
     port: 5432
     user: db-username
     dbname: database-name
-    query: SELECT id, config FROM some_table WHERE id IN %ID_LIST%;
+    query: SELECT id, requestData FROM stored_requests WHERE id IN %ID_LIST%;
 ```
 
 If you need a backend that you don't see, please [contribute it](contributing.md).

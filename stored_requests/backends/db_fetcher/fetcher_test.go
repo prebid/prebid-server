@@ -23,7 +23,7 @@ func TestEmptyQuery(t *testing.T) {
 		db: db,
 		queryMaker: successfulQueryMaker(""),
 	}
-	configs, errs := fetcher.GetConfigs(context.Background(), nil)
+	configs, errs := fetcher.FetchRequests(context.Background(), nil)
 	if len(errs) != 0 {
 		t.Errorf("Unexpected errors: %v", errs)
 	}
@@ -34,56 +34,56 @@ func TestEmptyQuery(t *testing.T) {
 
 // TestGoodResponse makes sure we interpret DB responses properly when all the configs are there.
 func TestGoodResponse(t *testing.T) {
-	mockQuery := "SELECT id, config FROM my_table WHERE id IN (?, ?)"
-	mockReturn := sqlmock.NewRows([]string{"id", "config"}).
-				AddRow("config-id", "{}")
+	mockQuery := "SELECT id, requestData FROM my_table WHERE id IN (?, ?)"
+	mockReturn := sqlmock.NewRows([]string{"id", "requestData"}).
+				AddRow("request-id", "{}")
 
-	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "config-id")
+	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "request-id")
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
+	configs, errs := fetcher.FetchRequests(context.Background(), []string{"request-id"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 0, errs)
 	assertMapLength(t, 1, configs)
-	assertHasConfig(t, configs, "config-id", "{}")
+	assertHasData(t, configs, "request-id", "{}")
 }
 
 // TestPartialResponse makes sure we unpack things properly when the DB finds some of the configs.
 func TestPartialResponse(t *testing.T) {
-	mockQuery := "SELECT id, config FROM my_table WHERE id IN (?, ?)"
-	mockReturn := sqlmock.NewRows([]string{"id", "config"}).
-		AddRow("config-id", "{}")
+	mockQuery := "SELECT id, requestData FROM my_table WHERE id IN (?, ?)"
+	mockReturn := sqlmock.NewRows([]string{"id", "requestData"}).
+		AddRow("stored-req-id", "{}")
 
-	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "config-id", "config-id-2")
+	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "stored-req-id", "stored-req-id-2")
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id", "config-id-2"})
+	configs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 1, configs)
-	assertHasConfig(t, configs, "config-id", "{}")
+	assertHasData(t, configs, "stored-req-id", "{}")
 }
 
 // TestEmptyResponse makes sure we handle empty DB responses properly.
 func TestEmptyResponse(t *testing.T) {
-	mockQuery := "SELECT id, config FROM my_table WHERE id IN (?, ?)"
-	mockReturn := sqlmock.NewRows([]string{"id", "config"})
+	mockQuery := "SELECT id, requestData FROM my_table WHERE id IN (?, ?)"
+	mockReturn := sqlmock.NewRows([]string{"id", "requestData"})
 
-	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "config-id", "config-id-2")
+	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "stored-req-id", "stored-req-id-2")
 	if err != nil {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id", "config-id-2"})
+	configs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 2, errs)
@@ -97,7 +97,7 @@ func TestQueryMakerError(t *testing.T) {
 		queryMaker: failedQueryMaker,
 	}
 
-	cfgs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
+	cfgs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"})
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 0, cfgs)
 }
@@ -113,10 +113,10 @@ func TestDatabaseError(t *testing.T) {
 
 	fetcher := &dbFetcher{
 		db: db,
-		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?, ?)"),
+		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
 	}
 
-	cfgs, errs := fetcher.GetConfigs(context.Background(), []string{"config-id"})
+	cfgs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"})
 	assertErrorCount(t, 1, errs)
 	assertMapLength(t, 0, cfgs)
 }
@@ -132,11 +132,11 @@ func TestContextDeadlines(t *testing.T) {
 
 	fetcher := &dbFetcher{
 		db: db,
-		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?, ?)"),
+		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 1 * time.Nanosecond)
-	_, errs := fetcher.GetConfigs(ctx, []string{"id"})
+	_, errs := fetcher.FetchRequests(ctx, []string{"id"})
 	if len(errs) < 1 {
 		t.Errorf("dbFetcher should return an error when the context times out.")
 	}
@@ -153,12 +153,12 @@ func TestContextCancelled(t *testing.T) {
 
 	fetcher := &dbFetcher{
 		db: db,
-		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?, ?)"),
+		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, errs := fetcher.GetConfigs(ctx, []string{"id"})
+	_, errs := fetcher.FetchRequests(ctx, []string{"id"})
 	if len(errs) < 1 {
 		t.Errorf("dbFetcher should return an error when the context is cancelled.")
 	}
@@ -194,14 +194,14 @@ func assertMockExpectations(t *testing.T, mock sqlmock.Sqlmock) {
 	}
 }
 
-func assertHasConfig(t *testing.T, configs map[string]json.RawMessage, key string, value string) {
+func assertHasData(t *testing.T, data map[string]json.RawMessage, key string, value string) {
 	t.Helper()
-	cfg, ok := configs[key]
+	cfg, ok := data[key]
 	if !ok {
-		t.Errorf("Missing expected config: %s", key)
+		t.Errorf("Missing expected stored request data: %s", key)
 	}
 	if string(cfg) != value {
-		t.Errorf("Bad configs[%s] value. Expected %s, Got %s", key, value, cfg)
+		t.Errorf("Bad data[%s] value. Expected %s, Got %s", key, value, cfg)
 	}
 }
 
