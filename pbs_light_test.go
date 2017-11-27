@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 )
@@ -178,6 +179,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		Width:      300,
 		Height:     250,
 		CacheID:    "test_cache_id1",
+		DealId:     "2345",
 	}
 	bids = append(bids, &fb_bid)
 	an_bid := pbs.PBSBid{
@@ -189,6 +191,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		Width:      320,
 		Height:     50,
 		CacheID:    "test_cache_id2",
+		DealId:     "1234",
 	}
 	bids = append(bids, &an_bid)
 	nosize_bid := pbs.PBSBid{
@@ -200,6 +203,15 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		CacheID:    "test_cache_id2",
 	}
 	bids = append(bids, &nosize_bid)
+	nodeal_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "nodeal",
+		Price:      1.00,
+		Adm:        "test_adm",
+		CacheID:    "test_cache_id2",
+	}
+	bids = append(bids, &nodeal_bid)
 	pbs_resp := pbs.PBSResponse{
 		Bids: bids,
 	}
@@ -219,11 +231,15 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			if bid.AdServerTargeting["hb_pb"] != "2.00" {
 				t.Error("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
 			}
+
 			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
 				t.Error("hb_cache_id key was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
 				t.Error("hb_bidder key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_deal"] != "2345" {
+				t.Error("hb_deal_id key was not parsed correctly ")
 			}
 		}
 		if bid.BidderCode == "appnexus" {
@@ -242,10 +258,18 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			if bid.AdServerTargeting["hb_pb"] != "" {
 				t.Error("hb_pb key was parsed for two bidders")
 			}
+			if bid.AdServerTargeting["hb_deal_appnexus"] != "1234" {
+				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
+			}
 		}
 		if bid.BidderCode == "nosizebidder" {
 			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
 				t.Error("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+			}
+		}
+		if bid.BidderCode == "nodeal" {
+			if _, exists := bid.AdServerTargeting["hb_deal_nodeal"]; exists {
+				t.Error("hb_deal_id key for nodeal bidder was not parsed correctly")
 			}
 		}
 	}
@@ -417,8 +441,7 @@ func TestBidSizeValidate(t *testing.T) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-
-	handler := NewJsonDirectoryServer(schemaDirectory)
+	handler := NewJsonDirectoryServer(&testValidator{})
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -426,7 +449,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	var data map[string]json.RawMessage
 	json.Unmarshal(recorder.Body.Bytes(), &data)
 
-	// Make sure that every adapter has a json schema file associated with it
+	// Make sure that every adapter has a json schema by the same name associated with it.
 	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
@@ -457,17 +480,22 @@ func TestWriteAuctionError(t *testing.T) {
 	}
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	if _, ok := data[key]; !ok {
 		t.Errorf("Expected map to produce a schema for adapter: %s", key)
+	}
+}
+
+type testValidator struct{}
+
+func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
+	return nil
+}
+
+func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
+	if name == openrtb_ext.BidderAppnexus {
+		return "{\"appnexus\":true}"
+	} else {
+		return "{\"appnexus\":false}"
 	}
 }

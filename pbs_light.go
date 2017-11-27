@@ -29,6 +29,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"crypto/tls"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/facebook"
@@ -42,10 +43,15 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/ssl"
+	"strings"
 )
 
 type DomainMetrics struct {
@@ -109,6 +115,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+const hbDealIdConstantKey = "hb_deal"
 const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
@@ -481,11 +488,13 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
 			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			hbDealIdBidderKey := hbDealIdConstantKey + "_" + bid.BidderCode
 			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
 				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 			pbs_kvs := map[string]string{
@@ -496,11 +505,17 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
+			if bid.DealId != "" {
+				pbs_kvs[hbDealIdBidderKey] = bid.DealId
+			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if bid.DealId != "" {
+					pbs_kvs[hbDealIdConstantKey] = bid.DealId
+				}
 				if hbSize != "" {
 					pbs_kvs[hbSizeConstantKey] = hbSize
 				}
@@ -529,7 +544,7 @@ func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
-func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
+func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
@@ -538,11 +553,12 @@ func NewJsonDirectoryServer(schemaDirectory string) httprouter.Handle {
 
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
-		bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, file.Name()))
-		if err != nil {
-			glog.Fatalf("Failed to read file %s/%s: %v", schemaDirectory, file.Name(), err)
+		bidder := strings.TrimSuffix(file.Name(), ".json")
+		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		if !isValid {
+			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
-		data[file.Name()[0:len(file.Name())-5]] = json.RawMessage(bytes)
+		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
 	response, err := json.Marshal(data)
 	if err != nil {
@@ -801,9 +817,30 @@ func serve(cfg *config.Configuration) error {
 		stopSignals <- syscall.SIGTERM
 	})()
 
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
+	if err != nil {
+		glog.Fatalf("Failed to create the bidder params validator. %v", err)
+	}
+
+	theExchange := exchange.NewExchange(
+		&http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:        400,
+				MaxIdleConnsPerHost: 10,
+				IdleConnTimeout:     60 * time.Second,
+				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+			},
+		})
+
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator)
+	if err != nil {
+		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
+	}
+
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
-	router.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory))
+	router.POST("/openrtb2/auction", openrtbEndpoint)
+	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)

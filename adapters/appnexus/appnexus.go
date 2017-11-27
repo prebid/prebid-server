@@ -17,7 +17,10 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+const uri = "http://ib.adnxs.com/openrtb2"
 
 type AppNexusAdapter struct {
 	http         *adapters.HTTPAdapter
@@ -204,19 +207,180 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			}
 
 			mediaType := getMediaTypeForImp(bid.ImpID, anReq.Imp)
-			pbid.CreativeMediaType = mediaType
+			pbid.CreativeMediaType = string(mediaType)
 			bids = append(bids, &pbid)
 		}
 	}
 
 	return bids, nil
 }
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) string {
-	mediaType := "banner"
+
+func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	memberIds := make(map[string]bool)
+	errs := make([]error, 0, len(request.Imp))
+
+	for i := 0; i < len(request.Imp); i++ {
+		memberId, err := preprocess(&request.Imp[i])
+		if memberId != "" {
+			memberIds[memberId] = true
+		}
+		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
+		if err != nil {
+			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
+		}
+	}
+
+	thisUri := uri
+
+	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
+	// different impressions have different member IDs.
+	// Check for this condition, and log an error if it's a problem.
+	if len(memberIds) > 0 {
+		uniqueIds := keys(memberIds)
+		memberId := uniqueIds[0]
+		thisUri = fmt.Sprintf("%s?member_id=%s", thisUri, memberId)
+
+		if len(uniqueIds) > 1 {
+			errs = append(errs, fmt.Errorf("All request.imp[i].ext.appnexus.member params must match. Request contained: %v", uniqueIds))
+		}
+	}
+
+	// If all the requests were malformed, don't bother making a server call with no impressions.
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     thisUri,
+		Body:    reqJSON,
+		Headers: headers,
+	}}, errs
+}
+
+// get the keys from the map
+func keys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for key, _ := range m {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+// preprocess mutates the imp to get it ready to send to appnexus.
+//
+// It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
+func preprocess(imp *openrtb.Imp) (string, error) {
+	// We only support banner and video impressions for now.
+	if imp.Native != nil || imp.Audio != nil {
+		return "", fmt.Errorf("Appnexus doesn't support audio or native Imps. Ignoring Imp ID=%s", imp.ID)
+	}
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", err
+	}
+
+	var appnexusExt openrtb_ext.ExtImpAppnexus
+	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
+		return "", err
+	}
+
+	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
+		return "", errors.New("No placement or member+invcode provided")
+	}
+
+	if appnexusExt.InvCode != "" {
+		imp.TagID = appnexusExt.InvCode
+	}
+	if appnexusExt.Reserve > 0 {
+		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
+	}
+	if imp.Banner != nil && appnexusExt.Position != "" {
+		if appnexusExt.Position == "above" {
+			imp.Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+		} else if appnexusExt.Position == "below" {
+			imp.Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+		}
+	}
+
+	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
+		PlacementID:       appnexusExt.PlacementId,
+		TrafficSourceCode: appnexusExt.TrafficSourceCode,
+		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+	}}
+	var err error
+	if imp.Ext, err = json.Marshal(&impExt); err != nil {
+		return appnexusExt.Member, err
+	}
+
+	return appnexusExt.Member, nil
+}
+
+func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
+	kvs := make([]string, 0, len(keywords)*2)
+	for _, kv := range keywords {
+		if len(kv.Values) == 0 {
+			kvs = append(kvs, kv.Key)
+		} else {
+			for _, val := range kv.Values {
+				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
+			}
+		}
+	}
+
+	return strings.Join(kvs, ",")
+}
+
+func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bids := make([]*adapters.TypedBid, 0, 5)
+
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			bids = append(bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
+			})
+		}
+	}
+	return bids, nil
+}
+
+// getMediaTypeForImp figures out which media type this bid is for.
+//
+// This is only safe for multi-type impressions because the AN server prioritizes video over banner,
+// and we duplicate that logic here. A ticket exists to return the media type in the bid response,
+// at which point we can delete this.
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
 			if imp.Video != nil {
-				mediaType = "video"
+				mediaType = openrtb_ext.BidTypeVideo
 			}
 			return mediaType
 		}
@@ -238,7 +402,7 @@ func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) 
 
 	return &AppNexusAdapter{
 		http:         a,
-		URI:          "http://ib.adnxs.com/openrtb2",
+		URI:          uri,
 		usersyncInfo: info,
 	}
 }

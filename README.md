@@ -48,8 +48,9 @@ For the full API reference, see [docs/endpoints](docs/endpoints)
 
 ## Contributing
 
-Want to add an adapter? Found a bug? Great! This project is in its infancy, and many things
-can be improved.
+Want to [add an adapter](docs/developers/add-new-bidder.md)? Found a bug? Great!
+This project is in its infancy, and many things can be improved.
+
 
 Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
 
