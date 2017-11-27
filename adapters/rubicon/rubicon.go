@@ -252,8 +252,6 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 		return
 	}
 
-	fmt.Sprintf("RP Response Body: ", result.ResponseBody)
-
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
