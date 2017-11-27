@@ -829,12 +829,12 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	byAccount, byId, err := NewFetcher(&(cfg.StoredRequests))
+	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byAccount, byId, cfg)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -907,27 +907,22 @@ func serve(cfg *config.Configuration) error {
 	return nil
 }
 
-const accountConfigPath = "./stored_requests/data/by_account"
 const requestConfigPath = "./stored_requests/data/by_id"
 
 // NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.StoredRequests) (byAccount stored_requests.Fetcher, byId stored_requests.Fetcher, err error) {
+func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err error) {
 	if cfg.Files {
-		glog.Infof("Reading Stored Requests from filesystem.\nAccount-scoped: %s\nRequest-scoped: %s\n", accountConfigPath, requestConfigPath)
-		byAccount, err = file_fetcher.NewEagerFetcher(accountConfigPath)
+		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewEagerFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
 		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
-		byAccount, err = db_fetcher.NewPostgres(cfg.Postgres)
-		byId = byAccount
+		byId, err = db_fetcher.NewPostgres(cfg.Postgres)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
-		byAccount = empty_fetcher.EmptyFetcher()
 		byId = empty_fetcher.EmptyFetcher()
 	}
-
 	return
 }

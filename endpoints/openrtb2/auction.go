@@ -19,20 +19,19 @@ import (
 	"github.com/buger/jsonparser"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsByAccount stored_requests.Fetcher, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsByAccount == nil || requestsById == nil {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
+	if ex == nil || validator == nil || requestsById == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsByAccount, requestsById, cfg}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg}).Auction), nil
 }
 
 type endpointDeps struct {
-	ex              exchange.Exchange
-	paramsValidator openrtb_ext.BidderParamValidator
-	accountFetcher  stored_requests.Fetcher
-	configFetcher   stored_requests.Fetcher
-	cfg             *config.Configuration
+	ex               exchange.Exchange
+	paramsValidator  openrtb_ext.BidderParamValidator
+	storedReqFetcher stored_requests.Fetcher
+	cfg              *config.Configuration
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -267,15 +266,13 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 
 // processStoredRequests merges any data referenced by request.imp[i].ext.prebid.storedrequest.id into the request, if necessary.
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
-	// TODO: Decide on supporting Account-level configs, or drop them totally
-
 	// Pull all the Stored Request IDs from the Imps.
 	storedReqIds, shortIds, errList := deps.findStoredRequestIds(request.Imp)
 	if len(shortIds) == 0 {
 		return nil
 	}
 
-	storedReqs, errL := deps.configFetcher.FetchRequests(ctx, shortIds)
+	storedReqs, errL := deps.storedReqFetcher.FetchRequests(ctx, shortIds)
 	if len(errL) > 0 {
 		return append(errList, errL...)
 	}
