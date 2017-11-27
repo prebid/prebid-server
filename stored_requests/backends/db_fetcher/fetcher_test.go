@@ -23,16 +23,16 @@ func TestEmptyQuery(t *testing.T) {
 		db: db,
 		queryMaker: successfulQueryMaker(""),
 	}
-	configs, errs := fetcher.FetchRequests(context.Background(), nil)
+	storedReqs, errs := fetcher.FetchRequests(context.Background(), nil)
 	if len(errs) != 0 {
 		t.Errorf("Unexpected errors: %v", errs)
 	}
-	if len(configs) != 0 {
-		t.Errorf("Bad configmap size. Expected %d, got %d.", 0, len(configs))
+	if len(storedReqs) != 0 {
+		t.Errorf("Bad map size. Expected %d, got %d.", 0, len(storedReqs))
 	}
 }
 
-// TestGoodResponse makes sure we interpret DB responses properly when all the configs are there.
+// TestGoodResponse makes sure we interpret DB responses properly when all the stored requests are there.
 func TestGoodResponse(t *testing.T) {
 	mockQuery := "SELECT id, requestData FROM my_table WHERE id IN (?, ?)"
 	mockReturn := sqlmock.NewRows([]string{"id", "requestData"}).
@@ -44,15 +44,15 @@ func TestGoodResponse(t *testing.T) {
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.FetchRequests(context.Background(), []string{"request-id"})
+	storedReqs, errs := fetcher.FetchRequests(context.Background(), []string{"request-id"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 0, errs)
-	assertMapLength(t, 1, configs)
-	assertHasData(t, configs, "request-id", "{}")
+	assertMapLength(t, 1, storedReqs)
+	assertHasData(t, storedReqs, "request-id", "{}")
 }
 
-// TestPartialResponse makes sure we unpack things properly when the DB finds some of the configs.
+// TestPartialResponse makes sure we unpack things properly when the DB finds some of the stored requests.
 func TestPartialResponse(t *testing.T) {
 	mockQuery := "SELECT id, requestData FROM my_table WHERE id IN (?, ?)"
 	mockReturn := sqlmock.NewRows([]string{"id", "requestData"}).
@@ -64,12 +64,12 @@ func TestPartialResponse(t *testing.T) {
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"})
+	storedReqs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 1, errs)
-	assertMapLength(t, 1, configs)
-	assertHasData(t, configs, "stored-req-id", "{}")
+	assertMapLength(t, 1, storedReqs)
+	assertHasData(t, storedReqs, "stored-req-id", "{}")
 }
 
 // TestEmptyResponse makes sure we handle empty DB responses properly.
@@ -83,11 +83,11 @@ func TestEmptyResponse(t *testing.T) {
 	}
 	defer fetcher.db.Close()
 
-	configs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"})
+	storedReqs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id", "stored-req-id-2"})
 
 	assertMockExpectations(t, mock)
 	assertErrorCount(t, 2, errs)
-	assertMapLength(t, 0, configs)
+	assertMapLength(t, 0, storedReqs)
 }
 
 // TestQueryMakerError makes sure we exit with an error if the queryMaker function fails.
@@ -97,9 +97,9 @@ func TestQueryMakerError(t *testing.T) {
 		queryMaker: failedQueryMaker,
 	}
 
-	cfgs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"})
+	storedReqs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"})
 	assertErrorCount(t, 1, errs)
-	assertMapLength(t, 0, cfgs)
+	assertMapLength(t, 0, storedReqs)
 }
 
 // TestDatabaseError makes sure we exit with an error if the DB query fails.

@@ -13,7 +13,7 @@ stored_requests:
   filesystem: true
 ```
 
-Choose an ID to reference your request. Throughout this doc, replace {id} with the ID you've chosen.
+Choose an ID to reference your stored request data. Throughout this doc, replace {id} with the ID you've chosen.
 
 Add the file `stored_requests/data/by_id/{id}.json` and populate it with some Impression data.
 
@@ -94,9 +94,9 @@ You can also store _part_ of the Impression on the server. For example:
 }
 ```
 
-Note that OpenRTB requires each `imp` to have an `id` property.
+This is not _fully_ legal OpenRTB `imp` data, since it lacks an `id`.
 
-For a given HTTP Request to be valid, it must contain these missing properties:
+However, incoming HTTP Requests can fill in the missing data to complete the OpenRTB request:
 
 ```json
 {
@@ -123,7 +123,7 @@ HTTP Request properties will overwrite the Stored Request ones.
 ## Alternate backends
 
 Stored Requests do not need to be saved to files. [Other backends](../../openrtb2_config/) are supported
-with different [configuration options](configuration.yaml).
+with different [configuration options](configuration.yaml). For example:
 
 ```yaml
 stored_requests:
@@ -135,4 +135,4 @@ stored_requests:
     query: SELECT id, requestData FROM stored_requests WHERE id IN %ID_LIST%;
 ```
 
-If you need a backend that you don't see, please [contribute it](contributing.md).
+If you need support for a backend that you don't see, please [contribute it](contributing.md).

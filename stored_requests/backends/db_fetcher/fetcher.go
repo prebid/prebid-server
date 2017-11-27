@@ -42,25 +42,23 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 	}
 	defer rows.Close()
 
-	configs := make(map[string]json.RawMessage, len(ids))
+	reqData := make(map[string]json.RawMessage, len(ids))
 	var errs []error = nil
 	for rows.Next() {
 		var id string
-		var configData []byte
-		if err := rows.Scan(&id, &configData); err != nil {
+		var thisReqData []byte
+		if err := rows.Scan(&id, &thisReqData); err != nil {
 			errs = append(errs, err)
 		}
 
-		configCopy := make([]byte, len(configData))
-		copy(configCopy, configData)
-		configs[id] = json.RawMessage(configCopy)
+		reqData[id] = thisReqData
 	}
 
 	for _, id := range ids {
-		if _, ok := configs[id]; !ok {
+		if _, ok := reqData[id]; !ok {
 			errs = append(errs, fmt.Errorf(`Stored Request with ID="%s" not found.`, id))
 		}
 	}
 
-	return configs, errs
+	return reqData, errs
 }

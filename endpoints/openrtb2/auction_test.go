@@ -346,7 +346,7 @@ var invalidRequests = []string{
 	}]}`,
 }
 
-// StoredRequest Cache testing
+// StoredRequest testing
 
 // Test stored request data
 var testStoredRequestData = map[string]json.RawMessage{

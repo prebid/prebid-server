@@ -21,13 +21,13 @@ type Configuration struct {
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
-	ORTB2Config     StoredRequests     `mapstructure:"stored_requests"`
+	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize  int64              `mapstructure:"max_request_size"`
 }
 
 func (cfg *Configuration) validate() error {
-	return cfg.ORTB2Config.validate()
+	return cfg.StoredRequests.validate()
 }
 
 type HostCookie struct {

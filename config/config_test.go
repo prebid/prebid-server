@@ -160,7 +160,7 @@ func TestFullConfig(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
-		ORTB2Config: StoredRequests{
+		StoredRequests: StoredRequests{
 			Files: true,
 		},
 	}
@@ -170,9 +170,9 @@ func TestValidConfig(t *testing.T) {
 	}
 }
 
-func TestInvalidORTBConfig(t *testing.T) {
+func TestInvalidStoredRequestsConfig(t *testing.T) {
 	cfg := Configuration{
-		ORTB2Config: StoredRequests{
+		StoredRequests: StoredRequests{
 			Files:    true,
 			Postgres: &PostgresConfig{},
 		},

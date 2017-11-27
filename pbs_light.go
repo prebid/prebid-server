@@ -829,12 +829,12 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	accountConfigs, requestConfigs, err := NewFetcher(&(cfg.ORTB2Config))
+	byAccount, byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, accountConfigs, requestConfigs, cfg)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byAccount, byId, cfg)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -914,19 +914,19 @@ const requestConfigPath = "./stored_requests/data/by_id"
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.StoredRequests) (accountFetcher stored_requests.Fetcher, requestFetcher stored_requests.Fetcher, err error) {
+func NewFetcher(cfg *config.StoredRequests) (byAccount stored_requests.Fetcher, byId stored_requests.Fetcher, err error) {
 	if cfg.Files {
 		glog.Infof("Reading Stored Requests from filesystem.\nAccount-scoped: %s\nRequest-scoped: %s\n", accountConfigPath, requestConfigPath)
-		accountFetcher, err = file_fetcher.NewEagerFetcher(accountConfigPath)
-		requestFetcher, err = file_fetcher.NewEagerFetcher(requestConfigPath)
+		byAccount, err = file_fetcher.NewEagerFetcher(accountConfigPath)
+		byId, err = file_fetcher.NewEagerFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
 		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
-		accountFetcher, err = db_fetcher.NewPostgres(cfg.Postgres)
-		requestFetcher = accountFetcher
+		byAccount, err = db_fetcher.NewPostgres(cfg.Postgres)
+		byId = byAccount
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
-		accountFetcher = empty_fetcher.EmptyFetcher()
-		requestFetcher = empty_fetcher.EmptyFetcher()
+		byAccount = empty_fetcher.EmptyFetcher()
+		byId = empty_fetcher.EmptyFetcher()
 	}
 
 	return

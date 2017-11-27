@@ -9,12 +9,12 @@ import (
 func TestFileFetcher(t *testing.T) {
 	fetcher, err := NewEagerFetcher("./test")
 	if err != nil {
-		t.Errorf("Failed to create a ConfigFetcher: %v", err)
+		t.Errorf("Failed to create a Fetcher: %v", err)
 	}
 
 	storedReqs, errs := fetcher.FetchRequests(context.Background(), []string{"1", "2"})
 	if len(errs) != 0 {
-		t.Errorf("There shouldn't be any errors when requesting known configs. Got %v", errs)
+		t.Errorf("There shouldn't be any errors when requesting known stored requests. Got %v", errs)
 	}
 	value, hasId := storedReqs["1"]
 	if !hasId {
@@ -26,11 +26,11 @@ func TestFileFetcher(t *testing.T) {
 		t.Errorf("Failed to unmarshal 1: %v", err)
 	}
 	if len(req1Val) != 1 {
-		t.Errorf("Unexpected config1Val length. Expected %v, Got %s", 1, len(req1Val))
+		t.Errorf("Unexpected req1Val length. Expected %v, Got %s", 1, len(req1Val))
 	}
 	data, hadKey := req1Val["test"]
 	if !hadKey {
-		t.Errorf("config1Val should have had a \"test\" key, but it didn't.")
+		t.Errorf("req1Val should have had a \"test\" key, but it didn't.")
 	}
 	if data != "foo" {
 		t.Errorf(`Bad data in "test" of stored request "1". Expected %s, Got %s`, "foo", data)
