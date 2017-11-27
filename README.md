@@ -36,6 +36,11 @@ Run the automated tests:
 ```bash
 ./validate.sh
 ```
+To run tests for a single file:
+
+```bash
+gulp test --file "path/to/spec/file.js"
+```
 
 Or just run the server locally:
 
