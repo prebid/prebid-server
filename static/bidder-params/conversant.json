@@ -9,7 +9,7 @@
       "description": "A Conversant specific ID which identifies the site."
     },
    	"secure": {
-   	  "type": ["boolean", "integer"],
+   	  "type": "integer",
    	  "description": "Override http/https context on ad markup."
    	},
     "bidfloor" : {
@@ -25,7 +25,7 @@
       "description": "Ad position on screen."
    	},
    	"mobile": {
-   	  "type": ["boolean", "integer"],
+   	  "type": "integer",
    	  "description": "Indicate if the site is mobile optimized."
    	},
    	"mimes": {

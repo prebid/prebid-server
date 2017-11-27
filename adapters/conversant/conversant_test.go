@@ -39,7 +39,7 @@ func TestConversantProperties(t *testing.T) {
 
 	assertNotEqual(t, an.Name(), "", "Missing name")
 	assertNotEqual(t, an.FamilyName(), "", "Missing family name")
-	assertFalse(t, an.SkipNoCookies(), "SkipNoCookies should be false")
+	assertTrue(t, an.SkipNoCookies(), "SkipNoCookies should be true")
 }
 
 // Test empty bid requests

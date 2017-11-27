@@ -35,8 +35,9 @@ func (a *ConversantAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
 	return a.usersyncInfo
 }
 
+// Return true so no request will be sent unless user has been sync'ed.
 func (a *ConversantAdapter) SkipNoCookies() bool {
-	return false
+	return true
 }
 
 type conversantParams struct {
