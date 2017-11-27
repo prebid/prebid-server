@@ -35,17 +35,6 @@ type endpointDeps struct {
 	cfg             *config.Configuration
 }
 
-// impExtConfig is the subset of openrtb_ext.ExtImpPrebid which is needed to resolve Stored Requests.
-// This should produce faster json.Unmarshalling as more bidders get added to the project.
-type impExtConfig struct {
-	Prebid struct { StoredRequest impId `json:"storedrequest"`} `json:"prebid"`
-}
-
-// Slimmed down to extract just the ID
-type impId struct {
-	ID string `json:"id"`
-}
-
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
@@ -323,13 +312,12 @@ func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []
 	shortIds := make([]string, 0, len(imps))
 	for i := 0; i < len(imps); i++ {
 		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
-			// TODO: Use jsonparser here in place of the contract classes
-			eConf := &impExtConfig{}
-			err := json.Unmarshal(imps[i].Ext, eConf)
-			if err == nil && len(eConf.Prebid.StoredRequest.ID) > 0 {
-				storedReqIds[i] = eConf.Prebid.StoredRequest.ID
-				shortIds = append(shortIds, eConf.Prebid.StoredRequest.ID)
-			} else if len(eConf.Prebid.StoredRequest.ID) > 0 {
+			storedReqId, _, _, err := jsonparser.Get(imps[i].Ext, "prebid", "storedrequest", "id")
+			storedReqString := string(storedReqId)
+			if err == nil && len(storedReqString) > 0 {
+				storedReqIds[i] = storedReqString
+				shortIds = append(shortIds, storedReqString)
+			} else if len(storedReqString) > 0 {
 				errList = append(errList, err)
 				storedReqIds[i] = ""
 			}
