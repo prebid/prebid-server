@@ -692,7 +692,7 @@ func init() {
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
-	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/userSync?")
+	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 
 	viper.ReadInConfig()
 

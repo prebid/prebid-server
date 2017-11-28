@@ -7,12 +7,14 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"net/http"
 )
 
 // OrtbMockService Represents a scaffolded OpenRTB service.
 type OrtbMockService struct {
 	Server         *httptest.Server
 	LastBidRequest *openrtb.BidRequest
+	LastHttpRequest *http.Request
 }
 
 // BidOnTags Produces a map of TagIds, based on a comma separated strings. The map

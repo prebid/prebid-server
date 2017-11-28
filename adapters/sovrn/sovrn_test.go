@@ -18,6 +18,11 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 )
 
+var testSovrnUserId = "SovrnUser123"
+var testUserAgent = "user-agent-test"
+var testUrl = "http://news.pub/topnews"
+var testIp = "123.123.123.123"
+
 func TestSovrnUserSyncInfo(t *testing.T) {
 	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/userSync?", "http://localhost:8000")
 	adapters.VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
@@ -36,10 +41,12 @@ func TestSovrnOpenRtbRequest(t *testing.T) {
 	adapters.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
 	adapters.VerifyStringValue(service.LastBidRequest.Imp[0].TagID, "123456", t)
 	adapters.VerifyBannerSize(service.LastBidRequest.Imp[0].Banner, 728, 90, t)
+	checkHttpRequest(*service.LastHttpRequest, t)
 }
 
 func TestSovrnBiddingBehavior(t *testing.T) {
-	server := CreateSovrnService(adapters.BidOnTags("123456")).Server
+	service := CreateSovrnService(adapters.BidOnTags("123456"))
+	server := service.Server
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
@@ -54,6 +61,7 @@ func TestSovrnBiddingBehavior(t *testing.T) {
 	adapters.VerifyIntValue(int(bids[0].Width), 728, t)
 	adapters.VerifyIntValue(int(bids[0].Height), 90, t)
 	adapters.VerifyIntValue(int(bids[0].Price*100), 210, t)
+	checkHttpRequest(*service.LastHttpRequest, t)
 }
 
 /**
@@ -73,6 +81,7 @@ func TestSovrntMultiImpPartialBidding(t *testing.T) {
 	adapters.VerifyIntValue(len(service.LastBidRequest.Imp), 2, t)
 	adapters.VerifyIntValue(len(bids), 1, t)
 	adapters.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
+	checkHttpRequest(*service.LastHttpRequest, t)
 }
 
 /**
@@ -93,13 +102,35 @@ func TestSovrnMultiImpAllBid(t *testing.T) {
 	adapters.VerifyIntValue(len(bids), 2, t)
 	adapters.VerifyStringValue(bids[0].AdUnitCode, "div-adunit-1", t)
 	adapters.VerifyStringValue(bids[1].AdUnitCode, "div-adunit-2", t)
+	checkHttpRequest(*service.LastHttpRequest, t)
+}
+
+func checkHttpRequest(req http.Request, t *testing.T) {
+	adapters.VerifyStringValue(req.Header.Get("Accept-Language"), "murican", t)
+	var cookie, _ = req.Cookie("ljt_reader")
+	adapters.VerifyStringValue((*cookie).Value, testSovrnUserId, t)
+	adapters.VerifyStringValue(req.Header.Get("User-Agent"), testUserAgent, t)
+	adapters.VerifyStringValue(req.Header.Get("Content-Type"), "application/json", t)
+	adapters.VerifyStringValue(req.Header.Get("X-Forwarded-For"), testIp, t)
+	adapters.VerifyStringValue(req.Header.Get("DNT"), "0", t)
 }
 
 func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
+	device := openrtb.Device{
+		Language: "murican",
+	}
+
+	user := openrtb.User{
+		ID: testSovrnUserId,
+	}
+
 	req := pbs.PBSRequest{
 		AccountID: "1",
 		AdUnits:   make([]pbs.AdUnit, 2),
+		Device: &device,
+		User: &user,
 	}
+
 	tagID := 123456
 
 	for i := 0; i < numberOfImpressions; i++ {
@@ -129,9 +160,11 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	}
 
 	httpReq := httptest.NewRequest("POST", CreateSovrnService(adapters.BidOnTags("")).Server.URL, body)
-	httpReq.Header.Add("Referer", "http://news.pub/topnews")
+	httpReq.Header.Add("Referer", testUrl)
+	httpReq.Header.Add("User-Agent", testUserAgent)
+	httpReq.Header.Add("X-Forwarded-For", testIp)
 	pc := pbs.ParsePBSCookieFromRequest(httpReq)
-	pc.TrySync("sovrn", "sovrnUser123")
+	pc.TrySync("sovrn", testSovrnUserId)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
@@ -150,8 +183,10 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 func CreateSovrnService(tagsToBid map[string]bool) adapters.OrtbMockService {
 	service := adapters.OrtbMockService{}
 	var lastBidRequest openrtb.BidRequest
+	var lastHttpReq http.Request
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lastHttpReq = *r
 		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -186,6 +221,7 @@ func CreateSovrnService(tagsToBid map[string]bool) adapters.OrtbMockService {
 
 	service.Server = server
 	service.LastBidRequest = &lastBidRequest
+	service.LastHttpRequest = &lastHttpReq
 
 	return service
 }

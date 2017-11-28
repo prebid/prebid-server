@@ -88,12 +88,11 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	httpReq, _ := http.NewRequest("POST", s.URI, bytes.NewReader(reqJSON))
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("User-Agent", sReq.Device.UA)
-	httpReq.Header.Set("Referer", sReq.Site.Ref)
 	httpReq.Header.Set("X-Forwarded-For", sReq.Device.IP)
 	httpReq.Header.Set("Accept-Language", sReq.Device.Language)
 	httpReq.Header.Set("DNT", strconv.Itoa(int(sReq.Device.DNT)))
 
-	userID := strings.TrimSpace(sReq.User.ID)
+	userID := strings.TrimSpace(sReq.User.BuyerUID)
 	if len(userID) > 0 {
 		httpReq.AddCookie(&http.Cookie{Name: "ljt_reader", Value: userID})
 	}
