@@ -11,7 +11,7 @@ type App struct {
 }
 
 type Account struct {
-	ID               string `json:"id"`
+	ID               string                   `json:"id"`
 	PriceGranularity buckets.PriceGranularity `json:"price_granularity"`
 }
 
