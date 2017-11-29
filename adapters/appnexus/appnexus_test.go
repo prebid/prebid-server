@@ -17,6 +17,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -679,7 +680,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", andata.deviceUA)
 	req.Header.Add("X-Real-IP", andata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pc.TrySync("adnxs", andata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
