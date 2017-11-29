@@ -170,10 +170,10 @@ func (a *SovrnAdapter) SkipNoCookies() bool {
 func NewSovrnAdapter(config *adapters.HTTPAdapterConfig, endpoint string, usersyncURL string, externalURL string) *SovrnAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
-	redirectURI := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=[SOVRNID]", externalURL)
+	redirectURI := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=$UID", externalURL)
 
 	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%slocation=%s", usersyncURL, url.QueryEscape(redirectURI)),
+		URL:         fmt.Sprintf("%sredir=%s", usersyncURL, url.QueryEscape(redirectURI)),
 		Type:        "redirect",
 		SupportCORS: false,
 	}
