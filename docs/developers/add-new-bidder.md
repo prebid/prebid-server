@@ -24,6 +24,7 @@ Bidder implementations are scattered throughout several files.
 - `adapters/{bidder}/{bidder}.go`: contains an implementation of [the Bidder interface](../../adapters/bidder.go).
 - `adapters/{bidder}/{bidder}_test.go`: contains unit tests for your Bidder implementation.
 - `adapters/{bidder}/params_test.go`: contains unit tests for your Bidder param validation.
+- `adapters/{bidder}/info.yaml`: contains contact info for the adapter's maintainer.
 - `openrtb_ext/imp_{bidder}.go`: contract classes for your Bidder's params.
 - `static/bidder-params/{bidder}.go`: A draft-4 json-schema which validates your Bidder's params.
 
