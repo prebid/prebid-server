@@ -127,6 +127,10 @@ func getCpmTarget(cpm float64, increment float64, precision int) string {
 // Externally facing function for computing CPM buckets
 // We don't currently have a precision config, so enforcing the default here.
 func GetPriceBucketString(cpm float64, granularity openrtb_ext.PriceGranularity) (string, error) {
+	// Default to medium if no granularity is given
+	if granularity == "" {
+		granularity = "medium"
+	}
 	config, ok := priceBucketConfigMap[granularity]
 	if ok {
 		return getCpmStringValue(cpm, config, DEFAULT_PRECISION), nil
