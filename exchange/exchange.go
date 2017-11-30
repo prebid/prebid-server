@@ -172,42 +172,7 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 	}
 	var err1 error = nil
 	if targData.targetFlag {
-		for id, bid := range targData.bid {
-			bidExt := new(openrtb_ext.ExtBid)
-			err1 = json.Unmarshal(bid.Ext, bidExt)
-			if err1 == nil && bidExt.Prebid.Targeting != nil {
-				hbPbBidderKey := string(hbpbConstantKey+"_"+targData.bidder[id])
-				hbBidderBidderKey := string(hbBidderConstantKey+"_"+targData.bidder[id])
-				hbSizeBidderKey := string(hbSizeConstantKey+"_"+targData.bidder[id])
-				hbDealIdBidderKey := string(hbDealIdConstantKey+"_"+targData.bidder[id])
-				hbCacheIdBidderKey := string(hbCacheIdConstantKey+"_"+targData.bidder[id])
-				if targData.lengthMax != 0 {
-					hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(targData.lengthMax))]
-					hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(targData.lengthMax))]
-					hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
-					hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
-					hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
-				}
-
-				bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[hbPbBidderKey]
-				bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[hbBidderBidderKey]
-				if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
-					bidExt.Prebid.Targeting[hbSizeConstantKey] = size
-				}
-				if cache, ok := bidExt.Prebid.Targeting[hbCacheIdBidderKey]; ok {
-					bidExt.Prebid.Targeting[hbCacheIdConstantKey] = cache
-				}
-				if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
-					bidExt.Prebid.Targeting[hbDealIdConstantKey] = deal
-				}
-				if targData.bidder[id] == "audienceNetwork" {
-					bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
-				} else {
-					bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
-				}
-				bid.Ext, err1 = json.Marshal(bidExt)
-			}
-		}
+		e.addWinningTargets(targData)
 	}
 	bidResponse.SeatBid = seatBids
 
@@ -218,6 +183,46 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		err = err1
 	}
 	return bidResponse, err
+}
+
+func (e *exchange) addWinningTargets(targData *targetData) {
+	for id, bid := range targData.bid {
+		bidExt := new(openrtb_ext.ExtBid)
+		err1 := json.Unmarshal(bid.Ext, bidExt)
+		if err1 == nil && bidExt.Prebid.Targeting != nil {
+			hbPbBidderKey := string(hbpbConstantKey+"_"+targData.bidder[id])
+			hbBidderBidderKey := string(hbBidderConstantKey+"_"+targData.bidder[id])
+			hbSizeBidderKey := string(hbSizeConstantKey+"_"+targData.bidder[id])
+			hbDealIdBidderKey := string(hbDealIdConstantKey+"_"+targData.bidder[id])
+			hbCacheIdBidderKey := string(hbCacheIdConstantKey+"_"+targData.bidder[id])
+			if targData.lengthMax != 0 {
+				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(targData.lengthMax))]
+				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(targData.lengthMax))]
+				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
+				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
+				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
+			}
+
+			bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[hbPbBidderKey]
+			bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[hbBidderBidderKey]
+			if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
+				bidExt.Prebid.Targeting[hbSizeConstantKey] = size
+			}
+			if cache, ok := bidExt.Prebid.Targeting[hbCacheIdBidderKey]; ok {
+				bidExt.Prebid.Targeting[hbCacheIdConstantKey] = cache
+			}
+			if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
+				bidExt.Prebid.Targeting[hbDealIdConstantKey] = deal
+			}
+			if targData.bidder[id] == "audienceNetwork" {
+				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+			} else {
+				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+			}
+			bid.Ext, err1 = json.Marshal(bidExt)
+		}
+	}
+
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
