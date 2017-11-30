@@ -24,9 +24,9 @@ var testUrl = "http://news.pub/topnews"
 var testIp = "123.123.123.123"
 
 func TestSovrnUserSyncInfo(t *testing.T) {
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/userSync?", "http://localhost:8000")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/pixel?", "http://localhost:8000")
 	adapters.VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
-	adapters.VerifyStringValue(adapter.GetUsersyncInfo().URL, "http://sovrn/userSync?location=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsovrn%26uid%3D%5BSOVRNID%5D", t)
+	adapters.VerifyStringValue(adapter.GetUsersyncInfo().URL, "http://sovrn/pixel?redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsovrn%26uid%3D%24UID", t)
 }
 
 func TestSovrnOpenRtbRequest(t *testing.T) {
