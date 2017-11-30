@@ -260,7 +260,7 @@ func diffFormatLists(description string, actual []openrtb.Format, expected []ope
 }
 
 func diffFormats(description string, actual openrtb.Format, expected openrtb.Format, differences []string) []string {
-  differences = diffInts(fmt.Sprintf("%s.w", description), int(actual.W), int(actual.W), differences)
+	differences = diffInts(fmt.Sprintf("%s.w", description), int(actual.W), int(actual.W), differences)
 	differences = diffInts(fmt.Sprintf("%s.h", description), int(actual.H), int(actual.H), differences)
 	return differences
 }
@@ -297,7 +297,7 @@ func diffTypedBids(actual *adapters.TypedBid, expected *adapters.TypedBid) (diff
 func diffBids(description string, actual *openrtb.Bid, expected *openrtb.Bid, differences []string) []string {
 	differences = diffStrings(fmt.Sprintf("%s.id expected %s, but got %s", description, expected.ID, actual.ID), actual.ID, expected.ID, differences)
 	differences = diffStrings(fmt.Sprintf("%s.impid expected %s, but got %s", description, expected.ImpID, actual.ImpID), actual.ImpID, expected.ImpID, differences)
-	differences = diffFloats(fmt.Sprintf("%s.price expected %s, but got %s", description, expected.Price, actual.Price), actual.Price, expected.Price, differences)
+	differences = diffFloats(fmt.Sprintf("%s.price expected %f, but got %f", description, expected.Price, actual.Price), actual.Price, expected.Price, differences)
 	differences = diffStrings(fmt.Sprintf("%s.adm expected %s, but got %s", description, expected.AdM, actual.AdM), actual.AdM, expected.AdM, differences)
 	differences = diffStrings(fmt.Sprintf("%s.adid expected %s, but got %s", description, expected.AdID, actual.AdID), actual.AdID, expected.AdID, differences)
 	differences = diffStringLists(fmt.Sprintf("%s.adomain", description), actual.ADomain, expected.ADomain, differences)
@@ -340,6 +340,6 @@ func diffFloats(description string, actual float64, expected float64, difference
 	if actual == expected {
 		return differences
 	} else {
-		return append(differences, fmt.Sprintf(`%s "%d" does not match expected "%d."`, description, actual, expected))
+		return append(differences, fmt.Sprintf(`%s "%f" does not match expected "%f."`, description, actual, expected))
 	}
 }

@@ -25,7 +25,6 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.TestOpenRTB(t, "appnexustest", new(AppNexusAdapter))
 }
 
-
 // ----------------------------------------------------------------------------
 // Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
 // clean up the existing code and make everything openrtb.
