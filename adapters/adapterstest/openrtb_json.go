@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"io/ioutil"
 	"reflect"
 	"testing"
@@ -17,134 +16,137 @@ import (
 //
 // 1. This includes some basic tests which confirm that your Bidder is "well-behaved" for all the input samples.
 //    For example, "no nil bids are allowed in the returned array".
-//    These tests are tedious to write, but very valuable to verify correct auction behavior.
+//    These tests are tedious to write, but help prevent bugs during auctions.
 //
-// 2. In the future, we plan to auto-generate documentation from the "ideal" JSON requests.
-//    By generating sample docs and running tests on the same code, this will teach publishers
-//    how to use your Bidder properly, which should encourage adoption.
+// 2. In the future, we plan to auto-generate documentation from the "exemplary" test files.
+//    By using this structure, those docs will teach publishers how to use your Bidder, which should encourage adoption.
 //
 // To use this method, create the following folders:
 //
-// adapters/{bidder}/{bidder}test/ideal:
-//   Fill this with *.json files which show "perfect" bid requests for your adapter. Your adapter should return
-//   no errors on these requests, and you should expect them to serve as public documentation in the future.
+// adapters/{bidder}/{bidder}test/exemplary:
+//   Fill this with *.json files which show "ideal" requests for your bidder.
+//   Expect the file name and BidRequest to become public documentation in the future.
+//   If possible, set up your servers so that they return the expected responses forever.
+//   This will enable the auto-generated docs to guarantee to publishers that your adapter works as advertised.
 //
-// adapters/{bidder}/{bidder}test/invalid:
-//   Fill this with *.json files which describe *unsupported* bid requests for your adapter. Your adapter should
-//   return errors on these requests *without* making any external calls. For example, a request with a Video imp
-//   would go here if your adapter doesn't support Video bids.
+// adapters/{bidder}/{bidder}test/supplementary:
+//   Fill this with *.json files which are useful test cases, but are not appropriate for external docs.
+//   For example, a mobile-only Bidder would use this to make sure their bidder returns errors on non-mobile requests.
 //
+// Then create a test in your adapters/{bidder}/{bidder}_test.go file like so:
 //
-// TODO: It may be worth adding a "flawed" directory here, with requests which the Bidder can _handle_, but
-// not necessarily ideal. For example: testing a Request with one Imp and one Video bid which gets sent to
-// a Bidder which does not support Video. I'll implement this if people like the overall strategy in the PR.
+//    func TestJsonSamples(t *testing.T) {
+//      adapterstest.TestOpenRTB(t, "{bidder}test", someBidderInstance)
+//    }
 func TestOpenRTB(t *testing.T, rootDir string, bidder adapters.Bidder) {
-	t.Helper()
+	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false)
+	runTests(t, fmt.Sprintf("%s/supplementary", rootDir), bidder, true)
+}
 
-	if idealReqs, err := ioutil.ReadDir(fmt.Sprintf("%s/ideal", rootDir)); err == nil {
-		for _, idealReq := range idealReqs {
-			TestUsefulRequest(t, fmt.Sprintf("%s/ideal/%s", rootDir, idealReq.Name()), bidder)
-		}
-	}
+// runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
+// expects errors from the bidder, then the test will fail.
+func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowErrors bool) {
+	if specFiles, err := ioutil.ReadDir(directory); err == nil {
+		for _, specFile := range specFiles {
+			fileName := fmt.Sprintf("%s/%s", directory, specFile.Name())
+			specData, err := loadFile(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileName, err)
+			}
 
-	if invalidReqs, err := ioutil.ReadDir(fmt.Sprintf("%s/invalid", rootDir)); err == nil {
-		for _, invalidReq := range invalidReqs {
-			TestUselessRequest(t, fmt.Sprintf("%s/invalid/%s", rootDir, invalidReq.Name()), bidder)
+			if allowErrors != specData.expectsErrors() {
+				t.Fatalf("Exemplary spec %s must not expect errors.", fileName)
+			}
+			runSpec(t, fileName, specData, bidder)
 		}
 	}
 }
 
-// This method implements the adapters/{bidder}/{bidder}test/ideal tests.
-// It expects the Bidder to return no errors.
-func TestUsefulRequest(t *testing.T, specPath string, bidder adapters.Bidder) {
-	t.Helper()
-
-	specData, err := ioutil.ReadFile(specPath)
+// LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
+func loadFile(filename string) (*ortbSpec, error) {
+	specData, err := ioutil.ReadFile(filename)
 	if err != nil {
-		t.Fatalf("Failed to read spec file contents.")
+		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
 
 	var spec ortbSpec
 	if err := json.Unmarshal(specData, &spec); err != nil {
-		t.Fatalf("Failed to unmarshal spec file: %v", err)
+		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
 
+	return &spec, nil
+}
+
+// runSpec runs a single test case. It will make sure:
+//
+//   - That the Bidder does not return nil HTTP requests, bids, or errors inside their lists
+//   - That the Bidder's HTTP calls match the spec's expectations.
+//   - That the Bidder's Bids match the spec's expectations
+//   - That the Bidder's errors match the spec's expectations
+//
+// More assertions will almost certainly be added in the future, as bugs come up.
+func runSpec(t *testing.T, filename string, spec *ortbSpec, bidder adapters.Bidder) {
 	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest)
-	if len(errs) > 0 {
-		t.Errorf("The sample bid request should not have produced an error. Got %v", errs)
-	}
-
-	if len(actualReqs) != len(spec.HttpCalls) {
-		t.Fatalf("Bidder did not make the expected number of HTTP calls. Expected %d, got %d", len(spec.HttpCalls), len(actualReqs))
-	}
+	compareErrorLists(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
+	compareHttpRequestLists(t, filename, actualReqs, spec.HttpCalls)
 
 	var bids = make([]*adapters.TypedBid, 0, len(spec.Bids))
-	for i, expectedCall := range spec.HttpCalls {
-		actualReq := actualReqs[i]
-		if actualReq == nil {
-			t.Errorf("The adpater should never send back a nil request.")
-		} else {
-			if expectedCall.Request.Uri != actualReq.Uri {
-				t.Errorf("HTTP request %d had the wrong Uri. Expected %s, got %s", i, expectedCall.Request.Uri, actualReq.Uri)
-			}
-
-			var actualReqData openrtb.BidRequest
-			if err := json.Unmarshal(actualReq.Body, &actualReqData); err != nil {
-				t.Fatalf("json.httpCalls.request.body unmarshalling failed: %v", err)
-			}
-			bidRequestDifferences := diffBidRequests(&actualReqData, &(expectedCall.Request.Body))
-			if len(bidRequestDifferences) > 0 {
-				t.Errorf("HTTP request %d did not match expectations: %v", i, bidRequestDifferences)
-			}
-		}
-
-		actualBids, bidErrs := bidder.MakeBids(&spec.BidRequest, expectedCall.Response.ToResponseData(t))
-		if len(bidErrs) > 0 {
-			t.Fatalf("The adapter shouldn't return errors when generating bids. Got: %v", bidErrs)
-		}
-		bids = append(bids, actualBids...)
+	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
+	for i := 0; i < len(actualReqs); i++ {
+		theseBids, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Response.ToResponseData(t))
+		bids = append(bids, theseBids...)
+		bidsErrs = append(bidsErrs, theseErrs...)
 	}
 
-	if len(bids) != len(spec.Bids) {
-		t.Fatalf("Bidder did not make the expected number of bids. Expected %d, got %d", len(spec.Bids), len(bids))
+	compareErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
+	compareBidLists(t, filename, bids, spec.Bids)
+}
+
+func compareErrorLists(t *testing.T, description string, actual []error, expected []string) {
+	t.Helper()
+
+	if len(expected) != len(actual) {
+		t.Fatalf("%s had wrong error count. Expected %d, got %d", description, len(expected), len(actual))
 	}
-
-	for i, bid := range bids {
-		expectedBid := spec.Bids[i].ToTypedBid()
-
-		bidDifferences := diffTypedBids(bid, expectedBid)
-		if len(bidDifferences) > 0 {
-			t.Errorf("Bids did not match expectations: %v", bidDifferences)
+	for i := 0; i < len(actual); i++ {
+		if expected[i] != actual[i].Error() {
+			t.Errorf(`%s error[%d] had wrong message. Expected "%s", got "%s"`, description, i, expected[i], actual[i].Error())
 		}
 	}
 }
 
-// This method implements the adapters/{bidder}/{bidder}test/invalid tests.
-// It expects the Bidder to return at least one error, and no HTTP calls.
-func TestUselessRequest(t *testing.T, specPath string, bidder adapters.Bidder) {
-	specData, err := ioutil.ReadFile(specPath)
-	if err != nil {
-		t.Fatalf("Failed to read spec file contents.")
-	}
+func compareHttpRequestLists(t *testing.T, filename string, actual []*adapters.RequestData, expected []httpCall) {
+	t.Helper()
 
-	var spec ortbSpec
-	if err := json.Unmarshal(specData, &spec); err != nil {
-		t.Fatalf("Failed to unmarshal spec file: %v", err)
+	if len(expected) != len(actual) {
+		t.Fatalf("%s: MakeRequests had wrong request count. Expected %d, got %d", filename, len(expected), len(actual))
 	}
+	for i := 0; i < len(actual); i++ {
+		diffHttpRequests(t, fmt.Sprintf("%s: httpRequest[%d]", filename, i), actual[i], &(expected[i].Request))
+	}
+}
 
-	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest)
-	if len(actualReqs) > 0 {
-		t.Errorf("A useless request should make no HTTP calls. Got %v", len(actualReqs))
+func compareBidLists(t *testing.T, filename string, actual []*adapters.TypedBid, expected []expectedBid) {
+	t.Helper()
+
+	if len(actual) != len(expected) {
+		t.Fatalf("%s: MakeBids returned wrong bid count. Expected %d, got %d", filename, len(expected), len(actual))
 	}
-	if len(errs) == 0 {
-		t.Errorf("A useless request should return at least one error. Got 0.")
+	for i := 0; i < len(actual); i++ {
+		diffBids(t, i, actual[i], &(expected[i]))
 	}
 }
 
 type ortbSpec struct {
-	BidRequest openrtb.BidRequest `json:"mockBidRequest"`
-	HttpCalls  []httpCall         `json:"httpCalls"`
-	Bids       []expectedBid      `json:"expectedBids"`
+	BidRequest        openrtb.BidRequest `json:"mockBidRequest"`
+	HttpCalls         []httpCall         `json:"httpCalls"`
+	Bids              []expectedBid      `json:"expectedBids"`
+	MakeRequestErrors []string           `json:"expectedMakeRequestsErrors"`
+	MakeBidsErrors    []string           `json:"expectedMakeBidsErrors"`
+}
+
+func (spec *ortbSpec) expectsErrors() bool {
+	return len(spec.MakeRequestErrors) > 0 || len(spec.MakeBidsErrors) > 0
 }
 
 type httpCall struct {
@@ -180,20 +182,33 @@ type expectedBid struct {
 	Type string       `json:"type"`
 }
 
-func (bid *expectedBid) ToTypedBid() *adapters.TypedBid {
-	return &adapters.TypedBid{
-		Bid:     bid.Bid,
-		BidType: openrtb_ext.BidType(bid.Type),
-	}
-}
-
 // ---------------------------------------
-// TODO: Lots of ugly, repetitive, boilerplate code down here. Am requestin general impressions in a PR before being thorough.
+// TODO: Lots of ugly, repetitive, boilerplate code down here. Am requesting general impressions in a PR before being thorough.
 //
 // We can't use reflect.DeepEquals because the `Ext` on each OpenRTB type is a byte array which we really want
 // to compare *as JSON. Unfortunately, recursive equality bloats into lots of manual code.
 //
 // It's not terrible, though... This lets us produce much more useful error messages on broken tests.
+
+func diffHttpRequests(t *testing.T, description string, actual *adapters.RequestData, expected *httpRequest) {
+	if actual == nil {
+		t.Errorf("%s should not be nil.", description)
+		return
+	}
+
+	if expected.Uri != actual.Uri {
+		t.Errorf("%s had wrong Uri. Expected %s, got %s", description, expected.Uri, actual.Uri)
+	}
+
+	var actualReqData openrtb.BidRequest
+	if err := json.Unmarshal(actual.Body, &actualReqData); err != nil {
+		t.Fatalf("%s unmarshalling failed. Does your Bidder send an OpenRTB BidRequest? %v", description, err)
+	}
+	bidRequestDifferences := diffBidRequests(&actualReqData, &(expected.Body))
+	if len(bidRequestDifferences) > 0 {
+		t.Errorf("%s did not match expectations: %v", description, bidRequestDifferences)
+	}
+}
 
 func diffBidRequests(actual *openrtb.BidRequest, expected *openrtb.BidRequest) (differences []string) {
 	differences = diffStrings("request.id", actual.ID, expected.ID, differences)
@@ -288,13 +303,19 @@ func diffJson(description string, actual openrtb.RawJSON, expected openrtb.RawJS
 	return differences
 }
 
-func diffTypedBids(actual *adapters.TypedBid, expected *adapters.TypedBid) (differences []string) {
-	differences = diffStrings("typedBid.type", string(actual.BidType), string(expected.BidType), differences)
-	differences = diffBids("typedBid.bid", actual.Bid, expected.Bid, differences)
+func diffBids(t *testing.T, index int, actual *adapters.TypedBid, expected *expectedBid) (differences []string) {
+	differences = diffStrings("typedBid.type", string(actual.BidType), string(expected.Type), differences)
+	differences = diffOrtbBids("typedBid.bid", actual.Bid, expected.Bid, differences)
 	return differences
 }
 
-func diffBids(description string, actual *openrtb.Bid, expected *openrtb.Bid, differences []string) []string {
+func diffTypedBids(actual *adapters.TypedBid, expected *adapters.TypedBid) (differences []string) {
+	differences = diffStrings("typedBid.type", string(actual.BidType), string(expected.BidType), differences)
+	differences = diffOrtbBids("typedBid.bid", actual.Bid, expected.Bid, differences)
+	return differences
+}
+
+func diffOrtbBids(description string, actual *openrtb.Bid, expected *openrtb.Bid, differences []string) []string {
 	differences = diffStrings(fmt.Sprintf("%s.id expected %s, but got %s", description, expected.ID, actual.ID), actual.ID, expected.ID, differences)
 	differences = diffStrings(fmt.Sprintf("%s.impid expected %s, but got %s", description, expected.ImpID, actual.ImpID), actual.ImpID, expected.ImpID, differences)
 	differences = diffFloats(fmt.Sprintf("%s.price expected %f, but got %f", description, expected.Price, actual.Price), actual.Price, expected.Price, differences)
