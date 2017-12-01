@@ -1,5 +1,7 @@
 package cache
 
+import "github.com/prebid/prebid-server/pbs/buckets"
+
 type Domain struct {
 	Domain string `json:"domain"`
 }
@@ -9,8 +11,8 @@ type App struct {
 }
 
 type Account struct {
-	ID               string `json:"id"`
-	PriceGranularity string `json:"price_granularity"`
+	ID               string                   `json:"id"`
+	PriceGranularity buckets.PriceGranularity `json:"price_granularity"`
 }
 
 type Configuration struct {

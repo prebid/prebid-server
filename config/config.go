@@ -22,11 +22,12 @@ type Configuration struct {
 }
 
 type HostCookie struct {
-	Domain     string `mapstructure:"domain"`
-	Family     string `mapstructure:"family"`
-	CookieName string `mapstructure:"cookie_name"`
-	OptOutURL  string `mapstructure:"opt_out_url"`
-	OptInURL   string `mapstructure:"opt_in_url"`
+	Domain       string `mapstructure:"domain"`
+	Family       string `mapstructure:"family"`
+	CookieName   string `mapstructure:"cookie_name"`
+	OptOutURL    string `mapstructure:"opt_out_url"`
+	OptInURL     string `mapstructure:"opt_in_url"`
+	OptOutCookie Cookie `mapstructure:"optout_cookie"`
 }
 
 type Adapter struct {
@@ -64,6 +65,11 @@ type Cache struct {
 	Query  string `mapstructure:"query"`
 }
 
+type Cookie struct {
+	Name  string `mapstructure:"name"`
+	Value string `mapstructure:"value"`
+}
+
 // New uses viper to get our server configurations
 func New() (*Configuration, error) {
 	var c Configuration
@@ -76,10 +82,10 @@ func New() (*Configuration, error) {
 //Allows for protocol relative URL if scheme is empty
 func (cfg *Configuration) GetCacheBaseURL() string {
 	cfg.CacheURL.Scheme = strings.ToLower(cfg.CacheURL.Scheme)
-	if strings.Contains(cfg.CacheURL.Scheme, "https"){
+	if strings.Contains(cfg.CacheURL.Scheme, "https") {
 		return fmt.Sprintf("https://%s", cfg.CacheURL.Host)
 	}
-	if strings.Contains(cfg.CacheURL.Scheme, "http"){
+	if strings.Contains(cfg.CacheURL.Scheme, "http") {
 		return fmt.Sprintf("http://%s", cfg.CacheURL.Host)
 	}
 	return fmt.Sprintf("//%s", cfg.CacheURL.Host)

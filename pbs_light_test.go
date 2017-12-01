@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 )
@@ -51,7 +52,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	}
 
 	if csresp.UUID != csreq.UUID {
-		t.Errorf("UUIDs didn't match")
+		t.Error("UUIDs didn't match")
 	}
 
 	if csresp.Status != "no_cookie" {
@@ -84,7 +85,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
 
-	pcs := pbs.ParsePBSCookieFromRequest(req)
+	pcs := pbs.ParsePBSCookieFromRequest(req, &cfg.HostCookie.OptOutCookie)
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
 	req.AddCookie(pcs.ToHTTPCookie())
@@ -102,7 +103,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 
 	if csresp.UUID != csreq.UUID {
-		t.Errorf("UUIDs didn't match")
+		t.Error("UUIDs didn't match")
 	}
 
 	if csresp.Status != "ok" {
@@ -178,6 +179,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		Width:      300,
 		Height:     250,
 		CacheID:    "test_cache_id1",
+		DealId:     "2345",
 	}
 	bids = append(bids, &fb_bid)
 	an_bid := pbs.PBSBid{
@@ -189,6 +191,7 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		Width:      320,
 		Height:     50,
 		CacheID:    "test_cache_id2",
+		DealId:     "1234",
 	}
 	bids = append(bids, &an_bid)
 	nosize_bid := pbs.PBSBid{
@@ -200,6 +203,15 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		CacheID:    "test_cache_id2",
 	}
 	bids = append(bids, &nosize_bid)
+	nodeal_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "nodeal",
+		Price:      1.00,
+		Adm:        "test_adm",
+		CacheID:    "test_cache_id2",
+	}
+	bids = append(bids, &nodeal_bid)
 	pbs_resp := pbs.PBSResponse{
 		Bids: bids,
 	}
@@ -207,45 +219,57 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 
 	for _, bid := range bids {
 		if bid.AdServerTargeting == nil {
-			t.Errorf("Ad server targeting should not be nil")
+			t.Error("Ad server targeting should not be nil")
 		}
 		if bid.BidderCode == "audienceNetwork" {
 			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
-				t.Errorf("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
+				t.Error("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
 			}
 			if bid.AdServerTargeting["hb_size"] != "300x250" {
-				t.Errorf("hb_size key was not parsed correctly")
+				t.Error("hb_size key was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb"] != "2.00" {
-				t.Errorf("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+				t.Error("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
 			}
+
 			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
-				t.Errorf("hb_cache_id key was not parsed correctly")
+				t.Error("hb_cache_id key was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
-				t.Errorf("hb_bidder key was not parsed correctly")
+				t.Error("hb_bidder key was not parsed correctly")
+			}
+			if bid.AdServerTargeting["hb_deal"] != "2345" {
+				t.Error("hb_deal_id key was not parsed correctly ")
 			}
 		}
 		if bid.BidderCode == "appnexus" {
 			if bid.AdServerTargeting["hb_size_appnexus"] != "320x50" {
-				t.Errorf("hb_size key for appnexus bidder was not parsed correctly")
+				t.Error("hb_size key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_cache_id_appnexus"] != "test_cache_id2" {
-				t.Errorf("hb_cache_id key for appnexus bidder was not parsed correctly")
+				t.Error("hb_cache_id key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_bidder_appnexus"] != "appnexus" {
-				t.Errorf("hb_bidder key for appnexus bidder was not parsed correctly")
+				t.Error("hb_bidder key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb_appnexus"] != "1.00" {
-				t.Errorf("hb_pb key for appnexus bidder was not parsed correctly")
+				t.Error("hb_pb key for appnexus bidder was not parsed correctly")
 			}
 			if bid.AdServerTargeting["hb_pb"] != "" {
-				t.Errorf("hb_pb key was parsed for two bidders")
+				t.Error("hb_pb key was parsed for two bidders")
+			}
+			if bid.AdServerTargeting["hb_deal_appnexus"] != "1234" {
+				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
 			}
 		}
 		if bid.BidderCode == "nosizebidder" {
 			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
-				t.Errorf("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+				t.Error("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+			}
+		}
+		if bid.BidderCode == "nodeal" {
+			if _, exists := bid.AdServerTargeting["hb_deal_nodeal"]; exists {
+				t.Error("hb_deal_id key for nodeal bidder was not parsed correctly")
 			}
 		}
 	}
@@ -417,8 +441,7 @@ func TestBidSizeValidate(t *testing.T) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-
-	handler := NewJsonDirectoryServer(schemaDirectory)
+	handler := NewJsonDirectoryServer(&testValidator{})
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -426,7 +449,7 @@ func TestNewJsonDirectoryServer(t *testing.T) {
 	var data map[string]json.RawMessage
 	json.Unmarshal(recorder.Body.Bytes(), &data)
 
-	// Make sure that every adapter has a json schema file associated with it
+	// Make sure that every adapter has a json schema by the same name associated with it.
 	adapterFiles, err := ioutil.ReadDir(adapterDirectory)
 	if err != nil {
 		t.Fatalf("Failed to open the adapters directory: %v", err)
@@ -446,7 +469,7 @@ func TestWriteAuctionError(t *testing.T) {
 	json.Unmarshal(recorder.Body.Bytes(), &resp)
 
 	if len(resp.Bids) != 0 {
-		t.Errorf("Error responses should return no bids.")
+		t.Error("Error responses should return no bids.")
 	}
 	if resp.Status != "some error message" {
 		t.Errorf("The response status should be the error message. Got: %s", resp.Status)
@@ -457,17 +480,22 @@ func TestWriteAuctionError(t *testing.T) {
 	}
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	if _, ok := data[key]; !ok {
 		t.Errorf("Expected map to produce a schema for adapter: %s", key)
+	}
+}
+
+type testValidator struct{}
+
+func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
+	return nil
+}
+
+func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
+	if name == openrtb_ext.BidderAppnexus {
+		return "{\"appnexus\":true}"
+	} else {
+		return "{\"appnexus\":false}"
 	}
 }

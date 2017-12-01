@@ -17,6 +17,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 )
 
 type lsTagInfo struct {
@@ -83,7 +84,7 @@ func DummyLifestreetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if *breq.Device.ConnectionType != openrtb.ConnectionType(lsdata.deviceConnectiontype) {
-		http.Error(w, fmt.Sprintf("Connectiontype '%s' doesn't match '%s", breq.Device.ConnectionType, lsdata.deviceConnectiontype), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Connectiontype '%d' doesn't match '%d", breq.Device.ConnectionType, lsdata.deviceConnectiontype), http.StatusInternalServerError)
 		return
 	}
 	if breq.Device.IFA != lsdata.deviceIfa {
@@ -223,7 +224,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	req.Header.Add("Referer", lsdata.referrer)
 	req.Header.Add("X-Real-IP", lsdata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))

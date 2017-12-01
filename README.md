@@ -13,7 +13,12 @@ For more information, see:
 
 ## Installation
 
-First install [Go 1.9.1](https://golang.org/doc/install) and [Glide](https://github.com/Masterminds/glide#install).
+First install [Go 1.9.1](https://golang.org/doc/install) and [Glide](https://github.com/Masterminds/glide#install). Note that Glide requires an explicit GOPATH to be set.
+
+```bash
+export GOPATH=$(go env GOPATH)
+mkdir -p $GOPATH
+```
 
 Then download and prepare Prebid Server:
 
@@ -43,8 +48,9 @@ For the full API reference, see [docs/endpoints](docs/endpoints)
 
 ## Contributing
 
-Want to add an adapter? Found a bug? Great! This project is in its infancy, and many things
-can be improved.
+Want to [add an adapter](docs/developers/add-new-bidder.md)? Found a bug? Great!
+This project is in its infancy, and many things can be improved.
+
 
 Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
 
