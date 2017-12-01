@@ -17,6 +17,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 )
 
 type tagInfo struct {
@@ -204,7 +205,7 @@ func GenerateBidRequestForTestData(fbdata bidInfo, url string) (*pbs.PBSRequest,
 	req.Header.Add("User-Agent", fbdata.deviceUA)
 	req.Header.Add("X-Real-IP", fbdata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req)
+	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pc.TrySync("audienceNetwork", fbdata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "")

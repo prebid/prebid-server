@@ -13,7 +13,7 @@ type App struct {
 }
 
 type Account struct {
-	ID               string `json:"id"`
+	ID               string                       `json:"id"`
 	PriceGranularity openrtb_ext.PriceGranularity `json:"price_granularity"`
 }
 

@@ -32,6 +32,7 @@ import (
 	"crypto/tls"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/facebook"
 	"github.com/prebid/prebid-server/adapters/index"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
@@ -115,6 +116,7 @@ const hbpbConstantKey = "hb_pb"
 const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
+const hbDealIdConstantKey = "hb_deal"
 const hbSizeConstantKey = "hb_size"
 
 // hb_creative_loadtype key can be one of `demand_sdk` or `html`
@@ -185,7 +187,7 @@ type cookieSyncResponse struct {
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -487,11 +489,13 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
 			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
 			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
+			hbDealIdBidderKey := hbDealIdConstantKey + "_" + bid.BidderCode
 			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
 				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 			pbs_kvs := map[string]string{
@@ -502,11 +506,17 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
+			if bid.DealId != "" {
+				pbs_kvs[hbDealIdBidderKey] = bid.DealId
+			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
 				pbs_kvs[hbpbConstantKey] = roundedCpm
 				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
 				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				if bid.DealId != "" {
+					pbs_kvs[hbDealIdConstantKey] = bid.DealId
+				}
 				if hbSize != "" {
 					pbs_kvs[hbSizeConstantKey] = hbSize
 				}
@@ -701,6 +711,8 @@ func init() {
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
+	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
@@ -728,6 +740,7 @@ func setupExchanges(cfg *config.Configuration) {
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
+		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint, cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
 	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
@@ -840,11 +853,12 @@ func serve(cfg *config.Configuration) error {
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	hostCookieSettings = pbs.HostCookieSettings{
-		Domain:     cfg.HostCookie.Domain,
-		Family:     cfg.HostCookie.Family,
-		CookieName: cfg.HostCookie.CookieName,
-		OptOutURL:  cfg.HostCookie.OptOutURL,
-		OptInURL:   cfg.HostCookie.OptInURL,
+		Domain:       cfg.HostCookie.Domain,
+		Family:       cfg.HostCookie.Family,
+		CookieName:   cfg.HostCookie.CookieName,
+		OptOutURL:    cfg.HostCookie.OptOutURL,
+		OptInURL:     cfg.HostCookie.OptInURL,
+		OptOutCookie: cfg.HostCookie.OptOutCookie,
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{

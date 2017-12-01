@@ -45,11 +45,12 @@ func (a *RubiconAdapter) SkipNoCookies() bool {
 }
 
 type rubiconParams struct {
-	AccountId int             `json:"accountId"`
-	SiteId    int             `json:"siteId"`
-	ZoneId    int             `json:"zoneId"`
-	Inventory json.RawMessage `json:"inventory"`
-	Visitor   json.RawMessage `json:"visitor"`
+	AccountId int                `json:"accountId"`
+	SiteId    int                `json:"siteId"`
+	ZoneId    int                `json:"zoneId"`
+	Inventory json.RawMessage    `json:"inventory"`
+	Visitor   json.RawMessage    `json:"visitor"`
+	Video     rubiconVideoParams `json:"video"`
 }
 
 type rubiconImpExtRPTrack struct {
@@ -99,6 +100,26 @@ type rubiconBannerExtRP struct {
 
 type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
+}
+
+// ***** Video Extension *****
+type rubiconVideoParams struct {
+	Language     string `json:"language,omitempty"`
+	PlayerHeight int    `json:"playerHeight,omitempty"`
+	PlayerWidth  int    `json:"playerWidth,omitempty"`
+	VideoSizeID  int    `json:"size_id,omitempty"`
+	Skip         int    `json:"skip,omitempty"`
+	SkipDelay    int    `json:"skipdelay,omitempty"`
+}
+
+type rubiconVideoExt struct {
+	Skip      int               `json:"skip,omitempty"`
+	SkipDelay int               `json:"skipdelay,omitempty"`
+	RP        rubiconVideoExtRP `json:"rp"`
+}
+
+type rubiconVideoExtRP struct {
+	SizeID int `json:"size_id,omitempty"`
 }
 
 type rubiconTargetingExt struct {
@@ -274,8 +295,10 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
+	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+
 	for i, unit := range bidder.AdUnits {
-		rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}, true)
+		rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
 		if err != nil {
 			continue
 		}
@@ -325,13 +348,18 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		deviceCopy.Ext, err = json.Marshal(&deviceExt)
 		rubiReq.Device = &deviceCopy
 
-		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
-		if err != nil {
-			return nil, err
+		if rubiReq.Imp[0].Video != nil {
+			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: params.Video.VideoSizeID}}
+			rubiReq.Imp[0].Video.Ext, err = json.Marshal(&videoExt)
+		} else {
+			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
+			if err != nil {
+				return nil, err
+			}
+			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
+			rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
 		}
 
-		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-		rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
 

@@ -16,7 +16,7 @@ type ExtRequestTargeting struct {
 	MaxLength        int              `json:"lengthmax"`
 }
 
-// PriceGranularity defines the allowed values for bidrequest.ext.targeting.pricegranularity
+// PriceGranularity defines the allowed values for bidrequest.ext.prebid.targeting.pricegranularity
 type PriceGranularity string
 
 const (
