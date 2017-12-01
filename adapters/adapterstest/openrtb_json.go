@@ -21,23 +21,25 @@ import (
 // 2. In the future, we plan to auto-generate documentation from the "exemplary" test files.
 //    By using this structure, those docs will teach publishers how to use your Bidder, which should encourage adoption.
 //
-// To use this method, create the following folders:
+// To use this method, create *.json files in the following directories:
 //
 // adapters/{bidder}/{bidder}test/exemplary:
-//   Fill this with *.json files which show "ideal" requests for your bidder.
-//   Expect the file name and BidRequest to become public documentation in the future.
-//   If possible, set up your servers so that they return the expected responses forever.
-//   This will enable the auto-generated docs to guarantee to publishers that your adapter works as advertised.
+//
+//   These show "ideal" BidRequests for your Bidder. If possible, configure your servers to return the same
+//   expected responses forever. In the future, we plan to auto-generate Publisher-facing docs from these examples.
+//   If your server responds appropriately, we can guarantee Publishers that your adapter works as documented.
 //
 // adapters/{bidder}/{bidder}test/supplementary:
-//   Fill this with *.json files which are useful test cases, but are not appropriate for external docs.
-//   For example, a mobile-only Bidder would use this to make sure their bidder returns errors on non-mobile requests.
+//
+//   Fill this with *.json files which are useful test cases, but are not appropriate for public example docs.
+//   For example, a file in this directory might make sure that a mobile-only Bidderreturns errors on non-mobile requests.
 //
 // Then create a test in your adapters/{bidder}/{bidder}_test.go file like so:
 //
-//    func TestJsonSamples(t *testing.T) {
-//      adapterstest.TestOpenRTB(t, "{bidder}test", someBidderInstance)
-//    }
+//   func TestJsonSamples(t *testing.T) {
+//     adapterstest.TestOpenRTB(t, "{bidder}test", someBidderInstance)
+//   }
+//
 func TestOpenRTB(t *testing.T, rootDir string, bidder adapters.Bidder) {
 	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false)
 	runTests(t, fmt.Sprintf("%s/supplementary", rootDir), bidder, true)
