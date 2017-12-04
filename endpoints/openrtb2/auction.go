@@ -273,7 +273,7 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
 		referrerCandidate := httpReq.Referer()
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
-			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err != nil {
+			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
 				if bidReq.Site == nil {
 					bidReq.Site = &openrtb.Site{}
 				}

@@ -134,6 +134,25 @@ func TestImplicitIPs(t *testing.T) {
 	}
 }
 
+func TestRefererParsing(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("Referer", "http://test.mysite.com")
+	bidReq := &openrtb.BidRequest{}
+
+	setSiteImplicitly(httpReq, bidReq)
+
+	if bidReq.Site == nil {
+		t.Fatalf("bidrequest.site should not be nil.")
+	}
+
+	if bidReq.Site.Domain != "mysite.com" {
+		t.Errorf("Bad bidrequest.site.domain. Expected mysite.com, got %s", bidReq.Site.Domain)
+	}
+	if bidReq.Site.Page != "http://test.mysite.com" {
+		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
+	}
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
