@@ -17,9 +17,11 @@ import (
 	"io"
 )
 
+const maxSize = 1024 * 256
+
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
 func TestGoodRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
@@ -50,7 +52,7 @@ func TestGoodRequests(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
@@ -65,7 +67,7 @@ func TestBadRequests(t *testing.T) {
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
-	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -73,7 +75,7 @@ func TestNilExchange(t *testing.T) {
 
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -81,7 +83,7 @@ func TestNilValidator(t *testing.T) {
 
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: 1024*256 })
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -93,7 +95,7 @@ func TestExchangeError(t *testing.T) {
 
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: 1024*256 }}
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: maxSize }}
 
 	for i, requestData := range testStoredRequests {
 		Request := openrtb.BidRequest{}
