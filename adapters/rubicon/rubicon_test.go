@@ -339,7 +339,7 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 
 	skipNoCookies := an.SkipNoCookies()
 	if skipNoCookies != false {
-		t.Errorf("SkipNoCookies should be false", skipNoCookies)
+		t.Errorf("SkipNoCookies should be false")
 	}
 
 	usersyncInfo := an.GetUsersyncInfo()
@@ -513,11 +513,10 @@ func TestZeroSeatBidResponse(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := openrtb.BidResponse{
-			ID:    "a-random-id",
-			BidID: "another-random-id",
-			Cur:   "USD",
-			SeatBid: []openrtb.SeatBid{
-			},
+			ID:      "a-random-id",
+			BidID:   "another-random-id",
+			Cur:     "USD",
+			SeatBid: []openrtb.SeatBid{},
 		}
 		js, _ := json.Marshal(resp)
 		w.Write(js)
