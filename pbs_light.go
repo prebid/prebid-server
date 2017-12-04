@@ -930,7 +930,7 @@ const requestConfigPath = "./stored_requests/data/by_id"
 func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err error) {
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
-		byId, err = file_fetcher.NewEagerFetcher(requestConfigPath)
+		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
 		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
 		byId, err = db_fetcher.NewPostgres(cfg.Postgres)

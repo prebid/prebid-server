@@ -352,87 +352,7 @@ var invalidRequests = []string{
 // Test stored request data
 var testStoredRequestData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
-			"id": "adUnit1",
-			"ext": {
-				"appnexus": {
-					"placementId": "abc",
-					"position": "above",
-					"reserve": 0.35
-				},
-				"rubicon": {
-					"accountId": "abc"
-				}
-			}
-			}`),
-			"": json.RawMessage(""),
-			}
-
-// Incoming requests with stored request IDs
-var testStoredRequests = []string{
-	`{
-  "id": "ThisID",
-  "imp": [
-    {
-      "ext": {
-        "prebid": {
-          "storedrequest": {
-            "id": "1"
-          }
-        }
-      }
-    }
-  ],
-  "ext": {
-    "prebid": {
-      "cache": {
-        "markup": 1
-      },
-      "targeting": {
-        "lengthmax": 20
-      }
-    }
-  }
-}`,
-	`{
-  "id": "ThisID",
-  "imp": [
-    {
-	  "id": "adUnit2",
-      "ext": {
-        "prebid": {
-          "storedrequest": {
-            "id": "1"
-          }
-		    },
-		    "appnexus": {
-			    "placementId": "def",
-			    "trafficSourceCode": "mysite.com",
-      		"reserve": null
-        },
-        "rubicon": null
-      }
-    }
-  ],
-  "ext": {
-    "prebid": {
-      "cache": {
-        "markup": 1
-      },
-      "targeting": {
-        "lengthmax": 20
-      }
-    }
-  }
-}`,
-}
-
-// The expected requests after stored request processing
-var testFinalRequests = []string {
-	`{
-"id": "ThisID",
-"imp": [
-	{
-	"id": "adUnit1",
+		"id": "adUnit1",
 		"ext": {
 			"appnexus": {
 				"placementId": "abc",
@@ -441,58 +361,136 @@ var testFinalRequests = []string {
 			},
 			"rubicon": {
 				"accountId": "abc"
-			},
-			"prebid": {
-        "storedrequest": {
-            "id": "1"
-          }
 			}
-    }
-	}
-],
-"ext": {
-	"prebid": {
-  		"cache": {
-			"markup": 1
-  		},
-  		"targeting": {
-			"lengthmax": 20
-  		}
-	}
+		}
+	}`),
+	"": json.RawMessage(""),
 }
-}`,
+
+// Incoming requests with stored request IDs
+var testStoredRequests = []string{
 	`{
-  "id": "ThisID",
-  "imp": [
-    {
-	  "id": "adUnit2",
-      "ext": {
-        "prebid": {
-          "storedrequest": {
-            "id": "1"
-          }
-		},
-		"appnexus": {
-			"placementId": "def",
-			"position": "above",
-      		"trafficSourceCode": "mysite.com"
-        }
-      }
-    }
-  ],
-  "ext": {
-    "prebid": {
-      "cache": {
-        "markup": 1
-      },
-      "targeting": {
-        "lengthmax": 20
-      }
-    }
-  }
-}`,
+		"id": "ThisID",
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					},
+					"appnexus": {
+						"placementId": "def",
+						"trafficSourceCode": "mysite.com",
+						"reserve": null
+					},
+					"rubicon": null
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+}
 
-
+// The expected requests after stored request processing
+var testFinalRequests = []string {
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit1",
+				"ext": {
+					"appnexus": {
+						"placementId": "abc",
+						"position": "above",
+						"reserve": 0.35
+					},
+					"rubicon": {
+						"accountId": "abc"
+					},
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					},
+					"appnexus": {
+						"placementId": "def",
+						"position": "above",
+						"trafficSourceCode": "mysite.com"
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
 }
 
 type mockStoredReqFetcher struct {

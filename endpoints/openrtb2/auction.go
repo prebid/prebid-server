@@ -20,7 +20,7 @@ import (
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsById == nil {
+	if ex == nil || validator == nil || requestsById == nil || cfg == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 

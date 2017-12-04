@@ -9,12 +9,12 @@ import (
 	"context"
 )
 
-// NewEagerFetcher _immediately_ loads stored request data from local files.
+// NewFileFetcher _immediately_ loads stored request data from local files.
 // These are stored in memory for low-latency reads.
 //
 // This expects each file in the directory to be named "{config_id}.json".
 // For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
-func NewEagerFetcher(directory string) (stored_requests.Fetcher, error) {
+func NewFileFetcher(directory string) (stored_requests.Fetcher, error) {
 	fileInfos, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err
