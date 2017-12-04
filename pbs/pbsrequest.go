@@ -258,7 +258,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = ParsePBSCookieFromRequest(r)
+		pbsReq.Cookie = ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 
 		// Host has right to leverage private cookie store for user ID
 		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {

@@ -3,6 +3,7 @@ package pbs
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -124,7 +125,7 @@ func TestParseNilSyncMap(t *testing.T) {
 	cookieJSON := "{\"bday\":123,\"optout\":true}"
 	cookieData := base64.URLEncoding.EncodeToString([]byte(cookieJSON))
 	raw := http.Cookie{
-		Name:  COOKIE_NAME,
+		Name:  UID_COOKIE_NAME,
 		Value: cookieData,
 	}
 	parsed := ParsePBSCookie(&raw)
@@ -289,7 +290,7 @@ func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request)
+	return ParsePBSCookieFromRequest(&request, &config.Cookie{})
 }
 
 func newTempId(uid string) uidWithExpiry {
