@@ -29,7 +29,7 @@ import (
 //   expected responses forever. In the future, we plan to auto-generate Publisher-facing docs from these examples.
 //   If your server responds appropriately, we can guarantee Publishers that your adapter works as documented.
 //
-// adapters/{bidder}/{bidder}test/supplementary:
+// adapters/{bidder}/{bidder}test/supplemental:
 //
 //   Fill this with *.json files which are useful test cases, but are not appropriate for public example docs.
 //   For example, a file in this directory might make sure that a mobile-only Bidderreturns errors on non-mobile requests.
@@ -42,7 +42,7 @@ import (
 //
 func TestOpenRTB(t *testing.T, rootDir string, bidder adapters.Bidder) {
 	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false)
-	runTests(t, fmt.Sprintf("%s/supplementary", rootDir), bidder, true)
+	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true)
 }
 
 // runTests runs all the *.json files in a directory. If allowErrors is false, and one of the test files
