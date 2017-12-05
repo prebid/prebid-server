@@ -248,7 +248,7 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	return nil
 }
 
-// setImplicitFields uses _implicit_ information from the httpReq to set values on bidReq.
+// setFieldsImplicitly uses _implicit_ information from the httpReq to set values on bidReq.
 // This function does not consume the request body, which was set explicitly, but infers certain
 // OpenRTB properties from the headers and other implicit info.
 //
@@ -268,7 +268,7 @@ func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	setUAImplicitly(httpReq, bidReq)
 }
 
-// setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Site
+// setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
 		referrerCandidate := httpReq.Referer()
@@ -303,7 +303,7 @@ func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
-// setIPImplicitly sets the IP address on bidReq, if it's defined on the request.
+// setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
 func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.Device == nil || bidReq.Device.UA == "" {
 		if ua := httpReq.UserAgent(); ua != "" {
