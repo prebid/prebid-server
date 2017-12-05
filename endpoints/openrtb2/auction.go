@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
+	"github.com/golang/glog"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
@@ -46,14 +47,16 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Failed to marshal auction response: %v", err)
-	}
+	// Fixes #231
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
 
-	w.WriteHeader(200)
-	w.Write(responseBytes)
+	// If an error happens when encoding the response, there isn't much we can do.
+	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
+	// That status code can't be un-sent... so the best we can do is log the error.
+	if err := enc.Encode(response); err != nil {
+		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+	}
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.
