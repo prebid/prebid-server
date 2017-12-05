@@ -610,7 +610,30 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 }
 
 func (a *RubiconAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
 	bids := make([]*adapters.TypedBid, 0, 5)
+
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			bids = append(bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: openrtb_ext.BidTypeBanner,
+			})
+		}
+	}
+
 	return bids, nil
 }
 
