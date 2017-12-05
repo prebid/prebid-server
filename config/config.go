@@ -22,11 +22,12 @@ type Configuration struct {
 }
 
 type HostCookie struct {
-	Domain     string `mapstructure:"domain"`
-	Family     string `mapstructure:"family"`
-	CookieName string `mapstructure:"cookie_name"`
-	OptOutURL  string `mapstructure:"opt_out_url"`
-	OptInURL   string `mapstructure:"opt_in_url"`
+	Domain       string `mapstructure:"domain"`
+	Family       string `mapstructure:"family"`
+	CookieName   string `mapstructure:"cookie_name"`
+	OptOutURL    string `mapstructure:"opt_out_url"`
+	OptInURL     string `mapstructure:"opt_in_url"`
+	OptOutCookie Cookie `mapstructure:"optout_cookie"`
 }
 
 type Adapter struct {
@@ -62,6 +63,11 @@ type Cache struct {
 	Scheme string `mapstructure:"scheme"`
 	Host   string `mapstructure:"host"`
 	Query  string `mapstructure:"query"`
+}
+
+type Cookie struct {
+	Name  string `mapstructure:"name"`
+	Value string `mapstructure:"value"`
 }
 
 // New uses viper to get our server configurations
