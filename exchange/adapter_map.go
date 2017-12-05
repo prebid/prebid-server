@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/rubicon"
 	"net/http"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -12,5 +13,6 @@ import (
 func newAdapterMap(client *http.Client) map[openrtb_ext.BidderName]adaptedBidder {
 	return map[openrtb_ext.BidderName]adaptedBidder{
 		openrtb_ext.BidderAppnexus: adaptBidder(new(appnexus.AppNexusAdapter), client),
+		openrtb_ext.BidderRubicon:  adaptBidder(new(rubicon.RubiconAdapter), client),
 	}
 }

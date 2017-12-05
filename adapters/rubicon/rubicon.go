@@ -16,6 +16,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type RubiconAdapter struct {
@@ -311,18 +312,27 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			Track:  track,
 		}}
 		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
+		if err != nil {
+			return nil, err
+		}
 
 		// Copy the $.user object and amend with $.user.ext.rp.target
 		// Copy avoids race condition since it points to ref & shared with other adapters
 		userCopy := *rubiReq.User
 		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: params.Visitor}}
 		userCopy.Ext, err = json.Marshal(&userExt)
+		if err != nil {
+			return nil, err
+		}
 		// Assign back our copy
 		rubiReq.User = &userCopy
 
 		deviceCopy := *rubiReq.Device
 		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: rubiReq.Device.PxRatio}}
 		deviceCopy.Ext, err = json.Marshal(&deviceExt)
+		if err != nil {
+			return nil, err
+		}
 		rubiReq.Device = &deviceCopy
 
 		primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
@@ -332,18 +342,32 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 
 		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
 		rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
+		if err != nil {
+			return nil, err
+		}
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
+		var rubiconUser rubiconUser
+		err = json.Unmarshal(req.PBSUser, &rubiconUser)
+		if err != nil {
+			return nil, err
+		}
 
 		if rubiReq.Site != nil {
 			siteCopy := *rubiReq.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				return nil, err
+			}
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				return nil, err
+			}
+			siteCopy.Content = &openrtb.Content{}
+			siteCopy.Content.Language = rubiconUser.Language
 			rubiReq.Site = &siteCopy
 		} else {
-			var rubiconUser rubiconUser
-			err = json.Unmarshal(req.PBSUser, &rubiconUser)
 			site := &openrtb.Site{}
 			site.Content = &openrtb.Content{}
 			site.Content.Language = rubiconUser.Language
@@ -353,8 +377,14 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.App != nil {
 			appCopy := *rubiReq.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				return nil, err
+			}
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				return nil, err
+			}
 			rubiReq.App = &appCopy
 		}
 
@@ -444,3 +474,144 @@ func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser str
 		XAPIPassword: xpass,
 	}
 }
+
+func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	numRequests := len(request.Imp)
+	requests := make([]bytes.Buffer, numRequests)
+	errs := make([]error, 0, len(request.Imp))
+	var err error
+
+	for i := 0; i < numRequests; i++ {
+		request.Imp = request.Imp[i : i+1]
+
+		var bidderExt adapters.ExtImpBidder
+		if err = json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		var rubiconExt openrtb_ext.ExtImpRubicon
+		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		if rubiconExt.AccountId == 0 {
+			errs = append(errs, errors.New("Missing accountId param"))
+			return nil, errs
+		}
+		if rubiconExt.SiteId == 0 {
+			errs = append(errs, errors.New("Missing siteId param"))
+			return nil, errs
+		}
+		if rubiconExt.ZoneId == 0 {
+			errs = append(errs, errors.New("Missing zoneId param"))
+			return nil, errs
+		}
+
+		impExt := rubiconImpExt {
+			RP: rubiconImpExtRP {
+				ZoneID: rubiconExt.ZoneId,
+				Target: rubiconExt.Inventory,
+				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
+			},
+		}
+		request.Imp[0].Ext, err = json.Marshal(&impExt)
+		if (err != nil) {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		userCopy := *request.User
+		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
+		userCopy.Ext, err = json.Marshal(&userExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		request.User = &userCopy
+
+		deviceCopy := *request.Device
+		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
+		deviceCopy.Ext, err = json.Marshal(&deviceExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		request.Device = &deviceCopy
+
+		primarySizeID, altSizeIDs, err := parseRubiconSizes(request.Imp[0].Banner.Format)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
+		request.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
+
+		if request.Site != nil {
+			siteCopy := *request.Site
+			siteCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+			siteCopy.Publisher = &openrtb.Publisher{}
+			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			request.Site = &siteCopy
+		}
+		if request.App != nil {
+			appCopy := *request.App
+			appCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			request.App = &appCopy
+		}
+
+		err = json.NewEncoder(&requests[i]).Encode(request)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+	}
+
+	requestData := make([]*adapters.RequestData, 0, numRequests)
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("User-Agent", "prebid-server/1.0")
+	// http.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
+
+	for i := 0; i < numRequests; i++ {
+		reqJSON, err := json.Marshal(requests[i])
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+		requestData = append(requestData, &adapters.RequestData {
+			Method:  "POST",
+			Uri:     a.URI,///todo
+			Body:    reqJSON,
+			Headers: headers,
+		})
+	}
+
+	return requestData, errs
+}
+
+func (a *RubiconAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+	bids := make([]*adapters.TypedBid, 0, 5)
+	return bids, nil
+}
+
+
