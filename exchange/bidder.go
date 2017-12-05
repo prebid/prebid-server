@@ -211,13 +211,6 @@ type httpCallInfo struct {
 	err      error
 }
 
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 func (bidder *bidderAdapter) makePrebidTargets(bid *openrtb.Bid, bidderTarg *bidderTargeting) (map[string]string, error) {
 	cpm := bid.Price
 	width := bid.W
@@ -238,18 +231,12 @@ func (bidder *bidderAdapter) makePrebidTargets(bid *openrtb.Bid, bidderTarg *bid
 		hbSize = w + "x" + h
 	}
 
-	hbPbBidderKey := string(hbpbConstantKey + "_" + bidderTarg.bidder)
-	hbBidderBidderKey := string(hbBidderConstantKey + "_" + bidderTarg.bidder)
-	hbSizeBidderKey := string(hbSizeConstantKey + "_" + bidderTarg.bidder)
-	hbDealIdBidderKey := string(hbDealIdConstantKey + "_" + bidderTarg.bidder)
-	hbCacheIdBidderKey := string(hbCacheIdConstantKey + "_" + bidderTarg.bidder)
-	if bidderTarg.lengthMax != 0 {
-		hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(bidderTarg.lengthMax))]
-		hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(bidderTarg.lengthMax))]
-		hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(bidderTarg.lengthMax))]
-		hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbSizeBidderKey), int(bidderTarg.lengthMax))]
-		hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbSizeBidderKey), int(bidderTarg.lengthMax))]
-	}
+	hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
+	hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
+	hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
+	hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
+	hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
+
 	pbs_kvs := map[string]string{
 		hbPbBidderKey:      roundedCpm,
 		hbBidderBidderKey:  string(bidderTarg.bidder),

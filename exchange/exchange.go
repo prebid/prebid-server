@@ -191,34 +191,27 @@ func (e *exchange) addWinningTargets(targData *targetData) {
 		bidExt := new(openrtb_ext.ExtBid)
 		err1 := json.Unmarshal(bid.Ext, bidExt)
 		if err1 == nil && bidExt.Prebid.Targeting != nil {
-			hbPbBidderKey := string(hbpbConstantKey+"_"+targData.winningBidders[id])
-			hbBidderBidderKey := string(hbBidderConstantKey+"_"+targData.winningBidders[id])
-			hbSizeBidderKey := string(hbSizeConstantKey+"_"+targData.winningBidders[id])
-			hbDealIdBidderKey := string(hbDealIdConstantKey+"_"+targData.winningBidders[id])
-			hbCacheIdBidderKey := string(hbCacheIdConstantKey+"_"+targData.winningBidders[id])
-			if targData.lengthMax != 0 {
-				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(targData.lengthMax))]
-				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(targData.lengthMax))]
-				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
-				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
-				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbSizeBidderKey), int(targData.lengthMax))]
-			}
+			hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
+			hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
+			hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
+			hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
+			hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
 
-			bidExt.Prebid.Targeting[hbpbConstantKey] = bidExt.Prebid.Targeting[hbPbBidderKey]
-			bidExt.Prebid.Targeting[hbBidderConstantKey] = bidExt.Prebid.Targeting[hbBidderBidderKey]
+			bidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)] = bidExt.Prebid.Targeting[hbPbBidderKey]
+			bidExt.Prebid.Targeting[string(openrtb_ext.HbBidderConstantKey)] = bidExt.Prebid.Targeting[hbBidderBidderKey]
 			if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
-				bidExt.Prebid.Targeting[hbSizeConstantKey] = size
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbSizeConstantKey)] = size
 			}
 			if cache, ok := bidExt.Prebid.Targeting[hbCacheIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[hbCacheIdConstantKey] = cache
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbCacheIdConstantKey)] = cache
 			}
 			if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[hbDealIdConstantKey] = deal
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbDealIdConstantKey)] = deal
 			}
 			if targData.winningBidders[id] == "audienceNetwork" {
-				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodDemandSDK
 			} else {
-				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodHTML
 			}
 			bid.Ext, err1 = json.Marshal(bidExt)
 		}
@@ -323,17 +316,4 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 	return bids, errList
 }
 
-// The following may move to /pbs/targeting with pbs/buckets going in there as well. But pbs/buckets in not yet in this branch
-// This also duplicates code in pbs_light, which should be moved to /pbs/targeting. But that is beyond the current
-// scope, and likely moot if the non-openrtb endpoint goes away.
-const (
-	hbpbConstantKey = "hb_pb"
-	hbBidderConstantKey = "hb_bidder"
-	hbSizeConstantKey = "hb_size"
-	hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
-	hbCreativeLoadMethodHTML = "html"
-	hbCreativeLoadMethodDemandSDK = "demand_sdk"
-	hbCacheIdConstantKey = "hb_cache_id"
-	hbDealIdConstantKey = "hb_deal"
-	)
 
