@@ -39,8 +39,9 @@ type targetData struct {
 	targetFlag bool
 	lengthMax int
 	priceGranularity openrtb_ext.PriceGranularity
-	bid map[string]*openrtb.Bid
-	bidder map[string]openrtb_ext.BidderName
+	// These two dictionaries index on imp.id to identify the winning bid for each imp.
+	winningBids map[string]*openrtb.Bid
+	winningBidders map[string]openrtb_ext.BidderName
 }
 
 type bidderTargeting struct {
@@ -78,8 +79,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		targetFlag:	false,
 		lengthMax:	0,
 		priceGranularity:	openrtb_ext.PriceGranularityMedium,
-		bid:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
-		bidder:		make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
+		winningBids:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
+		winningBidders:		make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
 	}
 	requestExt := new(openrtb_ext.ExtRequest)
 	err := json.Unmarshal(bidRequest.Ext, requestExt)
@@ -186,15 +187,15 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 }
 
 func (e *exchange) addWinningTargets(targData *targetData) {
-	for id, bid := range targData.bid {
+	for id, bid := range targData.winningBids {
 		bidExt := new(openrtb_ext.ExtBid)
 		err1 := json.Unmarshal(bid.Ext, bidExt)
 		if err1 == nil && bidExt.Prebid.Targeting != nil {
-			hbPbBidderKey := string(hbpbConstantKey+"_"+targData.bidder[id])
-			hbBidderBidderKey := string(hbBidderConstantKey+"_"+targData.bidder[id])
-			hbSizeBidderKey := string(hbSizeConstantKey+"_"+targData.bidder[id])
-			hbDealIdBidderKey := string(hbDealIdConstantKey+"_"+targData.bidder[id])
-			hbCacheIdBidderKey := string(hbCacheIdConstantKey+"_"+targData.bidder[id])
+			hbPbBidderKey := string(hbpbConstantKey+"_"+targData.winningBidders[id])
+			hbBidderBidderKey := string(hbBidderConstantKey+"_"+targData.winningBidders[id])
+			hbSizeBidderKey := string(hbSizeConstantKey+"_"+targData.winningBidders[id])
+			hbDealIdBidderKey := string(hbDealIdConstantKey+"_"+targData.winningBidders[id])
+			hbCacheIdBidderKey := string(hbCacheIdConstantKey+"_"+targData.winningBidders[id])
 			if targData.lengthMax != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(targData.lengthMax))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(targData.lengthMax))]
@@ -214,7 +215,7 @@ func (e *exchange) addWinningTargets(targData *targetData) {
 			if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
 				bidExt.Prebid.Targeting[hbDealIdConstantKey] = deal
 			}
-			if targData.bidder[id] == "audienceNetwork" {
+			if targData.winningBidders[id] == "audienceNetwork" {
 				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 			} else {
 				bidExt.Prebid.Targeting[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
@@ -304,10 +305,10 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 		if targData.targetFlag {
 			bidPrebid.Targeting = Bids[i].bidTargets
 			cpm := bids[i].Price
-			wbid, ok := targData.bid[bids[i].ImpID]
+			wbid, ok := targData.winningBids[bids[i].ImpID]
 			if !ok || cpm > wbid.Price {
-				targData.bidder[bids[i].ImpID] = adapter
-				targData.bid[bids[i].ImpID] = &bids[i]
+				targData.winningBidders[bids[i].ImpID] = adapter
+				targData.winningBids[bids[i].ImpID] = &bids[i]
 			}
 		}
 		bidExt.Prebid = bidPrebid

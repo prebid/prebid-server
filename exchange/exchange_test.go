@@ -214,8 +214,8 @@ func TestBuildBidResponse(t *testing.T) {
 	errList := make([]error, 0, 1)
 	targData := &targetData{
 		targetFlag: true,
-		bid: make(map[string]*openrtb.Bid),
-		bidder: make(map[string]openrtb_ext.BidderName),
+		winningBids: make(map[string]*openrtb.Bid),
+		winningBidders: make(map[string]openrtb_ext.BidderName),
 	}
 	bidResponse, err := e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
 	if err != nil {

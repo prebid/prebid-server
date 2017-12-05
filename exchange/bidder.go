@@ -121,17 +121,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 				var targets map[string]string
 				targets = nil
 				if bidderTarg.targetFlag {
-					cpm := bid.Bid.Price
-					width := bid.Bid.W
-					height := bid.Bid.H
-					deal := bid.Bid.DealID
-					cacheKey := ""
 					var err error
-					targets, err = bidder.makePrebidTargets(cpm, width, height, cacheKey, deal, bidderTarg)
+					targets, err = bidder.makePrebidTargets(bid.Bid, bidderTarg)
 					if err != nil {
 						errs = append(errs, err)
-						// set CPM to 0 if we could not bucket it
-						cpm = 0.0
 					}
 				}
 
@@ -225,8 +218,18 @@ func min(x, y int) int {
 	return y
 }
 
-func (bidder *bidderAdapter) makePrebidTargets(cpm float64, width uint64, height uint64, cache string, deal string, bidderTarg *bidderTargeting) (map[string]string, error) {
+func (bidder *bidderAdapter) makePrebidTargets(bid *openrtb.Bid, bidderTarg *bidderTargeting) (map[string]string, error) {
+	cpm := bid.Price
+	width := bid.W
+	height := bid.H
+	deal := bid.DealID
+	cacheKey := ""
+
 	roundedCpm, err := buckets.GetPriceBucketString(cpm, bidderTarg.priceGranularity)
+	if err != nil {
+		// set broken cpm to 0
+		roundedCpm = "0.0"
+	}
 
 	hbSize := ""
 	if width != 0 && height != 0 {
@@ -255,8 +258,8 @@ func (bidder *bidderAdapter) makePrebidTargets(cpm float64, width uint64, height
 	if hbSize != "" {
 		pbs_kvs[hbSizeBidderKey] = hbSize
 	}
-	if len(cache) > 0 {
-		pbs_kvs[hbCacheIdBidderKey] = cache
+	if len(cacheKey) > 0 {
+		pbs_kvs[hbCacheIdBidderKey] = cacheKey
 	}
 	if len(deal) > 0 {
 		pbs_kvs[hbDealIdBidderKey] = deal

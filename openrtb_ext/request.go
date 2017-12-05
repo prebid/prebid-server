@@ -1,5 +1,7 @@
 package openrtb_ext
 
+import "encoding/json"
+
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
 	Prebid ExtRequestPrebid `json:"prebid"`
@@ -14,6 +16,21 @@ type ExtRequestPrebid struct {
 type ExtRequestTargeting struct {
 	PriceGranularity PriceGranularity `json:"pricegranularity"`
 	MaxLength        int              `json:"lengthmax"`
+}
+
+// Make an unmashaller that will set a default PriceGranularity
+func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" {
+		return nil
+	}
+	err := json.Unmarshal(b, ert)
+	if err == nil {
+		// set default value
+		if ert.PriceGranularity == "" {
+			ert.PriceGranularity = PriceGranularityMedium
+		}
+	}
+	return err
 }
 
 // PriceGranularity defines the allowed values for bidrequest.ext.targeting.pricegranularity
