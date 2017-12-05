@@ -153,6 +153,18 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+// TestNoEncoding prevents #231.
+func TestNoEncoding(t *testing.T) {
+	endpoint, _ := NewEndpoint(&mockExchange{}, &bidderParamValidator{})
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if !strings.Contains(recorder.Body.String(), "<script></script>") {
+		t.Errorf("The Response from the exchange should not be html-encoded")
+	}
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
@@ -417,4 +429,16 @@ var invalidRequests = []string{
 			}
 		}]
 	}`,
+}
+
+type mockExchange struct {}
+
+func (*mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+	return &openrtb.BidResponse{
+		SeatBid: []openrtb.SeatBid{{
+			Bid: []openrtb.Bid{{
+				AdM: "<script></script>",
+			}},
+		}},
+	}, nil
 }
