@@ -93,6 +93,73 @@ func TestExchangeError(t *testing.T) {
 	}
 }
 
+// TestUserAgentSetting makes sure we read the User-Agent header if it wasn't defined on the request.
+func TestUserAgentSetting(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("User-Agent", "foo")
+	bidReq := &openrtb.BidRequest{}
+
+	setUAImplicitly(httpReq, bidReq)
+
+	if bidReq.Device == nil {
+		t.Fatal("bidrequest.device should have been set implicitly.")
+	}
+	if bidReq.Device.UA != "foo" {
+		t.Errorf("bidrequest.device.ua should have been \"foo\". Got %s", bidReq.Device.UA)
+	}
+}
+
+// TestUserAgentOverride makes sure that the explicit UA from the request takes precedence.
+func TestUserAgentOverride(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("User-Agent", "foo")
+	bidReq := &openrtb.BidRequest{
+		Device: &openrtb.Device{
+			UA: "bar",
+		},
+	}
+
+	setUAImplicitly(httpReq, bidReq)
+
+	if bidReq.Device.UA != "bar" {
+		t.Errorf("bidrequest.device.ua should have been \"bar\". Got %s", bidReq.Device.UA)
+	}
+}
+
+// TestImplicitIPs prevents #230
+func TestImplicitIPs(t *testing.T) {
+	ex := &nobidExchange{}
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: maxSize })
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
+	recorder := httptest.NewRecorder()
+
+	endpoint(recorder, httpReq, nil)
+
+	if ex.gotRequest.Device.IP != "123.456.78.90" {
+		t.Errorf("Bad device IP. Expected 123.456.78.90, got %s", ex.gotRequest.Device.IP)
+	}
+}
+
+func TestRefererParsing(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("Referer", "http://test.mysite.com")
+	bidReq := &openrtb.BidRequest{}
+
+	setSiteImplicitly(httpReq, bidReq)
+
+	if bidReq.Site == nil {
+		t.Fatalf("bidrequest.site should not be nil.")
+	}
+
+	if bidReq.Site.Domain != "mysite.com" {
+		t.Errorf("Bad bidrequest.site.domain. Expected mysite.com, got %s", bidReq.Site.Domain)
+	}
+	if bidReq.Site.Page != "http://test.mysite.com" {
+		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
+	}
+}
+
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: maxSize }}
@@ -191,9 +258,12 @@ func TestNoEncoding(t *testing.T) {
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
-type nobidExchange struct {}
+type nobidExchange struct {
+	gotRequest *openrtb.BidRequest
+}
 
 func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+	e.gotRequest = bidRequest
 	return &openrtb.BidResponse{
 		ID: bidRequest.ID,
 		BidID: "test bid id",
@@ -226,6 +296,36 @@ func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) strin
 var validRequests = []string{
 	`{
 		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "some-request-id",
+		"app": { },
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -386,6 +486,41 @@ var invalidRequests = []string{
 			"appnexus": "invalidParams"
 		}
 	}]}`,
+	`{"id":"req-id",
+		"imp":[{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}]}`,
+	`{"id":"req-id",
+		"site": {},
+		"imp":[{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}]
+	}`,
+	`{"id":"req-id",
+		"site": {"page":"test.mysite.com"},
+		"app": {},
+		"imp":[{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}]
+	}`,
 }
 
 // StoredRequest testing
