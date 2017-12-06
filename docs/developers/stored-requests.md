@@ -15,7 +15,7 @@ stored_requests:
 
 Choose an ID to reference your stored request data. Throughout this doc, replace {id} with the ID you've chosen.
 
-Add the file `stored_requests/data/by_id/{id}.json` and populate it with some Impression data.
+Add the file `stored_requests/data/by_id/{id}.json` and populate it with some [Imp](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=17) data.
 
 ```json
 {
@@ -66,11 +66,11 @@ And then `POST` to [`/openrtb2/auction`](../endpoints/openrtb2/auction.md) with 
 }
 ```
 
-The Auction will occur as if the Request had used the content from `stored_requests/data/by_id/{id}.json` instead.
+The auction will occur as if the HTTP request had included the content from `stored_requests/data/by_id/{id}.json` instead.
 
 ## Partially Stored Requests
 
-You can also store _part_ of the Impression on the server. For example:
+You can also store _part_ of the Imp on the server. For example:
 
 ```json
 {
@@ -96,7 +96,7 @@ You can also store _part_ of the Impression on the server. For example:
 
 This is not _fully_ legal OpenRTB `imp` data, since it lacks an `id`.
 
-However, incoming HTTP Requests can fill in the missing data to complete the OpenRTB request:
+However, incoming HTTP requests can fill in the missing data to complete the OpenRTB request:
 
 ```json
 {
@@ -116,9 +116,9 @@ However, incoming HTTP Requests can fill in the missing data to complete the Ope
   }
 ```
 
-If the Stored Request and the HTTP Request have conflicting properties,
+If the Stored Request and the HTTP request have conflicting properties,
 they will be resolved with a [JSON Merge Patch](https://tools.ietf.org/html/rfc7386).
-HTTP Request properties will overwrite the Stored Request ones.
+HTTP request properties will overwrite the Stored Request ones.
 
 ## Alternate backends
 
