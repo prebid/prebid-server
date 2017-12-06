@@ -87,9 +87,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	}
 	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
 	if lr.N <= 0 {
-		io.Copy(ioutil.Discard, httpRequest.Body)
-		errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
-		return
+		if written, err := io.Copy(ioutil.Discard, httpRequest.Body); written > 0 || err != nil {
+			errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
+			return
+		}
 	}
 
 	if err := json.Unmarshal(rawRequest, req); err != nil {

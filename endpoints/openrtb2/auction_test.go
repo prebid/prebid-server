@@ -126,7 +126,8 @@ func TestStoredRequests(t *testing.T) {
 	}
 }
 
-func TestHugeRequest(t *testing.T) {
+// TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
+func TestOversizedRequest(t *testing.T) {
 	reqBody := `{"id":"request-id"}`
 	deps := &endpointDeps{
 		&nobidExchange{},
@@ -146,6 +147,30 @@ func TestHugeRequest(t *testing.T) {
 
 	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
 		t.Errorf("The request body should still be fully read.")
+	}
+}
+
+// TestRequestSizeEdgeCase makes sure we behave properly when the request size *equals* the configured max.
+func TestRequestSizeEdgeCase(t *testing.T) {
+	reqBody := validRequests[0]
+	deps := &endpointDeps{
+		&nobidExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{ MaxRequestSize: int64(len(reqBody)) },
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps.Auction(recorder, req, nil)
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Endpoint should return a 200 if the request equals the size max.")
+	}
+
+	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
+		t.Errorf("The request body should have been read to completion.")
 	}
 }
 
