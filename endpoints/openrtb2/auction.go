@@ -114,9 +114,9 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-		setFieldsImplicitly(httpRequest, req)
+	setFieldsImplicitly(httpRequest, req)
 
-		if err := deps.validateRequest(req); err != nil {
+	if err := deps.validateRequest(req); err != nil {
 		errs = []error{err}
 		return
 	}
