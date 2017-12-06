@@ -114,8 +114,8 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := openrtb.BidResponse{
-		ID:    "a-random-id",
-		BidID: "another-random-id",
+		ID:    "test-response-id",
+		BidID: "test-bid-id",
 		Cur:   "USD",
 		SeatBid: []openrtb.SeatBid{
 			{
@@ -513,8 +513,8 @@ func TestZeroSeatBidResponse(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := openrtb.BidResponse{
-			ID:      "a-random-id",
-			BidID:   "another-random-id",
+			ID:      "test-response-id",
+			BidID:   "test-bid-id",
 			Cur:     "USD",
 			SeatBid: []openrtb.SeatBid{},
 		}
@@ -536,8 +536,8 @@ func TestEmptyBidResponse(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := openrtb.BidResponse{
-			ID:    "a-random-id",
-			BidID: "another-random-id",
+			ID:    "test-response-id",
+			BidID: "test-bid-id",
 			Cur:   "USD",
 			SeatBid: []openrtb.SeatBid{
 				{
@@ -564,8 +564,8 @@ func TestWrongBidIdResponse(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := openrtb.BidResponse{
-			ID:    "a-random-id",
-			BidID: "another-random-id",
+			ID:    "test-response-id",
+			BidID: "test-bid-id",
 			Cur:   "USD",
 			SeatBid: []openrtb.SeatBid{
 				{
