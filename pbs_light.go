@@ -52,6 +52,10 @@ import (
 	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"strings"
 )
 
@@ -706,11 +710,13 @@ func init() {
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
+	viper.SetDefault("stored_requests.filesystem", "true")
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	viper.SetDefault("max_request_size", 1024*256)
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.ReadInConfig()
@@ -721,7 +727,7 @@ func init() {
 func main() {
 	cfg, err := config.New()
 	if err != nil {
-		glog.Errorf("Viper was unable to read configurations: %v", err)
+		glog.Fatalf("Viper was unable to read configurations: %v", err)
 	}
 
 	if err := serve(cfg); err != nil {
@@ -836,7 +842,12 @@ func serve(cfg *config.Configuration) error {
 			},
 		})
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator)
+	byId, err := NewFetcher(&(cfg.StoredRequests))
+	if err != nil {
+		glog.Fatalf("Failed to initialize config backends. %v", err)
+	}
+
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -908,4 +919,24 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	return nil
+}
+
+const requestConfigPath = "./stored_requests/data/by_id"
+
+// NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
+// If it can't generate both of those from the given config, then an error will be returned.
+//
+// This function assumes that the argument config has been validated.
+func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err error) {
+	if cfg.Files {
+		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
+		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
+	} else if cfg.Postgres != nil {
+		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
+		byId, err = db_fetcher.NewPostgres(cfg.Postgres)
+	} else {
+		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
+		byId = empty_fetcher.EmptyFetcher()
+	}
+	return
 }
