@@ -11,33 +11,39 @@ import (
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
+	"github.com/evanphx/json-patch"
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/config"
+	"io"
+	"io/ioutil"
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator) (httprouter.Handle, error) {
-	if ex == nil || validator == nil {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
+	if ex == nil || validator == nil || requestsById == nil || cfg == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
-	return httprouter.Handle((&endpointDeps{ex, validator}).Auction), nil
+
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg}).Auction), nil
 }
 
 type endpointDeps struct {
-	ex exchange.Exchange
-	paramsValidator openrtb_ext.BidderParamValidator
+	ex               exchange.Exchange
+	paramsValidator  openrtb_ext.BidderParamValidator
+	storedReqFetcher stored_requests.Fetcher
+	cfg              *config.Configuration
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	req, err := deps.parseRequest(r)
-	if err != nil {
+	req, ctx, cancel, errL := deps.parseRequest(r)
+	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
+	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Invalid request format: %s", err.Error())))
+		for _, err := range errL {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
 		return
-	}
-	ctx := context.Background()
-	cancel := func() { }
-	if req.TMax > 0 {
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
-		defer cancel()
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req)
@@ -59,24 +65,57 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 }
 
-// parseRequest turns the HTTP request into an OpenRTB request.
+// parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:
 //
-// This will return an error if the request couldn't be parsed, or if the request isn't valid according
-// to the OpenRTB 2.5 spec.
+//   - A context which times out appropriately, given the request.
+//   - A cancellation function which should be called if the auction finishes early.
 //
-// It will also return errors for some of the "strong recommendations" in the spec, as long as
-// the same request can be sent in a better way which agrees with the recommendations.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (*openrtb.BidRequest, error) {
-	var ortbRequest openrtb.BidRequest
-	if err := json.NewDecoder(httpRequest.Body).Decode(&ortbRequest); err != nil {
-		return nil, err
+// If the errors list is empty, then the returned request will be valid according to the OpenRTB 2.5 spec.
+// In case of "strong recommendations" in the spec, it tends to be restrictive. If a better workaround is
+// possible, it will return errors with messages that suggest improvements.
+//
+// If the errors list has at least one element, then no guarantees are made about the returned request.
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, ctx context.Context, cancel func(), errs []error) {
+	req = &openrtb.BidRequest{}
+	ctx = context.Background()
+	cancel = func() { }
+	errs = nil
+
+	// Pull the request body into a buffer, so we have it for later usage.
+	lr := &io.LimitedReader{ httpRequest.Body, deps.cfg.MaxRequestSize }
+	rawRequest, err := ioutil.ReadAll(lr)
+	if err != nil {
+		errs = []error{err}
+		return
+	}
+	// If the request size was too large, read through the rest of the request body so that the connection can be reused.
+	if lr.N <= 0 {
+		if written, err := io.Copy(ioutil.Discard, httpRequest.Body); written > 0 || err != nil {
+			errs = []error{fmt.Errorf("Request size exceeded max size of %d bytes.", deps.cfg.MaxRequestSize)}
+			return
+		}
 	}
 
-	if err := deps.validateRequest(&ortbRequest); err != nil {
-		return nil, err
+	if err := json.Unmarshal(rawRequest, req); err != nil {
+		errs = []error{err}
+		return
 	}
 
-	return &ortbRequest, nil
+	if req.TMax > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
+	}
+
+	// Process any stored request directives in the impression objects.
+	if errL := deps.processStoredRequests(ctx, req, rawRequest); len(errL)>0 {
+		errs = errL
+		return
+	}
+
+	if err := deps.validateRequest(req); err != nil {
+		errs = []error{err}
+		return
+	}
+	return
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
@@ -221,10 +260,94 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
 			}
-		} else {
+		} else if bidder != "prebid" {
 			return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s", impIndex, bidder)
 		}
 	}
 
 	return nil
+}
+
+// processStoredRequests merges any data referenced by request.imp[i].ext.prebid.storedrequest.id into the request, if necessary.
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
+	// Pull all the Stored Request IDs from the Imps.
+	storedReqIds, shortIds, errList := deps.findStoredRequestIds(request.Imp)
+	if len(shortIds) == 0 {
+		return nil
+	}
+
+	storedReqs, errL := deps.storedReqFetcher.FetchRequests(ctx, shortIds)
+	if len(errL) > 0 {
+		return append(errList, errL...)
+	}
+
+	// Get the raw JSON for Imps, so we don't have to worry about the effects of an UnMarshal/Marshal round.
+	rawImpsRaw, dt, _, err := jsonparser.Get(rawRequest, "imp")
+	if err != nil {
+		return append(errList, err)
+	}
+	if dt != jsonparser.Array {
+		return append(errList, fmt.Errorf("ERROR: could not parse Imp[] as an array, got %s", string(dt)))
+	}
+	rawImps := getArrayElements(rawImpsRaw)
+	// Process Imp level configs.
+	for i := 0; i < len(request.Imp); i++ {
+		// Check if a config was requested
+		if len(storedReqIds[i]) > 0 {
+			conf, ok := storedReqs[storedReqIds[i]]
+			if ok && len(conf) > 0 {
+				err := deps.mergeStoredData(&request.Imp[i], rawImps[i], conf)
+				if err != nil {
+					errList = append(errList, err)
+				}
+			}
+		}
+	}
+	return errList
+}
+
+// Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
+func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []string, []error) {
+	errList := make([]error, 0, len(imps))
+	storedReqIds := make([]string, len(imps))
+	shortIds := make([]string, 0, len(imps))
+	for i := 0; i < len(imps); i++ {
+		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
+			// These keys should be kept in sync with openrtb_ext.ExtStoredRequest.
+			// The jsonparser is much faster than doing a full unmarshal to select a single value
+			storedReqId, _, _, err := jsonparser.Get(imps[i].Ext, "prebid", "storedrequest", "id")
+			storedReqString := string(storedReqId)
+			if err == nil && len(storedReqString) > 0 {
+				storedReqIds[i] = storedReqString
+				shortIds = append(shortIds, storedReqString)
+			} else if len(storedReqString) > 0 {
+				errList = append(errList, err)
+				storedReqIds[i] = ""
+			}
+		} else{
+			storedReqIds[i] = ""
+		}
+	}
+	return storedReqIds, shortIds, errList
+}
+
+
+// Process the stored request data for an Imp.
+// Need to modify the Imp object in place as we cannot simply assign one Imp to another (deep copy)
+func (deps *endpointDeps) mergeStoredData(imp *openrtb.Imp, impJson []byte, storedReqData json.RawMessage) error {
+	newImp, err := jsonpatch.MergePatch(storedReqData, impJson)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(newImp, imp)
+	return err
+}
+
+// Copied from jsonparser
+func getArrayElements(data []byte) (result [][]byte) {
+	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		result = append(result, value)
+	})
+
+	return
 }
