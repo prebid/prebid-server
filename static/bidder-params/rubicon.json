@@ -29,6 +29,36 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "video": {
+      "type": "object",
+      "description": "An object defining additional Rubicon video parameters",
+      "properties": {
+        "Language": {
+          "type": "string",
+          "description": "Language of the ad - should match content video"
+        },
+        "PlayerHeight": {
+          "type": "integer",
+          "description": "Height in pixels of the video player"
+        },
+        "PlayerWidth": {
+          "type": "integer",
+          "description": "Width in pixels of the video player"
+        },
+        "VideoSizeID": {
+          "type": "integer",
+          "description": "Rubicon size_id, used to describe type of video ad (preroll, postroll, etc)"
+        },
+        "Skip": {
+          "type": "integer",
+          "description": "Can this ad be skipped ( 0 = no, 1 = yes)"
+        },
+        "SkipDelay": {
+          "type": "integer",
+          "description": "number of seconds until the ad can be skipped"
+        }
+      }
     }
   },
   "required": ["accountId", "siteId", "zoneId"]

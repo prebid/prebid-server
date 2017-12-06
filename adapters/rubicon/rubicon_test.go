@@ -33,6 +33,7 @@ type rubiTagInfo struct {
 	bid               float64
 	content           string
 	adServerTargeting map[string]string
+	mediaType         string
 }
 
 type rubiBidInfo struct {
@@ -124,27 +125,48 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	if imp.Banner == nil {
-		http.Error(w, fmt.Sprintf("No banner object sent"), http.StatusInternalServerError)
-		return
+	if imp.Banner != nil {
+		var bix rubiconBannerExt
+		err = json.Unmarshal(imp.Banner.Ext, &bix)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if bix.RP.SizeID != 10 { // 300x600
+			http.Error(w, fmt.Sprintf("Primary size ID isn't 10"), http.StatusInternalServerError)
+			return
+		}
+		if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 15 { // 300x250
+			http.Error(w, fmt.Sprintf("Alt size ID isn't 15"), http.StatusInternalServerError)
+			return
+		}
+		if bix.RP.MIME != "text/html" {
+			http.Error(w, fmt.Sprintf("MIME isn't text/html"), http.StatusInternalServerError)
+			return
+		}
 	}
-	var bix rubiconBannerExt
-	err = json.Unmarshal(imp.Banner.Ext, &bix)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if bix.RP.SizeID != 10 { // 300x600
-		http.Error(w, fmt.Sprintf("Primary size ID isn't 10"), http.StatusInternalServerError)
-		return
-	}
-	if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 15 { // 300x250
-		http.Error(w, fmt.Sprintf("Alt size ID isn't 15"), http.StatusInternalServerError)
-		return
-	}
-	if bix.RP.MIME != "text/html" {
-		http.Error(w, fmt.Sprintf("MIME isn't text/html"), http.StatusInternalServerError)
-		return
+
+	if imp.Video != nil {
+		var vix rubiconVideoExt
+		err = json.Unmarshal(imp.Video.Ext, &vix)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(imp.Video.MIMEs) == 0 {
+			http.Error(w, fmt.Sprintf("Empty imp.video.mimes array"), http.StatusInternalServerError)
+			return
+		}
+		if len(imp.Video.Protocols) == 0 {
+			http.Error(w, fmt.Sprintf("Empty imp.video.protocols array"), http.StatusInternalServerError)
+			return
+		}
+		for _, protocol := range imp.Video.Protocols {
+			if protocol < 1 || protocol > 8 {
+				http.Error(w, fmt.Sprintf("Invalid video protocol %d", protocol), http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	targeting := "{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"
@@ -245,7 +267,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 		page:               "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
 		accountID:          7891,
 		siteID:             283282,
-		tags:               make([]rubiTagInfo, 2),
+		tags:               make([]rubiTagInfo, 3),
 		deviceIP:           "25.91.96.36",
 		deviceUA:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
 		buyerUID:           "need-an-actual-rp-id",
@@ -266,12 +288,21 @@ func TestRubiconBasicResponse(t *testing.T) {
 		zoneID:            8394,
 		bid:               1.67,
 		adServerTargeting: targeting,
+		mediaType:         "banner",
 	}
 	rubidata.tags[1] = rubiTagInfo{
 		code:              "second-tag",
 		zoneID:            8395,
 		bid:               3.22,
 		adServerTargeting: targeting,
+		mediaType:         "banner",
+	}
+	rubidata.tags[2] = rubiTagInfo{
+		code:              "video-tag",
+		zoneID:            7780,
+		bid:               23.12,
+		adServerTargeting: targeting,
+		mediaType:         "video",
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
@@ -279,7 +310,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
-		AdUnits: make([]pbs.AdUnit, 2),
+		AdUnits: make([]pbs.AdUnit, 3),
 		Device:  &openrtb.Device{PxRatio: rubidata.devicePxRatio},
 		SDK:     &pbs.SDK{Source: rubidata.sdkSource, Platform: rubidata.sdkPlatform, Version: rubidata.sdkVersion},
 	}
@@ -287,7 +318,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 	for i, tag := range rubidata.tags {
 		pbin.AdUnits[i] = pbs.AdUnit{
 			Code:       tag.code,
-			MediaTypes: []string{"BANNER"},
+			MediaTypes: []string{tag.mediaType},
 			Sizes: []openrtb.Format{
 				{
 					W: 300,
@@ -305,6 +336,17 @@ func TestRubiconBasicResponse(t *testing.T) {
 					Params:     json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", tag.zoneID, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting)),
 				},
 			},
+		}
+		if tag.mediaType == "video" {
+			pbin.AdUnits[i].Video = pbs.PBSVideo{
+				Mimes:          []string{"video/mp4"},
+				Minduration:    15,
+				Maxduration:    30,
+				Startdelay:     5,
+				Skippable:      0,
+				PlaybackMethod: 1,
+				Protocols:      []int8{1, 2, 3, 4, 5},
+			}
 		}
 	}
 
@@ -346,8 +388,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
-	if len(bids) != 2 {
-		t.Fatalf("Received %d bids instead of 2", len(bids))
+	if len(bids) != 3 {
+		t.Fatalf("Received %d bids instead of 3", len(bids))
 	}
 	for _, bid := range bids {
 		matched := false
@@ -463,6 +505,24 @@ func TestParseSizes(t *testing.T) {
 	}
 	if len(alt) != 0 {
 		t.Fatalf("Alt len %d != 0", len(alt))
+	}
+
+	sizes = []openrtb.Format{
+		{
+			W: 123,
+			H: 456,
+		},
+	}
+	primary, alt, err = parseRubiconSizes(sizes)
+
+	if err == nil {
+		t.Errorf("Parsing error: %v", err)
+	}
+	if primary != 0 {
+		t.Errorf("Primary %d != 0", primary)
+	}
+	if len(alt) != 0 {
+		t.Errorf("Alt len %d != 0", len(alt))
 	}
 }
 

@@ -26,7 +26,7 @@ Bidder implementations are scattered throughout several files.
 - `adapters/{bidder}/params_test.go`: contains unit tests for your Bidder param validation.
 - `adapters/{bidder}/info.yaml`: contains contact info for the adapter's maintainer.
 - `openrtb_ext/imp_{bidder}.go`: contract classes for your Bidder's params.
-- `static/bidder-params/{bidder}.go`: A draft-4 json-schema which validates your Bidder's params.
+- `static/bidder-params/{bidder}.go`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
 
 Bidder implementations may assume that any params have already been validated against the defined json-schema.
 

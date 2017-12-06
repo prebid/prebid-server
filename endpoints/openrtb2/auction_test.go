@@ -157,7 +157,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		&nobidExchange{},
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
-		&config.Configuration{ MaxRequestSize: int64(len(reqBody)) },
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -171,6 +171,22 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 
 	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
 		t.Errorf("The request body should have been read to completion.")
+	}
+}
+
+// TestNoEncoding prevents #231.
+func TestNoEncoding(t *testing.T) {
+	endpoint, _ := NewEndpoint(
+		&mockExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{ MaxRequestSize: maxSize })
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if !strings.Contains(recorder.Body.String(), "<script></script>") {
+		t.Errorf("The Response from the exchange should not be html-encoded")
 	}
 }
 
@@ -523,4 +539,16 @@ type mockStoredReqFetcher struct {
 
 func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	return testStoredRequestData, nil
+}
+
+type mockExchange struct {}
+
+func (*mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+	return &openrtb.BidResponse{
+		SeatBid: []openrtb.SeatBid{{
+			Bid: []openrtb.Bid{{
+				AdM: "<script></script>",
+			}},
+		}},
+	}, nil
 }
