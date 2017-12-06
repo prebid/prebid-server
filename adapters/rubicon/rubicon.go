@@ -304,6 +304,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 
 		// Only grab this ad unit
+		// Not supporting multi-media-type add-unit yet
 		rubiReq.Imp = rubiReq.Imp[i : i+1]
 
 		// Amend it with RP-specific information
@@ -393,7 +394,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	}
 
 	ch := make(chan adapters.CallOneResult)
-	for i, _ := range bidder.AdUnits {
+	for i := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err

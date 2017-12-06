@@ -1,10 +1,9 @@
-package config_test
+package config
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/spf13/viper"
 )
 
@@ -27,7 +26,7 @@ func init() {
 
 func TestDefaults(t *testing.T) {
 
-	cfg, err := config.New()
+	cfg, err := New()
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -115,7 +114,7 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 func TestFullConfig(t *testing.T) {
 	viper.SetConfigType("yaml")
 	viper.ReadConfig(bytes.NewBuffer(fullConfig))
-	cfg, err := config.New()
+	cfg, err := New()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -157,4 +156,59 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
+}
+
+func TestValidConfig(t *testing.T) {
+	cfg := Configuration{
+		StoredRequests: StoredRequests{
+			Files: true,
+		},
+	}
+
+	if err := cfg.validate(); err != nil {
+		t.Errorf("OpenRTB filesystem config should work. %v", err)
+	}
+}
+
+func TestInvalidStoredRequestsConfig(t *testing.T) {
+	cfg := Configuration{
+		StoredRequests: StoredRequests{
+			Files:    true,
+			Postgres: &PostgresConfig{},
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("OpenRTB Configs should not be allowed from both files and postgres.")
+	}
+}
+
+func TestQueryMaker(t *testing.T) {
+	cfg := PostgresConfig{
+		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
+	}
+	madeQuery, err := cfg.MakeQuery(3)
+	if err != nil {
+		t.Errorf("Unexpected error making query: %v", err)
+	}
+	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3)" {
+		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
+	}
+
+	madeQuery, err = cfg.MakeQuery(11)
+	if err != nil {
+		t.Errorf("Unexpected error making query: %v", err)
+	}
+	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)" {
+		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
+	}
+}
+
+func TestQueryMakerInvalid(t *testing.T) {
+	cfg := PostgresConfig{
+		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
+	}
+	if _, err := cfg.MakeQuery(0); err == nil {
+		t.Errorf("MakeQuery function should return an error if given no IDs.")
+	}
 }
