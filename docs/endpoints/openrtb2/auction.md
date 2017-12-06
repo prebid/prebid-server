@@ -191,6 +191,20 @@ PBS requests new syncs by returning the `response.ext.usersync.{bidderName}.sync
 This contains info about every request and response sent by the bidder to its server.
 It is only returned on `test` bids for performance reasons, but may be useful during debugging.
 
+#### Stored Requests
+
+`request.imp[i].ext.prebid.storedrequest` incorporates a [Stored Request](../../developers/stored-requests.md) from the server.
+
+A typical `storedrequest` value looks like this:
+
+```
+{
+  "id": "some-id"
+}
+```
+
+For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
+
 ### OpenRTB Differences
 
 This section describes the ways in which Prebid Server **breaks** the OpenRTB spec.
