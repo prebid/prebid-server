@@ -324,11 +324,9 @@ func assertStringValue(t *testing.T, object string, expect string, value string)
 type mockAdapter struct {
 	seatBid *pbsOrtbSeatBid
 	errs []error
-	delay time.Duration
 }
 
 func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
-	time.Sleep(a.delay)
 	return a.seatBid, a.errs
 }
 
@@ -376,32 +374,22 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 
 func mockAdapterConfig1(a *mockAdapter, adapter string) {
 	a.seatBid, a.errs = mockDummyBids1(adapter)
-
-	a.delay = 0 * time.Microsecond
 }
 
 func mockAdapterConfig2(a *mockAdapter, adapter string) {
 	a.seatBid, a.errs = mockDummyBids2(adapter)
-
-	a.delay = 0 * time.Microsecond
 }
 
 func mockAdapterConfig3(a *mockAdapter, adapter string) {
 	a.seatBid, a.errs = mockDummyBids3(adapter)
-
-	a.delay = 0 * time.Microsecond
 }
 
 func mockAdapterConfigErr1(a *mockAdapter) {
 	a.seatBid, a.errs = mockDummyBidsErr1()
-
-	a.delay = 0 * time.Microsecond
 }
 
 func mockAdapterConfigErr2(a *mockAdapter) {
 	a.seatBid, a.errs = mockDummyBidsErr2()
-
-	a.delay = 0 * time.Microsecond
 }
 
 func mockDummyBids1(adapter string) (*pbsOrtbSeatBid, []error) {
