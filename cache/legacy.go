@@ -1,6 +1,8 @@
 package cache
 
-import "github.com/prebid/prebid-server/pbs/buckets"
+import (
+	"github.com/prebid/prebid-server/pbs/buckets"
+)
 
 type Domain struct {
 	Domain string `json:"domain"`

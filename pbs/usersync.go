@@ -66,8 +66,6 @@ type uidWithExpiry struct {
 type UserSyncDeps struct {
 	ExternalUrl        string
 	RecaptchaSecret    string
-	OptOutUrl          string
-	OptInUrl           string
 	HostCookieSettings *HostCookieSettings
 	Metrics            metrics.Registry
 }
@@ -382,9 +380,9 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	if optout == "" {
-		http.Redirect(w, r, deps.OptInUrl, 301)
+		http.Redirect(w, r, deps.HostCookieSettings.OptInURL, 301)
 	} else {
-		http.Redirect(w, r, deps.OptOutUrl, 301)
+		http.Redirect(w, r, deps.HostCookieSettings.OptOutURL, 301)
 	}
 }
 
