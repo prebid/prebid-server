@@ -10,13 +10,12 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/prebid/prebid-server/pbs"
-
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/mxmCherry/openrtb"
 )
 
 type RubiconAdapter struct {
@@ -482,7 +481,11 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 }
 
 func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
-	a := adapters.NewHTTPAdapter(config)
+	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker, usersyncURL)
+}
+
+func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
 
 	uri = appendTrackerToUrl(uri, tracker)
 
@@ -503,9 +506,14 @@ func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser str
 
 func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
-	requests := make([]bytes.Buffer, numRequests)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
+
+	requestData := make([]*adapters.RequestData, 0, numRequests)
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("User-Agent", "prebid-server/1.0")
 
 	for i := 0; i < numRequests; i++ {
 		request.Imp = request.Imp[i : i+1]
@@ -604,31 +612,19 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			request.App = &appCopy
 		}
 
-		err = json.NewEncoder(&requests[i]).Encode(request)
+		reqJSON, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
-	}
 
-	requestData := make([]*adapters.RequestData, 0, numRequests)
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	headers.Add("User-Agent", "prebid-server/1.0")
-	// http.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
-
-	for i := 0; i < numRequests; i++ {
-		reqJSON, err := json.Marshal(requests[i])
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
 		requestData = append(requestData, &adapters.RequestData {
-			Method:  "POST",
-			Uri:     a.URI,///todo
-			Body:    reqJSON,
-			Headers: headers,
+			Method:       "POST",
+			Uri:          a.URI,
+			Body:         reqJSON,
+			Headers:      headers,
+			AuthUserName: a.XAPIUsername,
+			AuthPassword: a.XAPIPassword,
 		})
 	}
 
