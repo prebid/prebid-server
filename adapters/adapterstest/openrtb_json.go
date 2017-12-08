@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"io/ioutil"
-	"testing"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
+	"io/ioutil"
+	"testing"
 )
 
 // TestOpenRTB is a helper method intended for Bidders which use OpenRTB to communicate with their servers.
@@ -128,8 +128,8 @@ type httpCall struct {
 }
 
 type httpRequest struct {
-	Body json.RawMessage    `json:"body"`
-	Uri  string             `json:"uri"`
+	Body json.RawMessage `json:"body"`
+	Uri  string          `json:"uri"`
 }
 
 type httpResponse struct {
