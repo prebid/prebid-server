@@ -11,11 +11,17 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"bytes"
 	"errors"
+	"github.com/evanphx/json-patch"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/config"
+	"io"
 )
+
+const maxSize = 1024 * 256
 
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
 func TestGoodRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{})
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
@@ -24,6 +30,7 @@ func TestGoodRequests(t *testing.T) {
 
 		if recorder.Code != http.StatusOK {
 			t.Errorf("Expected status %d. Got %d. Request data was %s", http.StatusOK, recorder.Code, requestData)
+			//t.Errorf("Response body was: %s", recorder.Body)
 		}
 
 		var response openrtb.BidResponse
@@ -45,7 +52,7 @@ func TestGoodRequests(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{})
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
@@ -60,7 +67,7 @@ func TestBadRequests(t *testing.T) {
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
-	_, err := NewEndpoint(nil, &bidderParamValidator{})
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -68,7 +75,7 @@ func TestNilExchange(t *testing.T) {
 
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
-	_, err := NewEndpoint(&nobidExchange{}, nil)
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -76,7 +83,7 @@ func TestNilValidator(t *testing.T) {
 
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{})
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{ MaxRequestSize: maxSize })
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -86,10 +93,161 @@ func TestExchangeError(t *testing.T) {
 	}
 }
 
+// TestUserAgentSetting makes sure we read the User-Agent header if it wasn't defined on the request.
+func TestUserAgentSetting(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("User-Agent", "foo")
+	bidReq := &openrtb.BidRequest{}
+
+	setUAImplicitly(httpReq, bidReq)
+
+	if bidReq.Device == nil {
+		t.Fatal("bidrequest.device should have been set implicitly.")
+	}
+	if bidReq.Device.UA != "foo" {
+		t.Errorf("bidrequest.device.ua should have been \"foo\". Got %s", bidReq.Device.UA)
+	}
+}
+
+// TestUserAgentOverride makes sure that the explicit UA from the request takes precedence.
+func TestUserAgentOverride(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("User-Agent", "foo")
+	bidReq := &openrtb.BidRequest{
+		Device: &openrtb.Device{
+			UA: "bar",
+		},
+	}
+
+	setUAImplicitly(httpReq, bidReq)
+
+	if bidReq.Device.UA != "bar" {
+		t.Errorf("bidrequest.device.ua should have been \"bar\". Got %s", bidReq.Device.UA)
+	}
+}
+
+// TestImplicitIPs prevents #230
+func TestImplicitIPs(t *testing.T) {
+	ex := &nobidExchange{}
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: maxSize })
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
+	recorder := httptest.NewRecorder()
+
+	endpoint(recorder, httpReq, nil)
+
+	if ex.gotRequest.Device.IP != "123.456.78.90" {
+		t.Errorf("Bad device IP. Expected 123.456.78.90, got %s", ex.gotRequest.Device.IP)
+	}
+}
+
+func TestRefererParsing(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq.Header.Set("Referer", "http://test.mysite.com")
+	bidReq := &openrtb.BidRequest{}
+
+	setSiteImplicitly(httpReq, bidReq)
+
+	if bidReq.Site == nil {
+		t.Fatalf("bidrequest.site should not be nil.")
+	}
+
+	if bidReq.Site.Domain != "mysite.com" {
+		t.Errorf("Bad bidrequest.site.domain. Expected mysite.com, got %s", bidReq.Site.Domain)
+	}
+	if bidReq.Site.Page != "http://test.mysite.com" {
+		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
+	}
+}
+
+// Test the stored request functionality
+func TestStoredRequests(t *testing.T) {
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{ MaxRequestSize: maxSize }}
+
+	for i, requestData := range testStoredRequests {
+		Request := openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &Request)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		errList := edep.processStoredRequests(context.Background(), &Request, json.RawMessage(requestData))
+		if len(errList) != 0 {
+			for _, err := range errList {
+				if err != nil {
+					t.Errorf("processStoredRequests Error: %s", err.Error())
+				} else {
+					t.Error("processStoredRequests Error: recieved nil error")
+				}
+			}
+		}
+		expectJson := json.RawMessage(testFinalRequests[i])
+		requestJson, err := json.Marshal(Request)
+		if err != nil {
+			t.Errorf("Error mashalling bid request: %s", err.Error())
+		}
+		if ! jsonpatch.Equal(requestJson, expectJson) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
+		}
+
+	}
+}
+
+// TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
+func TestOversizedRequest(t *testing.T) {
+	reqBody := `{"id":"request-id"}`
+	deps := &endpointDeps{
+		&nobidExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{ MaxRequestSize: int64(len(reqBody) - 1) },
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps.Auction(recorder, req, nil)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Errorf("Endpoint should return a 400 if the request exceeds the size max.")
+	}
+
+	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
+		t.Errorf("The request body should still be fully read.")
+	}
+}
+
+// TestRequestSizeEdgeCase makes sure we behave properly when the request size *equals* the configured max.
+func TestRequestSizeEdgeCase(t *testing.T) {
+	reqBody := validRequests[0]
+	deps := &endpointDeps{
+		&nobidExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+	}
+
+	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps.Auction(recorder, req, nil)
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Endpoint should return a 200 if the request equals the size max.")
+	}
+
+	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
+		t.Errorf("The request body should have been read to completion.")
+	}
+}
 
 // TestNoEncoding prevents #231.
 func TestNoEncoding(t *testing.T) {
-	endpoint, _ := NewEndpoint(&mockExchange{}, &bidderParamValidator{})
+	endpoint, _ := NewEndpoint(
+		&mockExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{ MaxRequestSize: maxSize })
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -100,9 +258,12 @@ func TestNoEncoding(t *testing.T) {
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
-type nobidExchange struct {}
+type nobidExchange struct {
+	gotRequest *openrtb.BidRequest
+}
 
 func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+	e.gotRequest = bidRequest
 	return &openrtb.BidResponse{
 		ID: bidRequest.ID,
 		BidID: "test bid id",
@@ -135,6 +296,36 @@ func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) strin
 var validRequests = []string{
 	`{
 		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "some-request-id",
+		"app": { },
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -295,6 +486,194 @@ var invalidRequests = []string{
 			"appnexus": "invalidParams"
 		}
 	}]}`,
+	`{"id":"req-id",
+		"imp":[{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}]}`,
+	`{"id":"req-id",
+		"site": {},
+		"imp":[{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}]
+	}`,
+	`{"id":"req-id",
+		"site": {"page":"test.mysite.com"},
+		"app": {},
+		"imp":[{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}]
+	}`,
+}
+
+// StoredRequest testing
+
+// Test stored request data
+var testStoredRequestData = map[string]json.RawMessage{
+	"1": json.RawMessage(`{
+		"id": "adUnit1",
+		"ext": {
+			"appnexus": {
+				"placementId": "abc",
+				"position": "above",
+				"reserve": 0.35
+			},
+			"rubicon": {
+				"accountId": "abc"
+			}
+		}
+	}`),
+	"": json.RawMessage(""),
+}
+
+// Incoming requests with stored request IDs
+var testStoredRequests = []string{
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					},
+					"appnexus": {
+						"placementId": "def",
+						"trafficSourceCode": "mysite.com",
+						"reserve": null
+					},
+					"rubicon": null
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+}
+
+// The expected requests after stored request processing
+var testFinalRequests = []string {
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit1",
+				"ext": {
+					"appnexus": {
+						"placementId": "abc",
+						"position": "above",
+						"reserve": 0.35
+					},
+					"rubicon": {
+						"accountId": "abc"
+					},
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit2",
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					},
+					"appnexus": {
+						"placementId": "def",
+						"position": "above",
+						"trafficSourceCode": "mysite.com"
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+}
+
+type mockStoredReqFetcher struct {
+}
+
+func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+	return testStoredRequestData, nil
 }
 
 type mockExchange struct {}

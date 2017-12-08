@@ -12,8 +12,8 @@ import (
 
 // OrtbMockService Represents a scaffolded OpenRTB service.
 type OrtbMockService struct {
-	Server         *httptest.Server
-	LastBidRequest *openrtb.BidRequest
+	Server          *httptest.Server
+	LastBidRequest  *openrtb.BidRequest
 	LastHttpRequest *http.Request
 }
 

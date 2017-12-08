@@ -128,8 +128,8 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	req := pbs.PBSRequest{
 		AccountID: "1",
 		AdUnits:   make([]pbs.AdUnit, 2),
-		Device: &device,
-		User: &user,
+		Device:    &device,
+		User:      &user,
 	}
 
 	tagID := 123456

@@ -9,6 +9,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 
+	"context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -483,6 +484,34 @@ func TestWriteAuctionError(t *testing.T) {
 func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	if _, ok := data[key]; !ok {
 		t.Errorf("Expected map to produce a schema for adapter: %s", key)
+	}
+}
+
+func TestNewFilesFetcher(t *testing.T) {
+	fetcher, err := NewFetcher(&config.StoredRequests{
+		Files: true,
+	})
+	if err != nil {
+		t.Errorf("Error constructing file backends. %v", err)
+	}
+	if fetcher == nil {
+		t.Errorf("The file-backed fetcher should be non-nil.")
+	}
+}
+
+func TestNewEmptyFetcher(t *testing.T) {
+	fetcher, err := NewFetcher(&config.StoredRequests{})
+	if err != nil {
+		t.Errorf("Error constructing backends. %v", err)
+	}
+	if fetcher == nil {
+		t.Errorf("The fetcher should be non-nil, even with an empty config.")
+	}
+	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
+		t.Errorf("The returned accountFetcher should fail on any ID.")
+	}
+	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
+		t.Errorf("The returned requestFetcher should fail on any ID.")
 	}
 }
 

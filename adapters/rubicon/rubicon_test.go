@@ -114,8 +114,8 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := openrtb.BidResponse{
-		ID:    "a-random-id",
-		BidID: "another-random-id",
+		ID:    "test-response-id",
+		BidID: "test-bid-id",
 		Cur:   "USD",
 		SeatBid: []openrtb.SeatBid{
 			{
@@ -262,128 +262,8 @@ func TestRubiconBasicResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyRubiconServer))
 	defer server.Close()
 
-	rubidata = rubiBidInfo{
-		domain:             "nytimes.com",
-		page:               "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
-		accountID:          7891,
-		siteID:             283282,
-		tags:               make([]rubiTagInfo, 3),
-		deviceIP:           "25.91.96.36",
-		deviceUA:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
-		buyerUID:           "need-an-actual-rp-id",
-		visitorTargeting:   "[\"v1\",\"v2\"]",
-		inventoryTargeting: "[\"i1\",\"i2\"]",
-		sdkVersion:         "2.0.0",
-		sdkPlatform:        "iOS",
-		sdkSource:          "some-sdk",
-		devicePxRatio:      4.0,
-	}
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
 
-	targeting := make(map[string]string, 2)
-	targeting["key1"] = "value1"
-	targeting["key2"] = "value2"
-
-	rubidata.tags[0] = rubiTagInfo{
-		code:              "first-tag",
-		zoneID:            8394,
-		bid:               1.67,
-		adServerTargeting: targeting,
-		mediaType:         "banner",
-	}
-	rubidata.tags[1] = rubiTagInfo{
-		code:              "second-tag",
-		zoneID:            8395,
-		bid:               3.22,
-		adServerTargeting: targeting,
-		mediaType:         "banner",
-	}
-	rubidata.tags[2] = rubiTagInfo{
-		code:              "video-tag",
-		zoneID:            7780,
-		bid:               23.12,
-		adServerTargeting: targeting,
-		mediaType:         "video",
-	}
-
-	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "localhost/usersync")
-	an.URI = server.URL
-
-	pbin := pbs.PBSRequest{
-		AdUnits: make([]pbs.AdUnit, 3),
-		Device:  &openrtb.Device{PxRatio: rubidata.devicePxRatio},
-		SDK:     &pbs.SDK{Source: rubidata.sdkSource, Platform: rubidata.sdkPlatform, Version: rubidata.sdkVersion},
-	}
-
-	for i, tag := range rubidata.tags {
-		pbin.AdUnits[i] = pbs.AdUnit{
-			Code:       tag.code,
-			MediaTypes: []string{tag.mediaType},
-			Sizes: []openrtb.Format{
-				{
-					W: 300,
-					H: 600,
-				},
-				{
-					W: 300,
-					H: 250,
-				},
-			},
-			Bids: []pbs.Bids{
-				pbs.Bids{
-					BidderCode: "rubicon",
-					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", tag.zoneID, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting)),
-				},
-			},
-		}
-		if tag.mediaType == "video" {
-			pbin.AdUnits[i].Video = pbs.PBSVideo{
-				Mimes:          []string{"video/mp4"},
-				Minduration:    15,
-				Maxduration:    30,
-				Startdelay:     5,
-				Skippable:      0,
-				PlaybackMethod: 1,
-				Protocols:      []int8{1, 2, 3, 4, 5},
-			}
-		}
-	}
-
-	body := new(bytes.Buffer)
-	err := json.NewEncoder(body).Encode(pbin)
-	if err != nil {
-		t.Fatalf("Json encoding failed: %v", err)
-	}
-
-	fmt.Println("body", body)
-
-	req := httptest.NewRequest("POST", server.URL, body)
-	req.Header.Add("Referer", rubidata.page)
-	req.Header.Add("User-Agent", rubidata.deviceUA)
-	req.Header.Add("X-Real-IP", rubidata.deviceIP)
-
-	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
-	pc.TrySync("rubicon", rubidata.buyerUID)
-	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
-	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
-
-	cacheClient, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
-
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
-	if err != nil {
-		t.Fatalf("ParsePBSRequest failed: %v", err)
-	}
-	if len(pbReq.Bidders) != 1 {
-		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(pbReq.Bidders))
-	}
-	if pbReq.Bidders[0].BidderCode != "rubicon" {
-		t.Fatalf("ParsePBSRequest returned invalid bidder")
-	}
-
-	ctx := context.TODO()
 	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -415,6 +295,13 @@ func TestRubiconBasicResponse(t *testing.T) {
 		}
 	}
 
+	// test debug enabled
+	pbReq.IsDebug = true
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
 	// same test but with request timing out
 	rubidata.delay = 20 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
@@ -438,6 +325,32 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 	}
 	if an.usersyncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
+	}
+
+	name := an.Name()
+	if name != "Rubicon" {
+		t.Errorf("Name '%s' != 'Rubicon'", name)
+	}
+
+	familyName := an.FamilyName()
+	if familyName != "rubicon" {
+		t.Errorf("FamilyName '%s' != 'rubicon'", familyName)
+	}
+
+	skipNoCookies := an.SkipNoCookies()
+	if skipNoCookies != false {
+		t.Errorf("SkipNoCookies should be false")
+	}
+
+	usersyncInfo := an.GetUsersyncInfo()
+	if usersyncInfo.URL != url {
+		t.Fatalf("URL '%s' != '%s'", usersyncInfo.URL, url)
+	}
+	if usersyncInfo.Type != "redirect" {
+		t.Fatalf("Type should be redirect")
+	}
+	if usersyncInfo.SupportCORS != false {
+		t.Fatalf("SupportCORS should be false")
 	}
 
 }
@@ -548,18 +461,340 @@ func TestAppendTracker(t *testing.T) {
 	}
 }
 
-func BenchmarkParseSizes(b *testing.B) {
-	sizes := []openrtb.Format{
+func TestNoContentResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+}
+
+func TestNotFoundResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+}
+
+func TestWrongFormatResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("This is text."))
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+}
+
+func TestZeroSeatBidResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := openrtb.BidResponse{
+			ID:      "test-response-id",
+			BidID:   "test-bid-id",
+			Cur:     "USD",
+			SeatBid: []openrtb.SeatBid{},
+		}
+		js, _ := json.Marshal(resp)
+		w.Write(js)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+}
+
+func TestEmptyBidResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := openrtb.BidResponse{
+			ID:    "test-response-id",
+			BidID: "test-bid-id",
+			Cur:   "USD",
+			SeatBid: []openrtb.SeatBid{
+				{
+					Seat: "RUBICON",
+					Bid:  make([]openrtb.Bid, 0),
+				},
+			},
+		}
+		js, _ := json.Marshal(resp)
+		w.Write(js)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+}
+
+func TestWrongBidIdResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := openrtb.BidResponse{
+			ID:    "test-response-id",
+			BidID: "test-bid-id",
+			Cur:   "USD",
+			SeatBid: []openrtb.SeatBid{
+				{
+					Seat: "RUBICON",
+					Bid:  make([]openrtb.Bid, 2),
+				},
+			},
+		}
+		resp.SeatBid[0].Bid[0] = openrtb.Bid{
+			ID:    "random-id",
+			ImpID: "zma",
+			Price: 1.67,
+			AdM:   "zma",
+			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+		}
+		js, _ := json.Marshal(resp)
+		w.Write(js)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if err == nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+}
+
+func TestDifferentRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(DummyRubiconServer))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+
+	// test app not nil
+	pbReq.App = &openrtb.App{
+		ID:   "com.test",
+		Name: "testApp",
+	}
+	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	// set app back to normal
+	pbReq.App = nil
+
+	// test video media type
+	pbReq.Bidders[0].AdUnits[0].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
+	pbReq.Bidders[0].AdUnits[1].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	// set media back to normal
+	pbReq.Bidders[0].AdUnits[0].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
+	pbReq.Bidders[0].AdUnits[1].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
+
+	// test wrong params
+	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %s, \"siteId\": %d, \"visitor\": %s, \"inventory\": %s}", "zma", rubidata.siteID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	// test no account id
+	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.siteID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	// test no site id
+	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	// test no zone id
+	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	// set params back to normal
+	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
+
+	// test invalid size
+	pbReq.Bidders[0].AdUnits[0].Sizes = []openrtb.Format{
 		{
-			W: 300,
-			H: 600,
-		},
-		{
-			W: 300,
-			H: 250,
+			W: 0,
+			H: 0,
 		},
 	}
-	for i := 0; i < b.N; i++ {
-		_, _, _ = parseRubiconSizes(sizes)
+	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
 	}
+
+}
+
+func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdapter, ctx context.Context, pbReq *pbs.PBSRequest) {
+	rubidata = rubiBidInfo{
+		domain:             "nytimes.com",
+		page:               "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		accountID:          7891,
+		siteID:             283282,
+		tags:               make([]rubiTagInfo, 3),
+		deviceIP:           "25.91.96.36",
+		deviceUA:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:           "need-an-actual-rp-id",
+		visitorTargeting:   "[\"v1\",\"v2\"]",
+		inventoryTargeting: "[\"i1\",\"i2\"]",
+		sdkVersion:         "2.0.0",
+		sdkPlatform:        "iOS",
+		sdkSource:          "some-sdk",
+		devicePxRatio:      4.0,
+	}
+
+	targeting := make(map[string]string, 2)
+	targeting["key1"] = "value1"
+	targeting["key2"] = "value2"
+
+	rubidata.tags[0] = rubiTagInfo{
+		code:              "first-tag",
+		zoneID:            8394,
+		bid:               1.67,
+		adServerTargeting: targeting,
+		mediaType:         "banner",
+	}
+	rubidata.tags[1] = rubiTagInfo{
+		code:              "second-tag",
+		zoneID:            8395,
+		bid:               3.22,
+		adServerTargeting: targeting,
+		mediaType:         "banner",
+	}
+	rubidata.tags[2] = rubiTagInfo{
+		code:              "video-tag",
+		zoneID:            7780,
+		bid:               23.12,
+		adServerTargeting: targeting,
+		mediaType:         "video",
+	}
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "localhost/usersync")
+	an.URI = server.URL
+
+	pbin := pbs.PBSRequest{
+		AdUnits: make([]pbs.AdUnit, 3),
+		Device:  &openrtb.Device{PxRatio: rubidata.devicePxRatio},
+		SDK:     &pbs.SDK{Source: rubidata.sdkSource, Platform: rubidata.sdkPlatform, Version: rubidata.sdkVersion},
+	}
+
+	for i, tag := range rubidata.tags {
+		pbin.AdUnits[i] = pbs.AdUnit{
+			Code:       tag.code,
+			MediaTypes: []string{tag.mediaType},
+			Sizes: []openrtb.Format{
+				{
+					W: 300,
+					H: 600,
+				},
+				{
+					W: 300,
+					H: 250,
+				},
+			},
+			Bids: []pbs.Bids{
+				{
+					BidderCode: "rubicon",
+					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
+					Params:     json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", tag.zoneID, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting)),
+				},
+			},
+		}
+		if tag.mediaType == "video" {
+			pbin.AdUnits[i].Video = pbs.PBSVideo{
+				Mimes:          []string{"video/mp4"},
+				Minduration:    15,
+				Maxduration:    30,
+				Startdelay:     5,
+				Skippable:      0,
+				PlaybackMethod: 1,
+				Protocols:      []int8{1, 2, 3, 4, 5},
+			}
+		}
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(pbin)
+	if err != nil {
+		t.Fatalf("Json encoding failed: %v", err)
+	}
+
+	fmt.Println("body", body)
+
+	req := httptest.NewRequest("POST", server.URL, body)
+	req.Header.Add("Referer", rubidata.page)
+	req.Header.Add("User-Agent", rubidata.deviceUA)
+	req.Header.Add("X-Real-IP", rubidata.deviceIP)
+
+	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pc.TrySync("rubicon", rubidata.buyerUID)
+	fakewriter := httptest.NewRecorder()
+	pc.SetCookieOnResponse(fakewriter, "")
+	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
+
+	cacheClient, _ := dummycache.New()
+	hcs := pbs.HostCookieSettings{}
+
+	pbReq, err = pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	if err != nil {
+		t.Fatalf("ParsePBSRequest failed: %v", err)
+	}
+	if len(pbReq.Bidders) != 1 {
+		t.Fatalf("ParsePBSRequest returned %d bidders instead of 1", len(pbReq.Bidders))
+	}
+	if pbReq.Bidders[0].BidderCode != "rubicon" {
+		t.Fatalf("ParsePBSRequest returned invalid bidder")
+	}
+
+	ctx = context.TODO()
+
+	return
+
 }
