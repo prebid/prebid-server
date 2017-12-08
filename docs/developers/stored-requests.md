@@ -122,8 +122,8 @@ HTTP request properties will overwrite the Stored Request ones.
 
 ## Alternate backends
 
-Stored Requests do not need to be saved to files. [Other backends](../../openrtb2_config/) are supported
-with different [configuration options](configuration.yaml). For example:
+Stored Requests do not need to be saved to files. [Other backends](../../stored_requests/backends) are supported
+with different [configuration options](configuration.md). For example:
 
 ```yaml
 stored_requests:

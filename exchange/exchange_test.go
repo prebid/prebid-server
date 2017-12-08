@@ -1,17 +1,17 @@
 package exchange
 
 import (
-	"testing"
-	"net/http/httptest"
-	"net/http"
-	"github.com/mxmCherry/openrtb"
 	"context"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"time"
 	"encoding/json"
 	"errors"
-	openrtb_ext2 "github.com/prebid/prebid-server/openrtb_ext"
 	"fmt"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -21,7 +21,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client()).(*exchange)
+	e := NewExchange(server.Client(), &config.Configuration{}).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
@@ -214,7 +214,7 @@ func TestBuildBidResponse(t *testing.T) {
 
 	errList := make([]error, 0, 1)
 	targData := &targetData{
-		priceGranularity: openrtb_ext2.PriceGranularityMedium,
+		priceGranularity: openrtb_ext.PriceGranularityMedium,
 		winningBids: make(map[string]*openrtb.Bid),
 		winningBidders: make(map[string]openrtb_ext.BidderName),
 	}
@@ -244,7 +244,7 @@ func TestBuildBidResponse(t *testing.T) {
 	if bidderDummySeat == -1 {
 		t.Error("Could not find the SeatBid for BidderDummy!")
 	} else {
-		bidder1BidExt := make([]openrtb_ext2.ExtBid, 2)
+		bidder1BidExt := make([]openrtb_ext.ExtBid, 2)
 		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[0].Ext, &bidder1BidExt[0])
 		if err != nil {
 			t.Errorf("Unpacking extensions for bid[0]: %s", err.Error())
@@ -327,7 +327,7 @@ type mockAdapter struct {
 	delay time.Duration
 }
 
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext2.BidderName) (*pbsOrtbSeatBid, []error) {
+func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	time.Sleep(a.delay)
 	return a.seatBid, a.errs
 }

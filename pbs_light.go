@@ -840,7 +840,8 @@ func serve(cfg *config.Configuration) error {
 				IdleConnTimeout:     60 * time.Second,
 				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 			},
-		})
+		},
+		cfg)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
