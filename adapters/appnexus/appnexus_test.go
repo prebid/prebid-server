@@ -22,7 +22,7 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.TestOpenRTB(t, "appnexustest", new(AppNexusAdapter))
+	adapterstest.RunJSONBidderTest(t, "appnexustest", new(AppNexusAdapter))
 }
 
 // ----------------------------------------------------------------------------

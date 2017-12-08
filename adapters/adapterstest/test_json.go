@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-// TestOpenRTB is a helper method intended for Bidders which use OpenRTB to communicate with their servers.
+// RunJSONBidderTest is a helper method intended for Bidders which use OpenRTB to communicate with their servers.
 // It requires that:
 //
 //   1. Bidders communicate with external servers over HTTP.
@@ -43,10 +43,10 @@ import (
 // Then create a test in your adapters/{bidder}/{bidder}_test.go file like so:
 //
 //   func TestJsonSamples(t *testing.T) {
-//     adapterstest.TestOpenRTB(t, "{bidder}test", instanceOfYourBidder)
+//     adapterstest.RunJSONBidderTest(t, "{bidder}test", instanceOfYourBidder)
 //   }
 //
-func TestOpenRTB(t *testing.T, rootDir string, bidder adapters.Bidder) {
+func RunJSONBidderTest(t *testing.T, rootDir string, bidder adapters.Bidder) {
 	runTests(t, fmt.Sprintf("%s/exemplary", rootDir), bidder, false)
 	runTests(t, fmt.Sprintf("%s/supplemental", rootDir), bidder, true)
 }
