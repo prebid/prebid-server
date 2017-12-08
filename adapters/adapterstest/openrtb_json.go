@@ -206,163 +206,141 @@ func diffHttpRequests(t *testing.T, description string, actual *adapters.Request
 	if err := json.Unmarshal(actual.Body, &actualReqData); err != nil {
 		t.Fatalf("%s unmarshalling failed. Does your Bidder send an OpenRTB BidRequest? %v", description, err)
 	}
-	bidRequestDifferences := diffBidRequests(&actualReqData, &(expected.Body))
-	if len(bidRequestDifferences) > 0 {
-		t.Errorf("%s did not match expectations: %v", description, bidRequestDifferences)
-	}
+
+	diffBidRequests(t, &actualReqData, &(expected.Body))
 }
 
-func diffBidRequests(actual *openrtb.BidRequest, expected *openrtb.BidRequest) (differences []string) {
-	differences = diffStrings("request.id", actual.ID, expected.ID, differences)
-	differences = diffImpLists("request.imp", actual.Imp, expected.Imp, differences)
-	differences = diffSites("request.site", actual.Site, expected.Site, differences)
-	differences = diffApps("request.app", actual.App, expected.App, differences)
-	differences = diffDevices("request.device", actual.Device, expected.Device, differences)
-	differences = diffUsers("request.user", actual.User, expected.User, differences)
-	differences = diffInts("request.test", int(actual.Test), int(expected.Test), differences)
-	differences = diffInts("request.at", int(actual.AT), int(expected.AT), differences)
+func diffBidRequests(t *testing.T, actual *openrtb.BidRequest, expected *openrtb.BidRequest) {
+	diffStrings(t, "request.id", actual.ID, expected.ID)
+	diffImpLists(t, "request.imp", actual.Imp, expected.Imp)
+	diffSites(t, "request.site", actual.Site, expected.Site)
+	diffApps(t, "request.app", actual.App, expected.App)
+	diffDevices(t, "request.device", actual.Device, expected.Device)
+	diffUsers(t, "request.user", actual.User, expected.User)
+	diffInts(t, "request.test", int(actual.Test), int(expected.Test))
+	diffInts(t, "request.at", int(actual.AT), int(expected.AT))
 
 	return
 }
 
-func diffImpLists(description string, actual []openrtb.Imp, expected []openrtb.Imp, differences []string) []string {
+func diffImpLists(t *testing.T, description string, actual []openrtb.Imp, expected []openrtb.Imp) {
 	if len(actual) != len(expected) {
-		return append(differences, fmt.Sprintf(`%s expected %d elements, but got %d.`, description, len(expected), len(actual)))
+		t.Errorf(`%s expected %d elements, but got %d.`, description, len(expected), len(actual))
 	}
 	for i := 0; i < len(actual); i++ {
-		differences = diffImps(fmt.Sprintf("%s[%d]", description, i), actual[i], expected[i], differences)
+		diffImps(t, fmt.Sprintf("%s[%d]", description, i), actual[i], expected[i])
 	}
-	return differences
 }
 
-func diffImps(description string, actual openrtb.Imp, expected openrtb.Imp, differences []string) []string {
-	differences = diffStrings(fmt.Sprintf("%s.id", description), actual.ID, expected.ID, differences)
-	differences = diffBanners(fmt.Sprintf("%s.banner", description), actual.Banner, expected.Banner, differences)
-	differences = diffStrings(fmt.Sprintf("%s.tagid", description), actual.TagID, expected.TagID, differences)
-	differences = diffFloats(fmt.Sprintf("%s.bidfloor", description), actual.BidFloor, expected.BidFloor, differences)
-	differences = diffJson(fmt.Sprintf("%s.ext", description), actual.Ext, expected.Ext, differences)
-	return differences
+func diffImps(t *testing.T, description string, actual openrtb.Imp, expected openrtb.Imp) {
+	diffStrings(t, fmt.Sprintf("%s.id", description), actual.ID, expected.ID)
+	diffBanners(t, fmt.Sprintf("%s.banner", description), actual.Banner, expected.Banner)
+	diffStrings(t, fmt.Sprintf("%s.tagid", description), actual.TagID, expected.TagID)
+	diffFloats(t, fmt.Sprintf("%s.bidfloor", description), actual.BidFloor, expected.BidFloor)
+	diffJson(t, fmt.Sprintf("%s.ext", description), actual.Ext, expected.Ext)
 }
 
-func diffSites(description string, actual *openrtb.Site, expected *openrtb.Site, differences []string) []string {
-	return differences
+func diffSites(t *testing.T, description string, actual *openrtb.Site, expected *openrtb.Site) {
 }
 
-func diffDevices(description string, actual *openrtb.Device, expected *openrtb.Device, differences []string) []string {
-	return differences
+func diffDevices(t *testing.T, description string, actual *openrtb.Device, expected *openrtb.Device) {
 }
 
-func diffUsers(description string, actual *openrtb.User, expected *openrtb.User, differences []string) []string {
-	return differences
+func diffUsers(t *testing.T, description string, actual *openrtb.User, expected *openrtb.User) {
 }
 
-func diffApps(description string, actual *openrtb.App, expected *openrtb.App, differences []string) []string {
-	return differences
+func diffApps(t *testing.T, description string, actual *openrtb.App, expected *openrtb.App) {
 }
 
-func diffBanners(description string, actual *openrtb.Banner, expected *openrtb.Banner, differences []string) []string {
-	differences = diffFormatLists(fmt.Sprintf("%s.format", description), actual.Format, expected.Format, differences)
-	differences = diffAdPos(fmt.Sprintf("%s.pos", description), actual.Pos, expected.Pos, differences)
-	return differences
+func diffBanners(t *testing.T, description string, actual *openrtb.Banner, expected *openrtb.Banner) {
+	diffFormatLists(t, fmt.Sprintf("%s.format", description), actual.Format, expected.Format)
+	diffAdPos(t, fmt.Sprintf("%s.pos", description), actual.Pos, expected.Pos)
 }
 
-func diffFormatLists(description string, actual []openrtb.Format, expected []openrtb.Format, differences []string) []string {
+func diffFormatLists(t *testing.T, description string, actual []openrtb.Format, expected []openrtb.Format) {
 	if len(actual) != len(expected) {
-		return append(differences, fmt.Sprintf(`%s expected %d elements, but got %d.`, description, len(expected), len(actual)))
+		t.Errorf(`%s expected %d elements, but got %d.`, description, len(expected), len(actual))
 	}
 	for i := 0; i < len(actual); i++ {
-		differences = diffFormats(fmt.Sprintf("%s[%d]", description, i), actual[i], expected[i], differences)
+		diffFormats(t, fmt.Sprintf("%s[%d]", description, i), actual[i], expected[i])
 	}
-	return differences
 }
 
-func diffFormats(description string, actual openrtb.Format, expected openrtb.Format, differences []string) []string {
-	differences = diffInts(fmt.Sprintf("%s.w", description), int(actual.W), int(actual.W), differences)
-	differences = diffInts(fmt.Sprintf("%s.h", description), int(actual.H), int(actual.H), differences)
-	return differences
+func diffFormats(t *testing.T, description string, actual openrtb.Format, expected openrtb.Format) {
+	diffInts(t, fmt.Sprintf("%s.w", description), int(actual.W), int(actual.W))
+	diffInts(t, fmt.Sprintf("%s.h", description), int(actual.H), int(actual.H))
 }
 
-func diffAdPos(description string, actual *openrtb.AdPosition, expected *openrtb.AdPosition, differences []string) []string {
+func diffAdPos(t *testing.T, description string, actual *openrtb.AdPosition, expected *openrtb.AdPosition) {
 	if (actual == nil) != (expected == nil) {
-		return append(differences, fmt.Sprintf("%s expects nil: %t, got nil: %t.", description, expected == nil, actual == nil))
+		t.Errorf("%s expects nil: %t, got nil: %t.", description, expected == nil, actual == nil)
 	}
 	if actual == nil || expected == nil {
-		return differences
+		return
 	}
-	differences = diffInts(description, int(*actual), int(*expected), differences)
-	return differences
+	diffInts(t, description, int(*actual), int(*expected))
 }
 
-func diffJson(description string, actual openrtb.RawJSON, expected openrtb.RawJSON, differences []string) []string {
+func diffJson(t *testing.T, description string, actual openrtb.RawJSON, expected openrtb.RawJSON) {
 	var parsedActual interface{}
 	var parsedExpected interface{}
 	json.Unmarshal(actual, &parsedActual)
 	json.Unmarshal(expected, &parsedExpected)
 
 	if !reflect.DeepEqual(parsedActual, parsedExpected) {
-		return append(differences, fmt.Sprintf(`%s JSON does not match. Expected: %v, Actual: %v.`, description, parsedExpected, parsedActual))
+		t.Errorf(`%s JSON does not match. Expected: %v, Actual: %v.`, description, parsedExpected, parsedActual)
 	}
-	return differences
 }
 
-func diffBids(t *testing.T, index int, actual *adapters.TypedBid, expected *expectedBid) (differences []string) {
-	differences = diffStrings("typedBid.type", string(actual.BidType), string(expected.Type), differences)
-	differences = diffOrtbBids("typedBid.bid", actual.Bid, expected.Bid, differences)
-	return differences
+func diffBids(t *testing.T, index int, actual *adapters.TypedBid, expected *expectedBid) {
+	diffStrings(t, "typedBid.type", string(actual.BidType), string(expected.Type))
+	diffOrtbBids(t, "typedBid.bid", actual.Bid, expected.Bid)
 }
 
-func diffTypedBids(actual *adapters.TypedBid, expected *adapters.TypedBid) (differences []string) {
-	differences = diffStrings("typedBid.type", string(actual.BidType), string(expected.BidType), differences)
-	differences = diffOrtbBids("typedBid.bid", actual.Bid, expected.Bid, differences)
-	return differences
+func diffTypedBids(t *testing.T, actual *adapters.TypedBid, expected *adapters.TypedBid) {
+	diffStrings(t, "typedBid.type", string(actual.BidType), string(expected.BidType))
+	diffOrtbBids(t, "typedBid.bid", actual.Bid, expected.Bid)
 }
 
-func diffOrtbBids(description string, actual *openrtb.Bid, expected *openrtb.Bid, differences []string) []string {
-	differences = diffStrings(fmt.Sprintf("%s.id expected %s, but got %s", description, expected.ID, actual.ID), actual.ID, expected.ID, differences)
-	differences = diffStrings(fmt.Sprintf("%s.impid expected %s, but got %s", description, expected.ImpID, actual.ImpID), actual.ImpID, expected.ImpID, differences)
-	differences = diffFloats(fmt.Sprintf("%s.price expected %f, but got %f", description, expected.Price, actual.Price), actual.Price, expected.Price, differences)
-	differences = diffStrings(fmt.Sprintf("%s.adm expected %s, but got %s", description, expected.AdM, actual.AdM), actual.AdM, expected.AdM, differences)
-	differences = diffStrings(fmt.Sprintf("%s.adid expected %s, but got %s", description, expected.AdID, actual.AdID), actual.AdID, expected.AdID, differences)
-	differences = diffStringLists(fmt.Sprintf("%s.adomain", description), actual.ADomain, expected.ADomain, differences)
-	differences = diffStrings(fmt.Sprintf("%s.iurl", description), actual.IURL, expected.IURL, differences)
-	differences = diffStrings(fmt.Sprintf("%s.cid", description), actual.CID, expected.CID, differences)
-	differences = diffStrings(fmt.Sprintf("%s.crid", description), actual.CrID, expected.CrID, differences)
-	differences = diffInts(fmt.Sprintf("%s.w", description), int(actual.W), int(expected.W), differences)
-	differences = diffInts(fmt.Sprintf("%s.h", description), int(actual.H), int(expected.H), differences)
-	differences = diffJson(fmt.Sprintf("%s.ext", description), actual.Ext, expected.Ext, differences)
-	return differences
+func diffOrtbBids(t *testing.T, description string, actual *openrtb.Bid, expected *openrtb.Bid) {
+	diffStrings(t, fmt.Sprintf("%s.id expected %s, but got %s", description, expected.ID, actual.ID), actual.ID, expected.ID)
+	diffStrings(t, fmt.Sprintf("%s.impid expected %s, but got %s", description, expected.ImpID, actual.ImpID), actual.ImpID, expected.ImpID)
+	diffFloats(t, fmt.Sprintf("%s.price expected %f, but got %f", description, expected.Price, actual.Price), actual.Price, expected.Price)
+	diffStrings(t, fmt.Sprintf("%s.adm expected %s, but got %s", description, expected.AdM, actual.AdM), actual.AdM, expected.AdM)
+	diffStrings(t, fmt.Sprintf("%s.adid expected %s, but got %s", description, expected.AdID, actual.AdID), actual.AdID, expected.AdID)
+	diffStringLists(t, fmt.Sprintf("%s.adomain", description), actual.ADomain, expected.ADomain)
+	diffStrings(t, fmt.Sprintf("%s.iurl", description), actual.IURL, expected.IURL)
+	diffStrings(t, fmt.Sprintf("%s.cid", description), actual.CID, expected.CID)
+	diffStrings(t, fmt.Sprintf("%s.crid", description), actual.CrID, expected.CrID)
+	diffInts(t, fmt.Sprintf("%s.w", description), int(actual.W), int(expected.W))
+	diffInts(t, fmt.Sprintf("%s.h", description), int(actual.H), int(expected.H))
+	diffJson(t, fmt.Sprintf("%s.ext", description), actual.Ext, expected.Ext)
 }
 
-func diffStringLists(description string, actual []string, expected []string, differences []string) []string {
+func diffStringLists(t *testing.T, description string, actual []string, expected []string) {
 	if len(actual) != len(expected) {
-		return append(differences, fmt.Sprintf(`%s expected %d elements, but got %d.`, description, len(expected), len(actual)))
+		t.Errorf(`%s expected %d elements, but got %d.`, description, len(expected), len(actual))
+		return
 	}
 	for i := 0; i < len(actual); i++ {
-		differences = diffStrings(fmt.Sprintf("%s[%d]", description, i), actual[i], expected[i], differences)
-	}
-	return differences
-}
-
-func diffStrings(description string, actual string, expected string, differences []string) []string {
-	if actual == expected {
-		return differences
-	} else {
-		return append(differences, fmt.Sprintf(`%s "%s" does not match expected "%s."`, description, actual, expected))
+		diffStrings(t, fmt.Sprintf("%s[%d]", description, i), actual[i], expected[i])
 	}
 }
 
-func diffInts(description string, actual int, expected int, differences []string) []string {
-	if actual == expected {
-		return differences
-	} else {
-		return append(differences, fmt.Sprintf(`%s "%d" does not match expected "%d."`, description, actual, expected))
+func diffStrings(t *testing.T, description string, actual string, expected string) {
+	if actual != expected {
+		t.Errorf(`%s "%s" does not match expected "%s."`, description, actual, expected)
 	}
 }
 
-func diffFloats(description string, actual float64, expected float64, differences []string) []string {
-	if actual == expected {
-		return differences
-	} else {
-		return append(differences, fmt.Sprintf(`%s "%f" does not match expected "%f."`, description, actual, expected))
+func diffInts(t *testing.T, description string, actual int, expected int) {
+	if actual != expected {
+		t.Errorf(`%s "%d" does not match expected "%d."`, description, actual, expected)
+	}
+}
+
+func diffFloats(t *testing.T, description string, actual float64, expected float64) {
+	if actual != expected {
+		t.Errorf(`%s "%f" does not match expected "%f."`, description, actual, expected)
 	}
 }
