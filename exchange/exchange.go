@@ -19,7 +19,7 @@ type Exchange interface {
 
 type exchange struct {
 	// The list of adapters we will consider for this auction
-	adapters []openrtb_ext.BidderName
+	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
 }
 
@@ -67,10 +67,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	var targData *targetData = nil
 	if requestExt.Prebid.Targeting != nil {
 		targData = &targetData{
-			lengthMax:	requestExt.Prebid.Targeting.MaxLength,
+			lengthMax:        requestExt.Prebid.Targeting.MaxLength,
 			priceGranularity:	requestExt.Prebid.Targeting.PriceGranularity,
-			winningBids:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
-			winningBidders:		make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
+			winningBids:      make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
+			winningBidders:   make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
 		}
 	}
 
@@ -144,16 +144,12 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 			seatBids = append(seatBids, *sb)
 		}
 	}
-	var err1 error = nil
 	targData.addWinningTargets()
 	bidResponse.SeatBid = seatBids
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)
 	ext, err := json.Marshal(bidResponseExt)
 	bidResponse.Ext = ext
-	if err1 != nil {
-		err = err1
-	}
 	return bidResponse, err
 }
 

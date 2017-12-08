@@ -16,11 +16,10 @@ import (
 // All functions on this struct are all nil-safe.
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
-	targetFlag bool
-	lengthMax int
+	lengthMax        int
 	priceGranularity openrtb_ext.PriceGranularity
 	// These two dictionaries index on imp.id to identify the winning bid for each imp.
-	winningBids map[string]*openrtb.Bid
+	winningBids    map[string]*openrtb.Bid
 	winningBidders map[string]openrtb_ext.BidderName
 }
 
