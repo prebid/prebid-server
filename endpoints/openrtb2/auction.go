@@ -11,6 +11,9 @@ import (
 	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"time"
+	"github.com/prebid/prebid-server/prebid"
+	"net/url"
+	"golang.org/x/net/publicsuffix"
 	"github.com/evanphx/json-patch"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/config"
@@ -111,6 +114,8 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
+	setFieldsImplicitly(httpRequest, req)
+
 	if err := deps.validateRequest(req); err != nil {
 		errs = []error{err}
 		return
@@ -136,6 +141,15 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 			return err
 		}
 	}
+
+	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
+		return errors.New("request.site or request.app must be defined, but not both.")
+	}
+
+	if err := deps.validateSite(req.Site); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -268,6 +282,57 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	return nil
 }
 
+func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
+	if site != nil && site.ID == "" && site.Page == "" {
+		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+	}
+
+	return nil
+}
+
+// setFieldsImplicitly uses _implicit_ information from the httpReq to set values on bidReq.
+// This function does not consume the request body, which was set explicitly, but infers certain
+// OpenRTB properties from the headers and other implicit info.
+//
+// This function _should not_ override any fields which were defined explicitly by the caller in the request.
+func setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	setDeviceImplicitly(httpReq, bidReq)
+
+	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
+	if bidReq.App == nil {
+		setSiteImplicitly(httpReq, bidReq)
+	}
+}
+
+// setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
+func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	setIPImplicitly(httpReq, bidReq) 	// Fixes #230
+	setUAImplicitly(httpReq, bidReq)
+}
+
+// setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
+func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
+		referrerCandidate := httpReq.Referer()
+		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
+			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+				if bidReq.Site == nil {
+					bidReq.Site = &openrtb.Site{}
+				}
+				if bidReq.Site.Domain == "" {
+					bidReq.Site.Domain = domain
+				}
+
+				// This looks weird... but is not a bug. The site which called prebid-server (the "referer"), is
+				// (almost certainly) the page where the ad will be hosted. In the OpenRTB spec, this is *page*, not *ref*.
+				if bidReq.Site.Page == "" {
+					bidReq.Site.Page = referrerCandidate
+				}
+			}
+		}
+	}
+}
+
 // processStoredRequests merges any data referenced by request.imp[i].ext.prebid.storedrequest.id into the request, if necessary.
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
 	// Pull all the Stored Request IDs from the Imps.
@@ -303,7 +368,32 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *op
 			}
 		}
 	}
+
 	return errList
+}
+
+// setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.IP == "" {
+		if ip := prebid.GetIP(httpReq); ip != "" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+			bidReq.Device.IP = ip
+		}
+	}
+}
+
+// setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
+func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.UA == "" {
+		if ua := httpReq.UserAgent(); ua != "" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+			bidReq.Device.UA = ua
+		}
+	}
 }
 
 // Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
