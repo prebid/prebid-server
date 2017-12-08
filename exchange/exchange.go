@@ -68,7 +68,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	if requestExt.Prebid.Targeting != nil {
 		targData = &targetData{
 			lengthMax:        requestExt.Prebid.Targeting.MaxLength,
-			priceGranularity:	requestExt.Prebid.Targeting.PriceGranularity,
+			priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
 			winningBids:      make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
 			winningBidders:   make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
 		}
@@ -221,26 +221,25 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 
 // Create the Bid array inside of SeatBid
 func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []string) {
-	bids := make([]openrtb.Bid, len(Bids))
+	bids := make([]openrtb.Bid, 0, len(Bids))
 	errList := make([]string, 0, 1)
-	for i := 0; i < len(Bids); i++ {
-		var err error
-		bids[i] = *Bids[i].bid
-		bidExt := new(openrtb_ext.ExtBid)
-		bidExt.Bidder = bids[i].Ext
-		bidPrebid := new(openrtb_ext.ExtBidPrebid)
-		targData.addBid(adapter, &(bids[i]))
-		if targData != nil {
-			bidPrebid.Targeting = Bids[i].bidTargets
+	for i, thisBid := range Bids {
+		bidExt := &openrtb_ext.ExtBid{
+			Bidder: thisBid.bid.Ext,
+			Prebid: &openrtb_ext.ExtBidPrebid{
+				Targeting: thisBid.bidTargets,
+				Type: thisBid.bidType,
+			},
 		}
-		bidExt.Prebid = bidPrebid
-		bidPrebid.Type = Bids[i].bidType
 
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
 			errList = append(errList, fmt.Sprintf("Error writing SeatBid.Bid[%d].Ext: %s", i, err.Error()))
+		} else {
+			bids = append(bids, *thisBid.bid)
+			targData.addBid(adapter, &(bids[len(bids) - 1]))
+			bids[len(bids) - 1].Ext = ext
 		}
-		bids[i].Ext = ext
 	}
 	return bids, errList
 }
