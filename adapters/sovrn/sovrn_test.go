@@ -192,6 +192,42 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 
 }
 
+func TestNoContentResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	ctx := context.TODO()
+	req := SampleSovrnRequest(1, t)
+	bidder := req.Bidders[0]
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	_, err := adapter.Call(ctx, req, bidder)
+
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+}
+
+func TestNotFoundResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	ctx := context.TODO()
+	req := SampleSovrnRequest(1, t)
+	bidder := req.Bidders[0]
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	_, err := adapter.Call(ctx, req, bidder)
+
+	adapters.VerifyStringValue(err.Error(), "HTTP status 404; body: ", t);
+
+}
+
 func CreateSovrnService(tagsToBid map[string]bool) adapters.OrtbMockService {
 	service := adapters.OrtbMockService{}
 	var lastBidRequest openrtb.BidRequest
