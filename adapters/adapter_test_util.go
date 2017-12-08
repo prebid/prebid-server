@@ -55,6 +55,13 @@ func VerifyIntValue(value int, expected int, t *testing.T) {
 	}
 }
 
+// VerifyBoolValue Helper function to assert bool equals.
+func VerifyBoolValue(value bool, expected bool, t *testing.T) {
+	if value != expected {
+		t.Fatalf(fmt.Sprintf("%d expected, got %d", expected, value))
+	}
+}
+
 // VerifyBannerSize helper function to assert banner size
 func VerifyBannerSize(banner *openrtb.Banner, expectedWidth int, expectedHeight int, t *testing.T) {
 	VerifyIntValue(int(*(banner.W)), expectedWidth, t)
