@@ -10,6 +10,7 @@ import (
 	"time"
 	"encoding/json"
 	"errors"
+	"github.com/prebid/prebid-server/config"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -19,7 +20,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client()).(*exchange)
+	e := NewExchange(server.Client(), &config.Configuration{}).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
