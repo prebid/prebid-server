@@ -117,7 +117,7 @@ func TestGetAllBids(t *testing.T) {
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
 
 	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
-	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests, &targetData{})
+	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests, nil)
 
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
@@ -137,7 +137,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, &targetData{})
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -154,7 +154,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, &targetData{})
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil)
 
 	if len(adapterExtra[BidderDummy2].Errors) !=1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -162,8 +162,9 @@ func TestGetAllBids(t *testing.T) {
 	if len(adapterExtra[BidderDummy].Errors) !=0 {
 		t.Errorf("GetAllBids found errors on Bidder1, found %d errors", len(adapterExtra[BidderDummy2].Errors))
 	}
-
 }
+
+
 
 func TestBuildBidResponse(t *testing.T) {
 	//  BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*adapters.pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.BidResponse
@@ -213,7 +214,7 @@ func TestBuildBidResponse(t *testing.T) {
 
 	errList := make([]error, 0, 1)
 	targData := &targetData{
-		targetFlag: true,
+		priceGranularity: openrtb_ext2.PriceGranularityMedium,
 		winningBids: make(map[string]*openrtb.Bid),
 		winningBidders: make(map[string]openrtb_ext.BidderName),
 	}
@@ -277,7 +278,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, &targetData{}, errList)
+	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -296,7 +297,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors:convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, &targetData{}, errList)
+	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -314,6 +315,7 @@ func TestBuildBidResponse(t *testing.T) {
 }
 
 func assertStringValue(t *testing.T, object string, expect string, value string) {
+	t.Helper()
 	if expect != value {
 		t.Errorf("Wrong value for %s, expected \"%s\", got \"%s\"", object, expect, value)
 	}
@@ -325,7 +327,7 @@ type mockAdapter struct {
 	delay time.Duration
 }
 
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *bidderTargeting) (*pbsOrtbSeatBid, []error) {
+func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext2.BidderName) (*pbsOrtbSeatBid, []error) {
 	time.Sleep(a.delay)
 	return a.seatBid, a.errs
 }

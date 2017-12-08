@@ -47,14 +47,14 @@ func TestSingleBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, &bidderTargeting{})
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
 		t.Errorf("The Bidder should be called with the server's response.")
 	}
 	if bidderImpl.httpResponse.StatusCode != respStatus {
-		t.Errorf("Bad response status. Expected %d, got %d", respStatus, string(bidderImpl.httpResponse.StatusCode))
+		t.Errorf("Bad response status. Expected %d, got %d", respStatus, bidderImpl.httpResponse.StatusCode)
 	}
 	if string(bidderImpl.httpResponse.Body) != respBody {
 		t.Errorf("Bad response body. Expected %s, got %s", respBody, string(bidderImpl.httpResponse.Body))
@@ -123,7 +123,7 @@ func TestMultiBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, &bidderTargeting{})
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -335,7 +335,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 	bids, _ := bidder.requestBid(context.Background(), &openrtb.BidRequest{
 		Test: 1,
-	}, &bidderTargeting{})
+	}, nil, "test")
 
 	if len(bids.httpCalls) != 1 {
 		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
@@ -356,7 +356,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, &bidderTargeting{})
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -429,7 +429,10 @@ func TestTargetingKeys(t *testing.T) {
 		Ext: bidReqExtRaw,
 	}
 
-	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &bidderTargeting{targetFlag:true, bidder:"dummy"})
+	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{
+		winningBids: make(map[string]*openrtb.Bid),
+		winningBidders: make(map[string]openrtb_ext.BidderName),
+	}, "dummy")
 	if len(errs) > 0 {
 		t.Errorf("Errors processing requestBid")
 		for _, e := range errs {

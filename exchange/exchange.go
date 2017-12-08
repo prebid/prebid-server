@@ -34,23 +34,6 @@ type bidResponseWrapper struct {
 	bidder openrtb_ext.BidderName
 }
 
-// Container for storing a pointer to the winning bid.
-type targetData struct {
-	targetFlag bool
-	lengthMax int
-	priceGranularity openrtb_ext.PriceGranularity
-	// These two dictionaries index on imp.id to identify the winning bid for each imp.
-	winningBids map[string]*openrtb.Bid
-	winningBidders map[string]openrtb_ext.BidderName
-}
-
-type bidderTargeting struct {
-	targetFlag bool
-	lengthMax int
-	priceGranularity openrtb_ext.PriceGranularity
-	bidder openrtb_ext.BidderName
-}
-
 func NewExchange(client *http.Client) Exchange {
 	e := new(exchange)
 
@@ -75,23 +58,18 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// Randomize the list of adapters to make the auction more fair
 	randomizeList(liveAdapters)
 	// Process the request to check for targeting parameters.
-	targData := &targetData{
-		targetFlag:	false,
-		lengthMax:	0,
-		priceGranularity:	openrtb_ext.PriceGranularityMedium,
-		winningBids:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
-		winningBidders:		make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
-	}
 	requestExt := new(openrtb_ext.ExtRequest)
 	err := json.Unmarshal(bidRequest.Ext, requestExt)
 	if err != nil {
 		return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
 	}
+	var targData *targetData = nil
 	if requestExt.Prebid.Targeting != nil {
-		if len(requestExt.Prebid.Targeting.PriceGranularity) > 0 {
-			targData.targetFlag = true
-			targData.lengthMax = requestExt.Prebid.Targeting.MaxLength
-			targData.priceGranularity = requestExt.Prebid.Targeting.PriceGranularity
+		targData = &targetData{
+			lengthMax:	requestExt.Prebid.Targeting.MaxLength,
+			priceGranularity:	requestExt.Prebid.Targeting.PriceGranularity,
+			winningBids:		make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
+			winningBidders:		make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
 		}
 	}
 
@@ -111,16 +89,10 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 		// Here we actually call the adapters and collect the bids.
 		go func(aName openrtb_ext.BidderName) {
 			// Passing in aName so a doesn't change out from under the go routine
-			bidderTarg := &bidderTargeting{
-				targetFlag: targData.targetFlag,
-				lengthMax: targData.lengthMax,
-				priceGranularity: targData.priceGranularity,
-				bidder: aName,
-			}
 			brw := new(bidResponseWrapper)
 			brw.bidder = aName
 			start := time.Now()
-			bids, err := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName], bidderTarg)
+			bids, err := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName], targData, aName)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -172,9 +144,7 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		}
 	}
 	var err1 error = nil
-	if targData.targetFlag {
-		e.addWinningTargets(targData)
-	}
+	targData.addWinningTargets()
 	bidResponse.SeatBid = seatBids
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)
@@ -184,39 +154,6 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		err = err1
 	}
 	return bidResponse, err
-}
-
-func (e *exchange) addWinningTargets(targData *targetData) {
-	for id, bid := range targData.winningBids {
-		bidExt := new(openrtb_ext.ExtBid)
-		err1 := json.Unmarshal(bid.Ext, bidExt)
-		if err1 == nil && bidExt.Prebid.Targeting != nil {
-			hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
-			hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
-			hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
-			hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
-			hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(targData.winningBidders[id], targData.lengthMax)
-
-			bidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)] = bidExt.Prebid.Targeting[hbPbBidderKey]
-			bidExt.Prebid.Targeting[string(openrtb_ext.HbBidderConstantKey)] = bidExt.Prebid.Targeting[hbBidderBidderKey]
-			if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbSizeConstantKey)] = size
-			}
-			if cache, ok := bidExt.Prebid.Targeting[hbCacheIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCacheIdConstantKey)] = cache
-			}
-			if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbDealIdConstantKey)] = deal
-			}
-			if targData.winningBidders[id] == "audienceNetwork" {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodDemandSDK
-			} else {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodHTML
-			}
-			bid.Ext, err1 = json.Marshal(bidExt)
-		}
-	}
-
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
@@ -295,14 +232,9 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 		bidExt := new(openrtb_ext.ExtBid)
 		bidExt.Bidder = bids[i].Ext
 		bidPrebid := new(openrtb_ext.ExtBidPrebid)
-		if targData.targetFlag {
+		targData.addBid(adapter, &(bids[i]))
+		if targData != nil {
 			bidPrebid.Targeting = Bids[i].bidTargets
-			cpm := bids[i].Price
-			wbid, ok := targData.winningBids[bids[i].ImpID]
-			if !ok || cpm > wbid.Price {
-				targData.winningBidders[bids[i].ImpID] = adapter
-				targData.winningBids[bids[i].ImpID] = &bids[i]
-			}
 		}
 		bidExt.Prebid = bidPrebid
 		bidPrebid.Type = Bids[i].bidType
@@ -315,5 +247,3 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 	}
 	return bids, errList
 }
-
-

@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/pbs/buckets"
-	"strconv"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -36,7 +34,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *bidderTargeting) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -80,7 +78,7 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *bidderTargeting) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
@@ -118,14 +116,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
-				var targets map[string]string
-				targets = nil
-				if bidderTarg.targetFlag {
-					var err error
-					targets, err = bidder.makePrebidTargets(bid.Bid, bidderTarg)
-					if err != nil {
-						errs = append(errs, err)
-					}
+				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid)
+				if err != nil {
+					errs = append(errs, err)
 				}
 
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
@@ -209,47 +202,4 @@ type httpCallInfo struct {
 	request  *adapters.RequestData
 	response *adapters.ResponseData
 	err      error
-}
-
-func (bidder *bidderAdapter) makePrebidTargets(bid *openrtb.Bid, bidderTarg *bidderTargeting) (map[string]string, error) {
-	cpm := bid.Price
-	width := bid.W
-	height := bid.H
-	deal := bid.DealID
-	cacheKey := ""
-
-	roundedCpm, err := buckets.GetPriceBucketString(cpm, bidderTarg.priceGranularity)
-	if err != nil {
-		// set broken cpm to 0
-		roundedCpm = "0.0"
-	}
-
-	hbSize := ""
-	if width != 0 && height != 0 {
-		w := strconv.FormatUint(width, 10)
-		h := strconv.FormatUint(height, 10)
-		hbSize = w + "x" + h
-	}
-
-	hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
-	hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
-	hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
-	hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
-	hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(bidderTarg.bidder, bidderTarg.lengthMax)
-
-	pbs_kvs := map[string]string{
-		hbPbBidderKey:      roundedCpm,
-		hbBidderBidderKey:  string(bidderTarg.bidder),
-	}
-
-	if hbSize != "" {
-		pbs_kvs[hbSizeBidderKey] = hbSize
-	}
-	if len(cacheKey) > 0 {
-		pbs_kvs[hbCacheIdBidderKey] = cacheKey
-	}
-	if len(deal) > 0 {
-		pbs_kvs[hbDealIdBidderKey] = deal
-	}
-	return pbs_kvs, err
 }
