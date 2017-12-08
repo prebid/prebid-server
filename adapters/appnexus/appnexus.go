@@ -389,7 +389,11 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 }
 
 func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *AppNexusAdapter {
-	a := adapters.NewHTTPAdapter(config)
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, externalURL)
+}
+
+func NewAppNexusBidder(client *http.Client, externalURL string) *AppNexusAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
 
 	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
 	usersyncURL := "//ib.adnxs.com/getuid?"
