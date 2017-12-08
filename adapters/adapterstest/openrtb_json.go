@@ -211,12 +211,22 @@ func diffHttpRequests(t *testing.T, description string, actual *adapters.Request
 }
 
 func diffBids(t *testing.T, description string, actual *adapters.TypedBid, expected *expectedBid) {
+	if actual == nil {
+		t.Errorf("Bidders cannot return nil TypedBids. %s was nil.", description)
+		return
+	}
+
 	diffStrings(t, fmt.Sprintf("%s.type", description), string(actual.BidType), string(expected.Type))
 	diffOrtbBids(t, fmt.Sprintf("%s.bid", description), actual.Bid, expected.Bid)
 }
 
 // diffOrtbBids compares the actual Bid made by the adapter to the expectation from the JSON file.
 func diffOrtbBids(t *testing.T, description string, actual *openrtb.Bid, expected json.RawMessage) {
+	if actual == nil {
+		t.Errorf("Bidders cannot return nil Bids. %s was nil.", description)
+		return
+	}
+
 	actualJson, err := json.Marshal(actual)
 	if err != nil {
 		t.Fatalf("%s failed to marshal actual Bid into JSON. %v", description, err)
