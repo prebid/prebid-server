@@ -47,8 +47,7 @@ type HTTPAdapterConfig struct {
 }
 
 type HTTPAdapter struct {
-	Transport *http.Transport
-	Client    *http.Client
+	Client *http.Client
 }
 
 // DefaultHTTPAdapterConfig is an HTTPAdapterConfig that chooses sensible default values.
@@ -69,7 +68,6 @@ func NewHTTPAdapter(c *HTTPAdapterConfig) *HTTPAdapter {
 	}
 
 	return &HTTPAdapter{
-		Transport: ts,
 		Client: &http.Client{
 			Transport: ts,
 		},

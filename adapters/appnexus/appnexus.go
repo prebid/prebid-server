@@ -406,3 +406,22 @@ func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) 
 		usersyncInfo: info,
 	}
 }
+
+func NewAppNexusBidder(client *http.Client, externalURL string) *AppNexusAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+
+	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
+	usersyncURL := "//ib.adnxs.com/getuid?"
+
+	info := &pbs.UsersyncInfo{
+		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+		Type:        "redirect",
+		SupportCORS: false,
+	}
+
+	return &AppNexusAdapter{
+		http:         a,
+		URI:          uri,
+		usersyncInfo: info,
+	}
+}
