@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/config"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -34,10 +35,10 @@ type bidResponseWrapper struct {
 	bidder openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client) Exchange {
+func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
 	e := new(exchange)
 
-	e.adapterMap = newAdapterMap(client)
+	e.adapterMap = newAdapterMap(client, cfg)
 	e.adapters = make([]openrtb_ext.BidderName, 0, len(e.adapterMap))
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
