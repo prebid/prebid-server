@@ -58,7 +58,7 @@ func VerifyIntValue(value int, expected int, t *testing.T) {
 // VerifyBoolValue Helper function to assert bool equals.
 func VerifyBoolValue(value bool, expected bool, t *testing.T) {
 	if value != expected {
-		t.Fatalf(fmt.Sprintf("%d expected, got %d", expected, value))
+		t.Fatalf(fmt.Sprintf("%v expected, got %v", expected, value))
 	}
 }
 

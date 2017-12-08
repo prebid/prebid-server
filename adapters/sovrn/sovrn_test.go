@@ -224,7 +224,7 @@ func TestNotFoundResponse(t *testing.T) {
 	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
 	_, err := adapter.Call(ctx, req, bidder)
 
-	adapters.VerifyStringValue(err.Error(), "HTTP status 404; body: ", t);
+	adapters.VerifyStringValue(err.Error(), "HTTP status 404; body: ", t)
 
 }
 
