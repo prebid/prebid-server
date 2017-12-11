@@ -1,10 +1,10 @@
 package empty_fetcher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/prebid/prebid-server/stored_requests"
-	"context"
 )
 
 // EmptyFetcher is a nil-object which has no Stored Requests.
@@ -13,7 +13,7 @@ func EmptyFetcher() stored_requests.Fetcher {
 	return &instance
 }
 
-type emptyFetcher struct {}
+type emptyFetcher struct{}
 
 func (fetcher *emptyFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	errs := make([]error, 0, len(ids))

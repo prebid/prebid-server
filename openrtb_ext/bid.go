@@ -10,9 +10,9 @@ type ExtBid struct {
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
 type ExtBidPrebid struct {
-	Cache              *ExtResponseCache `json:"cache,omitempty"`
-	Targeting          map[string]string `json:"targeting,omitempty"`
-	Type               BidType           `json:"type"`
+	Cache     *ExtResponseCache `json:"cache,omitempty"`
+	Targeting map[string]string `json:"targeting,omitempty"`
+	Type      BidType           `json:"type"`
 }
 
 // ExtResponseCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -36,14 +36,14 @@ const (
 type TargetingKey string
 
 const (
-	HbpbConstantKey TargetingKey = "hb_pb"
-	HbBidderConstantKey TargetingKey = "hb_bidder"
-	HbSizeConstantKey TargetingKey = "hb_size"
+	HbpbConstantKey                 TargetingKey = "hb_pb"
+	HbBidderConstantKey             TargetingKey = "hb_bidder"
+	HbSizeConstantKey               TargetingKey = "hb_size"
 	HbCreativeLoadMethodConstantKey TargetingKey = "hb_creative_loadtype"
-	HbCacheIdConstantKey TargetingKey = "hb_cache_id"
-	HbDealIdConstantKey TargetingKey = "hb_deal"
+	HbCacheIdConstantKey            TargetingKey = "hb_cache_id"
+	HbDealIdConstantKey             TargetingKey = "hb_deal"
 	// These are not keys, but values used by hbCreativeLoadMethodConstantKey
-	HbCreativeLoadMethodHTML string = "html"
+	HbCreativeLoadMethodHTML      string = "html"
 	HbCreativeLoadMethodDemandSDK string = "demand_sdk"
 )
 

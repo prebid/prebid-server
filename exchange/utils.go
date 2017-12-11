@@ -1,22 +1,22 @@
 package exchange
 
 import (
-    "github.com/mxmCherry/openrtb"
-    "encoding/json"
-    "math/rand"
-    "fmt"
-    "github.com/prebid/prebid-server/openrtb_ext"
+	"encoding/json"
+	"fmt"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"math/rand"
 )
 
 // Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
 func randomizeList(list []openrtb_ext.BidderName) {
-    l := len(list)
-    perm := rand.Perm(l)
-    var j int
-    for i :=0; i < l; i++ {
-        j = perm[i]
-        list[i], list[j] = list[j], list[i]
-    }
+	l := len(list)
+	perm := rand.Perm(l)
+	var j int
+	for i := 0; i < l; i++ {
+		j = perm[i]
+		list[i], list[j] = list[j], list[i]
+	}
 }
 
 // This will copy the openrtb BidRequest into an array of requests, where the BidRequest.Imp[].Ext field will only
@@ -31,62 +31,62 @@ func randomizeList(list []openrtb_ext.BidderName) {
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
 func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
-    // This is the clean array of openrtb requests we will be returning
-    cleanReqs := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(adapters))
-    errList := make([]error, 0, 1)
+	// This is the clean array of openrtb requests we will be returning
+	cleanReqs := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(adapters))
+	errList := make([]error, 0, 1)
 
-    // Decode the Imp extensions once to save time. We store the results here
-    imp_exts := make([]map[string]openrtb.RawJSON, len(orig.Imp))
-    // Loop over every impression in the request
-    for i := 0 ; i < len(orig.Imp) ; i++ {
-        // Unpack each set of extensions found in the Imp array
-        err := json.Unmarshal(orig.Imp[i].Ext, &imp_exts[i])
-        if err != nil {
-            return nil, []error{fmt.Errorf("Error unpacking extensions for Imp[%d]: %s", i, err.Error())}
-        }
-    }
+	// Decode the Imp extensions once to save time. We store the results here
+	imp_exts := make([]map[string]openrtb.RawJSON, len(orig.Imp))
+	// Loop over every impression in the request
+	for i := 0; i < len(orig.Imp); i++ {
+		// Unpack each set of extensions found in the Imp array
+		err := json.Unmarshal(orig.Imp[i].Ext, &imp_exts[i])
+		if err != nil {
+			return nil, []error{fmt.Errorf("Error unpacking extensions for Imp[%d]: %s", i, err.Error())}
+		}
+	}
 
-    // Loop over every adapter we want to create a clean openrtb request for.
-    for i := 0 ; i < len(adapters); i++ {
-        // Go deeper into Imp array
-        newImps := make([]openrtb.Imp, 0, len(orig.Imp))
-        bn := adapters[i].String()
+	// Loop over every adapter we want to create a clean openrtb request for.
+	for i := 0; i < len(adapters); i++ {
+		// Go deeper into Imp array
+		newImps := make([]openrtb.Imp, 0, len(orig.Imp))
+		bn := adapters[i].String()
 
-        // Overwrite each extension field with a cleanly built subset
-        // We are looping over every impression in the Imp array
-        for j := 0 ; j < len(orig.Imp) ; j++ {
-            // Don't do anything if the current bidder's field is not present.
-            if val, ok := imp_exts[j][bn]; ok {
-                // Start with a new, empty unpacked extention
-                newExts := make(map[string]openrtb.RawJSON, len(orig.Imp))
-                // Need to do some consistency checking to verify these fields exist. Especially the adapters one.
-                if pb, ok := imp_exts[j]["prebid"]; ok {
-                    newExts["prebid"] = pb
-                }
-                newExts["bidder"] = val
-                // Create a "clean" byte array for this Imp's extension
-                // Note, if the "prebid" or "<adapter>" field is missing from the source, it will be missing here as well
-                // The adapters should test that their field is present rather than assuming it will be there if they are
-                // called
-                b, err := json.Marshal(newExts)
-                if err != nil {
-                    errList = append(errList, fmt.Errorf("Error creating sanitized bidder extents for Imp[%d], bidder %s: %s", j, bn, err.Error()))
-                }
-                // Overwrite the extention field with the new cleaned version
-                newImps = append(newImps, orig.Imp[j])
-                newImps[len(newImps) - 1].Ext = b
-            }
-        }
+		// Overwrite each extension field with a cleanly built subset
+		// We are looping over every impression in the Imp array
+		for j := 0; j < len(orig.Imp); j++ {
+			// Don't do anything if the current bidder's field is not present.
+			if val, ok := imp_exts[j][bn]; ok {
+				// Start with a new, empty unpacked extention
+				newExts := make(map[string]openrtb.RawJSON, len(orig.Imp))
+				// Need to do some consistency checking to verify these fields exist. Especially the adapters one.
+				if pb, ok := imp_exts[j]["prebid"]; ok {
+					newExts["prebid"] = pb
+				}
+				newExts["bidder"] = val
+				// Create a "clean" byte array for this Imp's extension
+				// Note, if the "prebid" or "<adapter>" field is missing from the source, it will be missing here as well
+				// The adapters should test that their field is present rather than assuming it will be there if they are
+				// called
+				b, err := json.Marshal(newExts)
+				if err != nil {
+					errList = append(errList, fmt.Errorf("Error creating sanitized bidder extents for Imp[%d], bidder %s: %s", j, bn, err.Error()))
+				}
+				// Overwrite the extention field with the new cleaned version
+				newImps = append(newImps, orig.Imp[j])
+				newImps[len(newImps)-1].Ext = b
+			}
+		}
 
-        // Only add a BidRequest if there exist Imp(s) for this adapter
-        if len(newImps) > 0 {
-            // Create a new BidRequest
-            newReq := new(openrtb.BidRequest)
-            // Make a shallow copy of the original request
-            *newReq = *orig
-            newReq.Imp = newImps
-            cleanReqs[adapters[i]] = newReq
-        }
-    }
-    return cleanReqs, errList
+		// Only add a BidRequest if there exist Imp(s) for this adapter
+		if len(newImps) > 0 {
+			// Create a new BidRequest
+			newReq := new(openrtb.BidRequest)
+			// Make a shallow copy of the original request
+			*newReq = *orig
+			newReq.Imp = newImps
+			cleanReqs[adapters[i]] = newReq
+		}
+	}
+	return cleanReqs, errList
 }

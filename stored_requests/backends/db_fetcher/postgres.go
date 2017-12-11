@@ -1,10 +1,10 @@
 package db_fetcher
 
 import (
+	"bytes"
+	"database/sql"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
-	"database/sql"
-	"bytes"
 	"strconv"
 )
 
@@ -15,7 +15,7 @@ func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
 	}
 
 	return &dbFetcher{
-		db: db,
+		db:         db,
 		queryMaker: cfg.MakeQuery,
 	}, nil
 }

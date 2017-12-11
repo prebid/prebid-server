@@ -1,26 +1,26 @@
 package openrtb2
 
 import (
-	"github.com/julienschmidt/httprouter"
-	"net/http"
-	"github.com/mxmCherry/openrtb"
-	"encoding/json"
-	"github.com/prebid/prebid-server/exchange"
-	"fmt"
 	"context"
+	"encoding/json"
 	"errors"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"time"
-	"github.com/prebid/prebid-server/prebid"
-	"net/url"
-	"golang.org/x/net/publicsuffix"
+	"fmt"
+	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/prebid"
+	"github.com/prebid/prebid-server/stored_requests"
+	"golang.org/x/net/publicsuffix"
 	"io"
 	"io/ioutil"
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
+	"net/http"
+	"net/url"
+	"time"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
@@ -81,7 +81,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, ctx context.Context, cancel func(), errs []error) {
 	req = &openrtb.BidRequest{}
 	ctx = context.Background()
-	cancel = func() { }
+	cancel = func() {}
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -108,11 +108,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	}
 
 	if req.TMax > 0 {
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax) * time.Millisecond)
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax)*time.Millisecond)
 	}
 
 	// Process any stored request directives in the impression objects.
-	if errL := deps.processStoredRequests(ctx, req, rawRequest); len(errL)>0 {
+	if errL := deps.processStoredRequests(ctx, req, rawRequest); len(errL) > 0 {
 		errs = errL
 		return
 	}
@@ -309,7 +309,7 @@ func setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
 func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	setIPImplicitly(httpReq, bidReq) 	// Fixes #230
+	setIPImplicitly(httpReq, bidReq) // Fixes #230
 	setUAImplicitly(httpReq, bidReq)
 }
 
@@ -417,13 +417,12 @@ func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []
 				errList = append(errList, err)
 				storedReqIds[i] = ""
 			}
-		} else{
+		} else {
 			storedReqIds[i] = ""
 		}
 	}
 	return storedReqIds, shortIds, errList
 }
-
 
 // Process the stored request data for an Imp.
 // Need to modify the Imp object in place as we cannot simply assign one Imp to another (deep copy)

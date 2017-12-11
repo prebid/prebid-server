@@ -1,10 +1,10 @@
 package exchange
 
 import (
-	"testing"
-	"github.com/mxmCherry/openrtb"
 	"encoding/json"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"testing"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -31,7 +31,7 @@ func TestRandomizeList(t *testing.T) {
 func TestCleanOpenRTBRequests(t *testing.T) {
 	// Very simple Bid request. The dummy bidders know what to do.
 	bidRequest := openrtb.BidRequest{
-		ID: "This Bid",
+		ID:  "This Bid",
 		Imp: make([]openrtb.Imp, 2),
 	}
 	// Need extensions for all the bidders so we know to hold auctions for them.
@@ -58,7 +58,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	adapters[1] = openrtb_ext.BidderName("dummy2")
 	adapters[2] = openrtb_ext.BidderName("dummy3")
 
-	cleanRequests, errList := cleanOpenRTBRequests( &bidRequest, adapters)
+	cleanRequests, errList := cleanOpenRTBRequests(&bidRequest, adapters)
 
 	if len(errList) > 0 {
 		for _, e := range errList {
@@ -75,7 +75,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
 	}
 	dummymap, ok := cleanImpExt["bidder"]
-	if ! ok {
+	if !ok {
 		t.Error("CleanOpenRTBRequests: dummy adapter did not get proper bidder extension")
 	}
 	if dummymap["placementId"] != "5554444" {
@@ -90,7 +90,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		t.Errorf("CleanOpenRTBRequests: %s", err.Error())
 	}
 	dummymap, ok = cleanImpExt["bidder"]
-	if ! ok {
+	if !ok {
 		t.Error("CleanOpenRTBRequests: dummy3 adapter did not get proper bidder extension")
 	}
 	if dummymap["placementId"] != "1234567" {
@@ -98,4 +98,3 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 
 }
-

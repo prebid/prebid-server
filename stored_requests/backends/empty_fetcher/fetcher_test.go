@@ -1,8 +1,8 @@
 package empty_fetcher
 
 import (
-	"testing"
 	"context"
+	"testing"
 )
 
 func TestErrorLength(t *testing.T) {

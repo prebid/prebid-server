@@ -1,16 +1,16 @@
 package exchange
 
 import (
-	"testing"
-	"github.com/mxmCherry/openrtb"
-	"errors"
-	"net/http/httptest"
-	"sync/atomic"
-	"net/http"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"context"
 	"encoding/json"
+	"errors"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
 )
 
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
@@ -379,20 +379,20 @@ func TestTargetingKeys(t *testing.T) {
 
 	mockBids := []*adapters.TypedBid{
 		{
-			Bid:     &openrtb.Bid{
-				ID: "123456",
-				W: 728,
-				H: 90,
+			Bid: &openrtb.Bid{
+				ID:    "123456",
+				W:     728,
+				H:     90,
 				Price: 1.34,
 				ImpID: "Imp1",
 			},
 			BidType: openrtb_ext.BidTypeBanner,
 		},
 		{
-			Bid:     &openrtb.Bid{
-				ID: "567890",
-				W: 300,
-				H: 250,
+			Bid: &openrtb.Bid{
+				ID:    "567890",
+				W:     300,
+				H:     250,
 				Price: 0.97,
 				ImpID: "Imp2",
 			},
@@ -417,20 +417,20 @@ func TestTargetingKeys(t *testing.T) {
 		Prebid: openrtb_ext.ExtRequestPrebid{
 			Targeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: openrtb_ext.PriceGranularityMedium,
-				MaxLength: 20,
+				MaxLength:        20,
 			},
 		},
 	}
 	var bidReqExtRaw openrtb.RawJSON
-	bidReqExtRaw ,_ = json.Marshal(bidReqExt)
+	bidReqExtRaw, _ = json.Marshal(bidReqExt)
 	bidRequest := &openrtb.BidRequest{
-		ID: "This Bid",
+		ID:   "This Bid",
 		Test: 0,
-		Ext: bidReqExtRaw,
+		Ext:  bidReqExtRaw,
 	}
 
 	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{
-		winningBids: make(map[string]*openrtb.Bid),
+		winningBids:    make(map[string]*openrtb.Bid),
 		winningBidders: make(map[string]openrtb_ext.BidderName),
 	}, "dummy")
 	if len(errs) > 0 {

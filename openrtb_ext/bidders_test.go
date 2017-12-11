@@ -1,10 +1,10 @@
 package openrtb_ext
 
 import (
-	"testing"
+	"github.com/mxmCherry/openrtb"
 	"github.com/xeipuuv/gojsonschema"
 	"os"
-	"github.com/mxmCherry/openrtb"
+	"testing"
 )
 
 // TestMain does the expensive setup so we don't keep re-reading the files in static/bidder-params for each test.
@@ -16,6 +16,7 @@ func TestMain(m *testing.M) {
 	validator = bidderParams
 	os.Exit(m.Run())
 }
+
 var validator BidderParamValidator
 
 // TestGetBidderName makes sure the GetBidderNames method works properly.

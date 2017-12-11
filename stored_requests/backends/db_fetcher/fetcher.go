@@ -1,16 +1,16 @@
 package db_fetcher
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"context"
 	"github.com/golang/glog"
 )
 
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewPostgres() function.
 type dbFetcher struct {
-	db *sql.DB
+	db         *sql.DB
 	queryMaker func(int) (string, error)
 }
 

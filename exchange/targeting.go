@@ -1,9 +1,9 @@
 package exchange
 
 import (
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/mxmCherry/openrtb"
 	"encoding/json"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs/buckets"
 	"strconv"
 )
@@ -56,8 +56,8 @@ func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb
 	hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(name, t.lengthMax)
 
 	pbs_kvs := map[string]string{
-		hbPbBidderKey:      roundedCpm,
-		hbBidderBidderKey:  string(name),
+		hbPbBidderKey:     roundedCpm,
+		hbBidderBidderKey: string(name),
 	}
 
 	if hbSize != "" {

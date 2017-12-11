@@ -1,12 +1,12 @@
 package file_fetcher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/stored_requests"
 	"io/ioutil"
 	"strings"
-	"github.com/prebid/prebid-server/stored_requests"
-	"context"
 )
 
 // NewFileFetcher _immediately_ loads stored request data from local files.

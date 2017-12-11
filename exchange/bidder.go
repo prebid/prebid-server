@@ -1,15 +1,15 @@
 package exchange
 
 import (
-	"context"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"bytes"
+	"context"
+	"fmt"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
-	"fmt"
 	"net/http"
-	"github.com/prebid/prebid-server/adapters"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -42,8 +42,8 @@ type adaptedBidder interface {
 // pbsOrtbBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // pbsOrtbBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 type pbsOrtbBid struct {
-	bid *openrtb.Bid
-	bidType openrtb_ext.BidType
+	bid        *openrtb.Bid
+	bidType    openrtb_ext.BidType
 	bidTargets map[string]string
 }
 
@@ -122,8 +122,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 				}
 
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:  bid.Bid,
-					bidType: bid.BidType,
+					bid:        bid.Bid,
+					bidType:    bid.BidType,
 					bidTargets: targets,
 				})
 			}
