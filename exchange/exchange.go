@@ -1,20 +1,26 @@
 package exchange
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"context"
-	"time"
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
+	"time"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error)
+}
+
+// IdFetcher can find the user's ID for a specific Bidder.
+type IdFetcher interface {
+	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
+	GetId(bidder openrtb_ext.BidderName) (string, bool)
 }
 
 type exchange struct {
@@ -26,13 +32,13 @@ type exchange struct {
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
 type seatResponseExtra struct {
 	ResponseTimeMillis int
-	Errors []string
+	Errors             []string
 }
 
 type bidResponseWrapper struct {
-	adapterBids *pbsOrtbSeatBid
+	adapterBids  *pbsOrtbSeatBid
 	adapterExtra *seatResponseExtra
-	bidder openrtb_ext.BidderName
+	bidder       openrtb_ext.BidderName
 }
 
 func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
@@ -46,9 +52,9 @@ func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)
+	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0
@@ -102,9 +108,9 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			brw.adapterBids = bids
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
-			ae.ResponseTimeMillis = int(elapsed/time.Millisecond)
+			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			serr := make([]string, len(err))
-			for i :=0; i<len(err); i++ {
+			for i := 0; i < len(err); i++ {
 				serr[i] = err[i].Error()
 			}
 			ae.Errors = serr
@@ -114,7 +120,7 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 	}
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(liveAdapters); i++ {
-		brw := <- chBids
+		brw := <-chBids
 		adapterExtra[brw.bidder] = brw.adapterExtra
 		adapterBids[brw.bidder] = brw.adapterBids
 	}
@@ -131,7 +137,6 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		// signal "Invalid Request" if no valid bidders.
 		bidResponse.NBR = openrtb.NoBidReasonCode.Ptr(openrtb.NoBidReasonCodeInvalidRequest)
 	}
-
 
 	// Create the SeatBids. We use a zero sized slice so that we can append non-zero seat bids, and not include seatBid
 	// objects for seatBids without any bids. Preallocate the max possible size to avoid reallocating the array as we go.
@@ -158,7 +163,7 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 // Extract all the data from the SeatBids and build the ExtBidResponse
 func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, test int8, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
-		Errors: make(map[openrtb_ext.BidderName][]string, len(adapterBids)),
+		Errors:             make(map[openrtb_ext.BidderName][]string, len(adapterBids)),
 		ResponseTimeMillis: make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 	}
 	if test == 1 {
@@ -180,7 +185,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 		}
 		if len(errList) > 0 {
 			s := make([]string, len(errList))
-			for i :=0; i<len(errList); i++ {
+			for i := 0; i < len(errList); i++ {
 				s[i] = errList[i].Error()
 			}
 			bidResponseExt.Errors["prebid"] = s
@@ -230,7 +235,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
 				Targeting: thisBid.bidTargets,
-				Type: thisBid.bidType,
+				Type:      thisBid.bidType,
 			},
 		}
 
@@ -239,8 +244,8 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 			errList = append(errList, fmt.Sprintf("Error writing SeatBid.Bid[%d].Ext: %s", i, err.Error()))
 		} else {
 			bids = append(bids, *thisBid.bid)
-			targData.addBid(adapter, &(bids[len(bids) - 1]))
-			bids[len(bids) - 1].Ext = ext
+			targData.addBid(adapter, &(bids[len(bids)-1]))
+			bids[len(bids)-1].Ext = ext
 		}
 	}
 	return bids, errList

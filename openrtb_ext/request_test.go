@@ -1,8 +1,8 @@
 package openrtb_ext
 
 import (
-	"testing"
 	"encoding/json"
+	"testing"
 )
 
 // Test the unmashalling of the prebid extensions and setting default Price Granularity

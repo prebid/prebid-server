@@ -1,4 +1,3 @@
-
 /*
 Package openrtb_ext defines all the input validation for Prebid Server's extensions to the OpenRTB 2.5 spec.
 
