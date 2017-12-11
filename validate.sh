@@ -18,8 +18,8 @@ done
 die() { echo -e "$@" 1>&2 ; exit 1;  }
 
 # check there are no formatting issues
-GOFMT_LINES=`gofmt -l *.go pbs adapters | wc -l | xargs`
 GOGLOB="*.go adapters cache config endpoints exchange openrtb_ext pbs prebid prebid_cache_client"
+GOFMT_LINES=`gofmt -l $GOGLOB | wc -l | xargs`
 
 if $AUTOFMT; then
   # if there are files with formatting issues, they will be automatically corrected using the gofmt -w <file> command

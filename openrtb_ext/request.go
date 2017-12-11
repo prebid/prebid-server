@@ -9,7 +9,7 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Targeting *ExtRequestTargeting`json:"targeting"`
+	Targeting *ExtRequestTargeting `json:"targeting"`
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting

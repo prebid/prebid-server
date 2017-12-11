@@ -2,9 +2,9 @@ package exchange
 
 import (
 	"github.com/prebid/prebid-server/adapters/appnexus"
-	"net/http"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
 )
 
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
