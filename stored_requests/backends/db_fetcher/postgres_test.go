@@ -1,10 +1,10 @@
 package db_fetcher
 
 import (
-	"testing"
 	"github.com/prebid/prebid-server/config"
-	"strings"
 	"strconv"
+	"strings"
+	"testing"
 )
 
 // TestDSNCreation makes sure we turn the config into a string expected by the Postgres driver library.
@@ -54,6 +54,6 @@ func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
 		t.Errorf("Map missing required key: %s", key)
 	}
 	if val != realVal {
-		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", val, realVal)
+		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, realVal)
 	}
 }
