@@ -22,7 +22,8 @@ GOGLOB="*.go"
 for DIRECTORY in */ ; do
   GOGLOB="$GOGLOB ${DIRECTORY%/}"
 done
-GOGLOB="${GOGLOB/vendor/}"
+GOGLOB="${GOGLOB/ docs/}"
+GOGLOB="${GOGLOB/ vendor/}"
 
 # Check that there are no formatting issues
 GOFMT_LINES=`gofmt -l $GOGLOB | wc -l | xargs`
