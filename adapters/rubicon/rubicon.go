@@ -574,18 +574,23 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		}
 		request.Device = &deviceCopy
 
-		primarySizeID, altSizeIDs, err := parseRubiconSizes(request.Imp[0].Banner.Format)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
+		if request.Imp[0].Video != nil {
+			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
+			request.Imp[0].Video.Ext, err = json.Marshal(&videoExt)
+		} else {
+			primarySizeID, altSizeIDs, err := parseRubiconSizes(request.Imp[0].Banner.Format)
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
+			request.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
 		}
-
-		bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-		request.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
+		
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
 
