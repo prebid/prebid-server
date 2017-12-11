@@ -85,7 +85,10 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
-	lr := &io.LimitedReader{ httpRequest.Body, deps.cfg.MaxRequestSize }
+	lr := &io.LimitedReader{
+		R: httpRequest.Body,
+		N: deps.cfg.MaxRequestSize,
+	}
 	rawRequest, err := ioutil.ReadAll(lr)
 	if err != nil {
 		errs = []error{err}

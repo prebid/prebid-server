@@ -452,7 +452,7 @@ bidLoop:
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
 // The bids are sorted by cpm to find the highest bid.
 // The ad server targeting keywords are added to all bids, with specific keywords for the highest bid.
-func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting buckets.PriceGranularity) {
+func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting openrtb_ext.PriceGranularity) {
 	if priceGranularitySetting == "" {
 		priceGranularitySetting = defaultPriceGranularity
 	}

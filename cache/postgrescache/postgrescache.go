@@ -11,7 +11,7 @@ import (
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/pbs/buckets"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type PostgresConfig struct {
@@ -131,7 +131,7 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 
 	account.ID = id
 	if priceGranularity.Valid {
-		account.PriceGranularity = buckets.PriceGranularity(priceGranularity.String)
+		account.PriceGranularity = openrtb_ext.PriceGranularity(priceGranularity.String)
 	}
 
 	buf := bytes.Buffer{}
