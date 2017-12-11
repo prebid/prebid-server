@@ -96,15 +96,14 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.Bidde
 // This *will* mutate the request, but will *not* mutate any objects nested inside it.
 func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyncs IdFetcher) {
 	if id, ok := usersyncs.GetId(bidder); ok {
-		var newUser *openrtb.User
 		if req.User == nil {
-			newUser = &openrtb.User{
+			req.User = &openrtb.User{
 				BuyerUID: id,
 			}
-		} else {
-			*newUser = *req.User
-			newUser.BuyerUID = id
+		} else if req.User.BuyerUID == "" {
+			clone := *req.User
+			clone.BuyerUID = id
+			req.User = &clone
 		}
-		req.User = newUser
 	}
 }
