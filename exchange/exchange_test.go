@@ -66,7 +66,6 @@ func TestHoldAuction(t *testing.T) {
 	b, _ := json.Marshal(impExt)
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
-	bidRequest.Ext = openrtb.RawJSON(json.RawMessage([]byte("{}")))
 
 	bidResponse, err := e.HoldAuction(ctx, bidRequest)
 	if err != nil {
