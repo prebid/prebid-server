@@ -8,6 +8,7 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"io"
@@ -15,7 +16,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"github.com/prebid/prebid-server/exchange"
 )
 
 const maxSize = 1024 * 256
@@ -96,7 +96,7 @@ func TestExplicitUserId(t *testing.T) {
 		]
 	}`))
 	request.AddCookie(&http.Cookie{
-		Name: cookieName,
+		Name:  cookieName,
 		Value: mockId,
 	})
 	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg)
@@ -125,7 +125,7 @@ func TestImplicitUserId(t *testing.T) {
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	request.AddCookie(&http.Cookie{
-		Name: cookieName,
+		Name:  cookieName,
 		Value: mockId,
 	})
 	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg)
@@ -765,7 +765,7 @@ func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) 
 	return testStoredRequestData, nil
 }
 
-type mockExchange struct{
+type mockExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 

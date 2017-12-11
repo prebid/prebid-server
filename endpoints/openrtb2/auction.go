@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
@@ -21,7 +22,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	"github.com/prebid/prebid-server/pbs"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
