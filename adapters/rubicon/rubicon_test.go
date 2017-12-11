@@ -595,6 +595,41 @@ func TestWrongBidIdResponse(t *testing.T) {
 
 }
 
+func TestZeroPriceBidResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := openrtb.BidResponse{
+			ID:    "test-response-id",
+			BidID: "test-bid-id",
+			Cur:   "USD",
+			SeatBid: []openrtb.SeatBid{
+				{
+					Seat: "RUBICON",
+					Bid:  make([]openrtb.Bid, 1),
+				},
+			},
+		}
+		resp.SeatBid[0].Bid[0] = openrtb.Bid{
+			ID:    "test-bid-id",
+			ImpID: "first-tag",
+			Price: 0,
+			AdM:   "zma",
+			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+		}
+		js, _ := json.Marshal(resp)
+		w.Write(js)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if b != nil {
+		t.Fatalf("\n\n\n0 price bids are being included %d, err : %v", len(b), err)
+	}
+
+}
+
 func TestDifferentRequest(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyRubiconServer))
 	defer server.Close()
