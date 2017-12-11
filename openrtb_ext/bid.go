@@ -11,7 +11,6 @@ type ExtBid struct {
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
 type ExtBidPrebid struct {
 	Cache              *ExtResponseCache `json:"cache,omitempty"`
-	ResponseTimeMillis int               `json:"responsetimemillis"`
 	Targeting          map[string]string `json:"targeting,omitempty"`
 	Type               BidType           `json:"type"`
 }

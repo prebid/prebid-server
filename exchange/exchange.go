@@ -59,18 +59,20 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// Randomize the list of adapters to make the auction more fair
 	randomizeList(liveAdapters)
 	// Process the request to check for targeting parameters.
-	requestExt := new(openrtb_ext.ExtRequest)
-	err := json.Unmarshal(bidRequest.Ext, requestExt)
-	if err != nil {
-		return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
-	}
 	var targData *targetData = nil
-	if requestExt.Prebid.Targeting != nil {
-		targData = &targetData{
-			lengthMax:        requestExt.Prebid.Targeting.MaxLength,
-			priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
-			winningBids:      make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
-			winningBidders:   make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
+	if len(bidRequest.Ext) > 0 {
+		var requestExt openrtb_ext.ExtRequest
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
+		if requestExt.Prebid.Targeting != nil {
+			targData = &targetData{
+				lengthMax:        requestExt.Prebid.Targeting.MaxLength,
+				priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+				winningBids:      make(map[string]*openrtb.Bid, len(bidRequest.Imp)),
+				winningBidders:   make(map[string]openrtb_ext.BidderName, len(bidRequest.Imp)),
+			}
 		}
 	}
 
