@@ -24,6 +24,7 @@ const (
 	BidderPulsepoint BidderName = "pulsepoint"
 	BidderRubicon    BidderName = "rubicon"
 	BidderConversant BidderName = "conversant"
+	BidderAdmixer BidderName = "admixer"
 )
 
 var bidderMap = map[string]BidderName{
@@ -35,6 +36,7 @@ var bidderMap = map[string]BidderName{
 	"pulsepoint": BidderPulsepoint,
 	"rubicon":    BidderRubicon,
 	"conversant": BidderConversant,
+	"admixer": BidderAdmixer,
 }
 
 // GetBidderName returns the BidderName for the given string, if it exists.
