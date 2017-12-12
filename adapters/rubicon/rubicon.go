@@ -556,23 +556,27 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			return nil, errs
 		}
 
-		userCopy := *request.User
-		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
-		userCopy.Ext, err = json.Marshal(&userExt)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
+		if request.User != nil {
+			userCopy := *request.User
+			userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
+			userCopy.Ext, err = json.Marshal(&userExt)
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+			request.User = &userCopy
 		}
-		request.User = &userCopy
 
-		deviceCopy := *request.Device
-		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
-		deviceCopy.Ext, err = json.Marshal(&deviceExt)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
+		if request.Device != nil {
+			deviceCopy := *request.Device
+			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
+			deviceCopy.Ext, err = json.Marshal(&deviceExt)
+			if err != nil {
+				errs = append(errs, err)
+				return nil, errs
+			}
+			request.Device = &deviceCopy
 		}
-		request.Device = &deviceCopy
 
 		if request.Imp[0].Video != nil {
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
@@ -651,12 +655,17 @@ func (a *RubiconAdapter) MakeBids(request *openrtb.BidRequest, response *adapter
 	}
 
 	bids := make([]*adapters.TypedBid, 0, 5)
+	bidType := openrtb_ext.BidTypeBanner
+
+	if request.Imp[0].Video != nil {
+		bidType = openrtb_ext.BidTypeVideo
+	}
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
 			bids = append(bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: bidType,
 			})
 		}
 	}
