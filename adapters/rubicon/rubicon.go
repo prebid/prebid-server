@@ -415,7 +415,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	bids := make(pbs.PBSBidSlice, 0)
 	for i := 0; i < len(bidder.AdUnits); i++ {
 		result := <-ch
-		if result.Bid != nil {
+		if result.Bid != nil && result.Bid.Price != 0 {
 			bids = append(bids, result.Bid)
 		}
 		if req.IsDebug {
