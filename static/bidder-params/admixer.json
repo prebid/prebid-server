@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Admixer Adapter Params",
+  "description": "A schema which validates params accepted by the Admixer adapter",
+  "type": "object",
+  "properties": {
+    "zoneOId": {
+      "type": "string",
+      "description": "Unique identifier of zone from Admixer interface"
+    }
+  },
+  "required": ["zoneOId"]
+}
