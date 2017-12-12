@@ -1,14 +1,14 @@
 package openrtb_ext
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
-	"strings"
-	"fmt"
 	"net/http"
-	"bytes"
-	"errors"
+	"strings"
 )
 
 const schemaDirectory = "static/bidder-params"
@@ -16,24 +16,24 @@ const schemaDirectory = "static/bidder-params"
 type BidderName string
 
 const (
-	BidderAppnexus BidderName   = "appnexus"
-	BidderFacebook BidderName   = "facebook"
-	BidderIndex BidderName      = "index"
+	BidderAppnexus   BidderName = "appnexus"
+	BidderFacebook   BidderName = "facebook"
+	BidderIndex      BidderName = "index"
 	BidderLifestreet BidderName = "lifestreet"
-	BidderPubmatic BidderName   = "pubmatic"
+	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
-	BidderRubicon BidderName    = "rubicon"
+	BidderRubicon    BidderName = "rubicon"
 	BidderConversant BidderName = "conversant"
 )
 
-var bidderMap = map[string]BidderName {
-	"appnexus": BidderAppnexus,
-	"facebook": BidderFacebook,
-	"index": BidderIndex,
+var bidderMap = map[string]BidderName{
+	"appnexus":   BidderAppnexus,
+	"facebook":   BidderFacebook,
+	"index":      BidderIndex,
 	"lifestreet": BidderLifestreet,
-	"pubmatic": BidderPubmatic,
+	"pubmatic":   BidderPubmatic,
 	"pulsepoint": BidderPulsepoint,
-	"rubicon": BidderRubicon,
+	"rubicon":    BidderRubicon,
 	"conversant": BidderConversant,
 }
 
@@ -99,13 +99,13 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 
 	return &bidderParamValidator{
 		schemaContents: schemaContents,
-		parsedSchemas: schemas,
+		parsedSchemas:  schemas,
 	}, nil
 }
 
 type bidderParamValidator struct {
 	schemaContents map[BidderName]string
-	parsedSchemas map[BidderName]*gojsonschema.Schema
+	parsedSchemas  map[BidderName]*gojsonschema.Schema
 }
 
 func (validator *bidderParamValidator) Validate(name BidderName, ext openrtb.RawJSON) error {

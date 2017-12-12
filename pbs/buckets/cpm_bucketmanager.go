@@ -3,6 +3,7 @@ package buckets
 import "math"
 import (
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"strconv"
 )
 
@@ -18,26 +19,13 @@ type priceBucketParams struct {
 // A type to hold the price bucket configurations
 type priceBucketConf []priceBucketParams
 
-// A type for the price bucket configuration names
-type PriceGranularity string
-
-const (
-	PriceGranularityLow    PriceGranularity = "low"
-	PriceGranularityMedium PriceGranularity = "medium"
-	// Seems that PBS was written with medium = "med", so hacking that in
-	PriceGranularityMedPBS PriceGranularity = "med"
-	PriceGranularityHigh   PriceGranularity = "high"
-	PriceGranularityAuto   PriceGranularity = "auto"
-	PriceGranularityDense  PriceGranularity = "dense"
-)
-
-var priceBucketConfigMap = map[PriceGranularity]priceBucketConf{
-	PriceGranularityLow:    priceBucketLow,
-	PriceGranularityMedium: priceBucketMed,
-	PriceGranularityMedPBS: priceBucketMed,
-	PriceGranularityHigh:   priceBucketHigh,
-	PriceGranularityAuto:   priceBucketAuto,
-	PriceGranularityDense:  priceBucketDense,
+var priceBucketConfigMap = map[openrtb_ext.PriceGranularity]priceBucketConf{
+	openrtb_ext.PriceGranularityLow:    priceBucketLow,
+	openrtb_ext.PriceGranularityMedium: priceBucketMed,
+	openrtb_ext.PriceGranularityMedPBS: priceBucketMed,
+	openrtb_ext.PriceGranularityHigh:   priceBucketHigh,
+	openrtb_ext.PriceGranularityAuto:   priceBucketAuto,
+	openrtb_ext.PriceGranularityDense:  priceBucketDense,
 }
 var priceBucketLow = priceBucketConf{
 	{
@@ -138,7 +126,11 @@ func getCpmTarget(cpm float64, increment float64, precision int) string {
 
 // Externally facing function for computing CPM buckets
 // We don't currently have a precision config, so enforcing the default here.
-func GetPriceBucketString(cpm float64, granularity PriceGranularity) (string, error) {
+func GetPriceBucketString(cpm float64, granularity openrtb_ext.PriceGranularity) (string, error) {
+	// Default to medium if no granularity is given
+	if granularity == "" {
+		granularity = "medium"
+	}
 	config, ok := priceBucketConfigMap[granularity]
 	if ok {
 		return getCpmStringValue(cpm, config, DEFAULT_PRECISION), nil

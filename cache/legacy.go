@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/prebid/prebid-server/pbs/buckets"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type Domain struct {
@@ -13,8 +13,8 @@ type App struct {
 }
 
 type Account struct {
-	ID               string                   `json:"id"`
-	PriceGranularity buckets.PriceGranularity `json:"price_granularity"`
+	ID               string                       `json:"id"`
+	PriceGranularity openrtb_ext.PriceGranularity `json:"price_granularity"`
 }
 
 type Configuration struct {

@@ -1,15 +1,15 @@
 package exchange
 
 import (
-	"context"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"bytes"
+	"context"
+	"fmt"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
-	"fmt"
 	"net/http"
-	"github.com/prebid/prebid-server/adapters"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -34,7 +34,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -42,8 +42,9 @@ type adaptedBidder interface {
 // pbsOrtbBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // pbsOrtbBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 type pbsOrtbBid struct {
-	bid *openrtb.Bid
-	bidType openrtb_ext.BidType
+	bid        *openrtb.Bid
+	bidType    openrtb_ext.BidType
+	bidTargets map[string]string
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -77,7 +78,7 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
@@ -115,9 +116,15 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
+				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid)
+				if err != nil {
+					errs = append(errs, err)
+				}
+
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:  bid.Bid,
-					bidType: bid.BidType,
+					bid:        bid.Bid,
+					bidType:    bid.BidType,
+					bidTargets: targets,
 				})
 			}
 		} else {

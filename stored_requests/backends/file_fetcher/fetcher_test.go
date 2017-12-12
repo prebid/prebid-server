@@ -1,9 +1,9 @@
 package file_fetcher
 
 import (
-	"testing"
-	"encoding/json"
 	"context"
+	"encoding/json"
+	"testing"
 )
 
 func TestFileFetcher(t *testing.T) {
@@ -26,7 +26,7 @@ func TestFileFetcher(t *testing.T) {
 		t.Errorf("Failed to unmarshal 1: %v", err)
 	}
 	if len(req1Val) != 1 {
-		t.Errorf("Unexpected req1Val length. Expected %v, Got %s", 1, len(req1Val))
+		t.Errorf("Unexpected req1Val length. Expected %d, Got %d", 1, len(req1Val))
 	}
 	data, hadKey := req1Val["test"]
 	if !hadKey {
