@@ -663,10 +663,12 @@ func (a *RubiconAdapter) MakeBids(request *openrtb.BidRequest, response *adapter
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			bids = append(bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidType,
-			})
+			if bid.Price != 0 {
+				bids = append(bids, &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				})
+			}
 		}
 	}
 
