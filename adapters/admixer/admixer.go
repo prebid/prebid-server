@@ -102,7 +102,7 @@ func (a *AdmixerAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.
 	}
 
 	if admixerRq.Imp != nil && len(admixerRq.Imp) > 0 {
-		admixerRq.Imp = admixerRq.Imp[unitInd: unitInd+1]
+		admixerRq.Imp = admixerRq.Imp[unitInd : unitInd+1]
 
 		if admixerRq.Imp[0].Banner != nil {
 			admixerRq.Imp[0].Banner.Format = nil
