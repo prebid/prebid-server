@@ -4,6 +4,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"encoding/base64"
 )
 
 // Bidder describes how to connect to external demand.
@@ -52,8 +53,6 @@ type RequestData struct {
 	Uri          string
 	Body         []byte
 	Headers      http.Header
-	AuthUserName string      `json:",omitempty"`
-	AuthPassword string      `json:",omitempty"`
 }
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
@@ -68,4 +67,8 @@ type ExtImpBidder struct {
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
 	Bidder openrtb.RawJSON `json:"bidder"`
+}
+
+func (r *RequestData) SetBasicAuth(username string, password string) {
+	r.Headers.Set("Authorization", "Basic " + base64.StdEncoding.EncodeToString([]byte(username + ":" + password)))
 }

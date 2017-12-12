@@ -166,10 +166,6 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	}
 	httpReq.Header = req.Headers
 
-	if req.AuthUserName != "" && req.AuthPassword != "" {
-		httpReq.SetBasicAuth(req.AuthUserName, req.AuthPassword)
-	}
-
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
 		return &httpCallInfo{

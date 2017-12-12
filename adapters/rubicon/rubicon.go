@@ -627,14 +627,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			return nil, errs
 		}
 
-		requestData = append(requestData, &adapters.RequestData {
-			Method:       "POST",
-			Uri:          a.URI,
-			Body:         reqJSON,
-			Headers:      headers,
-			AuthUserName: a.XAPIUsername,
-			AuthPassword: a.XAPIPassword,
-		})
+		reqData := &adapters.RequestData {
+			Method:	 "POST",
+			Uri:     a.URI,
+			Body:    reqJSON,
+			Headers: headers,
+		}
+		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
+		requestData = append(requestData, reqData)
 	}
 
 	return requestData, errs
