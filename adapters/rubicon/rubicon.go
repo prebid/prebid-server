@@ -521,26 +521,26 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 
 		var rubiconExt openrtb_ext.ExtImpRubicon
 		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 
 		if rubiconExt.AccountId == 0 {
 			errs = append(errs, errors.New("Missing accountId param"))
-			return nil, errs
+			continue
 		}
 		if rubiconExt.SiteId == 0 {
 			errs = append(errs, errors.New("Missing siteId param"))
-			return nil, errs
+			continue
 		}
 		if rubiconExt.ZoneId == 0 {
 			errs = append(errs, errors.New("Missing zoneId param"))
-			return nil, errs
+			continue
 		}
 
 		impExt := rubiconImpExt {
@@ -553,7 +553,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		request.Imp[0].Ext, err = json.Marshal(&impExt)
 		if (err != nil) {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 
 		if request.User != nil {
@@ -562,7 +562,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			userCopy.Ext, err = json.Marshal(&userExt)
 			if err != nil {
 				errs = append(errs, err)
-				return nil, errs
+				continue
 			}
 			request.User = &userCopy
 		}
@@ -573,7 +573,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
 			if err != nil {
 				errs = append(errs, err)
-				return nil, errs
+				continue
 			}
 			request.Device = &deviceCopy
 		}
@@ -585,13 +585,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(request.Imp[0].Banner.Format)
 			if err != nil {
 				errs = append(errs, err)
-				return nil, errs
+				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
 			request.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
-				return nil, errs
+				continue
 			}
 		}
 		
@@ -603,7 +603,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			siteCopy.Ext, err = json.Marshal(&siteExt)
 			if err != nil {
 				errs = append(errs, err)
-				return nil, errs
+				continue
 			}
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
@@ -614,7 +614,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			appCopy.Ext, err = json.Marshal(&siteExt)
 			if err != nil {
 				errs = append(errs, err)
-				return nil, errs
+				continue
 			}
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
@@ -624,7 +624,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 
 		reqData := &adapters.RequestData {
