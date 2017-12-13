@@ -294,7 +294,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 }
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	requests := make([]bytes.Buffer, len(bidder.AdUnits))
+	requestsJSON := make([]bytes.Buffer, 0)
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
 	for i, unit := range bidder.AdUnits {
@@ -355,7 +355,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 			if err != nil {
-				return nil, err
+				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
 			rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
@@ -387,14 +387,20 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			rubiReq.App = &appCopy
 		}
 
-		err = json.NewEncoder(&requests[i]).Encode(rubiReq)
+		var reqBuffer bytes.Buffer
+		err = json.NewEncoder(&reqBuffer).Encode(rubiReq)
+		requestsJSON = append(requestsJSON, reqBuffer)
 		if err != nil {
 			return nil, err
 		}
 	}
+	if len(requestsJSON) == 0 {
+		return nil, errors.New("No valid ad sizes")
+	}
 
 	ch := make(chan adapters.CallOneResult)
-	for i := range bidder.AdUnits {
+
+	for _, requestJSON := range requestsJSON {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err
@@ -407,13 +413,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				}
 			}
 			ch <- result
-		}(bidder, requests[i])
+		}(bidder, requestJSON)
 	}
 
 	var err error
 
 	bids := make(pbs.PBSBidSlice, 0)
-	for i := 0; i < len(bidder.AdUnits); i++ {
+	for i := 0; i < len(requestsJSON); i++ {
 		result := <-ch
 		if result.Bid != nil && result.Bid.Price != 0 {
 			bids = append(bids, result.Bid)
@@ -421,7 +427,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if req.IsDebug {
 			debug := &pbs.BidderDebug{
 				RequestURI:   a.URI,
-				RequestBody:  requests[i].String(),
+				RequestBody:  requestsJSON[i].String(),
 				StatusCode:   result.StatusCode,
 				ResponseBody: result.ResponseBody,
 			}
