@@ -16,6 +16,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type RubiconAdapter struct {
@@ -224,7 +225,7 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	return
 }
 
-func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
+func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
 	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
@@ -270,9 +271,10 @@ func (a *RubiconAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJS
 		Price:       bid.Price,
 		Adm:         bid.AdM,
 		Creative_id: bid.CrID,
-		Width:       bid.W,
-		Height:      bid.H,
-		DealId:      bid.DealID,
+		// for video, the width and height are undefined as there's no corresponding return value from XAPI
+		Width:  bid.W,
+		Height: bid.H,
+		DealId: bid.DealID,
 	}
 
 	// Pull out any server-side determined targeting
@@ -395,8 +397,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 
 	ch := make(chan adapters.CallOneResult)
 	for i := range bidder.AdUnits {
-		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.callOne(ctx, req, reqJSON)
+		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer, mediaTypes []pbs.MediaType) {
+			result, err := a.callOne(ctx, reqJSON)
 			result.Error = err
 			if result.Bid != nil {
 				result.Bid.BidderCode = bidder.BidderCode
@@ -404,10 +406,20 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				if result.Bid.BidID == "" {
 					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
 					result.Bid = nil
+				} else {
+					// no need to check whether mediaTypes is nil or length of zero, pbs.ParsePBSRequest will cover
+					// these cases.
+					// for media types other than banner and video, pbs.ParseMediaType will throw error.
+					// we may want to create a map/switch cases to support more media types in the future.
+					if mediaTypes[0] == pbs.MEDIA_TYPE_VIDEO {
+						result.Bid.CreativeMediaType = string(openrtb_ext.BidTypeVideo)
+					} else {
+						result.Bid.CreativeMediaType = string(openrtb_ext.BidTypeBanner)
+					}
 				}
 			}
 			ch <- result
-		}(bidder, requests[i])
+		}(bidder, requests[i], bidder.AdUnits[i].MediaTypes)
 	}
 
 	var err error

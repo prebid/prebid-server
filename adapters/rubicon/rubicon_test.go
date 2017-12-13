@@ -288,6 +288,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 				if !reflect.DeepEqual(bid.AdServerTargeting, tag.adServerTargeting) {
 					t.Errorf("Incorrect targeting '%+v' expected '%+v'", bid.AdServerTargeting, tag.adServerTargeting)
 				}
+				if bid.CreativeMediaType != tag.mediaType {
+					t.Errorf("Incorrect media type '%s' expected '%s'", bid.CreativeMediaType, tag.mediaType)
+				}
 			}
 		}
 		if !matched {
