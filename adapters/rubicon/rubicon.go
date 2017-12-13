@@ -219,7 +219,7 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 		}
 	}
 	if primary == 0 {
-		err = fmt.Errorf("No valid sizes")
+		err = fmt.Errorf("Invalid sizes")
 	}
 	return
 }
@@ -395,7 +395,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 	}
 	if len(requestsJSON) == 0 {
-		return nil, errors.New("No valid ad sizes")
+		return nil, errors.New("Invalid ad unit size")
 	}
 
 	ch := make(chan adapters.CallOneResult)
