@@ -669,27 +669,6 @@ func TestDifferentRequest(t *testing.T) {
 		t.Fatalf("Should have gotten an error: %v", err)
 	}
 
-	// test no account id
-	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.siteID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
-	}
-
-	// test no site id
-	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
-	}
-
-	// test no zone id
-	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
-	}
-
 	// set params back to normal
 	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
 

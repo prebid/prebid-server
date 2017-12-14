@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -314,15 +313,6 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if err != nil {
 			return nil, err
 		}
-		if params.AccountId == 0 {
-			return nil, errors.New("Missing accountId param")
-		}
-		if params.SiteId == 0 {
-			return nil, errors.New("Missing siteId param")
-		}
-		if params.ZoneId == 0 {
-			return nil, errors.New("Missing zoneId param")
-		}
 
 		var mint, mintVersion string
 		mint = "prebid"
@@ -527,19 +517,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		var rubiconExt openrtb_ext.ExtImpRubicon
 		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
 			errs = append(errs, err)
-			continue
-		}
-
-		if rubiconExt.AccountId == 0 {
-			errs = append(errs, errors.New("Missing accountId param"))
-			continue
-		}
-		if rubiconExt.SiteId == 0 {
-			errs = append(errs, errors.New("Missing siteId param"))
-			continue
-		}
-		if rubiconExt.ZoneId == 0 {
-			errs = append(errs, errors.New("Missing zoneId param"))
 			continue
 		}
 
