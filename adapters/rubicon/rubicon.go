@@ -295,8 +295,13 @@ func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (res
 	return
 }
 
+type callOneObject struct {
+	requestJson bytes.Buffer
+	mediaType   pbs.MediaType
+}
+
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	requestsJSON := make([]bytes.Buffer, 0)
+	callOneObjects := make([]callOneObject, 0)
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
 	for i, unit := range bidder.AdUnits {
@@ -391,18 +396,19 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 
 		var reqBuffer bytes.Buffer
 		err = json.NewEncoder(&reqBuffer).Encode(rubiReq)
-		requestsJSON = append(requestsJSON, reqBuffer)
+
 		if err != nil {
 			return nil, err
 		}
+		callOneObjects = append(callOneObjects, callOneObject{reqBuffer, unit.MediaTypes[0]})
 	}
-	if len(requestsJSON) == 0 {
+	if len(callOneObjects) == 0 {
 		return nil, errors.New("Invalid ad unit size")
 	}
 
 	ch := make(chan adapters.CallOneResult)
-		for _, requestJSON := range requestsJSON {
-		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer, mediaTypes []pbs.MediaType) {
+	for _, obj := range callOneObjects {
+		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer, mediaType pbs.MediaType) {
 			result, err := a.callOne(ctx, reqJSON)
 			result.Error = err
 			if result.Bid != nil {
@@ -416,7 +422,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 					// these cases.
 					// for media types other than banner and video, pbs.ParseMediaType will throw error.
 					// we may want to create a map/switch cases to support more media types in the future.
-					if mediaTypes[0] == pbs.MEDIA_TYPE_VIDEO {
+					if mediaType == pbs.MEDIA_TYPE_VIDEO {
 						result.Bid.CreativeMediaType = string(openrtb_ext.BidTypeVideo)
 					} else {
 						result.Bid.CreativeMediaType = string(openrtb_ext.BidTypeBanner)
@@ -424,13 +430,13 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				}
 			}
 			ch <- result
-		}(bidder, requestJSON, bidder.AdUnits[i].MediaTypes)
+		}(bidder, obj.requestJson, obj.mediaType)
 	}
 
 	var err error
 
 	bids := make(pbs.PBSBidSlice, 0)
-	for i := 0; i < len(requestsJSON); i++ {
+	for i := 0; i < len(callOneObjects); i++ {
 		result := <-ch
 		if result.Bid != nil && result.Bid.Price != 0 {
 			bids = append(bids, result.Bid)
@@ -438,7 +444,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if req.IsDebug {
 			debug := &pbs.BidderDebug{
 				RequestURI:   a.URI,
-				RequestBody:  requestsJSON[i].String(),
+				RequestBody:  callOneObjects[i].requestJson.String(),
 				StatusCode:   result.StatusCode,
 				ResponseBody: result.ResponseBody,
 			}
