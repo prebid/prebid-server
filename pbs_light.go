@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,9 +11,13 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/cloudfoundry/gosigar"
@@ -25,11 +30,6 @@ import (
 	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
 
-	"os"
-	"os/signal"
-	"syscall"
-
-	"crypto/tls"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -56,7 +56,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-	"strings"
+	_ "github.com/prebid/prebid-server/stored_requests/cache/inmemorycache"
+	_ "github.com/prebid/prebid-server/stored_requests/cache/rediscache"
 )
 
 type DomainMetrics struct {
