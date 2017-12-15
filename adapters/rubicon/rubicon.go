@@ -296,20 +296,20 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
-	for i, unit := range bidder.AdUnits {
-		rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
-		if err != nil {
-			continue
-		}
+	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
+	if err != nil {
+		return nil, err
+	}
+	rubiReqImpCopy := rubiReq.Imp
 
+	for i, unit := range bidder.AdUnits {
 		// Only grab this ad unit
 		// Not supporting multi-media-type add-unit yet
-		rubiReq.Imp = rubiReq.Imp[i : i+1]
+		thisImp := rubiReqImpCopy[i]
 
 		// Amend it with RP-specific information
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
-
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +324,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			Target: params.Inventory,
 			Track:  track,
 		}}
-		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
+		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			return nil, err
 		}
@@ -348,16 +348,16 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}
 		rubiReq.Device = &deviceCopy
 
-		if rubiReq.Imp[0].Video != nil {
+		if thisImp.Video != nil {
 			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: params.Video.VideoSizeID}}
-			rubiReq.Imp[0].Video.Ext, err = json.Marshal(&videoExt)
+			thisImp.Video.Ext, err = json.Marshal(&videoExt)
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 			if err != nil {
 				return nil, err
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
+			thisImp.Banner.Ext, err = json.Marshal(&bannerExt)
 		}
 
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
@@ -403,6 +403,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			rubiReq.App = &appCopy
 		}
 
+		rubiReq.Imp = []openrtb.Imp{thisImp}
+
 		err = json.NewEncoder(&requests[i]).Encode(rubiReq)
 		if err != nil {
 			return nil, err
@@ -425,8 +427,6 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			ch <- result
 		}(bidder, requests[i])
 	}
-
-	var err error
 
 	bids := make(pbs.PBSBidSlice, 0)
 	for i := 0; i < len(bidder.AdUnits); i++ {
@@ -505,11 +505,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 	headers.Add("Accept", "application/json")
 	headers.Add("User-Agent", "prebid-server/1.0")
 
+	requestImpCopy := request.Imp
+
 	for i := 0; i < numRequests; i++ {
-		request.Imp = request.Imp[i : i+1]
+		thisImp := requestImpCopy[i]
 
 		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -527,7 +529,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 		}
-		request.Imp[0].Ext, err = json.Marshal(&impExt)
+		thisImp.Ext, err = json.Marshal(&impExt)
 		if (err != nil) {
 			errs = append(errs, err)
 			continue
@@ -555,17 +557,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			request.Device = &deviceCopy
 		}
 
-		if request.Imp[0].Video != nil {
+		if thisImp.Video != nil {
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
-			request.Imp[0].Video.Ext, err = json.Marshal(&videoExt)
+			thisImp.Video.Ext, err = json.Marshal(&videoExt)
 		} else {
-			primarySizeID, altSizeIDs, err := parseRubiconSizes(request.Imp[0].Banner.Format)
+			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			request.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
+			thisImp.Banner.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -597,6 +599,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			request.App = &appCopy
 		}
+
+		request.Imp = []openrtb.Imp{thisImp}
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
