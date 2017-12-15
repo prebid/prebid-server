@@ -713,9 +713,9 @@ func TestDifferentRequest(t *testing.T) {
 		},
 	}
 	pbReq.Bidders[0].AdUnits = pbReq.Bidders[0].AdUnits[:len(pbReq.Bidders[0].AdUnits)-1]
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have reported an error")
+	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil || len(b) != 0 {
+		t.Fatalf("Filtering bids based on ad unit sizes failed. Got %d bids instead of 0", len(b))
 	}
 
 	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
@@ -732,9 +732,9 @@ func TestDifferentRequest(t *testing.T) {
 			H: 250,
 		},
 	}
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err != nil {
-		t.Fatalf("Should not have reported an error %v", err)
+	b, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil || len(b) != 1 {
+		t.Fatalf("Filtering bids based on ad unit sizes failed. Got %d bids instead of 1, error = %v", len(b), err)
 	}
 }
 
