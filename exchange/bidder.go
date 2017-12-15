@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
+	"encoding/json"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -113,7 +114,14 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 
 		if httpInfo.err == nil {
-			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.response)
+			var bidReq *openrtb.BidRequest
+			err := json.Unmarshal(httpInfo.request.Body, &bidReq)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			bids, moreErrs := bidder.Bidder.MakeBids(bidReq, httpInfo.response)
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
 				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid)
