@@ -7,52 +7,95 @@ import (
 )
 
 const (
-	EVENT_TYPE = "/request"
+	EVENT_TYPE = "bid_request"
+	//other event types
 )
 
 type Event interface {
+	LogEvent()
 }
 
-type Request struct {
-	Type   string
-	Start  time.Time
-	End    time.Time
-	Events []Event
+//For every event that occurs during a transaction
+type BidRequest struct {
+	BidderName string
+	Request    string
+	Response   string
+	Time       time.Duration
+	EventType  string
+	//More relevant parameters
 }
 
-func (r *Request) Log() {
+//Implements the Event interface
+func (ar *BidRequest) LogEvent() {
+
+}
+
+//One for each request to an endpoint
+type TransactionObject struct {
+	Type     string
+	Time     time.Duration
+	Events   []Event
+	Error    error
+	Request  string
+	Response string
+	//relevant paramters
+}
+
+//Means to log every transaction
+func (r *TransactionObject) Log() {
 	b, _ := json.Marshal(r)
 	fmt.Println(string(b))
 }
 
-type LogObject interface {
+//An interface just in case there's more types of things to log - possibly.
+type Transaction interface {
 	Log()
 }
 
+//Main interface object that user configures
 type AnalyticsLogger interface {
-	LogTransaction(LogObject)
+	LogTransaction(Transaction)
 }
 
+//to log into a file
 type FileLogger struct {
 	fileName string
 }
 
+//configure
 func (f *FileLogger) Setup() {
 
 }
 
-func (f *FileLogger) LogTransaction(lo LogObject) {
+//implement AnalyticsLogger interface
+func (f *FileLogger) LogTransaction(lo Transaction) {
 	//TODO: Write to file
 }
 
+//Log to graphite
 type GraphiteLogger struct {
-	fileName string
 }
 
+//configure graphite
 func (f *GraphiteLogger) Setup() {
 
 }
 
-func (g *GraphiteLogger) LogTransaction(lo LogObject) {
-	//TODO: Write to graphite
+//implementation of AnalyticsLogger to send data to graphite
+func (g *GraphiteLogger) LogTransaction(lo Transaction) {
+	//increment respective meters
+}
+
+//Log to InfluxDB
+type InfluxDBLogger struct {
+}
+
+//configure InfluxDB
+func (f *InfluxDBLogger) Setup() {
+
+}
+
+//implementation of AnalyticsLogger to send data to InfluxDB
+func (g *InfluxDBLogger) LogTransaction(lo Transaction) {
+	//increment respective meters
 }
