@@ -34,13 +34,16 @@ func (c *client) Close() {
 }
 
 // Configure will connect to Redis
-func (c *client) Configure(settings *cacher.Settings) error {
+func (c *client) Configure(config interface{}) error {
 	if c.client != nil {
 		return errors.New("rediscache: we have already configured this client")
 	}
 
 	// use this size by default
 	var addr = "localhost:6379"
+
+	// NOTE: ignore all of this for now. changing how this works
+	var settings = &cacher.Settings{}
 
 	if settings != nil && settings.Address != "" {
 		addr = settings.Address

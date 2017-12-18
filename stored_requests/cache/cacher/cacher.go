@@ -8,7 +8,7 @@ import (
 type Cacher interface {
 	// Configure opens a new connection to the cache database.
 	// This should be called once
-	Configure(settings *Settings) error
+	Configure(settings interface{}) error
 
 	// Name of the cache client
 	Name() string

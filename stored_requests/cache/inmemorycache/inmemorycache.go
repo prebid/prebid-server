@@ -38,10 +38,13 @@ func (c *client) Close() {
 // If the size is set relatively large, you should call
 // `debug.SetGCPercent()`, set it to a much smaller value
 // to limit the memory consumption and GC pause time.
-func (c *client) Configure(settings *cacher.Settings) error {
+func (c *client) Configure(config interface{}) error {
 
 	// use this size by default
 	var cacheSize = defaultCacheSize
+
+	// NOTE: ignore all of this for now. changing how this works
+	var settings = &cacher.Settings{}
 
 	// if we are provided with settings and the cache size is greater than 0, then use that value
 	if settings != nil && settings.Size > 0 {

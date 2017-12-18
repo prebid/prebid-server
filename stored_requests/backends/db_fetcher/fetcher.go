@@ -7,14 +7,13 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/stored_requests/cache/cacher"
+	"github.com/prebid/prebid-server/stored_requests/cache"
 )
 
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewPostgres() function.
 type dbFetcher struct {
 	db         *sql.DB
 	queryMaker func(int) (string, error)
-	cache      cacher.Cacher
 }
 
 func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
@@ -28,8 +27,8 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 
 	for _, id := range ids {
 		var err error
-		data, err := fetcher.cache.Get(id)
-		if err != nil && err != cacher.ErrDoesNotExist {
+		data, err := cache.Get(id)
+		if err != nil && err != cache.ErrDoesNotExist {
 			// if there is an error then append to the slice.
 			// do not append errors that are cache misses
 			errs = append(errs, err)
@@ -85,7 +84,7 @@ func (fetcher *dbFetcher) fetchRequests(ctx context.Context, reqData map[string]
 		}
 		reqData[id] = thisReqData
 
-		if err := fetcher.cache.Set(id, string(thisReqData), cacher.DefaultTTL); err != nil {
+		if err := cache.Set(id, string(thisReqData), cache.DefaultTTL); err != nil {
 			errs = append(errs, err)
 		}
 	}

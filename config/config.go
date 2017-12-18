@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 // Configuration

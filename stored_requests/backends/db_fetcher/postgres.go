@@ -7,7 +7,6 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/cache/cacher"
 )
 
 func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
@@ -16,16 +15,9 @@ func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
 		return nil, err
 	}
 
-	// get inmemory cacher
-	cache := cacher.Get("inmemory")
-
-	// configure using default settings
-	cache.Configure(nil)
-
 	return &dbFetcher{
 		db:         db,
 		queryMaker: cfg.MakeQuery,
-		cache:      cache,
 	}, nil
 }
 
