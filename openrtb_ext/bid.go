@@ -1,6 +1,9 @@
 package openrtb_ext
 
-import "github.com/mxmCherry/openrtb"
+import (
+	"fmt"
+	"github.com/mxmCherry/openrtb"
+)
 
 // ExtBid defines the contract for bidresponse.seatbid.bid[i].ext
 type ExtBid struct {
@@ -30,6 +33,21 @@ const (
 	BidTypeAudio          = "audio"
 	BidTypeNative         = "native"
 )
+
+func ParseBidType(bidType string) (BidType, error) {
+	switch bidType {
+	case "banner":
+		return BidTypeBanner, nil
+	case "video":
+		return BidTypeVideo, nil
+	case "audio":
+		return BidTypeAudio, nil
+	case "native":
+		return BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("invalid BidType: %s", bidType)
+	}
+}
 
 // This also duplicates code in pbs_light, which should be moved to /pbs/targeting. But that is beyond the current
 // scope, and likely moot if the non-openrtb endpoint goes away.
