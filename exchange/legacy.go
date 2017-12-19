@@ -118,7 +118,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		// SDK is excluded because we don't have that information in OpenRTB
 		// Bidders is excluded because no legacy adapters read from it
 		User: req.User,
-		// TODO: PBSCookie
+		Cookie: cookie,
 		Url:    url,
 		Domain: domain,
 		// Start is excluded because no legacy adapters read from it
