@@ -1,10 +1,10 @@
 package adapters
 
 import (
+	"encoding/base64"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
-	"encoding/base64"
 )
 
 // Bidder describes how to connect to external demand.
@@ -49,10 +49,10 @@ type ResponseData struct {
 
 // RequestData packages together the fields needed to make an http.Request.
 type RequestData struct {
-	Method       string
-	Uri          string
-	Body         []byte
-	Headers      http.Header
+	Method  string
+	Uri     string
+	Body    []byte
+	Headers http.Header
 }
 
 // ExtImpBidder can be used by Bidders to unmarshal any request.imp[i].ext.
@@ -70,5 +70,5 @@ type ExtImpBidder struct {
 }
 
 func (r *RequestData) SetBasicAuth(username string, password string) {
-	r.Headers.Set("Authorization", "Basic " + base64.StdEncoding.EncodeToString([]byte(username + ":" + password)))
+	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }

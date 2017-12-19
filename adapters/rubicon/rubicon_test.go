@@ -819,21 +819,21 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 func TestOpenRTBRequest(t *testing.T) {
 	bidder := new(RubiconAdapter)
 
-	rubidata = rubiBidInfo {
-		domain:             "nytimes.com",
-		page:               "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
-		deviceIP:           "25.91.96.36",
-		deviceUA:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
-		buyerUID:           "need-an-actual-rp-id",
-		devicePxRatio:      4.0,
+	rubidata = rubiBidInfo{
+		domain:        "nytimes.com",
+		page:          "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		deviceIP:      "25.91.96.36",
+		deviceUA:      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:      "need-an-actual-rp-id",
+		devicePxRatio: 4.0,
 	}
 
-	request := &openrtb.BidRequest {
+	request := &openrtb.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp {{
+		Imp: []openrtb.Imp{{
 			ID: "test-imp-banner-id",
-			Banner: &openrtb.Banner {
-				Format: []openrtb.Format {{
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
 					W: 300,
 					H: 250,
 				}, {
@@ -851,11 +851,11 @@ func TestOpenRTBRequest(t *testing.T) {
 		}, {
 			ID: "test-imp-video-id",
 			Video: &openrtb.Video{
-				W: 640,
-				H: 360,
-				MIMEs: []string{"video/mp4"},
-				MinDuration:    15,
-				MaxDuration:    30,
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				MinDuration: 15,
+				MaxDuration: 30,
 			},
 			Ext: openrtb.RawJSON(`{"bidder": {
 				"zoneId": 7780,
@@ -873,7 +873,7 @@ func TestOpenRTBRequest(t *testing.T) {
 				}
 			}}`),
 		}},
-		Device: &openrtb.Device {
+		Device: &openrtb.Device{
 			PxRatio: rubidata.devicePxRatio,
 		},
 	}
@@ -912,16 +912,16 @@ func TestOpenRTBRequest(t *testing.T) {
 			}
 
 			if rpRequest.Imp[0].Banner.Format[0].W != 300 {
-				t.Fatal("Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[0].W)
+				t.Fatalf("Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[0].W)
 			}
 			if rpRequest.Imp[0].Banner.Format[0].H != 250 {
-				t.Fatal("Banner height does not match. Expected %d, Got %d", 250, rpRequest.Imp[0].Banner.Format[0].H)
+				t.Fatalf("Banner height does not match. Expected %d, Got %d", 250, rpRequest.Imp[0].Banner.Format[0].H)
 			}
 			if rpRequest.Imp[0].Banner.Format[1].W != 300 {
-				t.Fatal("Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[1].W)
+				t.Fatalf("Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[1].W)
 			}
 			if rpRequest.Imp[0].Banner.Format[1].H != 600 {
-				t.Fatal("Banner height does not match. Expected %d, Got %d", 600, rpRequest.Imp[0].Banner.Format[1].H)
+				t.Fatalf("Banner height does not match. Expected %d, Got %d", 600, rpRequest.Imp[0].Banner.Format[1].H)
 			}
 		} else if rpRequest.Imp[0].ID == "test-imp-video-id" {
 			var rpExt rubiconVideoExt
@@ -930,19 +930,19 @@ func TestOpenRTBRequest(t *testing.T) {
 			}
 
 			if rpRequest.Imp[0].Video.W != 640 {
-				t.Fatal("Video width does not match. Expected %d, Got %d", 640, rpRequest.Imp[0].Video.W)
+				t.Fatalf("Video width does not match. Expected %d, Got %d", 640, rpRequest.Imp[0].Video.W)
 			}
 			if rpRequest.Imp[0].Video.H != 360 {
-				t.Fatal("Video height does not match. Expected %d, Got %d", 360, rpRequest.Imp[0].Video.H)
+				t.Fatalf("Video height does not match. Expected %d, Got %d", 360, rpRequest.Imp[0].Video.H)
 			}
 			if rpRequest.Imp[0].Video.MIMEs[0] != "video/mp4" {
-				t.Fatal("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", rpRequest.Imp[0].Video.MIMEs[0])
+				t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", rpRequest.Imp[0].Video.MIMEs[0])
 			}
 			if rpRequest.Imp[0].Video.MinDuration != 15 {
-				t.Fatal("Video min duration does not match. Expected %d, Got %d", 15, rpRequest.Imp[0].Video.MinDuration)
+				t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, rpRequest.Imp[0].Video.MinDuration)
 			}
 			if rpRequest.Imp[0].Video.MaxDuration != 30 {
-				t.Fatal("Video max duration does not match. Expected %d, Got %d", 30, rpRequest.Imp[0].Video.MaxDuration)
+				t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, rpRequest.Imp[0].Video.MaxDuration)
 			}
 		}
 	}
@@ -998,8 +998,8 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	requestJson, _ := json.Marshal(request)
 	reqData := &adapters.RequestData{
 		Method:  "POST",
-		Uri:	 "test-uri",
-		Body:	 requestJson,
+		Uri:     "test-uri",
+		Body:    requestJson,
 		Headers: nil,
 	}
 

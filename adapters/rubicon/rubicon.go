@@ -11,10 +11,10 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/prebid/prebid-server/pbs"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 type RubiconAdapter struct {
@@ -533,15 +533,15 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			continue
 		}
 
-		impExt := rubiconImpExt {
-			RP: rubiconImpExtRP {
+		impExt := rubiconImpExt{
+			RP: rubiconImpExtRP{
 				ZoneID: rubiconExt.ZoneId,
 				Target: rubiconExt.Inventory,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 		}
 		thisImp.Ext, err = json.Marshal(&impExt)
-		if (err != nil) {
+		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -584,7 +584,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				continue
 			}
 		}
-		
+
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
 
@@ -619,8 +619,8 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			continue
 		}
 
-		reqData := &adapters.RequestData {
-			Method:	 "POST",
+		reqData := &adapters.RequestData{
+			Method:  "POST",
 			Uri:     a.URI,
 			Body:    reqJSON,
 			Headers: headers,
@@ -671,5 +671,3 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 	return bids, nil
 }
-
-
