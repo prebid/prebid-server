@@ -19,7 +19,7 @@ type Configuration struct {
 	CacheURL        Cache              `mapstructure:"cache"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
-	Metrics         Metrics            `mapstructure:"metrics"`
+	Metrics         []Metrics          `mapstructure:"metrics"`
 	DataCache       DataCache          `mapstructure:"datacache"`
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
@@ -43,11 +43,11 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	XAPI        struct {
+	XAPI struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
-	} `mapstructure:"xapi"` // needed for Rubicon
+	} `mapstructure:"xapi"`                         // needed for Rubicon
 }
 
 type Metrics struct {
@@ -55,6 +55,9 @@ type Metrics struct {
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+	Type     string `mapstructure:"type"`
+	Interval string `mapstructure:"interval"`
+	Prefix   string `mapstructure:"prefix"`
 }
 
 type DataCache struct {

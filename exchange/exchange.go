@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"time"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -21,6 +22,7 @@ type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
+	analytics  analytics.Analytics
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -43,6 +45,7 @@ func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.analytics.Setup(cfg.Metrics, e.adapters)
 	return e
 }
 

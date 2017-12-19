@@ -54,7 +54,7 @@ type Transaction interface {
 
 //Main interface object that user configures
 type AnalyticsLogger interface {
-	LogTransaction(Transaction)
+	LogTransaction(*TransactionObject)
 }
 
 //to log into a file
@@ -70,32 +70,4 @@ func (f *FileLogger) Setup() {
 //implement AnalyticsLogger interface
 func (f *FileLogger) LogTransaction(lo Transaction) {
 	//TODO: Write to file
-}
-
-//Log to graphite
-type GraphiteLogger struct {
-}
-
-//configure graphite
-func (f *GraphiteLogger) Setup() {
-
-}
-
-//implementation of AnalyticsLogger to send data to graphite
-func (g *GraphiteLogger) LogTransaction(lo Transaction) {
-	//increment respective meters
-}
-
-//Log to InfluxDB
-type InfluxDBLogger struct {
-}
-
-//configure InfluxDB
-func (f *InfluxDBLogger) Setup() {
-
-}
-
-//implementation of AnalyticsLogger to send data to InfluxDB
-func (g *InfluxDBLogger) LogTransaction(lo Transaction) {
-	//increment respective meters
 }

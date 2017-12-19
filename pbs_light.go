@@ -792,14 +792,14 @@ func serve(cfg *config.Configuration) error {
 
 	setupExchanges(cfg)
 
-	if cfg.Metrics.Host != "" {
+	if cfg.Metrics[0].Host != "" {
 		go influxdb.InfluxDB(
-			metricsRegistry,      // metrics registry
-			time.Second*10,       // interval
-			cfg.Metrics.Host,     // the InfluxDB url
-			cfg.Metrics.Database, // your InfluxDB database
-			cfg.Metrics.Username, // your InfluxDB user
-			cfg.Metrics.Password, // your InfluxDB password
+			metricsRegistry,         // metrics registry
+			time.Second*10,          // interval
+			cfg.Metrics[0].Host,     // the InfluxDB url
+			cfg.Metrics[0].Database, // your InfluxDB database
+			cfg.Metrics[0].Username, // your InfluxDB user
+			cfg.Metrics[0].Password, // your InfluxDB password
 		)
 	}
 
