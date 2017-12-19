@@ -323,8 +323,8 @@ func transformBidToOrtb(legacyBid *pbs.PBSBid) *openrtb.Bid {
 		W:      legacyBid.Width,
 		H:      legacyBid.Height,
 		DealID: legacyBid.DealId,
-		// CacheID is ignored (for now!) because OpenRTB doesn't support it yet. See #216
-		// CacheURL is ignored (for now!) because OpenRTB doesn't support it yet. See #216
+		// TODO #216: Support CacheID here
+		// TODO: #216: Support CacheURL here
 		// ResponseTime is handled by the exchange, since it doesn't exist in the OpenRTB Bid
 		// AdServerTargeting is excluded because Rubicon's adapter is the only one which writes to it.
 		//   Since their Bidder is being upgraded for OpenRTB, this code won't be used on their legacy one.
