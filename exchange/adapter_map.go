@@ -20,7 +20,7 @@ import (
 func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_ext.BidderName]adaptedBidder {
 	return map[openrtb_ext.BidderName]adaptedBidder{
 		openrtb_ext.BidderAppnexus:   adaptBidder(appnexus.NewAppNexusBidder(client, cfg.ExternalURL), client),
-		// TODO #211: Upgrade the Conversant adapter
+		// TODO #267: Upgrade the Conversant adapter
 		openrtb_ext.BidderConversant: adaptLegacyAdapter(conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint, cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL)),
 		// TODO #211: Upgrade the Facebook adapter
 		openrtb_ext.BidderFacebook:   adaptLegacyAdapter(facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL)),
