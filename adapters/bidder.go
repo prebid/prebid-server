@@ -23,7 +23,7 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the server response didn't have the expected format.
-	MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error)
+	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) ([]*TypedBid, []error)
 }
 
 // TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an

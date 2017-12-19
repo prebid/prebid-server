@@ -301,7 +301,7 @@ func TestEmptyResponse(t *testing.T) {
 		StatusCode: http.StatusNoContent,
 	}
 	bidder := new(AppNexusAdapter)
-	bids, errs := bidder.MakeBids(nil, httpResp)
+	bids, errs := bidder.MakeBids(nil, nil, httpResp)
 	if len(bids) != 0 {
 		t.Errorf("Expected 0 bids. Got %d", len(bids))
 	}
@@ -316,7 +316,7 @@ func TestSurpriseResponse(t *testing.T) {
 		StatusCode: http.StatusAccepted,
 	}
 	bidder := new(AppNexusAdapter)
-	bids, errs := bidder.MakeBids(nil, httpResp)
+	bids, errs := bidder.MakeBids(nil, nil, httpResp)
 	if len(bids) != 0 {
 		t.Errorf("Expected 0 bids. Got %d", len(bids))
 	}
@@ -352,7 +352,7 @@ func TestStandardResponse(t *testing.T) {
 	}
 
 	bidder := new(AppNexusAdapter)
-	bids, errs := bidder.MakeBids(request, httpResp)
+	bids, errs := bidder.MakeBids(request, nil, httpResp)
 	if len(bids) != 1 {
 		t.Fatalf("Expected 1 bid. Got %d", len(bids))
 	}

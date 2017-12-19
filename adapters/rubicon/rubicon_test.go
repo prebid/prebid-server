@@ -953,7 +953,7 @@ func TestOpenRTBEmptyResponse(t *testing.T) {
 		StatusCode: http.StatusNoContent,
 	}
 	bidder := new(RubiconAdapter)
-	bids, errs := bidder.MakeBids(nil, httpResp)
+	bids, errs := bidder.MakeBids(nil, nil, httpResp)
 	if len(bids) != 0 {
 		t.Errorf("Expected 0 bids. Got %d", len(bids))
 	}
@@ -967,7 +967,7 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 		StatusCode: http.StatusAccepted,
 	}
 	bidder := new(RubiconAdapter)
-	bids, errs := bidder.MakeBids(nil, httpResp)
+	bids, errs := bidder.MakeBids(nil, nil, httpResp)
 	if len(bids) != 0 {
 		t.Errorf("Expected 0 bids. Got %d", len(bids))
 	}
@@ -995,13 +995,21 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 		}},
 	}
 
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:	 "test-uri",
+		Body:	 requestJson,
+		Headers: nil,
+	}
+
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusOK,
 		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1234567890","impid":"test-imp-id","price": 2,"crid":"4122982","adm":"some ad","h": 50,"w": 320,"ext":{"bidder":{"rp":{"targeting": {"key": "rpfl_2763", "values":["43_tier0100"]},"mime": "text/html","size_id": 43}}}}]}]}`),
 	}
 
 	bidder := new(RubiconAdapter)
-	bids, errs := bidder.MakeBids(request, httpResp)
+	bids, errs := bidder.MakeBids(request, reqData, httpResp)
 
 	if len(bids) != 1 {
 		t.Fatalf("Expected 1 bid. Got %d", len(bids))

@@ -632,7 +632,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 	return requestData, errs
 }
 
-func (a *RubiconAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -646,10 +646,15 @@ func (a *RubiconAdapter) MakeBids(request *openrtb.BidRequest, response *adapter
 		return nil, []error{err}
 	}
 
+	var bidReq openrtb.BidRequest
+	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+		return nil, []error{err}
+	}
+
 	bids := make([]*adapters.TypedBid, 0, 5)
 	bidType := openrtb_ext.BidTypeBanner
 
-	if request.Imp[0].Video != nil {
+	if bidReq.Imp[0].Video != nil {
 		bidType = openrtb_ext.BidTypeVideo
 	}
 
