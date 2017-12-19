@@ -114,8 +114,8 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		IsDebug: isDebug,
 		App:     req.App,
 		Device:  req.Device,
-		// PBSUser is excluded because no legacy adapters read from it
-		// SDK is excluded because we don't have that information in OpenRTB
+		// PBSUser is excluded because rubicon is the only adapter which reads from it, and they're supporting OpenRTB directly
+		// SDK is excluded because that information doesn't exist in OpenRTB.
 		// Bidders is excluded because no legacy adapters read from it
 		User: req.User,
 		Cookie: cookie,
@@ -181,7 +181,8 @@ func toLegacyBidder(req *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbs.
 			// NoCookie is excluded because no legacy adapters read from it
 			// NoBid is excluded because no legacy adapters read from it
 			// UsersyncInfo is excluded because no legacy adapters read from it
-			// Debug is excluded because legacy adapters only use it in nil-safe ways
+			// Debug is excluded because legacy adapters only use it in nil-safe ways.
+			//   They *do* write to it, though, so it may be read when unpacking the response.
 			AdUnits: adUnits,
 		}, errs
 	} else {
@@ -314,9 +315,9 @@ func transformBidToOrtb(legacyBid *pbs.PBSBid) *openrtb.Bid {
 		ID:    legacyBid.BidID,
 		ImpID: legacyBid.AdUnitCode,
 		CrID:  legacyBid.Creative_id,
-		// legacyBid.CreativeMediaType is handled in transformBid. It doesn't exist on the openrtb.Bid
+		// legacyBid.CreativeMediaType is handled by transformBid(), because it doesn't exist on the openrtb.Bid
 		// legacyBid.BidderCode is handled by the exchange, which already knows which bidder we are.
-		// legacyBid.BidHash is ignored, because it shouldn't go to the browser anyway
+		// legacyBid.BidHash is ignored, because it doesn't get sent in the response anyway
 		Price:  legacyBid.Price,
 		NURL:   legacyBid.NURL,
 		AdM:    legacyBid.Adm,
@@ -326,8 +327,8 @@ func transformBidToOrtb(legacyBid *pbs.PBSBid) *openrtb.Bid {
 		// TODO #216: Support CacheID here
 		// TODO: #216: Support CacheURL here
 		// ResponseTime is handled by the exchange, since it doesn't exist in the OpenRTB Bid
-		// AdServerTargeting is excluded because Rubicon's adapter is the only one which writes to it.
-		//   Since their Bidder is being upgraded for OpenRTB, this code won't be used on their legacy one.
+		// AdServerTargeting is handled by the exchange. Rubicon's adapter is the only one which writes to it,
+		//   but that doesn't matter since they're supporting OpenRTB directly.
 	}
 }
 
