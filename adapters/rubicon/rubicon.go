@@ -308,6 +308,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	if err != nil {
 		return nil, err
 	}
+
 	rubiReqImpCopy := rubiReq.Imp
 
 	for i, unit := range bidder.AdUnits {
@@ -334,7 +335,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		}}
 		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		// Copy the $.user object and amend with $.user.ext.rp.target
@@ -342,18 +343,12 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		userCopy := *rubiReq.User
 		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: params.Visitor}}
 		userCopy.Ext, err = json.Marshal(&userExt)
-		if err != nil {
-			return nil, err
-		}
 		// Assign back our copy
 		rubiReq.User = &userCopy
 
 		deviceCopy := *rubiReq.Device
 		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: rubiReq.Device.PxRatio}}
 		deviceCopy.Ext, err = json.Marshal(&deviceExt)
-		if err != nil {
-			return nil, err
-		}
 		rubiReq.Device = &deviceCopy
 
 		if thisImp.Video != nil {
@@ -372,21 +367,12 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
 		var rubiconUser rubiconUser
 		err = json.Unmarshal(req.PBSUser, &rubiconUser)
-		if err != nil {
-			return nil, err
-		}
 
 		if rubiReq.Site != nil {
 			siteCopy := *rubiReq.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
-			if err != nil {
-				return nil, err
-			}
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			if err != nil {
-				return nil, err
-			}
 			siteCopy.Content = &openrtb.Content{}
 			siteCopy.Content.Language = rubiconUser.Language
 			rubiReq.Site = &siteCopy
@@ -400,14 +386,8 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.App != nil {
 			appCopy := *rubiReq.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
-			if err != nil {
-				return nil, err
-			}
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
-			if err != nil {
-				return nil, err
-			}
 			rubiReq.App = &appCopy
 		}
 
@@ -421,7 +401,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		callOneObjects = append(callOneObjects, callOneObject{reqBuffer, unit.MediaTypes[0]})
 	}
 	if len(callOneObjects) == 0 {
-		return nil, errors.New("Invalid ad unit size")
+		return nil, errors.New("Invalid ad unit/imp")
 	}
 
 	ch := make(chan adapters.CallOneResult)
@@ -562,10 +542,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			userCopy := *request.User
 			userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
 			userCopy.Ext, err = json.Marshal(&userExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
 			request.User = &userCopy
 		}
 
@@ -573,10 +549,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			deviceCopy := *request.Device
 			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
 			request.Device = &deviceCopy
 		}
 
@@ -603,10 +575,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		if request.Site != nil {
 			siteCopy := *request.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			request.Site = &siteCopy
@@ -614,10 +582,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		if request.App != nil {
 			appCopy := *request.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
 			request.App = &appCopy
