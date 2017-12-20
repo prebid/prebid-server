@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"encoding/base64"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
@@ -22,7 +23,7 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the server response didn't have the expected format.
-	MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error)
+	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) ([]*TypedBid, []error)
 }
 
 // TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an
@@ -66,4 +67,8 @@ type ExtImpBidder struct {
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
 	Bidder openrtb.RawJSON `json:"bidder"`
+}
+
+func (r *RequestData) SetBasicAuth(username string, password string) {
+	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }
