@@ -95,11 +95,15 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 
 	cookie := pbs.NewPBSCookie()
 	if req.User != nil {
-		cookie.TrySync(bidder.adapter.FamilyName(), req.User.BuyerUID)
+		if req.User.BuyerUID != "" {
+			cookie.TrySync(bidder.adapter.FamilyName(), req.User.BuyerUID)
+		}
 
 		// This shouldn't be appnexus-specific... but this line does correctly invert the
 		// logic from adapters/openrtb_util.go, which will preserve this questionable behavior in legacy adapters.
-		cookie.TrySync("adnxs", req.User.ID)
+		if req.User.ID != "" {
+			cookie.TrySync("adnxs", req.User.ID)
+		}
 	}
 
 	return &pbs.PBSRequest{
@@ -117,7 +121,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		// PBSUser is excluded because rubicon is the only adapter which reads from it, and they're supporting OpenRTB directly
 		// SDK is excluded because that information doesn't exist in OpenRTB.
 		// Bidders is excluded because no legacy adapters read from it
-		User: req.User,
+		User:   req.User,
 		Cookie: cookie,
 		Url:    url,
 		Domain: domain,
