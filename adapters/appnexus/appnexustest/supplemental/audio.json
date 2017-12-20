@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "Appnexus doesn't support audio or native Imps. Ignoring Imp ID=unsupported-audio-imp"
+  ]
+}
