@@ -38,6 +38,12 @@ type endpointDeps struct {
 	cfg              *config.Configuration
 }
 
+type digiTrust struct {
+	ID   string `json:"id"`
+	KeyV int    `json:"keyv"`
+	Pref int    `json:"pref"`
+}
+
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
@@ -123,6 +129,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		errs = []error{err}
 		return
 	}
+
 	return
 }
 
@@ -305,6 +312,8 @@ func setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.App == nil {
 		setSiteImplicitly(httpReq, bidReq)
 	}
+
+	setUserImplicitly(httpReq, bidReq)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -330,6 +339,32 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 				// (almost certainly) the page where the ad will be hosted. In the OpenRTB spec, this is *page*, not *ref*.
 				if bidReq.Site.Page == "" {
 					bidReq.Site.Page = referrerCandidate
+				}
+			}
+		}
+	}
+}
+
+func setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.User != nil && bidReq.User.Ext != nil {
+		// Creating map of ext kvs
+		var userExtMap map[string]interface{}
+		if err := json.Unmarshal(bidReq.User.Ext, &userExtMap); err == nil {
+			// Creating ExtUser object to check if DigiTrust is valid
+			var userExt openrtb_ext.ExtUser
+			if err := json.Unmarshal(bidReq.User.Ext, &userExt); err == nil {
+				// Checking if DigiTrust is valid
+				if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
+					// DigiTrust is not valid so remove it from ext
+					delete(userExtMap, "digitrust")
+
+					if len(userExtMap) == 0 {
+						// No kvs left in ext, so set ext object to nil
+						bidReq.User.Ext = nil
+					} else if userExtRaw, err := json.Marshal(&userExtMap); err == nil {
+						// Other kvs left in ext, so put those back in bid request
+						bidReq.User.Ext = userExtRaw
+					}
 				}
 			}
 		}
