@@ -461,7 +461,7 @@ func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*ad
 	return []*adapters.RequestData{bidder.httpRequest}, nil
 }
 
-func (bidder *goodSingleBidder) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	bidder.httpResponse = response
 	return bidder.bids, nil
 }
@@ -478,7 +478,7 @@ func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest) ([]*ad
 	return bidder.httpRequests, []error{errors.New("The requests weren't ideal.")}
 }
 
-func (bidder *mixedMultiBidder) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	bidder.httpResponses = append(bidder.httpResponses, response)
 	return bidder.bids, []error{errors.New("The bids weren't ideal.")}
 }
@@ -492,7 +492,7 @@ func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest) ([]*adapter
 	return nil, []error{errors.New("Invalid params on BidRequest.")}
 }
 
-func (bidder *bidRejector) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	bidder.httpResponse = response
 	return nil, []error{errors.New("Can't make a response.")}
 }

@@ -4,19 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 type RubiconAdapter struct {
@@ -299,31 +297,22 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	requests := make([]bytes.Buffer, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
-	for i, unit := range bidder.AdUnits {
-		rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
-		if err != nil {
-			continue
-		}
+	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
+	if err != nil {
+		return nil, err
+	}
+	rubiReqImpCopy := rubiReq.Imp
 
+	for i, unit := range bidder.AdUnits {
 		// Only grab this ad unit
 		// Not supporting multi-media-type add-unit yet
-		rubiReq.Imp = rubiReq.Imp[i : i+1]
+		thisImp := rubiReqImpCopy[i]
 
 		// Amend it with RP-specific information
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
-
 		if err != nil {
 			return nil, err
-		}
-		if params.AccountId == 0 {
-			return nil, errors.New("Missing accountId param")
-		}
-		if params.SiteId == 0 {
-			return nil, errors.New("Missing siteId param")
-		}
-		if params.ZoneId == 0 {
-			return nil, errors.New("Missing zoneId param")
 		}
 
 		var mint, mintVersion string
@@ -336,45 +325,65 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			Target: params.Inventory,
 			Track:  track,
 		}}
-		rubiReq.Imp[0].Ext, err = json.Marshal(&impExt)
+		thisImp.Ext, err = json.Marshal(&impExt)
+		if err != nil {
+			return nil, err
+		}
 
 		// Copy the $.user object and amend with $.user.ext.rp.target
 		// Copy avoids race condition since it points to ref & shared with other adapters
 		userCopy := *rubiReq.User
 		userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: params.Visitor}}
 		userCopy.Ext, err = json.Marshal(&userExt)
+		if err != nil {
+			return nil, err
+		}
 		// Assign back our copy
 		rubiReq.User = &userCopy
 
 		deviceCopy := *rubiReq.Device
 		deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: rubiReq.Device.PxRatio}}
 		deviceCopy.Ext, err = json.Marshal(&deviceExt)
+		if err != nil {
+			return nil, err
+		}
 		rubiReq.Device = &deviceCopy
 
-		if rubiReq.Imp[0].Video != nil {
+		if thisImp.Video != nil {
 			videoExt := rubiconVideoExt{Skip: params.Video.Skip, SkipDelay: params.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: params.Video.VideoSizeID}}
-			rubiReq.Imp[0].Video.Ext, err = json.Marshal(&videoExt)
+			thisImp.Video.Ext, err = json.Marshal(&videoExt)
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(unit.Sizes)
 			if err != nil {
 				return nil, err
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			rubiReq.Imp[0].Banner.Ext, err = json.Marshal(&bannerExt)
+			thisImp.Banner.Ext, err = json.Marshal(&bannerExt)
 		}
 
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: params.SiteId}}
 		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: params.AccountId}}
+		var rubiconUser rubiconUser
+		err = json.Unmarshal(req.PBSUser, &rubiconUser)
+		if err != nil {
+			return nil, err
+		}
 
 		if rubiReq.Site != nil {
 			siteCopy := *rubiReq.Site
 			siteCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				return nil, err
+			}
 			siteCopy.Publisher = &openrtb.Publisher{}
 			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				return nil, err
+			}
+			siteCopy.Content = &openrtb.Content{}
+			siteCopy.Content.Language = rubiconUser.Language
 			rubiReq.Site = &siteCopy
 		} else {
-			var rubiconUser rubiconUser
-			err = json.Unmarshal(req.PBSUser, &rubiconUser)
 			site := &openrtb.Site{}
 			site.Content = &openrtb.Content{}
 			site.Content.Language = rubiconUser.Language
@@ -384,10 +393,18 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		if rubiReq.App != nil {
 			appCopy := *rubiReq.App
 			appCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				return nil, err
+			}
 			appCopy.Publisher = &openrtb.Publisher{}
 			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			if err != nil {
+				return nil, err
+			}
 			rubiReq.App = &appCopy
 		}
+
+		rubiReq.Imp = []openrtb.Imp{thisImp}
 
 		err = json.NewEncoder(&requests[i]).Encode(rubiReq)
 		if err != nil {
@@ -421,8 +438,6 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			ch <- result
 		}(bidder, requests[i], bidder.AdUnits[i].MediaTypes)
 	}
-
-	var err error
 
 	bids := make(pbs.PBSBidSlice, 0)
 	for i := 0; i < len(bidder.AdUnits); i++ {
@@ -467,7 +482,11 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 }
 
 func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
-	a := adapters.NewHTTPAdapter(config)
+	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker, usersyncURL)
+}
+
+func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
 
 	uri = appendTrackerToUrl(uri, tracker)
 
@@ -484,4 +503,171 @@ func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser str
 		XAPIUsername: xuser,
 		XAPIPassword: xpass,
 	}
+}
+
+func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	numRequests := len(request.Imp)
+	errs := make([]error, 0, len(request.Imp))
+	var err error
+
+	requestData := make([]*adapters.RequestData, 0, numRequests)
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("User-Agent", "prebid-server/1.0")
+
+	requestImpCopy := request.Imp
+
+	for i := 0; i < numRequests; i++ {
+		thisImp := requestImpCopy[i]
+
+		var bidderExt adapters.ExtImpBidder
+		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		var rubiconExt openrtb_ext.ExtImpRubicon
+		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		impExt := rubiconImpExt{
+			RP: rubiconImpExtRP{
+				ZoneID: rubiconExt.ZoneId,
+				Target: rubiconExt.Inventory,
+				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
+			},
+		}
+		thisImp.Ext, err = json.Marshal(&impExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		if request.User != nil {
+			userCopy := *request.User
+			userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
+			userCopy.Ext, err = json.Marshal(&userExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			request.User = &userCopy
+		}
+
+		if request.Device != nil {
+			deviceCopy := *request.Device
+			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
+			deviceCopy.Ext, err = json.Marshal(&deviceExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			request.Device = &deviceCopy
+		}
+
+		if thisImp.Video != nil {
+			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
+			thisImp.Video.Ext, err = json.Marshal(&videoExt)
+		} else {
+			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
+			thisImp.Banner.Ext, err = json.Marshal(&bannerExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+		}
+
+		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
+		pubExt := rubiconPubExt{RP: rubiconPubExtRP{AccountID: rubiconExt.AccountId}}
+
+		if request.Site != nil {
+			siteCopy := *request.Site
+			siteCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			siteCopy.Publisher = &openrtb.Publisher{}
+			siteCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			request.Site = &siteCopy
+		}
+		if request.App != nil {
+			appCopy := *request.App
+			appCopy.Ext, err = json.Marshal(&siteExt)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			appCopy.Publisher = &openrtb.Publisher{}
+			appCopy.Publisher.Ext, err = json.Marshal(&pubExt)
+			request.App = &appCopy
+		}
+
+		request.Imp = []openrtb.Imp{thisImp}
+
+		reqJSON, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		reqData := &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.URI,
+			Body:    reqJSON,
+			Headers: headers,
+		}
+		reqData.SetBasicAuth(a.XAPIUsername, a.XAPIPassword)
+		requestData = append(requestData, reqData)
+	}
+
+	return requestData, errs
+}
+
+func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	var bidReq openrtb.BidRequest
+	if err := json.Unmarshal(externalRequest.Body, &bidReq); err != nil {
+		return nil, []error{err}
+	}
+
+	bids := make([]*adapters.TypedBid, 0, 5)
+	bidType := openrtb_ext.BidTypeBanner
+
+	if bidReq.Imp[0].Video != nil {
+		bidType = openrtb_ext.BidTypeVideo
+	}
+
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			if bid.Price != 0 {
+				bids = append(bids, &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				})
+			}
+		}
+	}
+
+	return bids, nil
 }

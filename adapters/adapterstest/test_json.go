@@ -101,7 +101,7 @@ func runSpec(t *testing.T, filename string, spec *ortbSpec, bidder adapters.Bidd
 	var bids = make([]*adapters.TypedBid, 0, len(spec.Bids))
 	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
 	for i := 0; i < len(actualReqs); i++ {
-		theseBids, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Response.ToResponseData(t))
+		theseBids, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
 		bids = append(bids, theseBids...)
 		bidsErrs = append(bidsErrs, theseErrs...)
 	}
@@ -125,6 +125,14 @@ func (spec *ortbSpec) expectsErrors() bool {
 type httpCall struct {
 	Request  httpRequest  `json:"expectedRequest"`
 	Response httpResponse `json:"mockResponse"`
+}
+
+func (req *httpRequest) ToRequestData(t *testing.T) *adapters.RequestData {
+	return &adapters.RequestData{
+		Method: "POST",
+		Uri:    req.Uri,
+		Body:   req.Body,
+	}
 }
 
 type httpRequest struct {
