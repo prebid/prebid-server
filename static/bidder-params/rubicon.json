@@ -6,14 +6,17 @@
   "properties": {
     "accountId": {
       "type": "integer",
+      "minimum": 1,
       "description": "An ID which identifies the publisher's account"
     },
     "siteId": {
       "type": "integer",
+      "minimum": 1,
       "description": "An ID which identifies the site selling the impression"
     },
     "zoneId": {
       "type": "integer",
+      "minimum": 1,
       "description": "An ID which identifies the sub-section of the site where the impression is located"
     },
     "inventory": {
