@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"strings"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -299,13 +300,6 @@ func TestRubiconBasicResponse(t *testing.T) {
 		}
 	}
 
-	// test debug enabled
-	pbReq.IsDebug = true
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
-	}
-
 	// same test but with request timing out
 	rubidata.delay = 20 * time.Millisecond
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
@@ -473,7 +467,15 @@ func TestNoContentResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
+
+	if pbReq.Bidders[0].Debug[0].StatusCode != 204 {
+		t.Fatalf("StatusCode should be 204 instead of: %v", pbReq.Bidders[0].Debug[0].StatusCode)
+	}
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -491,8 +493,16 @@ func TestNotFoundResponse(t *testing.T) {
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
 	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 
+	if pbReq.Bidders[0].Debug[0].StatusCode != 404 {
+		t.Fatalf("StatusCode should be 404 instead of: %v", pbReq.Bidders[0].Debug[0].StatusCode)
+	}
+
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "HTTP status 404") {
+		t.Fatalf("Should start with 'HTTP status' instead of: %v", err.Error())
 	}
 
 }
@@ -507,8 +517,16 @@ func TestWrongFormatResponse(t *testing.T) {
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
 	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 
+	if pbReq.Bidders[0].Debug[0].StatusCode != 200 {
+		t.Fatalf("StatusCode should be 200 instead of: %v", pbReq.Bidders[0].Debug[0].StatusCode)
+	}
+
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "invalid character") {
+		t.Fatalf("Should start with 'invalid character' instead of: %v", err)
 	}
 
 }
@@ -528,7 +546,11 @@ func TestZeroSeatBidResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -556,7 +578,11 @@ func TestEmptyBidResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -591,10 +617,18 @@ func TestWrongBidIdResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
 
 	if err == nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "Unknown ad unit code") {
+		t.Fatalf("Should start with 'Unknown ad unit code' instead of: %v", err)
 	}
 
 }
@@ -655,7 +689,6 @@ func TestDifferentRequest(t *testing.T) {
 
 	// test video media type
 	pbReq.Bidders[0].AdUnits[0].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
-	pbReq.Bidders[0].AdUnits[1].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
 	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
@@ -663,7 +696,6 @@ func TestDifferentRequest(t *testing.T) {
 
 	// set media back to normal
 	pbReq.Bidders[0].AdUnits[0].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
-	pbReq.Bidders[0].AdUnits[1].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
 
 	// test wrong params
 	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %s, \"siteId\": %d, \"visitor\": %s, \"inventory\": %s}", "zma", rubidata.siteID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
@@ -801,6 +833,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	hcs := pbs.HostCookieSettings{}
 
 	pbReq, err = pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	pbReq.IsDebug = true
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
