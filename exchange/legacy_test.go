@@ -2,13 +2,13 @@ package exchange
 
 import (
 	"context"
+	"github.com/buger/jsonparser"
+	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"testing"
 	"reflect"
-	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	"testing"
 )
 
 func TestSiteVideo(t *testing.T) {
@@ -26,18 +26,18 @@ func TestSiteVideo(t *testing.T) {
 			TID: "transaction-id",
 		},
 		User: &openrtb.User{
-			ID: "host-id",
+			ID:       "host-id",
 			BuyerUID: "bidder-id",
 		},
 		Test: 1,
 		Imp: []openrtb.Imp{{
 			ID: "imp-id",
 			Video: &openrtb.Video{
-				MIMEs: []string{"video/mp4"},
+				MIMEs:       []string{"video/mp4"},
 				MinDuration: 20,
 				MaxDuration: 40,
-				Protocols: []openrtb.Protocol{openrtb.ProtocolVAST10},
-				StartDelay: openrtb.StartDelayGenericMidRoll.Ptr(),
+				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
+				StartDelay:  openrtb.StartDelayGenericMidRoll.Ptr(),
 			},
 			Banner: &openrtb.Banner{
 				Format: []openrtb.Format{{
@@ -86,7 +86,7 @@ func TestAppBanner(t *testing.T) {
 			TID: "transaction-id",
 		},
 		User: &openrtb.User{
-			ID: "host-id",
+			ID:       "host-id",
 			BuyerUID: "bidder-id",
 		},
 		Test: 1,
@@ -156,12 +156,12 @@ func assertEquivalentRequests(t *testing.T, req *openrtb.BidRequest, legacy *pbs
 	}
 
 	if expectedSecure != legacy.Secure {
-		t.Errorf("tmax did not translate. OpenRTB: %s, Legacy: %s.", expectedSecure, legacy.Secure)
+		t.Errorf("tmax did not translate. OpenRTB: %d, Legacy: %d.", expectedSecure, legacy.Secure)
 	}
 	// TODO: Secure
 
 	if req.TMax != legacy.TimeoutMillis {
-		t.Errorf("tmax did not translate. OpenRTB: %s, Legacy: %s.", req.TMax, legacy.TimeoutMillis)
+		t.Errorf("tmax did not translate. OpenRTB: %d, Legacy: %d.", req.TMax, legacy.TimeoutMillis)
 	}
 
 	if req.App != legacy.App {
@@ -174,7 +174,7 @@ func assertEquivalentRequests(t *testing.T, req *openrtb.BidRequest, legacy *pbs
 		t.Errorf("user did not translate. OpenRTB: %v, Legacy: %v.", req.User, legacy.User)
 	}
 	if req.User != nil {
-		if id, _, _ := legacy.Cookie.GetUID("rubicon"); id != req.User.BuyerUID {
+		if id, _, _ := legacy.Cookie.GetUID("someFamily"); id != req.User.BuyerUID {
 			t.Errorf("bidder usersync did not translate. OpenRTB: %v, Legacy: %v.", req.User.BuyerUID, id)
 		}
 		if id, _, _ := legacy.Cookie.GetUID("adnxs"); id != req.User.ID {
@@ -199,7 +199,7 @@ func assertEquivalentImp(t *testing.T, index int, imp *openrtb.Imp, legacy *pbs.
 	}
 
 	if imp.Instl != legacy.Instl {
-		t.Errorf("imp[%d].instl did not translate. OpenRTB %s, legacy %s", index, imp.Instl, legacy.Instl)
+		t.Errorf("imp[%d].instl did not translate. OpenRTB %d, legacy %d", index, imp.Instl, legacy.Instl)
 	}
 
 	if params, _, _, _ := jsonparser.Get(imp.Ext, "bidder"); !jsonpatch.Equal(params, legacy.Params) {
@@ -220,14 +220,21 @@ func assertEquivalentImp(t *testing.T, index int, imp *openrtb.Imp, legacy *pbs.
 
 	if imp.Video != nil {
 		if !reflect.DeepEqual(imp.Video.MIMEs, legacy.Video.Mimes) {
-			t.Errorf("imp[%d].video.mimes did not translate. OpenRTB %d, legacy %d", index, imp.Video.MIMEs, legacy.Video.Mimes)
+			t.Errorf("imp[%d].video.mimes did not translate. OpenRTB %v, legacy %v", index, imp.Video.MIMEs, legacy.Video.Mimes)
 		}
-		if len(imp.Video.Protocols) != len()
-		if !reflect.DeepEqual(imp.Video.Protocols, legacy.Video.Protocols) {
-			t.Errorf("imp[%d].video.protocols did not translate. OpenRTB %d, legacy %d", index, imp.Video.Protocols, legacy.Video.Protocols)
+		if len(imp.Video.Protocols) != len(imp.Video.Protocols) {
+			t.Errorf("len(imp[%d].video.protocols) did not match. OpenRTB %d, legacy %d", index, len(imp.Video.Protocols), len(imp.Video.Protocols))
+			return
 		}
-		if int8(imp.Video.PlaybackMethod[0]) != legacy.Video.PlaybackMethod {
-			t.Errorf("imp[%d].video.playbackmethod[0] did not translate. OpenRTB %d, legacy %d", index, int8(imp.Video.PlaybackMethod[0]), legacy.Video.PlaybackMethod)
+		for i := 0; i < len(imp.Video.Protocols); i++ {
+			if int8(imp.Video.Protocols[i]) != legacy.Video.Protocols[i] {
+				t.Errorf("imp[%d].video.protocol[%d] did not match. OpenRTB %d, legacy %d", index, i, imp.Video.Protocols[i], imp.Video.Protocols[i])
+			}
+		}
+		if len(imp.Video.PlaybackMethod) > 0 {
+			if int8(imp.Video.PlaybackMethod[0]) != legacy.Video.PlaybackMethod {
+				t.Errorf("imp[%d].video.playbackmethod[0] did not translate. OpenRTB %d, legacy %d", index, int8(imp.Video.PlaybackMethod[0]), legacy.Video.PlaybackMethod)
+			}
 		}
 		if imp.Video.Skip == nil {
 			if legacy.Video.Skippable != 0 {
