@@ -17,7 +17,7 @@ func TestInfoFile(t *testing.T) {
 	}
 
 	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
+		if fileInfo.IsDir() && fileInfo.Name() != "adapterstest" {
 			infoFile, err := os.Open(fmt.Sprintf("./%s/info.yaml", fileInfo.Name()))
 			if err != nil {
 				t.Errorf("Error: %v. Did you forget to add it?", err)

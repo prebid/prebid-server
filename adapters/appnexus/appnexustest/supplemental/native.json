@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "native": {
+          "request": "{\"context\"}",
+          "version": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "Appnexus doesn't support audio or native Imps. Ignoring Imp ID=unsupported-native-imp"
+  ]
+}
