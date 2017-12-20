@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"context"
+	"errors"
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
@@ -74,33 +75,13 @@ func TestSiteVideo(t *testing.T) {
 }
 
 func TestAppBanner(t *testing.T) {
-	ortbRequest := &openrtb.BidRequest{
-		ID:   "request-id",
-		TMax: 1000,
-		App: &openrtb.App{
-			Publisher: &openrtb.Publisher{
-				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
-			},
-		},
-		Source: &openrtb.Source{
-			TID: "transaction-id",
-		},
-		User: &openrtb.User{
-			ID:       "host-id",
-			BuyerUID: "bidder-id",
-		},
-		Test: 1,
-		Imp: []openrtb.Imp{{
-			ID: "imp-id",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
-					W: 300,
-					H: 250,
-				}},
-			},
-			Ext: openrtb.RawJSON(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
-		}},
+	ortbRequest := newAppOrtbRequest()
+	ortbRequest.TMax = 1000
+	ortbRequest.User = &openrtb.User{
+		ID:       "host-id",
+		BuyerUID: "bidder-id",
 	}
+	ortbRequest.Test = 1
 
 	mockAdapter := mockLegacyAdapter{}
 
@@ -123,6 +104,186 @@ func TestAppBanner(t *testing.T) {
 
 	assertEquivalentRequests(t, ortbRequest, mockAdapter.gotRequest)
 	assertEquivalentBidder(t, ortbRequest, mockAdapter.gotBidder)
+}
+
+func TestBidTransforms(t *testing.T) {
+	legalBid := &pbs.PBSBid{
+		BidID:             "bid-1",
+		AdUnitCode:        "adunit-1",
+		Creative_id:       "creative-1",
+		CreativeMediaType: "banner",
+		Price:             0.5,
+		NURL:              "nurl",
+		Adm:               "ad-markup",
+		Width:             10,
+		Height:            20,
+		DealId:            "some-deal",
+	}
+	mockAdapter := mockLegacyAdapter{
+		returnedBids: pbs.PBSBidSlice{
+			legalBid,
+			&pbs.PBSBid{
+				CreativeMediaType: "unsupported",
+			},
+		},
+	}
+
+	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
+	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), nil, openrtb_ext.BidderRubicon)
+	if len(errs) != 1 {
+		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
+	}
+	if errs[0].Error() != "invalid BidType: unsupported" {
+		t.Errorf("Unexpected error message. Got %s", errs[0].Error())
+	}
+
+	if len(seatBid.bids) != 1 {
+		t.Fatalf("Bad bid count. Expected 1, got %d", len(seatBid.bids))
+	}
+	theBid := seatBid.bids[0]
+	if theBid.bidType != openrtb_ext.BidTypeBanner {
+		t.Errorf("Bad BidType. Expected banner, got %s", theBid.bidType)
+	}
+	if theBid.bid.ID != legalBid.BidID {
+		t.Errorf("Bad id. Expected %s, got %s", legalBid.NURL, theBid.bid.NURL)
+	}
+	if theBid.bid.ImpID != legalBid.AdUnitCode {
+		t.Errorf("Bad impid. Expected %s, got %s", legalBid.AdUnitCode, theBid.bid.ImpID)
+	}
+	if theBid.bid.CrID != legalBid.Creative_id {
+		t.Errorf("Bad creativeid. Expected %s, got %s", legalBid.Creative_id, theBid.bid.CrID)
+	}
+	if theBid.bid.Price != legalBid.Price {
+		t.Errorf("Bad price. Expected %f, got %f", legalBid.Price, theBid.bid.Price)
+	}
+	if theBid.bid.NURL != legalBid.NURL {
+		t.Errorf("Bad NURL. Expected %s, got %s", legalBid.NURL, theBid.bid.NURL)
+	}
+	if theBid.bid.AdM != legalBid.Adm {
+		t.Errorf("Bad adm. Expected %s, got %s", legalBid.Adm, theBid.bid.AdM)
+	}
+	if theBid.bid.W != legalBid.Width {
+		t.Errorf("Bad adm. Expected %d, got %d", legalBid.Width, theBid.bid.W)
+	}
+	if theBid.bid.H != legalBid.Height {
+		t.Errorf("Bad adm. Expected %d, got %d", legalBid.Height, theBid.bid.H)
+	}
+	if theBid.bid.DealID != legalBid.DealId {
+		t.Errorf("Bad dealid. Expected %s, got %s", legalBid.DealId, theBid.bid.DealID)
+	}
+}
+
+func TestInsecureImps(t *testing.T) {
+	insecure := int8(0)
+	bidReq := &openrtb.BidRequest{
+		Imp: []openrtb.Imp{{
+			Secure: &insecure,
+		}, {
+			Secure: &insecure,
+		}},
+	}
+	isSecure, err := toSecure(bidReq)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if isSecure != 0 {
+		t.Errorf("Final request should be insecure. Got %d", isSecure)
+	}
+}
+
+func TestSecureImps(t *testing.T) {
+	secure := int8(1)
+	bidReq := &openrtb.BidRequest{
+		Imp: []openrtb.Imp{{
+			Secure: &secure,
+		}, {
+			Secure: &secure,
+		}},
+	}
+	isSecure, err := toSecure(bidReq)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if isSecure != 1 {
+		t.Errorf("Final request should be secure. Got %d", isSecure)
+	}
+}
+
+func TestMixedSecureImps(t *testing.T) {
+	insecure := int8(0)
+	secure := int8(1)
+	bidReq := &openrtb.BidRequest{
+		Imp: []openrtb.Imp{{
+			Secure: &insecure,
+		}, {
+			Secure: &secure,
+		}},
+	}
+	_, err := toSecure(bidReq)
+	if err == nil {
+		t.Error("No error was received, but we should have gotten one.")
+	}
+}
+
+func newAppOrtbRequest() *openrtb.BidRequest {
+	return &openrtb.BidRequest{
+		ID: "request-id",
+		App: &openrtb.App{
+			Publisher: &openrtb.Publisher{
+				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
+			},
+		},
+		Source: &openrtb.Source{
+			TID: "transaction-id",
+		},
+		Imp: []openrtb.Imp{{
+			ID: "imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
+		}},
+	}
+}
+
+func TestErrorResponse(t *testing.T) {
+	ortbRequest := &openrtb.BidRequest{
+		ID: "request-id",
+		App: &openrtb.App{
+			Publisher: &openrtb.Publisher{
+				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
+			},
+		},
+		Source: &openrtb.Source{
+			TID: "transaction-id",
+		},
+		Imp: []openrtb.Imp{{
+			ID: "imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
+		}},
+	}
+
+	mockAdapter := mockLegacyAdapter{
+		returnedError: errors.New("adapter failed"),
+	}
+
+	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	if len(errs) != 1 {
+		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
+	}
+	if errs[0].Error() != "adapter failed" {
+		t.Errorf("Unexpected error message. Got %s", errs[0].Error())
+	}
 }
 
 // assertEquivalentFields compares the OpenRTB request with the legacy request, using the mappings defined here:
