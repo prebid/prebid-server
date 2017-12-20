@@ -49,13 +49,11 @@ type GraphiteLogger struct {
 
 //configure graphite
 func (g *GraphiteLogger) Setup(setting config.Metrics, adapters []openrtb_ext.BidderName) *GraphiteLogger {
-	metricsRegistry := metrics.NewPrefixedRegistry("")
-	g.pbsMetrics.setup(metricsRegistry, adapters)
-
+	g.pbsMetrics.setup(metrics.NewPrefixedRegistry(""), adapters)
 	addr, err := net.ResolveTCPAddr("tcp", setting.Host)
 	if err == nil {
 		go graphite.Graphite(
-			metricsRegistry,                             // pbsMetrics registry
+			g.pbsMetrics.metricsRegistry,                // pbsMetrics registry
 			time.Second*time.Duration(setting.Interval), // interval
 			setting.Prefix,                              // prefix
 			addr,                                        // graphite host
@@ -76,10 +74,9 @@ type InfluxDBLogger struct {
 
 //configure InfluxDB
 func (i *InfluxDBLogger) Setup(setting config.Metrics, adapters []openrtb_ext.BidderName) *InfluxDBLogger {
-	metricsRegistry := metrics.NewPrefixedRegistry(setting.Prefix)
-	i.pbsMetrics.setup(metricsRegistry, adapters)
+	i.pbsMetrics.setup(metrics.NewPrefixedRegistry(setting.Prefix), adapters)
 	go influxdb.InfluxDB(
-		metricsRegistry,                             // pbsMetrics registry
+		i.pbsMetrics.metricsRegistry,                // pbsMetrics registry
 		time.Second*time.Duration(setting.Interval), // interval
 		setting.Host,                                // the InfluxDB url
 		setting.Database,                            // your InfluxDB database

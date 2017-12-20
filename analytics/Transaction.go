@@ -3,6 +3,9 @@ package analytics
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
 	"time"
 )
 
@@ -32,12 +35,31 @@ func (ar *BidRequest) LogEvent() {
 
 //One for each request to an endpoint
 type TransactionObject struct {
-	Type     string
-	Time     time.Duration
-	Events   []Event
-	Error    error
-	Request  string
-	Response string
+	Type                string
+	Events              []Event
+	Error               error
+	Request             string
+	Response            string
+	Time                time.Time
+	account             string
+	bidder              openrtb_ext.BidderName
+	PBSRegion           string
+	userRegion          string
+	uidTracked          bool
+	bidPrice            float64
+	domain              string
+	referrerUrl         string
+	appID               string
+	responseMediaType   pbs.MediaType
+	latform             string
+	Timeout             time.Duration
+	size                openrtb.Format
+	userAgent           string
+	adUnitCode          string
+	dealID              string
+	adServerTargeting   string
+	transactionID       string
+	limitAdTrackingFlag bool
 	//relevant paramters
 }
 
