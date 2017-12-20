@@ -19,8 +19,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"strings"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"strings"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
