@@ -30,6 +30,10 @@ import:
 - package: github.com/DATA-DOG/go-sqlmock
   version: ^1.3.0
 - package: github.com/buger/jsonparser
+- package: github.com/yudai/gojsondiff
+  version: ^1.0.0
+  subpackages:
+  - jd
 testImport:
 - package: github.com/erikstmartin/go-testdb
 - package: github.com/stretchr/testify

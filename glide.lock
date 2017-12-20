@@ -1,5 +1,5 @@
-hash: e580034b35dc3f0c4d82c9f390a643ea2a2c9cb879ea277a473685cf55985050
-updated: 2017-11-22T10:03:12.838157881-05:00
+hash: c2cb3f98a7fb53f594f9ea7492a9bde76453c2964e67b8cf4dcee2857f07f384
+updated: 2017-12-08T10:36:42.824894208-05:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -22,7 +22,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/hashicorp/hcl
-  version: 23c074d0eceb2b8a5bfdbb271ab780cde70f05a8
+  version: 8f6b1344a92ff8877cf24a5de9177bf7d0a2a187
   subpackages:
   - hcl/ast
   - hcl/parser
@@ -33,7 +33,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/influxdata/influxdb
-  version: 895b45385f4d4e3363e1dd6cb5360fe89967195a
+  version: 6d2685d1738277a1c2672fc58df7994627769be6
   subpackages:
   - client
   - models
@@ -49,21 +49,25 @@ imports:
   subpackages:
   - assert
 - name: github.com/mitchellh/mapstructure
-  version: 06020f85339e21b2478f756a78e295255ffa4d6a
+  version: d0303fe809921458f417bcf828397a65db30a7e4
 - name: github.com/mssola/user_agent
   version: a2f39d5a9b15ecc1fa1005b6aae73cd83da240ef
 - name: github.com/mxmCherry/openrtb
   version: 53a357476a774def318ed6c4d8d4105787d3bd90
 - name: github.com/pelletier/go-toml
-  version: 4e9e0ee19b60b13eb79915933f44d8ed5f268bdd
+  version: 1d6b12b7cb290426e27e6b4e38b89fcda3aeef03
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/rs/cors
   version: 7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6
+- name: github.com/sergi/go-diff
+  version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
+  subpackages:
+  - diffmatchpatch
 - name: github.com/spaolacci/murmur3
   version: 9f5d223c60793748f04a9d5b4b4eacddfc1f755d
 - name: github.com/spf13/afero
-  version: 5660eeed305fe5f69c8fc6cf899132a459a97064
+  version: ee1bd8ee15a1306d1f9201acc41ef39cd9f99a1b
   subpackages:
   - mem
 - name: github.com/spf13/cast
@@ -71,9 +75,9 @@ imports:
 - name: github.com/spf13/jwalterweatherman
   version: 12bd96e66386c1960ab0f74ced1362f66f552f7b
 - name: github.com/spf13/pflag
-  version: 97afa5e7ca8a08a383cb259e06636b5e2cc7897f
+  version: 7aff26db30c1be810f9de5038ec5ef96ac41fd7c
 - name: github.com/spf13/viper
-  version: 8ef37cbca71638bf32f3d5e194117d4cb46da163
+  version: 25b30aa063fc18e48662b86996252eabdcf2f0c7
 - name: github.com/vrischmann/go-metrics-influxdb
   version: 43af8332c303f62ef62663b02b3b7d8a9802002a
 - name: github.com/xeipuuv/gojsonpointer
@@ -82,18 +86,25 @@ imports:
   version: e02fc20de94c78484cd5ffb007f8af96be030a45
 - name: github.com/xeipuuv/gojsonschema
   version: 212d8a0df7acfab8bdd190a7a69f0ab7376edcc8
+- name: github.com/yudai/gojsondiff
+  version: 7b1b7adf999dab73a6eb02669c3d82dbb27a3dd6
+  subpackages:
+  - formatter
+  - jd
+- name: github.com/yudai/golcs
+  version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: golang.org/x/net
-  version: c73622c77280266305273cb545f54516ced95b93
+  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
   subpackages:
   - context
   - context/ctxhttp
   - publicsuffix
 - name: golang.org/x/sys
-  version: 661970f62f5897bc0cd5fdca7e087ba8a98a8fa1
+  version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 6eab0e8f74e86c598ec3b6fad4888e0c11482d48
+  version: bd91bbf73e9a4a801adbfb97133c992678533126
   subpackages:
   - transform
   - unicode/norm
