@@ -301,7 +301,7 @@ type callOneObject struct {
 }
 
 func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	callOneObjects := make([]callOneObject, 0)
+	callOneObjects := make([]callOneObject, 0, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
 	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)

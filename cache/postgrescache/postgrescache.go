@@ -12,6 +12,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"errors"
 )
 
 type PostgresConfig struct {
@@ -119,9 +120,11 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 
 	b, err := s.shared.lru.Get([]byte(key))
 	if err == nil {
-		return decodeAccount(b), nil
+		if acc, decErr := decodeAccount(b); decErr == nil {
+			return acc, nil
+		}
+		s.shared.lru.Clear()
 	}
-
 	var id string
 	var priceGranularity sql.NullString
 	if err := s.shared.db.QueryRow("SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity); err != nil {
@@ -136,20 +139,20 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 
 	buf := bytes.Buffer{}
 	if err := gob.NewEncoder(&buf).Encode(&account); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	s.shared.lru.Set([]byte(key), buf.Bytes(), s.shared.ttlSeconds)
 	return &account, nil
 }
 
-func decodeAccount(b []byte) *cache.Account {
+func decodeAccount(b []byte) (*cache.Account, error) {
 	var account cache.Account
 	buf := bytes.NewReader(b)
-	if err := gob.NewDecoder(buf).Decode(&account); err != nil {
-		panic(err)
+	if err := gob.NewDecoder(buf).Decode(&account); err == nil {
+		return &account, nil
 	}
-	return &account
+	return nil, errors.New("Postgres: Account decode error")
 }
 
 // Set the account in postgres and the lru cache
