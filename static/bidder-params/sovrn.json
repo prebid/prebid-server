@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "tagId": {
-      "type": "integer",
+      "type": "string",
       "description": "An ID which identifies the sovrn ad tag"
     },
     "bidFloor": {

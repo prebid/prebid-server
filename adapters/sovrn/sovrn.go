@@ -14,34 +14,32 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
-// SovrnAdapter adapter to send/receive bid requests/responses to/from sovrn
 type SovrnAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
+}
+
+// Name - export adapter name */
+func (s *SovrnAdapter) Name() string {
+	return "sovrn"
+}
+
+// FamilyName used for cookies and such
+func (s *SovrnAdapter) FamilyName() string {
+	return "sovrn"
 }
 
 type sovrnParams struct {
 	TagID int `json:"tagid"`
 }
 
-// Name - export adapter name */
-func (a *SovrnAdapter) Name() string {
-	return "sovrn"
-}
-
-// FamilyName used for cookies and such
-func (a *SovrnAdapter) FamilyName() string {
-	return "sovrn"
-}
-
-// GetUsersyncInfo get the UsersyncInfo object defining sovrn user sync parameters
-func (a *SovrnAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
+func (s *SovrnAdapter) SkipNoCookies() bool {
+	return false
 }
 
 // Call send bid requests to sovrn and receive responses
@@ -68,7 +66,7 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		}
 		sovrnReq.Imp[i].Secure = sReq.Imp[i].Secure
 		sovrnReq.Imp[i].TagID = strconv.Itoa(params.TagID)
-		sovrnReq.Imp[i].Banner.Format = nil
+		sovrnReq.Imp[i].Banner.Format = nil // todo: need to do this?
 	}
 
 	reqJSON, err := json.Marshal(sovrnReq)
@@ -130,11 +128,8 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	bids := make(pbs.PBSBidSlice, 0)
 
-	numBids := 0
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			numBids++
-
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
 				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
@@ -161,26 +156,119 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	return bids, nil
 }
 
-// SkipNoCookies whether or not to send bids to sovrn in the absence of cookies
-func (a *SovrnAdapter) SkipNoCookies() bool {
-	return false
+func (s *SovrnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	errs := make([]error, 0, len(request.Imp))
+
+	for i := 0; i < len(request.Imp); i++ {
+		_, err := preprocess(&request.Imp[i])
+		if err != nil {
+			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
+		}
+	}
+
+	// If all the requests were malformed, don't bother making a server call with no impressions.
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json")
+	headers.Add("User-Agent", request.Device.UA)
+	headers.Add("X-Forwarded-For", request.Device.IP)
+	headers.Add("Accept-Language", request.Device.Language)
+	headers.Add("DNT", strconv.Itoa(int(request.Device.DNT)))
+
+	userID := strings.TrimSpace(request.User.BuyerUID)
+	if len(userID) > 0 {
+		headers.Add("Cookie", fmt.Sprintf("%s=%s", "ljt_reader", userID))
+	}
+
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     s.URI,
+		Body:    reqJSON,
+		Headers: headers,
+	}}, errs
+}
+
+func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bids := make([]*adapters.TypedBid, 0, 5)
+
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			bids = append(bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+			})
+		}
+	}
+
+	return bids, nil
+}
+
+func preprocess(imp *openrtb.Imp) (string, error) {
+	// We only support banner and video impressions for now.
+	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
+		return "", fmt.Errorf("Sovrn doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID)
+	}
+
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", err
+	}
+
+	var sovrnExt openrtb_ext.ExtImpSovrn
+	if err := json.Unmarshal(bidderExt.Bidder, &sovrnExt); err != nil {
+		return "", err
+	}
+
+	imp.TagID = sovrnExt.TagId
+	imp.BidFloor = sovrnExt.BidFloor
+	imp.Banner.Format = nil
+
+	return imp.TagID, nil
+}
+
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impId && imp.Video != nil {
+			return openrtb_ext.BidTypeVideo
+		}
+	}
+	return openrtb_ext.BidTypeBanner
 }
 
 // NewSovrnAdapter create a new SovrnAdapter instance
-func NewSovrnAdapter(config *adapters.HTTPAdapterConfig, endpoint string, usersyncURL string, externalURL string) *SovrnAdapter {
-	a := adapters.NewHTTPAdapter(config)
+func NewSovrnAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *SovrnAdapter {
+	return NewSovrnBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+}
 
-	redirectURI := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=$UID", externalURL)
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%sredir=%s", usersyncURL, url.QueryEscape(redirectURI)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
+func NewSovrnBidder(client *http.Client, endpoint string) *SovrnAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
 
 	return &SovrnAdapter{
-		http:         a,
-		URI:          endpoint,
-		usersyncInfo: info,
+		http: a,
+		URI:  endpoint,
 	}
 }

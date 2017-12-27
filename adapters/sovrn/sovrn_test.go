@@ -15,9 +15,19 @@ import (
 	"net/http"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 )
+
+func TestJsonSamples(t *testing.T) {
+	sovrnAdapter := NewSovrnBidder(new(http.Client), "http://sovrn.com/test/endpoint")
+	adapterstest.RunJSONBidderTest(t, "sovrntest", sovrnAdapter)
+}
+
+// ----------------------------------------------------------------------------
+// Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
+// clean up the existing code and make everything openrtb.
 
 var testSovrnUserId = "SovrnUser123"
 var testUserAgent = "user-agent-test"
@@ -25,19 +35,13 @@ var testUrl = "http://news.pub/topnews"
 var testIp = "123.123.123.123"
 
 func TestSovrnAdapterNames(t *testing.T) {
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/pixel?", "http://localhost:8000")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid")
 	adapters.VerifyStringValue(adapter.Name(), "sovrn", t)
 	adapters.VerifyStringValue(adapter.FamilyName(), "sovrn", t)
 }
 
-func TestSovrnUserSyncInfo(t *testing.T) {
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/pixel?", "http://localhost:8000")
-	adapters.VerifyStringValue(adapter.GetUsersyncInfo().Type, "redirect", t)
-	adapters.VerifyStringValue(adapter.GetUsersyncInfo().URL, "http://sovrn/pixel?redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsovrn%26uid%3D%24UID", t)
-}
-
 func TestSovrnAdapter_SkipNoCookies(t *testing.T) {
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid", "http://sovrn/pixel?", "http://localhost:8000")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, "http://sovrn/rtb/bid")
 	adapters.VerifyBoolValue(adapter.SkipNoCookies(), false, t)
 }
 
@@ -47,7 +51,7 @@ func TestSovrnOpenRtbRequest(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	adapter.Call(ctx, req, bidder)
 
 	adapters.VerifyIntValue(len(service.LastBidRequest.Imp), 1, t)
@@ -62,7 +66,7 @@ func TestSovrnBiddingBehavior(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 
 	adapters.VerifyIntValue(len(bids), 1, t)
@@ -86,7 +90,7 @@ func TestSovrntMultiImpPartialBidding(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -106,7 +110,7 @@ func TestSovrnMultiImpAllBid(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(2, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	bids, _ := adapter.Call(ctx, req, bidder)
 	// two impressions sent.
 	// number of bids should be 1
@@ -202,7 +206,7 @@ func TestNoContentResponse(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	_, err := adapter.Call(ctx, req, bidder)
 
 	if err != nil {
@@ -221,7 +225,7 @@ func TestNotFoundResponse(t *testing.T) {
 	ctx := context.TODO()
 	req := SampleSovrnRequest(1, t)
 	bidder := req.Bidders[0]
-	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "http://sovrn/userSync?", "http://localhost")
+	adapter := NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	_, err := adapter.Call(ctx, req, bidder)
 
 	adapters.VerifyStringValue(err.Error(), "HTTP status 404; body: ", t)
