@@ -1,8 +1,8 @@
 package stored_requests
 
 import (
-	"encoding/json"
 	"context"
+	"encoding/json"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.

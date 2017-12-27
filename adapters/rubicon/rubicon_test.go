@@ -19,6 +19,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"strings"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -288,18 +290,14 @@ func TestRubiconBasicResponse(t *testing.T) {
 				if !reflect.DeepEqual(bid.AdServerTargeting, tag.adServerTargeting) {
 					t.Errorf("Incorrect targeting '%+v' expected '%+v'", bid.AdServerTargeting, tag.adServerTargeting)
 				}
+				if bid.CreativeMediaType != tag.mediaType {
+					t.Errorf("Incorrect media type '%s' expected '%s'", bid.CreativeMediaType, tag.mediaType)
+				}
 			}
 		}
 		if !matched {
 			t.Errorf("Received bid for unknown ad unit '%s'", bid.AdUnitCode)
 		}
-	}
-
-	// test debug enabled
-	pbReq.IsDebug = true
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err != nil {
-		t.Fatalf("Should not have gotten an error: %v", err)
 	}
 
 	// same test but with request timing out
@@ -469,7 +467,15 @@ func TestNoContentResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
+
+	if pbReq.Bidders[0].Debug[0].StatusCode != 204 {
+		t.Fatalf("StatusCode should be 204 instead of: %v", pbReq.Bidders[0].Debug[0].StatusCode)
+	}
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -487,8 +493,16 @@ func TestNotFoundResponse(t *testing.T) {
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
 	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 
+	if pbReq.Bidders[0].Debug[0].StatusCode != 404 {
+		t.Fatalf("StatusCode should be 404 instead of: %v", pbReq.Bidders[0].Debug[0].StatusCode)
+	}
+
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "HTTP status 404") {
+		t.Fatalf("Should start with 'HTTP status' instead of: %v", err.Error())
 	}
 
 }
@@ -503,8 +517,16 @@ func TestWrongFormatResponse(t *testing.T) {
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
 	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 
+	if pbReq.Bidders[0].Debug[0].StatusCode != 200 {
+		t.Fatalf("StatusCode should be 200 instead of: %v", pbReq.Bidders[0].Debug[0].StatusCode)
+	}
+
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "invalid character") {
+		t.Fatalf("Should start with 'invalid character' instead of: %v", err)
 	}
 
 }
@@ -524,7 +546,11 @@ func TestZeroSeatBidResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -552,7 +578,11 @@ func TestEmptyBidResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
 
 	if err != nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
@@ -587,10 +617,53 @@ func TestWrongBidIdResponse(t *testing.T) {
 	defer server.Close()
 
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
-	_, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	bids, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if len(bids) != 0 {
+		t.Fatalf("Length of bids should be 0 instead of: %v", len(bids))
+	}
 
 	if err == nil {
 		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "Unknown ad unit code") {
+		t.Fatalf("Should start with 'Unknown ad unit code' instead of: %v", err)
+	}
+
+}
+
+func TestZeroPriceBidResponse(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := openrtb.BidResponse{
+			ID:    "test-response-id",
+			BidID: "test-bid-id",
+			Cur:   "USD",
+			SeatBid: []openrtb.SeatBid{
+				{
+					Seat: "RUBICON",
+					Bid:  make([]openrtb.Bid, 1),
+				},
+			},
+		}
+		resp.SeatBid[0].Bid[0] = openrtb.Bid{
+			ID:    "test-bid-id",
+			ImpID: "first-tag",
+			Price: 0,
+			AdM:   "zma",
+			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+		}
+		js, _ := json.Marshal(resp)
+		w.Write(js)
+	}))
+	defer server.Close()
+
+	an, ctx, pbReq := CreatePrebidRequest(server, t)
+	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+
+	if b != nil {
+		t.Fatalf("\n\n\n0 price bids are being included %d, err : %v", len(b), err)
 	}
 
 }
@@ -616,7 +689,6 @@ func TestDifferentRequest(t *testing.T) {
 
 	// test video media type
 	pbReq.Bidders[0].AdUnits[0].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
-	pbReq.Bidders[0].AdUnits[1].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_VIDEO}
 	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
@@ -624,31 +696,9 @@ func TestDifferentRequest(t *testing.T) {
 
 	// set media back to normal
 	pbReq.Bidders[0].AdUnits[0].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
-	pbReq.Bidders[0].AdUnits[1].MediaTypes = []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
 
 	// test wrong params
 	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %s, \"siteId\": %d, \"visitor\": %s, \"inventory\": %s}", "zma", rubidata.siteID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
-	}
-
-	// test no account id
-	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"siteId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.siteID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
-	}
-
-	// test no site id
-	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"zoneId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", 8394, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
-	}
-
-	// test no zone id
-	pbReq.Bidders[0].AdUnits[0].Params = json.RawMessage(fmt.Sprintf("{\"siteId\": %d, \"accountId\": %d, \"visitor\": %s, \"inventory\": %s}", rubidata.siteID, rubidata.accountID, rubidata.visitorTargeting, rubidata.inventoryTargeting))
 	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil {
 		t.Fatalf("Should have gotten an error: %v", err)
@@ -660,15 +710,44 @@ func TestDifferentRequest(t *testing.T) {
 	// test invalid size
 	pbReq.Bidders[0].AdUnits[0].Sizes = []openrtb.Format{
 		{
-			W: 0,
-			H: 0,
+			W: 2222,
+			H: 333,
 		},
 	}
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
+	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
+		{
+			W: 222,
+			H: 3333,
+		},
+		{
+			W: 350,
+			H: 270,
+		},
+	}
+	pbReq.Bidders[0].AdUnits = pbReq.Bidders[0].AdUnits[:len(pbReq.Bidders[0].AdUnits)-1]
+	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil || len(b) != 0 {
+		t.Fatalf("Filtering bids based on ad unit sizes failed. Got %d bids instead of 0", len(b))
 	}
 
+	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
+		{
+			W: 222,
+			H: 3333,
+		},
+		{
+			W: 300,
+			H: 600,
+		},
+		{
+			W: 300,
+			H: 250,
+		},
+	}
+	b, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil || len(b) != 1 {
+		t.Fatalf("Filtering bids based on ad unit sizes failed. Got %d bids instead of 1, error = %v", len(b), err)
+	}
 }
 
 func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdapter, ctx context.Context, pbReq *pbs.PBSRequest) {
@@ -783,6 +862,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	hcs := pbs.HostCookieSettings{}
 
 	pbReq, err = pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	pbReq.IsDebug = true
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
@@ -796,5 +876,214 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	ctx = context.TODO()
 
 	return
+}
 
+func TestOpenRTBRequest(t *testing.T) {
+	bidder := new(RubiconAdapter)
+
+	rubidata = rubiBidInfo{
+		domain:        "nytimes.com",
+		page:          "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
+		deviceIP:      "25.91.96.36",
+		deviceUA:      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30",
+		buyerUID:      "need-an-actual-rp-id",
+		devicePxRatio: 4.0,
+	}
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-banner-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891,
+				"inventory": {"key1" : "val1"},
+				"visitor": {"key2" : "val2"}
+			}}`),
+		}, {
+			ID: "test-imp-video-id",
+			Video: &openrtb.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				MinDuration: 15,
+				MaxDuration: 30,
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+				"zoneId": 7780,
+				"siteId": 283282,
+				"accountId": 7891,
+				"inventory": {"key1" : "val1"},
+				"visitor": {"key2" : "val2"},
+				"video": {
+					"language": "en",
+					"playerHeight": 360,
+					"playerWidth": 640,
+					"size_id": 203,
+					"skip": 1,
+					"skipdelay": 5
+				}
+			}}`),
+		}},
+		Device: &openrtb.Device{
+			PxRatio: rubidata.devicePxRatio,
+		},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) > 0 {
+		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
+	}
+	if len(reqs) != 2 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 2)
+	}
+
+	for i := 0; i < len(reqs); i++ {
+		httpReq := reqs[i]
+		if httpReq.Method != "POST" {
+			t.Errorf("Expected a POST message. Got %s", httpReq.Method)
+		}
+
+		var rpRequest openrtb.BidRequest
+		if err := json.Unmarshal(httpReq.Body, &rpRequest); err != nil {
+			t.Fatalf("Failed to unmarshal HTTP request: %v", rpRequest)
+		}
+
+		if rpRequest.ID != request.ID {
+			t.Errorf("Bad Request ID. Expected %s, Got %s", request.ID, rpRequest.ID)
+		}
+		if len(rpRequest.Imp) != len(request.Imp) {
+			t.Fatalf("Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
+		}
+
+		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
+			var rpExt rubiconBannerExt
+			if err := json.Unmarshal(rpRequest.Imp[0].Ext, &rpExt); err != nil {
+				t.Fatal("Error unmarshalling request from the outgoing request.")
+			}
+
+			if rpRequest.Imp[0].Banner.Format[0].W != 300 {
+				t.Fatalf("Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[0].W)
+			}
+			if rpRequest.Imp[0].Banner.Format[0].H != 250 {
+				t.Fatalf("Banner height does not match. Expected %d, Got %d", 250, rpRequest.Imp[0].Banner.Format[0].H)
+			}
+			if rpRequest.Imp[0].Banner.Format[1].W != 300 {
+				t.Fatalf("Banner width does not match. Expected %d, Got %d", 300, rpRequest.Imp[0].Banner.Format[1].W)
+			}
+			if rpRequest.Imp[0].Banner.Format[1].H != 600 {
+				t.Fatalf("Banner height does not match. Expected %d, Got %d", 600, rpRequest.Imp[0].Banner.Format[1].H)
+			}
+		} else if rpRequest.Imp[0].ID == "test-imp-video-id" {
+			var rpExt rubiconVideoExt
+			if err := json.Unmarshal(rpRequest.Imp[0].Ext, &rpExt); err != nil {
+				t.Fatal("Error unmarshalling request from the outgoing request.")
+			}
+
+			if rpRequest.Imp[0].Video.W != 640 {
+				t.Fatalf("Video width does not match. Expected %d, Got %d", 640, rpRequest.Imp[0].Video.W)
+			}
+			if rpRequest.Imp[0].Video.H != 360 {
+				t.Fatalf("Video height does not match. Expected %d, Got %d", 360, rpRequest.Imp[0].Video.H)
+			}
+			if rpRequest.Imp[0].Video.MIMEs[0] != "video/mp4" {
+				t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", rpRequest.Imp[0].Video.MIMEs[0])
+			}
+			if rpRequest.Imp[0].Video.MinDuration != 15 {
+				t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, rpRequest.Imp[0].Video.MinDuration)
+			}
+			if rpRequest.Imp[0].Video.MaxDuration != 30 {
+				t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, rpRequest.Imp[0].Video.MaxDuration)
+			}
+		}
+	}
+}
+
+func TestOpenRTBEmptyResponse(t *testing.T) {
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusNoContent,
+	}
+	bidder := new(RubiconAdapter)
+	bids, errs := bidder.MakeBids(nil, nil, httpResp)
+	if len(bids) != 0 {
+		t.Errorf("Expected 0 bids. Got %d", len(bids))
+	}
+	if len(errs) != 0 {
+		t.Errorf("Expected 0 errors. Got %d", len(errs))
+	}
+}
+
+func TestOpenRTBSurpriseResponse(t *testing.T) {
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusAccepted,
+	}
+	bidder := new(RubiconAdapter)
+	bids, errs := bidder.MakeBids(nil, nil, httpResp)
+	if len(bids) != 0 {
+		t.Errorf("Expected 0 bids. Got %d", len(bids))
+	}
+	if len(errs) != 1 {
+		t.Errorf("Expected 1 error. Got %d", len(errs))
+	}
+}
+
+func TestOpenRTBStandardResponse(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 320,
+					H: 50,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+				"accountId": 2763,
+				"siteId": 68780,
+				"zoneId": 327642
+			}}`),
+		}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{
+		Method:  "POST",
+		Uri:     "test-uri",
+		Body:    requestJson,
+		Headers: nil,
+	}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","seatbid":[{"bid":[{"id":"1234567890","impid":"test-imp-id","price": 2,"crid":"4122982","adm":"some ad","h": 50,"w": 320,"ext":{"bidder":{"rp":{"targeting": {"key": "rpfl_2763", "values":["43_tier0100"]},"mime": "text/html","size_id": 43}}}}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bids, errs := bidder.MakeBids(request, reqData, httpResp)
+
+	if len(bids) != 1 {
+		t.Fatalf("Expected 1 bid. Got %d", len(bids))
+	}
+	if len(errs) != 0 {
+		t.Errorf("Expected 0 errors. Got %d", len(errs))
+	}
+	if bids[0].BidType != openrtb_ext.BidTypeBanner {
+		t.Errorf("Expected a banner bid. Got: %s", bids[0].BidType)
+	}
+	theBid := bids[0].Bid
+	if theBid.ID != "1234567890" {
+		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
+	}
 }

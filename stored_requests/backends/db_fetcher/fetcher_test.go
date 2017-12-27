@@ -1,14 +1,14 @@
 package db_fetcher
 
 import (
-	"testing"
+	"context"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"regexp"
-	"fmt"
-	"encoding/json"
-	"database/sql/driver"
-	"errors"
-	"context"
+	"testing"
 	"time"
 )
 
@@ -20,7 +20,7 @@ func TestEmptyQuery(t *testing.T) {
 	defer db.Close()
 
 	fetcher := dbFetcher{
-		db: db,
+		db:         db,
 		queryMaker: successfulQueryMaker(""),
 	}
 	storedReqs, errs := fetcher.FetchRequests(context.Background(), nil)
@@ -36,7 +36,7 @@ func TestEmptyQuery(t *testing.T) {
 func TestGoodResponse(t *testing.T) {
 	mockQuery := "SELECT id, requestData FROM my_table WHERE id IN (?, ?)"
 	mockReturn := sqlmock.NewRows([]string{"id", "requestData"}).
-				AddRow("request-id", "{}")
+		AddRow("request-id", "{}")
 
 	mock, fetcher, err := newFetcher(mockReturn, mockQuery, "request-id")
 	if err != nil {
@@ -93,7 +93,7 @@ func TestEmptyResponse(t *testing.T) {
 // TestQueryMakerError makes sure we exit with an error if the queryMaker function fails.
 func TestQueryMakerError(t *testing.T) {
 	fetcher := &dbFetcher{
-		db: nil,
+		db:         nil,
 		queryMaker: failedQueryMaker,
 	}
 
@@ -112,7 +112,7 @@ func TestDatabaseError(t *testing.T) {
 	mock.ExpectQuery(".*").WillReturnError(errors.New("Invalid query."))
 
 	fetcher := &dbFetcher{
-		db: db,
+		db:         db,
 		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
 	}
 
@@ -131,11 +131,12 @@ func TestContextDeadlines(t *testing.T) {
 	mock.ExpectQuery(".*").WillDelayFor(2 * time.Minute)
 
 	fetcher := &dbFetcher{
-		db: db,
+		db:         db,
 		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 1 * time.Nanosecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
 	_, errs := fetcher.FetchRequests(ctx, []string{"id"})
 	if len(errs) < 1 {
 		t.Errorf("dbFetcher should return an error when the context times out.")
@@ -152,7 +153,7 @@ func TestContextCancelled(t *testing.T) {
 	mock.ExpectQuery(".*").WillDelayFor(2 * time.Minute)
 
 	fetcher := &dbFetcher{
-		db: db,
+		db:         db,
 		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
 	}
 
@@ -173,11 +174,11 @@ func newFetcher(rows *sqlmock.Rows, query string, args ...driver.Value) (sqlmock
 	queryRegex := fmt.Sprintf("^%s$", regexp.QuoteMeta(query))
 	mock.ExpectQuery(queryRegex).WithArgs(args...).WillReturnRows(rows)
 	fetcher := &dbFetcher{
-		db: db,
+		db:         db,
 		queryMaker: successfulQueryMaker(query),
 	}
 
-	return 	mock, fetcher, nil
+	return mock, fetcher, nil
 }
 
 func assertMapLength(t *testing.T, numExpected int, configs map[string]json.RawMessage) {
@@ -218,6 +219,6 @@ func successfulQueryMaker(response string) func(int) (string, error) {
 	}
 }
 
-func failedQueryMaker(_ int)(string, error) {
-		return "", errors.New("The query maker failed.")
+func failedQueryMaker(_ int) (string, error) {
+	return "", errors.New("The query maker failed.")
 }

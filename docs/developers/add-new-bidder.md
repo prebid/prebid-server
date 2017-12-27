@@ -22,20 +22,29 @@ your bidder will access them at `request.imp[i].ext.bidder`--regardless of what 
 Bidder implementations are scattered throughout several files.
 
 - `adapters/{bidder}/{bidder}.go`: contains an implementation of [the Bidder interface](../../adapters/bidder.go).
-- `adapters/{bidder}/{bidder}_test.go`: contains unit tests for your Bidder implementation.
-- `adapters/{bidder}/params_test.go`: contains unit tests for your Bidder param validation.
 - `adapters/{bidder}/info.yaml`: contains contact info for the adapter's maintainer.
 - `openrtb_ext/imp_{bidder}.go`: contract classes for your Bidder's params.
-- `static/bidder-params/{bidder}.go`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
+- `static/bidder-params/{bidder}.json`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
 
 Bidder implementations may assume that any params have already been validated against the defined json-schema.
 
-## Add your Bidder to the Exchange
+## Test Your Bidder
 
-Update the [the adapter map](../../exchange/adapter_map.go) with your Bidder.
-This will also require a new [BidderName constant](../../openrtb_ext/bidders.go) for your Bidder.
+### Automated Tests
 
-## Test Your Bidder Manually
+Bidder tests live in two files:
+
+- `adapters/{bidder}/{bidder}_test.go`: contains unit tests for your Bidder implementation.
+- `adapters/{bidder}/params_test.go`: contains unit tests for your Bidder's JSON Schema params.
+
+Since most Bidders communicate through HTTP using JSON bodies, you should
+use the [JSON-test utilities](../../adapters/adapterstest/test_json.go).
+This comes with several benefits, which are described in the source code docs.
+
+If your HTTP requests don't use JSON, you'll need to write your tests in the code.
+We expect to see at least 90% code coverage on each Bidder.
+
+### Manual Tests
 
 Build and start your server:
 
@@ -46,7 +55,13 @@ go build .
 
 Then `POST` an OpenRTB Request to `http://localhost:8000/openrtb2/auction`.
 
-If at least one `request.imp[i].ext.{bidder}` is defined in your Request, then your bidder should be called.
+If at least one `request.imp[i].ext.{bidder}` is defined in your Request,
+then your bidder should be called.
+
+## Add your Bidder to the Exchange
+
+Update the [the adapter map](../../exchange/adapter_map.go) with your Bidder.
+This will also require a new [BidderName constant](../../openrtb_ext/bidders.go) for your Bidder.
 
 ## Contribute
 

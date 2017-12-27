@@ -343,7 +343,7 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 	return strings.Join(kvs, ",")
 }
 
-func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -363,7 +363,7 @@ func (a *AppNexusAdapter) MakeBids(request *openrtb.BidRequest, response *adapte
 		for _, bid := range sb.Bid {
 			bids = append(bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, request.Imp),
+				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
 			})
 		}
 	}
