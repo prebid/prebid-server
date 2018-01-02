@@ -195,21 +195,21 @@ func toLegacyBidder(req *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbs.
 }
 
 func toPBSAdUnits(req *openrtb.BidRequest) ([]pbs.PBSAdUnit, []error) {
-	adUnits := make([]pbs.PBSAdUnit, 0, len(req.Imp))
+	adUnits := make([]pbs.PBSAdUnit, len(req.Imp))
 	var errs []error = nil
+	nextAdUnit := 0
 	for i := 0; i < len(req.Imp); i++ {
-		adUnit, err := toPBSAdUnit(&(req.Imp[i]))
+		err := initPBSAdUnit(&(req.Imp[i]), &(adUnits[nextAdUnit]))
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			adUnits = append(adUnits, *adUnit)
-
+			nextAdUnit++
 		}
 	}
-	return adUnits, errs
+	return adUnits[:nextAdUnit], errs
 }
 
-func toPBSAdUnit(imp *openrtb.Imp) (*pbs.PBSAdUnit, error) {
+func initPBSAdUnit(imp *openrtb.Imp, adUnit *pbs.PBSAdUnit) error {
 	video := pbs.PBSVideo{}
 	if imp.Video != nil {
 		video.Mimes = imp.Video.MIMEs
@@ -240,7 +240,7 @@ func toPBSAdUnit(imp *openrtb.Imp) (*pbs.PBSAdUnit, error) {
 
 	params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	mediaTypes := make([]pbs.MediaType, 0, 2)
@@ -251,19 +251,19 @@ func toPBSAdUnit(imp *openrtb.Imp) (*pbs.PBSAdUnit, error) {
 		mediaTypes = append(mediaTypes, pbs.MEDIA_TYPE_VIDEO)
 	}
 	if len(mediaTypes) == 0 {
-		return nil, errors.New("legacy bidders can only bid on banner and video ad units")
+		return errors.New("legacy bidders can only bid on banner and video ad units")
 	}
 
-	return &pbs.PBSAdUnit{
-		Sizes:      sizes,
-		TopFrame:   topFrame,
-		Code:       imp.ID,
-		BidID:      imp.ID,
-		Params:     json.RawMessage(params),
-		Video:      video,
-		MediaTypes: mediaTypes,
-		Instl:      imp.Instl,
-	}, nil
+	adUnit.Sizes = sizes
+	adUnit.TopFrame = topFrame
+	adUnit.Code = imp.ID
+	adUnit.BidID = imp.ID
+	adUnit.Params = json.RawMessage(params)
+	adUnit.Video = video
+	adUnit.MediaTypes = mediaTypes
+	adUnit.Instl = imp.Instl
+
+	return nil
 }
 
 // ----------------------------------------------------------------------------
