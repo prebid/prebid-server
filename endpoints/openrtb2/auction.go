@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	a "github.com/prebid/prebid-server/analytics"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
@@ -39,20 +40,33 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	to := a.TransactionObject{
+		Request: *r,
+		Status : http.StatusOK,
+		Type : a.AUCTION,
+		Error :make([]error, 0),
+		UserAgent: r.UserAgent(),
+	}
+
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
+		to.Error = make([]error, len(errL))
+		to.Status = http.StatusBadRequest
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
+		to.Error = errL
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req)
+	response, err := deps.ex.HoldAuction(ctx, req, &to)
 	if err != nil {
+		to.Status = http.StatusInternalServerError
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		to.Error = append(to.Error, err)
 		return
 	}
 
@@ -65,7 +79,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+		to.Error = append(to.Error, err)
 	}
+	deps.ex.LogTransaction(&to)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:

@@ -57,6 +57,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"strings"
+	analytics2 "github.com/prebid/prebid-server/analytics"
 )
 
 type DomainMetrics struct {
@@ -791,6 +792,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
+	atics := analytics2.SetupAnalytics(cfg)
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
@@ -841,7 +843,7 @@ func serve(cfg *config.Configuration) error {
 				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 			},
 		},
-		cfg)
+		cfg, &atics)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {

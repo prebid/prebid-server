@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -34,7 +35,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, to *analytics.TransactionObject) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -78,12 +79,15 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, to *analytics.TransactionObject) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
 		return nil, errs
 	}
+
+
+	to.Events = append(to.Events, &analytics.AdapterRequests{Requests: reqData})
 
 	// Make any HTTP requests in parallel.
 	// If the bidder only needs to make one, save some cycles by just using the current one.
