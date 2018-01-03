@@ -1,11 +1,10 @@
 package analytics
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"net/http"
 	"time"
 )
 
@@ -36,10 +35,11 @@ func (ar *BidRequest) LogEvent() {
 //One for each request to an endpoint
 type TransactionObject struct {
 	Type                string
+	Status              int
 	Events              []Event
 	Error               error
-	Request             string
-	Response            string
+	Request             http.Request
+	Response            http.Response
 	Time                time.Time
 	account             string
 	bidder              openrtb_ext.BidderName
@@ -60,36 +60,5 @@ type TransactionObject struct {
 	adServerTargeting   string
 	transactionID       string
 	limitAdTrackingFlag bool
-	//relevant paramters
-}
-
-//Means to log every transaction
-func (r *TransactionObject) Log() {
-	b, _ := json.Marshal(r)
-	fmt.Println(string(b))
-}
-
-//An interface just in case there's more types of things to log - possibly.
-type Transaction interface {
-	Log()
-}
-
-//Main interface object that user configures
-type AnalyticsLogger interface {
-	LogTransaction(*TransactionObject)
-}
-
-//to log into a file
-type FileLogger struct {
-	fileName string
-}
-
-//configure
-func (f *FileLogger) Setup() {
-
-}
-
-//implement AnalyticsLogger interface
-func (f *FileLogger) LogTransaction(lo Transaction) {
-	//TODO: Write to file
+	//relevant parameters
 }
