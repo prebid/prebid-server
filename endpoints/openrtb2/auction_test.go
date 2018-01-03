@@ -529,6 +529,16 @@ var testStoredRequestData = map[string]json.RawMessage{
 		}
 	}`),
 	"": json.RawMessage(""),
+	"2": json.RawMessage(`{
+		"tmax": 500,
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low"
+				}
+			}
+		}
+	}`),
 }
 
 // Incoming requests with stored request IDs
@@ -584,6 +594,27 @@ var testStoredRequests = []string{
 				},
 				"targeting": {
 					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "2"
 				}
 			}
 		}
@@ -651,6 +682,40 @@ var testFinalRequests = []string{
 				},
 				"targeting": {
 					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit1",
+				"ext": {
+					"appnexus": {
+						"placementId": "abc",
+						"position": "above",
+						"reserve": 0.35
+					},
+					"rubicon": {
+						"accountId": "abc"
+					},
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"tmax": 500,
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low"
+				},
+				"storedrequest": {
+					"id": "2"
 				}
 			}
 		}
