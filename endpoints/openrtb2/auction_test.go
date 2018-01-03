@@ -165,13 +165,7 @@ func TestStoredRequests(t *testing.T) {
 	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}}
 
 	for i, requestData := range testStoredRequests {
-		Request := openrtb.BidRequest{}
-		err := json.Unmarshal(json.RawMessage(requestData), &Request)
-		if err != nil {
-			t.Errorf("Error unmashalling bid request: %s", err.Error())
-		}
-
-		errList := edep.processStoredRequests(context.Background(), &Request, json.RawMessage(requestData))
+		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -182,14 +176,9 @@ func TestStoredRequests(t *testing.T) {
 			}
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
-		requestJson, err := json.Marshal(Request)
-		if err != nil {
-			t.Errorf("Error mashalling bid request: %s", err.Error())
+		if !jsonpatch.Equal(newRequest, expectJson) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(newRequest), string(expectJson))
 		}
-		if !jsonpatch.Equal(requestJson, expectJson) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
-		}
-
 	}
 }
 
