@@ -117,11 +117,12 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		}
 	}
 
-	storedRequestCtx, storedRequestCancel := context.WithTimeout(context.Background(), storedRequestTimeout(requestJson))
-	defer storedRequestCancel()
+	timeout := parseTimeout(requestJson, time.Duration(50)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
 	// Fetch the Stored Request data and merge it into the HTTP request.
-	if requestJson, errs = deps.processStoredRequests(storedRequestCtx, requestJson); len(errs) > 0 {
+	if requestJson, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
 		return
 	}
 
@@ -140,22 +141,19 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	return
 }
 
-// storedRequestTimeout returns a reasonable timeout for fetching Stored Request data.
+// parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.
 //
 // requestJson should be the content of the POST body.
 //
 // If the request defines tmax explicitly, then this will return that duration in milliseconds.
-// If not, it will return a reasonable duration so that stalled backend connections won't last forever.
-func storedRequestTimeout(requestJson []byte) (timeout time.Duration) {
+// If not, it will return the default timeout.
+func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duration {
 	if tmax, dataType, _, err := jsonparser.Get(requestJson, "tmax"); dataType != jsonparser.NotExist && err == nil {
 		if tmaxInt, err := strconv.Atoi(string(tmax)); err != nil && tmaxInt > 0 {
-			timeout = time.Duration(tmaxInt) * time.Millisecond
+			return time.Duration(tmaxInt) * time.Millisecond
 		}
 	}
-	if timeout == 0 {
-		timeout = time.Duration(50) * time.Millisecond
-	}
-	return
+	return defaultTimeout
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
