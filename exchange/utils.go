@@ -30,7 +30,7 @@ func randomizeList(list []openrtb_ext.BidderName) {
 // before submitting.
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName, usersyncs IdFetcher) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
 	// This is the clean array of openrtb requests we will be returning
 	cleanReqs := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(adapters))
 	errList := make([]error, 0, 1)
@@ -84,9 +84,26 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.Bidde
 			newReq := new(openrtb.BidRequest)
 			// Make a shallow copy of the original request
 			*newReq = *orig
+			prepareUser(newReq, adapters[i], usersyncs)
 			newReq.Imp = newImps
 			cleanReqs[adapters[i]] = newReq
 		}
 	}
 	return cleanReqs, errList
+}
+
+// prepareUser changes req.User so that it's ready for the given bidder.
+// This *will* mutate the request, but will *not* mutate any objects nested inside it.
+func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyncs IdFetcher) {
+	if id, ok := usersyncs.GetId(bidder); ok {
+		if req.User == nil {
+			req.User = &openrtb.User{
+				BuyerUID: id,
+			}
+		} else if req.User.BuyerUID == "" {
+			clone := *req.User
+			clone.BuyerUID = id
+			req.User = &clone
+		}
+	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
@@ -49,7 +50,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req)
+	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
@@ -117,7 +120,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	setFieldsImplicitly(httpRequest, req)
+	deps.setFieldsImplicitly(httpRequest, req)
 
 	if err := deps.validateRequest(req); err != nil {
 		errs = []error{err}
@@ -298,13 +301,15 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	setDeviceImplicitly(httpReq, bidReq)
 
 	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
 	if bidReq.App == nil {
 		setSiteImplicitly(httpReq, bidReq)
 	}
+
+	deps.setUserImplicitly(httpReq, bidReq)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -332,6 +337,44 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 					bidReq.Site.Page = referrerCandidate
 				}
 			}
+		}
+	}
+}
+
+// setUserImplicitly uses implicit info from httpReq to populate bidReq.User
+func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.User == nil || bidReq.User.ID == "" {
+		if id, ok := parseUserID(deps.cfg, httpReq); ok {
+			if bidReq.User == nil {
+				bidReq.User = &openrtb.User{}
+			}
+			if bidReq.User.ID == "" {
+				bidReq.User.ID = id
+			}
+		}
+	}
+}
+
+// setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.IP == "" {
+		if ip := prebid.GetIP(httpReq); ip != "" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+			bidReq.Device.IP = ip
+		}
+	}
+}
+
+// setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
+func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.UA == "" {
+		if ua := httpReq.UserAgent(); ua != "" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+			bidReq.Device.UA = ua
 		}
 	}
 }
@@ -373,30 +416,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *op
 	}
 
 	return errList
-}
-
-// setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.IP == "" {
-		if ip := prebid.GetIP(httpReq); ip != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
-			}
-			bidReq.Device.IP = ip
-		}
-	}
-}
-
-// setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
-func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.UA == "" {
-		if ua := httpReq.UserAgent(); ua != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
-			}
-			bidReq.Device.UA = ua
-		}
-	}
 }
 
 // Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
@@ -442,4 +461,13 @@ func getArrayElements(data []byte) (result [][]byte) {
 	})
 
 	return
+}
+
+// parseUserId gets this user's ID  for the host machine, if it exists.
+func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
+	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
+		return hostCookie.Value, true
+	} else {
+		return "", false
+	}
 }
