@@ -149,7 +149,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 // If not, it will return the default timeout.
 func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duration {
 	if tmax, dataType, _, err := jsonparser.Get(requestJson, "tmax"); dataType != jsonparser.NotExist && err == nil {
-		if tmaxInt, err := strconv.Atoi(string(tmax)); err != nil && tmaxInt > 0 {
+		if tmaxInt, err := strconv.Atoi(string(tmax)); err == nil && tmaxInt > 0 {
 			return time.Duration(tmaxInt) * time.Millisecond
 		}
 	}

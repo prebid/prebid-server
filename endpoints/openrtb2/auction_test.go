@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 const maxSize = 1024 * 256
@@ -246,6 +247,15 @@ func TestNoEncoding(t *testing.T) {
 	}
 }
 
+// TestTimeoutParser makes sure we parse tmax properly.
+func TestTimeoutParser(t *testing.T) {
+	reqJson := json.RawMessage(`{"tmax":22}`)
+	timeout := parseTimeout(reqJson, 11 * time.Millisecond)
+	if timeout != 22 * time.Millisecond {
+		t.Errorf("Failed to parse tmax properly. Expected %d, got %d", 22 * time.Millisecond, timeout)
+	}
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
@@ -315,6 +325,34 @@ var validRequests = []string{
 	`{
 		"id": "some-request-id",
 		"app": { },
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "some-request-id",
+		"app": { },
+		"tmax": 500,
 		"imp": [
 			{
 				"id": "my-imp-id",
