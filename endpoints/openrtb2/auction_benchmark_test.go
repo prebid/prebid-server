@@ -4,6 +4,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/rcrowley/go-metrics"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -51,7 +52,7 @@ func newDummyRequest() *http.Request {
 func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}, metrics.NewRegistry()), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

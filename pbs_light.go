@@ -30,6 +30,8 @@ import (
 	"syscall"
 
 	"crypto/tls"
+	"strings"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -56,7 +58,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-	"strings"
 )
 
 type DomainMetrics struct {
@@ -832,6 +833,8 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
+	// TODO: Currently setupExchanges() creates metricsRegistry. We will need to do this
+	// here if/when the legacy endpoint goes away.
 	theExchange := exchange.NewExchange(
 		&http.Client{
 			Transport: &http.Transport{
@@ -841,7 +844,7 @@ func serve(cfg *config.Configuration) error {
 				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 			},
 		},
-		cfg)
+		cfg, metricsRegistry)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {

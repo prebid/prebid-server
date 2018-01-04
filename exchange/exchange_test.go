@@ -8,6 +8,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,7 +23,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client(), &config.Configuration{}).(*exchange)
+	e := NewExchange(server.Client(), &config.Configuration{}, metrics.NewRegistry()).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
@@ -359,6 +361,8 @@ func NewDummyExchange(client *http.Client) *exchange {
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.m = pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), e.adapters)
+
 	return e
 }
 

@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"time"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/rcrowley/go-metrics"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -21,6 +25,7 @@ type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
+	m          *pbsmetrics.Metrics
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -35,7 +40,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
+func NewExchange(client *http.Client, cfg *config.Configuration, registry metrics.Registry) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
@@ -43,10 +48,13 @@ func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.m = pbsmetrics.NewMetrics(registry, e.adapters)
 	return e
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+	e.m.RequestMeter.Mark(1)
+
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)
 	// List of bidders we have requests for.
