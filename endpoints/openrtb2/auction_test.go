@@ -250,9 +250,9 @@ func TestNoEncoding(t *testing.T) {
 // TestTimeoutParser makes sure we parse tmax properly.
 func TestTimeoutParser(t *testing.T) {
 	reqJson := json.RawMessage(`{"tmax":22}`)
-	timeout := parseTimeout(reqJson, 11 * time.Millisecond)
-	if timeout != 22 * time.Millisecond {
-		t.Errorf("Failed to parse tmax properly. Expected %d, got %d", 22 * time.Millisecond, timeout)
+	timeout := parseTimeout(reqJson, 11*time.Millisecond)
+	if timeout != 22*time.Millisecond {
+		t.Errorf("Failed to parse tmax properly. Expected %d, got %d", 22*time.Millisecond, timeout)
 	}
 }
 
