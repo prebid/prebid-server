@@ -367,77 +367,46 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 }
 
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
-	storedRequestIds := make([]string, 0, 10)
-
-	// Pull all the StoredRequest IDs from the BidRequest and Imps
+	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
 	if err != nil {
 		return nil, []error{err}
-	} else if hasStoredBidRequest {
-		storedRequestIds = append(storedRequestIds, storedBidRequestId)
 	}
-
-	// If request.imp exists, search through those imps for stored request IDs too.
-	if imps, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
-		var errs []error
-		jsonparser.ArrayEach(imps, func(imp []byte, dataType jsonparser.ValueType, offset int, err error) {
-			if storedImpId, hasStoredImp, err := getStoredRequestId(imp); err != nil {
-				errs = append(errs, err)
-			} else if hasStoredImp {
-				storedRequestIds = append(storedRequestIds, storedImpId)
-			}
-		})
-		if len(errs) > 0 {
-			return nil, errs
-		}
-	}
-
-	// Fetch all the stored requests
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, storedRequestIds)
+	imps, impIds, idIndices, errs := parseImpInfo(requestJson)
 	if len(errs) > 0 {
 		return nil, errs
 	}
 
-	// Apply the BidRequest patch
+	// Fetch all of the Stored Request data
+	var allIds = make([]string, len(impIds), len(impIds)+1)
+	copy(allIds, impIds)
+	if hasStoredBidRequest {
+		allIds = append(allIds, storedBidRequestId)
+	}
+	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, allIds)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
+	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
 	if hasStoredBidRequest {
-		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedRequestIds[0]], requestJson)
+		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 		if err != nil {
 			return nil, []error{err}
 		}
 	}
 
-	// Since the BidRequest patch may have included new imp data, we need to loop through this new document's
-	// imps again to make sure we apply the right patches in the right places.
-	if imps, dataType, _, err := jsonparser.Get(resolvedRequest, "imp"); err == nil && dataType == jsonparser.Array {
-		var errs []error
-		newImps := make([]json.RawMessage, 0, 10)
-		jsonparser.ArrayEach(imps, func(imp []byte, dataType jsonparser.ValueType, offset int, err error) {
-			if storedImpId, hasStoredImp, err := getStoredRequestId(imp); err != nil {
-				errs = append(errs, err)
-			} else if hasStoredImp {
-				// If this Stored Imp uses an unknown ID, then it must have been inside the Stored BidRequest
-				// data we just merged. Since we don't support nested stored things, it's ok to ignore them.
-				if storedImpData, ok := storedRequests[storedImpId]; ok {
-					newImp, err := jsonpatch.MergePatch(storedImpData, imp)
-					if err != nil {
-						errs = append(errs, err)
-					} else {
-						newImps = append(newImps, newImp)
-					}
-				} else {
-					newImps = append(newImps, imp)
-				}
-				storedRequestIds = append(storedRequestIds, storedImpId)
-			} else {
-				newImps = append(newImps, imp)
-			}
-		})
-		if len(errs) > 0 {
-			return nil, errs
+	// Apply any Stored Imps, if they exist
+	for i := 0; i < len(impIds); i++ {
+		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[i])
+		if err != nil {
+			return nil, []error{err}
 		}
-
-		newImpJson, err := json.Marshal(newImps)
+		imps[idIndices[i]] = resolvedImp
+	}
+	if len(impIds) > 0 {
+		newImpJson, err := json.Marshal(imps)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -448,6 +417,23 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	return resolvedRequest, nil
+}
+
+func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, impIdIndices []int, errs []error) {
+	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
+		i := 0
+		jsonparser.ArrayEach(impArray, func(imp []byte, dataType jsonparser.ValueType, offset int, err error) {
+			if storedImpId, hasStoredImp, err := getStoredRequestId(imp); err != nil {
+				errs = append(errs, err)
+			} else if hasStoredImp {
+				imps = append(imps, imp)
+				ids = append(ids, storedImpId)
+				impIdIndices = append(impIdIndices, i)
+			}
+			i++
+		})
+	}
+	return
 }
 
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
@@ -472,28 +458,6 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			bidReq.Device.UA = ua
 		}
 	}
-}
-
-// Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
-func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []string, []error) {
-	errList := make([]error, 0, len(imps))
-	storedReqIds := make([]string, len(imps))
-	shortIds := make([]string, 0, len(imps))
-	for i := 0; i < len(imps); i++ {
-		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
-			storedReqId, _, err := getStoredRequestId(imps[i].Ext)
-			if err == nil && len(storedReqId) > 0 {
-				storedReqIds[i] = storedReqId
-				shortIds = append(shortIds, storedReqId)
-			} else if len(storedReqId) > 0 {
-				errList = append(errList, err)
-				storedReqIds[i] = ""
-			}
-		} else {
-			storedReqIds[i] = ""
-		}
-	}
-	return storedReqIds, shortIds, errList
 }
 
 // getStoredRequestId parses a Stored Request ID from some json, without doing a full (slow) unmarshal.
