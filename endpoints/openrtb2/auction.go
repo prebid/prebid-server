@@ -397,7 +397,9 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		}
 	}
 
-	// Apply any Stored Imps, if they exist
+	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
+	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
+	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[i])
 		if err != nil {
