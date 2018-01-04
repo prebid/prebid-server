@@ -3,9 +3,10 @@ package db_fetcher
 import (
 	"bytes"
 	"database/sql"
+	"strconv"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
-	"strconv"
 )
 
 func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {

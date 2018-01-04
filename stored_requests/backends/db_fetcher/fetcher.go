@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/stored_requests/cache"
 )
 
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewPostgres() function.
@@ -19,14 +21,46 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 		return nil, nil
 	}
 
-	query, err := fetcher.queryMaker(len(ids))
-	if err != nil {
-		return nil, []error{err}
+	var errs []error = nil
+	reqData := make(map[string]json.RawMessage, len(ids))
+	idInterfaces := make([]interface{}, 0)
+
+	for _, id := range ids {
+		var err error
+		data, err := cache.Get(id)
+		if err != nil && err != cache.ErrDoesNotExist {
+			// if there is an error then append to the slice.
+			// do not append errors that are cache misses
+			errs = append(errs, err)
+		}
+		if data == "" {
+			// if empty string then we know we need to look up the id in the database
+			idInterfaces = append(idInterfaces, id)
+		} else {
+			// if its not an empty string then we can assign it to our map
+			reqData[id] = []byte(data)
+		}
 	}
 
-	idInterfaces := make([]interface{}, len(ids))
-	for i := 0; i < len(ids); i++ {
-		idInterfaces[i] = ids[i]
+	if len(idInterfaces) > 0 {
+		// fetch ids from database if we have cache misses
+		reqData, errs = fetcher.fetchRequests(ctx, reqData, errs, idInterfaces)
+	}
+
+	for _, id := range ids {
+		if _, ok := reqData[id]; !ok {
+			errs = append(errs, fmt.Errorf(`Stored Request with ID="%s" not found.`, id))
+		}
+	}
+
+	return reqData, errs
+}
+
+func (fetcher *dbFetcher) fetchRequests(ctx context.Context, reqData map[string]json.RawMessage, errs []error, idInterfaces ...interface{}) (map[string]json.RawMessage, []error) {
+
+	query, err := fetcher.queryMaker(len(idInterfaces))
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
@@ -42,23 +76,19 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 	}
 	defer rows.Close()
 
-	reqData := make(map[string]json.RawMessage, len(ids))
-	var errs []error = nil
 	for rows.Next() {
 		var id string
 		var thisReqData []byte
 		if err := rows.Scan(&id, &thisReqData); err != nil {
 			errs = append(errs, err)
 		}
-
 		reqData[id] = thisReqData
-	}
 
-	for _, id := range ids {
-		if _, ok := reqData[id]; !ok {
-			errs = append(errs, fmt.Errorf(`Stored Request with ID="%s" not found.`, id))
+		if err := cache.Set(id, string(thisReqData), cache.DefaultTTL); err != nil {
+			errs = append(errs, err)
 		}
 	}
+	rows.Close() // close rows
 
 	return reqData, errs
 }

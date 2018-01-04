@@ -41,3 +41,4 @@ testImport:
   subpackages:
   - assert
 - package: github.com/xeipuuv/gojsonschema
+- package: github.com/go-redis/redis
