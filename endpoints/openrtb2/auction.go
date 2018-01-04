@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -39,8 +40,15 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	req, ctx, cancel, errL := deps.parseRequest(r)
-	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
+	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
+	// to wait for bids. However, tmax may be defined in the Stored Request data.
+	//
+	// If so, then the trip to the backend might use a significant amount of this time.
+	// We can respect timeouts more accurately if we note the *real* start time, and use it
+	// to compute the auction timeout.
+	start := time.Now()
+
+	req, errL := deps.parseRequest(r)
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
@@ -48,6 +56,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 		return
 	}
+
+	ctx := context.Background()
+	cancel := func() {}
+	if req.TMax > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
+	} else {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(5000)*time.Millisecond))
+	}
+	defer cancel()
 
 	response, err := deps.ex.HoldAuction(ctx, req)
 	if err != nil {
@@ -78,10 +95,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, ctx context.Context, cancel func(), errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
 	req = &openrtb.BidRequest{}
-	ctx = context.Background()
-	cancel = func() {}
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -102,8 +117,11 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		}
 	}
 
-	// Apply any Stored Requests inside the BidRequest or Impression objects.
-	if requestJson, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
+	storedRequestCtx, storedRequestCancel := context.WithTimeout(context.Background(), storedRequestTimeout(requestJson))
+	defer storedRequestCancel()
+
+	// Fetch the Stored Request data and merge it into the HTTP request.
+	if requestJson, errs = deps.processStoredRequests(storedRequestCtx, requestJson); len(errs) > 0 {
 		return
 	}
 
@@ -112,15 +130,30 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	if req.TMax > 0 {
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax)*time.Millisecond)
-	}
-
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	setFieldsImplicitly(httpRequest, req)
 
 	if err := deps.validateRequest(req); err != nil {
 		errs = []error{err}
 		return
+	}
+	return
+}
+
+// storedRequestTimeout returns a reasonable timeout for fetching Stored Request data.
+//
+// requestJson should be the content of the POST body.
+//
+// If the request defines tmax explicitly, then this will return that duration in milliseconds.
+// If not, it will return a reasonable duration so that stalled backend connections won't last forever.
+func storedRequestTimeout(requestJson []byte) (timeout time.Duration) {
+	if tmax, dataType, _, err := jsonparser.Get(requestJson, "tmax"); dataType != jsonparser.NotExist && err == nil {
+		if tmaxInt, err := strconv.Atoi(string(tmax)); err != nil && tmaxInt > 0 {
+			timeout = time.Duration(tmaxInt) * time.Millisecond
+		}
+	}
+	if timeout == 0 {
+		timeout = time.Duration(50) * time.Millisecond
 	}
 	return
 }
@@ -362,7 +395,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	// Fetch all the stored requests
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(context.TODO(), storedRequestIds)
+	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, storedRequestIds)
 	if len(errs) > 0 {
 		return nil, errs
 	}
