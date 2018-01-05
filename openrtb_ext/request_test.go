@@ -41,7 +41,6 @@ func TestExtRequestTargeting(t *testing.T) {
 			t.Errorf("ext3 expected Price granularity \"medium\", found \"%s\"", extRequest.Prebid.Targeting.PriceGranularity)
 		}
 	}
-
 }
 
 const ext1 = `{
@@ -65,3 +64,31 @@ const ext3 = `{
 		"targeting": { }
 	}
 }`
+
+func TestCacheDefaults(t *testing.T) {
+	var bids ExtRequestPrebidCacheBids
+	if err := json.Unmarshal([]byte("{}"), &bids); err != nil {
+		t.Fatalf("Error unmarshaling empty object: %v", err)
+	}
+
+	if !bids.Winners {
+		t.Errorf("bids.winners should default to true. Got false.")
+	}
+	if bids.Deals {
+		t.Errorf("bids.deals should default to false. Got true.")
+	}
+}
+
+func TestCacheOverrides(t *testing.T) {
+	var bids ExtRequestPrebidCacheBids
+	if err := json.Unmarshal([]byte(`{"winners":false,"deals":true}`), &bids); err != nil {
+		t.Fatalf("Error unmarshaling empty object: %v", err)
+	}
+
+	if bids.Winners {
+		t.Errorf("bids.winners should set to false. Got true.")
+	}
+	if !bids.Deals {
+		t.Errorf("bids.deals should set to true. Got false.")
+	}
+}

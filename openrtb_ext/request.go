@@ -9,7 +9,34 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Targeting *ExtRequestTargeting `json:"targeting"`
+	Cache     *ExtRequestPrebidCache `json:"cache"`
+	Targeting *ExtRequestTargeting   `json:"targeting"`
+}
+
+// ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
+type ExtRequestPrebidCache struct {
+	Bids *ExtRequestPrebidCacheBids `json:"bids"`
+}
+
+// ExtRequestPrebidCacheBids defines the contract for bidrequest.ext.prebid.cache.bids
+type ExtRequestPrebidCacheBids struct {
+	Winners bool `json:"winners"`
+	Deals   bool `json:"deals"`
+}
+
+// UnmarhshalJSON override defaults "winners" to true, and "deals" to false.
+func (ert *ExtRequestPrebidCacheBids) UnmarshalJSON(b []byte) error {
+	type typesAlias ExtRequestPrebidCacheBids // Prevents infinite UnmarshalJSON loops
+	defaults := &typesAlias{
+		Winners: true,
+	}
+
+	if err := json.Unmarshal(b, defaults); err != nil {
+		return err
+	}
+
+	*ert = ExtRequestPrebidCacheBids(*defaults)
+	return nil
 }
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
