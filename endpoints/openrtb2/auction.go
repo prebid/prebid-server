@@ -442,6 +442,25 @@ func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, imp
 	return
 }
 
+// getStoredRequestId parses a Stored Request ID from some json, without doing a full (slow) unmarshal.
+// It returns the ID, true/false whether a stored request key existed, and an error if anything went wrong
+// (e.g. malformed json, id not a string, etc).
+func getStoredRequestId(data []byte) (string, bool, error) {
+	// These keys must be kept in sync with openrtb_ext.ExtStoredRequest
+	value, dataType, _, err := jsonparser.Get(data, "ext", "prebid", "storedrequest", "id")
+	if dataType == jsonparser.NotExist {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if dataType != jsonparser.String {
+		return "", true, errors.New("ext.prebid.storedrequest.id must be a string")
+	}
+
+	return string(value), true, nil
+}
+
 // setUserImplicitly uses implicit info from httpReq to populate bidReq.User
 func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.User == nil || bidReq.User.ID == "" {
@@ -478,25 +497,6 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			bidReq.Device.UA = ua
 		}
 	}
-}
-
-// getStoredRequestId parses a Stored Request ID from some json, without doing a full (slow) unmarshal.
-// It returns the ID, true/false whether a stored request key existed, and an error if anything went wrong
-// (e.g. malformed json, id not a string, etc).
-func getStoredRequestId(data []byte) (string, bool, error) {
-	// These keys must be kept in sync with openrtb_ext.ExtStoredRequest
-	value, dataType, _, err := jsonparser.Get(data, "ext", "prebid", "storedrequest", "id")
-	if dataType == jsonparser.NotExist {
-		return "", false, nil
-	}
-	if err != nil {
-		return "", false, err
-	}
-	if dataType != jsonparser.String {
-		return "", true, errors.New("ext.prebid.storedrequest.id must be a string")
-	}
-
-	return string(value), true, nil
 }
 
 // parseUserId gets this user's ID  for the host machine, if it exists.
