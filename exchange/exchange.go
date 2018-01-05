@@ -56,7 +56,7 @@ func NewExchange(client *http.Client, cfg *config.Configuration, atics *analytic
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher,  to *analytics.AuctionObject) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, to *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs)
 
@@ -87,8 +87,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
-	//to.Events = []analytics.LoggableEvent{&analytics.BidRequests{BidderNames: liveAdapters, Type: analytics.BID_REQUEST, Requests: cleanRequests}}
-
 	adapterBids, adapterExtra := e.getAllBids(ctx, liveAdapters, cleanRequests, targData, to)
 
 	// Build the response
@@ -96,7 +94,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, targData *targetData, object *analytics.AuctionObject) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
+func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, targData *targetData, to *analytics.AuctionObject) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(liveAdapters))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(liveAdapters))
@@ -108,7 +106,7 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			brw := new(bidResponseWrapper)
 			brw.bidder = aName
 			start := time.Now()
-			bids, err := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName], targData, aName, object)
+			bids, err := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName], targData, aName, to)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

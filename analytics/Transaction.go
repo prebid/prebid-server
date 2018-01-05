@@ -1,16 +1,16 @@
 package analytics
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/chasex/glog"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/config"
-	"log"
-	"encoding/json"
-	"bytes"
-	"fmt"
-	"net/http"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"log"
+	"net/http"
 )
 
 const (
@@ -100,7 +100,6 @@ func (fl *FileLogger) LogToModule(event LoggableEvent) {
 	fl.Debug(b.String())
 	fl.Flush()
 }
-
 
 func (a *AuctionObject) MakeLoggableAdapterRequests(name openrtb_ext.BidderName, reqData []*adapters.RequestData) []LoggableAdapterRequests {
 	ar := make([]LoggableAdapterRequests, len(reqData))

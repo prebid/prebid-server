@@ -179,12 +179,12 @@ func getAccountMetrics(id string) *AccountMetrics {
 	return am
 }
 
-type CookieSyncRequest struct {
+type cookieSyncRequest struct {
 	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
 }
 
-type CookieSyncResponse struct {
+type cookieSyncResponse struct {
 	UUID         string           `json:"uuid"`
 	Status       string           `json:"status"`
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
@@ -203,7 +203,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	defer r.Body.Close()
 
-	csReq := &CookieSyncRequest{}
+	csReq := &cookieSyncRequest{}
 	err := json.NewDecoder(r.Body).Decode(&csReq)
 	if err != nil {
 		if glog.V(2) {
@@ -213,7 +213,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	csResp := CookieSyncResponse{
+	csResp := cookieSyncResponse{
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}

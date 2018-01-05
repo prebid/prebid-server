@@ -206,4 +206,3 @@ type httpCallInfo struct {
 	response *adapters.ResponseData
 	err      error
 }
-
