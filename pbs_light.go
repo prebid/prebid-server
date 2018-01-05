@@ -39,6 +39,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	analytics2 "github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -57,7 +58,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"strings"
-	analytics2 "github.com/prebid/prebid-server/analytics"
 )
 
 type DomainMetrics struct {
@@ -179,18 +179,21 @@ func getAccountMetrics(id string) *AccountMetrics {
 	return am
 }
 
-type cookieSyncRequest struct {
+type CookieSyncRequest struct {
 	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
 }
 
-type cookieSyncResponse struct {
+type CookieSyncResponse struct {
 	UUID         string           `json:"uuid"`
 	Status       string           `json:"status"`
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
+var atics analytics2.Module
+
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	//cso := analytics2.CookieSyncObject{}
 	mCookieSyncMeter.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 	if !userSyncCookie.AllowSyncs() {
@@ -200,7 +203,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	defer r.Body.Close()
 
-	csReq := &cookieSyncRequest{}
+	csReq := &CookieSyncRequest{}
 	err := json.NewDecoder(r.Body).Decode(&csReq)
 	if err != nil {
 		if glog.V(2) {
@@ -210,7 +213,7 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	csResp := cookieSyncResponse{
+	csResp := CookieSyncResponse{
 		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
@@ -792,7 +795,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
-	atics := analytics2.SetupAnalytics(cfg)
+	atics = analytics2.SetupAnalytics(cfg)
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(

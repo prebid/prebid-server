@@ -5,25 +5,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"time"
-	"github.com/prebid/prebid-server/analytics"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, to *analytics.TransactionObject) (*openrtb.BidResponse, error)
-	LogTransaction(*analytics.TransactionObject)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, to *analytics.AuctionObject) (*openrtb.BidResponse, error)
+	LogTransaction(*analytics.AuctionObject)
 }
 
 type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	analytics  analytics.Module
+	analytics  *analytics.Module
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -50,7 +50,7 @@ func NewExchange(client *http.Client, cfg *config.Configuration, atics *analytic
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, to *analytics.TransactionObject) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, to *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)
 
@@ -81,7 +81,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
-	to.Events = []analytics.Event{ &analytics.BidRequests{BidderNames: liveAdapters, Type: analytics.BID_REQUEST, Requests: cleanRequests}}
+	//to.Events = []analytics.LoggableEvent{&analytics.BidRequests{BidderNames: liveAdapters, Type: analytics.BID_REQUEST, Requests: cleanRequests}}
 
 	adapterBids, adapterExtra := e.getAllBids(ctx, liveAdapters, cleanRequests, targData, to)
 
@@ -90,7 +90,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, targData *targetData, object *analytics.TransactionObject) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
+func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.BidderName, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, targData *targetData, object *analytics.AuctionObject) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(liveAdapters))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(liveAdapters))
@@ -252,6 +252,6 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 	return bids, errList
 }
 
-func (e *exchange) LogTransaction(to *analytics.TransactionObject) {
-	e.analytics.Log(to)
+func (e *exchange) LogTransaction(to *analytics.AuctionObject) {
+	(*e.analytics).LogToModule(to)
 }

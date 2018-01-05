@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
-	"github.com/prebid/prebid-server/analytics"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -35,7 +35,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, to *analytics.TransactionObject) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, to *analytics.AuctionObject) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -79,13 +79,12 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, to *analytics.TransactionObject) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, to *analytics.AuctionObject) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
 		return nil, errs
 	}
-
 
 	to.Events = append(to.Events, &analytics.AdapterRequests{Requests: reqData})
 
@@ -131,6 +130,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 					bidTargets: targets,
 				})
 			}
+			to.Events = append(to.Events)
 		} else {
 			errs = append(errs, httpInfo.err)
 		}

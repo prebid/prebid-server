@@ -10,6 +10,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
+	a "github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -21,7 +22,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	a "github.com/prebid/prebid-server/analytics"
 )
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
@@ -40,15 +40,15 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	to := a.TransactionObject{
-		Request: *r,
-		Status : http.StatusOK,
-		Type : a.AUCTION,
-		Error :make([]error, 0),
+	req, ctx, cancel, errL := deps.parseRequest(r)
+	to := a.AuctionObject{
+		Request:   *req,
+		Status:    http.StatusOK,
+		Type:      a.AUCTION,
+		Error:     make([]error, 0),
+		AdapterRequests: make([]a.AdapterRequests, 0),
 		UserAgent: r.UserAgent(),
 	}
-
-	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
 		to.Error = make([]error, len(errL))
@@ -57,7 +57,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		to.Error = errL
+		copy(to.Error, errL)
 		return
 	}
 
@@ -69,6 +69,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		to.Error = append(to.Error, err)
 		return
 	}
+
+	to.Response = *response
 
 	// Fixes #231
 	enc := json.NewEncoder(w)

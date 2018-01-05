@@ -1,10 +1,12 @@
-hash: c2cb3f98a7fb53f594f9ea7492a9bde76453c2964e67b8cf4dcee2857f07f384
-updated: 2017-12-08T10:36:42.824894208-05:00
+hash: d5c00148422ce75fc2f65a16e486da28853fe59d8127e231ea2cdd470ea63ea1
+updated: 2018-01-04T10:55:10.967102583-08:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/buger/jsonparser
   version: 5096fddd2cca678b0801ece8513a06e580981fd2
+- name: github.com/chasex/glog
+  version: c62392af379ca40e0f383bdec8044ee25545c29f
 - name: github.com/cloudfoundry/gosigar
   version: 14c0a766933d517675369dae6f551f5c1a10f0d8
 - name: github.com/coocood/freecache
@@ -124,6 +126,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert
