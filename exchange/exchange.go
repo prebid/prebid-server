@@ -15,8 +15,14 @@ import (
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, to *analytics.AuctionObject) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, to *analytics.AuctionObject) (*openrtb.BidResponse, error)
 	LogTransaction(*analytics.AuctionObject)
+}
+
+// IdFetcher can find the user's ID for a specific Bidder.
+type IdFetcher interface {
+	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
+	GetId(bidder openrtb_ext.BidderName) (string, bool)
 }
 
 type exchange struct {
@@ -50,9 +56,9 @@ func NewExchange(client *http.Client, cfg *config.Configuration, atics *analytic
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, to *analytics.AuctionObject) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher,  to *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)
+	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs)
 
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))

@@ -8,6 +8,7 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"io"
@@ -47,6 +48,95 @@ func TestGoodRequests(t *testing.T) {
 		if *response.NBR != openrtb.NoBidReasonCodeUnknownError {
 			t.Errorf("Bad response.nbr. Expected %d, got %d.", openrtb.NoBidReasonCodeUnknownError, response.NBR)
 		}
+	}
+}
+
+// TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
+func TestExplicitUserId(t *testing.T) {
+	cookieName := "userid"
+	mockId := "12345"
+	cfg := &config.Configuration{
+		MaxRequestSize: maxSize,
+		HostCookie: config.HostCookie{
+			CookieName: cookieName,
+		},
+	}
+	ex := &mockExchange{}
+
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"user": {
+			"id": "explicit"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`))
+	request.AddCookie(&http.Cookie{
+		Name:  cookieName,
+		Value: mockId,
+	})
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg)
+	endpoint(httptest.NewRecorder(), request, nil)
+
+	if ex.lastRequest.User == nil {
+		t.Fatalf("The exchange should have received a request with a non-nil user.")
+	}
+
+	if ex.lastRequest.User.ID != "explicit" {
+		t.Errorf("Bad User ID. Expected explicit, got %s", ex.lastRequest.User.ID)
+	}
+}
+
+// TestImplicitUserId makes sure that that bidrequest.user.id gets populated from the host cookie, if it wasn't sent explicitly.
+func TestImplicitUserId(t *testing.T) {
+	cookieName := "userid"
+	mockId := "12345"
+	cfg := &config.Configuration{
+		MaxRequestSize: maxSize,
+		HostCookie: config.HostCookie{
+			CookieName: cookieName,
+		},
+	}
+	ex := &mockExchange{}
+
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	request.AddCookie(&http.Cookie{
+		Name:  cookieName,
+		Value: mockId,
+	})
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg)
+	endpoint(httptest.NewRecorder(), request, nil)
+
+	if ex.lastRequest.User == nil {
+		t.Fatalf("The exchange should have received a request with a non-nil user.")
+	}
+
+	if ex.lastRequest.User.ID != mockId {
+		t.Errorf("Bad User ID. Expected %s, got %s", mockId, ex.lastRequest.User.ID)
 	}
 }
 
@@ -262,7 +352,7 @@ type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
 	e.gotRequest = bidRequest
 	return &openrtb.BidResponse{
 		ID:    bidRequest.ID,
@@ -285,7 +375,7 @@ func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
@@ -675,9 +765,12 @@ func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) 
 	return testStoredRequestData, nil
 }
 
-type mockExchange struct{}
+type mockExchange struct {
+	lastRequest *openrtb.BidRequest
+}
 
-func (*mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
+	m.lastRequest = bidRequest
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
