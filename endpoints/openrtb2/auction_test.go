@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -352,13 +353,17 @@ type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
 }
 
-func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
+func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, ao *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	e.gotRequest = bidRequest
 	return &openrtb.BidResponse{
 		ID:    bidRequest.ID,
 		BidID: "test bid id",
 		NBR:   openrtb.NoBidReasonCodeUnknownError.Ptr(),
 	}, nil
+}
+
+func (e *nobidExchange) LogTransaction(*analytics.AuctionObject) {
+
 }
 
 // bidderParamValidator expects the extension format for all bidders to be the JSON string "good".
@@ -375,8 +380,12 @@ func (validator *bidderParamValidator) Validate(name openrtb_ext.BidderName, ext
 
 type brokenExchange struct{}
 
-func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
+func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, ao *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
+}
+
+func (e *brokenExchange) LogTransaction(ao *analytics.AuctionObject) {
+
 }
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
@@ -769,7 +778,7 @@ type mockExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
+func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, ao *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
@@ -778,4 +787,8 @@ func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidR
 			}},
 		}},
 	}, nil
+}
+
+func (m *mockExchange) LogTransaction(ao *analytics.AuctionObject) {
+
 }
