@@ -43,12 +43,12 @@ type endpointDeps struct {
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	to := a.AuctionObject{
-		Request:   *req,
-		Status:    http.StatusOK,
-		Type:      a.AUCTION,
-		Error:     make([]error, 0),
-		AdapterRequests: make([]a.AdapterRequests, 0),
-		UserAgent: r.UserAgent(),
+		Request:            *req,
+		Status:             http.StatusOK,
+		Type:               a.AUCTION,
+		Error:              make([]error, 0),
+		AdapterBidRequests: make([]a.LoggableAdapterRequests, 0),
+		UserAgent:          r.UserAgent(),
 	}
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {

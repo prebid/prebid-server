@@ -86,7 +86,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		return nil, errs
 	}
 
-	to.Events = append(to.Events, &analytics.AdapterRequests{Requests: reqData})
+	to.AdapterBidRequests = append(to.AdapterBidRequests, to.MakeLoggableAdapterRequests(name, reqData)...)
 
 	// Make any HTTP requests in parallel.
 	// If the bidder only needs to make one, save some cycles by just using the current one.
@@ -130,7 +130,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 					bidTargets: targets,
 				})
 			}
-			to.Events = append(to.Events)
 		} else {
 			errs = append(errs, httpInfo.err)
 		}
@@ -207,3 +206,4 @@ type httpCallInfo struct {
 	response *adapters.ResponseData
 	err      error
 }
+

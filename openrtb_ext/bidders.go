@@ -37,7 +37,7 @@ var bidderMap = map[string]BidderName{
 	"conversant": BidderConversant,
 }
 
-// GetBidderName returns the BidderNames for the given string, if it exists.
+// GetBidderName returns the BidderName for the given string, if it exists.
 // The second argument is true if the name was valid, and false otherwise.
 func GetBidderName(name string) (BidderName, bool) {
 	bidderName, ok := bidderMap[name]
@@ -79,7 +79,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 	for _, fileInfo := range fileInfos {
 		bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
 		if _, isValid := GetBidderName(bidderName); !isValid {
-			return nil, fmt.Errorf("File %s/%s does not match a valid BidderNames.", schemaDirectory, fileInfo.Name())
+			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
 
 		schemaLoader := gojsonschema.NewReferenceLoaderFileSystem(fmt.Sprintf("file:///%s", fileInfo.Name()), filesystem)

@@ -3,16 +3,14 @@ package analytics
 import (
 	"github.com/chasex/glog"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbs"
-	"time"
 	"log"
 	"encoding/json"
-	"encoding/base64"
 	"bytes"
 	"fmt"
 	"net/http"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/adapters"
 )
 
 const (
@@ -34,95 +32,37 @@ type LoggableEvent interface {
 
 //One for each request to an endpoint
 type AuctionObject struct {
-	Type                RequestType
-	Status              int
-	AdapterRequests		[]AdapterRequests
-	Events              []LoggableEvent
-	Error               []error
-	Request             openrtb.BidRequest
-	Response            openrtb.BidResponse
-	Time                time.Time
-	Account             string
-	PBSRegion           string
-	UserRegion          string
-	UidTracked          bool
-	BidPrice            float64
-	Domain              string
-	ReferrerUrl         string
-	AppID               string
-	ResponseMediaType   pbs.MediaType
-	Latform             string
-	Timeout             time.Duration
-	Size                openrtb.Format
-	UserAgent           string
-	AdUnitCode          string
-	DealID              string
-	AdServerTargeting   string
-	TransactionID       string
-	LimitAdTrackingFlag bool
+	Type               RequestType
+	Status             int
+	AdapterBidRequests []LoggableAdapterRequests
+	Error              []error
+	Request            openrtb.BidRequest
+	Response           openrtb.BidResponse
+	UserAgent          string
 	//relevant parameters
 }
 
-type CookieSyncObject struct{
-	Type                RequestType
-	Status              int
-	Events              []LoggableEvent
-	Error               []error
-	Request             http.Request
-	Response            openrtb.BidResponse
-	Time                time.Time
-	Account             string
-	PBSRegion           string
-	UserRegion          string
-	UidTracked          bool
-	BidPrice            float64
-	Domain              string
-	ReferrerUrl         string
-	AppID               string
-	ResponseMediaType   pbs.MediaType
-	Latform             string
-	Timeout             time.Duration
-	Size                openrtb.Format
-	UserAgent           string
-	AdUnitCode          string
-	DealID              string
-	AdServerTargeting   string
-	TransactionID       string
-	LimitAdTrackingFlag bool
-}
-
-type AdapterRequests struct {
+type CookieSyncObject struct {
 	Type     RequestType
-	Requests []*adapters.RequestData
+	Status   int
+	Events   []LoggableEvent
+	Error    []error
+	Request  http.Request
+	Response http.Response
 }
 
-func (a *AdapterRequests) Log() (content []byte) {
-	for _, data := range a.Requests{
-		var b []byte
-		base64.StdEncoding.Decode(b, data.Body)
-		data.Body = b
-	}
-	var err error
-	if content, err = json.Marshal(a); err!=nil{
-		fmt.Printf("Error in adapter requests: %v", err)
-	}
-	return
+type LoggableAdapterRequests struct {
+	Name     string
+	Requests string
+	Uri      string
+	Header   http.Header
+	Method   string
 }
 
 func (to *AuctionObject) Log() (content []byte) {
-
-	e := to.Events
-	to.Events = make([]LoggableEvent, 0)
-	var b bytes.Buffer
-
-	for _, eve := range e {
-		b.Write(eve.Log())
-	}
-
-	c, err := json.Marshal(to)
+	content, err := json.Marshal(to)
 	fmt.Printf("err %v", err)
-	b.Write(c)
-	return b.Bytes()
+	return
 }
 
 func SetupAnalytics(config *config.Configuration) Module {
@@ -159,4 +99,19 @@ func (fl *FileLogger) LogToModule(event LoggableEvent) {
 	b.Write(event.Log())
 	fl.Debug(b.String())
 	fl.Flush()
+}
+
+
+func (a *AuctionObject) MakeLoggableAdapterRequests(name openrtb_ext.BidderName, reqData []*adapters.RequestData) []LoggableAdapterRequests {
+	ar := make([]LoggableAdapterRequests, len(reqData))
+	for i, req := range reqData {
+		ar[i] = LoggableAdapterRequests{
+			Name:     string(name),
+			Requests: string(req.Body),
+			Uri:      req.Uri,
+			Method:   req.Method,
+			Header:   req.Headers,
+		}
+	}
+	return ar
 }
