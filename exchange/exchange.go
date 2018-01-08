@@ -7,6 +7,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 	"net/http"
 	"time"
 )
@@ -27,6 +28,7 @@ type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
+	cache      prebid_cache_client.Client
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -41,11 +43,12 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cfg *config.Configuration) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
 	e.adapters = make([]openrtb_ext.BidderName, 0, len(e.adapterMap))
+	e.cache = cache
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}

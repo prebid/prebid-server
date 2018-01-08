@@ -841,6 +841,7 @@ func serve(cfg *config.Configuration) error {
 				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 			},
 		},
+		pbc.NewClient(&cfg.CacheURL),
 		cfg)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
