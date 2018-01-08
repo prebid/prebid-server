@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"math/rand"
 )
@@ -106,4 +108,18 @@ func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyn
 			req.User = &clone
 		}
 	}
+}
+
+func makeLoggableAdapterRequests(name openrtb_ext.BidderName, reqData []*adapters.RequestData) []analytics.LoggableAdapterRequests {
+	ar := make([]analytics.LoggableAdapterRequests, len(reqData))
+	for i, req := range reqData {
+		ar[i] = analytics.LoggableAdapterRequests{
+			Name:     string(name),
+			Requests: string(req.Body),
+			Uri:      req.Uri,
+			Method:   req.Method,
+			Header:   req.Headers,
+		}
+	}
+	return ar
 }

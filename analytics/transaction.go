@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"github.com/chasex/glog"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"log"
 	"net/http"
 )
@@ -42,13 +40,21 @@ type AuctionObject struct {
 	//relevant parameters
 }
 
+type SetUIDObject struct {
+	Type    RequestType
+	Status  int
+	Error   []error
+	Cookie  string
+	Success bool
+}
+
 type CookieSyncObject struct {
 	Type     RequestType
 	Status   int
 	Events   []LoggableEvent
 	Error    []error
-	Request  http.Request
-	Response http.Response
+	Request  string
+	Response string
 }
 
 type LoggableAdapterRequests struct {
@@ -61,6 +67,17 @@ type LoggableAdapterRequests struct {
 
 func (to *AuctionObject) Log() (content []byte) {
 	content, err := json.Marshal(to)
+	fmt.Printf("err %v", err)
+	return
+}
+
+func (cso *CookieSyncObject) Log() (content []byte) {
+	content, err := json.Marshal(cso)
+	fmt.Printf("err %v", err)
+	return
+}
+func (so *SetUIDObject) Log() (content []byte) {
+	content, err := json.Marshal(so)
 	fmt.Printf("err %v", err)
 	return
 }
@@ -99,18 +116,4 @@ func (fl *FileLogger) LogToModule(event LoggableEvent) {
 	b.Write(event.Log())
 	fl.Debug(b.String())
 	fl.Flush()
-}
-
-func (a *AuctionObject) MakeLoggableAdapterRequests(name openrtb_ext.BidderName, reqData []*adapters.RequestData) []LoggableAdapterRequests {
-	ar := make([]LoggableAdapterRequests, len(reqData))
-	for i, req := range reqData {
-		ar[i] = LoggableAdapterRequests{
-			Name:     string(name),
-			Requests: string(req.Body),
-			Uri:      req.Uri,
-			Method:   req.Method,
-			Header:   req.Headers,
-		}
-	}
-	return ar
 }

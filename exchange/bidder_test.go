@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/http/httptest"
@@ -47,7 +48,7 @@ func TestSingleBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test", &analytics.AuctionObject{})
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -123,7 +124,7 @@ func TestMultiBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test", &analytics.AuctionObject{})
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -335,7 +336,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 	bids, _ := bidder.requestBid(context.Background(), &openrtb.BidRequest{
 		Test: 1,
-	}, nil, "test")
+	}, nil, "test", &analytics.AuctionObject{})
 
 	if len(bids.httpCalls) != 1 {
 		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
@@ -356,7 +357,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test", &analytics.AuctionObject{})
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -432,7 +433,7 @@ func TestTargetingKeys(t *testing.T) {
 	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{
 		winningBids:    make(map[string]*openrtb.Bid),
 		winningBidders: make(map[string]openrtb_ext.BidderName),
-	}, "dummy")
+	}, "dummy", &analytics.AuctionObject{})
 	if len(errs) > 0 {
 		t.Errorf("Errors processing requestBid")
 		for _, e := range errs {

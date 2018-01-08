@@ -86,7 +86,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		return nil, errs
 	}
 
-	to.AdapterBidRequests = append(to.AdapterBidRequests, to.MakeLoggableAdapterRequests(name, reqData)...)
+	to.AdapterBidRequests = append(to.AdapterBidRequests, makeLoggableAdapterRequests(name, reqData)...)
 
 	// Make any HTTP requests in parallel.
 	// If the bidder only needs to make one, save some cycles by just using the current one.
