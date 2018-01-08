@@ -27,6 +27,19 @@ func TestBidSerialization(t *testing.T) {
 	assertStringsMatch(t, mockClient.mockReturn, ids)
 }
 
+func TestCacheFailures(t *testing.T) {
+	bids := []*openrtb.Bid{{
+		ID: "foo",
+	}, {
+		ID: "bar",
+	}}
+	mockClient := &mockCacheClient{
+		mockReturn: []string{"0", ""},
+	}
+	ids := cacheBids(context.Background(), mockClient, bids)
+	assertStringsMatch(t, mockClient.mockReturn, ids)
+}
+
 func assertJSONMatch(t *testing.T, expected []json.RawMessage, actual []json.RawMessage) {
 	t.Helper()
 	if len(expected) != len(actual) {
