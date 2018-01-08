@@ -3,7 +3,6 @@ package prebid_cache_client
 import (
 	"context"
 	"encoding/json"
-	"github.com/mxmCherry/openrtb"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -22,9 +21,9 @@ func TestEmptyPut(t *testing.T) {
 		httpClient: server.Client(),
 		putUrl:     server.URL,
 	}
-	ids := client.PutBids(context.Background(), nil)
+	ids := client.PutJson(context.Background(), nil)
 	assertIntEqual(t, len(ids), 0)
-	ids = client.PutBids(context.Background(), []*openrtb.Bid{})
+	ids = client.PutJson(context.Background(), []json.RawMessage{})
 	assertIntEqual(t, len(ids), 0)
 }
 
@@ -39,9 +38,10 @@ func TestBadResponse(t *testing.T) {
 		httpClient: server.Client(),
 		putUrl:     server.URL,
 	}
-	ids := client.PutBids(context.Background(), []*openrtb.Bid{{}})
-	assertIntEqual(t, len(ids), 1)
+	ids := client.PutJson(context.Background(), []json.RawMessage{json.RawMessage("true"), json.RawMessage("false")})
+	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "")
+	assertStringEqual(t, ids[1], "")
 }
 
 func TestCancelledContext(t *testing.T) {
@@ -58,25 +58,9 @@ func TestCancelledContext(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	ids := client.PutBids(ctx, []*openrtb.Bid{{}})
+	ids := client.PutJson(ctx, []json.RawMessage{json.RawMessage("true")})
 	assertIntEqual(t, len(ids), 1)
 	assertStringEqual(t, ids[0], "")
-}
-
-func TestBidSerialization(t *testing.T) {
-	expectedJsonString := `{"puts":[{"type":"json","value":{"id":"foo","impid":"","price":0}},{"type":"json","value":{"id":"bar","impid":"","price":0}}]}`
-	bids := []*openrtb.Bid{{
-		ID: "foo",
-	}, {
-		ID: "bar",
-	}}
-
-	jsonBytes, err := marshalBidList(bids)
-	if err != nil {
-		t.Errorf("Error marshalling JSON: %v", err)
-	}
-	jsonString := string(jsonBytes)
-	assertStringEqual(t, expectedJsonString, jsonString)
 }
 
 func TestSuccessfulPut(t *testing.T) {
@@ -88,7 +72,7 @@ func TestSuccessfulPut(t *testing.T) {
 		putUrl:     server.URL,
 	}
 
-	ids := client.PutBids(context.Background(), []*openrtb.Bid{{}, {}})
+	ids := client.PutJson(context.Background(), []json.RawMessage{json.RawMessage("true"), json.RawMessage("false")})
 	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "0")
 	assertStringEqual(t, ids[1], "1")
