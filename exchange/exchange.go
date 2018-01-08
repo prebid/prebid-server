@@ -19,6 +19,7 @@ import (
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error)
+	GetMetrics() *pbsmetrics.Metrics
 }
 
 type exchange struct {
@@ -52,8 +53,11 @@ func NewExchange(client *http.Client, cfg *config.Configuration, registry metric
 	return e
 }
 
+func (e *exchange) GetMetrics() *pbsmetrics.Metrics {
+	return e.m
+}
+
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
-	e.m.RequestMeter.Mark(1)
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)

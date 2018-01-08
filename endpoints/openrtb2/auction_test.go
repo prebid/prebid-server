@@ -9,7 +9,9 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/rcrowley/go-metrics"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -271,6 +273,10 @@ func (e *nobidExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bid
 	}, nil
 }
 
+func (e *nobidExchange) GetMetrics() *pbsmetrics.Metrics {
+	return pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{})
+}
+
 // bidderParamValidator expects the extension format for all bidders to be the JSON string "good".
 // Substantive tests for bidder param validation should go in openrtb_ext/bidders_test.go.
 type bidderParamValidator struct{}
@@ -287,6 +293,10 @@ type brokenExchange struct{}
 
 func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
 	return nil, errors.New("Critical, unrecoverable error.")
+}
+
+func (e *brokenExchange) GetMetrics() *pbsmetrics.Metrics {
+	return pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{})
 }
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
@@ -685,4 +695,8 @@ func (*mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReq
 			}},
 		}},
 	}, nil
+}
+
+func (*mockExchange) GetMetrics() *pbsmetrics.Metrics {
+	return pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{})
 }

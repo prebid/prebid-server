@@ -9,6 +9,7 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
@@ -39,6 +40,18 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	met := deps.ex.GetMetrics()
+	met.RequestMeter.Mark(1)
+
+	isSafari := false
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
+			isSafari = true
+			met.SafariRequestMeter.Mark(1)
+		}
+	}
+
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
@@ -46,7 +59,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
+		met.ErrorMeter.Mark(1)
 		return
+	}
+
+	if req.App != nil {
+		met.AppRequestMeter.Mark(1)
+	} else if req.Cookie.LiveSyncCount() == 0 {
+		met.NoCookieMeter.Mark(1)
+		if isSafari {
+			met.SafariNoCookieMeter.Mark(1)
+		}
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req)
