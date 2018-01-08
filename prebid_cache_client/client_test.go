@@ -1,13 +1,13 @@
 package prebid_cache_client
 
 import (
-	"testing"
-	"net/http/httptest"
-	"net/http"
 	"context"
-	"github.com/mxmCherry/openrtb"
-	"strconv"
 	"encoding/json"
+	"github.com/mxmCherry/openrtb"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"testing"
 )
 
 // Prevents #197
@@ -20,7 +20,7 @@ func TestEmptyPut(t *testing.T) {
 
 	client := &clientImpl{
 		httpClient: server.Client(),
-		putUrl: "prebid.adnxs.com/cache",
+		putUrl:     server.URL,
 	}
 	ids := client.PutBids(context.Background(), nil)
 	assertIntEqual(t, len(ids), 0)
@@ -37,7 +37,7 @@ func TestBadResponse(t *testing.T) {
 
 	client := &clientImpl{
 		httpClient: server.Client(),
-		putUrl: "prebid.adnxs.com/cache",
+		putUrl:     server.URL,
 	}
 	ids := client.PutBids(context.Background(), []*openrtb.Bid{{}})
 	assertIntEqual(t, len(ids), 1)
@@ -53,7 +53,7 @@ func TestCancelledContext(t *testing.T) {
 
 	client := &clientImpl{
 		httpClient: server.Client(),
-		putUrl: "prebid.adnxs.com/cache",
+		putUrl:     server.URL,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -63,13 +63,29 @@ func TestCancelledContext(t *testing.T) {
 	assertStringEqual(t, ids[0], "")
 }
 
+func TestBidSerialization(t *testing.T) {
+	expectedJsonString := `{"puts":[{"type":"json","value":{"id":"foo","impid":"","price":0}},{"type":"json","value":{"id":"bar","impid":"","price":0}}]}`
+	bids := []*openrtb.Bid{{
+		ID: "foo",
+	}, {
+		ID: "bar",
+	}}
+
+	jsonBytes, err := marshalBidList(bids)
+	if err != nil {
+		t.Errorf("Error marshalling JSON: %v", err)
+	}
+	jsonString := string(jsonBytes)
+	assertStringEqual(t, expectedJsonString, jsonString)
+}
+
 func TestSuccessfulPut(t *testing.T) {
 	server := httptest.NewServer(newHandler(2))
 	defer server.Close()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
-		putUrl: "prebid.adnxs.com/cache",
+		putUrl:     server.URL,
 	}
 
 	ids := client.PutBids(context.Background(), []*openrtb.Bid{{}, {}})

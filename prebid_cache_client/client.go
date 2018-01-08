@@ -1,16 +1,16 @@
 package prebid_cache_client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
-	"net/http"
-	"bytes"
-	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
-	"github.com/buger/jsonparser"
+	"net/http"
 )
 
 // Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
@@ -45,34 +45,35 @@ func (c *clientImpl) PutBids(ctx context.Context, values []*openrtb.Bid) (uuids 
 	if values == nil || len(values) < 1 {
 		return nil
 	}
-	postBody, err := json.Marshal(jsonPuts(values))
+
+	uuidsToReturn := make([]string, len(values))
+	postBody, err := marshalBidList(values)
 	if err != nil {
 		glog.Errorf("Error marshalling bids for prebid cache request: %v", err)
-		return make([]string, len(values))
+		return uuidsToReturn
 	}
 
-	httpReq, err := http.NewRequest("POST", putURL, bytes.NewReader(postBody))
+	httpReq, err := http.NewRequest("POST", c.putUrl, bytes.NewReader(postBody))
 	if err != nil {
 		glog.Errorf("Error creating POST request to prebid cache: %v", err)
-		return make([]string, len(values))
+		return uuidsToReturn
 	}
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
-	anResp, err := ctxhttp.Do(ctx, client, httpReq)
+	anResp, err := ctxhttp.Do(ctx, c.httpClient, httpReq)
 	if err != nil {
 		glog.Errorf("Error sending the request to Prebid Cache: %v", err)
-		return make([]string, len(values))
+		return uuidsToReturn
 	}
 	defer anResp.Body.Close()
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 
 	if anResp.StatusCode != 200 {
 		glog.Errorf("Prebid Cache returned %d: %v", anResp.StatusCode, err)
-		return make([]string, len(values))
+		return uuidsToReturn
 	}
 
-	returnVal := make([]string, len(values))
 	currentIndex := 0
 	processResponse := func(uuidObj []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if uuid, valueType, _, err := jsonparser.Get(uuidObj, "uuid"); err != nil {
@@ -80,9 +81,9 @@ func (c *clientImpl) PutBids(ctx context.Context, values []*openrtb.Bid) (uuids 
 		} else if valueType != jsonparser.String {
 			glog.Errorf("Prebid Cache returned a %v at index %d in: %v", valueType, currentIndex, string(responseBody))
 		} else {
-			if returnVal[currentIndex], err = jsonparser.ParseString(uuid); err != nil {
+			if uuidsToReturn[currentIndex], err = jsonparser.ParseString(uuid); err != nil {
 				glog.Errorf("Prebid Cache response index %d could not be parsed as string: %v", currentIndex, err)
-				returnVal[currentIndex] = ""
+				uuidsToReturn[currentIndex] = ""
 			}
 		}
 		currentIndex++
@@ -90,47 +91,43 @@ func (c *clientImpl) PutBids(ctx context.Context, values []*openrtb.Bid) (uuids 
 
 	if _, err := jsonparser.ArrayEach(responseBody, processResponse, "responses"); err != nil {
 		glog.Errorf("Error interpreting Prebid Cache response: %v\nResponse was: %s", err, string(responseBody))
-		return make([]string, len(values))
+		return uuidsToReturn
 	}
 
-	return returnVal
+	return uuidsToReturn
 }
 
-type jsonPuts []*openrtb.Bid
-
-func (m jsonPuts) MarshalJSON() ([]byte, error) {
+// marshalBidList encodes an []*openrtb.Bid into JSON for the Prebid Cache API.
+func marshalBidList(bids []*openrtb.Bid) ([]byte, error) {
 	// This function assumes that m is non-nil and has at least one element.
 	// clientImp.PutBids should respect this.
-	var buffer bytes.Buffer
-	buffer.WriteString(`{"puts":[`)
-	for i := 0; i < len(m); i++ {
-		if bidBytes, err := json.Marshal(jsonPut(*m[i])); err != nil {
+	var buf bytes.Buffer
+	buf.WriteString(`{"puts":[`)
+	for i := 0; i < len(bids); i++ {
+		if err := marshalBidToBuffer(bids[i], i != 0, &buf); err != nil {
 			return nil, err
-		} else {
-			buffer.Write(bidBytes)
 		}
 	}
-	buffer.WriteString(`]}`)
-
-	return buffer.Bytes(), nil
+	buf.WriteString("]}")
+	return buf.Bytes(), nil
 }
 
-type jsonPut openrtb.Bid
-
-func (m *jsonPut) MarshalJSON() ([]byte, error) {
-	if m == nil {
-		return []byte("null"), nil
+// marshalBidToBuffer writes JSON for bid into the buffer, with a leading comma if necessary.
+func marshalBidToBuffer(bid *openrtb.Bid, leadingComma bool, buffer *bytes.Buffer) error {
+	if leadingComma {
+		buffer.WriteByte(',')
+	}
+	if bid == nil {
+		buffer.WriteString("null")
+		return nil
 	}
 
-	bidJson, err := json.Marshal(openrtb.Bid(*m))
+	bidJson, err := json.Marshal(bid)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	var finalSlice = make([]byte, 0, len(bidJson) + 24)
-	finalSlice = append(finalSlice, `{"type":"json","value":`...)
-	finalSlice = append(finalSlice, bidJson...)
-	finalSlice = append(finalSlice, '}')
-
-	return finalSlice, nil
+	buffer.WriteString(`{"type":"json","value":`)
+	buffer.Write(bidJson)
+	buffer.WriteByte('}')
+	return nil
 }
