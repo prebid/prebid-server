@@ -18,8 +18,14 @@ import (
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error)
 	GetMetrics() *pbsmetrics.Metrics
+}
+
+// IdFetcher can find the user's ID for a specific Bidder.
+type IdFetcher interface {
+	// GetId returns the ID for the bidder. The boolean will be true if the ID exists, and false otherwise.
+	GetId(bidder openrtb_ext.BidderName) (string, bool)
 }
 
 type exchange struct {
@@ -57,10 +63,9 @@ func (e *exchange) GetMetrics() *pbsmetrics.Metrics {
 	return e.m
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest) (*openrtb.BidResponse, error) {
-
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters)
+	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs, e.m)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0
@@ -115,12 +120,33 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
+			// Timing statistics
+			e.m.AdapterMetrics[aName].RequestTimer.UpdateSince(start)
 			serr := make([]string, len(err))
 			for i := 0; i < len(err); i++ {
 				serr[i] = err[i].Error()
+				// NOTE, for a bidder that return multiple errors, we will log multiple errors for that request
+				// in the metrics. Need to remember that in analyzing the data.
+				switch err[i] {
+				case context.DeadlineExceeded:
+					e.m.AdapterMetrics[aName].TimeoutMeter.Mark(1)
+				default:
+					e.m.AdapterMetrics[aName].ErrorMeter.Mark(1)
+				}
 			}
 			ae.Errors = serr
 			brw.adapterExtra = ae
+			if len(err) == 0 {
+				if len(bids.bids) == 0 {
+					// Don't want to mark no bids on error topreserve legacy behavior.
+					e.m.AdapterMetrics[aName].NoBidMeter.Mark(1)
+				} else {
+					for _, bid := range bids.bids {
+						var cpm = int64(bid.bid.Price * 1000)
+						e.m.AdapterMetrics[aName].PriceHistogram.Update(cpm)
+					}
+				}
+			}
 			chBids <- brw
 		}(a)
 	}
