@@ -318,28 +318,38 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	so := analytics.SetUIDObject{
-		Type:    analytics.SETUID,
-		Status:  http.StatusOK,
-		Success: false,
-	}
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
-	if cookie, err := json.Marshal(pc); err == nil {
-		so.Cookie = string(cookie)
+	var so analytics.SetUIDObject
+	if deps.Analytics != nil {
+		so = analytics.SetUIDObject{
+			Type:    analytics.SETUID,
+			Status:  http.StatusOK,
+			Success: false,
+		}
+		if cookie, err := json.Marshal(pc); err == nil {
+			so.Cookie = string(cookie)
+		}
 	}
+
 	if !pc.AllowSyncs() {
-		so.Status = http.StatusUnauthorized
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
+		if deps.Analytics != nil {
+			so.Status = http.StatusUnauthorized
+			(*deps.Analytics).LogToModule(&so)
+		}
 		return
 	}
 
 	query := getRawQueryMap(r.URL.RawQuery)
 	bidder := query["bidder"]
 	if bidder == "" {
-		so.Status = http.StatusBadRequest
 		w.WriteHeader(http.StatusBadRequest)
 		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
+		if deps.Analytics != nil {
+			so.Status = http.StatusBadRequest
+			(*deps.Analytics).LogToModule(&so)
+		}
 		return
 	}
 
@@ -352,12 +362,15 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	if err == nil {
-		so.Success = true
+		if deps.Analytics != nil {
+			so.Success = true
+		}
 		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
 	}
-
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
-	(*deps.Analytics).LogToModule(&so)
+	if deps.Analytics != nil {
+		(*deps.Analytics).LogToModule(&so)
+	}
 }
 
 // Struct for parsing json in google's response

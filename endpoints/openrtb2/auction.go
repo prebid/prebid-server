@@ -42,51 +42,61 @@ type endpointDeps struct {
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
-	to := a.AuctionObject{
-		Request:            *req,
-		Status:             http.StatusOK,
-		Type:               a.AUCTION,
-		Error:              make([]error, 0),
-		AdapterBidRequests: make([]a.LoggableAdapterRequests, 0),
-		UserAgent:          r.UserAgent(),
+	var ao a.AuctionObject
+	if deps.ex.IsLoggingEnabled() {
+		ao = a.AuctionObject{
+			Request:            *req,
+			Status:             http.StatusOK,
+			Type:               a.AUCTION,
+			Error:              make([]error, 0),
+			AdapterBidRequests: make([]a.LoggableAdapterRequests, 0),
+			UserAgent:          r.UserAgent(),
+		}
 	}
+
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
-		to.Error = make([]error, len(errL))
-		to.Status = http.StatusBadRequest
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		copy(to.Error, errL)
+		if deps.ex.IsLoggingEnabled() {
+			ao.Error = make([]error, len(errL))
+			ao.Status = http.StatusBadRequest
+			copy(ao.Error, errL)
+			deps.ex.LogTransaction(&ao)
+		}
 		return
 	}
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, &to)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, &ao)
 	if err != nil {
-		to.Status = http.StatusInternalServerError
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		to.Error = append(to.Error, err)
+		if deps.ex.IsLoggingEnabled() {
+			ao.Status = http.StatusInternalServerError
+			ao.Error = append(ao.Error, err)
+			deps.ex.LogTransaction(&ao)
+		}
 		return
 	}
-
-	to.Response = *response
 
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
+	if deps.ex.IsLoggingEnabled() {
+		ao.Response = *response
+		deps.ex.LogTransaction(&ao)
+	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
-		to.Error = append(to.Error, err)
 	}
-	deps.ex.LogTransaction(&to)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:

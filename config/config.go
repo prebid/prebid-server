@@ -11,19 +11,20 @@ import (
 
 // Configuration
 type Configuration struct {
-	ExternalURL     string             `mapstructure:"external_url"`
-	Host            string             `mapstructure:"host"`
-	Port            int                `mapstructure:"port"`
-	AdminPort       int                `mapstructure:"admin_port"`
-	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheURL        Cache              `mapstructure:"cache"`
-	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie         `mapstructure:"host_cookie"`
-	Metrics         Metrics            `mapstructure:"metrics"`
-	DataCache       DataCache          `mapstructure:"datacache"`
-	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
-	Adapters        map[string]Adapter `mapstructure:"adapters"`
-	MaxRequestSize  int64              `mapstructure:"max_request_size"`
+	ExternalURL              string             `mapstructure:"external_url"`
+	Host                     string             `mapstructure:"host"`
+	Port                     int                `mapstructure:"port"`
+	AdminPort                int                `mapstructure:"admin_port"`
+	DefaultTimeout           uint64             `mapstructure:"default_timeout_ms"`
+	CacheURL                 Cache              `mapstructure:"cache"`
+	RecaptchaSecret          string             `mapstructure:"recaptcha_secret"`
+	HostCookie               HostCookie         `mapstructure:"host_cookie"`
+	Metrics                  Metrics            `mapstructure:"metrics"`
+	DataCache                DataCache          `mapstructure:"datacache"`
+	StoredRequests           StoredRequests     `mapstructure:"stored_requests"`
+	Adapters                 map[string]Adapter `mapstructure:"adapters"`
+	MaxRequestSize           int64              `mapstructure:"max_request_size"`
+	EnableTransactionLogging bool               `mapstructure:"enable_transaction_log"`
 }
 
 func (cfg *Configuration) validate() error {

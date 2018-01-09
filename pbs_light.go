@@ -194,17 +194,25 @@ type cookieSyncResponse struct {
 var atics analytics2.Module
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	cso := analytics2.CookieSyncObject{
-		Type:   analytics2.COOKIE_SYNC,
-		Status: http.StatusOK,
-		Error:  make([]error, 0),
+	var cso analytics2.CookieSyncObject
+	if atics != nil {
+		cso = analytics2.CookieSyncObject{
+			Type:   analytics2.COOKIE_SYNC,
+			Status: http.StatusOK,
+			Error:  make([]error, 0),
+		}
 	}
+
 	mCookieSyncMeter.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 	if !userSyncCookie.AllowSyncs() {
-		cso.Status = http.StatusUnauthorized
-		cso.Error = append(cso.Error, errors.New("user has opted out"))
+
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		if atics != nil {
+			cso.Status = http.StatusUnauthorized
+			cso.Error = append(cso.Error, errors.New("user has opted out"))
+			atics.LogToModule(&cso)
+		}
 		return
 	}
 
@@ -216,7 +224,10 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
-		cso.Status = http.StatusBadRequest
+		if atics != nil {
+			cso.Status = http.StatusBadRequest
+			atics.LogToModule(&cso)
+		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
@@ -245,15 +256,16 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	if cs, err := json.Marshal(csResp); err == nil {
+	if cs, err := json.Marshal(csResp); err == nil && atics != nil {
 		cso.Response = string(cs)
+		atics.LogToModule(&cso)
 	}
 
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	//enc.SetIndent("", "  ")
 	enc.Encode(csResp)
-	atics.LogToModule(&cso)
+
 }
 
 type auctionDeps struct {
@@ -808,7 +820,10 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
-	atics = analytics2.SetupAnalytics(cfg)
+
+	if cfg.EnableTransactionLogging {
+		atics = analytics2.SetupAnalytics(cfg)
+	}
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(

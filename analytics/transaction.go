@@ -51,7 +51,6 @@ type SetUIDObject struct {
 type CookieSyncObject struct {
 	Type     RequestType
 	Status   int
-	Events   []LoggableEvent
 	Error    []error
 	Request  string
 	Response string

@@ -17,6 +17,7 @@ type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, to *analytics.AuctionObject) (*openrtb.BidResponse, error)
 	LogTransaction(*analytics.AuctionObject)
+	IsLoggingEnabled() bool
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -44,7 +45,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cfg *config.Configuration, atics *analytics.Module) Exchange {
+func NewExchange(client *http.Client, cfg *config.Configuration, atics ...*analytics.Module) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
@@ -52,7 +53,7 @@ func NewExchange(client *http.Client, cfg *config.Configuration, atics *analytic
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
-	e.analytics = atics
+	e.analytics = atics[0]
 	return e
 }
 
@@ -91,6 +92,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Build the response
 	return e.buildBidResponse(liveAdapters, adapterBids, bidRequest, adapterExtra, targData, errs)
+
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
@@ -258,4 +260,8 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 
 func (e *exchange) LogTransaction(to *analytics.AuctionObject) {
 	(*e.analytics).LogToModule(to)
+}
+
+func (e *exchange) IsLoggingEnabled() bool {
+	return e.analytics != nil
 }
