@@ -225,11 +225,20 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
 		if atics != nil {
+			if c, err := json.Marshal(csReq); err == nil {
+				cso.Request = string(c)
+			} else {
+				fmt.Printf("Cookie sync request marshal error %v", err)
+			}
 			cso.Status = http.StatusBadRequest
 			atics.LogToModule(&cso)
 		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
+	}
+
+	if c, err := json.Marshal(csReq); err == nil && atics != nil {
+		cso.Request = string(c)
 	}
 
 	csResp := cookieSyncResponse{

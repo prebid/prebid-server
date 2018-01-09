@@ -11,24 +11,21 @@ import (
 	"net/http"
 )
 
+//RequestTypes
 const (
-	BID_REQUEST = "bid_request"
-	TRANSACTION = "transaction"
 	AUCTION     = "/openrtb2/auction"
 	COOKIE_SYNC = "/cookiesync"
 	SETUID      = "/setuid"
-	GETUID      = "/getuid"
-
-	//other event types
 )
 
 type RequestType string
 
+//Modules that need to be logged shall implement this interface
 type LoggableEvent interface {
 	Log() (content []byte)
 }
 
-//One for each request to an endpoint
+//Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
 	Type               RequestType
 	Status             int
@@ -37,9 +34,9 @@ type AuctionObject struct {
 	Request            openrtb.BidRequest
 	Response           openrtb.BidResponse
 	UserAgent          string
-	//relevant parameters
 }
 
+//Loggable object of a transaction at /setuid
 type SetUIDObject struct {
 	Type    RequestType
 	Status  int
@@ -48,6 +45,7 @@ type SetUIDObject struct {
 	Success bool
 }
 
+//Loggable object of a transaction at /cookie_sync
 type CookieSyncObject struct {
 	Type     RequestType
 	Status   int

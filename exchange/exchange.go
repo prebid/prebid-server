@@ -45,7 +45,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cfg *config.Configuration, atics ...*analytics.Module) Exchange {
+func NewExchange(client *http.Client, cfg *config.Configuration, atics *analytics.Module) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
@@ -53,7 +53,7 @@ func NewExchange(client *http.Client, cfg *config.Configuration, atics ...*analy
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
-	e.analytics = atics[0]
+	e.analytics = atics
 	return e
 }
 
@@ -263,5 +263,5 @@ func (e *exchange) LogTransaction(to *analytics.AuctionObject) {
 }
 
 func (e *exchange) IsLoggingEnabled() bool {
-	return e.analytics != nil
+	return *e.analytics != nil
 }
