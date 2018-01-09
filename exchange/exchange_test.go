@@ -22,7 +22,8 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client(), &config.Configuration{}, &analytics.SetupAnalytics(&config.Configuration{})).(*exchange)
+	atics := analytics.SetupAnalytics(&config.Configuration{})
+	e := NewExchange(server.Client(), &config.Configuration{}, &atics).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
@@ -393,7 +394,7 @@ type mockBidder struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, ao *analytics.AuctionObject) (*pbsOrtbSeatBid, []error) {
 	b.lastRequest = request
 	return nil, nil
 }

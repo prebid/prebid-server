@@ -6,6 +6,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"reflect"
@@ -53,7 +54,7 @@ func TestSiteVideo(t *testing.T) {
 	mockAdapter := mockLegacyAdapter{}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon, &analytics.AuctionObject{})
 	if len(errs) > 0 {
 		t.Errorf("Unexpected error requesting bids: %v", errs)
 	}
@@ -86,7 +87,7 @@ func TestAppBanner(t *testing.T) {
 	mockAdapter := mockLegacyAdapter{}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon, &analytics.AuctionObject{})
 	if len(errs) > 0 {
 		t.Errorf("Unexpected error requesting bids: %v", errs)
 	}
@@ -129,7 +130,7 @@ func TestBidTransforms(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), nil, openrtb_ext.BidderRubicon)
+	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), nil, openrtb_ext.BidderRubicon, &analytics.AuctionObject{})
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
 	}
@@ -277,7 +278,7 @@ func TestErrorResponse(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon, &analytics.AuctionObject{})
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
 	}

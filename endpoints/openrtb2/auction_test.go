@@ -366,6 +366,10 @@ func (e *nobidExchange) LogTransaction(*analytics.AuctionObject) {
 
 }
 
+func (e *nobidExchange) IsLoggingEnabled() bool {
+	return false
+}
+
 // bidderParamValidator expects the extension format for all bidders to be the JSON string "good".
 // Substantive tests for bidder param validation should go in openrtb_ext/bidders_test.go.
 type bidderParamValidator struct{}
@@ -386,6 +390,10 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bi
 
 func (e *brokenExchange) LogTransaction(ao *analytics.AuctionObject) {
 
+}
+
+func (e *brokenExchange) IsLoggingEnabled() bool {
+	return false
 }
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
@@ -791,4 +799,8 @@ func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidR
 
 func (m *mockExchange) LogTransaction(ao *analytics.AuctionObject) {
 
+}
+
+func (m *mockExchange) IsLoggingEnabled() bool {
+	return false
 }
