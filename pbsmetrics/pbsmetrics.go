@@ -2,7 +2,6 @@ package pbsmetrics
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -20,12 +19,11 @@ type Metrics struct {
 	InvalidMeter        metrics.Meter
 	RequestTimer        metrics.Timer
 	CookieSyncMeter     metrics.Meter
-	// UserSyncMetrics     *UserSyncMetrics
+	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
+	// and know when legacy requests have been abandoned.
+	ORTBRequestMeter metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
-
-	// accountMetrics        map[string]*AccountMetrics
-	accountMetricsRWMutex sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
 }
@@ -56,9 +54,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		InvalidMeter:        blankMeter(0),
 		RequestTimer:        blankTimer(0),
 		CookieSyncMeter:     blankMeter(0),
+		ORTBRequestMeter:    blankMeter(0),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
-		// accountMetrics: make(map[string]*AccountMetrics),
 
 		exchanges: exchanges,
 	}
@@ -83,6 +81,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
+	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	newMetrics.ORTBRequestMeter = metrics.GetOrRegisterMeter("ortb_requests", registry)
 
 	for _, a := range exchanges {
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])

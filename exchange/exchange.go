@@ -137,7 +137,7 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			ae.Errors = serr
 			brw.adapterExtra = ae
 			if len(err) == 0 {
-				if len(bids.bids) == 0 {
+				if bids == nil || len(bids.bids) == 0 {
 					// Don't want to mark no bids on error topreserve legacy behavior.
 					e.m.AdapterMetrics[aName].NoBidMeter.Mark(1)
 				} else {

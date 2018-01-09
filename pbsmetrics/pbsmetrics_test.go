@@ -2,9 +2,7 @@ package pbsmetrics
 
 import (
 	"fmt"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/rcrowley/go-metrics"
@@ -20,11 +18,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "safari_requests", m.SafariRequestMeter)
 	ensureContains(t, registry, "safari_no_cookie_requests", m.SafariNoCookieMeter)
 	ensureContains(t, registry, "error_requests", m.ErrorMeter)
-	ensureContains(t, registry, "invalid_requests", m.InvalidMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
-	ensureContains(t, registry, "cookie_sync_requests", m.CookieSyncMeter)
-	ensureContains(t, registry, "usersync.bad_requests", m.UserSyncMetrics.BadRequestMeter)
-	ensureContains(t, registry, "usersync.opt_outs", m.UserSyncMetrics.OptOutMeter)
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
 	ensureContainsAdapterMetrics(t, registry, "adapter.rubicon", m.AdapterMetrics["rubicon"])
 }

@@ -43,6 +43,7 @@ type endpointDeps struct {
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	met := deps.ex.GetMetrics()
 	met.RequestMeter.Mark(1)
+	met.ORTBRequestMeter.Mark(1)
 
 	isSafari := false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
