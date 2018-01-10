@@ -39,12 +39,6 @@ type endpointDeps struct {
 	cfg              *config.Configuration
 }
 
-type digiTrust struct {
-	ID   string `json:"id"`
-	KeyV int    `json:"keyv"`
-	Pref int    `json:"pref"`
-}
-
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.

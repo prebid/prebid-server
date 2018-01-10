@@ -264,30 +264,31 @@ func TestDigiTrust(t *testing.T) {
 
 		edep.setUserImplicitly(httpReq, bidReq)
 
-		if bidReq.ID == "request-without-user-obj" {
+		switch bidReq.ID {
+		case "request-without-user-obj":
 			if bidReq.User != nil {
 				t.Fatalf("bidrequest.user should be nil.")
 			}
-		} else if bidReq.ID == "request-without-user-ext-obj" {
+		case "request-without-user-ext-obj":
 			checkForEmptyUser(t, bidReq)
 			checkUserYob(t, bidReq)
-		} else if bidReq.ID == "request-with-valid-digitrust-obj" {
+		case "request-with-valid-digitrust-obj":
 			checkForEmptyUser(t, bidReq)
 			checkUserYob(t, bidReq)
 			checkForEmptyUserExt(t, bidReq)
 			checkDigiTrustObj(t, bidReq)
-		} else if bidReq.ID == "request-with-invalid-digitrust-obj" {
+		case "request-with-invalid-digitrust-obj":
 			checkForEmptyUser(t, bidReq)
 			checkUserYob(t, bidReq)
 			if bidReq.User.Ext != nil {
 				t.Fatalf("User.Ext object should be nil because digitrust was not valid.")
 			}
-		} else if bidReq.ID == "request-with-invalid-digitrust-obj-plus-other-kv" || bidReq.ID == "request-without-digitrust-obj-plus-other-kv" {
+		case "request-with-invalid-digitrust-obj-plus-other-kv", "request-without-digitrust-obj-plus-other-kv":
 			checkForEmptyUser(t, bidReq)
 			checkUserYob(t, bidReq)
 			checkForEmptyUserExt(t, bidReq)
 			checkUserExtValidKV(t, bidReq)
-		} else if bidReq.ID == "request-with-valid-digitrust-obj-plus-other-kv" {
+		case "request-with-valid-digitrust-obj-plus-other-kv":
 			checkForEmptyUser(t, bidReq)
 			checkUserYob(t, bidReq)
 			checkForEmptyUserExt(t, bidReq)
