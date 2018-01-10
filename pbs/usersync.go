@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/rcrowley/go-metrics"
 )
@@ -34,6 +35,14 @@ const (
 	USERSYNC_BAD_REQUEST = "usersync.bad_requests"
 	USERSYNC_SUCCESS     = "usersync.%s.sets"
 )
+
+// bidderToFamilyNames maps the BidderName to Adapter.FamilyName() for the early adapters.
+// If a mapping isn't listed here, then we assume that the two are the same.
+var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
+	openrtb_ext.BidderAppnexus: "adnxs",
+	openrtb_ext.BidderFacebook: "audienceNetwork",
+	openrtb_ext.BidderIndex:    "indexExchange",
+}
 
 // PBSCookie is the cookie used in Prebid Server.
 //
@@ -151,6 +160,16 @@ func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
 		}
 	}
 	return "", false, false
+}
+
+// GetId wraps GetUID, letting callers fetch the ID given an OpenRTB BidderName.
+func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, exists bool) {
+	if familyName, ok := bidderToFamilyNames[bidderName]; ok {
+		id, exists, _ = cookie.GetUID(familyName)
+	} else {
+		id, exists, _ = cookie.GetUID(string(bidderName))
+	}
+	return
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"

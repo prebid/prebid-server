@@ -710,15 +710,44 @@ func TestDifferentRequest(t *testing.T) {
 	// test invalid size
 	pbReq.Bidders[0].AdUnits[0].Sizes = []openrtb.Format{
 		{
-			W: 0,
-			H: 0,
+			W: 2222,
+			H: 333,
 		},
 	}
-	_, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
-	if err == nil {
-		t.Fatalf("Should have gotten an error: %v", err)
+	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
+		{
+			W: 222,
+			H: 3333,
+		},
+		{
+			W: 350,
+			H: 270,
+		},
+	}
+	pbReq.Bidders[0].AdUnits = pbReq.Bidders[0].AdUnits[:len(pbReq.Bidders[0].AdUnits)-1]
+	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err == nil || len(b) != 0 {
+		t.Fatalf("Filtering bids based on ad unit sizes failed. Got %d bids instead of 0", len(b))
 	}
 
+	pbReq.Bidders[0].AdUnits[1].Sizes = []openrtb.Format{
+		{
+			W: 222,
+			H: 3333,
+		},
+		{
+			W: 300,
+			H: 600,
+		},
+		{
+			W: 300,
+			H: 250,
+		},
+	}
+	b, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
+	if err != nil || len(b) != 1 {
+		t.Fatalf("Filtering bids based on ad unit sizes failed. Got %d bids instead of 1, error = %v", len(b), err)
+	}
 }
 
 func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdapter, ctx context.Context, pbReq *pbs.PBSRequest) {
