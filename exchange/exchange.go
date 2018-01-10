@@ -29,7 +29,7 @@ type exchange struct {
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
 	cache      prebid_cache_client.Client
-	cacheTime    time.Duration
+	cacheTime  time.Duration
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
