@@ -71,31 +71,39 @@ func (t *targetData) addTargetsToCompletedAuction(auction *auction) {
 		return
 	}
 
-	auction.forEachWinner(func(id string, bidderName openrtb_ext.BidderName, bid *openrtb.Bid) {
+	auction.forEachBestBid(func(id string, bidderName openrtb_ext.BidderName, bid *openrtb.Bid, overallWinner bool) {
 		bidExt := new(openrtb_ext.ExtBid)
 		err1 := json.Unmarshal(bid.Ext, bidExt)
-		if err1 == nil && bidExt.Prebid.Targeting != nil {
-			hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(bidderName, t.lengthMax)
-			hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(bidderName, t.lengthMax)
-			hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(bidderName, t.lengthMax)
-			hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(bidderName, t.lengthMax)
+		if err1 == nil && overallWinner && bidExt.Prebid.Targeting != nil {
+			cacheId, hasCacheId := auction.cacheId(bid)
+			if overallWinner {
+				hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(bidderName, t.lengthMax)
+				hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(bidderName, t.lengthMax)
+				hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(bidderName, t.lengthMax)
+				hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(bidderName, t.lengthMax)
 
-			bidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)] = bidExt.Prebid.Targeting[hbPbBidderKey]
-			bidExt.Prebid.Targeting[string(openrtb_ext.HbBidderConstantKey)] = bidExt.Prebid.Targeting[hbBidderBidderKey]
-			if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbSizeConstantKey)] = size
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)] = bidExt.Prebid.Targeting[hbPbBidderKey]
+				bidExt.Prebid.Targeting[string(openrtb_ext.HbBidderConstantKey)] = bidExt.Prebid.Targeting[hbBidderBidderKey]
+				if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
+					bidExt.Prebid.Targeting[string(openrtb_ext.HbSizeConstantKey)] = size
+				}
+				if hasCacheId {
+					bidExt.Prebid.Targeting[string(openrtb_ext.HbCacheKey)] = cacheId
+				}
+				if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
+					bidExt.Prebid.Targeting[string(openrtb_ext.HbDealIdConstantKey)] = deal
+				}
+				if bidderName == "audienceNetwork" {
+					bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodDemandSDK
+				} else {
+					bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodHTML
+				}
 			}
-			if cacheId, ok := auction.cacheId(bid); ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCacheKey)] = cacheId
+
+			if hasCacheId {
+				bidExt.Prebid.Targeting[openrtb_ext.HbCacheKey.BidderKey(bidderName, t.lengthMax)] = cacheId
 			}
-			if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbDealIdConstantKey)] = deal
-			}
-			if bidderName == "audienceNetwork" {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodDemandSDK
-			} else {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodHTML
-			}
+
 			bid.Ext, err1 = json.Marshal(bidExt)
 		}
 	})

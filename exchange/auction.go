@@ -10,18 +10,22 @@ import (
 type auction struct {
 	// bidsWithDeals stores all of the bids in the auction which are part of a Deal.
 	bidsWithDeals []*openrtb.Bid
-	// winningBids is a map from imp.id to the highest CPM bid in that imp.
+	// winningBids is a map from imp.id to the highest overall CPM bid in that imp.
 	winningBids map[string]*openrtb.Bid
 	// winningBidders is a map from imp.id to the BidderName which made the winning Bid.
 	winningBidders map[string]openrtb_ext.BidderName
-	// cachedBids stores the cache ID for each bid.
+	// winningBidsFromBidder stores the highest bid on each imp by each bidder.
+	winningBidsByBidder map[string]map[openrtb_ext.BidderName]*openrtb.Bid
+	// cachedBids stores the cache ID for each bid, if it exists.
+	// This is set by cacheBids() in cache.go, and is nil beforehand.
 	cachedBids map[*openrtb.Bid]string
 }
 
 func newAuction(numImps int) *auction {
 	return &auction{
-		winningBids:    make(map[string]*openrtb.Bid, numImps),
-		winningBidders: make(map[string]openrtb_ext.BidderName, numImps),
+		winningBids:         make(map[string]*openrtb.Bid, numImps),
+		winningBidders:      make(map[string]openrtb_ext.BidderName, numImps),
+		winningBidsByBidder: make(map[string]map[openrtb_ext.BidderName]*openrtb.Bid, numImps),
 	}
 }
 
@@ -40,6 +44,15 @@ func (auction *auction) addBid(name openrtb_ext.BidderName, bid *openrtb.Bid) {
 	if !ok || cpm > wbid.Price {
 		auction.winningBidders[bid.ImpID] = name
 		auction.winningBids[bid.ImpID] = bid
+	}
+	if bidMap, ok := auction.winningBidsByBidder[bid.ImpID]; ok {
+		bestSoFar, ok := bidMap[name]
+		if !ok || cpm > bestSoFar.Price {
+			bidMap[name] = bid
+		}
+	} else {
+		auction.winningBidsByBidder[bid.ImpID] = make(map[openrtb_ext.BidderName]*openrtb.Bid)
+		auction.winningBidsByBidder[bid.ImpID][name] = bid
 	}
 }
 
@@ -76,13 +89,16 @@ func (auction *auction) cacheId(bid *openrtb.Bid) (id string, exists bool) {
 	return
 }
 
-// forEachWinner runs the callback function on each winning Bid.
-func (auction *auction) forEachWinner(callback func(impID string, bidder openrtb_ext.BidderName, bid *openrtb.Bid)) {
+// forEachBestBid runs the callback function on every bid which is the highest one for each Bidder on each Imp.
+func (auction *auction) forEachBestBid(callback func(impID string, bidder openrtb_ext.BidderName, bid *openrtb.Bid, winner bool)) {
 	if auction == nil {
 		return
 	}
 
-	for id, bid := range auction.winningBids {
-		callback(id, auction.winningBidders[id], bid)
+	for impId, bidderMap := range auction.winningBidsByBidder {
+		overallWinner, _ := auction.winningBids[impId]
+		for bidderName, bid := range bidderMap {
+			callback(impId, bidderName, bid, bid == overallWinner)
+		}
 	}
 }
