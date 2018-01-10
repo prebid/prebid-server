@@ -18,6 +18,7 @@ import (
 type targetData struct {
 	lengthMax        int
 	priceGranularity openrtb_ext.PriceGranularity
+	includeCache     bool
 }
 
 // makePrebidTargets returns the _bidder specific_ targeting keys and values. For example,
@@ -62,6 +63,10 @@ func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb
 		pbs_kvs[hbDealIdBidderKey] = deal
 	}
 	return pbs_kvs, err
+}
+
+func (t *targetData) shouldCache() bool {
+	return t != nil && t.includeCache
 }
 
 // addTargetsToCompletedAuction takes a _completed_ auction, and adds all the appropriate targeting keys to it.

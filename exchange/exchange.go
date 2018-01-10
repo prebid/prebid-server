@@ -72,7 +72,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	randomizeList(liveAdapters)
 	// Process the request to check for targeting parameters.
 	var targData *targetData = nil
-	var auction *auction = nil
 	shouldCacheBids := false
 	if len(bidRequest.Ext) > 0 {
 		var requestExt openrtb_ext.ExtRequest
@@ -87,10 +86,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				lengthMax:        requestExt.Prebid.Targeting.MaxLength,
 				priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
 			}
-			auction = newAuction(len(bidRequest.Imp))
-		}
-		if auction == nil && shouldCacheBids {
-			auction = newAuction(len(bidRequest.Imp))
+			if shouldCacheBids {
+				targData.includeCache = true
+			}
 		}
 	}
 
@@ -108,7 +106,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, liveAdapters, cleanRequests, targData)
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, targData, auction, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, targData, errs)
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
@@ -152,7 +150,7 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, targData *targetData, auction *auction, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, targData *targetData, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -161,6 +159,10 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 		bidResponse.NBR = openrtb.NoBidReasonCode.Ptr(openrtb.NoBidReasonCodeInvalidRequest)
 	}
 
+	var auc *auction = nil
+	if targData != nil {
+		auc = newAuction(len(bidRequest.Imp))
+	}
 	// Create the SeatBids. We use a zero sized slice so that we can append non-zero seat bids, and not include seatBid
 	// objects for seatBids without any bids. Preallocate the max possible size to avoid reallocating the array as we go.
 	seatBids := make([]openrtb.SeatBid, 0, len(liveAdapters))
@@ -170,13 +172,15 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 			// Possible performance improvement by grabbing a pointer to the current seatBid element, passing it to
 			// MakeSeatBid, and then building the seatBid in place, rather than copying. Probably more confusing than
 			// its worth
-			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auction)
+			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auc)
 			seatBids = append(seatBids, *sb)
 		}
 	}
 
-	cacheBids(ctx, e.cache, auction)
-	targData.addTargetsToCompletedAuction(auction)
+	if targData.shouldCache() {
+		cacheBids(ctx, e.cache, auc)
+	}
+	targData.addTargetsToCompletedAuction(auc)
 	bidResponse.SeatBid = seatBids
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)
