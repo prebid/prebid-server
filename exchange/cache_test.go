@@ -69,6 +69,41 @@ func TestCacheFailures(t *testing.T) {
 	}
 }
 
+func TestMarshalFailure(t *testing.T) {
+	auc := newAuction(2)
+
+	badBid := &openrtb.Bid{
+		ImpID: "foo",
+		Price: 1,
+		Ext:   openrtb.RawJSON("{"),
+	}
+	goodBid := &openrtb.Bid{
+		ImpID: "bar",
+		Price: 2,
+	}
+	auc.addBid(openrtb_ext.BidderAppnexus, badBid)
+	auc.addBid(openrtb_ext.BidderAppnexus, goodBid)
+
+	mockClient := &mockCacheClient{
+		mockReturns: map[*openrtb.Bid]string{
+			badBid:  "0",
+			goodBid: "1",
+		},
+	}
+
+	cacheBids(context.Background(), mockClient, auc)
+	if _, ok := auc.cacheId(badBid); ok {
+		t.Errorf("bids with malformed JSON should not be cached.")
+	}
+	if id, ok := auc.cacheId(goodBid); ok {
+		if id != "1" {
+			t.Errorf("Wrong id for good bid. Expected 1, got %s", id)
+		}
+	} else {
+		t.Errorf("bids with malformed JSON should not prevent other bids from being cached.")
+	}
+}
+
 func assertJSONMatch(t *testing.T, expected []json.RawMessage, actual []json.RawMessage) {
 	t.Helper()
 	if len(expected) != len(actual) {
