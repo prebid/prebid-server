@@ -177,7 +177,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	}
 
 	if targData.shouldCache() {
-		cacheBids(ctx, e.cache, auc)
+		cacheBids(ctx, e.cache, auc, targData.priceGranularity)
 	}
 	targData.addTargetsToCompletedAuction(auc)
 	bidResponse.SeatBid = seatBids

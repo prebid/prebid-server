@@ -6,18 +6,24 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs/buckets"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"strings"
 )
 
 // cacheBids stores the given Bids in prebid cache, and saves the generated UUIDs in the auction.
 // If any cache calls fail, then there's not much anyone can do about it. This function will just log
 // the error and save IDs to any bids which are cached successfully.
-func cacheBids(ctx context.Context, cache prebid_cache_client.Client, auction *auction) {
+func cacheBids(ctx context.Context, cache prebid_cache_client.Client, auction *auction, granularity openrtb_ext.PriceGranularity) {
 	bids := make([]*openrtb.Bid, 0, 30) // Arbitrary initial capacity
 	nextBidIndex := 0
 	auction.forEachBestBid(func(impID string, bidder openrtb_ext.BidderName, bid *openrtb.Bid, winner bool) {
-		bids = append(bids, bid)
-		nextBidIndex++
+		// Fixes #199
+		granularityStr, err := buckets.GetPriceBucketString(bid.Price, granularity)
+		if err == nil && strings.ContainsAny(granularityStr, "123456789") {
+			bids = append(bids, bid)
+			nextBidIndex++
+		}
 	})
 
 	// Marshal the bids into JSON payloads. If any errors occur during marshalling, eject that bid from the array.
