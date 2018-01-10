@@ -8,8 +8,6 @@ import (
 // auction stores the Bids for a single call to Exchange.HoldAuction().
 // Construct these with the newAuction() function.
 type auction struct {
-	// bidsWithDeals stores all of the bids in the auction which are part of a Deal.
-	bidsWithDeals []*openrtb.Bid
 	// winningBids is a map from imp.id to the highest overall CPM bid in that imp.
 	winningBids map[string]*openrtb.Bid
 	// winningBidders is a map from imp.id to the BidderName which made the winning Bid.
@@ -35,10 +33,6 @@ func (auction *auction) addBid(name openrtb_ext.BidderName, bid *openrtb.Bid) {
 		return
 	}
 
-	if bid.DealID != "" {
-		auction.bidsWithDeals = append(auction.bidsWithDeals, bid)
-	}
-
 	cpm := bid.Price
 	wbid, ok := auction.winningBids[bid.ImpID]
 	if !ok || cpm > wbid.Price {
@@ -61,20 +55,6 @@ func (auction *auction) numImps() int {
 		return 0
 	} else {
 		return len(auction.winningBids)
-	}
-}
-
-func (auction *auction) numDealBids() int {
-	if auction == nil {
-		return 0
-	} else {
-		return len(auction.bidsWithDeals)
-	}
-}
-
-func (auction *auction) forEachDeal(callback func(bid *openrtb.Bid)) {
-	for _, bidWithDeal := range auction.bidsWithDeals {
-		callback(bidWithDeal)
 	}
 }
 

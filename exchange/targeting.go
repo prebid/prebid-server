@@ -107,14 +107,4 @@ func (t *targetData) addTargetsToCompletedAuction(auction *auction) {
 			bid.Ext, err1 = json.Marshal(bidExt)
 		}
 	})
-
-	auction.forEachDeal(func(bid *openrtb.Bid) {
-		if cacheId, ok := auction.cacheId(bid); ok {
-			bidExt := new(openrtb_ext.ExtBid)
-			err1 := json.Unmarshal(bid.Ext, bidExt)
-			if err1 == nil && bidExt.Prebid.Targeting != nil {
-				bidExt.Prebid.Targeting[openrtb_ext.HbCacheKey.DealKey(bid.DealID, t.lengthMax)] = cacheId
-			}
-		}
-	})
 }

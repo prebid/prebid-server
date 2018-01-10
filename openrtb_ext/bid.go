@@ -83,15 +83,6 @@ const (
 
 func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {
 	s := string(key) + "_" + string(bidder)
-	return truncate(s, maxLength)
-}
-
-func (key TargetingKey) DealKey(deal string, maxLength int) string {
-	s := string(key) + "_" + deal
-	return truncate(s, maxLength)
-}
-
-func truncate(s string, maxLength int) string {
 	if maxLength != 0 {
 		return s[:min(len(s), maxLength)]
 	}
