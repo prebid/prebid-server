@@ -156,6 +156,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	if err := deps.validateBidRequestExt(req.Ext); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -285,6 +289,17 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 		}
 	}
 
+	return nil
+}
+
+func (deps *endpointDeps) validateBidRequestExt(ext openrtb.RawJSON) error {
+	if len(ext) < 1 {
+		return nil
+	}
+	var tmpExt openrtb_ext.ExtRequest
+	if err := json.Unmarshal(ext, &tmpExt); err != nil {
+		return fmt.Errorf("request.ext is invalid: %v", err)
+	}
 	return nil
 }
 

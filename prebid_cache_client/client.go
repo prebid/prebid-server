@@ -30,7 +30,7 @@ func NewClient(conf *config.Cache) Client {
 				IdleConnTimeout: 65,
 			},
 		},
-		putUrl: conf.GetBaseURL(),
+		putUrl: conf.GetBaseURL() + "/cache",
 	}
 }
 
@@ -68,7 +68,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []json.RawMessage) (uui
 
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
-		glog.Errorf("Prebid Cache returned %d: %v", anResp.StatusCode, err)
+		glog.Errorf("Prebid Cache call to %s returned %d: %s", putURL, anResp.StatusCode, responseBody)
 		return uuidsToReturn
 	}
 

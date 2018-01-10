@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// TODO: Don't hardcode this.
 const CacheTimeMillis = 10
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
