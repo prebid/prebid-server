@@ -12,9 +12,6 @@ import (
 	"time"
 )
 
-// TODO: Don't hardcode this.
-const CacheTimeMillis = 10
-
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -32,6 +29,7 @@ type exchange struct {
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
 	cache      prebid_cache_client.Client
+	cacheTime    time.Duration
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -52,6 +50,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.adapterMap = newAdapterMap(client, cfg)
 	e.adapters = make([]openrtb_ext.BidderName, 0, len(e.adapterMap))
 	e.cache = cache
+	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
@@ -98,7 +97,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	if shouldCacheBids {
 		if deadline, ok := ctx.Deadline(); ok {
 			var cancel func()
-			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-CacheTimeMillis*time.Millisecond))
+			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime*time.Millisecond))
 			defer cancel()
 		}
 	}
