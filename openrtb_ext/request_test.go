@@ -65,37 +65,25 @@ const ext3 = `{
 	}
 }`
 
-func TestCacheDefaults(t *testing.T) {
-	var cache ExtRequestPrebidCache
-	if err := json.Unmarshal([]byte(`{"bids":{}}`), &cache); err != nil {
-		t.Fatalf("Error unmarshaling empty object: %v", err)
-	}
-
-	if !cache.Bids.Winners {
-		t.Errorf("cache.bids.winners should default to true. Got false.")
-	}
-	if cache.Bids.Deals {
-		t.Errorf("cache.bids.deals should default to false. Got true.")
-	}
-}
-
-func TestCacheOverrides(t *testing.T) {
-	var cache ExtRequestPrebidCache
-	if err := json.Unmarshal([]byte(`{"bids":{"winners":false,"deals":true}}`), &cache); err != nil {
-		t.Fatalf("Error unmarshaling empty object: %v", err)
-	}
-
-	if cache.Bids.Winners {
-		t.Errorf("cache.bids.winners should set to false. Got true.")
-	}
-	if !cache.Bids.Deals {
-		t.Errorf("cache.bids.deals should set to true. Got false.")
-	}
-}
-
 func TestCacheIllegal(t *testing.T) {
 	var bids ExtRequestPrebidCache
 	if err := json.Unmarshal([]byte(`{}`), &bids); err == nil {
 		t.Error("Unmarshal should fail when cache.bids is undefined.")
+	}
+	if err := json.Unmarshal([]byte(`{"bids":null}`), &bids); err == nil {
+		t.Error("Unmarshal should fail when cache.bids is null.")
+	}
+	if err := json.Unmarshal([]byte(`{"bids":true}`), &bids); err == nil {
+		t.Error("Unmarshal should fail when cache.bids is not an object.")
+	}
+}
+
+func TestCacheLegal(t *testing.T) {
+	var bids ExtRequestPrebidCache
+	if err := json.Unmarshal([]byte(`{"bids":{}}`), &bids); err != nil {
+		t.Error("Unmarshal should succeed when cache.bids is defined.")
+	}
+	if bids.Bids == nil {
+		t.Error("bids.Bids should not be nil.")
 	}
 }

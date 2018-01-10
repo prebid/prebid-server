@@ -49,17 +49,33 @@ func ParseBidType(bidType string) (BidType, error) {
 	}
 }
 
-// This also duplicates code in pbs_light, which should be moved to /pbs/targeting. But that is beyond the current
-// scope, and likely moot if the non-openrtb endpoint goes away.
+// TargetingKeys are used throughout Prebid as keys which can be used in an ad server like DFP.
+// Clients set the values we assign on the request to the ad server, where they can be substituted like macros into
+// Creatives.
+//
+// Removing one of these, or changing the semantics of what we store there, will probably break the
+// line item setups for many publishers.
+//
+// These are especially important to Prebid Mobile. It's much more cumbersome for a Mobile App to update code
+// than it is for a website. As a result, they rely heavily on these targeting keys so that any changes can
+// be made on Prebid Server and the Ad Server's line items.
 type TargetingKey string
 
 const (
-	HbpbConstantKey                 TargetingKey = "hb_pb"
-	HbBidderConstantKey             TargetingKey = "hb_bidder"
-	HbSizeConstantKey               TargetingKey = "hb_size"
+	HbpbConstantKey TargetingKey = "hb_pb"
+
+	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
+	HbBidderConstantKey TargetingKey = "hb_bidder"
+	HbSizeConstantKey   TargetingKey = "hb_size"
+
+	// HbCreativeLoadMethodConstantKey is used exclusively by Prebid Mobile to accomodate Facebook.
+	// Facebook requires that ads from their network be loaded using their own SDK.
+	// Other demand sources are happy to let Prebid Mobile use a Webview.
 	HbCreativeLoadMethodConstantKey TargetingKey = "hb_creative_loadtype"
-	HbCacheIdConstantKey            TargetingKey = "hb_cache_id"
 	HbDealIdConstantKey             TargetingKey = "hb_deal"
+	// HbCacheKey stores the UUID which can be used to fetch the bid data from prebid cache.
+	// Callers should *never* assume that this exists, since the call to the cache may always fail.
+	HbCacheKey TargetingKey = "hb_uuid"
 	// These are not keys, but values used by hbCreativeLoadMethodConstantKey
 	HbCreativeLoadMethodHTML      string = "html"
 	HbCreativeLoadMethodDemandSDK string = "demand_sdk"
@@ -67,8 +83,17 @@ const (
 
 func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {
 	s := string(key) + "_" + string(bidder)
+	return truncate(s, maxLength)
+}
+
+func (key TargetingKey) DealKey(deal string, maxLength int) string {
+	s := string(key) + "_" + deal
+	return truncate(s, maxLength)
+}
+
+func truncate(s string, maxLength int) string {
 	if maxLength != 0 {
-		s = s[:min(len(s), maxLength)]
+		return s[:min(len(s), maxLength)]
 	}
 	return s
 }
