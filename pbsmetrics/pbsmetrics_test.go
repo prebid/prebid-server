@@ -19,6 +19,7 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "safari_no_cookie_requests", m.SafariNoCookieMeter)
 	ensureContains(t, registry, "error_requests", m.ErrorMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
+	ensureContains(t, registry, "ortb_requests", m.ORTBRequestMeter)
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
 	ensureContainsAdapterMetrics(t, registry, "adapter.rubicon", m.AdapterMetrics["rubicon"])
 }
