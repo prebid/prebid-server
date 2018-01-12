@@ -204,6 +204,19 @@ func TestQueryMaker(t *testing.T) {
 	}
 }
 
+func TestQueryMakerMultilist(t *testing.T) {
+	cfg := PostgresConfig{
+		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST% UNION ALL SELECT id, config FROM other_table WHERE id in %ID_LIST%",
+	}
+	madeQuery, err := cfg.MakeQuery(3)
+	if err != nil {
+		t.Errorf("Unexpected error making query: %v", err)
+	}
+	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3) UNION ALL SELECT id, config FROM other_table WHERE id in ($1, $2, $3)" {
+		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
+	}
+}
+
 func TestQueryMakerInvalid(t *testing.T) {
 	cfg := PostgresConfig{
 		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
