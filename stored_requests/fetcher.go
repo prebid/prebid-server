@@ -40,13 +40,13 @@ type Cache interface {
 // This can be called multiple times to compose Cache layers onto the backing Fetcher.
 func WithCache(fetcher Fetcher, cache Cache) Fetcher {
 	return &fetcherWithCache{
-		cache: cache,
+		cache:   cache,
 		fetcher: fetcher,
 	}
 }
 
 type fetcherWithCache struct {
-	cache Cache
+	cache   Cache
 	fetcher Fetcher
 }
 
@@ -56,7 +56,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, ids []string) (dat
 		return data, nil
 	}
 
-	leftoverIds := make([]string, len(ids) - len(data))
+	leftoverIds := make([]string, len(ids)-len(data))
 	currentIndex := 0
 	for _, id := range ids {
 		if _, gotFromCache := data[id]; !gotFromCache {

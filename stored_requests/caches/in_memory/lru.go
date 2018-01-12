@@ -1,9 +1,9 @@
 package in_memory
 
 import (
-	"github.com/coocood/freecache"
-	"encoding/json"
 	"context"
+	"encoding/json"
+	"github.com/coocood/freecache"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -16,13 +16,13 @@ import (
 // For no TTL, use ttlSeconds <= 0
 func NewLRUCache(sizeBytes int, ttlSeconds int) stored_requests.Cache {
 	return &cache{
-		lru: freecache.NewCache(sizeBytes),
+		lru:        freecache.NewCache(sizeBytes),
 		ttlSeconds: ttlSeconds,
 	}
 }
 
 type cache struct {
-	lru *freecache.Cache
+	lru        *freecache.Cache
 	ttlSeconds int
 }
 

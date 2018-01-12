@@ -1,14 +1,14 @@
 package stored_requests
 
 import (
-	"encoding/json"
-	"context"
-	"testing"
 	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
+	"testing"
 )
 
-func TestPerfectCache (t *testing.T) {
+func TestPerfectCache(t *testing.T) {
 	cache := &mockCache{
 		mockGetData: map[string]json.RawMessage{
 			"known": json.RawMessage(`{}`),
@@ -30,7 +30,7 @@ func TestPerfectCache (t *testing.T) {
 	}
 }
 
-func TestImperfectCache (t *testing.T) {
+func TestImperfectCache(t *testing.T) {
 	cache := &mockCache{
 		mockGetData: map[string]json.RawMessage{
 			"cached": json.RawMessage(`true`),
@@ -110,8 +110,8 @@ func (f *mockFetcher) FetchRequests(ctx context.Context, ids []string) (map[stri
 
 type mockCache struct {
 	gotSaveValues map[string]json.RawMessage
-	gotGetIds []string
-	mockGetData map[string]json.RawMessage
+	gotGetIds     []string
+	mockGetData   map[string]json.RawMessage
 }
 
 func (c *mockCache) GetRequests(ctx context.Context, ids []string) map[string]json.RawMessage {
