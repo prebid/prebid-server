@@ -23,7 +23,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client(), &config.Configuration{}, metrics.NewRegistry()).(*exchange)
+	e := NewExchange(server.Client(), &config.Configuration{}, pbsmetrics.NewMetrics(metrics.NewRegistry(), AdapterList())).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}

@@ -12,14 +12,12 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/rcrowley/go-metrics"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
 	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error)
-	GetMetrics() *pbsmetrics.Metrics
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -47,7 +45,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cfg *config.Configuration, registry metrics.Registry) Exchange {
+func NewExchange(client *http.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
@@ -55,12 +53,8 @@ func NewExchange(client *http.Client, cfg *config.Configuration, registry metric
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
-	e.m = pbsmetrics.NewMetrics(registry, e.adapters)
+	e.m = registry
 	return e
-}
-
-func (e *exchange) GetMetrics() *pbsmetrics.Metrics {
-	return e.m
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {

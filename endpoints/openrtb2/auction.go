@@ -43,16 +43,15 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	met := deps.ex.GetMetrics()
-	met.RequestMeter.Mark(1)
-	met.ORTBRequestMeter.Mark(1)
+	deps.metrics.RequestMeter.Mark(1)
+	deps.metrics.ORTBRequestMeter.Mark(1)
 
 	isSafari := false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
 			isSafari = true
-			met.SafariRequestMeter.Mark(1)
+			deps.metrics.SafariRequestMeter.Mark(1)
 		}
 	}
 
@@ -63,18 +62,18 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		met.ErrorMeter.Mark(1)
+		deps.metrics.ErrorMeter.Mark(1)
 		return
 	}
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 
 	if req.App != nil {
-		met.AppRequestMeter.Mark(1)
+		deps.metrics.AppRequestMeter.Mark(1)
 	} else if usersyncs.LiveSyncCount() == 0 {
-		met.NoCookieMeter.Mark(1)
+		deps.metrics.NoCookieMeter.Mark(1)
 		if isSafari {
-			met.SafariNoCookieMeter.Mark(1)
+			deps.metrics.SafariNoCookieMeter.Mark(1)
 		}
 	}
 
