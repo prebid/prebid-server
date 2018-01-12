@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/rcrowley/go-metrics"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -125,7 +125,7 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			serr := make([]string, len(err))
 			for i := 0; i < len(err); i++ {
 				serr[i] = err[i].Error()
-				// NOTE, for a bidder that return multiple errors, we will log multiple errors for that request
+				// TODO: #142: for a bidder that return multiple errors, we will log multiple errors for that request
 				// in the metrics. Need to remember that in analyzing the data.
 				switch err[i] {
 				case context.DeadlineExceeded:

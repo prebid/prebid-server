@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -835,23 +836,23 @@ func serve(cfg *config.Configuration) error {
 
 	// TODO: Currently setupExchanges() creates metricsRegistry. We will need to do this
 	// here if/when the legacy endpoint goes away.
-	theExchange := exchange.NewExchange(
-		&http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:        400,
-				MaxIdleConnsPerHost: 10,
-				IdleConnTimeout:     60 * time.Second,
-				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
-			},
+	theClient := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        400,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     60 * time.Second,
+			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
-		cfg, metricsRegistry)
+	}
+	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
+	theExchange := exchange.NewExchange(theClient, cfg, metricsRegistry)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}

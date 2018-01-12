@@ -3,6 +3,7 @@ package openrtb2
 import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
 	"net/http"
@@ -52,7 +53,9 @@ func newDummyRequest() *http.Request {
 func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}, metrics.NewRegistry()), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}, metrics.NewRegistry()), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
