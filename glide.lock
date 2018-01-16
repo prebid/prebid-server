@@ -1,5 +1,5 @@
 hash: c2cb3f98a7fb53f594f9ea7492a9bde76453c2964e67b8cf4dcee2857f07f384
-updated: 2017-12-08T10:36:42.824894208-05:00
+updated: 2018-01-04T15:37:18.181155224-05:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -124,6 +124,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert

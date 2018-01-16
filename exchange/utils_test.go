@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
 	"testing"
 )
 
@@ -58,7 +60,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	adapters[1] = openrtb_ext.BidderName("dummy2")
 	adapters[2] = openrtb_ext.BidderName("dummy3")
 
-	cleanRequests, errList := cleanOpenRTBRequests(&bidRequest, adapters, &emptyUsersync{})
+	cleanRequests, errList := cleanOpenRTBRequests(&bidRequest, adapters, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), adapters))
 
 	if len(errList) > 0 {
 		for _, e := range errList {
