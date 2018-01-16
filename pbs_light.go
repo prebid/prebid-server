@@ -845,7 +845,7 @@ func serve(cfg *config.Configuration) error {
 		},
 	}
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
-	theExchange := exchange.NewExchange(theClient, cfg, metricsRegistry)
+	theExchange := exchange.NewExchange(theClient, cfg, theMetrics)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
