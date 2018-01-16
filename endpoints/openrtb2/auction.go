@@ -157,6 +157,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	if err := validateUser(req.User); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -297,6 +301,23 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	return nil
 }
 
+func validateUser(user *openrtb.User) error {
+	// DigiTrust support
+	if user != nil && user.Ext != nil {
+		// Creating ExtUser object to check if DigiTrust is valid
+		var userExt openrtb_ext.ExtUser
+		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
+			// Checking if DigiTrust is valid
+			if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
+				// DigiTrust is not valid. Return error.
+				return errors.New("request.user contains a digitrust object that is not valid.")
+			}
+		}
+	}
+
+	return nil
+}
+
 // setFieldsImplicitly uses _implicit_ information from the httpReq to set values on bidReq.
 // This function does not consume the request body, which was set explicitly, but infers certain
 // OpenRTB properties from the headers and other implicit info.
@@ -351,31 +372,6 @@ func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openr
 			}
 			if bidReq.User.ID == "" {
 				bidReq.User.ID = id
-			}
-		}
-	}
-
-	// DigiTrust support
-	if bidReq.User != nil && bidReq.User.Ext != nil {
-		// Creating map of ext kvs
-		var userExtMap map[string]interface{}
-		if err := json.Unmarshal(bidReq.User.Ext, &userExtMap); err == nil {
-			// Creating ExtUser object to check if DigiTrust is valid
-			var userExt openrtb_ext.ExtUser
-			if err := json.Unmarshal(bidReq.User.Ext, &userExt); err == nil {
-				// Checking if DigiTrust is valid
-				if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
-					// DigiTrust is not valid so remove it from ext
-					delete(userExtMap, "digitrust")
-
-					if len(userExtMap) == 0 {
-						// No kvs left in ext, so set ext object to nil
-						bidReq.User.Ext = nil
-					} else if userExtRaw, err := json.Marshal(&userExtMap); err == nil {
-						// Other kvs left in ext, so put those back in bid request
-						bidReq.User.Ext = userExtRaw
-					}
-				}
 			}
 		}
 	}

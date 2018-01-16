@@ -252,89 +252,33 @@ func TestRefererParsing(t *testing.T) {
 
 // Test valid/invalid DigiTrust functionality
 func TestDigiTrust(t *testing.T) {
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}}
-
 	for _, requestData := range digiTrustTestRequests {
-		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
 		bidReq := &openrtb.BidRequest{}
 		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
 		if err != nil {
 			t.Errorf("Error unmashalling bid request: %s", err.Error())
 		}
 
-		edep.setUserImplicitly(httpReq, bidReq)
+		err = validateUser(bidReq.User)
 
 		switch bidReq.ID {
 		case "request-without-user-obj":
-			if bidReq.User != nil {
-				t.Fatalf("bidrequest.user should be nil.")
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
 			}
 		case "request-without-user-ext-obj":
-			checkForEmptyUser(t, bidReq)
-			checkUserYob(t, bidReq)
-		case "request-with-valid-digitrust-obj":
-			checkForEmptyUser(t, bidReq)
-			checkUserYob(t, bidReq)
-			checkForEmptyUserExt(t, bidReq)
-			checkDigiTrustObj(t, bidReq)
-		case "request-with-invalid-digitrust-obj":
-			checkForEmptyUser(t, bidReq)
-			checkUserYob(t, bidReq)
-			if bidReq.User.Ext != nil {
-				t.Fatalf("User.Ext object should be nil because digitrust was not valid.")
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
 			}
-		case "request-with-invalid-digitrust-obj-plus-other-kv", "request-without-digitrust-obj-plus-other-kv":
-			checkForEmptyUser(t, bidReq)
-			checkUserYob(t, bidReq)
-			checkForEmptyUserExt(t, bidReq)
-			checkUserExtValidKV(t, bidReq)
-		case "request-with-valid-digitrust-obj-plus-other-kv":
-			checkForEmptyUser(t, bidReq)
-			checkUserYob(t, bidReq)
-			checkForEmptyUserExt(t, bidReq)
-			checkDigiTrustObj(t, bidReq)
-			checkUserExtValidKV(t, bidReq)
+		case "request-with-valid-digitrust-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-with-invalid-digitrust-obj":
+			if err == nil {
+				t.Fatalf("validateUser should return an error due to digitrust.")
+			}
 		}
-	}
-}
-
-func checkForEmptyUser(t *testing.T, bidReq *openrtb.BidRequest) {
-	if bidReq.User == nil {
-		t.Fatalf("BidRequest.User should not be nil.")
-	}
-}
-
-func checkForEmptyUserExt(t *testing.T, bidReq *openrtb.BidRequest) {
-	if bidReq.User.Ext == nil {
-		t.Fatalf("BidRequest.User.Ext should not be nil.")
-	}
-}
-
-func checkUserYob(t *testing.T, bidReq *openrtb.BidRequest) {
-	if bidReq.User.Yob != 1989 {
-		t.Fatalf("BidRequest.User should contain YOB set in request.")
-	}
-}
-
-func checkUserExtValidKV(t *testing.T, bidReq *openrtb.BidRequest) {
-	var userExtMap map[string]interface{}
-	err := json.Unmarshal(bidReq.User.Ext, &userExtMap)
-	if err != nil {
-		t.Errorf("Error unmashalling user.ext object: %s", err.Error())
-	}
-	if userExtMap["key1"] != "val1" {
-		t.Fatalf("User.Ext object should contain one valid kv.")
-	}
-}
-
-func checkDigiTrustObj(t *testing.T, bidReq *openrtb.BidRequest) {
-	userExt := &openrtb_ext.ExtUser{}
-	err := json.Unmarshal(bidReq.User.Ext, &userExt)
-	if err != nil {
-		t.Errorf("Error unmashalling digitrust object: %s", err.Error())
-	}
-	if userExt.DigiTrust.ID != "sample-digitrust-id" && userExt.DigiTrust.KeyV != 1 && userExt.DigiTrust.Pref != 0 {
-		t.Fatalf("DigiTrust object does not contain expected kvs.")
 	}
 }
 
@@ -608,121 +552,6 @@ var digiTrustTestRequests = []string{
 					"keyv": 1,
 					"pref": 1
 				}
-			}
-		}
-	}`,
-	`{
-		"id": "request-with-invalid-digitrust-obj-plus-other-kv",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"user": {
-			"yob": 1989,
-			"ext": {
-				"digitrust": {
-					"id": "sample-digitrust-id",
-					"keyv": 1,
-					"pref": 1
-				},
-				"key1": "val1"
-			}
-		}
-	}`,
-	`{
-		"id": "request-with-valid-digitrust-obj-plus-other-kv",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"user": {
-			"yob": 1989,
-			"ext": {
-				"digitrust": {
-					"id": "sample-digitrust-id",
-					"keyv": 1,
-					"pref": 0
-				},
-				"key1": "val1"
-			}
-		}
-	}`,
-	`{
-		"id": "request-without-digitrust-obj-plus-other-kv",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"user": {
-			"yob": 1989,
-			"ext": {
-				"key1": "val1"
 			}
 		}
 	}`,
