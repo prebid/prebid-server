@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const defaultAdServerCurrency = "USD"
+
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -101,7 +103,7 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			brw := new(bidResponseWrapper)
 			brw.bidder = aName
 			start := time.Now()
-			bids, err := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName], targData, aName)
+			bids, errs := e.adapterMap[aName].requestBid(ctx, cleanRequests[aName], targData, aName)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -109,9 +111,9 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
-			serr := make([]string, len(err))
-			for i := 0; i < len(err); i++ {
-				serr[i] = err[i].Error()
+			serr := make([]string, len(errs))
+			for i := 0; i < len(errs); i++ {
+				serr[i] = errs[i].Error()
 			}
 			ae.Errors = serr
 			brw.adapterExtra = ae
@@ -152,6 +154,7 @@ func (e *exchange) buildBidResponse(liveAdapters []openrtb_ext.BidderName, adapt
 		}
 	}
 	targData.addWinningTargets()
+	bidResponse.Cur = getCurrency(&seatBids, bidRequest, &adapterExtra)
 	bidResponse.SeatBid = seatBids
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)
@@ -237,6 +240,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, targData *targetData, adapter ope
 				Targeting: thisBid.bidTargets,
 				Type:      thisBid.bidType,
 			},
+			AdServerCurrency: thisBid.bidCurrency,
 		}
 
 		ext, err := json.Marshal(bidExt)

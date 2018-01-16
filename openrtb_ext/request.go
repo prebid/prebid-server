@@ -4,7 +4,15 @@ import "encoding/json"
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid ExtRequestPrebid `json:"prebid"`
+	Prebid   ExtRequestPrebid   `json:"prebid"`
+	Currency ExtRequestCurrency `json:"currency"`
+}
+
+// ExtRequestCurrency defines the contract for bidrequest.ext.currency
+type ExtRequestCurrency struct {
+	AdServerCurrency      string          `json:"adServerCurrency,omitempty"`
+	GranularityMultiplier float64         `json:"granularityMultiplier,omitempty"`
+	Rates                 json.RawMessage `json:"rates,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid

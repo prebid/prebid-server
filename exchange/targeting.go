@@ -25,7 +25,7 @@ type targetData struct {
 
 // makePrebidTargets returns the _bidder specific_ targeting keys and values. For example,
 // this map will include "hb_pb_appnexus", but _not_ "hb_pb".
-func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb.Bid) (map[string]string, error) {
+func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb.Bid, granularityMultiplier float64) (map[string]string, error) {
 	if t == nil {
 		return nil, nil
 	}
@@ -36,7 +36,7 @@ func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb
 	deal := bid.DealID
 	cacheKey := ""
 
-	roundedCpm, err := buckets.GetPriceBucketString(cpm, t.priceGranularity)
+	roundedCpm, err := buckets.GetPriceBucketString(cpm, t.priceGranularity, granularityMultiplier)
 	if err != nil {
 		// set broken cpm to 0
 		roundedCpm = "0.0"

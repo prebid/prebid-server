@@ -347,6 +347,77 @@ func TestNoEncoding(t *testing.T) {
 	}
 }
 
+// Testing currency support
+func TestImplicitExt(t *testing.T) {
+	for _, requestData := range currencyTestRequests {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
+		bidReq := &openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		// First testing with currency not set in config
+		deps := &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{},
+		}
+		deps.setExtImplicitly(httpReq, bidReq)
+
+		var ext openrtb_ext.ExtRequest
+		err = json.Unmarshal(bidReq.Ext, &ext)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request ext: %s", err.Error())
+		}
+
+		switch bidReq.ID {
+		case "request-with-empty-currency":
+			if ext.Currency.AdServerCurrency != "" {
+				t.Fatalf("bidrequest.ext.currency should not be set, got %s", ext.Currency.AdServerCurrency)
+			}
+		case "request-should-default-currency":
+			if ext.Currency.AdServerCurrency != "" {
+				t.Fatalf("bidrequest.ext.currency should not be set, got %s", ext.Currency.AdServerCurrency)
+			}
+		case "request-with-valid-currency":
+			if ext.Currency.AdServerCurrency != "GBP" {
+				t.Fatalf("bidrequest.ext.currency should be GBP as set in request, got %s", ext.Currency.AdServerCurrency)
+			}
+		}
+
+		// Testing with currency set in config
+		deps = &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{AdServerCurrency: "JPY"},
+		}
+		deps.setExtImplicitly(httpReq, bidReq)
+
+		err = json.Unmarshal(bidReq.Ext, &ext)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request ext: %s", err.Error())
+		}
+
+		switch bidReq.ID {
+		case "request-with-empty-currency":
+			if ext.Currency.AdServerCurrency != "JPY" {
+				t.Fatalf("bidrequest.ext.currency should be JPY as set in config, got %s", ext.Currency.AdServerCurrency)
+			}
+		case "request-should-default-currency":
+			if ext.Currency.AdServerCurrency != "JPY" {
+				t.Fatalf("bidrequest.ext.currency should be JPY as set in config, got %s", ext.Currency.AdServerCurrency)
+			}
+		case "request-with-valid-currency":
+			if ext.Currency.AdServerCurrency != "GBP" {
+				t.Fatalf("bidrequest.ext.currency should be GBP as set in request, got %s", ext.Currency.AdServerCurrency)
+			}
+		}
+	}
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
@@ -609,6 +680,109 @@ var invalidRequests = []string{
 				"appnexus": "good"
 			}
 		}]
+	}`,
+}
+
+var currencyTestRequests = []string{
+	`{
+		"id": "request-with-empty-currency",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"currency": {}
+		}
+	}`,
+	`{
+		"id": "request-should-default-currency",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"currency": {
+				"some-key": "some-val"
+			}
+		}
+	}`,
+	`{
+		"id": "request-with-valid-currency",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"currency": {
+				"adServerCurrency": "GBP"
+			}
+		}
 	}`,
 }
 

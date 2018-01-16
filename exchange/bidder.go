@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -42,9 +43,10 @@ type adaptedBidder interface {
 // pbsOrtbBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // pbsOrtbBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 type pbsOrtbBid struct {
-	bid        *openrtb.Bid
-	bidType    openrtb_ext.BidType
-	bidTargets map[string]string
+	bid         *openrtb.Bid
+	bidType     openrtb_ext.BidType
+	bidTargets  map[string]string
+	bidCurrency string
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -103,6 +105,14 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
 
+	var granularityMultiplier float64
+	var requestExt openrtb_ext.ExtRequest
+	if request.Ext != nil {
+		if err := json.Unmarshal(request.Ext, &requestExt); err == nil {
+			granularityMultiplier = requestExt.Currency.GranularityMultiplier
+		}
+	}
+
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
 	// even if the timeout occurs sometime halfway through.
 	for i := 0; i < len(reqData); i++ {
@@ -115,16 +125,18 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		if httpInfo.err == nil {
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
+
 			for _, bid := range bids {
-				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid)
+				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid, granularityMultiplier)
 				if err != nil {
 					errs = append(errs, err)
 				}
 
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:        bid.Bid,
-					bidType:    bid.BidType,
-					bidTargets: targets,
+					bid:         bid.Bid,
+					bidType:     bid.BidType,
+					bidTargets:  targets,
+					bidCurrency: bid.BidCurrency,
 				})
 			}
 		} else {

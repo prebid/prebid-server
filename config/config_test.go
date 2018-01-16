@@ -17,6 +17,7 @@ func init() {
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
 	viper.SetDefault("datacache.type", "dummy")
+	viper.SetDefault("ad_server_currency", "usd")
 
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
@@ -47,6 +48,10 @@ func TestDefaults(t *testing.T) {
 		t.Error("Expected DataCache Type of 'dummy'")
 	}
 
+	if cfg.AdServerCurrency != "usd" {
+		t.Error("Expected AdServerCurrency of 'usd'")
+	}
+
 	if cfg.Adapters["pubmatic"].Endpoint != "http://openbid-useast.pubmatic.com/translator?" {
 		t.Errorf("Expected Pubmatic Endpoint of http://openbid-useast.pubmatic.com/translator?")
 	}
@@ -65,6 +70,7 @@ host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
 default_timeout_ms: 123
+ad_server_currency: usd
 cache:
   scheme: http
   host: prebidcache.net
@@ -130,6 +136,7 @@ func TestFullConfig(t *testing.T) {
 	if cfg.DefaultTimeout != 123 {
 		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
 	}
+	cmpStrings(t, "ad_server_currency", cfg.AdServerCurrency, "usd")
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")

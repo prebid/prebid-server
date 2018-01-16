@@ -126,6 +126,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		errs = []error{err}
 		return
 	}
+
 	return
 }
 
@@ -310,6 +311,27 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 
 	deps.setUserImplicitly(httpReq, bidReq)
+
+	deps.setExtImplicitly(httpReq, bidReq)
+}
+
+// setExtImplicitly sets the Currency on bidReq to that found in the config, if it's not explicitly defined in the request.
+func (deps *endpointDeps) setExtImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	var ext openrtb_ext.ExtRequest
+	var err error
+
+	if bidReq.Ext != nil {
+		err = json.Unmarshal(bidReq.Ext, &ext)
+	}
+
+	if err == nil {
+		if ext.Currency.AdServerCurrency == "" && deps.cfg.AdServerCurrency != "" {
+			ext.Currency.AdServerCurrency = deps.cfg.AdServerCurrency
+			if extRaw, err := json.Marshal(&ext); err == nil {
+				bidReq.Ext = extRaw
+			}
+		}
+	}
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device

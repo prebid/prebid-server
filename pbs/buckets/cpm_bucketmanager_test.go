@@ -25,7 +25,7 @@ func TestGetPriceBucketString(t *testing.T) {
 
 func getOnePriceBucket(t *testing.T, granularity openrtb_ext.PriceGranularity, price float64, expected string) {
 	t.Helper()
-	priceBucket, err := GetPriceBucketString(price, granularity)
+	priceBucket, err := GetPriceBucketString(price, granularity, 0)
 	if err != nil {
 		t.Errorf("GetPriceBucketString: %s", err.Error())
 	}
