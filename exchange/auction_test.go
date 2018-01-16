@@ -17,8 +17,8 @@ func TestImpCount(t *testing.T) {
 	a.addBid(openrtb_ext.BidderIndex, &openrtb.Bid{
 		ImpID: "imp-2",
 	})
-	if a.numImps() != 2 {
-		t.Errorf("Expected 2 imps. Got %d", a.numImps())
+	if len(a.winningBids) != 2 {
+		t.Errorf("Expected 2 imps. Got %d", len(a.winningBids))
 	}
 }
 

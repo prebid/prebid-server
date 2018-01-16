@@ -50,20 +50,6 @@ func (auction *auction) addBid(name openrtb_ext.BidderName, bid *openrtb.Bid) {
 	}
 }
 
-func (auction *auction) numImps() int {
-	if auction == nil {
-		return 0
-	} else {
-		return len(auction.winningBids)
-	}
-}
-
-func (auction *auction) forEachCachedBid(callback func(bid *openrtb.Bid, id string)) {
-	for bid, id := range auction.cachedBids {
-		callback(bid, id)
-	}
-}
-
 func (auction *auction) cacheId(bid *openrtb.Bid) (id string, exists bool) {
 	id, exists = auction.cachedBids[bid]
 	return
