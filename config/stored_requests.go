@@ -62,7 +62,7 @@ func (cfg *PostgresConfig) MakeQuery(numRequests int) (string, error) {
 	final.WriteString("$")
 	final.WriteString(strconv.Itoa(numRequests))
 	final.WriteString(")")
-	return strings.Replace(cfg.QueryTemplate, "%ID_LIST%", final.String(), 1), nil
+	return strings.Replace(cfg.QueryTemplate, "%ID_LIST%", final.String(), -1), nil
 }
 
 type InMemoryCache struct {
