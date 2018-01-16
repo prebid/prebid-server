@@ -75,7 +75,7 @@ const (
 	HbDealIdConstantKey             TargetingKey = "hb_deal"
 	// HbCacheKey stores the UUID which can be used to fetch the bid data from prebid cache.
 	// Callers should *never* assume that this exists, since the call to the cache may always fail.
-	HbCacheKey TargetingKey = "hb_uuid"
+	HbCacheKey TargetingKey = "hb_cache_id"
 	// These are not keys, but values used by hbCreativeLoadMethodConstantKey
 	HbCreativeLoadMethodHTML      string = "html"
 	HbCreativeLoadMethodDemandSDK string = "demand_sdk"
