@@ -16,9 +16,7 @@ type Metrics struct {
 	SafariRequestMeter  metrics.Meter
 	SafariNoCookieMeter metrics.Meter
 	ErrorMeter          metrics.Meter
-	InvalidMeter        metrics.Meter
 	RequestTimer        metrics.Timer
-	CookieSyncMeter     metrics.Meter
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
 	ORTBRequestMeter metrics.Meter
@@ -51,9 +49,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:  blankMeter(0),
 		SafariNoCookieMeter: blankMeter(0),
 		ErrorMeter:          blankMeter(0),
-		InvalidMeter:        blankMeter(0),
 		RequestTimer:        blankTimer(0),
-		CookieSyncMeter:     blankMeter(0),
 		ORTBRequestMeter:    blankMeter(0),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
