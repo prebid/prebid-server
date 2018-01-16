@@ -11,7 +11,8 @@ import (
 	"strings"
 )
 
-// cacheBids stores the given Bids in prebid cache, and saves the generated UUIDs in the auction.
+// cacheBids mutates the auction so that the highest Bid from each Bidder in each Imp has a Cache ID associated with it.
+//
 // If any cache calls fail, then there's not much anyone can do about it. This function will just log
 // the error and save IDs to any bids which are cached successfully.
 func cacheBids(ctx context.Context, cache prebid_cache_client.Client, auction *auction, granularity openrtb_ext.PriceGranularity) {
