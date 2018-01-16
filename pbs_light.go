@@ -397,17 +397,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				})
 			}
 		}
-		err = pbc.Put(ctx, cobjs)
-		if err != nil {
-			writeAuctionError(w, "Prebid cache failed", err)
-			mErrorMeter.Mark(1)
-			return
+		if len(cobjs) > 0 {
+			err = pbc.Put(ctx, cobjs)
+			if err != nil {
+				writeAuctionError(w, "Prebid cache failed", err)
+				mErrorMeter.Mark(1)
+				return
+			}
 		}
-		err = pbc.PutXml(ctx, cxmls)
-		if err != nil {
-			writeAuctionError(w, "Prebid cache failed", err)
-			mErrorMeter.Mark(1)
-			return
+		if len(cxmls) > 0 {
+			err = pbc.PutXml(ctx, cxmls)
+			if err != nil {
+				writeAuctionError(w, "Prebid cache failed", err)
+				mErrorMeter.Mark(1)
+				return
+			}
 		}
 		objIndex := 0
 		xmlIndex := 0
