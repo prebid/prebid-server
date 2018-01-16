@@ -14,6 +14,10 @@ func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
 		return nil, err
 	}
 
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
 	return &dbFetcher{
 		db:         db,
 		queryMaker: cfg.MakeQuery,
