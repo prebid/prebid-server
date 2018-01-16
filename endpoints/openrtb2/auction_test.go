@@ -766,6 +766,42 @@ var testStoredRequests = []string{
 			}
 		}
 	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "some-static-imp",
+				"video":{
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": "abc",
+						"position": "below"
+					}
+				}
+			},
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
 }
 
 // The expected requests after stored request processing
@@ -867,6 +903,51 @@ var testFinalRequests = []string{
 			}
 		}
 	}`,
+	`{
+	"id": "ThisID",
+	"imp": [
+		{
+			"id": "some-static-imp",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "below"
+				}
+			}
+		},
+		{
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				},
+				"prebid": {
+					"storedrequest": {
+						"id": "1"
+					}
+				}
+			}
+		}
+	],
+	"ext": {
+		"prebid": {
+			"cache": {
+				"markup": 1
+			},
+			"targeting": {
+				"lengthmax": 20
+			}
+		}
+	}
+}`,
 }
 
 type mockStoredReqFetcher struct {

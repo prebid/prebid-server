@@ -405,7 +405,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	for i := 0; i < len(impIds); i++ {
-		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[i])
+		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[idIndices[i]])
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -425,6 +425,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	return resolvedRequest, nil
 }
 
+// parseImpInfo parses the request JSON and returns several things about the Imps
+//
+// 1. A list of the JSON for every Imp.
+// 2. A list of all IDs which appear at `imp[i].ext.prebid.storedrequest.id`.
+// 3. A list intended to parallel "ids". Each element tells which index of "imp[index]" the corresponding element of "ids" should modify.
+// 4. Any errors which occur due to bad requests. These should warrant an HTTP 4xx response.
 func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, impIdIndices []int, errs []error) {
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		i := 0
@@ -432,10 +438,10 @@ func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, imp
 			if storedImpId, hasStoredImp, err := getStoredRequestId(imp); err != nil {
 				errs = append(errs, err)
 			} else if hasStoredImp {
-				imps = append(imps, imp)
 				ids = append(ids, storedImpId)
 				impIdIndices = append(impIdIndices, i)
 			}
+			imps = append(imps, imp)
 			i++
 		})
 	}
