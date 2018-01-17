@@ -56,6 +56,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		glog.Errorf("/openrtb2/auction Critical error: %v", err)
 		return
 	}
 
@@ -153,6 +154,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
+		return err
+	}
+
+	if err := deps.validateBidRequestExt(req.Ext); err != nil {
 		return err
 	}
 
@@ -285,6 +290,17 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 		}
 	}
 
+	return nil
+}
+
+func (deps *endpointDeps) validateBidRequestExt(ext openrtb.RawJSON) error {
+	if len(ext) < 1 {
+		return nil
+	}
+	var tmpExt openrtb_ext.ExtRequest
+	if err := json.Unmarshal(ext, &tmpExt); err != nil {
+		return fmt.Errorf("request.ext is invalid: %v", err)
+	}
 	return nil
 }
 
