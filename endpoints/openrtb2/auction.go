@@ -312,6 +312,9 @@ func validateUser(user *openrtb.User) error {
 				// DigiTrust is not valid. Return error.
 				return errors.New("request.user contains a digitrust object that is not valid.")
 			}
+		} else {
+			// Return error.
+			return errors.New("request.user.ext object is not valid.")
 		}
 	}
 
