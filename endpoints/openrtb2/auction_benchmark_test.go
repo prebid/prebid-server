@@ -51,7 +51,7 @@ func newDummyRequest() *http.Request {
 func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
