@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -21,7 +22,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client(), &config.Configuration{}).(*exchange)
+	e := NewExchange(server.Client(), nil, &config.Configuration{}).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
@@ -216,10 +217,8 @@ func TestBuildBidResponse(t *testing.T) {
 	errList := make([]error, 0, 1)
 	targData := &targetData{
 		priceGranularity: openrtb_ext.PriceGranularityMedium,
-		winningBids:      make(map[string]*openrtb.Bid),
-		winningBidders:   make(map[string]openrtb_ext.BidderName),
 	}
-	bidResponse, err := e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
+	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -279,7 +278,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -298,7 +297,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -450,6 +449,7 @@ func NewDummyExchange(client *http.Client) *exchange {
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.cache = &wellBehavedCache{}
 	return e
 }
 
@@ -617,4 +617,14 @@ func convertErr2Str(e []error) []string {
 		s[i] = e[i].Error()
 	}
 	return s
+}
+
+type wellBehavedCache struct{}
+
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage) []string {
+	ids := make([]string, len(values))
+	for i := 0; i < len(values); i++ {
+		ids[i] = strconv.Itoa(i)
+	}
+	return ids
 }

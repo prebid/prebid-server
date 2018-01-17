@@ -127,6 +127,17 @@ type Cache struct {
 	Scheme string `mapstructure:"scheme"`
 	Host   string `mapstructure:"host"`
 	Query  string `mapstructure:"query"`
+
+	// A static timeout here is not ideal. This is a hack because we have some aggressive timelines for OpenRTB support.
+	// This value specifies how much time the prebid server host expects a call to prebid cache to take.
+	//
+	// OpenRTB allows the caller to specify the auction timeout. Prebid Server will subtract _this_ amount of time
+	// from the timeout it gives demand sources to respond.
+	//
+	// In reality, the cache response time will probably fluctuate with the traffic over time. Someday,
+	// this should be replaced by code which tracks the response time of recent cache calls and
+	// adjusts the time dynamically.
+	ExpectedTimeMillis int `mapstructure:"expected_millis"`
 }
 
 type Cookie struct {
@@ -144,17 +155,17 @@ func New() (*Configuration, error) {
 }
 
 //Allows for protocol relative URL if scheme is empty
-func (cfg *Configuration) GetCacheBaseURL() string {
-	cfg.CacheURL.Scheme = strings.ToLower(cfg.CacheURL.Scheme)
-	if strings.Contains(cfg.CacheURL.Scheme, "https") {
-		return fmt.Sprintf("https://%s", cfg.CacheURL.Host)
+func (cfg *Cache) GetBaseURL() string {
+	cfg.Scheme = strings.ToLower(cfg.Scheme)
+	if strings.Contains(cfg.Scheme, "https") {
+		return fmt.Sprintf("https://%s", cfg.Host)
 	}
-	if strings.Contains(cfg.CacheURL.Scheme, "http") {
-		return fmt.Sprintf("http://%s", cfg.CacheURL.Host)
+	if strings.Contains(cfg.Scheme, "http") {
+		return fmt.Sprintf("http://%s", cfg.Host)
 	}
-	return fmt.Sprintf("//%s", cfg.CacheURL.Host)
+	return fmt.Sprintf("//%s", cfg.Host)
 }
 
 func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
-	return fmt.Sprintf("%s/cache?%s", cfg.GetCacheBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
+	return fmt.Sprintf("%s/cache?%s", cfg.CacheURL.GetBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 }
