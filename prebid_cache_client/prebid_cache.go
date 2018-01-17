@@ -10,6 +10,9 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+// This file is deprecated, and is only used to cache things for the legacy (/auction) endpoint.
+// For /openrtb2/auction cache, see client.go in this package.
+
 type CacheObject struct {
 	Value *BidCache
 	UUID  string

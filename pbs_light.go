@@ -709,6 +709,7 @@ func init() {
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
+	viper.SetDefault("cache.expected_millis", 10)
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
@@ -845,7 +846,7 @@ func serve(cfg *config.Configuration) error {
 		},
 	}
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
-	theExchange := exchange.NewExchange(theClient, cfg, theMetrics)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
@@ -889,7 +890,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.GetCacheBaseURL())
+	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})

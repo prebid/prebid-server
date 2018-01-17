@@ -424,7 +424,18 @@ var validRequests = []string{
 					"appnexus": "good"
 				}
 			}
-		]
+		],
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low",
+					"lengthmax": 20
+				},
+				"cache": {
+					"bids": {}
+				}
+			}
+		}
 	}`,
 	`{
 		"id": "some-request-id",
@@ -667,6 +678,7 @@ var invalidRequests = []string{
 				"storedrequest": {
 					"id": 13
 				}
+				"cache": {}
 			}
 		}
 	}`,
