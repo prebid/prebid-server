@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -21,7 +22,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client(), &config.Configuration{}).(*exchange)
+	e := NewExchange(server.Client(), nil, &config.Configuration{}).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
@@ -67,7 +68,7 @@ func TestHoldAuction(t *testing.T) {
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
 
-	bidResponse, err := e.HoldAuction(ctx, bidRequest)
+	bidResponse, err := e.HoldAuction(ctx, bidRequest, &emptyUsersync{})
 	if err != nil {
 		t.Errorf("HoldAuction: %s", err.Error())
 	}
@@ -216,10 +217,8 @@ func TestBuildBidResponse(t *testing.T) {
 	errList := make([]error, 0, 1)
 	targData := &targetData{
 		priceGranularity: openrtb_ext.PriceGranularityMedium,
-		winningBids:      make(map[string]*openrtb.Bid),
-		winningBidders:   make(map[string]openrtb_ext.BidderName),
 	}
-	bidResponse, err := e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
+	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -279,7 +278,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -298,7 +297,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -312,7 +311,98 @@ func TestBuildBidResponse(t *testing.T) {
 	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
 		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
 	}
+}
 
+var baseRequest = openrtb.BidRequest{
+	ID: "foo",
+	Imp: []openrtb.Imp{{
+		Video: &openrtb.Video{
+			MIMEs: []string{"video/mp4"},
+		},
+	}},
+	App: &openrtb.App{},
+}
+
+func TestBuyerIdWithoutUser(t *testing.T) {
+	req := baseRequest
+	runBuyerTest(t, &req, true)
+}
+
+func TestBuyerIdWithUser(t *testing.T) {
+	req := baseRequest
+	req.User = &openrtb.User{
+		ID: "abc",
+	}
+
+	runBuyerTest(t, &req, true)
+}
+
+func TestBuyerIdWithExplicit(t *testing.T) {
+	req := baseRequest
+	req.User = &openrtb.User{
+		ID:       "abc",
+		BuyerUID: "def",
+	}
+
+	runBuyerTest(t, &req, false)
+}
+
+func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverride bool) {
+	t.Helper()
+
+	initialId := ""
+	if incoming.User != nil {
+		initialId = incoming.User.BuyerUID
+	}
+
+	overrideId := "apnId"
+
+	incoming.Imp[0].Ext = []byte(`{"appnexus": {}}`)
+	syncs := &mockSyncs{
+		uids: map[openrtb_ext.BidderName]string{
+			openrtb_ext.BidderAppnexus: overrideId,
+		},
+	}
+
+	bidder := &mockBidder{}
+
+	ex := &exchange{
+		adapters: []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
+		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
+			openrtb_ext.BidderAppnexus: bidder,
+		},
+	}
+	ex.HoldAuction(context.Background(), incoming, syncs)
+
+	if bidder.lastRequest == nil {
+		t.Fatalf("The Bidder never received a request.")
+	}
+
+	if bidder.lastRequest.User == nil {
+		t.Fatalf("bidrequest.user was not defined on the Bidder's request.")
+	}
+
+	if (expectBuyeridOverride && bidder.lastRequest.User.BuyerUID != overrideId) || (!expectBuyeridOverride && bidder.lastRequest.User.BuyerUID != initialId) {
+		t.Errorf("Bidder received bad bidrequest.user.buyeruid. Expected %s, got %s", initialId, bidder.lastRequest.User.BuyerUID)
+	}
+}
+
+type mockBidder struct {
+	lastRequest *openrtb.BidRequest
+}
+
+func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+	b.lastRequest = request
+	return nil, nil
+}
+
+type mockSyncs struct {
+	uids map[openrtb_ext.BidderName]string
+}
+
+func (m *mockSyncs) GetId(name openrtb_ext.BidderName) (id string, ok bool) {
+	id, ok = m.uids[name]
+	return
 }
 
 func assertStringValue(t *testing.T, object string, expect string, value string) {
@@ -359,6 +449,7 @@ func NewDummyExchange(client *http.Client) *exchange {
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.cache = &wellBehavedCache{}
 	return e
 }
 
@@ -526,4 +617,14 @@ func convertErr2Str(e []error) []string {
 		s[i] = e[i].Error()
 	}
 	return s
+}
+
+type wellBehavedCache struct{}
+
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage) []string {
+	ids := make([]string, len(values))
+	for i := 0; i < len(values); i++ {
+		ids[i] = strconv.Itoa(i)
+	}
+	return ids
 }

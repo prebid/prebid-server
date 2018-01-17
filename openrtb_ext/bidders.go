@@ -18,25 +18,25 @@ type BidderName string
 const (
 	BidderAppnexus   BidderName = "appnexus"
 	BidderFacebook   BidderName = "facebook"
-	BidderIndex      BidderName = "index"
+	BidderIndex      BidderName = "indexExchange"
 	BidderLifestreet BidderName = "lifestreet"
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
-	BidderRubicon 	BidderName = "rubicon"
-	BidderSovrn 		BidderName = "sovrn"
+	BidderRubicon 	 BidderName = "rubicon"
+	BidderSovrn 	 BidderName = "sovrn"
 	BidderConversant BidderName = "conversant"
 )
 
 var bidderMap = map[string]BidderName{
-	"appnexus":   BidderAppnexus,
-	"facebook":   BidderFacebook,
-	"index":      BidderIndex,
-	"lifestreet": BidderLifestreet,
-	"pubmatic":   BidderPubmatic,
-	"pulsepoint": BidderPulsepoint,
-	"rubicon":    BidderRubicon,
+	"appnexus":      BidderAppnexus,
+	"facebook":      BidderFacebook,
+	"indexExchange": BidderIndex,
+	"lifestreet":    BidderLifestreet,
+	"pubmatic":      BidderPubmatic,
+	"pulsepoint":    BidderPulsepoint,
+	"rubicon":       BidderRubicon,
+	"conversant":    BidderConversant,
 	"sovrn":      BidderSovrn,
-	"conversant": BidderConversant,
 }
 
 // GetBidderName returns the BidderName for the given string, if it exists.
