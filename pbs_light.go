@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -30,6 +31,8 @@ import (
 	"syscall"
 
 	"crypto/tls"
+	"strings"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -57,7 +60,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
-	"strings"
 )
 
 type DomainMetrics struct {
@@ -834,24 +836,25 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	theExchange := exchange.NewExchange(
-		&http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:        400,
-				MaxIdleConnsPerHost: 10,
-				IdleConnTimeout:     60 * time.Second,
-				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
-			},
+	// TODO: Currently setupExchanges() creates metricsRegistry. We will need to do this
+	// here if/when the legacy endpoint goes away.
+	theClient := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        400,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     60 * time.Second,
+			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
-		pbc.NewClient(&cfg.CacheURL),
-		cfg)
+	}
+	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}

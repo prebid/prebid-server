@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"math/rand"
 )
 
@@ -30,7 +31,7 @@ func randomizeList(list []openrtb_ext.BidderName) {
 // before submitting.
 
 // Take an openrtb request, and a list of bidders, and return an openrtb request sanitized for each bidder
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName, usersyncs IdFetcher) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.BidderName, usersyncs IdFetcher, met *pbsmetrics.Metrics) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
 	// This is the clean array of openrtb requests we will be returning
 	cleanReqs := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(adapters))
 	errList := make([]error, 0, 1)
@@ -87,6 +88,15 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, adapters []openrtb_ext.Bidde
 			prepareUser(newReq, adapters[i], usersyncs)
 			newReq.Imp = newImps
 			cleanReqs[adapters[i]] = newReq
+			// Grab some statistics now we know we are holding an auction
+			met.AdapterMetrics[adapters[i]].RequestMeter.Mark(1)
+			if newReq.App == nil {
+				_, found := usersyncs.GetId(adapters[i])
+				if !found {
+					met.AdapterMetrics[adapters[i]].NoCookieMeter.Mark(1)
+				}
+			}
+
 		}
 	}
 	return cleanReqs, errList

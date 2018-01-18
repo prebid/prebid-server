@@ -9,11 +9,13 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
@@ -24,12 +26,12 @@ import (
 	"time"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -37,9 +39,22 @@ type endpointDeps struct {
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
+	metrics          *pbsmetrics.Metrics
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.metrics.RequestMeter.Mark(1)
+	deps.metrics.ORTBRequestMeter.Mark(1)
+
+	isSafari := false
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
+			isSafari = true
+			deps.metrics.SafariRequestMeter.Mark(1)
+		}
+	}
+
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
@@ -47,10 +62,20 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
+		deps.metrics.ErrorMeter.Mark(1)
 		return
 	}
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+
+	if req.App != nil {
+		deps.metrics.AppRequestMeter.Mark(1)
+	} else if usersyncs.LiveSyncCount() == 0 {
+		deps.metrics.NoCookieMeter.Mark(1)
+		if isSafari {
+			deps.metrics.SafariNoCookieMeter.Mark(1)
+		}
+	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
 	if err != nil {
