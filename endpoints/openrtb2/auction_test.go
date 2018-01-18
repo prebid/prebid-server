@@ -260,6 +260,38 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+// Test valid/invalid DigiTrust functionality
+func TestDigiTrust(t *testing.T) {
+	for _, requestData := range digiTrustTestRequests {
+		bidReq := &openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		err = validateUser(bidReq.User)
+
+		switch bidReq.ID {
+		case "request-without-user-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-without-user-ext-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-with-valid-digitrust-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-with-invalid-digitrust-obj":
+			if err == nil {
+				t.Fatalf("validateUser should return an error due to digitrust.")
+			}
+		}
+	}
+}
+
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
@@ -395,6 +427,148 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bi
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
 	return "{}"
+}
+
+var digiTrustTestRequests = []string{
+	`{
+		"id": "request-without-user-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "request-without-user-ext-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"user": {
+			"yob": 1989
+		}
+	}`,
+	`{
+		"id": "request-with-valid-digitrust-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"user": {
+			"yob": 1989,
+			"ext": {
+				"digitrust": {
+					"id": "sample-digitrust-id",
+					"keyv": 1,
+					"pref": 0
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "request-with-invalid-digitrust-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"user": {
+			"yob": 1989,
+			"ext": {
+				"digitrust": {
+					"id": "sample-digitrust-id",
+					"keyv": 1,
+					"pref": 1
+				}
+			}
+		}
+	}`,
 }
 
 var validRequests = []string{

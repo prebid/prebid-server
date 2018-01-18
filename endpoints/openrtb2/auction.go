@@ -152,6 +152,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		errs = []error{err}
 		return
 	}
+
 	return
 }
 
@@ -179,6 +180,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
+		return err
+	}
+
+	if err := validateUser(req.User); err != nil {
 		return err
 	}
 
@@ -332,6 +337,26 @@ func (deps *endpointDeps) validateBidRequestExt(ext openrtb.RawJSON) error {
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if site != nil && site.ID == "" && site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+	}
+
+	return nil
+}
+
+func validateUser(user *openrtb.User) error {
+	// DigiTrust support
+	if user != nil && user.Ext != nil {
+		// Creating ExtUser object to check if DigiTrust is valid
+		var userExt openrtb_ext.ExtUser
+		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
+			// Checking if DigiTrust is valid
+			if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
+				// DigiTrust is not valid. Return error.
+				return errors.New("request.user contains a digitrust object that is not valid.")
+			}
+		} else {
+			// Return error.
+			return errors.New("request.user.ext object is not valid.")
+		}
 	}
 
 	return nil
