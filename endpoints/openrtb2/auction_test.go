@@ -425,7 +425,18 @@ var validRequests = []string{
 					"appnexus": "good"
 				}
 			}
-		]
+		],
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low",
+					"lengthmax": 20
+				},
+				"cache": {
+					"bids": {}
+				}
+			}
+		}
 	}`,
 	`{
 		"id": "some-request-id",
@@ -623,6 +634,24 @@ var invalidRequests = []string{
 				"appnexus": "good"
 			}
 		}]
+	}`,
+	`{
+		"id": "some-request-id",
+		"site": {"page": "test.somepage.com"},
+		"imp": [{
+			"id": "my-imp-id",
+			"video": {
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"cache": {}
+			}
+		}
 	}`,
 }
 
