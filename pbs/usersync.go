@@ -78,7 +78,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret    string
 	HostCookieSettings *HostCookieSettings
 	Metrics            metrics.Registry
-	Analytics          *analytics.Module
+	Analytics          *analytics.Analytics
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -336,7 +336,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
 		if deps.Analytics != nil {
 			so.Status = http.StatusUnauthorized
-			(*deps.Analytics).LogToModule(&so)
+			(*deps.Analytics).LogSetUIDObject(&so)
 		}
 		return
 	}
@@ -348,7 +348,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
 		if deps.Analytics != nil {
 			so.Status = http.StatusBadRequest
-			(*deps.Analytics).LogToModule(&so)
+			(*deps.Analytics).LogSetUIDObject(&so)
 		}
 		return
 	}
@@ -369,7 +369,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
 	if deps.Analytics != nil {
-		(*deps.Analytics).LogToModule(&so)
+		(*deps.Analytics).LogSetUIDObject(&so)
 	}
 }
 

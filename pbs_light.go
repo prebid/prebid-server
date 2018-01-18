@@ -191,11 +191,11 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-var atics analytics2.Module
+var atics analytics2.Analytics
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var cso analytics2.CookieSyncObject
-	if atics != nil {
+	if atics.Enabled {
 		cso = analytics2.CookieSyncObject{
 			Type:   analytics2.COOKIE_SYNC,
 			Status: http.StatusOK,
@@ -208,10 +208,10 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !userSyncCookie.AllowSyncs() {
 
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
-		if atics != nil {
+		if atics.Enabled {
 			cso.Status = http.StatusUnauthorized
 			cso.Error = append(cso.Error, errors.New("user has opted out"))
-			atics.LogToModule(&cso)
+			atics.LogCookieSyncObject(&cso)
 		}
 		return
 	}
@@ -224,20 +224,20 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
-		if atics != nil {
+		if atics.Enabled {
 			if c, err := json.Marshal(csReq); err == nil {
 				cso.Request = string(c)
 			} else {
 				fmt.Printf("Cookie sync request marshal error %v", err)
 			}
 			cso.Status = http.StatusBadRequest
-			atics.LogToModule(&cso)
+			atics.LogCookieSyncObject(&cso)
 		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
 
-	if c, err := json.Marshal(csReq); err == nil && atics != nil {
+	if c, err := json.Marshal(csReq); err == nil && atics.Enabled {
 		cso.Request = string(c)
 	}
 
@@ -265,9 +265,9 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		}
 	}
 
-	if cs, err := json.Marshal(csResp); err == nil && atics != nil {
+	if cs, err := json.Marshal(csResp); err == nil && atics.Enabled {
 		cso.Response = string(cs)
-		atics.LogToModule(&cso)
+		atics.LogCookieSyncObject(&cso)
 	}
 
 	enc := json.NewEncoder(w)
@@ -829,10 +829,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
-
-	if cfg.EnableTransactionLogging {
-		atics = analytics2.SetupAnalytics(cfg)
-	}
+	cfg.Analytics.Setup()
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
@@ -883,7 +880,7 @@ func serve(cfg *config.Configuration) error {
 				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 			},
 		},
-		cfg, &atics)
+		cfg)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {

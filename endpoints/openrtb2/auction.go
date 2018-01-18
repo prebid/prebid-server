@@ -43,14 +43,13 @@ type endpointDeps struct {
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	var ao a.AuctionObject
-	if deps.ex.IsLoggingEnabled() {
+	if deps.cfg.Analytics.Enabled {
 		ao = a.AuctionObject{
-			Request:            *req,
-			Status:             http.StatusOK,
-			Type:               a.AUCTION,
-			Error:              make([]error, 0),
-			AdapterBidRequests: make([]a.LoggableAdapterRequests, 0),
-			UserAgent:          r.UserAgent(),
+			Request:   *req,
+			Status:    http.StatusOK,
+			Type:      a.AUCTION,
+			Error:     make([]error, 0),
+			UserAgent: r.UserAgent(),
 		}
 	}
 
@@ -60,11 +59,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		if deps.ex.IsLoggingEnabled() {
+		if deps.cfg.Analytics.Enabled {
 			ao.Error = make([]error, len(errL))
 			ao.Status = http.StatusBadRequest
 			copy(ao.Error, errL)
-			deps.ex.LogTransaction(&ao)
+			deps.cfg.Analytics.LogAuctionObject(&ao)
 		}
 		return
 	}
@@ -75,10 +74,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		if deps.ex.IsLoggingEnabled() {
+		if deps.cfg.Analytics.Enabled {
 			ao.Status = http.StatusInternalServerError
 			ao.Error = append(ao.Error, err)
-			deps.ex.LogTransaction(&ao)
+			deps.cfg.Analytics.LogAuctionObject(&ao)
 		}
 		return
 	}
@@ -86,9 +85,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	if deps.ex.IsLoggingEnabled() {
+	if deps.cfg.Analytics.Enabled {
 		ao.Response = *response
-		deps.ex.LogTransaction(&ao)
+		deps.cfg.Analytics.LogAuctionObject(&ao)
 	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
