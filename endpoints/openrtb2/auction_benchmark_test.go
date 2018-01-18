@@ -1,7 +1,6 @@
 package openrtb2
 
 import (
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
@@ -52,8 +51,8 @@ func newDummyRequest() *http.Request {
 func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
-	atics := analytics.SetupAnalytics(&config.Configuration{})
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}, &atics), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), &config.Configuration{}), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		endpoint(httptest.NewRecorder(), newDummyRequest(), nil)

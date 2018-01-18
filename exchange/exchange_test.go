@@ -22,8 +22,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	atics := analytics.SetupAnalytics(&config.Configuration{})
-	e := NewExchange(server.Client(), &config.Configuration{}, &atics).(*exchange)
+	e := NewExchange(server.Client(), &config.Configuration{}).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
