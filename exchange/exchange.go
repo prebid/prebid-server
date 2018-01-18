@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/prebid_cache_client"
 	"net/http"
 	"time"
+
+	"github.com/mxmCherry/openrtb"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -28,6 +31,7 @@ type exchange struct {
 	// The list of adapters we will consider for this auction
 	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
+	m          *pbsmetrics.Metrics
 	cache      prebid_cache_client.Client
 	cacheTime  time.Duration
 }
@@ -44,7 +48,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
@@ -54,12 +58,13 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.m = registry
 	return e
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs)
+	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs, e.m)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0
@@ -129,12 +134,33 @@ func (e *exchange) getAllBids(ctx context.Context, liveAdapters []openrtb_ext.Bi
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
+			// Timing statistics
+			e.m.AdapterMetrics[aName].RequestTimer.UpdateSince(start)
 			serr := make([]string, len(err))
 			for i := 0; i < len(err); i++ {
 				serr[i] = err[i].Error()
+				// TODO: #142: for a bidder that return multiple errors, we will log multiple errors for that request
+				// in the metrics. Need to remember that in analyzing the data.
+				switch err[i] {
+				case context.DeadlineExceeded:
+					e.m.AdapterMetrics[aName].TimeoutMeter.Mark(1)
+				default:
+					e.m.AdapterMetrics[aName].ErrorMeter.Mark(1)
+				}
 			}
 			ae.Errors = serr
 			brw.adapterExtra = ae
+			if len(err) == 0 {
+				if bids == nil || len(bids.bids) == 0 {
+					// Don't want to mark no bids on error topreserve legacy behavior.
+					e.m.AdapterMetrics[aName].NoBidMeter.Mark(1)
+				} else {
+					for _, bid := range bids.bids {
+						var cpm = int64(bid.bid.Price * 1000)
+						e.m.AdapterMetrics[aName].PriceHistogram.Update(cpm)
+					}
+				}
+			}
 			chBids <- brw
 		}(a)
 	}
