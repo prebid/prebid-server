@@ -56,6 +56,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	"strings"
 )
 
@@ -940,6 +941,11 @@ func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err e
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
+	}
+
+	if cfg.InMemoryCache != nil {
+		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
+		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
 }
