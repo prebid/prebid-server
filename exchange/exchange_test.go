@@ -8,6 +8,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -22,7 +24,7 @@ func TestNewExchange(t *testing.T) {
 	defer server.Close()
 
 	// Just match the counts
-	e := NewExchange(server.Client(), nil, &config.Configuration{}).(*exchange)
+	e := NewExchange(server.Client(), nil, &config.Configuration{}, pbsmetrics.NewMetrics(metrics.NewRegistry(), AdapterList())).(*exchange)
 	if len(e.adapters) != len(e.adapterMap) {
 		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
 	}
@@ -371,6 +373,7 @@ func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverr
 		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
 			openrtb_ext.BidderAppnexus: bidder,
 		},
+		m: pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}),
 	}
 	ex.HoldAuction(context.Background(), incoming, syncs)
 
@@ -449,6 +452,8 @@ func NewDummyExchange(client *http.Client) *exchange {
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
+	e.m = pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), e.adapters)
+
 	e.cache = &wellBehavedCache{}
 	return e
 }
