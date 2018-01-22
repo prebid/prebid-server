@@ -27,6 +27,14 @@ All pull requests must have 90% coverage in the changed code. Check the code cov
 
 Bugfixes should include a regression test which prevents that bug from being re-introduced in the future.
 
+## Update Documentation
+
+Documentation for the project is stored in the [docs](..) directory. If your feature requires docs updates,
+those updates must be submitted in the same Pull Request as the code changes.
+
+- [docs/endpoints](../endpoints) describes the Prebid Server API. For example, the endpoint `host:port/openrtb2/auction` is described by [docs/endpoints/openrtb2/auction.md](../endpoints/openrtb2/auction.md)
+- [docs/developers](../developers) contains docs intended for Developers. These assume that the reader is technical, and describe the mechanics of features.
+
 ## Open a Pull Request
 
 When you're ready, [submit a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
