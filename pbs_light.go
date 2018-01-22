@@ -848,19 +848,28 @@ func serve(cfg *config.Configuration) error {
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
-	byId, err := NewFetcher(&(cfg.StoredRequests))
+	byId, err := NewFetcher(&(cfg.StoredRequests), "DEFAULT")
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
+
+	byAmpId, err := NewFetcher(&(cfg.StoredRequests), "AMP")
+	// No need to relog the error above on error.
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics)
+	if err != nil {
+		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
+	}
+
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
+	router.POST("/openrtb2/amp", ampEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
@@ -933,13 +942,13 @@ const requestConfigPath = "./stored_requests/data/by_id"
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err error) {
+func NewFetcher(cfg *config.StoredRequests, qtype string) (byId stored_requests.Fetcher, err error) {
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
 		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
-		byId, err = db_fetcher.NewPostgres(cfg.Postgres)
+		byId, err = db_fetcher.NewPostgres(cfg.Postgres, qtype)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()

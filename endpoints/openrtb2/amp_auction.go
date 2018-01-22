@@ -21,7 +21,7 @@ import (
 )
 
 type AmpResponse struct {
-	targeting map[string]string `json:"targeting"`
+	Targeting map[string]string `json:"targeting"`
 }
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -47,7 +47,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Set this as an AMP request in Metrics. Should it also count as an OpenRTB request?
 	deps.metrics.AmpRequestMeter.Mark(1)
 
-	req, errL := deps.parseRequest(r)
+	req, errL := deps.parseAmpRequest(r)
 	isSafari := false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
@@ -120,8 +120,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	// Now JSONify the tragets for the AMP response.
-	ampResponse := &AmpResponse{
-		targeting: targets,
+	ampResponse := AmpResponse{
+		Targeting: targets,
 	}
 
 	// Fixes #231
@@ -163,11 +163,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 		errs = []error{fmt.Errorf("No AMP config found for ID '%s'", ampId)}
 		return
 	}
-	// An extra check just to be safe.
-	if len(storedRequests) > 1 {
-		errs = []error{fmt.Errorf("Error fetching AMP config for ID '%s', multiple configs found.", ampId)}
-		return
-	}
+
 	// The fetched config becomes the entire OpenRTB request
 	requestJson := storedRequests[ampId]
 	if err := json.Unmarshal(requestJson, req); err != nil {
@@ -190,9 +186,11 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// Need to ensure cache and targeting are turned on
 	extRequest := &openrtb_ext.ExtRequest{}
-	if err := json.Unmarshal(req.Ext, extRequest); err != nil {
-		errs = []error{err}
-		return
+	if req.Ext != nil && len(req.Ext) > 0 {
+		if err := json.Unmarshal(req.Ext, extRequest); err != nil {
+			errs = []error{err}
+			return
+		}
 	}
 
 	updateExt := false

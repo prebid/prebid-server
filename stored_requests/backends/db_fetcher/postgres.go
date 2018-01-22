@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
+func NewPostgres(cfg *config.PostgresConfig, qtype string) (stored_requests.Fetcher, error) {
 	db, err := sql.Open("postgres", confToPostgresDSN(cfg))
 	if err != nil {
 		return nil, err
@@ -18,6 +18,15 @@ func NewPostgres(cfg *config.PostgresConfig) (stored_requests.Fetcher, error) {
 		return nil, err
 	}
 
+	switch qtype {
+	// Using a case for future expandability
+	case "AMP":
+		return &dbFetcher{
+			db:         db,
+			queryMaker: cfg.MakeAmpQuery,
+		}, nil
+	}
+	// Default fetcher
 	return &dbFetcher{
 		db:         db,
 		queryMaker: cfg.MakeQuery,
