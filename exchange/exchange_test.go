@@ -11,8 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
+
+	"github.com/mxmCherry/openrtb"
 )
 
 // TODO: Fix this before the final PR
@@ -23,7 +26,7 @@ import (
 // 	defer server.Close()
 
 // 	// Just match the counts
-// 	e := NewExchange(server.Client(), nil, &config.Configuration{}).(*exchange)
+// 	e := NewExchange(server.Client(), nil, &config.Configuration{}, pbsmetrics.NewMetrics(metrics.NewRegistry(), AdapterList()).(*exchange)
 // 	// Test that all adapters are in the map and not repeated
 // 	tmp := make(map[openrtb_ext.BidderName]int)
 // 	for _, a := range openrtb_ext. {
@@ -369,6 +372,7 @@ func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverr
 		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
 			openrtb_ext.BidderAppnexus: bidder,
 		},
+		m: pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}),
 	}
 	ex.HoldAuction(context.Background(), incoming, syncs)
 
@@ -443,6 +447,9 @@ func NewDummyExchange(client *http.Client) *exchange {
 		BidderDummy3: c,
 	}
 
+	adapterList := []openrtb_ext.BidderName{BidderDummy, BidderDummy2, BidderDummy3}
+
+	e.m = pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), adapterList)
 	e.cache = &wellBehavedCache{}
 	return e
 }

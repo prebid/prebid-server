@@ -6,6 +6,8 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -34,6 +36,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	bidRequest := openrtb.BidRequest{
 		ID:  "This Bid",
 		Imp: make([]openrtb.Imp, 2),
+		Ext: openrtb.RawJSON(`{"prebid":{"aliases":{"dummy":"appnexus","dummy2":"rubicon","dummy3":"indexExchange"}}}`),
 	}
 	// Need extensions for all the bidders so we know to hold auctions for them.
 	impExt := make(map[string]interface{})
@@ -53,8 +56,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
-
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{})
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
 
 	if len(errList) > 0 {
 		for _, e := range errList {

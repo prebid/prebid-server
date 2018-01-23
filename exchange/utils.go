@@ -8,6 +8,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -15,7 +16,7 @@ import (
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, met *pbsmetrics.Metrics) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
 		return
@@ -26,19 +27,19 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher) (reques
 		return
 	}
 
-	requestsByBidder = splitBidRequest(orig, impsByBidder, aliases, usersyncs)
+	requestsByBidder = splitBidRequest(orig, impsByBidder, aliases, usersyncs, met)
 	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher) map[openrtb_ext.BidderName]*openrtb.BidRequest {
+func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, met *pbsmetrics.Metrics) map[openrtb_ext.BidderName]*openrtb.BidRequest {
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	for bidder, imps := range impsByBidder {
-		coreBidder := bidder
-		if linkedBidder, ok := aliases[bidder]; ok {
-			coreBidder = linkedBidder
-		}
 		reqCopy := *req
-		prepareUser(&reqCopy, openrtb_ext.BidderName(coreBidder), usersyncs)
+		coreBidder := resolveBidder(bidder, aliases)
+		met.AdapterMetrics[coreBidder].RequestMeter.Mark(1)
+		if hadSync := prepareUser(&reqCopy, coreBidder, usersyncs); !hadSync && req.App == nil {
+			met.AdapterMetrics[coreBidder].NoCookieMeter.Mark(1)
+		}
 		reqCopy.Imp = imps
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
@@ -101,7 +102,10 @@ func sanitizedImpCopy(imp *openrtb.Imp, ext map[string]openrtb.RawJSON, intended
 
 // prepareUser changes req.User so that it's ready for the given bidder.
 // This *will* mutate the request, but will *not* mutate any objects nested inside it.
-func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyncs IdFetcher) {
+//
+// This function expects bidder to be a "known" bidder name. It will not work on aliases.
+// It returns true if an ID sync existed, and false otherwise.
+func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyncs IdFetcher) bool {
 	if id, ok := usersyncs.GetId(bidder); ok {
 		if req.User == nil {
 			req.User = &openrtb.User{
@@ -112,7 +116,17 @@ func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyn
 			clone.BuyerUID = id
 			req.User = &clone
 		}
+		return true
 	}
+	return false
+}
+
+// resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.
+func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderName {
+	if coreBidder, ok := aliases[bidder]; ok {
+		return openrtb_ext.BidderName(coreBidder)
+	}
+	return openrtb_ext.BidderName(bidder)
 }
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
