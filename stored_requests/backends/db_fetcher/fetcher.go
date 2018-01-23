@@ -53,6 +53,9 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 
 		reqData[id] = thisReqData
 	}
+	if rows.Err() != nil {
+		errs = append(errs, rows.Err())
+	}
 
 	for _, id := range ids {
 		if _, ok := reqData[id]; !ok {

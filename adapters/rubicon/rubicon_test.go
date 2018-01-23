@@ -938,6 +938,14 @@ func TestOpenRTBRequest(t *testing.T) {
 		Device: &openrtb.Device{
 			PxRatio: rubidata.devicePxRatio,
 		},
+		User: &openrtb.User{
+			Ext: openrtb.RawJSON(`{"digitrust": {
+				"id": "some-digitrust-id",
+				"keyv": 1,
+				"pref": 0
+
+			}}`),
+		},
 	}
 
 	reqs, errs := bidder.MakeRequests(request)
@@ -1006,6 +1014,18 @@ func TestOpenRTBRequest(t *testing.T) {
 			if rpRequest.Imp[0].Video.MaxDuration != 30 {
 				t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, rpRequest.Imp[0].Video.MaxDuration)
 			}
+		}
+
+		if rpRequest.User.Ext != nil {
+			var userExt rubiconUserExt
+			if err := json.Unmarshal(rpRequest.User.Ext, &userExt); err != nil {
+				t.Fatal("Error unmarshalling request.user.ext object.")
+			}
+			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
+				t.Fatal("DigiTrust values are not as expected!")
+			}
+		} else {
+			t.Fatalf("User.Ext object should not be nil since it contains a valid digitrust object.")
 		}
 	}
 }

@@ -9,10 +9,13 @@ import (
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
@@ -23,12 +26,12 @@ import (
 	"time"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration) (httprouter.Handle, error) {
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -36,9 +39,22 @@ type endpointDeps struct {
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
+	metrics          *pbsmetrics.Metrics
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.metrics.RequestMeter.Mark(1)
+	deps.metrics.ORTBRequestMeter.Mark(1)
+
+	isSafari := false
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
+			isSafari = true
+			deps.metrics.SafariRequestMeter.Mark(1)
+		}
+	}
+
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
 	if len(errL) > 0 {
@@ -46,13 +62,26 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
+		deps.metrics.ErrorMeter.Mark(1)
 		return
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req)
+	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+
+	if req.App != nil {
+		deps.metrics.AppRequestMeter.Mark(1)
+	} else if usersyncs.LiveSyncCount() == 0 {
+		deps.metrics.NoCookieMeter.Mark(1)
+		if isSafari {
+			deps.metrics.SafariNoCookieMeter.Mark(1)
+		}
+	}
+
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		glog.Errorf("/openrtb2/auction Critical error: %v", err)
 		return
 	}
 
@@ -117,12 +146,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		return
 	}
 
-	setFieldsImplicitly(httpRequest, req)
+	deps.setFieldsImplicitly(httpRequest, req)
 
 	if err := deps.validateRequest(req); err != nil {
 		errs = []error{err}
 		return
 	}
+
 	return
 }
 
@@ -150,6 +180,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
+		return err
+	}
+
+	if err := validateUser(req.User); err != nil {
+		return err
+	}
+
+	if err := deps.validateBidRequestExt(req.Ext); err != nil {
 		return err
 	}
 
@@ -285,9 +323,40 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	return nil
 }
 
+func (deps *endpointDeps) validateBidRequestExt(ext openrtb.RawJSON) error {
+	if len(ext) < 1 {
+		return nil
+	}
+	var tmpExt openrtb_ext.ExtRequest
+	if err := json.Unmarshal(ext, &tmpExt); err != nil {
+		return fmt.Errorf("request.ext is invalid: %v", err)
+	}
+	return nil
+}
+
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if site != nil && site.ID == "" && site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+	}
+
+	return nil
+}
+
+func validateUser(user *openrtb.User) error {
+	// DigiTrust support
+	if user != nil && user.Ext != nil {
+		// Creating ExtUser object to check if DigiTrust is valid
+		var userExt openrtb_ext.ExtUser
+		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
+			// Checking if DigiTrust is valid
+			if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
+				// DigiTrust is not valid. Return error.
+				return errors.New("request.user contains a digitrust object that is not valid.")
+			}
+		} else {
+			// Return error.
+			return errors.New("request.user.ext object is not valid.")
+		}
 	}
 
 	return nil
@@ -298,13 +367,15 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 // OpenRTB properties from the headers and other implicit info.
 //
 // This function _should not_ override any fields which were defined explicitly by the caller in the request.
-func setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	setDeviceImplicitly(httpReq, bidReq)
 
 	// Per the OpenRTB spec: A bid request must not contain both a Site and an App object.
 	if bidReq.App == nil {
 		setSiteImplicitly(httpReq, bidReq)
 	}
+
+	deps.setUserImplicitly(httpReq, bidReq)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
@@ -332,6 +403,44 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 					bidReq.Site.Page = referrerCandidate
 				}
 			}
+		}
+	}
+}
+
+// setUserImplicitly uses implicit info from httpReq to populate bidReq.User
+func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.User == nil || bidReq.User.ID == "" {
+		if id, ok := parseUserID(deps.cfg, httpReq); ok {
+			if bidReq.User == nil {
+				bidReq.User = &openrtb.User{}
+			}
+			if bidReq.User.ID == "" {
+				bidReq.User.ID = id
+			}
+		}
+	}
+}
+
+// setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
+func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.IP == "" {
+		if ip := prebid.GetIP(httpReq); ip != "" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+			bidReq.Device.IP = ip
+		}
+	}
+}
+
+// setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
+func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Device == nil || bidReq.Device.UA == "" {
+		if ua := httpReq.UserAgent(); ua != "" {
+			if bidReq.Device == nil {
+				bidReq.Device = &openrtb.Device{}
+			}
+			bidReq.Device.UA = ua
 		}
 	}
 }
@@ -373,30 +482,6 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *op
 	}
 
 	return errList
-}
-
-// setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
-func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.IP == "" {
-		if ip := prebid.GetIP(httpReq); ip != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
-			}
-			bidReq.Device.IP = ip
-		}
-	}
-}
-
-// setUAImplicitly sets the User Agent on bidReq, if it's not explicitly defined and it's defined on the request.
-func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Device == nil || bidReq.Device.UA == "" {
-		if ua := httpReq.UserAgent(); ua != "" {
-			if bidReq.Device == nil {
-				bidReq.Device = &openrtb.Device{}
-			}
-			bidReq.Device.UA = ua
-		}
-	}
 }
 
 // Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
@@ -442,4 +527,13 @@ func getArrayElements(data []byte) (result [][]byte) {
 	})
 
 	return
+}
+
+// parseUserId gets this user's ID  for the host machine, if it exists.
+func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
+	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
+		return hostCookie.Value, true
+	} else {
+		return "", false
+	}
 }

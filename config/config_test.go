@@ -146,7 +146,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "datacache.password", cfg.DataCache.Password, "db2342")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
-	cmpStrings(t, "", cfg.GetCacheBaseURL(), "http://prebidcache.net")
+	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
 	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
@@ -200,6 +200,19 @@ func TestQueryMaker(t *testing.T) {
 		t.Errorf("Unexpected error making query: %v", err)
 	}
 	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)" {
+		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
+	}
+}
+
+func TestQueryMakerMultilist(t *testing.T) {
+	cfg := PostgresConfig{
+		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST% UNION ALL SELECT id, config FROM other_table WHERE id in %ID_LIST%",
+	}
+	madeQuery, err := cfg.MakeQuery(3)
+	if err != nil {
+		t.Errorf("Unexpected error making query: %v", err)
+	}
+	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3) UNION ALL SELECT id, config FROM other_table WHERE id in ($1, $2, $3)" {
 		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
 	}
 }

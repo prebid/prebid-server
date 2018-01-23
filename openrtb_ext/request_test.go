@@ -41,7 +41,6 @@ func TestExtRequestTargeting(t *testing.T) {
 			t.Errorf("ext3 expected Price granularity \"medium\", found \"%s\"", extRequest.Prebid.Targeting.PriceGranularity)
 		}
 	}
-
 }
 
 const ext1 = `{
@@ -65,3 +64,26 @@ const ext3 = `{
 		"targeting": { }
 	}
 }`
+
+func TestCacheIllegal(t *testing.T) {
+	var bids ExtRequestPrebidCache
+	if err := json.Unmarshal([]byte(`{}`), &bids); err == nil {
+		t.Error("Unmarshal should fail when cache.bids is undefined.")
+	}
+	if err := json.Unmarshal([]byte(`{"bids":null}`), &bids); err == nil {
+		t.Error("Unmarshal should fail when cache.bids is null.")
+	}
+	if err := json.Unmarshal([]byte(`{"bids":true}`), &bids); err == nil {
+		t.Error("Unmarshal should fail when cache.bids is not an object.")
+	}
+}
+
+func TestCacheLegal(t *testing.T) {
+	var bids ExtRequestPrebidCache
+	if err := json.Unmarshal([]byte(`{"bids":{}}`), &bids); err != nil {
+		t.Error("Unmarshal should succeed when cache.bids is defined.")
+	}
+	if bids.Bids == nil {
+		t.Error("bids.Bids should not be nil.")
+	}
+}
