@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	"net/http"
-	"time"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -59,7 +60,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs)
+	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, usersyncs)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0

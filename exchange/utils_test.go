@@ -2,9 +2,10 @@ package exchange
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"testing"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -53,12 +54,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
 
-	adapters := make([]openrtb_ext.BidderName, 3)
-	adapters[0] = openrtb_ext.BidderName("dummy")
-	adapters[1] = openrtb_ext.BidderName("dummy2")
-	adapters[2] = openrtb_ext.BidderName("dummy3")
-
-	cleanRequests, errList := cleanOpenRTBRequests(&bidRequest, adapters, &emptyUsersync{})
+	cleanRequests, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{})
 
 	if len(errList) > 0 {
 		for _, e := range errList {
@@ -66,7 +62,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		}
 	}
 	if len(cleanRequests) != 3 {
-		t.Errorf("CleanOpenRTBRequests: expected 3 requests, found %d", len(cleanRequests))
+		t.Fatalf("CleanOpenRTBRequests: expected 3 requests, found %d", len(cleanRequests))
 	}
 
 	var cleanImpExt map[string]map[string]string

@@ -4,44 +4,51 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 const schemaDirectory = "static/bidder-params"
 
+// BidderName may refer to a bidder ID, or an Alias which is defined in the request.
 type BidderName string
 
 const (
 	BidderAppnexus   BidderName = "appnexus"
+	BidderConversant BidderName = "conversant"
 	BidderFacebook   BidderName = "facebook"
 	BidderIndex      BidderName = "indexExchange"
 	BidderLifestreet BidderName = "lifestreet"
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
 	BidderRubicon    BidderName = "rubicon"
-	BidderConversant BidderName = "conversant"
 )
 
+// bidderMap is a map from all the core Bidder ID strings to their BidderName object. This should never be mutated.
 var bidderMap = map[string]BidderName{
 	"appnexus":      BidderAppnexus,
+	"conversant":    BidderConversant,
 	"facebook":      BidderFacebook,
 	"indexExchange": BidderIndex,
 	"lifestreet":    BidderLifestreet,
 	"pubmatic":      BidderPubmatic,
 	"pulsepoint":    BidderPulsepoint,
 	"rubicon":       BidderRubicon,
-	"conversant":    BidderConversant,
 }
 
-// GetBidderName returns the BidderName for the given string, if it exists.
-// The second argument is true if the name was valid, and false otherwise.
+// GetBidderName converts the given string to a BidderName.
+// It also returns true if the name was one of the core IDs, and false otherwise.
 func GetBidderName(name string) (BidderName, bool) {
-	bidderName, ok := bidderMap[name]
-	return bidderName, ok
+	_, isCore := bidderMap[name]
+	return BidderName(name), isCore
+}
+
+func NumBidders() int {
+	return len(bidderMap)
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
