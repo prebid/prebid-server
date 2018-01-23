@@ -54,7 +54,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, usersyncs)
+	cleanRequests, _, errs := cleanOpenRTBRequests(bidRequest, usersyncs)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0

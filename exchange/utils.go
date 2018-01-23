@@ -10,50 +10,27 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
-func randomizeList(list []openrtb_ext.BidderName) {
-	l := len(list)
-	perm := rand.Perm(l)
-	var j int
-	for i := 0; i < l; i++ {
-		j = perm[i]
-		list[i], list[j] = list[j], list[i]
-	}
-}
-
-// This will copy the openrtb BidRequest into an array of requests, where the BidRequest.Imp[].Ext field will only
-// consist of the "prebid" field and the field for the appropriate bidder parameters. We will drop all extended fields
-// beyond this context, so this will not be compatible with any other uses of the extension area. That is, this routine
-// will work, but the adapters will not see any other extension fields.
-
-// NOTE: the return map will only contain entries for bidders that both have the extension field in at least one Imp,
-// and are listed in the adapters string.
-
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
 //
-//   1. BidRequest.Imp[].Ext will only contain the "prebid" field and the params for the intended Bidder.
+//   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
-		return nil, errs
+		return
 	}
 
-	bidReqs, err := splitBidRequest(orig, impsByBidder, usersyncs)
-	if err != nil {
-		return nil, []error{err}
+	aliases, errs = parseAliases(orig)
+	if len(errs) > 0 {
+		return
 	}
 
-	return bidReqs, nil
+	requestsByBidder = splitBidRequest(orig, impsByBidder, aliases, usersyncs)
+	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, usersyncs IdFetcher) (map[openrtb_ext.BidderName]*openrtb.BidRequest, error) {
-	aliases, err := parseAliases(req)
-	if err != nil {
-		return nil, err
-	}
-
+func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher) map[openrtb_ext.BidderName]*openrtb.BidRequest {
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	for bidder, imps := range impsByBidder {
 		coreBidder := bidder
@@ -65,15 +42,15 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 		reqCopy.Imp = imps
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
-	return requestsByBidder, nil
+	return requestsByBidder
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.
 //
 // For example, suppose imps has two elements. One goes to rubicon, while the other goes to appnexus and index.
 // The returned map will have three keys: rubicon, appnexus, and index--each with one Imp.
-// The "imp.ext" value of the appnexus Imp will only contain the "appnexus" and "prebid" values.
-// The "imp.ext" value of the rubicon Imp will only contain the "rubicon" and "prebid" values.
+// The "imp.ext" value of the appnexus Imp will only contain the "prebid" values, and "appnexus" value at the "bidder" key.
+// The "imp.ext" value of the rubicon Imp will only contain the "prebid" values, and "rubicon" value at the "bidder" key.
 //
 // The goal here is so that Bidders only get Imps and Imp.Ext values which are intended for them.
 func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
@@ -87,7 +64,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 	for i := 0; i < len(imps); i++ {
 		thisImp := imps[i]
 		theseBidders := impExts[i]
-		for intendedBidder, _ := range theseBidders {
+		for intendedBidder := range theseBidders {
 			if intendedBidder == "prebid" {
 				continue
 			}
@@ -154,14 +131,25 @@ func parseImpExts(imps []openrtb.Imp) ([]map[string]openrtb.RawJSON, error) {
 }
 
 // parseAliases parses the aliases from the BidRequest
-func parseAliases(orig *openrtb.BidRequest) (map[string]string, error) {
-	var aliases map[string]string = nil
+func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
+	var aliases map[string]string
 	if value, dataType, _, err := jsonparser.Get(orig.Ext, "prebid", "aliases"); dataType == jsonparser.Object && err == nil {
 		if err := json.Unmarshal(value, &aliases); err != nil {
-			return nil, err
+			return nil, []error{err}
 		}
 	} else if dataType != jsonparser.NotExist && err != jsonparser.KeyPathNotFoundError {
-		return nil, err
+		return nil, []error{err}
 	}
 	return aliases, nil
+}
+
+// Quick little randomizer for a list of strings. Stuffing it in utils to keep other files clean
+func randomizeList(list []openrtb_ext.BidderName) {
+	l := len(list)
+	perm := rand.Perm(l)
+	var j int
+	for i := 0; i < l; i++ {
+		j = perm[i]
+		list[i], list[j] = list[j], list[i]
+	}
 }
