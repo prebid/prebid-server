@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -30,12 +31,15 @@ import (
 	"syscall"
 
 	"crypto/tls"
+	"strings"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/facebook"
-	"github.com/prebid/prebid-server/adapters/index"
+	"github.com/prebid/prebid-server/adapters/indexExchange"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/platformio"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
@@ -56,7 +60,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-	"strings"
+	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 )
 
 type DomainMetrics struct {
@@ -707,14 +711,17 @@ func init() {
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
 	viper.SetDefault("default_timeout_ms", 250)
+	viper.SetDefault("cache.expected_millis", 10)
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
 
 	viper.SetDefault("stored_requests.filesystem", "true")
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
-	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
+	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	viper.SetDefault("adapters.platformio.endpoint", "http://piohbdisp.hb.adx1.com/")
+	viper.SetDefault("adapters.platformio.usersync_url", "http://piohbdisp.hb.adx1.com/users/sync?rurl=")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.SetDefault("max_request_size", 1024*256)
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
@@ -739,9 +746,10 @@ func setupExchanges(cfg *config.Configuration) {
 	exchanges = map[string]adapters.Adapter{
 		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
 		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": index.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
+		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
 		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
 		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
+		"platformio":    platformio.NewPlatformioAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["platformio"].Endpoint, cfg.Adapters["platformio"].UserSyncURL, cfg.ExternalURL),
 		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
 		"audienceNetwork": facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
@@ -832,23 +840,25 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	theExchange := exchange.NewExchange(
-		&http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:        400,
-				MaxIdleConnsPerHost: 10,
-				IdleConnTimeout:     60 * time.Second,
-				TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
-			},
+	// TODO: Currently setupExchanges() creates metricsRegistry. We will need to do this
+	// here if/when the legacy endpoint goes away.
+	theClient := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        400,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     60 * time.Second,
+			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
-		cfg)
+	}
+	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -885,7 +895,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
-	pbc.InitPrebidCache(cfg.GetCacheBaseURL())
+	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{AllowCredentials: true})
@@ -938,6 +948,11 @@ func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err e
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
+	}
+
+	if cfg.InMemoryCache != nil {
+		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
+		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
 }
