@@ -26,8 +26,6 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	// The list of adapters we will consider for this auction
-	adapters   []openrtb_ext.BidderName
 	adapterMap map[openrtb_ext.BidderName]adaptedBidder
 	cache      prebid_cache_client.Client
 	cacheTime  time.Duration
@@ -49,12 +47,8 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
-	e.adapters = make([]openrtb_ext.BidderName, 0, len(e.adapterMap))
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
-	for a, _ := range e.adapterMap {
-		e.adapters = append(e.adapters, a)
-	}
 	return e
 }
 
@@ -64,14 +58,14 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0
-	for a, _ := range cleanRequests {
+	for a := range cleanRequests {
 		liveAdapters[i] = a
 		i++
 	}
 	// Randomize the list of adapters to make the auction more fair
 	randomizeList(liveAdapters)
 	// Process the request to check for targeting parameters.
-	var targData *targetData = nil
+	var targData *targetData
 	shouldCacheBids := false
 	if len(bidRequest.Ext) > 0 {
 		var requestExt openrtb_ext.ExtRequest
@@ -159,7 +153,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 		bidResponse.NBR = openrtb.NoBidReasonCode.Ptr(openrtb.NoBidReasonCodeInvalidRequest)
 	}
 
-	var auc *auction = nil
+	var auc *auction
 	if targData != nil {
 		auc = newAuction(len(bidRequest.Imp))
 	}
