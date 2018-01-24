@@ -136,7 +136,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			// Timing statistics
-			e.m.AdapterMetrics[aName].RequestTimer.UpdateSince(start)
+			e.m.AdapterMetrics[coreBidder].RequestTimer.UpdateSince(start)
 			serr := make([]string, len(err))
 			for i := 0; i < len(err); i++ {
 				serr[i] = err[i].Error()
@@ -144,9 +144,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				// in the metrics. Need to remember that in analyzing the data.
 				switch err[i] {
 				case context.DeadlineExceeded:
-					e.m.AdapterMetrics[aName].TimeoutMeter.Mark(1)
+					e.m.AdapterMetrics[coreBidder].TimeoutMeter.Mark(1)
 				default:
-					e.m.AdapterMetrics[aName].ErrorMeter.Mark(1)
+					e.m.AdapterMetrics[coreBidder].ErrorMeter.Mark(1)
 				}
 			}
 			ae.Errors = serr
@@ -154,11 +154,11 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if len(err) == 0 {
 				if bids == nil || len(bids.bids) == 0 {
 					// Don't want to mark no bids on error topreserve legacy behavior.
-					e.m.AdapterMetrics[aName].NoBidMeter.Mark(1)
+					e.m.AdapterMetrics[coreBidder].NoBidMeter.Mark(1)
 				} else {
 					for _, bid := range bids.bids {
 						var cpm = int64(bid.bid.Price * 1000)
-						e.m.AdapterMetrics[aName].PriceHistogram.Update(cpm)
+						e.m.AdapterMetrics[coreBidder].PriceHistogram.Update(cpm)
 					}
 				}
 			}
