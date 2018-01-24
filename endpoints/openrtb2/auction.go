@@ -5,6 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
@@ -19,13 +26,10 @@ import (
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strconv"
-	"time"
 )
+
+const defaultRequestTimeoutMillis = 5000
+const storedRequestTimeoutMillis = 50
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -79,7 +83,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(5000)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
 
@@ -145,7 +149,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		}
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(50)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
