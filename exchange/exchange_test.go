@@ -12,34 +12,36 @@ import (
 	"time"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
 )
 
-// TODO: Fix this before the final PR
-// func TestNewExchange(t *testing.T) {
-// 	respStatus := 200
-// 	respBody := "{\"bid\":false}"
-// 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-// 	defer server.Close()
+func TestNewExchange(t *testing.T) {
+	respStatus := 200
+	respBody := "{\"bid\":false}"
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
 
-// 	// Just match the counts
-// 	e := NewExchange(server.Client(), nil, &config.Configuration{}, pbsmetrics.NewMetrics(metrics.NewRegistry(), AdapterList()).(*exchange)
-// 	// Test that all adapters are in the map and not repeated
-// 	tmp := make(map[openrtb_ext.BidderName]int)
-// 	for _, a := range openrtb_ext. {
-// 		_, ok := tmp[a]
-// 		if ok {
-// 			t.Errorf("Exchange.adapters repeats value %s", a)
-// 		}
-// 		tmp[a] = 1
-// 		_, ok = e.adapterMap[a]
-// 		if !ok {
-// 			t.Errorf("Exchange.adapterMap missing adpater %s", a)
-// 		}
-// 	}
-// }
+	knownAdapters := AdapterList()
+
+	cfg := &config.Configuration{
+		CacheURL: config.Cache{
+			ExpectedTimeMillis: 20,
+		},
+	}
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters)).(*exchange)
+	for _, bidderName := range knownAdapters {
+		if _, ok := e.adapterMap[bidderName]; !ok {
+			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
+		}
+	}
+	if e.cacheTime != time.Duration(cfg.CacheURL.ExpectedTimeMillis)*time.Millisecond {
+		t.Errorf("Bad cacheTime. Expected 20 ms, got %s", e.cacheTime.String())
+	}
+}
 
 func TestHoldAuction(t *testing.T) {
 	respStatus := 200
