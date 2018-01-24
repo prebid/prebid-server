@@ -100,19 +100,6 @@ func TestMarshalFailure(t *testing.T) {
 	}
 }
 
-func assertJSONMatch(t *testing.T, expected []json.RawMessage, actual []json.RawMessage) {
-	t.Helper()
-	if len(expected) != len(actual) {
-		t.Errorf("Mismatched lengths. Expected %d, actual %d", len(expected), len(actual))
-		return
-	}
-	for i := 0; i < len(expected); i++ {
-		if !jsonpatch.Equal(actual[i], expected[i]) {
-			t.Errorf("Wrong JSON at index %d. Expected %s, got %s", i, string(expected[i]), string(actual[i]))
-		}
-	}
-}
-
 type mockCacheClient struct {
 	mockReturns map[*openrtb.Bid]string
 }
