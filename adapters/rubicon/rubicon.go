@@ -74,7 +74,8 @@ type rubiconUserExtRP struct {
 }
 
 type rubiconUserExt struct {
-	RP rubiconUserExtRP `json:"rp"`
+	RP        rubiconUserExtRP              `json:"rp"`
+	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
 }
 
 type rubiconSiteExtRP struct {
@@ -540,8 +541,24 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		if request.User != nil {
 			userCopy := *request.User
-			userExt := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
-			userCopy.Ext, err = json.Marshal(&userExt)
+			userExtRP := rubiconUserExt{RP: rubiconUserExtRP{Target: rubiconExt.Visitor}}
+
+			if request.User.Ext != nil {
+				var userExt *openrtb_ext.ExtUser
+				if err = json.Unmarshal(userCopy.Ext, &userExt); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				if userExt.DigiTrust != nil {
+					userExtRP.DigiTrust = userExt.DigiTrust
+				}
+			}
+
+			userCopy.Ext, err = json.Marshal(&userExtRP)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
 			request.User = &userCopy
 		}
 

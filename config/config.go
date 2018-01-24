@@ -1,11 +1,8 @@
 package config
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"github.com/spf13/viper"
-	"strconv"
 	"strings"
 )
 
@@ -68,6 +65,7 @@ type DataCache struct {
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
 
+<<<<<<< HEAD
 // StoredRequests configures the backend used to store requests on the server.
 type StoredRequests struct {
 	// Files should be true if Stored Requests should be loaded from the filesystem.
@@ -147,6 +145,8 @@ func (cfg *PostgresConfig) MakeAmpQuery(numRequests int) (string, error) {
 	return strings.Replace(cfg.AmpQueryTemplate, "%ID_LIST%", final.String(), -1), nil
 }
 
+=======
+>>>>>>> 611549dcf9638b64b8cd0e5f55e51da923960953
 type Cache struct {
 	Scheme string `mapstructure:"scheme"`
 	Host   string `mapstructure:"host"`

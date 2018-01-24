@@ -59,6 +59,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 )
 
 type DomainMetrics struct {
@@ -714,8 +715,8 @@ func init() {
 	// no metrics configured by default (metrics{host|database|username|password})
 
 	viper.SetDefault("stored_requests.filesystem", "true")
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid.pubmatic.com/translator?source=prebid-server")
-	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
+	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
@@ -952,6 +953,11 @@ func NewFetcher(cfg *config.StoredRequests, qtype string) (byId stored_requests.
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
+	}
+
+	if cfg.InMemoryCache != nil {
+		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
+		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
 }

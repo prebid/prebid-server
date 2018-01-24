@@ -57,10 +57,6 @@ func (auction *auction) cacheId(bid *openrtb.Bid) (id string, exists bool) {
 
 // forEachBestBid runs the callback function on every bid which is the highest one for each Bidder on each Imp.
 func (auction *auction) forEachBestBid(callback func(impID string, bidder openrtb_ext.BidderName, bid *openrtb.Bid, winner bool)) {
-	if auction == nil {
-		return
-	}
-
 	for impId, bidderMap := range auction.winningBidsByBidder {
 		overallWinner, _ := auction.winningBids[impId]
 		for bidderName, bid := range bidderMap {

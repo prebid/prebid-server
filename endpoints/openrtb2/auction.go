@@ -5,6 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
@@ -26,6 +33,11 @@ import (
 	"strconv"
 	"time"
 )
+
+)
+
+const defaultRequestTimeoutMillis = 5000
+const storedRequestTimeoutMillis = 50
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -51,11 +63,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-
 	deps.metrics.RequestMeter.Mark(1)
 	deps.metrics.ORTBRequestMeter.Mark(1)
 
-	req, errL := deps.parseRequest(r)
 	isSafari := false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
@@ -64,6 +74,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 			deps.metrics.SafariRequestMeter.Mark(1)
 		}
 	}
+
+	req, errL := deps.parseRequest(r)
 
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -79,7 +91,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(5000)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
 
@@ -145,7 +157,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		}
 	}
 
-	timeout := parseTimeout(requestJson, time.Duration(50)*time.Millisecond)
+	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -166,6 +178,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		errs = []error{err}
 		return
 	}
+
 	return
 }
 
@@ -208,6 +221,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
+		return err
+	}
+
+	if err := validateUser(req.User); err != nil {
 		return err
 	}
 
@@ -361,6 +378,26 @@ func (deps *endpointDeps) validateBidRequestExt(ext openrtb.RawJSON) error {
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if site != nil && site.ID == "" && site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+	}
+
+	return nil
+}
+
+func validateUser(user *openrtb.User) error {
+	// DigiTrust support
+	if user != nil && user.Ext != nil {
+		// Creating ExtUser object to check if DigiTrust is valid
+		var userExt openrtb_ext.ExtUser
+		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
+			// Checking if DigiTrust is valid
+			if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
+				// DigiTrust is not valid. Return error.
+				return errors.New("request.user contains a digitrust object that is not valid.")
+			}
+		} else {
+			// Return error.
+			return errors.New("request.user.ext object is not valid.")
+		}
 	}
 
 	return nil
