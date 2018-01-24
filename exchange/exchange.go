@@ -98,19 +98,24 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	var auctionCtx = ctx
-	if shouldCacheBids {
-		if deadline, ok := ctx.Deadline(); ok {
-			var cancel func()
-			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime*time.Millisecond))
-			defer cancel()
-		}
-	}
+	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids)
+	defer cancel()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, liveAdapters, cleanRequests, targData)
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, targData, errs)
+}
+
+func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel func()) {
+	auctionCtx = ctx
+	cancel = func() {}
+	if needsCache {
+		if deadline, ok := ctx.Deadline(); ok {
+			auctionCtx, cancel = context.WithDeadline(ctx, deadline.Add(-e.cacheTime))
+		}
+	}
+	return
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
