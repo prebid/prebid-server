@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/rcrowley/go-metrics"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/rcrowley/go-metrics"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -347,6 +348,23 @@ func TestBuyerIdWithExplicit(t *testing.T) {
 	}
 
 	runBuyerTest(t, &req, false)
+}
+
+func TestTimeoutComputation(t *testing.T) {
+	cacheTimeMillis := 10
+	ex := exchange{
+		cacheTime: time.Duration(cacheTimeMillis) * time.Millisecond,
+	}
+	deadline := time.Now()
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+
+	auctionCtx, cancel := ex.makeAuctionContext(ctx, true)
+	defer cancel()
+
+	if finalDeadline, ok := auctionCtx.Deadline(); !ok || deadline.Add(-time.Duration(cacheTimeMillis)*time.Millisecond) != finalDeadline {
+		t.Errorf("The auction should allocate cacheTime amount of time from the whole request timeout.")
+	}
 }
 
 func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverride bool) {
