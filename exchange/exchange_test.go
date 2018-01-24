@@ -121,10 +121,12 @@ func TestGetAllBids(t *testing.T) {
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
 
-	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
-	liveAdapters := []openrtb_ext.BidderName{BidderDummy, BidderDummy2, BidderDummy3}
-	adapterBids, adapterExtra := e.getAllBids(ctx, liveAdapters, cleanRequests, nil)
-
+	cleanRequests := map[openrtb_ext.BidderName]*openrtb.BidRequest{
+		BidderDummy:  nil,
+		BidderDummy2: nil,
+		BidderDummy3: nil,
+	}
+	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, nil)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
@@ -143,7 +145,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, liveAdapters, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -160,7 +162,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, liveAdapters, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
