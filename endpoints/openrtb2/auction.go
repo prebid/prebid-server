@@ -26,14 +26,6 @@ import (
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strconv"
-	"time"
-)
-
 )
 
 const defaultRequestTimeoutMillis = 5000

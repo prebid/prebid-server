@@ -146,7 +146,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	req = &openrtb.BidRequest{}
 	errs = nil
 
-	ampId := httpRequest.FormValue("config")
+	ampId := httpRequest.FormValue("tag_id")
 	if len(ampId) == 0 {
 		errs = []error{errors.New("AMP requests require an AMP config ID")}
 		return

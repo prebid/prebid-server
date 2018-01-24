@@ -24,7 +24,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
 	for _, requestID := range storedValidRequests {
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?config=%s", requestID), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 		endpoint(recorder, request, nil)
 
@@ -53,7 +53,7 @@ func TestAmpBadRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
 	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	for _, requestID := range storedInvalidRequests {
-		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?config=%s", requestID), nil)
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 
 		endpoint(recorder, request, nil)
