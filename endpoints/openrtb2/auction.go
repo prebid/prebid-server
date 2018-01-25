@@ -202,9 +202,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return errors.New("request.imp must contain at least one element.")
 	}
 
-	aliases, err := deps.parseAliasesAndValidateBidExt(req.Ext)
-	if err != nil {
+	var aliases map[string]string
+	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
 		return err
+	} else if bidExt != nil {
+		aliases = bidExt.Prebid.Aliases
 	}
 
 	for index, imp := range req.Imp {
@@ -359,7 +361,7 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string
 	return nil
 }
 
-func (deps *endpointDeps) parseAliasesAndValidateBidExt(ext openrtb.RawJSON) (aliases map[string]string, err error) {
+func (deps *endpointDeps) parseBidExt(ext openrtb.RawJSON) (*openrtb_ext.ExtRequest, error) {
 	if len(ext) < 1 {
 		return nil, nil
 	}
@@ -367,8 +369,7 @@ func (deps *endpointDeps) parseAliasesAndValidateBidExt(ext openrtb.RawJSON) (al
 	if err := json.Unmarshal(ext, &tmpExt); err != nil {
 		return nil, fmt.Errorf("request.ext is invalid: %v", err)
 	}
-
-	return tmpExt.Prebid.Aliases, nil
+	return &tmpExt, nil
 }
 
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
