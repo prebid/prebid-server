@@ -46,7 +46,7 @@ type pbsOrtbBid struct {
 	bid         *openrtb.Bid
 	bidType     openrtb_ext.BidType
 	bidTargets  map[string]string
-	bidCurrency string
+	bidCurrency string // Currency strings must be ISO 4217 alpha codes
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.

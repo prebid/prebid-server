@@ -57,6 +57,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"strings"
+
+	"golang.org/x/text/currency"
 )
 
 type DomainMetrics struct {
@@ -788,6 +790,11 @@ func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
 func serve(cfg *config.Configuration) error {
 	if err := loadDataCache(cfg); err != nil {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
+	}
+
+	// Validate currency set in config
+	if cfg.AdServerCurrency != "" {
+		currency.MustParseISO(cfg.AdServerCurrency)
 	}
 
 	setupExchanges(cfg)

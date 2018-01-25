@@ -17,6 +17,9 @@ import:
   subpackages:
   - context/ctxhttp
   - publicsuffix
+- package: golang.org/x/text
+  subpackages:
+  - currency
 - package: gopkg.in/mgo.v2
 - package: gopkg.in/yaml.v2
 - package: github.com/rs/cors

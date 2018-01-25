@@ -49,9 +49,6 @@ func TestCurrency(t *testing.T) {
 	if err != nil {
 		t.Errorf("ext4 Unmashall falure: %s", err.Error())
 	}
-	if extRequest.Currency.AdServerCurrency != "JPY" {
-		t.Errorf("ext4 expected ad server currency \"JPY\", found \"%s\"", extRequest.Currency.AdServerCurrency)
-	}
 	if extRequest.Currency.Rates == nil {
 		t.Error("ext4 Rates is nil")
 	} else {
@@ -64,9 +61,6 @@ func TestCurrency(t *testing.T) {
 	err = json.Unmarshal([]byte(ext5), extRequest)
 	if err != nil {
 		t.Errorf("ext5 Unmashall falure: %s", err.Error())
-	}
-	if extRequest.Currency.AdServerCurrency != "" {
-		t.Error("ext5 AdServerCurrency is not empty")
 	}
 	if extRequest.Currency.Rates != nil {
 		t.Error("ext5 Rates is not nil")
@@ -97,7 +91,6 @@ const ext3 = `{
 
 const ext4 = `{
 	"currency": {
-		"adServerCurrency": "JPY",
 		"rates": {
 			"USD": {
 				"JPY": 110.21

@@ -157,6 +157,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	if len(req.Cur) > 1 {
+		return errors.New("request.cur must have exaclty one element.")
+	}
+
 	return nil
 }
 
@@ -312,25 +316,13 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 
 	deps.setUserImplicitly(httpReq, bidReq)
 
-	deps.setExtImplicitly(httpReq, bidReq)
+	deps.setCurImplicitly(httpReq, bidReq)
 }
 
-// setExtImplicitly sets the Currency on bidReq to that found in the config, if it's not explicitly defined in the request.
-func (deps *endpointDeps) setExtImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	var ext openrtb_ext.ExtRequest
-	var err error
-
-	if bidReq.Ext != nil {
-		err = json.Unmarshal(bidReq.Ext, &ext)
-	}
-
-	if err == nil {
-		if ext.Currency.AdServerCurrency == "" && deps.cfg.AdServerCurrency != "" {
-			ext.Currency.AdServerCurrency = deps.cfg.AdServerCurrency
-			if extRaw, err := json.Marshal(&ext); err == nil {
-				bidReq.Ext = extRaw
-			}
-		}
+// setCurImplicitly sets the Currency on bidReq to that found in the config, if it's not explicitly defined in the request.
+func (deps *endpointDeps) setCurImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Cur == nil && deps.cfg.AdServerCurrency != "" {
+		bidReq.Cur = []string{deps.cfg.AdServerCurrency}
 	}
 }
 

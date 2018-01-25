@@ -638,8 +638,9 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		for _, bid := range sb.Bid {
 			if bid.Price != 0 {
 				bids = append(bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
+					Bid:         &bid,
+					BidType:     bidType,
+					BidCurrency: "USD",
 				})
 			}
 		}

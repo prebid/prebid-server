@@ -348,7 +348,7 @@ func TestNoEncoding(t *testing.T) {
 }
 
 // Testing currency support
-func TestImplicitExt(t *testing.T) {
+func TestImplicitCur(t *testing.T) {
 	for _, requestData := range currencyTestRequests {
 		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
 		bidReq := &openrtb.BidRequest{}
@@ -364,26 +364,20 @@ func TestImplicitExt(t *testing.T) {
 			&mockStoredReqFetcher{},
 			&config.Configuration{},
 		}
-		deps.setExtImplicitly(httpReq, bidReq)
-
-		var ext openrtb_ext.ExtRequest
-		err = json.Unmarshal(bidReq.Ext, &ext)
-		if err != nil {
-			t.Errorf("Error unmashalling bid request ext: %s", err.Error())
-		}
+		deps.setCurImplicitly(httpReq, bidReq)
 
 		switch bidReq.ID {
-		case "request-with-empty-currency":
-			if ext.Currency.AdServerCurrency != "" {
-				t.Fatalf("bidrequest.ext.currency should not be set, got %s", ext.Currency.AdServerCurrency)
+		case "request-with-no-currency":
+			if bidReq.Cur != nil {
+				t.Fatalf("bidrequest.cur should not be set, got %s", bidReq.Cur)
 			}
 		case "request-should-default-currency":
-			if ext.Currency.AdServerCurrency != "" {
-				t.Fatalf("bidrequest.ext.currency should not be set, got %s", ext.Currency.AdServerCurrency)
+			if bidReq.Cur != nil {
+				t.Fatalf("bidrequest.cur should not be set, got %s", bidReq.Cur)
 			}
 		case "request-with-valid-currency":
-			if ext.Currency.AdServerCurrency != "GBP" {
-				t.Fatalf("bidrequest.ext.currency should be GBP as set in request, got %s", ext.Currency.AdServerCurrency)
+			if bidReq.Cur == nil || bidReq.Cur[0] != "GBP" {
+				t.Fatalf("bidrequest.cur[0] should be GBP as set in request, got %s", bidReq.Cur[0])
 			}
 		}
 
@@ -394,25 +388,20 @@ func TestImplicitExt(t *testing.T) {
 			&mockStoredReqFetcher{},
 			&config.Configuration{AdServerCurrency: "JPY"},
 		}
-		deps.setExtImplicitly(httpReq, bidReq)
-
-		err = json.Unmarshal(bidReq.Ext, &ext)
-		if err != nil {
-			t.Errorf("Error unmashalling bid request ext: %s", err.Error())
-		}
+		deps.setCurImplicitly(httpReq, bidReq)
 
 		switch bidReq.ID {
-		case "request-with-empty-currency":
-			if ext.Currency.AdServerCurrency != "JPY" {
-				t.Fatalf("bidrequest.ext.currency should be JPY as set in config, got %s", ext.Currency.AdServerCurrency)
+		case "request-with-no-currency":
+			if bidReq.Cur == nil || bidReq.Cur[0] != "JPY" {
+				t.Fatalf("bidrequest.cur[0] should be JPY as set in config, got %s", bidReq.Cur[0])
 			}
 		case "request-should-default-currency":
-			if ext.Currency.AdServerCurrency != "JPY" {
-				t.Fatalf("bidrequest.ext.currency should be JPY as set in config, got %s", ext.Currency.AdServerCurrency)
+			if bidReq.Cur == nil || bidReq.Cur[0] != "JPY" {
+				t.Fatalf("bidrequest.cur[0] should be JPY as set in config, got %s", bidReq.Cur[0])
 			}
 		case "request-with-valid-currency":
-			if ext.Currency.AdServerCurrency != "GBP" {
-				t.Fatalf("bidrequest.ext.currency should be GBP as set in request, got %s", ext.Currency.AdServerCurrency)
+			if bidReq.Cur == nil || bidReq.Cur[0] != "GBP" {
+				t.Fatalf("bidrequest.cur[0] should be GBP as set in request, got %s", bidReq.Cur[0])
 			}
 		}
 	}
@@ -685,7 +674,7 @@ var invalidRequests = []string{
 
 var currencyTestRequests = []string{
 	`{
-		"id": "request-with-empty-currency",
+		"id": "request-with-no-currency",
 		"site": {
 			"page": "test.somepage.com"
 		},
@@ -711,10 +700,7 @@ var currencyTestRequests = []string{
 					"appnexus": "good"
 				}
 			}
-		],
-		"ext": {
-			"currency": {}
-		}
+		]
 	}`,
 	`{
 		"id": "request-should-default-currency",
@@ -778,11 +764,7 @@ var currencyTestRequests = []string{
 				}
 			}
 		],
-		"ext": {
-			"currency": {
-				"adServerCurrency": "GBP"
-			}
-		}
+		"cur": ["GBP"]
 	}`,
 }
 

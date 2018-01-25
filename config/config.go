@@ -24,7 +24,7 @@ type Configuration struct {
 	StoredRequests   StoredRequests     `mapstructure:"stored_requests"`
 	Adapters         map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize   int64              `mapstructure:"max_request_size"`
-	AdServerCurrency string             `mapstructure:"ad_server_currency"`
+	AdServerCurrency string             `mapstructure:"ad_server_currency"` // Currency strings must be ISO 4217 alpha codes
 }
 
 func (cfg *Configuration) validate() error {
