@@ -921,6 +921,30 @@ var invalidRequests = []string{
 			}
 		}
 	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"appnexus": "appnexus"
+				}
+			}
+		}
+	}`,
 }
 
 // StoredRequest testing
