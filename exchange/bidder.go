@@ -105,11 +105,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
 
-	var granularityMultiplier float64
 	var requestExt openrtb_ext.ExtRequest
 	if request.Ext != nil {
 		if err := json.Unmarshal(request.Ext, &requestExt); err == nil {
-			granularityMultiplier = requestExt.Currency.GranularityMultiplier
+			bidderTarg.granularityMultiplier = requestExt.Currency.GranularityMultiplier
 		}
 	}
 
@@ -127,7 +126,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 			errs = append(errs, moreErrs...)
 
 			for _, bid := range bids {
-				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid, granularityMultiplier)
+				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid)
 				if err != nil {
 					errs = append(errs, err)
 				}

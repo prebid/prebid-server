@@ -302,7 +302,7 @@ func transformBid(legacyBid *pbs.PBSBid, bidderTarg *targetData, name openrtb_ex
 		return nil, err
 	}
 
-	targets, err := bidderTarg.makePrebidTargets(name, newBid, 0)
+	targets, err := bidderTarg.makePrebidTargets(name, newBid)
 	if targets != nil {
 		return nil, err
 	}
