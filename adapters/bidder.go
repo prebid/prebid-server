@@ -34,7 +34,7 @@ type Bidder interface {
 type TypedBid struct {
 	Bid         *openrtb.Bid
 	BidType     openrtb_ext.BidType
-	BidCurrency string
+	BidCurrency string // Currency strings must be ISO 4217 alpha codes
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality
