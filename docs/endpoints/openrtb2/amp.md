@@ -5,11 +5,8 @@ This document describes the behavior of the Prebid Server amp endpoint, includin
 - Request/response formats
 
 ## AMP RTC
-Legacy support for prebid in AMP is being retired. RTC (Real Time Config) in AMP provides a new route
-to inject prebid demand into an AMP page. RTC can only send a `GET` request, and only recieve ad 
-targeting key/value pairs, so the prebid AMP protocol is a slimmed down version of the OpenRTB2
-protocol. This document will only describe the changes from OpenRTB2 support, please refer to that
-documentation for anything not specified here.
+The AMP endpoint uses the OpenRTB enpoint code behind the scenes. This document will only describe 
+the changes from OpenRTB2 support, please refer to that documentation for anything not specified here.
 
 ## `GET /openrtb2/amp?tag_id=<ID>`
 
@@ -21,7 +18,9 @@ to conduct an auction as normal.
 
 ## Sample response
 
-The response contains only the targeting key/value pairs produced in the auction. This includes the
+The response contains only the targeting key/value pairs produced in the auction. See 
+[Prebid documentation](http://prebid.org/adops.html) for more detail on the targeting keys and
+how they are used in Prebid. This includes the
 key/values for cached ads. The creative delivered in response to the prebid demand must be able to
 refernce the cache in order to pull the ad, as AMP/RTC does not allow for transmitting the ad to
 the creative through the RTC response. A sample RTC response is shown below:

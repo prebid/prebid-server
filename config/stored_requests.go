@@ -56,17 +56,7 @@ func (cfg *PostgresConfig) MakeQuery(numRequests int) (string, error) {
 	if numRequests < 1 {
 		return "", fmt.Errorf("can't generate query to fetch %d stored requests", numRequests)
 	}
-	final := bytes.NewBuffer(make([]byte, 0, 2+4*numRequests))
-	final.WriteString("(")
-	for i := 1; i < numRequests; i++ {
-		final.WriteString("$")
-		final.WriteString(strconv.Itoa(i))
-		final.WriteString(", ")
-	}
-	final.WriteString("$")
-	final.WriteString(strconv.Itoa(numRequests))
-	final.WriteString(")")
-	return strings.Replace(cfg.QueryTemplate, "%ID_LIST%", final.String(), -1), nil
+	return strings.Replace(cfg.QueryTemplate, "%ID_LIST%", makeIdList(numRequests), -1), nil
 }
 
 // MakeAmpQuery gets a stored-request-fetching query which can be used to fetch numRequests requests at once.
@@ -76,6 +66,10 @@ func (cfg *PostgresConfig) MakeAmpQuery(numRequests int) (string, error) {
 	if numRequests < 1 {
 		return "", fmt.Errorf("can't generate query to fetch %d stored requests", numRequests)
 	}
+	return strings.Replace(cfg.AmpQueryTemplate, "%ID_LIST%", makeIdList(numRequests), -1), nil
+}
+
+func makeIdList(numRequests int) string {
 	final := bytes.NewBuffer(make([]byte, 0, 2+4*numRequests))
 	final.WriteString("(")
 	for i := 1; i < numRequests; i++ {
@@ -86,7 +80,8 @@ func (cfg *PostgresConfig) MakeAmpQuery(numRequests int) (string, error) {
 	final.WriteString("$")
 	final.WriteString(strconv.Itoa(numRequests))
 	final.WriteString(")")
-	return strings.Replace(cfg.AmpQueryTemplate, "%ID_LIST%", final.String(), -1), nil
+
+	return final.String()
 }
 
 type InMemoryCache struct {
