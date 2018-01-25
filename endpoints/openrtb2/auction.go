@@ -209,6 +209,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		aliases = bidExt.Prebid.Aliases
 	}
 
+	if err := deps.validateAliases(aliases); err != nil {
+		return err
+	}
+
 	for index, imp := range req.Imp {
 		if err := deps.validateImp(&imp, aliases, index); err != nil {
 			return err
@@ -346,15 +350,19 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string
 	}
 
 	for bidder, ext := range bidderExts {
-		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
-		if isValid {
+		if bidder == "prebid" {
+			continue
+		}
+		coreBidder := bidder
+		if tmp, isAlias := aliases[bidder]; isAlias {
+			coreBidder = tmp
+		}
+		if bidderName, isValid := openrtb_ext.GetBidderName(coreBidder); isValid {
 			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
+				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
 			}
-		} else if bidder != "prebid" {
-			if _, isAlias := aliases[bidder]; !isAlias {
-				return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s", impIndex, bidder)
-			}
+		} else {
+			return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
 		}
 	}
 
@@ -370,6 +378,15 @@ func (deps *endpointDeps) parseBidExt(ext openrtb.RawJSON) (*openrtb_ext.ExtRequ
 		return nil, fmt.Errorf("request.ext is invalid: %v", err)
 	}
 	return &tmpExt, nil
+}
+
+func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
+	for thisAlias, coreBidder := range aliases {
+		if _, isCoreBidder := openrtb_ext.GetBidderName(coreBidder); !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
+		}
+	}
+	return nil
 }
 
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
