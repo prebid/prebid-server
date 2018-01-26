@@ -31,11 +31,12 @@ type IdFetcher interface {
 
 type exchange struct {
 	// The list of adapters we will consider for this auction
-	adapters   []openrtb_ext.BidderName
-	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	m          *pbsmetrics.Metrics
-	cache      prebid_cache_client.Client
-	cacheTime  time.Duration
+	adapters      []openrtb_ext.BidderName
+	adapterMap    map[openrtb_ext.BidderName]adaptedBidder
+	m             *pbsmetrics.Metrics
+	cache         prebid_cache_client.Client
+	cacheTime     time.Duration
+	currencyRates []byte
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -50,7 +51,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics, currencyRates []byte) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
@@ -61,6 +62,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 		e.adapters = append(e.adapters, a)
 	}
 	e.m = registry
+	e.currencyRates = currencyRates
 	return e
 }
 
@@ -216,7 +218,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 		cacheBids(ctx, e.cache, auc, targData.priceGranularity, targData.granularityMultiplier)
 	}
 	targData.addTargetsToCompletedAuction(auc)
-	bidResponse.Cur = getCurrency(&seatBids, bidRequest, &adapterExtra)
+	bidResponse.Cur = getCurrency(e.currencyRates, &seatBids, bidRequest, &adapterExtra)
 	bidResponse.SeatBid = seatBids
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)

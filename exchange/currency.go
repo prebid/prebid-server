@@ -7,12 +7,9 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"io/ioutil"
-	"net/http"
 	"strconv"
 )
 
-const latestConversionRatesUrl = "http://currency.prebid.org/latest.json"
 const defaultCurrencyConversionError = "No currency conversion available."
 
 type currencyData struct {
@@ -20,7 +17,7 @@ type currencyData struct {
 	ConversionRates openrtb_ext.ConversionRates `json:"conversions"`
 }
 
-func getCurrency(seatBids *[]openrtb.SeatBid, bidRequest *openrtb.BidRequest, adapterExtra *map[openrtb_ext.BidderName]*seatResponseExtra) string {
+func getCurrency(currencyRates []byte, seatBids *[]openrtb.SeatBid, bidRequest *openrtb.BidRequest, adapterExtra *map[openrtb_ext.BidderName]*seatResponseExtra) string {
 	currencyToUse := defaultAdServerCurrency
 	requestCurrency := ""
 
@@ -73,13 +70,13 @@ func getCurrency(seatBids *[]openrtb.SeatBid, bidRequest *openrtb.BidRequest, ad
 						// If they are set in request, convert the currencies.
 						if convertedBid, err = convertCurrencyWithRates(requestExt.Currency.Rates, requestCurrency, bidCurrency, bid.Price); err != nil {
 							// Error converting currency with request rates. Try with latest rates.
-							if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(&bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
+							if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(currencyRates, &bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
 								continue
 							}
 						}
 					} else {
 						// Conversion rates are not set in request. Use latest rates.
-						if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(&bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
+						if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(currencyRates, &bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
 							continue
 						}
 					}
@@ -111,18 +108,17 @@ func getCurrency(seatBids *[]openrtb.SeatBid, bidRequest *openrtb.BidRequest, ad
 	return currencyToUse
 }
 
-func convertCurrencyWithCurrentRates(bidderErrs *[]interface{}, requestCurrency string, bidCurrency string, bid openrtb.Bid) (float64, bool) {
+func convertCurrencyWithCurrentRates(currencyRates []byte, bidderErrs *[]interface{}, requestCurrency string, bidCurrency string, bid openrtb.Bid) (float64, bool) {
 	var convertedBid float64
 	var successfulConversion bool
-	conversionRates := fetchCurrencyConversionRates()
 
-	if conversionRates == nil {
+	if currencyRates == nil {
 		// If converstion rates not available, return error and drop the bid.
 		*bidderErrs = append(*bidderErrs, errors.New(defaultCurrencyConversionError).Error())
 	} else {
 		// Convert the currencies
 		var currData currencyData
-		if err := json.Unmarshal(conversionRates, &currData); err != nil {
+		if err := json.Unmarshal(currencyRates, &currData); err != nil {
 			*bidderErrs = append(*bidderErrs, errors.New(defaultCurrencyConversionError).Error())
 		} else {
 			convertedBid, err = convertCurrencyWithRates(currData.ConversionRates, requestCurrency, bidCurrency, bid.Price)
@@ -136,22 +132,6 @@ func convertCurrencyWithCurrentRates(bidderErrs *[]interface{}, requestCurrency 
 	}
 
 	return convertedBid, successfulConversion
-}
-
-func fetchCurrencyConversionRates() []byte {
-	var rates []byte
-	// Fetching latest currency conversion rates
-	resp, err := http.Get(latestConversionRatesUrl)
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close()
-	rates, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil
-	}
-
-	return rates
 }
 
 func convertCurrencyWithRates(rates openrtb_ext.ConversionRates, requestCurrency string, bidCurrency string, bidPrice float64) (float64, error) {
