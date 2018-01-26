@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -15,6 +16,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/pbsmetrics"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -33,6 +36,7 @@ import (
 	"crypto/tls"
 	"strings"
 
+	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -658,23 +662,7 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return
 }
 
-func loadPostgresDataCache(cfg *config.Configuration) (cache.Cache, error) {
-	mem := sigar.Mem{}
-	mem.Get()
-
-	return postgrescache.New(postgrescache.PostgresConfig{
-		Dbname:   cfg.DataCache.Database,
-		Host:     cfg.DataCache.Host,
-		User:     cfg.DataCache.Username,
-		Password: cfg.DataCache.Password,
-		Size:     cfg.DataCache.CacheSize,
-		TTL:      cfg.DataCache.TTLSeconds,
-	})
-
-}
-
-func loadDataCache(cfg *config.Configuration) (err error) {
-
+func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 	switch cfg.DataCache.Type {
 	case "dummy":
 		dataCache, err = dummycache.New()
@@ -683,7 +671,12 @@ func loadDataCache(cfg *config.Configuration) (err error) {
 		}
 
 	case "postgres":
-		dataCache, err = loadPostgresDataCache(cfg)
+		mem := sigar.Mem{}
+		mem.Get()
+		dataCache, err = postgrescache.New(db, postgrescache.PostgresConfig{
+			Size: cfg.DataCache.CacheSize,
+			TTL:  cfg.DataCache.TTLSeconds,
+		})
 		if err != nil {
 			return fmt.Errorf("PostgresCache Error: %s", err.Error())
 		}
@@ -698,6 +691,58 @@ func loadDataCache(cfg *config.Configuration) (err error) {
 		return fmt.Errorf("Unknown datacache.type: %s", cfg.DataCache.Type)
 	}
 	return nil
+}
+
+func newPostgresDb(cfg *config.PostgresConfig) (*sql.DB, error) {
+	db, err := sql.Open("postgres", confToPostgresDSN(cfg))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+// confToPostgresDSN converts our app config into a string for the pq driver.
+// For their docs, and the intended behavior of this function, see:  https://godoc.org/github.com/lib/pq
+func confToPostgresDSN(cfg *config.PostgresConfig) string {
+	buffer := bytes.NewBuffer(nil)
+
+	if cfg.Host != "" {
+		buffer.WriteString("host=")
+		buffer.WriteString(cfg.Host)
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Port > 0 {
+		buffer.WriteString("port=")
+		buffer.WriteString(strconv.Itoa(cfg.Port))
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Username != "" {
+		buffer.WriteString("user=")
+		buffer.WriteString(cfg.Username)
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Password != "" {
+		buffer.WriteString("password=")
+		buffer.WriteString(cfg.Password)
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Database != "" {
+		buffer.WriteString("dbname=")
+		buffer.WriteString(cfg.Database)
+		buffer.WriteString(" ")
+	}
+
+	buffer.WriteString("sslmode=disable")
+	return buffer.String()
 }
 
 func init() {
@@ -790,7 +835,15 @@ func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
 }
 
 func serve(cfg *config.Configuration) error {
-	if err := loadDataCache(cfg); err != nil {
+	var db *sql.DB
+	if cfg.StoredRequests.Postgres != nil {
+		if conn, err := newPostgresDb(cfg.StoredRequests.Postgres); err != nil {
+			glog.Fatalf("Failed to connect to postgres: %v", err)
+		} else {
+			db = conn
+		}
+	}
+	if err := loadDataCache(cfg, db); err != nil {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
@@ -849,7 +902,7 @@ func serve(cfg *config.Configuration) error {
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
-	byId, err := NewFetcher(&(cfg.StoredRequests))
+	byId, err := NewFetcher(&(cfg.StoredRequests), db)
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
@@ -934,13 +987,13 @@ const requestConfigPath = "./stored_requests/data/by_id"
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err error) {
+func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fetcher, err error) {
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
 		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
-		byId, err = db_fetcher.NewPostgres(cfg.Postgres)
+		byId, err = db_fetcher.NewPostgres(db, cfg.Postgres.MakeQuery)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()

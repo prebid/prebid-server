@@ -10,12 +10,13 @@ import (
 	"github.com/mxmCherry/openrtb"
 
 	"context"
+	"io/ioutil"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"io/ioutil"
 )
 
 const adapterDirectory = "adapters"
@@ -491,7 +492,7 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 func TestNewFilesFetcher(t *testing.T) {
 	fetcher, err := NewFetcher(&config.StoredRequests{
 		Files: true,
-	})
+	}, nil)
 	if err != nil {
 		t.Errorf("Error constructing file backends. %v", err)
 	}
@@ -501,7 +502,7 @@ func TestNewFilesFetcher(t *testing.T) {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, err := NewFetcher(&config.StoredRequests{})
+	fetcher, err := NewFetcher(&config.StoredRequests{}, nil)
 	if err != nil {
 		t.Errorf("Error constructing backends. %v", err)
 	}

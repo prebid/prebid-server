@@ -6,10 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 
-	_ "github.com/lib/pq"
-
 	"github.com/coocood/freecache"
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -56,26 +53,6 @@ type shared struct {
 	ttlSeconds int
 }
 
-func newShared(conf PostgresConfig) (*shared, error) {
-	db, err := sql.Open("postgres", conf.uri()+" sslmode=disable")
-	if err != nil {
-		return nil, err
-	}
-
-	s := &shared{
-		db:         db,
-		lru:        freecache.NewCache(conf.Size),
-		ttlSeconds: conf.TTL,
-	}
-
-	if err := s.db.Ping(); err != nil {
-		/* This is for information only; we'll still operate w/o db */
-		glog.Errorf("failed to connect to db store: %v", err)
-	}
-
-	return s, nil
-}
-
 // Cache postgres
 type Cache struct {
 	shared   *shared
@@ -84,11 +61,11 @@ type Cache struct {
 }
 
 // New creates new postgres.Cache
-func New(cfg PostgresConfig) (*Cache, error) {
-
-	shared, err := newShared(cfg)
-	if err != nil {
-		return nil, err
+func New(db *sql.DB, cfg PostgresConfig) (*Cache, error) {
+	shared := &shared{
+		db:         db,
+		lru:        freecache.NewCache(cfg.Size),
+		ttlSeconds: cfg.TTL,
 	}
 	return &Cache{
 		shared:   shared,
