@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -693,58 +692,6 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 	return nil
 }
 
-func newPostgresDb(cfg *config.PostgresConfig) (*sql.DB, error) {
-	db, err := sql.Open("postgres", confToPostgresDSN(cfg))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-// confToPostgresDSN converts our app config into a string for the pq driver.
-// For their docs, and the intended behavior of this function, see:  https://godoc.org/github.com/lib/pq
-func confToPostgresDSN(cfg *config.PostgresConfig) string {
-	buffer := bytes.NewBuffer(nil)
-
-	if cfg.Host != "" {
-		buffer.WriteString("host=")
-		buffer.WriteString(cfg.Host)
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Port > 0 {
-		buffer.WriteString("port=")
-		buffer.WriteString(strconv.Itoa(cfg.Port))
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Username != "" {
-		buffer.WriteString("user=")
-		buffer.WriteString(cfg.Username)
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Password != "" {
-		buffer.WriteString("password=")
-		buffer.WriteString(cfg.Password)
-		buffer.WriteString(" ")
-	}
-
-	if cfg.Database != "" {
-		buffer.WriteString("dbname=")
-		buffer.WriteString(cfg.Database)
-		buffer.WriteString(" ")
-	}
-
-	buffer.WriteString("sslmode=disable")
-	return buffer.String()
-}
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	viper.SetConfigName("pbs")
@@ -837,7 +784,7 @@ func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
 func serve(cfg *config.Configuration) error {
 	var db *sql.DB
 	if cfg.StoredRequests.Postgres != nil {
-		if conn, err := newPostgresDb(cfg.StoredRequests.Postgres); err != nil {
+		if conn, err := db_fetcher.NewPostgresDb(cfg.StoredRequests.Postgres); err != nil {
 			glog.Fatalf("Failed to connect to postgres: %v", err)
 		} else {
 			db = conn
