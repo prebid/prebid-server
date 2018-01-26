@@ -31,7 +31,7 @@ the creative through the RTC response. A sample RTC response is shown below:
 		"hb_pb": 1.30
 		"hb_bidder": "appnexus"
 		"hb_cache_host": "prebid-cache.adnexus.com"
-		"hb_cache_id": "6768-FB78-9890-7878"
+		"hb_uuid": "6768-FB78-9890-7878"
 	}
 }
 ```
