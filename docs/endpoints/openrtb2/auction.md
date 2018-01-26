@@ -110,7 +110,7 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 
 #### Details
 
-##### Targeting
+#### Targeting
 
 Targeting refers to strings which are sent to the adserver to
 [make header bidding possible](http://prebid.org/overview/intro.html#how-does-prebid-work).
@@ -140,7 +140,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
 (with _no_ {bidderName} suffix).
 
-##### Bidder Aliases
+#### Bidder Aliases
 
 Requests can define Bidder aliases if they want to refer to a Bidder by a separate name.
 This can be used to request bids from the same Bidder with different params. For example:
@@ -173,10 +173,14 @@ This can be used to request bids from the same Bidder with different params. For
 }
 ```
 
-For all intents and purposes, the alias will be treated as another Bidder. The Response will contain
-seprate SeatBids, and any Targeting keys from the alias will be named using the alias.
+For all intents and purposes, the alias will be treated as another Bidder. This new Bidder will behave exactly
+like the original, except that the Response will contain seprate SeatBids, and any Targeting keys
+will be formed using the alias' name.
 
-If an alias overlaps with a known Bidder, the alias will take precedence. For example, if the Request contains:
+If an alias overlaps with a core Bidder's name, then the alias will take precedence.
+This prevents breaking API changes as new Bidders are added to the project.
+
+For example, if the Request defines an alias like this:
 
 ```
 {
@@ -187,9 +191,9 @@ If an alias overlaps with a known Bidder, the alias will take precedence. For ex
 ```
 
 then any `imp.ext.appnexus` params will actually go to the **rubicon** adapter.
-It will be impossible to fetch bids from Appnexus within that Request.
+It will become impossible to fetch bids from Appnexus within that Request.
 
-##### Bidder Response Times
+#### Bidder Response Times
 
 `response.ext.responsetimemillis.{bidderName}` tells how long each bidder took to respond.
 These can help quantify the performance impact of "the slowest bidder."
@@ -201,14 +205,14 @@ which only supports `banner`.
 In cases like these, the bidder can ignore the `video` impression and bid on the `banner` one.
 However, the publisher can improve performance by only offering impressions which the bidder supports.
 
-##### Debugging
+#### Debugging
 
 `response.ext.debug.httpcalls.{bidder}` will be populated **only if** `request.test` **was set to 1**.
 
 This contains info about every request and response sent by the bidder to its server.
 It is only returned on `test` bids for performance reasons, but may be useful during debugging.
 
-##### Stored Requests
+#### Stored Requests
 
 `request.imp[i].ext.prebid.storedrequest` incorporates a [Stored Request](../../developers/stored-requests.md) from the server.
 
