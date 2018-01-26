@@ -671,16 +671,16 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 		}
 
 	case "postgres":
+		if db == nil {
+			return fmt.Errorf("Nil db cannot connect to postgres. Did you forget to set the config.stored_requests.postgres values?")
+		}
 		mem := sigar.Mem{}
 		mem.Get()
-		dataCache, err = postgrescache.New(db, postgrescache.PostgresConfig{
+		dataCache = postgrescache.New(db, postgrescache.CacheConfig{
 			Size: cfg.DataCache.CacheSize,
 			TTL:  cfg.DataCache.TTLSeconds,
 		})
-		if err != nil {
-			return fmt.Errorf("PostgresCache Error: %s", err.Error())
-		}
-
+		return nil
 	case "filecache":
 		dataCache, err = filecache.New(cfg.DataCache.Filename)
 		if err != nil {
@@ -993,7 +993,7 @@ func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fe
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
 		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
-		byId, err = db_fetcher.NewPostgres(db, cfg.Postgres.MakeQuery)
+		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()

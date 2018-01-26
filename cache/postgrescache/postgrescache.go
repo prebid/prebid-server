@@ -4,46 +4,15 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"fmt"
 
 	"github.com/coocood/freecache"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type PostgresConfig struct {
-	Host     string
-	Port     int
-	Dbname   string
-	User     string
-	Password string
-	TTL      int
-	Size     int
-}
-
-func (c PostgresConfig) uri() string {
-	uri := ""
-	if c.Host != "" {
-		uri += fmt.Sprintf("host=%s ", c.Host)
-	}
-
-	if c.Port > 0 {
-		uri += fmt.Sprintf("port=%d ", c.Port)
-	}
-
-	if c.User != "" {
-		uri += fmt.Sprintf("user=%s ", c.User)
-	}
-
-	if c.Password != "" {
-		uri += fmt.Sprintf("password=%s ", c.Password)
-	}
-
-	if c.Dbname != "" {
-		uri += fmt.Sprintf("dbname=%s ", c.Dbname)
-	}
-
-	return uri
+type CacheConfig struct {
+	TTL  int
+	Size int
 }
 
 // shared configuration that get used by all of the services
@@ -61,7 +30,7 @@ type Cache struct {
 }
 
 // New creates new postgres.Cache
-func New(db *sql.DB, cfg PostgresConfig) (*Cache, error) {
+func New(db *sql.DB, cfg CacheConfig) *Cache {
 	shared := &shared{
 		db:         db,
 		lru:        freecache.NewCache(cfg.Size),
@@ -71,7 +40,7 @@ func New(db *sql.DB, cfg PostgresConfig) (*Cache, error) {
 		shared:   shared,
 		accounts: &accountService{shared: shared},
 		config:   &configService{shared: shared},
-	}, nil
+	}
 }
 
 func (c *Cache) Accounts() cache.AccountsService {
