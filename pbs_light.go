@@ -939,6 +939,7 @@ func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fe
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
+		// Be careful not to log the password here, for security reasons
 		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
 		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
 	} else {
