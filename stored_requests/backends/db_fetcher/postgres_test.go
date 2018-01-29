@@ -1,14 +1,15 @@
 package db_fetcher
 
 import (
-	"github.com/prebid/prebid-server/config"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/prebid/prebid-server/config"
 )
 
-// TestDSNCreation makes sure we turn the config into a string expected by the Postgres driver library.
-func TestDSNCreation(t *testing.T) {
+// TestPostgresDSNCreation makes sure we turn the config into a string expected by the Postgres driver library.
+func TestPostgresDSNCreation(t *testing.T) {
 	db := "TestDB"
 	host := "somehost.com"
 	port := 20

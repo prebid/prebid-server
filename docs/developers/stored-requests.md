@@ -100,25 +100,93 @@ However, incoming HTTP requests can fill in the missing data to complete the Ope
 
 ```json
 {
-    "id": "test-request-id",
-    "imp": [
-      {
-        "id": "test-imp-id",
-        "ext": {
-          "prebid": {
-            "storedrequest": {
-              "id": "{id}"
-            }
+  "id": "test-request-id",
+  "imp": [
+    {
+      "id": "test-imp-id",
+      "ext": {
+        "prebid": {
+          "storedrequest": {
+            "id": "{id}"
           }
         }
       }
-    ]
-  }
+    }
+  ]
+}
 ```
 
 If the Stored Request and the HTTP request have conflicting properties,
 they will be resolved with a [JSON Merge Patch](https://tools.ietf.org/html/rfc7386).
 HTTP request properties will overwrite the Stored Request ones.
+
+## Stored BidRequests
+
+So far, our examples have only used Stored Imp data. However, Stored Requests
+are also allowed on the [BidRequest](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=15).
+These work exactly the same way, but support storing properties like timeouts and price granularity.
+
+For example, assume the following `stored_requests/data/by_id/stored-request.json`:
+
+```json
+{
+    "tmax": 1000,
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegraularity": "low",
+          "lengthmax": 20
+        }
+      }
+    }
+  }
+```
+
+Then an HTTP request like:
+
+```json
+{
+  "id": "test-request-id",
+  "imp": [
+    "Any valid Imp data in here"
+  ],
+  "ext": {
+    "prebid": {
+      "storedrequest": {
+        "id": "stored-request.json"
+      }
+    }
+  }
+}
+```
+
+will produce the same auction as if the HTTP request had been:
+
+```json
+{
+  "id": "test-request-id",
+  "tmax": 1000,
+  "imp": [
+    "Any valid Imp data in here"
+  ],
+  "ext": {
+    "prebid": {
+      "targeting": {
+        "pricegraularity": "low",
+        "lengthmax": 20
+      }
+    }
+  }
+}
+```
+
+Prebid Server does allow Stored BidRequests and Stored Imps in the same HTTP Request.
+The Stored BidRequest will be applied first, and then the Stored Imps after.
+
+**Beware**: Stored Request data will not be applied recursively.
+If a Stored BidRequest includes Imps with their own Stored Request IDs,
+then the data for those Stored Imps not be resolved.
+
 
 ## Alternate backends
 
