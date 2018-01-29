@@ -4,49 +4,15 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"fmt"
-
-	_ "github.com/lib/pq"
 
 	"github.com/coocood/freecache"
-	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type PostgresConfig struct {
-	Host     string
-	Port     int
-	Dbname   string
-	User     string
-	Password string
-	TTL      int
-	Size     int
-}
-
-func (c PostgresConfig) uri() string {
-	uri := ""
-	if c.Host != "" {
-		uri += fmt.Sprintf("host=%s ", c.Host)
-	}
-
-	if c.Port > 0 {
-		uri += fmt.Sprintf("port=%d ", c.Port)
-	}
-
-	if c.User != "" {
-		uri += fmt.Sprintf("user=%s ", c.User)
-	}
-
-	if c.Password != "" {
-		uri += fmt.Sprintf("password=%s ", c.Password)
-	}
-
-	if c.Dbname != "" {
-		uri += fmt.Sprintf("dbname=%s ", c.Dbname)
-	}
-
-	return uri
+type CacheConfig struct {
+	TTL  int
+	Size int
 }
 
 // shared configuration that get used by all of the services
@@ -54,26 +20,6 @@ type shared struct {
 	db         *sql.DB
 	lru        *freecache.Cache
 	ttlSeconds int
-}
-
-func newShared(conf PostgresConfig) (*shared, error) {
-	db, err := sql.Open("postgres", conf.uri()+" sslmode=disable")
-	if err != nil {
-		return nil, err
-	}
-
-	s := &shared{
-		db:         db,
-		lru:        freecache.NewCache(conf.Size),
-		ttlSeconds: conf.TTL,
-	}
-
-	if err := s.db.Ping(); err != nil {
-		/* This is for information only; we'll still operate w/o db */
-		glog.Errorf("failed to connect to db store: %v", err)
-	}
-
-	return s, nil
 }
 
 // Cache postgres
@@ -84,17 +30,17 @@ type Cache struct {
 }
 
 // New creates new postgres.Cache
-func New(cfg PostgresConfig) (*Cache, error) {
-
-	shared, err := newShared(cfg)
-	if err != nil {
-		return nil, err
+func New(db *sql.DB, cfg CacheConfig) *Cache {
+	shared := &shared{
+		db:         db,
+		lru:        freecache.NewCache(cfg.Size),
+		ttlSeconds: cfg.TTL,
 	}
 	return &Cache{
 		shared:   shared,
 		accounts: &accountService{shared: shared},
 		config:   &configService{shared: shared},
-	}, nil
+	}
 }
 
 func (c *Cache) Accounts() cache.AccountsService {

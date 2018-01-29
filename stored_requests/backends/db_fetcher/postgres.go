@@ -3,12 +3,12 @@ package db_fetcher
 import (
 	"bytes"
 	"database/sql"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests"
 	"strconv"
+
+	"github.com/prebid/prebid-server/config"
 )
 
-func NewPostgres(cfg *config.PostgresConfig, qtype string) (stored_requests.Fetcher, error) {
+func NewPostgresDb(cfg *config.PostgresConfig) (*sql.DB, error) {
 	db, err := sql.Open("postgres", confToPostgresDSN(cfg))
 	if err != nil {
 		return nil, err
@@ -18,19 +18,7 @@ func NewPostgres(cfg *config.PostgresConfig, qtype string) (stored_requests.Fetc
 		return nil, err
 	}
 
-	switch qtype {
-	// Using a case for future expandability
-	case "AMP":
-		return &dbFetcher{
-			db:         db,
-			queryMaker: cfg.MakeAmpQuery,
-		}, nil
-	}
-	// Default fetcher
-	return &dbFetcher{
-		db:         db,
-		queryMaker: cfg.MakeQuery,
-	}, nil
+	return db, nil
 }
 
 // confToPostgresDSN converts our app config into a string for the pq driver.
