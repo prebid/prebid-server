@@ -62,6 +62,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
 type DomainMetrics struct {
@@ -108,6 +109,7 @@ var (
 )
 
 var exchanges map[string]adapters.Adapter
+var syncers map[string]usersyncers.Usersyncer
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
 
@@ -694,6 +696,17 @@ func setupExchanges(cfg *config.Configuration) {
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint, cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
 	}
 
+	syncers = map[string]usersyncers.Usersyncer{
+		"appnexus":        usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
+		"audienceNetwork": usersyncers.NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
+		"conversant":      usersyncers.NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
+		"indexExchange":   usersyncers.NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
+		"lifestreet":      usersyncers.NewLifestreetSyncer(cfg.ExternalURL),
+		"pubmatic":        usersyncers.NewPubmaticSyncer(cfg.ExternalURL),
+		"pulsepoint":      usersyncers.NewPulsepointSyncer(cfg.ExternalURL),
+		"rubicon":         usersyncers.NewRubiconSyncer(cfg.Adapters["rubicon"].UserSyncURL),
+	}
+
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
 	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
@@ -804,7 +817,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", syncEndpoints.NewEndpoint(nil, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter)) // TODO Build the map
+	router.POST("/cookie_sync", syncEndpoints.NewEndpoint(syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter))
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
