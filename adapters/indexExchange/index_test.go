@@ -18,7 +18,7 @@ import (
 
 func TestIndexInvalidCall(t *testing.T) {
 
-	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "localhost")
+	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932")
 	an.URI = "blah"
 	s := an.Name()
 	if s == "" {
@@ -44,7 +44,7 @@ func TestIndexTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL, "localhost")
+	an := NewIndexAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -81,7 +81,7 @@ func TestIndexInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL, "localhost")
+	an := NewIndexAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -117,7 +117,7 @@ func TestIndexInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL, "localhost")
+	an := NewIndexAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -153,7 +153,7 @@ func TestIndexMissingSiteId(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL, "localhost")
+	an := NewIndexAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -212,7 +212,7 @@ func TestIndexBasicResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL, "localhost")
+	an := NewIndexAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -238,19 +238,5 @@ func TestIndexBasicResponse(t *testing.T) {
 	}
 	if len(bids) != 1 {
 		t.Fatalf("Should have received one bid")
-	}
-}
-
-func TestIndexUserSyncInfo(t *testing.T) {
-
-	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
-	if an.usersyncInfo.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D" {
-		t.Fatalf("should have matched")
-	}
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
 	}
 }

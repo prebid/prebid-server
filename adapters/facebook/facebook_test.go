@@ -248,7 +248,7 @@ func TestFacebookBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID))
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
@@ -340,7 +340,7 @@ func TestFacebookInterstitialResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID))
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
@@ -422,7 +422,7 @@ func TestFacebookBannerRequestWithSupportedSizes(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID))
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
@@ -507,7 +507,7 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID), "localhost")
+	an := NewFacebookAdapter(&conf, fmt.Sprintf("%d", fbdata.partnerID))
 	an.URI = server.URL
 	an.nonSecureUri = server.URL
 
@@ -542,19 +542,4 @@ func TestGenerateRequestsForFacebook(t *testing.T) {
 		t.Fatalf("Should be passing width 0 for size 320x50")
 	}
 
-}
-
-func TestFacebookUserSyncInfo(t *testing.T) {
-	url := "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26uid%3D%24UID"
-
-	an := NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, "partnerId", url)
-	if an.usersyncInfo.URL != url {
-		t.Fatalf("should have matched")
-	}
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
-	}
 }

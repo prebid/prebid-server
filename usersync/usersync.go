@@ -2,11 +2,14 @@ package usersync
 
 import "github.com/prebid/prebid-server/pbs"
 
-// Usersyncer is the interface for objects which have usersync info.
-// This can be returned to the browser so that the Prebid Server host knows which IDs
-// to send to each Bidder.s
 type Usersyncer interface {
+	// GetUsersyncInfo returns basic info the browser needs in order to run a user sync.
+	//
+	// For more information, see http://clearcode.cc/2015/12/cookie-syncing/
 	GetUsersyncInfo() *pbs.UsersyncInfo
+	// FamilyName identifies the space of cookies for this usersyncer.
+	// For example, if this Usersyncer syncs with adnxs.com, then this
+	// should return "adnxs".
 	FamilyName() string
 }
 
