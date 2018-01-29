@@ -19,106 +19,101 @@ type currencyData struct {
 
 func getCurrency(currencyRates []byte, seatBids *[]openrtb.SeatBid, bidRequest *openrtb.BidRequest, adapterExtra *map[openrtb_ext.BidderName]*seatResponseExtra) string {
 	currencyToUse := defaultAdServerCurrency
-	requestCurrency := ""
+	requestCurrency := defaultAdServerCurrency // Assuming default USD for request currency if one was not set
 
 	if len(bidRequest.Cur) == 1 {
+		// Setting request currency if one was set
 		requestCurrency = bidRequest.Cur[0]
 	}
 
-	// First check if currency was set in request
-	if requestCurrency != "" {
-		var requestExt openrtb_ext.ExtRequest
-		if bidRequest.Ext != nil {
-			json.Unmarshal(bidRequest.Ext, &requestExt)
+	var requestExt openrtb_ext.ExtRequest
+	if bidRequest.Ext != nil {
+		json.Unmarshal(bidRequest.Ext, &requestExt)
+	}
+
+	newSeatBids := make([]openrtb.SeatBid, 0, len(*seatBids))
+
+	// Iterate through bidder currencies and make sure they match with request currency
+	for _, seatBid := range *seatBids {
+		var bidderErrs []string
+		bidderName, ok := openrtb_ext.GetBidderName(seatBid.Seat)
+		if ok == false {
+			// Invalid bidder name in SeatBid.Seat. Skip to the next seat.
+			continue
 		}
+		adapterExtraCopy := *adapterExtra
+		newBids := make([]openrtb.Bid, 0, len(seatBid.Bid))
 
-		newSeatBids := make([]openrtb.SeatBid, 0, len(*seatBids))
-
-		// Iterate through bidder currencies and make sure they match with request currency
-		for _, seatBid := range *seatBids {
-			var bidderErrs []interface{}
-			bidderName, ok := openrtb_ext.GetBidderName(seatBid.Seat)
-			if ok == false {
-				// Invalid bidder name in SeatBid.Seat. Skip to the next seat.
-				continue
-			}
-			adapterExtraCopy := *adapterExtra
-			newBids := make([]openrtb.Bid, 0, len(seatBid.Bid))
-
-			for _, bid := range seatBid.Bid {
-				// Fetch currency from bid
-				bidCurrency, err := jsonparser.GetString(bid.Ext, "ad_server_currency")
-				if err != nil || bidCurrency == "" {
-					if requestCurrency == defaultAdServerCurrency {
-						// If bidder did not provide bid currency but request currency was set to USD (default), use USD
-						currencyToUse = defaultAdServerCurrency
-						newBids = append(newBids, bid)
-						continue
-					}
-
-					// Currency was set in request but bidder did not provide currency info in bid. Return error and drop the bid.
-					bidderErrs = append(bidderErrs, errors.New(defaultCurrencyConversionError).Error())
+		for _, bid := range seatBid.Bid {
+			// Fetch currency from bid
+			bidCurrency, err := jsonparser.GetString(bid.Ext, "ad_server_currency")
+			if err != nil || bidCurrency == "" {
+				if requestCurrency == defaultAdServerCurrency {
+					// If bidder did not provide bid currency but request currency was set to USD (default), use USD
+					currencyToUse = defaultAdServerCurrency
+					newBids = append(newBids, bid)
 					continue
 				}
 
-				if bidCurrency != requestCurrency {
-					var convertedBid float64
-					var successfulConversion bool
-					// Currencies do not match for this bid. Need to convert the bid price based on converstion rates.
-					// Check if conversion rates were provided in request first.
-					if requestExt.Currency.Rates != nil {
-						// If they are set in request, convert the currencies.
-						if convertedBid, err = convertCurrencyWithRates(requestExt.Currency.Rates, requestCurrency, bidCurrency, bid.Price); err != nil {
-							// Error converting currency with request rates. Try with latest rates.
-							if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(currencyRates, &bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
-								continue
-							}
-						}
-					} else {
-						// Conversion rates are not set in request. Use latest rates.
+				// Currency was set in request but bidder did not provide currency info in bid. Return error and drop the bid.
+				bidderErrs = append(bidderErrs, errors.New(defaultCurrencyConversionError).Error())
+				continue
+			}
+
+			if bidCurrency != requestCurrency {
+				var convertedBid float64
+				var successfulConversion bool
+				// Currencies do not match for this bid. Need to convert the bid price based on converstion rates.
+				// Check if conversion rates were provided in request first.
+				if len(requestExt.Currency.Rates) > 0 {
+					// If they are set in request, convert the currencies.
+					if convertedBid, err = convertCurrencyWithRates(requestExt.Currency.Rates, requestCurrency, bidCurrency, bid.Price); err != nil {
+						// Error converting currency with request rates. Try with latest rates.
 						if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(currencyRates, &bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
 							continue
 						}
 					}
-
-					// Rate conversion successful. Set new bid price.
-					bid.Price = convertedBid
+				} else {
+					// Conversion rates are not set in request. Use latest rates.
+					if convertedBid, successfulConversion = convertCurrencyWithCurrentRates(currencyRates, &bidderErrs, requestCurrency, bidCurrency, bid); successfulConversion == false {
+						continue
+					}
 				}
-				// Rate conversion was successful or no conversion was needed. Set new currency.
-				currencyToUse = requestCurrency
-				newBids = append(newBids, bid)
-			}
 
-			if len(newBids) > 0 {
-				// Set new bids for seat
-				seatBid.Bid = newBids
-				newSeatBids = append(newSeatBids, seatBid)
+				// Rate conversion successful. Set new bid price.
+				bid.Price = convertedBid
 			}
-
-			for _, bidderErr := range bidderErrs {
-				// Set errors for this seat
-				adapterExtraCopy[bidderName].Errors = append(adapterExtraCopy[bidderName].Errors, fmt.Sprintf("%s", bidderErr))
-			}
-			*adapterExtra = adapterExtraCopy
+			// Rate conversion was successful or no conversion was needed. Set new currency.
+			currencyToUse = requestCurrency
+			newBids = append(newBids, bid)
 		}
-		// Set the updated list of seatBids
-		*seatBids = newSeatBids
+
+		if len(newBids) > 0 {
+			// Set new bids for seat
+			seatBid.Bid = newBids
+			newSeatBids = append(newSeatBids, seatBid)
+		}
+
+		for _, bidderErr := range bidderErrs {
+			// Set errors for this seat
+			adapterExtraCopy[bidderName].Errors = append(adapterExtraCopy[bidderName].Errors, bidderErr)
+		}
+		*adapterExtra = adapterExtraCopy
 	}
+	// Set the updated list of seatBids
+	*seatBids = newSeatBids
 
 	return currencyToUse
 }
 
-func convertCurrencyWithCurrentRates(currencyRates []byte, bidderErrs *[]interface{}, requestCurrency string, bidCurrency string, bid openrtb.Bid) (float64, bool) {
+func convertCurrencyWithCurrentRates(currencyRates []byte, bidderErrs *[]string, requestCurrency string, bidCurrency string, bid openrtb.Bid) (float64, bool) {
 	var convertedBid float64
 	var successfulConversion bool
 
-	if currencyRates == nil {
-		// If converstion rates not available, return error and drop the bid.
-		*bidderErrs = append(*bidderErrs, errors.New(defaultCurrencyConversionError).Error())
-	} else {
+	if len(currencyRates) > 0 {
 		// Convert the currencies
 		var currData currencyData
-		if err := json.Unmarshal(currencyRates, &currData); err != nil {
+		if err := json.Unmarshal(currencyRates, &currData); err != nil || currData.ConversionRates == nil {
 			*bidderErrs = append(*bidderErrs, errors.New(defaultCurrencyConversionError).Error())
 		} else {
 			convertedBid, err = convertCurrencyWithRates(currData.ConversionRates, requestCurrency, bidCurrency, bid.Price)
@@ -129,6 +124,9 @@ func convertCurrencyWithCurrentRates(currencyRates []byte, bidderErrs *[]interfa
 				successfulConversion = true
 			}
 		}
+	} else {
+		// If converstion rates not available, return error and drop the bid.
+		*bidderErrs = append(*bidderErrs, errors.New(defaultCurrencyConversionError).Error())
 	}
 
 	return convertedBid, successfulConversion

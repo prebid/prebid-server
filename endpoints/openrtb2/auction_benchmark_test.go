@@ -55,7 +55,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	defer server.Close()
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics, []byte{}), &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
