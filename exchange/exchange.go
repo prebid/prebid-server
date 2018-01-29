@@ -35,7 +35,6 @@ type exchange struct {
 	m          *pbsmetrics.Metrics
 	cache      prebid_cache_client.Client
 	cacheTime  time.Duration
-	analytics  *analytics.Analytics
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -60,15 +59,12 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	for a, _ := range e.adapterMap {
 		e.adapters = append(e.adapters, a)
 	}
-	e.analytics = &cfg.Analytics
 	e.m = registry
 	return e
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, to *analytics.AuctionObject) (*openrtb.BidResponse, error) {
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs)
-
 	cleanRequests, errs := cleanOpenRTBRequests(bidRequest, e.adapters, usersyncs, e.m)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
@@ -112,12 +108,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
-	adapterBids, adapterExtra := e.getAllBids(auctionCtx, liveAdapters, cleanRequests, targData)
-	adapterBids, adapterExtra := e.getAllBids(ctx, liveAdapters, cleanRequests, targData, to)
+	adapterBids, adapterExtra := e.getAllBids(auctionCtx, liveAdapters, cleanRequests, targData, to)
 
 	// Build the response
-	return e.buildBidResponse(liveAdapters, adapterBids, bidRequest, adapterExtra, targData, errs)
-
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, targData, errs)
 }
 

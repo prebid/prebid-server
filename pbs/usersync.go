@@ -78,7 +78,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret    string
 	HostCookieSettings *HostCookieSettings
 	Metrics            metrics.Registry
-	Analytics          *analytics.Analytics
+	Analytics          *analytics.PBSAnalyticsModule
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.

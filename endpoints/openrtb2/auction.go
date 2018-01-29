@@ -27,12 +27,12 @@ import (
 	"time"
 )
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics, module *a.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, module}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -41,6 +41,7 @@ type endpointDeps struct {
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
 	metrics          *pbsmetrics.Metrics
+	analytics        *a.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -58,7 +59,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, ctx, cancel, errL := deps.parseRequest(r)
 	var ao a.AuctionObject
-	if deps.cfg.Analytics.Enabled {
+	if deps.analytics!=nil {
 		ao = a.AuctionObject{
 			Request:   *req,
 			Status:    http.StatusOK,
@@ -75,11 +76,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		deps.metrics.ErrorMeter.Mark(1)
-		if deps.cfg.Analytics.Enabled {
+		if deps.analytics!=nil {
 			ao.Error = make([]error, len(errL))
 			ao.Status = http.StatusBadRequest
 			copy(ao.Error, errL)
-			deps.cfg.Analytics.LogAuctionObject(&ao)
+			(*deps.analytics).LogAuctionObject(&ao)
 		}
 		return
 	}
@@ -95,16 +96,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, &ao)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		if deps.cfg.Analytics.Enabled {
+		if deps.analytics!=nil{
 			ao.Status = http.StatusInternalServerError
 			ao.Error = append(ao.Error, err)
-			deps.cfg.Analytics.LogAuctionObject(&ao)
+			(*deps.analytics).LogAuctionObject(&ao)
 		}
 		return
 	}
@@ -112,9 +112,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	if deps.cfg.Analytics.Enabled {
+	if deps.analytics!=nil {
 		ao.Response = *response
-		deps.cfg.Analytics.LogAuctionObject(&ao)
+		(*deps.analytics).LogAuctionObject(&ao)
 	}
 
 	// If an error happens when encoding the response, there isn't much we can do.

@@ -2,27 +2,26 @@ package config
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/spf13/viper"
 	"strings"
 )
 
 // Configuration
 type Configuration struct {
-	ExternalURL     string              `mapstructure:"external_url"`
-	Host            string              `mapstructure:"host"`
-	Port            int                 `mapstructure:"port"`
-	AdminPort       int                 `mapstructure:"admin_port"`
-	DefaultTimeout  uint64              `mapstructure:"default_timeout_ms"`
-	CacheURL        Cache               `mapstructure:"cache"`
-	RecaptchaSecret string              `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie          `mapstructure:"host_cookie"`
-	Metrics         Metrics             `mapstructure:"metrics"`
-	DataCache       DataCache           `mapstructure:"datacache"`
-	StoredRequests  StoredRequests      `mapstructure:"stored_requests"`
-	Adapters        map[string]Adapter  `mapstructure:"adapters"`
-	MaxRequestSize  int64               `mapstructure:"max_request_size"`
-	Analytics       analytics.Analytics `mapstructure:"analytics"`
+	ExternalURL     string             `mapstructure:"external_url"`
+	Host            string             `mapstructure:"host"`
+	Port            int                `mapstructure:"port"`
+	AdminPort       int                `mapstructure:"admin_port"`
+	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
+	CacheURL        Cache              `mapstructure:"cache"`
+	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie         `mapstructure:"host_cookie"`
+	Metrics         Metrics            `mapstructure:"metrics"`
+	DataCache       DataCache          `mapstructure:"datacache"`
+	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
+	Adapters        map[string]Adapter `mapstructure:"adapters"`
+	MaxRequestSize  int64              `mapstructure:"max_request_size"`
+	Analytics       Analytics          `mapstructure:"analytics"`
 }
 
 func (cfg *Configuration) validate() error {
@@ -42,11 +41,11 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	XAPI        struct {
+	XAPI struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
-	} `mapstructure:"xapi"` // needed for Rubicon
+	} `mapstructure:"xapi"`                         // needed for Rubicon
 }
 
 type Metrics struct {
@@ -87,6 +86,15 @@ type Cache struct {
 type Cookie struct {
 	Name  string `mapstructure:"name"`
 	Value string `mapstructure:"value"`
+}
+
+type Analytics struct {
+	Enabled bool   `mapstructure:"enabled"`
+	File FileLogs `mapstructure:"file"`
+}
+
+type FileLogs struct {
+	Config string `mapstructure:"filename"`
 }
 
 // New uses viper to get our server configurations

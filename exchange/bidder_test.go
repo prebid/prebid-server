@@ -430,11 +430,7 @@ func TestTargetingKeys(t *testing.T) {
 		Ext:  bidReqExtRaw,
 	}
 
-	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{
-		winningBids:    make(map[string]*openrtb.Bid),
-		winningBidders: make(map[string]openrtb_ext.BidderName),
-	}, "dummy", &analytics.AuctionObject{})
-	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{}, "dummy")
+	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{}, "dummy", &analytics.AuctionObject{})
 	if len(errs) > 0 {
 		t.Errorf("Errors processing requestBid")
 		for _, e := range errs {

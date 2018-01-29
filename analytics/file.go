@@ -6,15 +6,16 @@ import (
 	"errors"
 )
 
+const FILE_LOGGER = "file_logger"
+
 type FileLogger struct {
-	FileName string `mapstructure:"filename"`
-	Logger   *glog.Logger
+	Logger *glog.Logger
 }
 
 func (f *FileLogger) LogAuctionObject(ao *AuctionObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-	b.WriteString(string(ao))
+	b.WriteString(ao.String())
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
@@ -22,20 +23,20 @@ func (f *FileLogger) LogAuctionObject(ao *AuctionObject) {
 func (f *FileLogger) LogSetUIDObject(so *SetUIDObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-	b.WriteString(string(so))
+	b.WriteString(so.String())
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
 func (f *FileLogger) LogCookieSyncObject(cso *CookieSyncObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-	b.WriteString(string(cso))
+	b.WriteString(cso.String())
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
 
 func NewFileLogger(conf map[string]string) (PBSAnalyticsModule, error) {
-	fileName, ok := conf["file_logger"]
+	fileName, ok := conf[FILE_LOGGER]
 	if !ok {
 		return nil, errors.New("FileLogger not configured")
 	}
@@ -47,7 +48,6 @@ func NewFileLogger(conf map[string]string) (PBSAnalyticsModule, error) {
 	}
 	if logger, err := glog.New(options); err == nil {
 		return &FileLogger{
-			fileName,
 			logger,
 		}, nil
 	} else {
