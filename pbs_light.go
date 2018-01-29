@@ -111,7 +111,6 @@ var (
 )
 
 var exchanges map[string]adapters.Adapter
-var syncers map[string]usersyncers.Usersyncer
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
 
@@ -188,7 +187,8 @@ func getAccountMetrics(id string) *AccountMetrics {
 }
 
 type auctionDeps struct {
-	cfg *config.Configuration
+	cfg     *config.Configuration
+	syncers map[string]usersyncers.Usersyncer
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -257,9 +257,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil {
-				// If exchanges[bidderCode] exists, then syncers[bidderCode] should exist too.
+				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] should exist too.
 				// The unit tests guarantee it.
-				syncer := syncers[bidder.BidderCode]
+				syncer := deps.syncers[bidder.BidderCode]
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
@@ -690,18 +690,6 @@ func setupExchanges(cfg *config.Configuration) {
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
 	}
 
-	syncers = map[string]usersyncers.Usersyncer{
-		"appnexus":        usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
-		"districtm":       usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
-		"audienceNetwork": usersyncers.NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
-		"conversant":      usersyncers.NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
-		"indexExchange":   usersyncers.NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
-		"lifestreet":      usersyncers.NewLifestreetSyncer(cfg.ExternalURL),
-		"pubmatic":        usersyncers.NewPubmaticSyncer(cfg.ExternalURL),
-		"pulsepoint":      usersyncers.NewPulsepointSyncer(cfg.ExternalURL),
-		"rubicon":         usersyncers.NewRubiconSyncer(cfg.Adapters["rubicon"].UserSyncURL),
-	}
-
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
 	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
@@ -715,7 +703,22 @@ func setupExchanges(cfg *config.Configuration) {
 
 	accountMetrics = make(map[string]*AccountMetrics)
 	adapterMetrics = makeExchangeMetrics("adapter")
+}
 
+// makeSyncers returns a map of usersyncer objects.
+// The same keys should exist in this map as in the exchanges map.
+func makeSyncers(cfg *config.Configuration) map[string]usersyncers.Usersyncer {
+	return map[string]usersyncers.Usersyncer{
+		"appnexus":        usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
+		"districtm":       usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
+		"audienceNetwork": usersyncers.NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
+		"conversant":      usersyncers.NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
+		"indexExchange":   usersyncers.NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
+		"lifestreet":      usersyncers.NewLifestreetSyncer(cfg.ExternalURL),
+		"pubmatic":        usersyncers.NewPubmaticSyncer(cfg.ExternalURL),
+		"pulsepoint":      usersyncers.NewPulsepointSyncer(cfg.ExternalURL),
+		"rubicon":         usersyncers.NewRubiconSyncer(cfg.Adapters["rubicon"].UserSyncURL),
+	}
 }
 
 func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
@@ -816,8 +819,10 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
+	syncers := makeSyncers(cfg)
+
 	router := httprouter.New()
-	router.POST("/auction", (&auctionDeps{cfg}).auction)
+	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", syncEndpoints.NewEndpoint(syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter))
