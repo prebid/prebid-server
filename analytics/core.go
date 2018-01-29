@@ -31,7 +31,7 @@ func Register(name string, factory factory) {
 }
 
 //Setup and initialize analytics modules
-func CreateAnalyticsModules(conf map[string]string) PBSAnalyticsModule {
+func InitializePBSAnalytics(conf map[string]string) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
 	for module := range conf {
 		engineFactory, ok := analyticsFactories[module]

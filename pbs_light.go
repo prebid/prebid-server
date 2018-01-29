@@ -753,7 +753,7 @@ func init() {
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.ReadInConfig()
-	a.Register(a.FILE_LOGGER, a.NewFileLogger)
+	registerAnalyticsModules()
 
 	flag.Parse() // read glog settings from cmd line
 }
@@ -834,7 +834,7 @@ func serve(cfg *config.Configuration) error {
 
 	setupExchanges(cfg)
 	if cfg.Analytics.Enabled {
-		atics := a.CreateAnalyticsModules(map[string]string{
+		atics := a.InitializePBSAnalytics(map[string]string{
 			a.FILE_LOGGER: cfg.Analytics.File.Config,
 		})
 		analytics = &atics
@@ -996,4 +996,8 @@ func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fe
 		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
+}
+
+func registerAnalyticsModules(){
+	a.Register(a.FILE_LOGGER, a.NewFileLogger)
 }
