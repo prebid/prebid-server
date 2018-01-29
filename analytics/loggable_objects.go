@@ -1,10 +1,10 @@
 package analytics
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"github.com/mxmCherry/openrtb"
+	"net/http"
 )
 
 type RequestType string

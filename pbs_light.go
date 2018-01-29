@@ -753,9 +753,9 @@ func init() {
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.ReadInConfig()
+	a.Register(a.FILE_LOGGER, a.NewFileLogger)
 
 	flag.Parse() // read glog settings from cmd line
-	a.Register("file_logger", a.NewFileLogger)
 }
 
 func main() {

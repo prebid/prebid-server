@@ -1,8 +1,8 @@
 package analytics
 
 import (
-	"log"
 	"github.com/golang/glog"
+	"log"
 )
 
 type PBSAnalyticsModule interface {
@@ -31,23 +31,18 @@ func Register(name string, factory factory) {
 }
 
 //Setup and initialize analytics modules
-func CreateAnalyticsModules(conf map[string]string) (PBSAnalyticsModule) {
+func CreateAnalyticsModules(conf map[string]string) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
 	for module := range conf {
-		engineName, ok := conf[module]
+		engineFactory, ok := analyticsFactories[module]
 		if ok {
-			engineFactory, ok := analyticsFactories[engineName]
-			if ok {
-				if mod, err := engineFactory(conf); err == nil {
-					modules = append(modules, mod)
-				} else {
-					glog.Errorf("Error setting up %v", module)
-				}
+			if mod, err := engineFactory(conf); err == nil {
+				modules = append(modules, mod)
 			} else {
-				glog.Errorf("Factory missing for module %v", module)
+				glog.Errorf("Error setting up %v", module)
 			}
 		} else {
-			glog.Error("Module configuration not found for %v", module)
+			glog.Errorf("Factory missing for module %v", module)
 		}
 	}
 	return modules

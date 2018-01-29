@@ -2,8 +2,8 @@ package analytics
 
 import (
 	"bytes"
-	"github.com/chasex/glog"
 	"errors"
+	"github.com/chasex/glog"
 )
 
 const FILE_LOGGER = "file_logger"

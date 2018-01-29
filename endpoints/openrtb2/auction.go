@@ -71,7 +71,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 	var ao a.AuctionObject
-	if deps.analytics!=nil {
+	if deps.analytics != nil {
 		ao = a.AuctionObject{
 			Request:   *req,
 			Status:    http.StatusOK,
@@ -87,7 +87,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		deps.metrics.ErrorMeter.Mark(1)
-		if deps.analytics!=nil {
+		if deps.analytics != nil {
 			ao.Error = make([]error, len(errL))
 			ao.Status = http.StatusBadRequest
 			copy(ao.Error, errL)
@@ -120,7 +120,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		if deps.analytics!=nil{
+		if deps.analytics != nil {
 			ao.Status = http.StatusInternalServerError
 			ao.Error = append(ao.Error, err)
 			(*deps.analytics).LogAuctionObject(&ao)
@@ -131,7 +131,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	if deps.analytics!=nil {
+	if deps.analytics != nil {
 		ao.Response = *response
 		(*deps.analytics).LogAuctionObject(&ao)
 	}

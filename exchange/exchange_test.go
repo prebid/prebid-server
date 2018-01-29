@@ -12,12 +12,11 @@ import (
 	"time"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
-	"github.com/prebid/prebid-server/analytics"
-
 )
 
 func TestNewExchange(t *testing.T) {
