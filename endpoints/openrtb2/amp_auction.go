@@ -206,31 +206,10 @@ func enforceAMPCache(req *openrtb.BidRequest) (errs []error) {
 		}
 	}
 
-	updateExt := false
-	// Ensure Targeting is on, if not set an empty (default) targeting object
-	if extRequest.Prebid.Targeting == nil {
-		extRequest.Prebid.Targeting = &openrtb_ext.ExtRequestTargeting{}
-		updateExt = true
+	// Ensure Targeting and caching is on
+	if extRequest.Prebid.Targeting == nil || extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {
+		errs = []error{fmt.Errorf("AMP requests require Trageting and Caching to be set")}
 	}
 
-	// Ensure caching is on, if not set an empty (default) cache object.
-	if extRequest.Prebid.Cache == nil {
-		extRequest.Prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{}
-		updateExt = true
-	}
-	if extRequest.Prebid.Cache.Bids == nil {
-		extRequest.Prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
-		updateExt = true
-	}
-
-	// Repack the Request.Ext if needed
-	if updateExt {
-		var err error
-		req.Ext, err = json.Marshal(extRequest)
-		if err != nil {
-			errs = []error{err}
-			return
-		}
-	}
 	return
 }
