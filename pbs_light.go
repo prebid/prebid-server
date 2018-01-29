@@ -998,6 +998,6 @@ func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fe
 	return
 }
 
-func registerAnalyticsModules(){
+func registerAnalyticsModules() {
 	a.Register(a.FILE_LOGGER, a.NewFileLogger)
 }
