@@ -434,6 +434,7 @@ func TestTargetingKeys(t *testing.T) {
 		winningBids:    make(map[string]*openrtb.Bid),
 		winningBidders: make(map[string]openrtb_ext.BidderName),
 	}, "dummy", &analytics.AuctionObject{})
+	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{}, "dummy")
 	if len(errs) > 0 {
 		t.Errorf("Errors processing requestBid")
 		for _, e := range errs {

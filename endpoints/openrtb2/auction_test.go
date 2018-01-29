@@ -11,7 +11,9 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/rcrowley/go-metrics"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +25,8 @@ const maxSize = 1024 * 256
 
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
 func TestGoodRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
@@ -100,7 +103,8 @@ func TestExplicitUserId(t *testing.T) {
 		Name:  cookieName,
 		Value: mockId,
 	})
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg)
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest.User == nil {
@@ -129,7 +133,8 @@ func TestImplicitUserId(t *testing.T) {
 		Name:  cookieName,
 		Value: mockId,
 	})
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg)
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest.User == nil {
@@ -143,7 +148,8 @@ func TestImplicitUserId(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
@@ -158,7 +164,8 @@ func TestBadRequests(t *testing.T) {
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
-	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -166,7 +173,8 @@ func TestNilExchange(t *testing.T) {
 
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -174,7 +182,8 @@ func TestNilValidator(t *testing.T) {
 
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize})
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -220,7 +229,8 @@ func TestUserAgentOverride(t *testing.T) {
 // TestImplicitIPs prevents #230
 func TestImplicitIPs(t *testing.T) {
 	ex := &nobidExchange{}
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize})
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
 	recorder := httptest.NewRecorder()
@@ -251,9 +261,42 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+// Test valid/invalid DigiTrust functionality
+func TestDigiTrust(t *testing.T) {
+	for _, requestData := range digiTrustTestRequests {
+		bidReq := &openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		err = validateUser(bidReq.User)
+
+		switch bidReq.ID {
+		case "request-without-user-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-without-user-ext-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-with-valid-digitrust-obj":
+			if err != nil {
+				t.Fatalf("validateUser should not return an error due to digitrust.")
+			}
+		case "request-with-invalid-digitrust-obj":
+			if err == nil {
+				t.Fatalf("validateUser should return an error due to digitrust.")
+			}
+		}
+	}
+}
+
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics}
 
 	for i, requestData := range testStoredRequests {
 		Request := openrtb.BidRequest{}
@@ -292,6 +335,7 @@ func TestOversizedRequest(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -316,6 +360,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -338,7 +383,8 @@ func TestNoEncoding(t *testing.T) {
 		&mockExchange{},
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize})
+		&config.Configuration{MaxRequestSize: maxSize},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -400,6 +446,148 @@ func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) strin
 	return "{}"
 }
 
+var digiTrustTestRequests = []string{
+	`{
+		"id": "request-without-user-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "request-without-user-ext-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"user": {
+			"yob": 1989
+		}
+	}`,
+	`{
+		"id": "request-with-valid-digitrust-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"user": {
+			"yob": 1989,
+			"ext": {
+				"digitrust": {
+					"id": "sample-digitrust-id",
+					"keyv": 1,
+					"pref": 0
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "request-with-invalid-digitrust-obj",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"user": {
+			"yob": 1989,
+			"ext": {
+				"digitrust": {
+					"id": "sample-digitrust-id",
+					"keyv": 1,
+					"pref": 1
+				}
+			}
+		}
+	}`,
+}
+
 var validRequests = []string{
 	`{
 		"id": "some-request-id",
@@ -428,7 +616,18 @@ var validRequests = []string{
 					"appnexus": "good"
 				}
 			}
-		]
+		],
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low",
+					"lengthmax": 20
+				},
+				"cache": {
+					"bids": {}
+				}
+			}
+		}
 	}`,
 	`{
 		"id": "some-request-id",
@@ -626,6 +825,24 @@ var invalidRequests = []string{
 				"appnexus": "good"
 			}
 		}]
+	}`,
+	`{
+		"id": "some-request-id",
+		"site": {"page": "test.somepage.com"},
+		"imp": [{
+			"id": "my-imp-id",
+			"video": {
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"cache": {}
+			}
+		}
 	}`,
 }
 

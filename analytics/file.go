@@ -3,7 +3,7 @@ package analytics
 import (
 	"bytes"
 	"github.com/chasex/glog"
-	"log"
+	"errors"
 )
 
 type FileLogger struct {
@@ -11,33 +11,46 @@ type FileLogger struct {
 	Logger   *glog.Logger
 }
 
-func (f *FileLogger) logAuctionObject(ao *AuctionObject) {
+func (f *FileLogger) LogAuctionObject(ao *AuctionObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
-	b.Write(ao.log())
+	b.WriteString(string(ao))
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
 
-func (f *FileLogger) logSetUIDObject(so *SetUIDObject) {
+func (f *FileLogger) LogSetUIDObject(so *SetUIDObject) {
 	//Code to parse the object and log in a way required
+	var b bytes.Buffer
+	b.WriteString(string(so))
+	f.Logger.Debug(b.String())
+	f.Logger.Flush()
 }
-func (f *FileLogger) logCookieSyncObject(cso *CookieSyncObject) {
+func (f *FileLogger) LogCookieSyncObject(cso *CookieSyncObject) {
 	//Code to parse the object and log in a way required
+	var b bytes.Buffer
+	b.WriteString(string(cso))
+	f.Logger.Debug(b.String())
+	f.Logger.Flush()
 }
 
-func (f *FileLogger) setupFileLogger() *FileLogger {
-	//Any other settings can be configured here
+func NewFileLogger(conf map[string]string) (PBSAnalyticsModule, error) {
+	fileName, ok := conf["file_logger"]
+	if !ok {
+		return nil, errors.New("FileLogger not configured")
+	}
 	options := glog.LogOptions{
-		File:  f.FileName,
+		File:  fileName,
 		Flag:  glog.LstdFlags,
 		Level: glog.Ldebug,
 		Mode:  glog.R_Day,
 	}
-	var err error
-	f.Logger, err = glog.New(options)
-	if err != nil {
-		log.Printf("File Logger could not be initialized. Error: %v", err)
+	if logger, err := glog.New(options); err == nil {
+		return &FileLogger{
+			fileName,
+			logger,
+		}, nil
+	} else {
+		return nil, err
 	}
-	return f
 }
