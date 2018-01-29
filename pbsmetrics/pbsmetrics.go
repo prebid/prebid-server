@@ -21,6 +21,7 @@ type Metrics struct {
 	// and know when legacy requests have been abandoned.
 	ORTBRequestMeter metrics.Meter
 	AmpRequestMeter  metrics.Meter
+	AmpNoCookieMeter metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 
@@ -53,6 +54,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		RequestTimer:        blankTimer(0),
 		ORTBRequestMeter:    blankMeter(0),
 		AmpRequestMeter:     blankMeter(0),
+		AmpNoCookieMeter:    blankMeter(0),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 
@@ -82,6 +84,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
 	newMetrics.ORTBRequestMeter = metrics.GetOrRegisterMeter("ortb_requests", registry)
 	newMetrics.AmpRequestMeter = metrics.GetOrRegisterMeter("amp_requests", registry)
+	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 
 	for _, a := range exchanges {
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])

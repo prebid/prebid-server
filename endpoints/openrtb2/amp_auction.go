@@ -41,8 +41,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 
-	deps.metrics.RequestMeter.Mark(1)
 	// Set this as an AMP request in Metrics.
+	start := time.Now()
 	deps.metrics.AmpRequestMeter.Mark(1)
 
 	req, errL := deps.parseAmpRequest(r)
@@ -57,14 +57,20 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx := context.Background()
+	cancel := func() {}
+	if req.TMax > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
+	} else {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
+	}
 	defer cancel()
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
 		deps.metrics.AppRequestMeter.Mark(1)
 	} else if usersyncs.LiveSyncCount() == 0 {
-		deps.metrics.NoCookieMeter.Mark(1)
+		deps.metrics.AmpNoCookieMeter.Mark(1)
 		if isSafari {
 			deps.metrics.SafariNoCookieMeter.Mark(1)
 		}
@@ -160,7 +166,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	ampId := httpRequest.FormValue("tag_id")
 	if len(ampId) == 0 {
-		errs = []error{errors.New("AMP requests require an AMP config ID")}
+		errs = []error{errors.New("AMP requests require an AMP tag_id")}
 		return
 	}
 
@@ -172,7 +178,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return nil, errs
 	}
 	if len(storedRequests) == 0 {
-		errs = []error{fmt.Errorf("No AMP config found for ID '%s'", ampId)}
+		errs = []error{fmt.Errorf("No AMP config found for tag_id '%s'", ampId)}
 		return
 	}
 
@@ -185,11 +191,11 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	// Two checks so users know which way the Imp check failed.
 	if len(req.Imp) == 0 {
-		errs = []error{fmt.Errorf("AMP config ID '%s' does not include an Imp object. One id required", ampId)}
+		errs = []error{fmt.Errorf("AMP tag_id '%s' does not include an Imp object. One id required", ampId)}
 		return
 	}
 	if len(req.Imp) > 1 {
-		errs = []error{fmt.Errorf("AMP config ID '%s' includes multiple Imp objects. We must have only one", ampId)}
+		errs = []error{fmt.Errorf("AMP tag_id '%s' includes multiple Imp objects. We must have only one", ampId)}
 		return
 	}
 	return
