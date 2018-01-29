@@ -433,3 +433,13 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 		return "{\"appnexus\":false}"
 	}
 }
+
+func TestSyncers(t *testing.T) {
+	setupExchanges(&config.Configuration{})
+
+	for bidderName, _ := range exchanges {
+		if _, ok := syncers[bidderName]; !ok {
+			t.Errorf("No syncer exists for adapter: %s", bidderName)
+		}
+	}
+}

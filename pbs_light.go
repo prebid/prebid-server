@@ -257,10 +257,13 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil {
-				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				// If exchanges[bidderCode] exists, then syncers[bidderCode] should exist too.
+				// The unit tests guarantee it.
+				syncer := syncers[bidder.BidderCode]
+				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					bidder.UsersyncInfo = syncer.GetUsersyncInfo()
 					ametrics.NoCookieMeter.Mark(1)
 					accountAdapterMetric.NoCookieMeter.Mark(1)
 					if ex.SkipNoCookies() {
@@ -689,6 +692,7 @@ func setupExchanges(cfg *config.Configuration) {
 
 	syncers = map[string]usersyncers.Usersyncer{
 		"appnexus":        usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
+		"districtm":       usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
 		"audienceNetwork": usersyncers.NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
 		"conversant":      usersyncers.NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
 		"indexExchange":   usersyncers.NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
