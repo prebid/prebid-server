@@ -9,11 +9,9 @@ import (
 
 type RequestType string
 
-const (
-	COOKIE_SYNC = "cookie_sync"
-	AUCTION     = "auction"
-	SETUID      = "set_uid"
-)
+const COOKIE_SYNC RequestType = "cookie_sync"
+const AUCTION RequestType = "auction"
+const SETUID RequestType = "set_uid"
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
