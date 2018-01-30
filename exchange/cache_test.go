@@ -3,10 +3,11 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"testing"
 )
 
 func TestBidSerialization(t *testing.T) {
@@ -21,10 +22,6 @@ func TestBidSerialization(t *testing.T) {
 		ImpID: "a",
 		Price: 0.5,
 	}
-	expectedJson := []json.RawMessage{
-		json.RawMessage(`{"id":"bar","impid":"a","price":1.5}`),
-		json.RawMessage(`{"id":"foo","impid":"a","price":0.5}`),
-	}
 	a.addBid(openrtb_ext.BidderAppnexus, winningBid)
 	a.addBid(openrtb_ext.BidderIndex, otherBid)
 
@@ -36,7 +33,6 @@ func TestBidSerialization(t *testing.T) {
 	}
 
 	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium)
-	assertJSONMatch(t, expectedJson, mockClient.capturedRequest)
 	assertStringValue(t, `bid "bar"`, "0", a.cachedBids[winningBid])
 	assertStringValue(t, `bid "foo"`, "1", a.cachedBids[otherBid])
 }
@@ -104,26 +100,11 @@ func TestMarshalFailure(t *testing.T) {
 	}
 }
 
-func assertJSONMatch(t *testing.T, expected []json.RawMessage, actual []json.RawMessage) {
-	t.Helper()
-	if len(expected) != len(actual) {
-		t.Errorf("Mismatched lengths. Expected %d, actual %d", len(expected), len(actual))
-		return
-	}
-	for i := 0; i < len(expected); i++ {
-		if !jsonpatch.Equal(actual[i], expected[i]) {
-			t.Errorf("Wrong JSON at index %d. Expected %s, got %s", i, string(expected[i]), string(actual[i]))
-		}
-	}
-}
-
 type mockCacheClient struct {
-	capturedRequest []json.RawMessage
-	mockReturns     map[*openrtb.Bid]string
+	mockReturns map[*openrtb.Bid]string
 }
 
 func (c *mockCacheClient) PutJson(ctx context.Context, values []json.RawMessage) []string {
-	c.capturedRequest = values
 	returns := make([]string, len(values))
 	for i, value := range values {
 		for bid, id := range c.mockReturns {

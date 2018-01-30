@@ -5,6 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
@@ -19,12 +26,10 @@ import (
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"golang.org/x/net/publicsuffix"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"time"
 )
+
+const defaultRequestTimeoutMillis = 5000
+const storedRequestTimeoutMillis = 50
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -43,6 +48,13 @@ type endpointDeps struct {
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
+	// to wait for bids. However, tmax may be defined in the Stored Request data.
+	//
+	// If so, then the trip to the backend might use a significant amount of this time.
+	// We can respect timeouts more accurately if we note the *real* start time, and use it
+	// to compute the auction timeout.
+	start := time.Now()
 	deps.metrics.RequestMeter.Mark(1)
 	deps.metrics.ORTBRequestMeter.Mark(1)
 
@@ -55,8 +67,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	req, ctx, cancel, errL := deps.parseRequest(r)
-	defer cancel() // Safe because parseRequest returns a no-op even if errors are present.
+	req, errL := deps.parseRequest(r)
+
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
@@ -66,8 +78,16 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+	ctx := context.Background()
+	cancel := func() {}
+	if req.TMax > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
+	} else {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
+	}
+	defer cancel()
 
+	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
 		deps.metrics.AppRequestMeter.Mark(1)
 	} else if usersyncs.LiveSyncCount() == 0 {
@@ -107,10 +127,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 // possible, it will return errors with messages that suggest improvements.
 //
 // If the errors list has at least one element, then no guarantees are made about the returned request.
-func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, ctx context.Context, cancel func(), errs []error) {
+func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error) {
 	req = &openrtb.BidRequest{}
-	ctx = context.Background()
-	cancel = func() {}
 	errs = nil
 
 	// Pull the request body into a buffer, so we have it for later usage.
@@ -118,7 +136,7 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		R: httpRequest.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
-	rawRequest, err := ioutil.ReadAll(lr)
+	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
 		errs = []error{err}
 		return
@@ -131,21 +149,21 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 		}
 	}
 
-	if err := json.Unmarshal(rawRequest, req); err != nil {
+	timeout := parseTimeout(requestJson, time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Fetch the Stored Request data and merge it into the HTTP request.
+	if requestJson, errs = deps.processStoredRequests(ctx, requestJson); len(errs) > 0 {
+		return
+	}
+
+	if err := json.Unmarshal(requestJson, req); err != nil {
 		errs = []error{err}
 		return
 	}
 
-	if req.TMax > 0 {
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TMax)*time.Millisecond)
-	}
-
-	// Process any stored request directives in the impression objects.
-	if errL := deps.processStoredRequests(ctx, req, rawRequest); len(errL) > 0 {
-		errs = errL
-		return
-	}
-
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	if err := deps.validateRequest(req); err != nil {
@@ -154,6 +172,21 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	}
 
 	return
+}
+
+// parseTimeout returns parses tmax from the requestJson, or returns the default if it doesn't exist.
+//
+// requestJson should be the content of the POST body.
+//
+// If the request defines tmax explicitly, then this will return that duration in milliseconds.
+// If not, it will return the default timeout.
+func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duration {
+	if tmax, dataType, _, err := jsonparser.Get(requestJson, "tmax"); dataType != jsonparser.NotExist && err == nil {
+		if tmaxInt, err := strconv.Atoi(string(tmax)); err == nil && tmaxInt > 0 {
+			return time.Duration(tmaxInt) * time.Millisecond
+		}
+	}
+	return defaultTimeout
 }
 
 func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
@@ -407,6 +440,103 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
+func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
+	// Parse the Stored Request IDs from the BidRequest and Imps.
+	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
+	if err != nil {
+		return nil, []error{err}
+	}
+	imps, impIds, idIndices, errs := parseImpInfo(requestJson)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
+	// Fetch all of the Stored Request data
+	var allIds = make([]string, len(impIds), len(impIds)+1)
+	copy(allIds, impIds)
+	if hasStoredBidRequest {
+		allIds = append(allIds, storedBidRequestId)
+	}
+	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, allIds)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
+	// Apply the Stored BidRequest, if it exists
+	resolvedRequest := requestJson
+	if hasStoredBidRequest {
+		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
+		if err != nil {
+			return nil, []error{err}
+		}
+	}
+
+	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
+	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
+	// assume that the request.imp data did not change when applying the Stored BidRequest.
+	for i := 0; i < len(impIds); i++ {
+		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[idIndices[i]])
+		if err != nil {
+			return nil, []error{err}
+		}
+		imps[idIndices[i]] = resolvedImp
+	}
+	if len(impIds) > 0 {
+		newImpJson, err := json.Marshal(imps)
+		if err != nil {
+			return nil, []error{err}
+		}
+		resolvedRequest, err = jsonparser.Set(resolvedRequest, newImpJson, "imp")
+		if err != nil {
+			return nil, []error{err}
+		}
+	}
+
+	return resolvedRequest, nil
+}
+
+// parseImpInfo parses the request JSON and returns several things about the Imps
+//
+// 1. A list of the JSON for every Imp.
+// 2. A list of all IDs which appear at `imp[i].ext.prebid.storedrequest.id`.
+// 3. A list intended to parallel "ids". Each element tells which index of "imp[index]" the corresponding element of "ids" should modify.
+// 4. Any errors which occur due to bad requests. These should warrant an HTTP 4xx response.
+func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, impIdIndices []int, errs []error) {
+	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
+		i := 0
+		jsonparser.ArrayEach(impArray, func(imp []byte, dataType jsonparser.ValueType, offset int, err error) {
+			if storedImpId, hasStoredImp, err := getStoredRequestId(imp); err != nil {
+				errs = append(errs, err)
+			} else if hasStoredImp {
+				ids = append(ids, storedImpId)
+				impIdIndices = append(impIdIndices, i)
+			}
+			imps = append(imps, imp)
+			i++
+		})
+	}
+	return
+}
+
+// getStoredRequestId parses a Stored Request ID from some json, without doing a full (slow) unmarshal.
+// It returns the ID, true/false whether a stored request key existed, and an error if anything went wrong
+// (e.g. malformed json, id not a string, etc).
+func getStoredRequestId(data []byte) (string, bool, error) {
+	// These keys must be kept in sync with openrtb_ext.ExtStoredRequest
+	value, dataType, _, err := jsonparser.Get(data, "ext", "prebid", "storedrequest", "id")
+	if dataType == jsonparser.NotExist {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if dataType != jsonparser.String {
+		return "", true, errors.New("ext.prebid.storedrequest.id must be a string")
+	}
+
+	return string(value), true, nil
+}
+
 // setUserImplicitly uses implicit info from httpReq to populate bidReq.User
 func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.User == nil || bidReq.User.ID == "" {
@@ -443,90 +573,6 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			bidReq.Device.UA = ua
 		}
 	}
-}
-
-// processStoredRequests merges any data referenced by request.imp[i].ext.prebid.storedrequest.id into the request, if necessary.
-func (deps *endpointDeps) processStoredRequests(ctx context.Context, request *openrtb.BidRequest, rawRequest []byte) []error {
-	// Pull all the Stored Request IDs from the Imps.
-	storedReqIds, shortIds, errList := deps.findStoredRequestIds(request.Imp)
-	if len(shortIds) == 0 {
-		return nil
-	}
-
-	storedReqs, errL := deps.storedReqFetcher.FetchRequests(ctx, shortIds)
-	if len(errL) > 0 {
-		return append(errList, errL...)
-	}
-
-	// Get the raw JSON for Imps, so we don't have to worry about the effects of an UnMarshal/Marshal round.
-	rawImpsRaw, dt, _, err := jsonparser.Get(rawRequest, "imp")
-	if err != nil {
-		return append(errList, err)
-	}
-	if dt != jsonparser.Array {
-		return append(errList, fmt.Errorf("ERROR: could not parse Imp[] as an array, got %s", string(dt)))
-	}
-	rawImps := getArrayElements(rawImpsRaw)
-	// Process Imp level configs.
-	for i := 0; i < len(request.Imp); i++ {
-		// Check if a config was requested
-		if len(storedReqIds[i]) > 0 {
-			conf, ok := storedReqs[storedReqIds[i]]
-			if ok && len(conf) > 0 {
-				err := deps.mergeStoredData(&request.Imp[i], rawImps[i], conf)
-				if err != nil {
-					errList = append(errList, err)
-				}
-			}
-		}
-	}
-
-	return errList
-}
-
-// Pull the Stored Request IDs from the Imps. Return both ID indexed by Imp array index, and a simple list of existing IDs.
-func (deps *endpointDeps) findStoredRequestIds(imps []openrtb.Imp) ([]string, []string, []error) {
-	errList := make([]error, 0, len(imps))
-	storedReqIds := make([]string, len(imps))
-	shortIds := make([]string, 0, len(imps))
-	for i := 0; i < len(imps); i++ {
-		if imps[i].Ext != nil && len(imps[i].Ext) > 0 {
-			// These keys should be kept in sync with openrtb_ext.ExtStoredRequest.
-			// The jsonparser is much faster than doing a full unmarshal to select a single value
-			storedReqId, _, _, err := jsonparser.Get(imps[i].Ext, "prebid", "storedrequest", "id")
-			storedReqString := string(storedReqId)
-			if err == nil && len(storedReqString) > 0 {
-				storedReqIds[i] = storedReqString
-				shortIds = append(shortIds, storedReqString)
-			} else if len(storedReqString) > 0 {
-				errList = append(errList, err)
-				storedReqIds[i] = ""
-			}
-		} else {
-			storedReqIds[i] = ""
-		}
-	}
-	return storedReqIds, shortIds, errList
-}
-
-// Process the stored request data for an Imp.
-// Need to modify the Imp object in place as we cannot simply assign one Imp to another (deep copy)
-func (deps *endpointDeps) mergeStoredData(imp *openrtb.Imp, impJson []byte, storedReqData json.RawMessage) error {
-	newImp, err := jsonpatch.MergePatch(storedReqData, impJson)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(newImp, imp)
-	return err
-}
-
-// Copied from jsonparser
-func getArrayElements(data []byte) (result [][]byte) {
-	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		result = append(result, value)
-	})
-
-	return
 }
 
 // parseUserId gets this user's ID  for the host machine, if it exists.

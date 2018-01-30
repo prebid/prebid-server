@@ -2,33 +2,12 @@ package postgrescache
 
 import (
 	"database/sql"
-	"strings"
 	"testing"
 
 	"github.com/coocood/freecache"
 	"github.com/erikstmartin/go-testdb"
 	"github.com/golang/glog"
-	"github.com/stretchr/testify/assert"
 )
-
-func TestPostgresConfig(t *testing.T) {
-	conf := PostgresConfig{
-		Host:     "host",
-		Port:     1234,
-		Dbname:   "dbname",
-		User:     "user",
-		Password: "password",
-		TTL:      3434,
-		Size:     100,
-	}
-
-	u := conf.uri()
-	assert.True(t, strings.Contains(u, "host=host"))
-	assert.True(t, strings.Contains(u, "port=1234"))
-	assert.True(t, strings.Contains(u, "dbname=dbname"))
-	assert.True(t, strings.Contains(u, "user=user"))
-	assert.True(t, strings.Contains(u, "password=password"))
-}
 
 type StubCache struct {
 	shared   *shared
@@ -37,7 +16,7 @@ type StubCache struct {
 }
 
 // New creates new postgres.Cache
-func StubNew(cfg PostgresConfig) *Cache {
+func StubNew(cfg CacheConfig) *Cache {
 	shared := stubnewShared(cfg)
 	return &Cache{
 		shared:   shared,
@@ -46,7 +25,7 @@ func StubNew(cfg PostgresConfig) *Cache {
 	}
 }
 
-func stubnewShared(conf PostgresConfig) *shared {
+func stubnewShared(conf CacheConfig) *shared {
 	db, _ := sql.Open("testdb", "")
 
 	s := &shared{
@@ -67,14 +46,9 @@ func TestPostgresDbPriceGranularity(t *testing.T) {
 	  `
 	testdb.StubQuery(sql, testdb.RowsFromCSVString(columns, result))
 
-	conf := PostgresConfig{
-		Host:     "host",
-		Port:     1234,
-		Dbname:   "dbname",
-		User:     "user",
-		Password: "password",
-		TTL:      3434,
-		Size:     100,
+	conf := CacheConfig{
+		TTL:  3434,
+		Size: 100,
 	}
 	dataCache := StubNew(conf)
 
@@ -101,14 +75,9 @@ func TestPostgresDbNullPriceGranularity(t *testing.T) {
 	  `
 	testdb.StubQuery(sql, testdb.RowsFromCSVString(columns, result))
 
-	conf := PostgresConfig{
-		Host:     "host",
-		Port:     1234,
-		Dbname:   "dbname",
-		User:     "user",
-		Password: "password",
-		TTL:      3434,
-		Size:     100,
+	conf := CacheConfig{
+		TTL:  3434,
+		Size: 100,
 	}
 	dataCache := StubNew(conf)
 
