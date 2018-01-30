@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"github.com/golang/glog"
-	"log"
 )
 
 type PBSAnalyticsModule interface {
@@ -21,7 +20,8 @@ var analyticsFactories = make(map[string]factory)
 //Assign factory method to respective modules
 func Register(name string, factory factory) {
 	if factory == nil {
-		log.Panicf("Analytics factory %s does not exist.", name)
+		glog.Errorf("Analytics factory for %s does not exist.", name)
+		return
 	}
 	_, registered := analyticsFactories[name]
 	if registered {
