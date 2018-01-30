@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/prebid/prebid-server/openrtb_ext"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -13,12 +15,12 @@ import (
 )
 
 // NewEndpoint implements /cookie_sync
-func NewEndpoint(syncers map[string]syncers.Usersyncer, optOutCookie *config.Cookie, metric metrics.Meter) httprouter.Handle {
+func NewEndpoint(syncers map[openrtb_ext.BidderName]syncers.Usersyncer, optOutCookie *config.Cookie, metric metrics.Meter) httprouter.Handle {
 	return (&cookieSyncDeps{syncers, optOutCookie, metric}).CookieSync
 }
 
 type cookieSyncDeps struct {
-	syncs        map[string]syncers.Usersyncer
+	syncs        map[openrtb_ext.BidderName]syncers.Usersyncer
 	optOutCookie *config.Cookie
 	metric       metrics.Meter
 }
@@ -55,7 +57,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	}
 
 	for _, bidder := range csReq.Bidders {
-		if syncer, ok := deps.syncs[bidder]; ok {
+		if syncer, ok := deps.syncs[openrtb_ext.BidderName(bidder)]; ok {
 			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,

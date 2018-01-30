@@ -1,9 +1,20 @@
 package exchange
 
 import (
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+func TestAdapterMap(t *testing.T) {
+	adapterMap := newAdapterMap(nil, &config.Configuration{})
+	for _, bidderName := range openrtb_ext.BidderMap {
+		if _, ok := adapterMap[bidderName]; !ok {
+			t.Errorf("adapterMap missing expected Bidder: %s", string(bidderName))
+		}
+	}
+}
 
 func TestAdapterList(t *testing.T) {
 	list := AdapterList()

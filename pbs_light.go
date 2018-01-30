@@ -38,8 +38,8 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/facebook"
 	"github.com/prebid/prebid-server/adapters/indexExchange"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -188,7 +188,7 @@ func getAccountMetrics(id string) *AccountMetrics {
 
 type auctionDeps struct {
 	cfg     *config.Configuration
-	syncers map[string]usersyncers.Usersyncer
+	syncers map[openrtb_ext.BidderName]usersyncers.Usersyncer
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -259,7 +259,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] should exist too.
 				// The unit tests guarantee it.
-				syncer := deps.syncers[bidder.BidderCode]
+				syncer := deps.syncers[openrtb_ext.BidderName(bidder.BidderCode)]
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
@@ -685,7 +685,7 @@ func setupExchanges(cfg *config.Configuration) {
 		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
-		"audienceNetwork": facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
+		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
 	}
@@ -703,22 +703,6 @@ func setupExchanges(cfg *config.Configuration) {
 
 	accountMetrics = make(map[string]*AccountMetrics)
 	adapterMetrics = makeExchangeMetrics("adapter")
-}
-
-// makeSyncers returns a map of usersyncer objects.
-// The same keys should exist in this map as in the exchanges map.
-func makeSyncers(cfg *config.Configuration) map[string]usersyncers.Usersyncer {
-	return map[string]usersyncers.Usersyncer{
-		"appnexus":        usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
-		"districtm":       usersyncers.NewAppnexusSyncer(cfg.ExternalURL),
-		"audienceNetwork": usersyncers.NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
-		"conversant":      usersyncers.NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
-		"indexExchange":   usersyncers.NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
-		"lifestreet":      usersyncers.NewLifestreetSyncer(cfg.ExternalURL),
-		"pubmatic":        usersyncers.NewPubmaticSyncer(cfg.ExternalURL),
-		"pulsepoint":      usersyncers.NewPulsepointSyncer(cfg.ExternalURL),
-		"rubicon":         usersyncers.NewRubiconSyncer(cfg.Adapters["rubicon"].UserSyncURL),
-	}
 }
 
 func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
@@ -819,7 +803,7 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	syncers := makeSyncers(cfg)
+	syncers := usersyncers.NewSyncerMap(cfg)
 
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)

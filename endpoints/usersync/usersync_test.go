@@ -9,6 +9,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	usersyncers "github.com/prebid/prebid-server/usersync"
 	metrics "github.com/rcrowley/go-metrics"
@@ -105,14 +106,9 @@ func TestCookieSyncHasCookies(t *testing.T) {
 }
 
 func testableEndpoint() httprouter.Handle {
-	knownSyncers := map[string]usersyncers.Usersyncer{
-		"appnexus":        usersyncers.NewAppnexusSyncer("someurl.com"),
-		"audienceNetwork": usersyncers.NewFacebookSyncer("facebookurl.com"),
-		"conversant":      usersyncers.NewConversantSyncer("conversant.com", "conversantSync.com"),
-		"lifestreet":      usersyncers.NewLifestreetSyncer("lifestreet.com"),
-		"pubmatic":        usersyncers.NewPubmaticSyncer("pubmatic.con"),
-		"pulsepoint":      usersyncers.NewPulsepointSyncer("pulsepoint.com"),
-		"rubicon":         usersyncers.NewRubiconSyncer("rubicon.com"),
+	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
+		openrtb_ext.BidderAppnexus: usersyncers.NewAppnexusSyncer("someurl.com"),
+		openrtb_ext.BidderFacebook: usersyncers.NewFacebookSyncer("facebookurl.com"),
 	}
 	return NewEndpoint(knownSyncers, &config.Cookie{}, metrics.NewMeter())
 }

@@ -2,12 +2,11 @@ package exchange
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/facebook"
 	"github.com/prebid/prebid-server/adapters/indexExchange"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -26,7 +25,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		// TODO #267: Upgrade the Conversant adapter
 		openrtb_ext.BidderConversant: adaptLegacyAdapter(conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint)),
 		// TODO #211: Upgrade the Facebook adapter
-		openrtb_ext.BidderFacebook: adaptLegacyAdapter(facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID)),
+		openrtb_ext.BidderFacebook: adaptLegacyAdapter(audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID)),
 		// TODO #212: Upgrade the Index adapter
 		openrtb_ext.BidderIndex: adaptLegacyAdapter(indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint)),
 		// TODO #213: Upgrade the Lifestreet adapter
@@ -42,19 +41,11 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 
 // Just pull the list of adapters from AdapterMap
 func AdapterList() []openrtb_ext.BidderName {
-	theClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConns:        400,
-			MaxIdleConnsPerHost: 10,
-			IdleConnTimeout:     60 * time.Second,
-		},
-	}
-
-	// Throwaway Adapter Map.
-	theAdapterMap := newAdapterMap(theClient, &config.Configuration{})
-	theAdapters := make([]openrtb_ext.BidderName, 0, len(theAdapterMap))
-	for a, _ := range theAdapterMap {
-		theAdapters = append(theAdapters, a)
+	theAdapters := make([]openrtb_ext.BidderName, len(openrtb_ext.BidderMap))
+	i := 0
+	for _, bidderName := range openrtb_ext.BidderMap {
+		theAdapters[i] = bidderName
+		i++
 	}
 	return theAdapters
 }
