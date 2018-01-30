@@ -1,4 +1,4 @@
-package usersync
+package cookie_sync
 
 import (
 	"encoding/json"
