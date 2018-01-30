@@ -27,7 +27,7 @@ const (
 	BidderConversant BidderName = "conversant"
 )
 
-// BidderMap stores all the valid OpenRTB 2.x Bidders in the project.
+// BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
 	"appnexus":      BidderAppnexus,
 	"facebook":      BidderFacebook,
