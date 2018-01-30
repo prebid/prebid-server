@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 const schemaDirectory = "static/bidder-params"
@@ -17,7 +18,7 @@ type BidderName string
 
 const (
 	BidderAppnexus   BidderName = "appnexus"
-	BidderFacebook   BidderName = "facebook"
+	BidderFacebook   BidderName = "audienceNetwork"
 	BidderIndex      BidderName = "indexExchange"
 	BidderLifestreet BidderName = "lifestreet"
 	BidderPubmatic   BidderName = "pubmatic"
@@ -27,14 +28,14 @@ const (
 )
 
 var bidderMap = map[string]BidderName{
-	"appnexus":      BidderAppnexus,
-	"facebook":      BidderFacebook,
-	"indexExchange": BidderIndex,
-	"lifestreet":    BidderLifestreet,
-	"pubmatic":      BidderPubmatic,
-	"pulsepoint":    BidderPulsepoint,
-	"rubicon":       BidderRubicon,
-	"conversant":    BidderConversant,
+	"appnexus":        BidderAppnexus,
+	"audienceNetwork": BidderFacebook,
+	"indexExchange":   BidderIndex,
+	"lifestreet":      BidderLifestreet,
+	"pubmatic":        BidderPubmatic,
+	"pulsepoint":      BidderPulsepoint,
+	"rubicon":         BidderRubicon,
+	"conversant":      BidderConversant,
 }
 
 // GetBidderName returns the BidderName for the given string, if it exists.
