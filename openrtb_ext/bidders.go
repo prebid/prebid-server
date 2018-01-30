@@ -18,7 +18,7 @@ type BidderName string
 
 const (
 	BidderAppnexus   BidderName = "appnexus"
-	BidderFacebook   BidderName = "facebook"
+	BidderFacebook   BidderName = "audienceNetwork"
 	BidderIndex      BidderName = "indexExchange"
 	BidderLifestreet BidderName = "lifestreet"
 	BidderPubmatic   BidderName = "pubmatic"
@@ -29,14 +29,14 @@ const (
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
-	"appnexus":      BidderAppnexus,
-	"facebook":      BidderFacebook,
-	"indexExchange": BidderIndex,
-	"lifestreet":    BidderLifestreet,
-	"pubmatic":      BidderPubmatic,
-	"pulsepoint":    BidderPulsepoint,
-	"rubicon":       BidderRubicon,
-	"conversant":    BidderConversant,
+	"appnexus":        BidderAppnexus,
+	"audienceNetwork": BidderFacebook,
+	"indexExchange":   BidderIndex,
+	"lifestreet":      BidderLifestreet,
+	"pubmatic":        BidderPubmatic,
+	"pulsepoint":      BidderPulsepoint,
+	"rubicon":         BidderRubicon,
+	"conversant":      BidderConversant,
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
