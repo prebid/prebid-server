@@ -10,7 +10,7 @@ import (
 func TestAdapterMap(t *testing.T) {
 	adapterMap := newAdapterMap(nil, &config.Configuration{})
 	for _, bidderName := range openrtb_ext.BidderMap {
-		if _, ok := adapterMap[bidderName]; !ok {
+		if bidder, ok := adapterMap[bidderName]; bidder == nil || !ok {
 			t.Errorf("adapterMap missing expected Bidder: %s", string(bidderName))
 		}
 	}
