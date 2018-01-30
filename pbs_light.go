@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"sort"
@@ -55,7 +54,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
-	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -597,37 +595,6 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.handler.ServeHTTP(w, r)
 }
 
-// https://blog.golang.org/context/userip/userip.go
-func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	if ua := user_agent.New(req.Header.Get("User-Agent")); ua != nil {
-		fmt.Fprintf(w, "User Agent: %v\n", ua)
-	}
-	ip, port, err := net.SplitHostPort(req.RemoteAddr)
-	if err != nil {
-		fmt.Fprintf(w, "userip: %q is not IP:port\n", req.RemoteAddr)
-	}
-
-	userIP := net.ParseIP(ip)
-	if userIP == nil {
-		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
-		fmt.Fprintf(w, "userip: %q is not IP:port\n", req.RemoteAddr)
-		return
-	}
-
-	forwardedIP := prebid.GetForwardedIP(req)
-	realIP := prebid.GetIP(req)
-
-	fmt.Fprintf(w, "IP: %s\n", ip)
-	fmt.Fprintf(w, "Port: %s\n", port)
-	fmt.Fprintf(w, "Forwarded IP: %s\n", forwardedIP)
-	fmt.Fprintf(w, "Real IP: %s\n", realIP)
-
-	for k, v := range req.Header {
-		fmt.Fprintf(w, "%s: %s\n", k, v)
-	}
-
-}
-
 func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "text/plain")
 	defer r.Body.Close()
@@ -867,7 +834,6 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
-	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	hostCookieSettings = pbs.HostCookieSettings{
