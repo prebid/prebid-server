@@ -1,4 +1,4 @@
-package facebook
+package audienceNetwork
 
 import (
 	"bytes"
@@ -21,7 +21,6 @@ type FacebookAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
 	nonSecureUri string
-	usersyncInfo *pbs.UsersyncInfo
 	platformJSON openrtb.RawJSON
 }
 
@@ -44,10 +43,6 @@ func (a *FacebookAdapter) FamilyName() string {
 // Facebook likes to parallelize to minimize latency
 func (a *FacebookAdapter) SplitAdUnits() bool {
 	return true
-}
-
-func (a *FacebookAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *FacebookAdapter) SkipNoCookies() bool {
@@ -260,21 +255,14 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
+func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
 	a := adapters.NewHTTPAdapter(config)
-
-	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
 
 	return &FacebookAdapter{
 		http: a,
 		URI:  "https://an.facebook.com/placementbid.ortb",
 		//for AB test
 		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
-		usersyncInfo: info,
 		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
 	}
 }

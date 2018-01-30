@@ -16,11 +16,12 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"strings"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -312,18 +313,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 }
 
 func TestRubiconUserSyncInfo(t *testing.T) {
-	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
-
-	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker", url)
-	if an.usersyncInfo.URL != url {
-		t.Fatalf("should have matched")
-	}
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
-	}
+	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker")
 
 	name := an.Name()
 	if name != "Rubicon" {
@@ -339,18 +329,6 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 	if skipNoCookies != false {
 		t.Errorf("SkipNoCookies should be false")
 	}
-
-	usersyncInfo := an.GetUsersyncInfo()
-	if usersyncInfo.URL != url {
-		t.Fatalf("URL '%s' != '%s'", usersyncInfo.URL, url)
-	}
-	if usersyncInfo.Type != "redirect" {
-		t.Fatalf("Type should be redirect")
-	}
-	if usersyncInfo.SupportCORS != false {
-		t.Fatalf("SupportCORS should be false")
-	}
-
 }
 
 func TestParseSizes(t *testing.T) {
@@ -795,7 +773,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker", "localhost/usersync")
+	an = NewRubiconAdapter(&conf, "uri", rubidata.xapiuser, rubidata.xapipass, "pbs-test-tracker")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{

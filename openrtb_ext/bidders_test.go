@@ -1,10 +1,11 @@
 package openrtb_ext
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/xeipuuv/gojsonschema"
 	"os"
 	"testing"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 // TestMain does the expensive setup so we don't keep re-reading the files in static/bidder-params for each test.
@@ -21,7 +22,7 @@ var validator BidderParamValidator
 
 // TestGetBidderName makes sure the GetBidderNames method works properly.
 func TestGetBidderName(t *testing.T) {
-	for bidderString, bidderName := range bidderMap {
+	for bidderString, bidderName := range BidderMap {
 		converted, isValid := GetBidderName(bidderString)
 		if !isValid {
 			t.Errorf("GetBidderName thinks \"%s\" is not a valid bidder", bidderString)
@@ -35,7 +36,7 @@ func TestGetBidderName(t *testing.T) {
 // TestBidderParamSchemas makes sure that the validator.Schema() function
 // returns valid JSON for all known BidderNames.
 func TestBidderParamSchemas(t *testing.T) {
-	for _, bidderName := range bidderMap {
+	for _, bidderName := range BidderMap {
 		schema := validator.Schema(bidderName)
 		if schema == "" {
 			t.Errorf("No schema exists for bidder %s. Does static/bidder-params/%s.json exist?", bidderName, bidderName)

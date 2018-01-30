@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
@@ -18,9 +17,8 @@ import (
 )
 
 type LifestreetAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 /* Name - export adapter name */
@@ -31,10 +29,6 @@ func (a *LifestreetAdapter) Name() string {
 // used for cookies and such
 func (a *LifestreetAdapter) FamilyName() string {
 	return "lifestreet"
-}
-
-func (a *LifestreetAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *LifestreetAdapter) SkipNoCookies() bool {
@@ -199,21 +193,10 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *LifestreetAdapter {
+func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig) *LifestreetAdapter {
 	a := adapters.NewHTTPAdapter(config)
-
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=lifestreet&uid=$$visitor_cookie$$", externalURL)
-	usersyncURL := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &LifestreetAdapter{
-		http:         a,
-		URI:          "https://prebid.s2s.lfstmedia.com/adrequest",
-		usersyncInfo: info,
+		http: a,
+		URI:  "https://prebid.s2s.lfstmedia.com/adrequest",
 	}
 }

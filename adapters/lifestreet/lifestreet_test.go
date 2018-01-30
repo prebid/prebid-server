@@ -175,7 +175,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewLifestreetAdapter(&conf, server.URL)
+	an := NewLifestreetAdapter(&conf)
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -282,20 +282,5 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil {
 		t.Fatalf("Should have gotten a timeout error: %v", err)
-	}
-}
-
-func TestLifestreetUserSyncInfo(t *testing.T) {
-	url := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl=localhost%2Fsetuid%3Fbidder%3Dlifestreet%26uid%3D%24%24visitor_cookie%24%24"
-
-	an := NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != url {
-		t.Fatalf("User Sync Info URL '%s' doesn't match '%s'", an.usersyncInfo.URL, url)
-	}
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
 	}
 }
