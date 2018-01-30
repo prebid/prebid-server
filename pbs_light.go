@@ -381,51 +381,33 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 	if pbs_req.CacheMarkup == 1 {
-		var cobjs []*pbc.CacheObject
-		var cxmls []*pbc.CacheXmlObject
-		for _, bid := range pbs_resp.Bids {
+		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
+		for i, bid := range pbs_resp.Bids {
 			if bid.CreativeMediaType == "video" {
-				cxmls = append(cxmls, &pbc.CacheXmlObject{
-					Value: bid.Adm,
-				})
-			} else {
-				bc := &pbc.BidCache{
-					Adm:    bid.Adm,
-					NURL:   bid.NURL,
-					Width:  bid.Width,
-					Height: bid.Height,
+				cobjs[i] = &pbc.CacheObject{
+					Value:   bid.Adm,
+					IsVideo: true,
 				}
-				cobjs = append(cobjs, &pbc.CacheObject{
-					Value: bc,
-				})
-			}
-		}
-		if len(cobjs) > 0 {
-			err = pbc.Put(ctx, cobjs)
-			if err != nil {
-				writeAuctionError(w, "Prebid cache failed", err)
-				mErrorMeter.Mark(1)
-				return
-			}
-		}
-		if len(cxmls) > 0 {
-			err = pbc.PutXml(ctx, cxmls)
-			if err != nil {
-				writeAuctionError(w, "Prebid cache failed", err)
-				mErrorMeter.Mark(1)
-				return
-			}
-		}
-		objIndex := 0
-		xmlIndex := 0
-		for _, bid := range pbs_resp.Bids {
-			if bid.CreativeMediaType == "video" {
-				bid.CacheID = cxmls[xmlIndex].UUID
-				xmlIndex++
 			} else {
-				bid.CacheID = cobjs[objIndex].UUID
-				objIndex++
+				cobjs[i] = &pbc.CacheObject{
+					Value: &pbc.BidCache{
+						Adm:    bid.Adm,
+						NURL:   bid.NURL,
+						Width:  bid.Width,
+						Height: bid.Height,
+					},
+					IsVideo: false,
+				}
 			}
+		}
+		err = pbc.Put(ctx, cobjs)
+		if err != nil {
+			writeAuctionError(w, "Prebid cache failed", err)
+			mErrorMeter.Mark(1)
+			return
+		}
+		for i, bid := range pbs_resp.Bids {
+			bid.CacheID = cobjs[i].UUID
 			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""

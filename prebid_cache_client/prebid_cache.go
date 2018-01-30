@@ -14,13 +14,9 @@ import (
 // For /openrtb2/auction cache, see client.go in this package.
 
 type CacheObject struct {
-	Value *BidCache
-	UUID  string
-}
-
-type CacheXmlObject struct {
-	Value string
-	UUID  string
+	Value   interface{}
+	UUID    string
+	IsVideo bool
 }
 
 type BidCache struct {
@@ -32,21 +28,12 @@ type BidCache struct {
 
 // internal protocol objects
 type putObject struct {
-	Type  string    `json:"type"`
-	Value *BidCache `json:"value"`
-}
-
-type putXmlObject struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }
 
 type putRequest struct {
 	Puts []putObject `json:"puts"`
-}
-
-type putXmlRequest struct {
-	Puts []putXmlObject `json:"puts"`
 }
 
 type responseObject struct {
@@ -85,58 +72,11 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	}
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
-		pr.Puts[i].Type = "json"
-		pr.Puts[i].Value = obj.Value
-	}
-	// Don't want to escape the HTML for adm and nurl
-	buf := new(bytes.Buffer)
-	enc := json.NewEncoder(buf)
-	enc.SetEscapeHTML(false)
-	err := enc.Encode(pr)
-	if err != nil {
-		return err
-	}
-
-	httpReq, err := http.NewRequest("POST", putURL, buf)
-	if err != nil {
-		return err
-	}
-	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
-	httpReq.Header.Add("Accept", "application/json")
-
-	anResp, err := ctxhttp.Do(ctx, client, httpReq)
-	if err != nil {
-		return err
-	}
-	defer anResp.Body.Close()
-
-	if anResp.StatusCode != 200 {
-		return fmt.Errorf("HTTP status code %d", anResp.StatusCode)
-	}
-
-	var resp response
-	if err := json.NewDecoder(anResp.Body).Decode(&resp); err != nil {
-		return err
-	}
-
-	if len(resp.Responses) != len(objs) {
-		return fmt.Errorf("Put response length didn't match")
-	}
-
-	for i, r := range resp.Responses {
-		objs[i].UUID = r.UUID
-	}
-
-	return nil
-}
-
-func PutXml(ctx context.Context, objs []*CacheXmlObject) error {
-	if len(objs) == 0 {
-		return nil
-	}
-	pr := putXmlRequest{Puts: make([]putXmlObject, len(objs))}
-	for i, obj := range objs {
-		pr.Puts[i].Type = "xml"
+		if obj.IsVideo {
+			pr.Puts[i].Type = "xml"
+		} else {
+			pr.Puts[i].Type = "json"
+		}
 		pr.Puts[i].Value = obj.Value
 	}
 	// Don't want to escape the HTML for adm and nurl
