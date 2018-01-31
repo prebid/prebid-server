@@ -60,9 +60,10 @@ Then `POST` an OpenRTB Request to `http://localhost:8000/openrtb2/auction`.
 If at least one `request.imp[i].ext.{bidder}` is defined in your Request,
 then your bidder should be called.
 
-To test user syncs, make a request to `http://localhost:8000/setuid?bidder={bidder}&uid={any-string-here}`.
+To test user syncs, [save a UID](../endpoints/setuid.md) using the FamilyName of your Usersyncer.
 The next time you use `/openrtb2/auction`, the OpenRTB request sent to your Bidder should have
-`BidRequest.User.BuyerUID` with the value you saved.
+`BidRequest.User.BuyerUID` with the value you saved. Note that UIDs are stored in the Cookie, so both
+requests must be made to the same domain.
 
 ## Add your Bidder to the Exchange
 
