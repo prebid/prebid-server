@@ -54,24 +54,15 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, ids []string) (dat
 	data = f.cache.GetRequests(ctx, ids)
 
 	// Fixes #311
-	perfectCacheHit := true
-	for _, id := range ids {
-		if _, ok := data[id]; !ok {
-			perfectCacheHit = false
-			break
-		}
-	}
-	if perfectCacheHit {
-		return data, nil
-	}
-
 	leftoverIds := make([]string, 0, len(ids)-len(data))
 	for _, id := range ids {
 		if _, gotFromCache := data[id]; !gotFromCache {
 			leftoverIds = append(leftoverIds, id)
 		}
 	}
-
+	if len(leftoverIds) < 1 {
+		return data, nil
+	}
 	newData, errs := f.fetcher.FetchRequests(ctx, leftoverIds)
 	f.cache.SaveRequests(ctx, newData)
 	for key, value := range newData {

@@ -26,7 +26,7 @@ func TestPerfectCache(t *testing.T) {
 		t.Errorf(`The cache called with the wrong ID. Expected "known", got %s.`, cache.gotGetIds[0])
 	}
 	if fetcher.gotRequest != nil {
-		t.Errorf("The delegate fetcher should not have been called.")
+		t.Errorf("The delegate fetcher should not have been called. Got %#v", fetcher.gotRequest)
 	}
 }
 
