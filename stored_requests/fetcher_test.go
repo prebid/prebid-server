@@ -97,6 +97,21 @@ func TestMissingData(t *testing.T) {
 	}
 }
 
+// Prevents #311
+func TestCacheSaves(t *testing.T) {
+	cache := &mockCache{
+		mockGetData: map[string]json.RawMessage{
+			"abc": json.RawMessage(`{}`),
+		},
+	}
+	fetcher := &mockFetcher{}
+	composed := WithCache(fetcher, cache)
+	composed.FetchRequests(context.Background(), []string{"abc", "abc"})
+	if fetcher.gotRequest != nil {
+		t.Errorf("The fetcher shouldn't be called when the cache has all the required data. Got %#v", fetcher.gotRequest)
+	}
+}
+
 type mockFetcher struct {
 	returnData map[string]json.RawMessage
 	returnErrs []error
