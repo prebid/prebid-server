@@ -506,11 +506,15 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 
-			pbs_kvs := map[string]string{
-				hbPbBidderKey:      roundedCpm,
-				hbBidderBidderKey:  bid.BidderCode,
-				hbCacheIdBidderKey: bid.CacheID,
+			// fixes #288 where map was being overwritten instead of updated
+			if bid.AdServerTargeting == nil {
+				bid.AdServerTargeting = make(map[string]string)
 			}
+			pbs_kvs := bid.AdServerTargeting
+
+			pbs_kvs[hbPbBidderKey] = roundedCpm
+			pbs_kvs[hbBidderBidderKey] = bid.BidderCode
+			pbs_kvs[hbCacheIdBidderKey] = bid.CacheID
 
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
@@ -533,13 +537,6 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
-				}
-			}
-			if bid.AdServerTargeting == nil {
-				bid.AdServerTargeting = pbs_kvs
-			} else {
-				for k, v := range pbs_kvs {
-					bid.AdServerTargeting[k] = v
 				}
 			}
 		}
