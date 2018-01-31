@@ -25,8 +25,8 @@ func TestPerfectCache(t *testing.T) {
 	if cache.gotGetIds[0] != "known" {
 		t.Errorf(`The cache called with the wrong ID. Expected "known", got %s.`, cache.gotGetIds[0])
 	}
-	if fetcher.gotRequest != nil {
-		t.Errorf("The delegate fetcher should not have been called. Got %#v", fetcher.gotRequest)
+	if len(fetcher.gotRequest) != 0 {
+		t.Errorf("The delegate fetcher should not have been called with any IDs. Got %#v", fetcher.gotRequest)
 	}
 }
 
@@ -107,8 +107,8 @@ func TestCacheSaves(t *testing.T) {
 	fetcher := &mockFetcher{}
 	composed := WithCache(fetcher, cache)
 	composed.FetchRequests(context.Background(), []string{"abc", "abc"})
-	if fetcher.gotRequest != nil {
-		t.Errorf("The fetcher shouldn't be called when the cache has all the required data. Got %#v", fetcher.gotRequest)
+	if len(fetcher.gotRequest) != 0 {
+		t.Errorf("No IDs should be requested from the fetcher for requests with duplicate ID. Got %#v", fetcher.gotRequest)
 	}
 }
 

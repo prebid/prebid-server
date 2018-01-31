@@ -60,9 +60,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, ids []string) (dat
 			leftoverIds = append(leftoverIds, id)
 		}
 	}
-	if len(leftoverIds) < 1 {
-		return data, nil
-	}
+
 	newData, errs := f.fetcher.FetchRequests(ctx, leftoverIds)
 	f.cache.SaveRequests(ctx, newData)
 	for key, value := range newData {
