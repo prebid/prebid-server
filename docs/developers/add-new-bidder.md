@@ -62,8 +62,7 @@ then your bidder should be called.
 
 To test user syncs, [save a UID](../endpoints/setuid.md) using the FamilyName of your Usersyncer.
 The next time you use `/openrtb2/auction`, the OpenRTB request sent to your Bidder should have
-`BidRequest.User.BuyerUID` with the value you saved. Note that UIDs are stored in the Cookie, so both
-requests must be made to the same domain.
+`BidRequest.User.BuyerUID` with the value you saved.
 
 ## Add your Bidder to the Exchange
 
