@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 const schemaDirectory = "static/bidder-params"
@@ -17,33 +18,27 @@ type BidderName string
 
 const (
 	BidderAppnexus   BidderName = "appnexus"
-	BidderFacebook   BidderName = "facebook"
+	BidderFacebook   BidderName = "audienceNetwork"
 	BidderIndex      BidderName = "indexExchange"
 	BidderLifestreet BidderName = "lifestreet"
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
-	BidderRubicon 	 BidderName = "rubicon"
-	BidderSovrn 	 BidderName = "sovrn"
+	BidderRubicon 	BidderName = "rubicon"
+	BidderSovrn 	 	BidderName = "sovrn"
 	BidderConversant BidderName = "conversant"
 )
 
-var bidderMap = map[string]BidderName{
-	"appnexus":      BidderAppnexus,
-	"facebook":      BidderFacebook,
-	"indexExchange": BidderIndex,
-	"lifestreet":    BidderLifestreet,
-	"pubmatic":      BidderPubmatic,
-	"pulsepoint":    BidderPulsepoint,
-	"rubicon":       BidderRubicon,
-	"conversant":    BidderConversant,
-	"sovrn":      BidderSovrn,
-}
-
-// GetBidderName returns the BidderName for the given string, if it exists.
-// The second argument is true if the name was valid, and false otherwise.
-func GetBidderName(name string) (BidderName, bool) {
-	bidderName, ok := bidderMap[name]
-	return bidderName, ok
+// BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
+var BidderMap = map[string]BidderName{
+	"appnexus":        BidderAppnexus,
+	"audienceNetwork": BidderFacebook,
+	"indexExchange":   BidderIndex,
+	"lifestreet":      BidderLifestreet,
+	"pubmatic":        BidderPubmatic,
+	"pulsepoint":      BidderPulsepoint,
+	"rubicon":         BidderRubicon,
+	"sovrn":      	  BidderSovrn,
+	"conversant":      BidderConversant,
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
@@ -80,7 +75,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 	schemas := make(map[BidderName]*gojsonschema.Schema, 50)
 	for _, fileInfo := range fileInfos {
 		bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
-		if _, isValid := GetBidderName(bidderName); !isValid {
+		if _, isValid := BidderMap[bidderName]; !isValid {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
 

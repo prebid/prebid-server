@@ -12,8 +12,9 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Cache     *ExtRequestPrebidCache `json:"cache"`
-	Targeting *ExtRequestTargeting   `json:"targeting"`
+	StoredRequest *ExtStoredRequest      `json:"storedrequest"`
+	Cache         *ExtRequestPrebidCache `json:"cache"`
+	Targeting     *ExtRequestTargeting   `json:"targeting"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache

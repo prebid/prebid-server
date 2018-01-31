@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 const maxSize = 1024 * 256
@@ -298,13 +299,7 @@ func TestStoredRequests(t *testing.T) {
 	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics}
 
 	for i, requestData := range testStoredRequests {
-		Request := openrtb.BidRequest{}
-		err := json.Unmarshal(json.RawMessage(requestData), &Request)
-		if err != nil {
-			t.Errorf("Error unmashalling bid request: %s", err.Error())
-		}
-
-		errList := edep.processStoredRequests(context.Background(), &Request, json.RawMessage(requestData))
+		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
 		if len(errList) != 0 {
 			for _, err := range errList {
 				if err != nil {
@@ -315,14 +310,9 @@ func TestStoredRequests(t *testing.T) {
 			}
 		}
 		expectJson := json.RawMessage(testFinalRequests[i])
-		requestJson, err := json.Marshal(Request)
-		if err != nil {
-			t.Errorf("Error mashalling bid request: %s", err.Error())
+		if !jsonpatch.Equal(newRequest, expectJson) {
+			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(newRequest), string(expectJson))
 		}
-		if !jsonpatch.Equal(requestJson, expectJson) {
-			t.Errorf("Error in processStoredRequests, test %d failed on compare\nFound:\n%s\nExpected:\n%s", i, string(requestJson), string(expectJson))
-		}
-
 	}
 }
 
@@ -390,6 +380,15 @@ func TestNoEncoding(t *testing.T) {
 
 	if !strings.Contains(recorder.Body.String(), "<script></script>") {
 		t.Errorf("The Response from the exchange should not be html-encoded")
+	}
+}
+
+// TestTimeoutParser makes sure we parse tmax properly.
+func TestTimeoutParser(t *testing.T) {
+	reqJson := json.RawMessage(`{"tmax":22}`)
+	timeout := parseTimeout(reqJson, 11*time.Millisecond)
+	if timeout != 22*time.Millisecond {
+		t.Errorf("Failed to parse tmax properly. Expected %d, got %d", 22*time.Millisecond, timeout)
 	}
 }
 
@@ -639,6 +638,34 @@ var validRequests = []string{
 			}
 		]
 	}`,
+	`{
+		"id": "some-request-id",
+		"app": { },
+		"tmax": 500,
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
 }
 
 var invalidRequests = []string{
@@ -809,6 +836,25 @@ var invalidRequests = []string{
 			}
 		}]
 	}`,
+	`{"id": "some-request-id",
+		"site": {"page": "test.somepage.com"},
+		"imp": [{
+			"id":"imp-id",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": "good"
+			}
+		}],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": 13
+				}
+			}
+		}
+	}`,
 	`{
 		"id": "some-request-id",
 		"site": {"page": "test.somepage.com"},
@@ -847,6 +893,16 @@ var testStoredRequestData = map[string]json.RawMessage{
 		}
 	}`),
 	"": json.RawMessage(""),
+	"2": json.RawMessage(`{
+		"tmax": 500,
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low"
+				}
+			}
+		}
+	}`),
 }
 
 // Incoming requests with stored request IDs
@@ -892,6 +948,63 @@ var testStoredRequests = []string{
 						"reserve": null
 					},
 					"rubicon": null
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"cache": {
+					"markup": 1
+				},
+				"targeting": {
+					"lengthmax": 20
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"storedrequest": {
+					"id": "2"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "some-static-imp",
+				"video":{
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": "abc",
+						"position": "below"
+					}
+				}
+			},
+			{
+				"ext": {
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
 				}
 			}
 		],
@@ -973,6 +1086,85 @@ var testFinalRequests = []string{
 			}
 		}
 	}`,
+	`{
+		"id": "ThisID",
+		"imp": [
+			{
+				"id": "adUnit1",
+				"ext": {
+					"appnexus": {
+						"placementId": "abc",
+						"position": "above",
+						"reserve": 0.35
+					},
+					"rubicon": {
+						"accountId": "abc"
+					},
+					"prebid": {
+						"storedrequest": {
+							"id": "1"
+						}
+					}
+				}
+			}
+		],
+		"tmax": 500,
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low"
+				},
+				"storedrequest": {
+					"id": "2"
+				}
+			}
+		}
+	}`,
+	`{
+	"id": "ThisID",
+	"imp": [
+		{
+			"id": "some-static-imp",
+			"video":{
+				"mimes":["video/mp4"]
+			},
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "below"
+				}
+			}
+		},
+		{
+			"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				},
+				"prebid": {
+					"storedrequest": {
+						"id": "1"
+					}
+				}
+			}
+		}
+	],
+	"ext": {
+		"prebid": {
+			"cache": {
+				"markup": 1
+			},
+			"targeting": {
+				"lengthmax": 20
+			}
+		}
+	}
+}`,
 }
 
 type mockStoredReqFetcher struct {

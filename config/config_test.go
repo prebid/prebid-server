@@ -78,10 +78,6 @@ metrics:
 datacache:
   type: postgres
   filename: /usr/db/db.db
-  dbname: pbsdb
-  host: postgres.internal
-  user: dbadmin
-  password: db2342
   cache_size: 10000000
   ttl_seconds: 3600
 adapters:
@@ -140,10 +136,6 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "metrics.password", cfg.Metrics.Password, "admin1324")
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
-	cmpStrings(t, "datacache.dbname", cfg.DataCache.Database, "pbsdb")
-	cmpStrings(t, "datacache.host", cfg.DataCache.Host, "postgres.internal")
-	cmpStrings(t, "datacache.user", cfg.DataCache.Username, "dbadmin")
-	cmpStrings(t, "datacache.password", cfg.DataCache.Password, "db2342")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
