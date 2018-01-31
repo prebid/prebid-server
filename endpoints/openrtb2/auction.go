@@ -343,7 +343,7 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	}
 
 	for bidder, ext := range bidderExts {
-		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		bidderName, isValid := openrtb_ext.BidderMap[bidder]
 		if isValid {
 			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)

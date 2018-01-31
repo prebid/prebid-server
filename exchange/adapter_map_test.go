@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func TestAdapterMap(t *testing.T) {
+func TestNewAdapterMap(t *testing.T) {
 	adapterMap := newAdapterMap(nil, &config.Configuration{})
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if bidder, ok := adapterMap[bidderName]; bidder == nil || !ok {
@@ -15,16 +15,11 @@ func TestAdapterMap(t *testing.T) {
 		}
 	}
 }
-
 func TestAdapterList(t *testing.T) {
 	list := AdapterList()
-	adapterInList(t, openrtb_ext.BidderAppnexus, list)
-	adapterInList(t, openrtb_ext.BidderRubicon, list)
-	adapterInList(t, openrtb_ext.BidderPubmatic, list)
-	adapterInList(t, openrtb_ext.BidderFacebook, list)
-	adapterInList(t, openrtb_ext.BidderIndex, list)
-	adapterInList(t, openrtb_ext.BidderPulsepoint, list)
-	adapterInList(t, openrtb_ext.BidderConversant, list)
+	for _, bidderName := range openrtb_ext.BidderMap {
+		adapterInList(t, bidderName, list)
+	}
 }
 
 func adapterInList(t *testing.T, a openrtb_ext.BidderName, l []openrtb_ext.BidderName) {

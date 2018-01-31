@@ -21,6 +21,7 @@ type FacebookAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
 	nonSecureUri string
+	usersyncInfo *pbs.UsersyncInfo
 	platformJSON openrtb.RawJSON
 }
 
@@ -43,6 +44,10 @@ func (a *FacebookAdapter) FamilyName() string {
 // Facebook likes to parallelize to minimize latency
 func (a *FacebookAdapter) SplitAdUnits() bool {
 	return true
+}
+
+func (a *FacebookAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+	return a.usersyncInfo
 }
 
 func (a *FacebookAdapter) SkipNoCookies() bool {

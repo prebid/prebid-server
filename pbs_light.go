@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/prebid"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -56,7 +57,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
-	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -510,7 +510,7 @@ func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprout
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
 		bidder := strings.TrimSuffix(file.Name(), ".json")
-		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		bidderName, isValid := openrtb_ext.BidderMap[bidder]
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
@@ -885,7 +885,8 @@ func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fe
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
 	} else if cfg.Postgres != nil {
-		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
+		// Be careful not to log the password here, for security reasons
+		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
 		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")

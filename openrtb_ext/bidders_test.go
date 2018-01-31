@@ -23,7 +23,7 @@ var validator BidderParamValidator
 // TestGetBidderName makes sure the GetBidderNames method works properly.
 func TestGetBidderName(t *testing.T) {
 	for bidderString, bidderName := range BidderMap {
-		converted, isValid := GetBidderName(bidderString)
+		converted, isValid := BidderMap[bidderString]
 		if !isValid {
 			t.Errorf("GetBidderName thinks \"%s\" is not a valid bidder", bidderString)
 		}

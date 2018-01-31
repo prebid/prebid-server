@@ -39,13 +39,13 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 	}
 }
 
-// Just pull the list of adapters from AdapterMap
+// AdapterList returns a list of adapters available in the auction.
 func AdapterList() []openrtb_ext.BidderName {
-	theAdapters := make([]openrtb_ext.BidderName, len(openrtb_ext.BidderMap))
+	theNames := make([]openrtb_ext.BidderName, len(openrtb_ext.BidderMap))
 	i := 0
 	for _, bidderName := range openrtb_ext.BidderMap {
-		theAdapters[i] = bidderName
+		theNames[i] = bidderName
 		i++
 	}
-	return theAdapters
+	return theNames
 }
