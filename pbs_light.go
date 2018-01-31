@@ -808,10 +808,11 @@ func serve(cfg *config.Configuration) error {
 	// Load latest currency conversion rates in blocking call
 	currencyLoadStopSignal := make(chan os.Signal, 1)
 	signal.Notify(currencyLoadStopSignal, syscall.SIGTERM, syscall.SIGINT)
-	var currencyRates interface{}
+
 	go func() {
 		fetchLatestCurrencyConversionRates()
-		if currencyRates = CurrencyRates.Load(); currencyRates == nil {
+
+		if CurrencyRates.Load() == nil {
 			glog.Errorf("Unable to load latest currency conversion rates")
 		}
 
@@ -881,7 +882,7 @@ func serve(cfg *config.Configuration) error {
 		},
 	}
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics, currencyRates.([]byte))
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics, CurrencyRates.Load().([]byte))
 
 	byId, err := NewFetcher(&(cfg.StoredRequests))
 	if err != nil {
