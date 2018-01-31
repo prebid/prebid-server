@@ -51,7 +51,6 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
-	syncEndpoints "github.com/prebid/prebid-server/endpoints/cookie_sync"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -184,6 +183,73 @@ func getAccountMetrics(id string) *AccountMetrics {
 	accountMetricsRWMutex.Unlock()
 
 	return am
+}
+
+type cookieSyncRequest struct {
+	UUID    string   `json:"uuid"`
+	Bidders []string `json:"bidders"`
+}
+
+type cookieSyncResponse struct {
+	UUID         string           `json:"uuid"`
+	Status       string           `json:"status"`
+	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
+}
+
+type cookieSyncDeps struct {
+	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	optOutCookie *config.Cookie
+	metric       metrics.Meter
+}
+
+func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.metric.Mark(1)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
+	if !userSyncCookie.AllowSyncs() {
+		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		return
+	}
+
+	defer r.Body.Close()
+
+	csReq := &cookieSyncRequest{}
+	err := json.NewDecoder(r.Body).Decode(&csReq)
+	if err != nil {
+		if glog.V(2) {
+			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
+		}
+		http.Error(w, "JSON parse failed", http.StatusBadRequest)
+		return
+	}
+
+	csResp := cookieSyncResponse{
+		UUID:         csReq.UUID,
+		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
+	}
+
+	if userSyncCookie.LiveSyncCount() == 0 {
+		csResp.Status = "no_cookie"
+	} else {
+		csResp.Status = "ok"
+	}
+
+	for _, bidder := range csReq.Bidders {
+		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
+			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
+				b := pbs.PBSBidder{
+					BidderCode:   bidder,
+					NoCookie:     true,
+					UsersyncInfo: syncer.GetUsersyncInfo(),
+				}
+				csResp.BidderStatus = append(csResp.BidderStatus, &b)
+			}
+		}
+	}
+
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	//enc.SetIndent("", "  ")
+	enc.Encode(csResp)
 }
 
 type auctionDeps struct {
@@ -809,7 +875,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", syncEndpoints.NewEndpoint(syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter))
+	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
