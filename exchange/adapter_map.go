@@ -1,10 +1,12 @@
 package exchange
 
 import (
+	"net/http"
+
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/facebook"
 	"github.com/prebid/prebid-server/adapters/indexExchange"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -12,8 +14,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
-	"time"
 )
 
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
@@ -25,7 +25,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		// TODO #267: Upgrade the Conversant adapter
 		openrtb_ext.BidderConversant: adaptLegacyAdapter(conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint, cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL)),
 		// TODO #211: Upgrade the Facebook adapter
-		openrtb_ext.BidderFacebook: adaptLegacyAdapter(facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL)),
+		openrtb_ext.BidderFacebook: adaptLegacyAdapter(audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL)),
 		// TODO #212: Upgrade the Index adapter
 		openrtb_ext.BidderIndex: adaptLegacyAdapter(indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL)),
 		// TODO #213: Upgrade the Lifestreet adapter
@@ -39,21 +39,13 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 	}
 }
 
-// Just pull the list of adapters from AdapterMap
+// AdapterList returns a list of adapters available in the auction.
 func AdapterList() []openrtb_ext.BidderName {
-	theClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConns:        400,
-			MaxIdleConnsPerHost: 10,
-			IdleConnTimeout:     60 * time.Second,
-		},
+	theNames := make([]openrtb_ext.BidderName, len(openrtb_ext.BidderMap))
+	i := 0
+	for _, bidderName := range openrtb_ext.BidderMap {
+		theNames[i] = bidderName
+		i++
 	}
-
-	// Throwaway Adapter Map.
-	theAdapterMap := newAdapterMap(theClient, &config.Configuration{})
-	theAdapters := make([]openrtb_ext.BidderName, 0, len(theAdapterMap))
-	for a, _ := range theAdapterMap {
-		theAdapters = append(theAdapters, a)
-	}
-	return theAdapters
+	return theNames
 }

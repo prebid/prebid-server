@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 // Configuration
@@ -57,10 +58,6 @@ type Metrics struct {
 type DataCache struct {
 	Type       string `mapstructure:"type"`
 	Filename   string `mapstructure:"filename"`
-	Database   string `mapstructure:"dbname"`
-	Host       string `mapstructure:"host"`
-	Username   string `mapstructure:"user"`
-	Password   string `mapstructure:"password"`
 	CacheSize  int    `mapstructure:"cache_size"`
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
