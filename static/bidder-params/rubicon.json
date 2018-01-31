@@ -19,6 +19,20 @@
       "minimum": 1,
       "description": "An ID which identifies the sub-section of the site where the impression is located"
     },
+    "sizes": {
+      "type": "array",
+      "description": "An array of Rubicon Project size IDs. If not specified, the system will try to convert from bid.sizes",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "keywords": {
+      "type": "array",
+      "description": "An array of page-specific keywords. May be referenced in Rubicon Project reports",
+      "items": {
+        "type": "string"
+      }
+    },
     "inventory": {
       "type": "object",
       "description": "An object defining arbitrary targeting key/value pairs related to the page",
@@ -32,6 +46,10 @@
       "additionalProperties": {
         "type": "string"
       }
+    },
+    "position": {
+      "type": "string",
+      "description": "Set the page position. Valid values are \"atf\" and \"btf\""
     },
     "video": {
       "type": "object",
