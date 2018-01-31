@@ -20,19 +20,6 @@ func TestMain(m *testing.M) {
 
 var validator BidderParamValidator
 
-// TestGetBidderName makes sure the GetBidderNames method works properly.
-func TestGetBidderName(t *testing.T) {
-	for bidderString, bidderName := range BidderMap {
-		converted, isValid := BidderMap[bidderString]
-		if !isValid {
-			t.Errorf("GetBidderName thinks \"%s\" is not a valid bidder", bidderString)
-		}
-		if converted != bidderName {
-			t.Errorf("GetBidderName parsed %s into %s", bidderString, converted.String())
-		}
-	}
-}
-
 // TestBidderParamSchemas makes sure that the validator.Schema() function
 // returns valid JSON for all known BidderNames.
 func TestBidderParamSchemas(t *testing.T) {
