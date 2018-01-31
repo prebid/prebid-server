@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/prebid"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -55,7 +56,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
-	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -565,7 +565,7 @@ func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprout
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
 		bidder := strings.TrimSuffix(file.Name(), ".json")
-		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		bidderName, isValid := openrtb_ext.BidderMap[bidder]
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
