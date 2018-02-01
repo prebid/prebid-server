@@ -20,7 +20,7 @@ type StoredRequests struct {
 
 func (cfg *StoredRequests) validate() error {
 	if cfg.Files && cfg.Postgres != nil {
-		return errors.New("Only one backend from {filesystem, postgres} can be used at the same time.")
+		return errors.New("stored request backend is ambiguous. If stored_requests.postgres is defined, then stored_requests.filesystem must be false")
 	}
 
 	return nil
