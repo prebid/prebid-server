@@ -907,7 +907,9 @@ func serve(cfg *config.Configuration) error {
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	// Add CORS middleware
-	c := cors.New(cors.Options{AllowCredentials: true})
+	c := cors.New(cors.Options{
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
 	corsRouter := c.Handler(router)
 
 	// Add no cache headers
