@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
@@ -15,8 +18,6 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
-	"net/http"
-	"time"
 )
 
 type AmpResponse struct {
@@ -27,7 +28,7 @@ type AmpResponse struct {
 // of the request, and the return value, using the OpenRTB machinery to handle everything inbetween.
 func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
-		return nil, errors.New("NewEndpoint requires non-nil arguments.")
+		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
 	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).AmpAuction), nil
@@ -170,7 +171,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(50)*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
 	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId})
