@@ -867,7 +867,7 @@ func serve(cfg *config.Configuration) error {
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
-	router.POST("/openrtb2/amp", ampEndpoint)
+	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
