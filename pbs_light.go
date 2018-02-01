@@ -386,14 +386,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	if pbs_req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
 		for i, bid := range pbs_resp.Bids {
-			bc := &pbc.BidCache{
-				Adm:    bid.Adm,
-				NURL:   bid.NURL,
-				Width:  bid.Width,
-				Height: bid.Height,
-			}
-			cobjs[i] = &pbc.CacheObject{
-				Value: bc,
+			if bid.CreativeMediaType == "video" {
+				cobjs[i] = &pbc.CacheObject{
+					Value:   bid.Adm,
+					IsVideo: true,
+				}
+			} else {
+				cobjs[i] = &pbc.CacheObject{
+					Value: &pbc.BidCache{
+						Adm:    bid.Adm,
+						NURL:   bid.NURL,
+						Width:  bid.Width,
+						Height: bid.Height,
+					},
+					IsVideo: false,
+				}
 			}
 		}
 		err = pbc.Put(ctx, cobjs)
