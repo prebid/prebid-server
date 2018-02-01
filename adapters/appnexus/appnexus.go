@@ -307,11 +307,18 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	if appnexusExt.Reserve > 0 {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
-	if imp.Banner != nil && appnexusExt.Position != "" {
+	if imp.Banner != nil {
 		if appnexusExt.Position == "above" {
 			imp.Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
 		} else if appnexusExt.Position == "below" {
 			imp.Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+		}
+
+		// Fixes #307
+		if imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
+			firstFormat := imp.Banner.Format[0]
+			imp.Banner.W = &(firstFormat.W)
+			imp.Banner.H = &(firstFormat.H)
 		}
 	}
 
