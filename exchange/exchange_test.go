@@ -55,7 +55,7 @@ func TestHoldAuction(t *testing.T) {
 	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "appnexus")
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "rubicon")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "facebook")
+	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "audienceNetwork")
 
 	// Very simple Bid request. The dummy bidders know what to do.
 	bidRequest := new(openrtb.BidRequest)
@@ -66,7 +66,7 @@ func TestHoldAuction(t *testing.T) {
 	impExt := make(map[string]map[string]string)
 	impExt["appnexus"] = make(map[string]string)
 	impExt["rubicon"] = make(map[string]string)
-	impExt["facebook"] = make(map[string]string)
+	impExt["audienceNetwork"] = make(map[string]string)
 	b, _ := json.Marshal(impExt)
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
@@ -97,7 +97,7 @@ func TestHoldAuction(t *testing.T) {
 		if sb.Seat == "appnexus" {
 			dummy1 = i
 		}
-		if sb.Seat == "facebook" {
+		if sb.Seat == "audienceNetwork" {
 			dummy3 = i
 		}
 	}
@@ -105,7 +105,7 @@ func TestHoldAuction(t *testing.T) {
 		t.Errorf("HoldAuction: Expected 2 bids from appnexus bidder, found %d instead", len(bidResponse.SeatBid[dummy1].Bid))
 	}
 	if len(bidResponse.SeatBid[dummy3].Bid) != 1 {
-		t.Errorf("HoldAuction: Expected 2 bids from facebook bidder, found %d instead", len(bidResponse.SeatBid[dummy3].Bid))
+		t.Errorf("HoldAuction: Expected 2 bids from audienceNetwork bidder, found %d instead", len(bidResponse.SeatBid[dummy3].Bid))
 	}
 
 }
@@ -121,7 +121,7 @@ func TestGetAllBids(t *testing.T) {
 	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "appnexus")
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "rubicon")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "facebook")
+	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "audienceNetwork")
 
 	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
 	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests, nil)
@@ -133,7 +133,7 @@ func TestGetAllBids(t *testing.T) {
 		t.Errorf("GetAllBids failed to get the first bid of appnexus")
 	}
 	if adapterBids[BidderDummy3].bids[0].bid.ID != "MyBid" {
-		t.Errorf("GetAllBids failed to get the bid from facebook")
+		t.Errorf("GetAllBids failed to get the bid from audienceNetwork")
 	}
 	if len(adapterExtra) != 3 {
 		t.Errorf("GetAllBids failed to return 3 adapterExtra's, got %d instead", len(adapterExtra))
@@ -181,7 +181,7 @@ func TestBuildBidResponse(t *testing.T) {
 	e := NewDummyExchange(server.Client())
 	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "appnexus")
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "rubicon")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "facebook")
+	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "audienceNetwork")
 
 	// Very simple Bid request. At this point we are just reading these two values
 	// Adding targeting to enable targeting tests
@@ -212,7 +212,7 @@ func TestBuildBidResponse(t *testing.T) {
 	var errs1, errs2, errs3 []error
 	adapterBids[BidderDummy], errs1 = mockDummyBids1("appnexus")
 	adapterBids[BidderDummy2], errs2 = mockDummyBids2("rubicon")
-	adapterBids[BidderDummy3], errs3 = mockDummyBids3("facebook")
+	adapterBids[BidderDummy3], errs3 = mockDummyBids3("audienceNetwork")
 	adapterExtra[BidderDummy] = &seatResponseExtra{ResponseTimeMillis: 131, Errors: convertErr2Str(errs1)}
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
@@ -445,7 +445,7 @@ func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidReques
 const (
 	BidderDummy  openrtb_ext.BidderName = "appnexus"
 	BidderDummy2 openrtb_ext.BidderName = "rubicon"
-	BidderDummy3 openrtb_ext.BidderName = "facebook"
+	BidderDummy3 openrtb_ext.BidderName = "audienceNetwork"
 )
 
 // Tester is responsible for filling bid results into the adapters

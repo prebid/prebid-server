@@ -36,8 +36,8 @@ func getCurrency(currencyRates []byte, seatBids *[]openrtb.SeatBid, bidRequest *
 	// Iterate through bidder currencies and make sure they match with request currency
 	for _, seatBid := range *seatBids {
 		var bidderErrs []string
-		bidderName, ok := openrtb_ext.GetBidderName(seatBid.Seat)
-		if ok == false {
+		bidderName, isValid := openrtb_ext.BidderMap[seatBid.Seat]
+		if !isValid {
 			// Invalid bidder name in SeatBid.Seat. Skip to the next seat.
 			continue
 		}
