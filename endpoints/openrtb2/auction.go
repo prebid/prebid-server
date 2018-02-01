@@ -198,6 +198,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)
 	}
 
+	if len(req.Cur) != 1 {
+		return errors.New("Ad server currency must be set either in bidrequest.cur (exactly one element) or in config.")
+	}
+
 	if len(req.Imp) < 1 {
 		return errors.New("request.imp must contain at least one element.")
 	}
@@ -214,10 +218,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 
 	if err := deps.validateSite(req.Site); err != nil {
 		return err
-	}
-
-	if len(req.Cur) > 1 {
-		return errors.New("request.cur must have exaclty one element.")
 	}
 
 	if err := validateUser(req.User); err != nil {

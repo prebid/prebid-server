@@ -75,6 +75,7 @@ func TestExplicitUserId(t *testing.T) {
 		"user": {
 			"id": "explicit"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -445,6 +446,65 @@ func TestImplicitCur(t *testing.T) {
 	}
 }
 
+func TestValidateCur(t *testing.T) {
+	for _, requestData := range currencyTestRequests {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
+		bidReq := &openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		// First testing with currency not set in config
+		deps := &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{},
+			pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		}
+		deps.setCurImplicitly(httpReq, bidReq)
+		err = deps.validateRequest(bidReq)
+
+		switch bidReq.ID {
+		case "request-with-no-currency":
+			if err == nil {
+				t.Fatalf("currency was not set in bidrequest.cur or config, should have gotten error.")
+			}
+		case "request-should-default-currency":
+			if err == nil {
+				t.Fatalf("currency was not set in bidrequest.cur or config, should have gotten error.")
+			}
+		case "request-with-valid-currency":
+			if err != nil {
+				t.Fatalf("currency was set in bidrequest.cur, should not have gotten error.")
+			}
+		}
+
+		err = nil
+
+		// Testing with currency set in config
+		deps = &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{AdServerCurrency: "JPY"},
+			pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		}
+		deps.setCurImplicitly(httpReq, bidReq)
+		err = deps.validateRequest(bidReq)
+
+		switch bidReq.ID {
+		case "request-with-no-currency":
+		case "request-should-default-currency":
+		case "request-with-valid-currency":
+			if err != nil {
+				t.Fatalf("currency was set in config, should not have gotten error.")
+			}
+		}
+	}
+}
+
 // TestTimeoutParser makes sure we parse tmax properly.
 func TestTimeoutParser(t *testing.T) {
 	reqJson := json.RawMessage(`{"tmax":22}`)
@@ -496,6 +556,7 @@ var digiTrustTestRequests = []string{
 		"site": {
 			"page": "test.somepage.com"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -525,6 +586,7 @@ var digiTrustTestRequests = []string{
 		"site": {
 			"page": "test.somepage.com"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -557,6 +619,7 @@ var digiTrustTestRequests = []string{
 		"site": {
 			"page": "test.somepage.com"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -596,6 +659,7 @@ var digiTrustTestRequests = []string{
 		"site": {
 			"page": "test.somepage.com"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -638,6 +702,7 @@ var validRequests = []string{
 		"site": {
 			"page": "test.somepage.com"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -676,6 +741,7 @@ var validRequests = []string{
 	`{
 		"id": "some-request-id",
 		"app": { },
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -704,6 +770,7 @@ var validRequests = []string{
 		"id": "some-request-id",
 		"app": { },
 		"tmax": 500,
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
@@ -934,6 +1001,63 @@ var invalidRequests = []string{
 				"cache": {}
 			}
 		}
+	}`,
+	`{
+		"id": "some-request-id",
+		"app": { },
+		"tmax": 500,
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "some-request-id",
+		"app": { },
+		"tmax": 500,
+		"cur": ["AUD", "USD"],
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
 	}`,
 }
 
