@@ -127,7 +127,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// These are handled in CORS middleware
 	// w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 	// w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
+	// w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
 	// Fixes #231
