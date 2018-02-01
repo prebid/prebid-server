@@ -856,7 +856,7 @@ func serve(cfg *config.Configuration) error {
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
-	byId, err := NewFetcher(&(cfg.StoredRequests), db)
+	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
@@ -866,9 +866,15 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics)
+	if err != nil {
+		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
+	}
+
 	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
+	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", cookieSync)
 	router.POST("/validate", validate)
@@ -941,22 +947,28 @@ const requestConfigPath = "./stored_requests/data/by_id"
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fetcher, err error) {
+func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, err error) {
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
+		// Currently assuming the file store is "flat", that is IDs are unique across all config types
+		// and that the files for all the types sit next to each other.
+		byAmpId = byId
 	} else if cfg.Postgres != nil {
 		// Be careful not to log the password here, for security reasons
 		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
 		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
+		byAmpId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
+		byAmpId = byId
 	}
 
 	if cfg.InMemoryCache != nil {
 		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
 		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
+		byAmpId = stored_requests.WithCache(byAmpId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
 }
