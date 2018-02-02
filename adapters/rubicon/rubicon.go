@@ -208,6 +208,11 @@ func lookupSize(s openrtb.Format) (int, error) {
 }
 
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
+	// Fixes #317
+	if len(sizes) < 1 {
+		err = errors.New("rubicon imps must have at least one imp.format element")
+		return
+	}
 	alt = make([]int, 0, len(sizes)-1)
 	for _, size := range sizes {
 		rs, lerr := lookupSize(size)
