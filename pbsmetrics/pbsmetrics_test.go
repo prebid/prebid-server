@@ -20,6 +20,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "error_requests", m.ErrorMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
 	ensureContains(t, registry, "ortb_requests", m.ORTBRequestMeter)
+	ensureContains(t, registry, "amp_requests", m.AmpRequestMeter)
+	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
 	ensureContainsAdapterMetrics(t, registry, "adapter.rubicon", m.AdapterMetrics["rubicon"])
 }
