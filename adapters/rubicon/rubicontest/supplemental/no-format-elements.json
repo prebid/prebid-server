@@ -1,4 +1,5 @@
 {
+  "//": "Prevents #317",
   "mockBidRequest": {
     "id": "e8f0d8a3-f360-43c2-af08-34aa265108b0",
     "site": {
