@@ -3,12 +3,13 @@ package adapterstest
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"testing"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
-	"io/ioutil"
-	"testing"
 )
 
 // RunJSONBidderTest is a helper method intended for Bidders which use OpenRTB to communicate with their servers.
@@ -62,7 +63,7 @@ func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowError
 				t.Fatalf("Failed to load contents of file %s: %v", fileName, err)
 			}
 
-			if allowErrors != specData.expectsErrors() {
+			if !allowErrors && specData.expectsErrors() {
 				t.Fatalf("Exemplary spec %s must not expect errors.", fileName)
 			}
 			runSpec(t, fileName, specData, bidder)

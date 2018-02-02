@@ -490,7 +490,7 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewFilesFetcher(t *testing.T) {
-	fetcher, err := NewFetcher(&config.StoredRequests{
+	fetcher, _, err := NewFetchers(&config.StoredRequests{
 		Files: true,
 	}, nil)
 	if err != nil {
@@ -502,7 +502,7 @@ func TestNewFilesFetcher(t *testing.T) {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, err := NewFetcher(&config.StoredRequests{}, nil)
+	fetcher, _, err := NewFetchers(&config.StoredRequests{}, nil)
 	if err != nil {
 		t.Errorf("Error constructing backends. %v", err)
 	}

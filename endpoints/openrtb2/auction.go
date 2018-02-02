@@ -26,6 +26,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -60,14 +61,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	deps.metrics.RequestMeter.Mark(1)
 	deps.metrics.ORTBRequestMeter.Mark(1)
 
-	isSafari := false
-	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
-		name, _ := ua.Browser()
-		if name == "Safari" {
-			isSafari = true
-			deps.metrics.SafariRequestMeter.Mark(1)
-		}
-	}
+	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
 
 	req, errL := deps.parseRequest(r)
 	var ao a.AuctionObject
@@ -81,12 +75,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	if len(errL) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		for _, err := range errL {
-			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
-		}
-		deps.metrics.ErrorMeter.Mark(1)
+	if writeError(errL, deps.metrics.ErrorMeter, w) {
 		if deps.pbsAnalytics != nil {
 			ao.Error = make([]error, len(errL))
 			ao.Status = http.StatusBadRequest
@@ -370,7 +359,7 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	}
 
 	for bidder, ext := range bidderExts {
-		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		bidderName, isValid := openrtb_ext.BidderMap[bidder]
 		if isValid {
 			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
@@ -609,4 +598,30 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 	} else {
 		return "", false
 	}
+}
+
+// Check if a request comes from a Safari browser
+func checkSafari(r *http.Request, safariRequestsMeter metrics.Meter) (isSafari bool) {
+	isSafari = false
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
+			isSafari = true
+			safariRequestsMeter.Mark(1)
+		}
+	}
+	return
+}
+
+// Write(return) errors to the client, if any. Returns true if errors were found.
+func writeError(errs []error, errMeter metrics.Meter, w http.ResponseWriter) bool {
+	if len(errs) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		for _, err := range errs {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
+		errMeter.Mark(1)
+		return true
+	}
+	return false
 }
