@@ -34,6 +34,7 @@ import (
 	"crypto/tls"
 	"strings"
 
+	"errors"
 	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -44,6 +45,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -104,6 +106,7 @@ var (
 	accountMetricsRWMutex sync.RWMutex
 
 	hostCookieSettings pbs.HostCookieSettings
+	pbsAnalytics       *analytics.PBSAnalyticsModule
 )
 
 var exchanges map[string]adapters.Adapter
@@ -194,10 +197,25 @@ type cookieSyncResponse struct {
 }
 
 func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var cso analytics.CookieSyncObject
+	if pbsAnalytics != nil {
+		cso = analytics.CookieSyncObject{
+			Type:   analytics.COOKIE_SYNC,
+			Status: http.StatusOK,
+			Error:  make([]error, 0),
+		}
+	}
+
 	mCookieSyncMeter.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 	if !userSyncCookie.AllowSyncs() {
+
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		if pbsAnalytics != nil {
+			cso.Status = http.StatusUnauthorized
+			cso.Error = append(cso.Error, errors.New("user has opted out"))
+			(*pbsAnalytics).LogCookieSyncObject(&cso)
+		}
 		return
 	}
 
@@ -209,8 +227,21 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
+		if pbsAnalytics != nil {
+			if c, err := json.Marshal(csReq); err == nil {
+				cso.Request = string(c)
+			} else {
+				fmt.Printf("Cookie sync request marshal error %v", err)
+			}
+			cso.Status = http.StatusBadRequest
+			(*pbsAnalytics).LogCookieSyncObject(&cso)
+		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
+	}
+
+	if c, err := json.Marshal(csReq); err == nil && pbsAnalytics != nil {
+		cso.Request = string(c)
 	}
 
 	csResp := cookieSyncResponse{
@@ -235,6 +266,11 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				csResp.BidderStatus = append(csResp.BidderStatus, &b)
 			}
 		}
+	}
+
+	if cs, err := json.Marshal(csResp); err == nil && pbsAnalytics != nil {
+		cso.Response = string(cs)
+		(*pbsAnalytics).LogCookieSyncObject(&cso)
 	}
 
 	enc := json.NewEncoder(w)
@@ -550,11 +586,11 @@ func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// could add more logic here, but doing nothing means 200 OK
 }
 
-// NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
-// given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
+// NewJsonDirectoryServer is used to serve .json files from analytics directory as analytics single blob. For example,
+// given analytics directory containing the files "analytics.json" and "b.json", this returns analytics Handle which serves JSON like:
 //
 // {
-//   "a": { ... content from the file a.json ... },
+//   "analytics": { ... content from the file analytics.json ... },
 //   "b": { ... content from the file b.json ... }
 // }
 //
@@ -682,7 +718,7 @@ func init() {
 
 	viper.SetDefault("stored_requests.filesystem", "true")
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
-	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
+	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/analytics/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
@@ -690,6 +726,7 @@ func init() {
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.ReadInConfig()
+	registerAnalyticsModules()
 
 	flag.Parse() // read glog settings from cmd line
 }
@@ -769,6 +806,12 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
+	if cfg.Analytics.Enabled {
+		atics := analytics.InitializePBSAnalytics(map[string]string{
+			analytics.FILE_LOGGER: cfg.Analytics.File.Config,
+		})
+		pbsAnalytics = &atics
+	}
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
@@ -828,7 +871,7 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
@@ -863,6 +906,7 @@ func serve(cfg *config.Configuration) error {
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		Metrics:            metricsRegistry,
+		Analytics:          pbsAnalytics,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)
@@ -911,7 +955,7 @@ func serve(cfg *config.Configuration) error {
 
 const requestConfigPath = "./stored_requests/data/by_id"
 
-// NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
+// NewFetchers returns an Account-based config fetcher and analytics Request-based config fetcher, in that order.
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
@@ -934,9 +978,13 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.F
 	}
 
 	if cfg.InMemoryCache != nil {
-		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
+		glog.Infof("Using analytics Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
 		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 		byAmpId = stored_requests.WithCache(byAmpId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
+}
+
+func registerAnalyticsModules() {
+	analytics.Register(analytics.FILE_LOGGER, analytics.NewFileLogger)
 }

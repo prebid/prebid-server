@@ -18,6 +18,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	a "github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -32,12 +33,12 @@ import (
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics, module *a.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, module}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -46,6 +47,7 @@ type endpointDeps struct {
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
 	metrics          *pbsmetrics.Metrics
+	pbsAnalytics     *a.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -62,8 +64,24 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
 
 	req, errL := deps.parseRequest(r)
+	var ao a.AuctionObject
+	if deps.pbsAnalytics != nil {
+		ao = a.AuctionObject{
+			Request:   *req,
+			Status:    http.StatusOK,
+			Type:      a.AUCTION,
+			Error:     make([]error, 0),
+			UserAgent: r.UserAgent(),
+		}
+	}
 
 	if writeError(errL, deps.metrics.ErrorMeter, w) {
+		if deps.pbsAnalytics != nil {
+			ao.Error = make([]error, len(errL))
+			ao.Status = http.StatusBadRequest
+			copy(ao.Error, errL)
+			(*deps.pbsAnalytics).LogAuctionObject(&ao)
+		}
 		return
 	}
 
@@ -86,17 +104,26 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, &ao)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		if deps.pbsAnalytics != nil {
+			ao.Status = http.StatusInternalServerError
+			ao.Error = append(ao.Error, err)
+			(*deps.pbsAnalytics).LogAuctionObject(&ao)
+		}
 		return
 	}
 
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
+	if deps.pbsAnalytics != nil {
+		ao.Response = *response
+		(*deps.pbsAnalytics).LogAuctionObject(&ao)
+	}
 
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.

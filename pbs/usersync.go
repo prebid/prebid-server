@@ -13,6 +13,7 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/ssl"
@@ -77,6 +78,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret    string
 	HostCookieSettings *HostCookieSettings
 	Metrics            metrics.Registry
+	Analytics          *analytics.PBSAnalyticsModule
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -317,9 +319,25 @@ func getRawQueryMap(query string) map[string]string {
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
+	var so analytics.SetUIDObject
+	if deps.Analytics != nil {
+		so = analytics.SetUIDObject{
+			Type:    analytics.SETUID,
+			Status:  http.StatusOK,
+			Success: false,
+		}
+		if cookie, err := json.Marshal(pc); err == nil {
+			so.Cookie = string(cookie)
+		}
+	}
+
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
+		if deps.Analytics != nil {
+			so.Status = http.StatusUnauthorized
+			(*deps.Analytics).LogSetUIDObject(&so)
+		}
 		return
 	}
 
@@ -328,6 +346,10 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
+		if deps.Analytics != nil {
+			so.Status = http.StatusBadRequest
+			(*deps.Analytics).LogSetUIDObject(&so)
+		}
 		return
 	}
 
@@ -340,10 +362,15 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	if err == nil {
+		if deps.Analytics != nil {
+			so.Success = true
+		}
 		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
 	}
-
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
+	if deps.Analytics != nil {
+		(*deps.Analytics).LogSetUIDObject(&so)
+	}
 }
 
 // Struct for parsing json in google's response

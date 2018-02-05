@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -71,7 +72,7 @@ func TestHoldAuction(t *testing.T) {
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
 
-	bidResponse, err := e.HoldAuction(ctx, bidRequest, &emptyUsersync{})
+	bidResponse, err := e.HoldAuction(ctx, bidRequest, &emptyUsersync{}, &analytics.AuctionObject{})
 	if err != nil {
 		t.Errorf("HoldAuction: %s", err.Error())
 	}
@@ -124,7 +125,7 @@ func TestGetAllBids(t *testing.T) {
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
 
 	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
-	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests, nil)
+	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests, nil, &analytics.AuctionObject{})
 
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
@@ -144,7 +145,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil, &analytics.AuctionObject{})
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -161,7 +162,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil, &analytics.AuctionObject{})
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -393,7 +394,7 @@ func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverr
 		},
 		m: pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}),
 	}
-	ex.HoldAuction(context.Background(), incoming, syncs)
+	ex.HoldAuction(context.Background(), incoming, syncs, &analytics.AuctionObject{})
 
 	if bidder.lastRequest == nil {
 		t.Fatalf("The Bidder never received a request.")
@@ -412,7 +413,7 @@ type mockBidder struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName, ao *analytics.AuctionObject) (*pbsOrtbSeatBid, []error) {
 	b.lastRequest = request
 	return nil, nil
 }
@@ -438,7 +439,7 @@ type mockAdapter struct {
 	errs    []error
 }
 
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext.BidderName, object *analytics.AuctionObject) (*pbsOrtbSeatBid, []error) {
 	return a.seatBid, a.errs
 }
 
