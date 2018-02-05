@@ -51,6 +51,9 @@ type rubiconParams struct {
 	ZoneId    int                `json:"zoneId"`
 	Inventory json.RawMessage    `json:"inventory"`
 	Visitor   json.RawMessage    `json:"visitor"`
+	Sizes     []int              `json:"sizes"`
+	Keywords  []string           `json:"keywords"`
+	Position  float32            `json:"position"`
 	Video     rubiconVideoParams `json:"video"`
 }
 
