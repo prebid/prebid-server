@@ -11,16 +11,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
 
 	"fmt"
 
+	"strings"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"strings"
 )
 
 type rubiAppendTrackerUrlTestScenario struct {
@@ -1106,4 +1108,8 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	if theBid.ID != "1234567890" {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
 	}
+}
+
+func TestJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker", "usersync-url"))
 }
