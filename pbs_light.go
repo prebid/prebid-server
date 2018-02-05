@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/prebid"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
