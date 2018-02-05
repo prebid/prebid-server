@@ -87,7 +87,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if requestExt.Prebid.Targeting != nil {
 			targData = &targetData{
-				lengthMax:        requestExt.Prebid.Targeting.MaxLength,
 				priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
 			}
 			if shouldCacheBids {

@@ -44,7 +44,6 @@ type ExtRequestPrebidCacheBids struct{}
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
 	PriceGranularity PriceGranularity `json:"pricegranularity"`
-	MaxLength        int              `json:"lengthmax"`
 }
 
 // ExtRequestTargeting without Unmashall override to prevent infinite loops
@@ -61,7 +60,6 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 	ertRaw := &ExtRequestTargetingPlain{}
 	err := json.Unmarshal(b, ertRaw)
 	ert.PriceGranularity = ertRaw.PriceGranularity
-	ert.MaxLength = ertRaw.MaxLength
 	if err == nil {
 		// set default value
 		if ert.PriceGranularity == "" {
