@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
 
@@ -1084,4 +1085,8 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	if theBid.ID != "1234567890" {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
 	}
+}
+
+func TestJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker", "usersync-url"))
 }

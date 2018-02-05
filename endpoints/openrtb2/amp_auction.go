@@ -117,6 +117,17 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Targeting: targets,
 	}
 
+	// Add AMP headers
+	origin := r.FormValue("__amp_source_origin")
+	if len(origin) == 0 {
+		// Just to be safe
+		origin = r.Header.Get("Origin")
+	}
+	// Heders "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
+	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
+	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
+	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
