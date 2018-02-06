@@ -188,6 +188,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			ImpID: imp.ID,
 			Price: andata.tags[i].bid,
 			AdM:   andata.tags[i].content,
+			Ext:   openrtb.RawJSON(fmt.Sprintf(`{"appnexus":{"bid_ad_type":%d}}`, bidTypeToInt(andata.tags[i].mediaType))),
 		}
 
 		if imp.Video != nil {
@@ -235,6 +236,20 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func bidTypeToInt(bidType string) int {
+	switch bidType {
+	case "banner":
+		return 0
+	case "video":
+		return 1
+	case "audio":
+		return 2
+	case "native":
+		return 3
+	default:
+		return -1
+	}
+}
 func TestAppNexusBasicResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyAppNexusServer))
 	defer server.Close()
@@ -371,7 +386,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 			if bid.AdUnitCode == tag.code {
 				matched = true
 				if bid.CreativeMediaType != tag.mediaType {
-					t.Errorf("Incorrect Creative MediaType '%s'", bid.CreativeMediaType)
+					t.Errorf("Incorrect Creative MediaType '%s'. Expected '%s'", bid.CreativeMediaType, tag.mediaType)
 				}
 				if bid.BidderCode != "appnexus" {
 					t.Errorf("Incorrect BidderCode '%s'", bid.BidderCode)
