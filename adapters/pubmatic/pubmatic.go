@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -22,9 +21,8 @@ import (
 const MAX_IMPRESSIONS_PUBMATIC = 30
 
 type PubmaticAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 /* Name - export adapter name */
@@ -35,10 +33,6 @@ func (a *PubmaticAdapter) Name() string {
 // used for cookies and such
 func (a *PubmaticAdapter) FamilyName() string {
 	return "pubmatic"
-}
-
-func (a *PubmaticAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *PubmaticAdapter) SkipNoCookies() bool {
@@ -233,20 +227,11 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewPubmaticAdapter(config *adapters.HTTPAdapterConfig, uri string, externalURL string) *PubmaticAdapter {
+func NewPubmaticAdapter(config *adapters.HTTPAdapterConfig, uri string) *PubmaticAdapter {
 	a := adapters.NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
-	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "iframe",
-		SupportCORS: false,
-	}
 
 	return &PubmaticAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
+		http: a,
+		URI:  uri,
 	}
 }

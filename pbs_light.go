@@ -61,6 +61,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
 type DomainMetrics struct {
@@ -193,9 +194,15 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
+type cookieSyncDeps struct {
+	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	optOutCookie *config.Cookie
+	metric       metrics.Meter
+}
+
+func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.metric.Mark(1)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -225,12 +232,12 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	for _, bidder := range csReq.Bidders {
-		if ex, ok := exchanges[bidder]; ok {
-			if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
+		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
+			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
-					UsersyncInfo: ex.GetUsersyncInfo(),
+					UsersyncInfo: syncer.GetUsersyncInfo(),
 				}
 				csResp.BidderStatus = append(csResp.BidderStatus, &b)
 			}
@@ -244,7 +251,8 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 type auctionDeps struct {
-	cfg *config.Configuration
+	cfg     *config.Configuration
+	syncers map[openrtb_ext.BidderName]usersyncers.Usersyncer
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -313,10 +321,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil {
-				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
+				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
+				// bidderCodes, deps.syncers[bidderCode] will exist if exchanges[bidderCode] also does.
+				// This is guaranteed by the following unit tests, which compare these maps to the (source of truth) openrtb_ext.BidderMap:
+				//   1. TestSyncers inside usersync/usersync_test.go
+				//   2. TestExchangeMap inside pbs_light_test.go
+				syncerCode := bidder.BidderCode
+				if syncerCode == "districtm" {
+					syncerCode = "appnexus"
+				}
+				syncer := deps.syncers[openrtb_ext.BidderName(syncerCode)]
+				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					bidder.UsersyncInfo = syncer.GetUsersyncInfo()
 					ametrics.NoCookieMeter.Mark(1)
 					accountAdapterMetric.NoCookieMeter.Mark(1)
 					if ex.SkipNoCookies() {
@@ -706,18 +725,7 @@ func main() {
 }
 
 func setupExchanges(cfg *config.Configuration) {
-	exchanges = map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
-		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
-		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
-		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint, cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
-	}
+	exchanges = newExchangeMap(cfg)
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
@@ -732,7 +740,21 @@ func setupExchanges(cfg *config.Configuration) {
 
 	accountMetrics = make(map[string]*AccountMetrics)
 	adapterMetrics = makeExchangeMetrics("adapter")
+}
 
+func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	return map[string]adapters.Adapter{
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
+			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
+		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
+		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+	}
 }
 
 func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
@@ -838,12 +860,14 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
+	syncers := usersyncers.NewSyncerMap(cfg)
+
 	router := httprouter.New()
-	router.POST("/auction", (&auctionDeps{cfg}).auction)
+	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)

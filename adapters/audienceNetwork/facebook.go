@@ -260,21 +260,14 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string, usersyncURL string) *FacebookAdapter {
+func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
 	a := adapters.NewHTTPAdapter(config)
-
-	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
 
 	return &FacebookAdapter{
 		http: a,
 		URI:  "https://an.facebook.com/placementbid.ortb",
 		//for AB test
 		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
-		usersyncInfo: info,
 		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
 	}
 }

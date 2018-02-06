@@ -80,7 +80,7 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 
 func TestPubmaticInvalidCall(t *testing.T) {
 
-	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah", "localhost")
+	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
 
 	s := an.Name()
 	if s == "" {
@@ -106,7 +106,7 @@ func TestPubmaticTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -143,7 +143,7 @@ func TestPubmaticInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -179,7 +179,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -207,7 +207,7 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 func TestPubmaticInvalidInputParameters(t *testing.T) {
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, "http://localhost/test", "localhost")
+	an := NewPubmaticAdapter(&conf, "http://localhost/test")
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -309,7 +309,7 @@ func TestPubmaticBasicResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -345,7 +345,7 @@ func TestPubmaticMultiImpressionResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -393,7 +393,7 @@ func TestPubmaticMultiAdUnitResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -442,7 +442,7 @@ func TestPubmaticMobileResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -477,28 +477,13 @@ func TestPubmaticMobileResponse(t *testing.T) {
 		t.Fatalf("Should have received one bid")
 	}
 }
-
-func TestPubmaticUserSyncInfo(t *testing.T) {
-
-	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "pubmaticUrl", "localhost")
-	if an.usersyncInfo.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
-		t.Fatalf("should have matched")
-	}
-	if an.usersyncInfo.Type != "iframe" {
-		t.Fatalf("should be iframe")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
-	}
-}
-
 func TestPubmaticInvalidLookupBidIDParameter(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
@@ -529,7 +514,7 @@ func TestPubmaticAdSlotParams(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, server.URL, "localhost")
+	an := NewPubmaticAdapter(&conf, server.URL)
 
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}

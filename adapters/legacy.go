@@ -3,10 +3,11 @@ package adapters
 import (
 	"context"
 	"crypto/tls"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
+
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/ssl"
 )
 
 // This file contains some deprecated, legacy types.
@@ -26,9 +27,6 @@ type Adapter interface {
 	FamilyName() string
 	// Determines whether this adapter should get callouts if there is not a synched user ID
 	SkipNoCookies() bool
-	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.
-	// For more information, see http://clearcode.cc/2015/12/cookie-syncing/
-	GetUsersyncInfo() *pbs.UsersyncInfo
 	// Call produces bids which should be considered, given the auction params.
 	//
 	// In practice, implementations almost always make one call to an external server here.
