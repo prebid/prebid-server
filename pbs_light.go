@@ -321,9 +321,17 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil {
-				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] should exist too.
-				// The unit tests guarantee it.
-				syncer := deps.syncers[openrtb_ext.BidderName(bidder.BidderCode)]
+				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
+				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
+				// bidderCodes, deps.syncers[bidderCode] will exist if exchanges[bidderCode] also does.
+				// This is guaranteed by the following unit tests, which compare these maps to the (source of truth) openrtb_ext.BidderMap:
+				//   1. TestSyncers inside usersync/usersync_test.go
+				//   2. TestExchangeMap inside pbs_light_test.go
+				syncerCode := bidder.BidderCode
+				if syncerCode == "districtm" {
+					syncerCode = "appnexus"
+				}
+				syncer := deps.syncers[openrtb_ext.BidderName(syncerCode)]
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
@@ -717,18 +725,7 @@ func main() {
 }
 
 func setupExchanges(cfg *config.Configuration) {
-	exchanges = map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
-		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
-		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
-		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
-	}
+	exchanges = newExchangeMap(cfg)
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
@@ -743,6 +740,21 @@ func setupExchanges(cfg *config.Configuration) {
 
 	accountMetrics = make(map[string]*AccountMetrics)
 	adapterMetrics = makeExchangeMetrics("adapter")
+}
+
+func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	return map[string]adapters.Adapter{
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
+			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
+		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
+		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+	}
 }
 
 func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {

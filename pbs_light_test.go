@@ -521,6 +521,17 @@ func TestNewEmptyFetcher(t *testing.T) {
 	}
 }
 
+func TestExchangeMap(t *testing.T) {
+	exchanges := newExchangeMap(&config.Configuration{})
+	for bidderName, _ := range exchanges {
+		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
+		// which was the only alias in the legacy adapter map.
+		if _, ok := openrtb_ext.BidderMap[bidderName]; bidderName != "districtm" && !ok {
+			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
+		}
+	}
+}
+
 type testValidator struct{}
 
 func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
