@@ -191,8 +191,19 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return errors.New("request.imp must contain at least one element.")
 	}
 
+	var aliases map[string]string
+	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
+		return err
+	} else if bidExt != nil {
+		aliases = bidExt.Prebid.Aliases
+	}
+
+	if err := deps.validateAliases(aliases); err != nil {
+		return err
+	}
+
 	for index, imp := range req.Imp {
-		if err := deps.validateImp(&imp, index); err != nil {
+		if err := deps.validateImp(&imp, aliases, index); err != nil {
 			return err
 		}
 	}
@@ -209,14 +220,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
-	if err := deps.validateBidRequestExt(req.Ext); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (deps *endpointDeps) validateImp(imp *openrtb.Imp, index int) error {
+func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) error {
 	if imp.ID == "" {
 		return fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
 	}
@@ -255,7 +262,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, index int) error {
 		return err
 	}
 
-	if err := deps.validateImpExt(imp.Ext, index); err != nil {
+	if err := deps.validateImpExt(imp.Ext, aliases, index); err != nil {
 		return err
 	}
 
@@ -321,7 +328,7 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) error {
+func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
 	var bidderExts map[string]openrtb.RawJSON
 	if err := json.Unmarshal(ext, &bidderExts); err != nil {
 		return err
@@ -332,26 +339,43 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, impIndex int) erro
 	}
 
 	for bidder, ext := range bidderExts {
-		bidderName, isValid := openrtb_ext.BidderMap[bidder]
-		if isValid {
-			if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-				return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, bidder, err)
+		if bidder != "prebid" {
+			coreBidder := bidder
+			if tmp, isAlias := aliases[bidder]; isAlias {
+				coreBidder = tmp
 			}
-		} else if bidder != "prebid" {
-			return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s", impIndex, bidder)
+			if bidderName, isValid := openrtb_ext.BidderMap[coreBidder]; isValid {
+				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
+					return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+				}
+			} else {
+				return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (deps *endpointDeps) validateBidRequestExt(ext openrtb.RawJSON) error {
+func (deps *endpointDeps) parseBidExt(ext openrtb.RawJSON) (*openrtb_ext.ExtRequest, error) {
 	if len(ext) < 1 {
-		return nil
+		return nil, nil
 	}
 	var tmpExt openrtb_ext.ExtRequest
 	if err := json.Unmarshal(ext, &tmpExt); err != nil {
-		return fmt.Errorf("request.ext is invalid: %v", err)
+		return nil, fmt.Errorf("request.ext is invalid: %v", err)
+	}
+	return &tmpExt, nil
+}
+
+func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
+	for thisAlias, coreBidder := range aliases {
+		if _, isCoreBidder := openrtb_ext.BidderMap[coreBidder]; !isCoreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
+		}
+		if thisAlias == coreBidder {
+			return fmt.Errorf("request.ext.prebid.aliases.%s defines a no-op alias. Choose a different alias, or remove this entry.", thisAlias)
+		}
 	}
 	return nil
 }
