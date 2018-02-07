@@ -30,10 +30,10 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	m          *pbsmetrics.Metrics
-	cache      prebid_cache_client.Client
-	cacheTime  time.Duration
+	adapterMap    map[openrtb_ext.BidderName]adaptedBidder
+	m             *pbsmetrics.Metrics
+	cache         prebid_cache_client.Client
+	cacheTime     time.Duration
 	currencyRates []byte
 }
 

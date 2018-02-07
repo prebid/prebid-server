@@ -800,6 +800,7 @@ var validRequests = []string{
 		"site": {
 			"page": "test.somepage.com"
 		},
+		"cur": ["AUD"],
 		"imp": [
 			{
 				"id": "my-imp-id",
