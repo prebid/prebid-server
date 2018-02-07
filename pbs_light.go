@@ -62,8 +62,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
-	"golang.org/x/text/currency"
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"golang.org/x/text/currency"
 )
 
 type DomainMetrics struct {
@@ -513,7 +513,7 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 		// after sorting we need to add the ad targeting keywords
 		for i, bid := range bar {
 			// We should eventually check for the error and do something.
-			roundedCpm, err := buckets.GetPriceBucketString(bid.Price, priceGranularitySetting, 0)
+			roundedCpm, err := buckets.GetPriceBucketString(bid.Price, priceGranularitySetting)
 			if err != nil {
 				glog.Error(err.Error())
 			}

@@ -25,41 +25,11 @@ func TestGetPriceBucketString(t *testing.T) {
 
 func getOnePriceBucket(t *testing.T, granularity openrtb_ext.PriceGranularity, price float64, expected string) {
 	t.Helper()
-	priceBucket, err := GetPriceBucketString(price, granularity, 0)
+	priceBucket, err := GetPriceBucketString(price, granularity)
 	if err != nil {
 		t.Errorf("GetPriceBucketString: %s", err.Error())
 	}
 	if priceBucket != expected {
 		t.Errorf("Expected %s, got %s from %f", expected, priceBucket, price)
-	}
-}
-
-func TestGetCpmStringValue(t *testing.T) {
-	cpm := 1.55
-	precision := 0
-	granularityMultiplier := 108.00
-
-	// Testing with low price bucket
-	cpmStr := getCpmStringValue(cpm, priceBucketLow, precision, granularityMultiplier)
-
-	// cpmStr should be 162 because 1.50 (low price bucket for 1.55) * 108 granularity multipler
-	if cpmStr != "162.00" {
-		t.Errorf("Expected %s, got %s", "162.00", cpmStr)
-	}
-
-	// Testing with medium price bucket
-	cpmStr = getCpmStringValue(cpm, priceBucketMed, precision, granularityMultiplier)
-
-	// cpmStr should be 162 because 1.50 (medium price bucket for 1.55) * 108 granularity multipler
-	if cpmStr != "162.00" {
-		t.Errorf("Expected %s, got %s", "162.00", cpmStr)
-	}
-
-	// Testing with high price bucket
-	cpmStr = getCpmStringValue(cpm, priceBucketHigh, precision, granularityMultiplier)
-
-	// cpmStr should be 162 because 1.55 (high price bucket for 1.55) * 108 granularity multipler
-	if cpmStr != "167.40" {
-		t.Errorf("Expected %s, got %s", "167.40", cpmStr)
 	}
 }

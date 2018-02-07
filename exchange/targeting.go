@@ -16,10 +16,9 @@ import (
 // All functions on this struct are all nil-safe.
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
-	lengthMax             int
-	priceGranularity      openrtb_ext.PriceGranularity
-	includeCache          bool
-	granularityMultiplier float64
+	lengthMax        int
+	priceGranularity openrtb_ext.PriceGranularity
+	includeCache     bool
 }
 
 // makePrebidTargets returns the _bidder specific_ targeting keys and values. For example,
@@ -34,7 +33,7 @@ func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb
 	height := bid.H
 	deal := bid.DealID
 
-	roundedCpm, err := buckets.GetPriceBucketString(cpm, t.priceGranularity, t.granularityMultiplier)
+	roundedCpm, err := buckets.GetPriceBucketString(cpm, t.priceGranularity)
 	if err != nil {
 		// set broken cpm to 0
 		roundedCpm = "0.0"

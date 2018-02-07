@@ -3,7 +3,6 @@ package exchange
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -103,13 +102,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	seatBid := &pbsOrtbSeatBid{
 		bids:      make([]*pbsOrtbBid, 0, len(reqData)),
 		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
-	}
-
-	var requestExt openrtb_ext.ExtRequest
-	if request.Ext != nil {
-		if err := json.Unmarshal(request.Ext, &requestExt); err == nil {
-			bidderTarg.granularityMultiplier = requestExt.Currency.GranularityMultiplier
-		}
 	}
 
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...

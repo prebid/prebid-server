@@ -32,7 +32,7 @@ func TestBidSerialization(t *testing.T) {
 		},
 	}
 
-	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium, 0)
+	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium)
 	assertStringValue(t, `bid "bar"`, "0", a.cachedBids[winningBid])
 	assertStringValue(t, `bid "foo"`, "1", a.cachedBids[otherBid])
 }
@@ -58,7 +58,7 @@ func TestCacheFailures(t *testing.T) {
 			otherBid:   "1",
 		},
 	}
-	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium, 0)
+	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium)
 	assertStringValue(t, `bid "foo"`, "1", a.cachedBids[otherBid])
 	if _, ok := a.cachedBids[winningBid]; ok {
 		t.Error("If the cache call fails, no ID should exist for that bid.")
@@ -87,7 +87,7 @@ func TestMarshalFailure(t *testing.T) {
 		},
 	}
 
-	cacheBids(context.Background(), mockClient, auc, openrtb_ext.PriceGranularityMedium, 0)
+	cacheBids(context.Background(), mockClient, auc, openrtb_ext.PriceGranularityMedium)
 	if _, ok := auc.cacheId(badBid); ok {
 		t.Errorf("bids with malformed JSON should not be cached.")
 	}

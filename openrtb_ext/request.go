@@ -13,8 +13,7 @@ type ExtRequest struct {
 
 // ExtRequestCurrency defines the contract for bidrequest.ext.currency
 type ExtRequestCurrency struct {
-	GranularityMultiplier float64         `json:"granularityMultiplier,omitempty"`
-	Rates                 ConversionRates `json:"rates,omitempty"`
+	Rates ConversionRates `json:"rates,omitempty"`
 }
 
 type ConversionRates map[string]currencyCode

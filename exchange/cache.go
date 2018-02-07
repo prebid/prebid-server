@@ -15,12 +15,12 @@ import (
 //
 // If any cache calls fail, then there's not much anyone can do about it. This function will just log
 // the error and save IDs to any bids which are cached successfully.
-func cacheBids(ctx context.Context, cache prebid_cache_client.Client, auction *auction, granularity openrtb_ext.PriceGranularity, granularityMultiplier float64) {
+func cacheBids(ctx context.Context, cache prebid_cache_client.Client, auction *auction, granularity openrtb_ext.PriceGranularity) {
 	bids := make([]*openrtb.Bid, 0, 30) // Arbitrary initial capacity
 	nextBidIndex := 0
 	auction.forEachBestBid(func(impID string, bidder openrtb_ext.BidderName, bid *openrtb.Bid, winner bool) {
 		// Fixes #199
-		granularityStr, err := buckets.GetPriceBucketString(bid.Price, granularity, granularityMultiplier)
+		granularityStr, err := buckets.GetPriceBucketString(bid.Price, granularity)
 		if err == nil && strings.ContainsAny(granularityStr, "123456789") {
 			bids = append(bids, bid)
 			nextBidIndex++

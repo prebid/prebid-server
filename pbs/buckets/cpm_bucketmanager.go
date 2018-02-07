@@ -87,7 +87,7 @@ var priceBucketAuto = priceBucketConf{
 	},
 }
 
-func getCpmStringValue(cpm float64, config priceBucketConf, precision int, granularityMultipler float64) string {
+func getCpmStringValue(cpm float64, config priceBucketConf, precision int) string {
 	cpmStr := ""
 	bucketMax := 0.0
 	increment := 0.0
@@ -110,45 +110,30 @@ func getCpmStringValue(cpm float64, config priceBucketConf, precision int, granu
 		}
 	}
 	if increment > 0 {
-		cpmStr = getCpmTarget(cpm, increment, precision, granularityMultipler)
+		cpmStr = getCpmTarget(cpm, increment, precision)
 	}
 	return cpmStr
 }
 
-func getCpmTarget(cpm float64, increment float64, precision int, granularityMultipler float64) string {
-	var cpmTarget string
+func getCpmTarget(cpm float64, increment float64, precision int) string {
 	// Probably don't need this default check given it is in getCpmStringValue
 	if precision == 0 {
 		precision = DEFAULT_PRECISION
 	}
 	roundedCPM := math.Floor(cpm/increment) * increment
-	cpmBeforeMultiplier := strconv.FormatFloat(roundedCPM, 'f', precision, 64)
-
-	if granularityMultipler != 0 {
-		cpmBeforeMultiplierF, err := strconv.ParseFloat(cpmBeforeMultiplier, 64)
-		if err != nil {
-			cpmTarget = cpmBeforeMultiplier
-		} else {
-			cpmWithMultiplier := cpmBeforeMultiplierF * granularityMultipler
-			cpmTarget = strconv.FormatFloat(cpmWithMultiplier, 'f', precision, 64)
-		}
-	} else {
-		cpmTarget = cpmBeforeMultiplier
-	}
-
-	return cpmTarget
+	return strconv.FormatFloat(roundedCPM, 'f', precision, 64)
 }
 
 // Externally facing function for computing CPM buckets
 // We don't currently have a precision config, so enforcing the default here.
-func GetPriceBucketString(cpm float64, granularity openrtb_ext.PriceGranularity, granularityMultipler float64) (string, error) {
+func GetPriceBucketString(cpm float64, granularity openrtb_ext.PriceGranularity) (string, error) {
 	// Default to medium if no granularity is given
 	if granularity == "" {
 		granularity = "medium"
 	}
 	config, ok := priceBucketConfigMap[granularity]
 	if ok {
-		return getCpmStringValue(cpm, config, DEFAULT_PRECISION, granularityMultipler), nil
+		return getCpmStringValue(cpm, config, DEFAULT_PRECISION), nil
 	}
 	return "", fmt.Errorf("Price bucket granularity error: '%s' is not a recognized granularity", string(granularity))
 }

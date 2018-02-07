@@ -97,9 +97,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			if shouldCacheBids {
 				targData.includeCache = true
 			}
-			if requestExt.Currency.GranularityMultiplier != 0 {
-				targData.granularityMultiplier = requestExt.Currency.GranularityMultiplier
-			}
 		}
 	}
 
@@ -215,7 +212,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	}
 
 	if targData.shouldCache() {
-		cacheBids(ctx, e.cache, auc, targData.priceGranularity, targData.granularityMultiplier)
+		cacheBids(ctx, e.cache, auc, targData.priceGranularity)
 	}
 	targData.addTargetsToCompletedAuction(auc)
 	bidResponse.Cur = getCurrency(e.currencyRates, &seatBids, bidRequest, &adapterExtra)
