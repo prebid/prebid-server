@@ -24,23 +24,22 @@ func TestNewExchange(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	// Just match the counts
-	e := NewExchange(server.Client(), nil, &config.Configuration{}, pbsmetrics.NewMetrics(metrics.NewRegistry(), AdapterList())).(*exchange)
-	if len(e.adapters) != len(e.adapterMap) {
-		t.Errorf("Exchange initialized, but adapter list doesn't match adapter map (%d - %d)", len(e.adapters), len(e.adapterMap))
+	knownAdapters := AdapterList()
+
+	cfg := &config.Configuration{
+		CacheURL: config.Cache{
+			ExpectedTimeMillis: 20,
+		},
 	}
-	// Test that all adapters are in the map and not repeated
-	tmp := make(map[openrtb_ext.BidderName]int)
-	for _, a := range e.adapters {
-		_, ok := tmp[a]
-		if ok {
-			t.Errorf("Exchange.adapters repeats value %s", a)
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters)).(*exchange)
+	for _, bidderName := range knownAdapters {
+		if _, ok := e.adapterMap[bidderName]; !ok {
+			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
 		}
-		tmp[a] = 1
-		_, ok = e.adapterMap[a]
-		if !ok {
-			t.Errorf("Exchange.adapterMap missing adpater %s", a)
-		}
+	}
+	if e.cacheTime != time.Duration(cfg.CacheURL.ExpectedTimeMillis)*time.Millisecond {
+		t.Errorf("Bad cacheTime. Expected 20 ms, got %s", e.cacheTime.String())
 	}
 }
 
@@ -123,9 +122,12 @@ func TestGetAllBids(t *testing.T) {
 	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
 	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
 
-	cleanRequests := make(map[openrtb_ext.BidderName]*openrtb.BidRequest)
-	adapterBids, adapterExtra := e.getAllBids(ctx, e.adapters, cleanRequests, nil)
-
+	cleanRequests := map[openrtb_ext.BidderName]*openrtb.BidRequest{
+		BidderDummy:  nil,
+		BidderDummy2: nil,
+		BidderDummy3: nil,
+	}
+	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, nil)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
@@ -144,7 +146,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -161,7 +163,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, e.adapters, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -387,7 +389,6 @@ func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverr
 	bidder := &mockBidder{}
 
 	ex := &exchange{
-		adapters: []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus},
 		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
 			openrtb_ext.BidderAppnexus: bidder,
 		},
@@ -466,12 +467,9 @@ func NewDummyExchange(client *http.Client) *exchange {
 		BidderDummy3: c,
 	}
 
-	e.adapters = make([]openrtb_ext.BidderName, 0, len(e.adapterMap))
-	for a, _ := range e.adapterMap {
-		e.adapters = append(e.adapters, a)
-	}
-	e.m = pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), e.adapters)
+	adapterList := []openrtb_ext.BidderName{BidderDummy, BidderDummy2, BidderDummy3}
 
+	e.m = pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), adapterList)
 	e.cache = &wellBehavedCache{}
 	return e
 }

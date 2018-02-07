@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -16,9 +15,8 @@ import (
 )
 
 type ConversantAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 // Name - export adapter name
@@ -29,10 +27,6 @@ func (a *ConversantAdapter) Name() string {
 // Corresponds to the bidder name in cookies and requests
 func (a *ConversantAdapter) FamilyName() string {
 	return "conversant"
-}
-
-func (a *ConversantAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 // Return true so no request will be sent unless user has been sync'ed.
@@ -262,19 +256,11 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewConversantAdapter(config *adapters.HTTPAdapterConfig, uri string, usersyncURL string, externalURL string) *ConversantAdapter {
+func NewConversantAdapter(config *adapters.HTTPAdapterConfig, uri string) *ConversantAdapter {
 	a := adapters.NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=conversant&uid=", externalURL)
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
 
 	return &ConversantAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
+		http: a,
+		URI:  uri,
 	}
 }

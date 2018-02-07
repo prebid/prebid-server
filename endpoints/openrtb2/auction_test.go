@@ -5,6 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
@@ -13,12 +20,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 const maxSize = 1024 * 256
@@ -34,8 +35,7 @@ func TestGoodRequests(t *testing.T) {
 		endpoint(recorder, request, nil)
 
 		if recorder.Code != http.StatusOK {
-			t.Errorf("Expected status %d. Got %d. Request data was %s", http.StatusOK, recorder.Code, requestData)
-			//t.Errorf("Response body was: %s", recorder.Body)
+			t.Fatalf("Expected status %d. Got %d. Request data was %s\n\nResponse body was: %s", http.StatusOK, recorder.Code, requestData, recorder.Body.String())
 		}
 
 		var response openrtb.BidResponse
@@ -666,6 +666,30 @@ var validRequests = []string{
 			}
 		]
 	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"unknown": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"unknown": "appnexus"
+				}
+			}
+		}
+	}`,
 }
 
 var invalidRequests = []string{
@@ -870,6 +894,54 @@ var invalidRequests = []string{
 		"ext": {
 			"prebid": {
 				"cache": {}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"unknown": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"unknown": "other-unknown"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"appnexus": "appnexus"
+				}
 			}
 		}
 	}`,
