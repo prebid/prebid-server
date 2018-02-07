@@ -22,8 +22,9 @@ type currencyCode map[string]float64
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	StoredRequest *ExtStoredRequest      `json:"storedrequest"`
+	Aliases       map[string]string      `json:"aliases"`
 	Cache         *ExtRequestPrebidCache `json:"cache"`
+	StoredRequest *ExtStoredRequest      `json:"storedrequest"`
 	Targeting     *ExtRequestTargeting   `json:"targeting"`
 }
 
