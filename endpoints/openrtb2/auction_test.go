@@ -5,6 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
@@ -13,12 +20,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-	"time"
 )
 
 const maxSize = 1024 * 256
@@ -602,8 +603,7 @@ var validRequests = []string{
 		"ext": {
 			"prebid": {
 				"targeting": {
-					"pricegranularity": "low",
-					"lengthmax": 20
+					"pricegranularity": "low"
 				},
 				"cache": {
 					"bids": {}
@@ -926,7 +926,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -957,7 +956,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1014,7 +1012,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1051,7 +1048,6 @@ var testFinalRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1081,7 +1077,6 @@ var testFinalRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1160,7 +1155,6 @@ var testFinalRequests = []string{
 				"markup": 1
 			},
 			"targeting": {
-				"lengthmax": 20
 			}
 		}
 	}
