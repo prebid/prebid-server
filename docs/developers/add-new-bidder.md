@@ -4,7 +4,7 @@ This document describes how to add a new Bidder to Prebid Server.
 
 ## Choose a Bidder Name
 
-This name must be unique. Existing names can be found in [the Adapter Map](../../exchange/adapter_map.go).
+This name must be unique. Existing BidderNames can be found [here](../../openrtb_ext/bidders.go).
 
 Throughout the rest of this document, substitute `{bidder}` with the name you've chosen.
 
@@ -24,6 +24,8 @@ Bidder implementations are scattered throughout several files.
 - `adapters/{bidder}/{bidder}.go`: contains an implementation of [the Bidder interface](../../adapters/bidder.go).
 - `adapters/{bidder}/info.yaml`: contains contact info for the adapter's maintainer.
 - `openrtb_ext/imp_{bidder}.go`: contract classes for your Bidder's params.
+- `usersync/{bidder}.go`: A [Usersyncer](../../usersync/usersync.go) which returns cookie sync info for your bidder.
+- `usersync/{bidder}_test.go`: Unit tests for your Usersyncer
 - `static/bidder-params/{bidder}.json`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
 
 Bidder implementations may assume that any params have already been validated against the defined json-schema.
@@ -58,10 +60,15 @@ Then `POST` an OpenRTB Request to `http://localhost:8000/openrtb2/auction`.
 If at least one `request.imp[i].ext.{bidder}` is defined in your Request,
 then your bidder should be called.
 
+To test user syncs, [save a UID](../endpoints/setuid.md) using the FamilyName of your Usersyncer.
+The next time you use `/openrtb2/auction`, the OpenRTB request sent to your Bidder should have
+`BidRequest.User.BuyerUID` with the value you saved.
+
 ## Add your Bidder to the Exchange
 
-Update the [the adapter map](../../exchange/adapter_map.go) with your Bidder.
-This will also require a new [BidderName constant](../../openrtb_ext/bidders.go) for your Bidder.
+Add a new [BidderName constant](../../openrtb_ext/bidders.go) for your {bidder}.
+Update the [newAdapterMap function](../../exchange/adapter_map.go) to make your Bidder available in [auctions](../endpoints/openrtb2/auction).
+Update the [NewSyncerMap function](../../usersync/usersync.go) to make your Bidder available for [usersyncs](../endpoints/setuid.md).
 
 ## Contribute
 
