@@ -219,7 +219,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
-	if err := validateUser(req.User); err != nil {
+	if err := validateUser(req.User, aliases); err != nil {
 		return err
 	}
 
@@ -391,7 +391,7 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	return nil
 }
 
-func validateUser(user *openrtb.User) error {
+func (deps *endpointDeps) validateUser(user *openrtb.User, aliases map[string]string) error {
 	// DigiTrust support
 	if user != nil && user.Ext != nil {
 		// Creating ExtUser object to check if DigiTrust is valid
@@ -401,6 +401,14 @@ func validateUser(user *openrtb.User) error {
 			if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
 				// DigiTrust is not valid. Return error.
 				return errors.New("request.user contains a digitrust object that is not valid.")
+			}
+
+			for bidderName, _ := range userExt.BuyerUIDs {
+				if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
+					if _, ok := aliases[bidderName]; !ok {
+						return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
+					}
+				}
 			}
 		} else {
 			// Return error.

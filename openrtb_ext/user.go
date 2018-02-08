@@ -2,6 +2,7 @@ package openrtb_ext
 
 // ExtUser defines the contract for bidrequest.user.ext
 type ExtUser struct {
+	BuyerUIDs map[string]string `json:"buyeruids"`
 	DigiTrust *ExtUserDigiTrust `json:"digitrust,omitempty"`
 }
 
