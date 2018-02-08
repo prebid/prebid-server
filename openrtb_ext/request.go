@@ -48,27 +48,23 @@ type ExtRequestTargeting struct {
 	MaxLength        int              `json:"lengthmax"`
 }
 
-// ExtRequestTargeting without Unmashall override to prevent infinite loops
-type ExtRequestTargetingPlain struct {
-	PriceGranularity PriceGranularity `json:"pricegranularity"`
-	MaxLength        int              `json:"lengthmax"`
-}
-
-// Make an unmashaller that will set a default PriceGranularity
+// Make an unmarshaller that will set a default PriceGranularity
 func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
 		return nil
 	}
-	ertRaw := &ExtRequestTargetingPlain{}
-	err := json.Unmarshal(b, ertRaw)
-	ert.PriceGranularity = ertRaw.PriceGranularity
-	ert.MaxLength = ertRaw.MaxLength
-	if err == nil {
-		// set default value
-		if ert.PriceGranularity == "" {
-			ert.PriceGranularity = PriceGranularityMedium
-		}
+
+	// define seperate type to prevent infinite recursive calls to UnmarshalJSON
+	type extRequestTargetingDefaults ExtRequestTargeting
+	defaults := &extRequestTargetingDefaults{
+		PriceGranularity: PriceGranularityMedium,
 	}
+
+	err := json.Unmarshal(b, defaults)
+	if err == nil {
+		*ert = ExtRequestTargeting(*defaults)
+	}
+
 	return err
 }
 
