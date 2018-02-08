@@ -62,6 +62,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/analytics"
+	"errors"
 )
 
 type DomainMetrics struct {
@@ -105,6 +107,7 @@ var (
 	accountMetricsRWMutex sync.RWMutex
 
 	hostCookieSettings pbs.HostCookieSettings
+	pbsAnalytics       analytics.PBSAnalyticsModule
 )
 
 var exchanges map[string]adapters.Adapter
@@ -203,8 +206,23 @@ type cookieSyncDeps struct {
 func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	deps.metric.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
+
+	var cso analytics.CookieSyncObject
+	if pbsAnalytics != nil {
+		cso = analytics.CookieSyncObject{
+			Type:   analytics.COOKIE_SYNC,
+			Status: http.StatusOK,
+			Error:  make([]error, 0),
+		}
+	}
+
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		if pbsAnalytics != nil {
+			cso.Status = http.StatusUnauthorized
+			cso.Error = append(cso.Error, errors.New("user has opted out"))
+			pbsAnalytics.LogCookieSyncObject(&cso)
+		}
 		return
 	}
 
@@ -215,6 +233,15 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
+		}
+		if pbsAnalytics != nil {
+			if c, err := json.Marshal(csReq); err == nil {
+				cso.Request = string(c)
+			} else {
+				fmt.Printf("Cookie sync request marshal error %v", err)
+			}
+			cso.Status = http.StatusBadRequest
+			pbsAnalytics.LogCookieSyncObject(&cso)
 		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
@@ -242,6 +269,11 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 				csResp.BidderStatus = append(csResp.BidderStatus, &b)
 			}
 		}
+	}
+
+	if cs, err := json.Marshal(csResp); err == nil && pbsAnalytics != nil {
+		cso.Response = string(cs)
+		pbsAnalytics.LogCookieSyncObject(&cso)
 	}
 
 	enc := json.NewEncoder(w)
@@ -791,6 +823,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
+	pbsAnalytics = analytics.NewPBSAnalytics(&cfg.Analytics)
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
@@ -850,12 +883,12 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -887,6 +920,7 @@ func serve(cfg *config.Configuration) error {
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		Metrics:            metricsRegistry,
+		Analytics:          pbsAnalytics,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)

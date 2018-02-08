@@ -27,17 +27,18 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics, analytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, analytics}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -46,6 +47,7 @@ type endpointDeps struct {
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
 	metrics          *pbsmetrics.Metrics
+	analytics        analytics.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -62,6 +64,27 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
 
 	req, errL := deps.parseRequest(r)
+
+	var ao analytics.AuctionObject
+	if deps.analytics != nil {
+		ao = analytics.AuctionObject{
+			Request:   *req,
+			Status:    http.StatusOK,
+			Type:      analytics.AUCTION,
+			Error:     make([]error, 0),
+			UserAgent: r.UserAgent(),
+		}
+	}
+
+	if writeError(errL, deps.metrics.ErrorMeter, w) {
+		if deps.analytics != nil {
+			ao.Error = make([]error, len(errL))
+			ao.Status = http.StatusBadRequest
+			copy(ao.Error, errL)
+			deps.analytics.LogAuctionObject(&ao)
+		}
+		return
+	}
 
 	if writeError(errL, deps.metrics.ErrorMeter, w) {
 		return
@@ -86,11 +109,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs);
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		if deps.analytics != nil {
+			ao.Error = make([]error, len(errL))
+			ao.Status = http.StatusInternalServerError
+			copy(ao.Error, errL)
+			deps.analytics.LogAuctionObject(&ao)
+		}
 		return
 	}
 
@@ -103,6 +132,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+	}
+	if deps.analytics != nil {
+		ao.Response = *response
+		deps.analytics.LogAuctionObject(&ao)
 	}
 }
 
