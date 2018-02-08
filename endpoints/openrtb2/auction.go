@@ -98,6 +98,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 
+	// Fixes #328
+	w.Header().Set("Content-Type", "application/json")
+
 	// If an error happens when encoding the response, there isn't much we can do.
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
