@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
@@ -262,6 +263,10 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
 	a := adapters.NewHTTPAdapter(config)
+
+	if partnerID == "" {
+		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
+	}
 
 	return &FacebookAdapter{
 		http: a,
