@@ -103,9 +103,10 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 	bid := bidResp.SeatBid[0].Bid[0]
 
 	result.Bid = &pbs.PBSBid{
-		AdUnitCode: bid.ImpID,
-		Price:      bid.Price,
-		Adm:        bid.AdM,
+		AdUnitCode:        bid.ImpID,
+		Price:             bid.Price,
+		Adm:               bid.AdM,
+		CreativeMediaType: "banner", //  hard code this, because that's all facebook supports now, can potentially update it dynamically from "template" field in the "adm"
 	}
 	return
 }
@@ -227,6 +228,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
 					result.Bid = nil
 				}
+			}
 			}
 			ch <- result
 		}(bidder, requests[i])
