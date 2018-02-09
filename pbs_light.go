@@ -885,6 +885,7 @@ func serve(cfg *config.Configuration) error {
 		OptOutURL:    cfg.HostCookie.OptOutURL,
 		OptInURL:     cfg.HostCookie.OptInURL,
 		OptOutCookie: cfg.HostCookie.OptOutCookie,
+		TTL:          time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour,
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{

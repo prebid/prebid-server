@@ -13,6 +13,7 @@ import (
 
 	"context"
 	"io/ioutil"
+	"time"
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -86,7 +87,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	pcs := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
-	req.AddCookie(pcs.ToHTTPCookie())
+	req.AddCookie(pcs.ToHTTPCookie(90 * 24 * time.Hour))
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
