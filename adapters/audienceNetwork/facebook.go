@@ -267,7 +267,7 @@ func NewAdapterFromFacebook(config *adapters.HTTPAdapterConfig, partnerID string
 		return &adapters.MisconfiguredAdapter{
 			TheName:       "audienceNetwork",
 			TheFamilyName: "audienceNetwork",
-			Err:           errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service."),
+			Err:           errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
 		}
 	}
 	return NewFacebookAdapter(config, partnerID)
