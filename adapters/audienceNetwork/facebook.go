@@ -229,7 +229,6 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					result.Bid = nil
 				}
 			}
-			}
 			ch <- result
 		}(bidder, requests[i])
 	}
