@@ -261,13 +261,20 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
-	a := adapters.NewHTTPAdapter(config)
-
+func NewAdapterFromFacebook(config *adapters.HTTPAdapterConfig, partnerID string) adapters.Adapter {
 	if partnerID == "" {
 		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
+		return &adapters.MisconfiguredAdapter{
+			TheName:       "audienceNetwork",
+			TheFamilyName: "audienceNetwork",
+			Err:           errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service."),
+		}
 	}
+	return NewFacebookAdapter(config, partnerID)
+}
 
+func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
+	a := adapters.NewHTTPAdapter(config)
 	return &FacebookAdapter{
 		http: a,
 		URI:  "https://an.facebook.com/placementbid.ortb",
