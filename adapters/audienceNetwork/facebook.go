@@ -275,6 +275,7 @@ func NewAdapterFromFacebook(config *adapters.HTTPAdapterConfig, partnerID string
 
 func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
 	a := adapters.NewHTTPAdapter(config)
+
 	return &FacebookAdapter{
 		http: a,
 		URI:  "https://an.facebook.com/placementbid.ortb",
