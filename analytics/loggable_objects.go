@@ -26,14 +26,14 @@ type AuctionObject struct {
 	UserAgent string
 }
 
-type AmpObject struct{
+type AmpObject struct {
 	Type      RequestType
 	Status    int
 	Error     []error
 	Request   string
 	Response  string
 	UserAgent string
-	Origin string
+	Origin    string
 }
 
 //Bid requests from each adapter. This information is available in /openrtb2/auction response but necessary to log in case there are errors
@@ -87,7 +87,7 @@ func (so SetUIDObject) ToJson() string {
 	}
 }
 
-func (ao AmpObject) ToJson() string{
+func (ao AmpObject) ToJson() string {
 	if content, err := json.Marshal(ao); err != nil {
 		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
 	} else {

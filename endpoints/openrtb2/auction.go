@@ -18,6 +18,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -27,7 +28,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
-	"github.com/prebid/prebid-server/analytics"
 )
 
 const defaultRequestTimeoutMillis = 5000
@@ -105,7 +105,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs);
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)

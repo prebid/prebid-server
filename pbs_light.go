@@ -34,6 +34,7 @@ import (
 	"crypto/tls"
 	"strings"
 
+	"errors"
 	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/appnexus"
@@ -44,6 +45,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -62,8 +64,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	usersyncers "github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/analytics"
-	"errors"
 )
 
 type DomainMetrics struct {

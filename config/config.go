@@ -86,7 +86,7 @@ type Cookie struct {
 }
 
 type Analytics struct {
-	File    FileLogs `mapstructure:"file"`
+	File FileLogs `mapstructure:"file"`
 }
 
 type FileLogs struct {
