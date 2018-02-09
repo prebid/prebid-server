@@ -3,13 +3,14 @@ package exchange
 import (
 	"context"
 	"errors"
+	"reflect"
+	"testing"
+
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"reflect"
-	"testing"
 )
 
 func TestSiteVideo(t *testing.T) {
@@ -283,6 +284,51 @@ func TestErrorResponse(t *testing.T) {
 	}
 	if errs[0].Error() != "adapter failed" {
 		t.Errorf("Unexpected error message. Got %s", errs[0].Error())
+	}
+}
+
+func TestWithTargeting(t *testing.T) {
+	ortbRequest := &openrtb.BidRequest{
+		ID: "request-id",
+		App: &openrtb.App{
+			Publisher: &openrtb.Publisher{
+				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
+			},
+		},
+		Source: &openrtb.Source{
+			TID: "transaction-id",
+		},
+		Imp: []openrtb.Imp{{
+			ID: "imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {"placementId": "1959066997713356_1959836684303054"}}`),
+		}},
+	}
+
+	mockAdapter := mockLegacyAdapter{
+		returnedBids: []*pbs.PBSBid{{
+			CreativeMediaType: "banner",
+		}},
+	}
+	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
+	targ := &targetData{
+		lengthMax:        20,
+		priceGranularity: openrtb_ext.PriceGranularityMedium,
+	}
+	bid, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, targ, openrtb_ext.BidderFacebook)
+	if len(errs) != 0 {
+		t.Fatalf("This should not produce errors. Got %v", errs)
+	}
+	if len(bid.bids) != 1 {
+		t.Fatalf("We should get one bid back.")
+	}
+	if bid.bids[0] == nil {
+		t.Errorf("The returned bid should not be nil.")
 	}
 }
 
