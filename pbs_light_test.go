@@ -200,6 +200,21 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		DealId:     "1234",
 	}
 	bids = append(bids, &an_bid)
+	rb_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "rubicon",
+		Price:      1.00,
+		Adm:        "test_adm",
+		Width:      300,
+		Height:     250,
+		CacheID:    "test_cache_id2",
+		DealId:     "7890",
+	}
+	rb_bid.AdServerTargeting = map[string]string{
+		"rpfl_1001": "15_tier0100",
+	}
+	bids = append(bids, &rb_bid)
 	nosize_bid := pbs.PBSBid{
 		BidID:      "test_bidid2",
 		AdUnitCode: "test_adunitcode",
@@ -266,6 +281,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			}
 			if bid.AdServerTargeting["hb_deal_appnexus"] != "1234" {
 				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
+			}
+		}
+		if bid.BidderCode == "rubicon" {
+			if bid.AdServerTargeting["rpfl_1001"] != "15_tier0100" {
+				t.Error("custom ad_server_targeting KVPs from adapter were not preserved")
 			}
 		}
 		if bid.BidderCode == "nosizebidder" {
