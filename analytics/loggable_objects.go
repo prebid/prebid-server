@@ -13,16 +13,27 @@ const (
 	COOKIE_SYNC RequestType = "cookie_sync"
 	AUCTION     RequestType = "auction"
 	SETUID      RequestType = "set_uid"
+	AMP         RequestType = "amp"
 )
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
-	Type              RequestType
-	Status            int
-	Error             []error
-	Request           openrtb.BidRequest
-	Response          openrtb.BidResponse
-	UserAgent         string
+	Type      RequestType
+	Status    int
+	Error     []error
+	Request   openrtb.BidRequest
+	Response  openrtb.BidResponse
+	UserAgent string
+}
+
+type AmpObject struct{
+	Type      RequestType
+	Status    int
+	Error     []error
+	Request   string
+	Response  string
+	UserAgent string
+	Origin string
 }
 
 //Bid requests from each adapter. This information is available in /openrtb2/auction response but necessary to log in case there are errors
@@ -71,6 +82,14 @@ func (cso CookieSyncObject) ToJson() string {
 func (so SetUIDObject) ToJson() string {
 	if content, err := json.Marshal(so); err != nil {
 		return fmt.Sprintf("Transactional Logs Error: Set UID object badly formed %v", err)
+	} else {
+		return string(content)
+	}
+}
+
+func (ao AmpObject) ToJson() string{
+	if content, err := json.Marshal(ao); err != nil {
+		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
 	} else {
 		return string(content)
 	}

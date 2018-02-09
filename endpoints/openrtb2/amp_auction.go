@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/analytics"
+	"io/ioutil"
 )
 
 type AmpResponse struct {
@@ -50,12 +51,29 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	req, errL := deps.parseAmpRequest(r)
 	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
 
+	var ao analytics.AmpObject
+	if deps.analytics != nil {
+		ao = analytics.AmpObject{
+			Request:   makeLoggableRequest(r),
+			Status:    http.StatusOK,
+			Type:      analytics.AUCTION,
+			Error:     make([]error, 0),
+			UserAgent: r.UserAgent(),
+		}
+	}
+
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		deps.metrics.ErrorMeter.Mark(1)
+		if deps.analytics != nil {
+			ao.Error = make([]error, len(errL))
+			ao.Status = http.StatusBadRequest
+			copy(ao.Error, errL)
+			deps.analytics.LogAmpObject(&ao)
+		}
 		return
 	}
 
@@ -83,6 +101,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
+		if deps.analytics != nil {
+			ao.Status = http.StatusInternalServerError
+			ao.Error = []error{err}
+			deps.analytics.LogAmpObject(&ao)
+		}
 		return
 	}
 
@@ -113,7 +136,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		}
 	}
 
-	// Now JSONify the tragets for the AMP response.
+	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
 	}
@@ -124,7 +147,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		// Just to be safe
 		origin = r.Header.Get("Origin")
 	}
-	// Heders "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
+	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
 	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
 	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
@@ -138,6 +161,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
 		glog.Errorf("/openrtb2/amp Error encoding response: %v", err)
+	}
+
+	if deps.analytics != nil {
+		ao.Origin = origin
+		ao.Response = makeLoggableResponse(ampResponse)
+		deps.analytics.LogAmpObject(&ao)
 	}
 }
 
@@ -231,4 +260,18 @@ func enforceAMPCache(req *openrtb.BidRequest) (errs []error) {
 	}
 
 	return
+}
+
+func makeLoggableRequest(r *http.Request) (request string) {
+	if req, err := ioutil.ReadAll(r.Body); err == nil {
+		request = string(req)
+	}
+	return request
+}
+
+func makeLoggableResponse(response AmpResponse) (resp string) {
+	if res, err := json.Marshal(response); err == nil {
+		resp = string(res)
+	}
+	return resp
 }

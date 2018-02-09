@@ -86,10 +86,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	if writeError(errL, deps.metrics.ErrorMeter, w) {
-		return
-	}
-
 	ctx := context.Background()
 	cancel := func() {}
 	if req.TMax > 0 {
@@ -115,9 +111,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
 		if deps.analytics != nil {
-			ao.Error = make([]error, len(errL))
 			ao.Status = http.StatusInternalServerError
-			copy(ao.Error, errL)
+			ao.Error = []error{err}
 			deps.analytics.LogAuctionObject(&ao)
 		}
 		return

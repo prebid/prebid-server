@@ -26,10 +26,19 @@ func (f *FileLogger) LogSetUIDObject(so *SetUIDObject) {
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
+
 func (f *FileLogger) LogCookieSyncObject(cso *CookieSyncObject) {
 	//Code to parse the object and log in a way required
 	var b bytes.Buffer
 	b.WriteString(cso.ToJson())
+	f.Logger.Debug(b.String())
+	f.Logger.Flush()
+}
+
+func (f *FileLogger) LogAmpObject(ao *AmpObject) {
+	//Code to parse the object and log in a way required
+	var b bytes.Buffer
+	b.WriteString(ao.ToJson())
 	f.Logger.Debug(b.String())
 	f.Logger.Flush()
 }
