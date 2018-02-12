@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"testing"
 	"time"
@@ -183,9 +182,6 @@ func TestRowErrors(t *testing.T) {
 		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?)"),
 	}
 	data, errs := fetcher.FetchRequests(context.Background(), []string{"foo", "bar"})
-	for id, b := range data {
-		log.Printf("Data[%s] = %s", id, string(b))
-	}
 	if len(errs) != 1 {
 		t.Fatalf("Expected 1 error. Got %v", errs)
 	}
