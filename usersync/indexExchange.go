@@ -6,7 +6,7 @@ import (
 
 func NewIndexSyncer(userSyncURL string) Usersyncer {
 	return &syncer{
-		familyName: "adnxs",
+		familyName: "indexExchange",
 		syncInfo: &pbs.UsersyncInfo{
 			URL:         userSyncURL,
 			Type:        "redirect",

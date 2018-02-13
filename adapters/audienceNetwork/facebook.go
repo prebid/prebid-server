@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
@@ -103,9 +104,10 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 	bid := bidResp.SeatBid[0].Bid[0]
 
 	result.Bid = &pbs.PBSBid{
-		AdUnitCode: bid.ImpID,
-		Price:      bid.Price,
-		Adm:        bid.AdM,
+		AdUnitCode:        bid.ImpID,
+		Price:             bid.Price,
+		Adm:               bid.AdM,
+		CreativeMediaType: "banner", //  hard code this, because that's all facebook supports now, can potentially update it dynamically from "template" field in the "adm"
 	}
 	return
 }
@@ -258,6 +260,18 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		return nil, err
 	}
 	return bids, nil
+}
+
+func NewAdapterFromFacebook(config *adapters.HTTPAdapterConfig, partnerID string) adapters.Adapter {
+	if partnerID == "" {
+		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
+		return &adapters.MisconfiguredAdapter{
+			TheName:       "audienceNetwork",
+			TheFamilyName: "audienceNetwork",
+			Err:           errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+		}
+	}
+	return NewFacebookAdapter(config, partnerID)
 }
 
 func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *FacebookAdapter {
