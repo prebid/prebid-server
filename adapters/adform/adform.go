@@ -26,8 +26,8 @@ type AdformAdapter struct {
 }
 
 type adformRequest struct {
-	tid       string
-	userAgent string
+	tid        string
+	userAgent  string
 	ip         string
 	bidderCode string
 	isSecure   bool
@@ -155,8 +155,8 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 	userId, _, _ := request.Cookie.GetUID(a.FamilyName())
 
 	return &adformRequest{
-		adUnits: adUnits,
-		ip:      request.Device.IP,
+		adUnits:    adUnits,
+		ip:         request.Device.IP,
 		userAgent:  request.Device.UA,
 		bidderCode: bidder.BidderCode,
 		isSecure:   request.Secure == 1,
@@ -327,8 +327,8 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	}
 
 	return &adformRequest{
-		adUnits: adUnits,
-		ip:      request.Device.IP,
+		adUnits:   adUnits,
+		ip:        request.Device.IP,
 		userAgent: request.Device.UA,
 		isSecure:  secure,
 		referer:   referer,

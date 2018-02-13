@@ -39,7 +39,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
-	"adform":        BidderAdform,
+	"adform":          BidderAdform,
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {

@@ -732,7 +732,6 @@ func main() {
 
 func setupExchanges(cfg *config.Configuration) {
 	exchanges = newExchangeMap(cfg)
-		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint, cfg.Adapters["adform"].UserSyncURL, cfg.ExternalURL),
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
@@ -761,6 +760,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint, cfg.Adapters["adform"].UserSyncURL, cfg.ExternalURL),
 	}
 }
 
