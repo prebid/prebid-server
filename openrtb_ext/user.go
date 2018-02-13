@@ -12,7 +12,7 @@ type ExtUser struct {
 
 // ExtUserPrebid defines the contract for bidrequest.user.ext.prebid
 type ExtUserPrebid struct {
-	BuyerUIDs map[string]string `json:"buyeruids"`
+	BuyerUIDs map[string]string `json:"buyeruids,omitempty"`
 }
 
 // ExtUserDigiTrust defines the contract for bidrequest.user.ext.digitrust
