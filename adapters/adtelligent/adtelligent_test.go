@@ -437,3 +437,112 @@ func TestAdtelligentEmptyRTBRequest(t *testing.T) {
 	}
 
 }
+
+func TestAdtelligentInvalidExt1RTBRequest(t *testing.T) {
+	bidder := new(AdtelligentAdapter)
+
+	bidReq := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-banner-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+				"sourceId": "1111"
+			}}`),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(bidReq)
+
+	if len(reqs) != 0 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 0)
+	}
+
+	if len(errs) != 1 {
+		t.Fatalf("Length of errs should be 1 instead of: %v", len(errs))
+	}
+
+	if !strings.Contains(errs[0].Error(), "error while decoding impExt") {
+		t.Fatalf("Unexpected error for InvalidRequest status, should be: error while decoding impExt ... instead of: %s", errs[0].Error())
+	}
+}
+
+func TestAdtelligentInvalidExt2RTBRequest(t *testing.T) {
+	bidder := new(AdtelligentAdapter)
+
+	bidReq := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-banner-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+				"sourceId": 0
+			}}`),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(bidReq)
+
+	if len(reqs) != 0 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 0)
+	}
+
+	if len(errs) != 1 {
+		t.Fatalf("Length of errs should be 1 instead of: %v", len(errs))
+	}
+
+	if !strings.Contains(errs[0].Error(), "impExt doesn't contain the required field sourceId") {
+		t.Fatalf("Unexpected error for InvalidRequest status, should be: impExt doesn't contain the required field sourceId ... instead of: %s", errs[0].Error())
+	}
+}
+
+func TestAdtelligentInvalidExt3RTBRequest(t *testing.T) {
+	bidder := new(AdtelligentAdapter)
+
+	bidReq := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-banner-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: openrtb.RawJSON(``),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(bidReq)
+
+	if len(reqs) != 0 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 0)
+	}
+
+	if len(errs) != 1 {
+		t.Fatalf("Length of errs should be 1 instead of: %v", len(errs))
+	}
+
+	if !strings.Contains(errs[0].Error(), "extImpBidder is empty") {
+		t.Fatalf("Unexpected error for InvalidRequest status, should be: extImpBidder is empty ... instead of: %s", errs[0].Error())
+	}
+}

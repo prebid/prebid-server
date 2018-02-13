@@ -47,7 +47,7 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 
 	if nil != err {
 		return nil, []error{
-			fmt.Errorf("error while encoding adtelligentImpExt, err: %s", err),
+			fmt.Errorf("error while encoding impExt, err: %s", err),
 		}
 	}
 
@@ -186,11 +186,11 @@ func validateImpression(imp *openrtb.Imp) (int, error) {
 	impExt := openrtb_ext.ExtImpAdtelligent{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return 0, fmt.Errorf("ignoring imp id=%s, error while decoding adtelligentImpExt, err: %s", imp.ID, err)
+		return 0, fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
 	}
 
 	if impExt.SourceId == 0 {
-		return 0, fmt.Errorf("ignoring imp id=%s, adtelligentImpExt doesn't contain the required field sourceId", imp.ID)
+		return 0, fmt.Errorf("ignoring imp id=%s, impExt doesn't contain the required field sourceId", imp.ID)
 	}
 
 	// common extension for all impressions
