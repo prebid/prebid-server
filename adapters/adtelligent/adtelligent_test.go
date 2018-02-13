@@ -442,7 +442,7 @@ func TestAdtelligentInvalidExt1RTBRequest(t *testing.T) {
 	bidder := new(AdtelligentAdapter)
 
 	bidReq := &openrtb.BidRequest{
-		ID:  "test-request-id",
+		ID: "test-request-id",
 		Imp: []openrtb.Imp{{
 			ID: "test-imp-banner-id",
 			Banner: &openrtb.Banner{
@@ -479,7 +479,7 @@ func TestAdtelligentInvalidExt2RTBRequest(t *testing.T) {
 	bidder := new(AdtelligentAdapter)
 
 	bidReq := &openrtb.BidRequest{
-		ID:  "test-request-id",
+		ID: "test-request-id",
 		Imp: []openrtb.Imp{{
 			ID: "test-imp-banner-id",
 			Banner: &openrtb.Banner{
@@ -516,7 +516,7 @@ func TestAdtelligentInvalidExt3RTBRequest(t *testing.T) {
 	bidder := new(AdtelligentAdapter)
 
 	bidReq := &openrtb.BidRequest{
-		ID:  "test-request-id",
+		ID: "test-request-id",
 		Imp: []openrtb.Imp{{
 			ID: "test-imp-banner-id",
 			Banner: &openrtb.Banner{
