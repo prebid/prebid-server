@@ -7,35 +7,34 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
+	metrics "github.com/rcrowley/go-metrics"
 
 	"context"
 	"io/ioutil"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
 const adapterDirectory = "adapters"
 
 func TestCookieSyncNoCookies(t *testing.T) {
-	cfg, err := config.New()
-	if err != nil {
-		t.Fatalf("Unable to config: %v", err)
-	}
-	setupExchanges(cfg)
+	endpoint := testableEndpoint()
+
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
-	err = json.NewEncoder(csbuf).Encode(&csreq)
+	err := json.NewEncoder(csbuf).Encode(&csreq)
 	if err != nil {
 		t.Fatalf("Encode csr failed: %v", err)
 	}
@@ -67,27 +66,24 @@ func TestCookieSyncNoCookies(t *testing.T) {
 }
 
 func TestCookieSyncHasCookies(t *testing.T) {
-	cfg, err := config.New()
-	if err != nil {
-		t.Fatalf("Unable to config: %v", err)
-	}
-	setupExchanges(cfg)
+	endpoint := testableEndpoint()
+
 	router := httprouter.New()
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
 		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
-	err = json.NewEncoder(csbuf).Encode(&csreq)
+	err := json.NewEncoder(csbuf).Encode(&csreq)
 	if err != nil {
 		t.Fatalf("Encode csr failed: %v", err)
 	}
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
 
-	pcs := pbs.ParsePBSCookieFromRequest(req, &cfg.HostCookie.OptOutCookie)
+	pcs := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
 	req.AddCookie(pcs.ToHTTPCookie())
@@ -115,6 +111,14 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	if len(csresp.BidderStatus) != 0 {
 		t.Errorf("Expected 0 bidder status rows; got %d", len(csresp.BidderStatus))
 	}
+}
+
+func testableEndpoint() httprouter.Handle {
+	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
+		openrtb_ext.BidderAppnexus: usersyncers.NewAppnexusSyncer("someurl.com"),
+		openrtb_ext.BidderFacebook: usersyncers.NewFacebookSyncer("facebookurl.com"),
+	}
+	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, metrics.NewMeter()}).CookieSync
 }
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -196,6 +200,21 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		DealId:     "1234",
 	}
 	bids = append(bids, &an_bid)
+	rb_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "rubicon",
+		Price:      1.00,
+		Adm:        "test_adm",
+		Width:      300,
+		Height:     250,
+		CacheID:    "test_cache_id2",
+		DealId:     "7890",
+	}
+	rb_bid.AdServerTargeting = map[string]string{
+		"rpfl_1001": "15_tier0100",
+	}
+	bids = append(bids, &rb_bid)
 	nosize_bid := pbs.PBSBid{
 		BidID:      "test_bidid2",
 		AdUnitCode: "test_adunitcode",
@@ -262,6 +281,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			}
 			if bid.AdServerTargeting["hb_deal_appnexus"] != "1234" {
 				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
+			}
+		}
+		if bid.BidderCode == "rubicon" {
+			if bid.AdServerTargeting["rpfl_1001"] != "15_tier0100" {
+				t.Error("custom ad_server_targeting KVPs from adapter were not preserved")
 			}
 		}
 		if bid.BidderCode == "nosizebidder" {
@@ -514,6 +538,17 @@ func TestNewEmptyFetcher(t *testing.T) {
 	}
 	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
 		t.Errorf("The returned requestFetcher should fail on any ID.")
+	}
+}
+
+func TestExchangeMap(t *testing.T) {
+	exchanges := newExchangeMap(&config.Configuration{})
+	for bidderName, _ := range exchanges {
+		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
+		// which was the only alias in the legacy adapter map.
+		if _, ok := openrtb_ext.BidderMap[bidderName]; bidderName != "districtm" && !ok {
+			t.Errorf("Bidder %s exists in exchange, but is not a part of the BidderMap.", bidderName)
+		}
 	}
 }
 

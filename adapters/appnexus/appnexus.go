@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/prebid/prebid-server/pbs"
@@ -23,9 +22,8 @@ import (
 const uri = "http://ib.adnxs.com/openrtb2"
 
 type AppNexusAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 /* Name - export adapter name */
@@ -36,10 +34,6 @@ func (a *AppNexusAdapter) Name() string {
 // used for cookies and such
 func (a *AppNexusAdapter) FamilyName() string {
 	return "adnxs"
-}
-
-func (a *AppNexusAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *AppNexusAdapter) SkipNoCookies() bool {
@@ -395,25 +389,14 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *AppNexusAdapter {
-	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, externalURL)
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig) *AppNexusAdapter {
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client)
 }
 
-func NewAppNexusBidder(client *http.Client, externalURL string) *AppNexusAdapter {
+func NewAppNexusBidder(client *http.Client) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
-
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=adnxs&uid=$UID", externalURL)
-	usersyncURL := "//ib.adnxs.com/getuid?"
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &AppNexusAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
+		http: a,
+		URI:  uri,
 	}
 }

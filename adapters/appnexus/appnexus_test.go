@@ -274,7 +274,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, server.URL)
+	an := NewAppNexusAdapter(&conf)
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -397,18 +397,5 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil {
 		t.Fatalf("Should have gotten a timeout error: %v", err)
-	}
-}
-
-func TestAppNexusUserSyncInfo(t *testing.T) {
-	an := NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
-		t.Fatalf("should have matched")
-	}
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
 	}
 }

@@ -14,29 +14,30 @@ import (
 
 const schemaDirectory = "static/bidder-params"
 
+// BidderName may refer to a bidder ID, or an Alias which is defined in the request.
 type BidderName string
 
 const (
 	BidderAppnexus   BidderName = "appnexus"
+	BidderConversant BidderName = "conversant"
 	BidderFacebook   BidderName = "audienceNetwork"
 	BidderIndex      BidderName = "indexExchange"
 	BidderLifestreet BidderName = "lifestreet"
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
 	BidderRubicon    BidderName = "rubicon"
-	BidderConversant BidderName = "conversant"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
 	"appnexus":        BidderAppnexus,
 	"audienceNetwork": BidderFacebook,
+	"conversant":      BidderConversant,
 	"indexExchange":   BidderIndex,
 	"lifestreet":      BidderLifestreet,
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
-	"conversant":      BidderConversant,
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {

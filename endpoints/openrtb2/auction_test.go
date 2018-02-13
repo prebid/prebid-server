@@ -35,8 +35,7 @@ func TestGoodRequests(t *testing.T) {
 		endpoint(recorder, request, nil)
 
 		if recorder.Code != http.StatusOK {
-			t.Errorf("Expected status %d. Got %d. Request data was %s", http.StatusOK, recorder.Code, requestData)
-			//t.Errorf("Response body was: %s", recorder.Body)
+			t.Fatalf("Expected status %d. Got %d. Request data was %s\n\nResponse body was: %s", http.StatusOK, recorder.Code, requestData, recorder.Body.String())
 		}
 
 		var response openrtb.BidResponse
@@ -393,6 +392,23 @@ func TestTimeoutParser(t *testing.T) {
 	}
 }
 
+// TestContentType prevents #328
+func TestContentType(t *testing.T) {
+	endpoint, _ := NewEndpoint(
+		&mockExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if recorder.Header().Get("Content-Type") != "application/json" {
+		t.Errorf("Content-Type should be application/json. Got %s", recorder.Header().Get("Content-Type"))
+	}
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
@@ -666,6 +682,30 @@ var validRequests = []string{
 			}
 		]
 	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"unknown": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"unknown": "appnexus"
+				}
+			}
+		}
+	}`,
 }
 
 var invalidRequests = []string{
@@ -870,6 +910,54 @@ var invalidRequests = []string{
 		"ext": {
 			"prebid": {
 				"cache": {}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"unknown": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"unknown": "other-unknown"
+				}
+			}
+		}
+	}`,
+	`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"video": {
+					"mimes":["video/mp4"]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"prebid": {
+				"aliases": {
+					"appnexus": "appnexus"
+				}
 			}
 		}
 	}`,
