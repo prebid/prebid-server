@@ -270,7 +270,7 @@ func TestDigiTrust(t *testing.T) {
 			t.Errorf("Error unmashalling bid request: %s", err.Error())
 		}
 
-		err = validateUser(bidReq.User)
+		err = validateUser(bidReq.User, nil)
 
 		switch bidReq.ID {
 		case "request-without-user-obj":
