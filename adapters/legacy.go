@@ -79,3 +79,24 @@ type CallOneResult struct {
 	Bid          *pbs.PBSBid
 	Error        error
 }
+
+type MisconfiguredAdapter struct {
+	TheName       string
+	TheFamilyName string
+	Err           error
+}
+
+func (b *MisconfiguredAdapter) Name() string {
+	return b.TheName
+}
+
+func (b *MisconfiguredAdapter) FamilyName() string {
+	return b.TheFamilyName
+}
+func (b *MisconfiguredAdapter) SkipNoCookies() bool {
+	return false
+}
+
+func (b *MisconfiguredAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	return nil, b.Err
+}
