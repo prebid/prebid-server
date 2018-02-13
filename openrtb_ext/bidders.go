@@ -18,14 +18,15 @@ const schemaDirectory = "static/bidder-params"
 type BidderName string
 
 const (
-	BidderAppnexus   BidderName = "appnexus"
-	BidderConversant BidderName = "conversant"
-	BidderFacebook   BidderName = "audienceNetwork"
-	BidderIndex      BidderName = "indexExchange"
-	BidderLifestreet BidderName = "lifestreet"
-	BidderPubmatic   BidderName = "pubmatic"
-	BidderPulsepoint BidderName = "pulsepoint"
-	BidderRubicon    BidderName = "rubicon"
+	BidderAppnexus    BidderName = "appnexus"
+	BidderConversant  BidderName = "conversant"
+	BidderFacebook    BidderName = "audienceNetwork"
+	BidderIndex       BidderName = "indexExchange"
+	BidderLifestreet  BidderName = "lifestreet"
+	BidderPubmatic    BidderName = "pubmatic"
+	BidderPulsepoint  BidderName = "pulsepoint"
+	BidderRubicon     BidderName = "rubicon"
+	BidderAdtelligent BidderName = "adtelligent"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -38,6 +39,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
+	"adtelligent":     BidderAdtelligent,
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
