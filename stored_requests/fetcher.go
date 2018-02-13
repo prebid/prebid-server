@@ -52,16 +52,12 @@ type fetcherWithCache struct {
 
 func (f *fetcherWithCache) FetchRequests(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
 	data = f.cache.GetRequests(ctx, ids)
-	if len(data) >= len(ids) {
-		return data, nil
-	}
 
-	leftoverIds := make([]string, len(ids)-len(data))
-	currentIndex := 0
+	// Fixes #311
+	leftoverIds := make([]string, 0, len(ids)-len(data))
 	for _, id := range ids {
 		if _, gotFromCache := data[id]; !gotFromCache {
-			leftoverIds[currentIndex] = id
-			currentIndex++
+			leftoverIds = append(leftoverIds, id)
 		}
 	}
 

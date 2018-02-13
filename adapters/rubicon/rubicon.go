@@ -22,7 +22,6 @@ import (
 type RubiconAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
-	usersyncInfo *pbs.UsersyncInfo
 	XAPIUsername string
 	XAPIPassword string
 }
@@ -35,10 +34,6 @@ func (a *RubiconAdapter) Name() string {
 // used for cookies and such
 func (a *RubiconAdapter) FamilyName() string {
 	return "rubicon"
-}
-
-func (a *RubiconAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *RubiconAdapter) SkipNoCookies() bool {
@@ -208,6 +203,11 @@ func lookupSize(s openrtb.Format) (int, error) {
 }
 
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
+	// Fixes #317
+	if len(sizes) < 1 {
+		err = errors.New("rubicon imps must have at least one imp.format element")
+		return
+	}
 	alt = make([]int, 0, len(sizes)-1)
 	for _, size := range sizes {
 		rs, lerr := lookupSize(size)
@@ -474,25 +474,18 @@ func appendTrackerToUrl(uri string, tracker string) (res string) {
 	return
 }
 
-func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
-	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker, usersyncURL)
+func NewRubiconAdapter(config *adapters.HTTPAdapterConfig, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
+	return NewRubiconBidder(adapters.NewHTTPAdapter(config).Client, uri, xuser, xpass, tracker)
 }
 
-func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string, usersyncURL string) *RubiconAdapter {
+func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass string, tracker string) *RubiconAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
 	uri = appendTrackerToUrl(uri, tracker)
 
-	info := &pbs.UsersyncInfo{
-		URL:         usersyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &RubiconAdapter{
 		http:         a,
 		URI:          uri,
-		usersyncInfo: info,
 		XAPIUsername: xuser,
 		XAPIPassword: xpass,
 	}

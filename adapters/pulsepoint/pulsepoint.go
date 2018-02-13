@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -19,9 +18,8 @@ import (
 )
 
 type PulsePointAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 // adapter name
@@ -32,10 +30,6 @@ func (a *PulsePointAdapter) Name() string {
 // used for cookies and such
 func (a *PulsePointAdapter) FamilyName() string {
 	return "pulsepoint"
-}
-
-func (a *PulsePointAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *PulsePointAdapter) SkipNoCookies() bool {
@@ -174,20 +168,11 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewPulsePointAdapter(config *adapters.HTTPAdapterConfig, uri string, externalURL string) *PulsePointAdapter {
+func NewPulsePointAdapter(config *adapters.HTTPAdapterConfig, uri string) *PulsePointAdapter {
 	a := adapters.NewHTTPAdapter(config)
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=pulsepoint&uid=%s", externalURL, "%%VGUID%%")
-	usersyncURL := "//bh.contextweb.com/rtset?pid=561205&ev=1&rurl="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
 
 	return &PulsePointAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
+		http: a,
+		URI:  uri,
 	}
 }

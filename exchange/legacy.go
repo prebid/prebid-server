@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -303,7 +304,7 @@ func transformBid(legacyBid *pbs.PBSBid, bidderTarg *targetData, name openrtb_ex
 	}
 
 	targets, err := bidderTarg.makePrebidTargets(name, newBid)
-	if targets != nil {
+	if err != nil {
 		return nil, err
 	}
 

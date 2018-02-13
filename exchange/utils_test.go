@@ -2,11 +2,12 @@ package exchange
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
-	"testing"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -35,6 +36,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	bidRequest := openrtb.BidRequest{
 		ID:  "This Bid",
 		Imp: make([]openrtb.Imp, 2),
+		Ext: openrtb.RawJSON(`{"prebid":{"aliases":{"dummy":"appnexus","dummy2":"rubicon","dummy3":"indexExchange"}}}`),
 	}
 	// Need extensions for all the bidders so we know to hold auctions for them.
 	impExt := make(map[string]interface{})
@@ -54,13 +56,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
-
-	adapters := make([]openrtb_ext.BidderName, 3)
-	adapters[0] = openrtb_ext.BidderName("dummy")
-	adapters[1] = openrtb_ext.BidderName("dummy2")
-	adapters[2] = openrtb_ext.BidderName("dummy3")
-
-	cleanRequests, errList := cleanOpenRTBRequests(&bidRequest, adapters, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), adapters))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
 
 	if len(errList) > 0 {
 		for _, e := range errList {
@@ -68,7 +64,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 		}
 	}
 	if len(cleanRequests) != 3 {
-		t.Errorf("CleanOpenRTBRequests: expected 3 requests, found %d", len(cleanRequests))
+		t.Fatalf("CleanOpenRTBRequests: expected 3 requests, found %d", len(cleanRequests))
 	}
 
 	var cleanImpExt map[string]map[string]string

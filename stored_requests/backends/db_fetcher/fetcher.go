@@ -5,10 +5,19 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
-// dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewPostgres() function.
+func NewFetcher(db *sql.DB, queryMaker func(int) (string, error)) stored_requests.Fetcher {
+	return &dbFetcher{
+		db:         db,
+		queryMaker: queryMaker,
+	}
+}
+
+// dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewFetcher() function.
 type dbFetcher struct {
 	db         *sql.DB
 	queryMaker func(int) (string, error)
