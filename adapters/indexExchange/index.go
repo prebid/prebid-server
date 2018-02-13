@@ -18,9 +18,8 @@ import (
 )
 
 type IndexAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 /* Name - export adapter name */
@@ -31,10 +30,6 @@ func (a *IndexAdapter) Name() string {
 // used for cookies and such
 func (a *IndexAdapter) FamilyName() string {
 	return "indexExchange"
-}
-
-func (a *IndexAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *IndexAdapter) SkipNoCookies() bool {
@@ -152,18 +147,10 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	return bids, nil
 }
 
-func NewIndexAdapter(config *adapters.HTTPAdapterConfig, uri string, userSyncURL string) *IndexAdapter {
+func NewIndexAdapter(config *adapters.HTTPAdapterConfig, uri string) *IndexAdapter {
 	a := adapters.NewHTTPAdapter(config)
-
-	info := &pbs.UsersyncInfo{
-		URL:         userSyncURL,
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &IndexAdapter{
-		http:         a,
-		URI:          uri,
-		usersyncInfo: info,
+		http: a,
+		URI:  uri,
 	}
 }

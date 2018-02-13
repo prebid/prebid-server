@@ -2,19 +2,20 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/prebid/prebid-server/pbsmetrics"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/prebid/prebid-server/pbsmetrics"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
@@ -33,11 +34,12 @@ import (
 	"crypto/tls"
 	"strings"
 
+	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/facebook"
 	"github.com/prebid/prebid-server/adapters/indexExchange"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -53,7 +55,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
-	"github.com/prebid/prebid-server/prebid"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -61,6 +62,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
 type DomainMetrics struct {
@@ -193,9 +195,15 @@ type cookieSyncResponse struct {
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
 
-func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	mCookieSyncMeter.Mark(1)
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
+type cookieSyncDeps struct {
+	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	optOutCookie *config.Cookie
+	metric       metrics.Meter
+}
+
+func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	deps.metric.Mark(1)
+	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		return
@@ -225,12 +233,12 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	for _, bidder := range csReq.Bidders {
-		if ex, ok := exchanges[bidder]; ok {
-			if !userSyncCookie.HasLiveSync(ex.FamilyName()) {
+		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
+			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
 				b := pbs.PBSBidder{
 					BidderCode:   bidder,
 					NoCookie:     true,
-					UsersyncInfo: ex.GetUsersyncInfo(),
+					UsersyncInfo: syncer.GetUsersyncInfo(),
 				}
 				csResp.BidderStatus = append(csResp.BidderStatus, &b)
 			}
@@ -244,7 +252,8 @@ func cookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 type auctionDeps struct {
-	cfg *config.Configuration
+	cfg     *config.Configuration
+	syncers map[openrtb_ext.BidderName]usersyncers.Usersyncer
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -313,10 +322,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			ametrics.RequestMeter.Mark(1)
 			accountAdapterMetric.RequestMeter.Mark(1)
 			if pbs_req.App == nil {
-				uid, _, _ := pbs_req.Cookie.GetUID(ex.FamilyName())
+				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
+				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
+				// bidderCodes, deps.syncers[bidderCode] will exist if exchanges[bidderCode] also does.
+				// This is guaranteed by the following unit tests, which compare these maps to the (source of truth) openrtb_ext.BidderMap:
+				//   1. TestSyncers inside usersync/usersync_test.go
+				//   2. TestExchangeMap inside pbs_light_test.go
+				syncerCode := bidder.BidderCode
+				if syncerCode == "districtm" {
+					syncerCode = "appnexus"
+				}
+				syncer := deps.syncers[openrtb_ext.BidderName(syncerCode)]
+				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = ex.GetUsersyncInfo()
+					bidder.UsersyncInfo = syncer.GetUsersyncInfo()
 					ametrics.NoCookieMeter.Mark(1)
 					accountAdapterMetric.NoCookieMeter.Mark(1)
 					if ex.SkipNoCookies() {
@@ -384,14 +404,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	if pbs_req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
 		for i, bid := range pbs_resp.Bids {
-			bc := &pbc.BidCache{
-				Adm:    bid.Adm,
-				NURL:   bid.NURL,
-				Width:  bid.Width,
-				Height: bid.Height,
-			}
-			cobjs[i] = &pbc.CacheObject{
-				Value: bc,
+			if bid.CreativeMediaType == "video" {
+				cobjs[i] = &pbc.CacheObject{
+					Value:   bid.Adm,
+					IsVideo: true,
+				}
+			} else {
+				cobjs[i] = &pbc.CacheObject{
+					Value: &pbc.BidCache{
+						Adm:    bid.Adm,
+						NURL:   bid.NURL,
+						Width:  bid.Width,
+						Height: bid.Height,
+					},
+					IsVideo: false,
+				}
 			}
 		}
 		err = pbc.Put(ctx, cobjs)
@@ -506,11 +533,17 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
-			pbs_kvs := map[string]string{
-				hbPbBidderKey:      roundedCpm,
-				hbBidderBidderKey:  bid.BidderCode,
-				hbCacheIdBidderKey: bid.CacheID,
+
+			// fixes #288 where map was being overwritten instead of updated
+			if bid.AdServerTargeting == nil {
+				bid.AdServerTargeting = make(map[string]string)
 			}
+			pbs_kvs := bid.AdServerTargeting
+
+			pbs_kvs[hbPbBidderKey] = roundedCpm
+			pbs_kvs[hbBidderBidderKey] = bid.BidderCode
+			pbs_kvs[hbCacheIdBidderKey] = bid.CacheID
+
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
@@ -534,7 +567,6 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
 				}
 			}
-			bid.AdServerTargeting = pbs_kvs
 		}
 	}
 }
@@ -563,7 +595,7 @@ func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprout
 	data := make(map[string]json.RawMessage, len(files))
 	for _, file := range files {
 		bidder := strings.TrimSuffix(file.Name(), ".json")
-		bidderName, isValid := openrtb_ext.GetBidderName(bidder)
+		bidderName, isValid := openrtb_ext.BidderMap[bidder]
 		if !isValid {
 			glog.Fatalf("Schema exists for an unknown bidder: %s", bidder)
 		}
@@ -593,37 +625,6 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Pragma", "no-cache")
 	w.Header().Add("Expires", "0")
 	m.handler.ServeHTTP(w, r)
-}
-
-// https://blog.golang.org/context/userip/userip.go
-func getIP(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	if ua := user_agent.New(req.Header.Get("User-Agent")); ua != nil {
-		fmt.Fprintf(w, "User Agent: %v\n", ua)
-	}
-	ip, port, err := net.SplitHostPort(req.RemoteAddr)
-	if err != nil {
-		fmt.Fprintf(w, "userip: %q is not IP:port\n", req.RemoteAddr)
-	}
-
-	userIP := net.ParseIP(ip)
-	if userIP == nil {
-		//return nil, fmt.Errorf("userip: %q is not IP:port", req.RemoteAddr)
-		fmt.Fprintf(w, "userip: %q is not IP:port\n", req.RemoteAddr)
-		return
-	}
-
-	forwardedIP := prebid.GetForwardedIP(req)
-	realIP := prebid.GetIP(req)
-
-	fmt.Fprintf(w, "IP: %s\n", ip)
-	fmt.Fprintf(w, "Port: %s\n", port)
-	fmt.Fprintf(w, "Forwarded IP: %s\n", forwardedIP)
-	fmt.Fprintf(w, "Real IP: %s\n", realIP)
-
-	for k, v := range req.Header {
-		fmt.Fprintf(w, "%s: %s\n", k, v)
-	}
-
 }
 
 func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -659,23 +660,7 @@ func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	return
 }
 
-func loadPostgresDataCache(cfg *config.Configuration) (cache.Cache, error) {
-	mem := sigar.Mem{}
-	mem.Get()
-
-	return postgrescache.New(postgrescache.PostgresConfig{
-		Dbname:   cfg.DataCache.Database,
-		Host:     cfg.DataCache.Host,
-		User:     cfg.DataCache.Username,
-		Password: cfg.DataCache.Password,
-		Size:     cfg.DataCache.CacheSize,
-		TTL:      cfg.DataCache.TTLSeconds,
-	})
-
-}
-
-func loadDataCache(cfg *config.Configuration) (err error) {
-
+func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 	switch cfg.DataCache.Type {
 	case "dummy":
 		dataCache, err = dummycache.New()
@@ -684,11 +669,16 @@ func loadDataCache(cfg *config.Configuration) (err error) {
 		}
 
 	case "postgres":
-		dataCache, err = loadPostgresDataCache(cfg)
-		if err != nil {
-			return fmt.Errorf("PostgresCache Error: %s", err.Error())
+		if db == nil {
+			return fmt.Errorf("Nil db cannot connect to postgres. Did you forget to set the config.stored_requests.postgres values?")
 		}
-
+		mem := sigar.Mem{}
+		mem.Get()
+		dataCache = postgrescache.New(db, postgrescache.CacheConfig{
+			Size: cfg.DataCache.CacheSize,
+			TTL:  cfg.DataCache.TTLSeconds,
+		})
+		return nil
 	case "filecache":
 		dataCache, err = filecache.New(cfg.DataCache.Filename)
 		if err != nil {
@@ -741,19 +731,8 @@ func main() {
 }
 
 func setupExchanges(cfg *config.Configuration) {
-	exchanges = map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint, cfg.Adapters["indexexchange"].UserSyncURL),
-		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint, cfg.ExternalURL),
-		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint, cfg.ExternalURL),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker, cfg.Adapters["rubicon"].UserSyncURL),
-		"audienceNetwork": facebook.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID, cfg.Adapters["facebook"].UserSyncURL),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.ExternalURL),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint, cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
+	exchanges = newExchangeMap(cfg)
 		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint, cfg.Adapters["adform"].UserSyncURL, cfg.ExternalURL),
-	}
 
 	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
 	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
@@ -768,7 +747,21 @@ func setupExchanges(cfg *config.Configuration) {
 
 	accountMetrics = make(map[string]*AccountMetrics)
 	adapterMetrics = makeExchangeMetrics("adapter")
+}
 
+func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	return map[string]adapters.Adapter{
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
+			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
+		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
+		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+	}
 }
 
 func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
@@ -792,7 +785,15 @@ func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
 }
 
 func serve(cfg *config.Configuration) error {
-	if err := loadDataCache(cfg); err != nil {
+	var db *sql.DB
+	if cfg.StoredRequests.Postgres != nil {
+		if conn, err := db_fetcher.NewPostgresDb(cfg.StoredRequests.Postgres); err != nil {
+			glog.Fatalf("Failed to connect to postgres: %v", err)
+		} else {
+			db = conn
+		}
+	}
+	if err := loadDataCache(cfg, db); err != nil {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
@@ -851,7 +852,7 @@ func serve(cfg *config.Configuration) error {
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
-	byId, err := NewFetcher(&(cfg.StoredRequests))
+	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
@@ -861,15 +862,22 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics)
+	if err != nil {
+		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
+	}
+
+	syncers := usersyncers.NewSyncerMap(cfg)
+
 	router := httprouter.New()
-	router.POST("/auction", (&auctionDeps{cfg}).auction)
+	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
+	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", cookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
-	router.GET("/ip", getIP)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	hostCookieSettings = pbs.HostCookieSettings{
@@ -896,7 +904,9 @@ func serve(cfg *config.Configuration) error {
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	// Add CORS middleware
-	c := cors.New(cors.Options{AllowCredentials: true})
+	c := cors.New(cors.Options{
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
 	corsRouter := c.Handler(router)
 
 	// Add no cache headers
@@ -936,21 +946,28 @@ const requestConfigPath = "./stored_requests/data/by_id"
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetcher(cfg *config.StoredRequests) (byId stored_requests.Fetcher, err error) {
+func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, err error) {
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
+		// Currently assuming the file store is "flat", that is IDs are unique across all config types
+		// and that the files for all the types sit next to each other.
+		byAmpId = byId
 	} else if cfg.Postgres != nil {
-		glog.Infof("Loading Stored Requests from Postgres with config: %#v", cfg.Postgres)
-		byId, err = db_fetcher.NewPostgres(cfg.Postgres)
+		// Be careful not to log the password here, for security reasons
+		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
+		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
+		byAmpId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
 	} else {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
+		byAmpId = byId
 	}
 
 	if cfg.InMemoryCache != nil {
 		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
 		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
+		byAmpId = stored_requests.WithCache(byAmpId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
 }
