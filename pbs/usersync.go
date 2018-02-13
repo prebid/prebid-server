@@ -144,7 +144,7 @@ func (cookie *PBSCookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 	return &http.Cookie{
 		Name:    UID_COOKIE_NAME,
 		Value:   b64,
-		Expires: time.Now().Add(ttl * 24 * time.Hour),
+		Expires: time.Now().Add(ttl),
 	}
 }
 
