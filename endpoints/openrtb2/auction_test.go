@@ -619,8 +619,7 @@ var validRequests = []string{
 		"ext": {
 			"prebid": {
 				"targeting": {
-					"pricegranularity": "low",
-					"lengthmax": 20
+					"pricegranularity": "low"
 				},
 				"cache": {
 					"bids": {}
@@ -1015,7 +1014,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1046,7 +1044,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1103,7 +1100,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1140,7 +1136,6 @@ var testFinalRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1170,7 +1165,6 @@ var testFinalRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1249,7 +1243,6 @@ var testFinalRequests = []string{
 				"markup": 1
 			},
 			"targeting": {
-				"lengthmax": 20
 			}
 		}
 	}

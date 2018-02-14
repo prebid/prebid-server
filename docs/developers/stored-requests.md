@@ -135,7 +135,6 @@ For example, assume the following `stored_requests/data/by_id/stored-request.jso
       "prebid": {
         "targeting": {
           "pricegraularity": "low",
-          "lengthmax": 20
         }
       }
     }
@@ -173,7 +172,6 @@ will produce the same auction as if the HTTP request had been:
     "prebid": {
       "targeting": {
         "pricegraularity": "low",
-        "lengthmax": 20
       }
     }
   }

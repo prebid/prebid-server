@@ -108,8 +108,6 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
-#### Details
-
 #### Targeting
 
 Targeting refers to strings which are sent to the adserver to
@@ -123,7 +121,6 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 ```
 {
   "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']", // Required property.
-  "lengthmax": 20 // Max characters allowed in a targeting value. If omitted, there is no max.
 }
 ```
 
@@ -139,6 +136,9 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 
 The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
 (with _no_ {bidderName} suffix).
+
+**NOTE**: Targeting keys are limited to 20 characters. If {bidderName} is too long, the returned key
+will be truncated to only include the first 20 characters.
 
 #### Bidder Aliases
 

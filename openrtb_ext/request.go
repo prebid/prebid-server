@@ -45,7 +45,6 @@ type ExtRequestPrebidCacheBids struct{}
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
 	PriceGranularity PriceGranularity `json:"pricegranularity"`
-	MaxLength        int              `json:"lengthmax"`
 }
 
 // Make an unmarshaller that will set a default PriceGranularity
