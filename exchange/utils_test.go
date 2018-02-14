@@ -130,6 +130,32 @@ func TestBuyerUIDs(t *testing.T) {
 	}
 }
 
+func TestUserExplicitUID(t *testing.T) {
+	bidRequest := openrtb.BidRequest{
+		ID: "This Bid",
+		Imp: []openrtb.Imp{{
+			Ext: openrtb.RawJSON(`{"dummy":{},"appnexus":{},"rubicon":{}}`),
+		}},
+		User: &openrtb.User{
+			BuyerUID: "apnExplicit",
+			Ext:      openrtb.RawJSON(`{"digitrust":{"id":"abc","keyv":1,"pref":2}}`),
+		},
+		Ext: openrtb.RawJSON(`{"prebid":{"aliases":{"dummy":"appnexus"}}}`),
+	}
+	syncs := &mockUsersync{
+		syncs: map[string]string{
+			"appnexus": "apnCookie",
+		},
+	}
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
+	if len(errList) > 0 {
+		t.Fatalf("Got unexpected errors: %v", errList)
+	}
+	if cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID != "apnExplicit" {
+		t.Errorf("Appnexus should get the explicit buyeruid. Instead got %s", cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID)
+	}
+}
+
 type emptyUsersync struct{}
 
 func (e *emptyUsersync) GetId(bidder openrtb_ext.BidderName) (string, bool) {

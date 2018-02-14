@@ -404,6 +404,9 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 			}
 			// Check if the buyeruids are valid
 			if userExt.Prebid != nil {
+				if len(userExt.Prebid.BuyerUIDs) < 1 {
+					return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
+				}
 				for bidderName, _ := range userExt.Prebid.BuyerUIDs {
 					if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
 						if _, ok := aliases[bidderName]; !ok {
