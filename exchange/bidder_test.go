@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
@@ -417,7 +418,6 @@ func TestTargetingKeys(t *testing.T) {
 		Prebid: openrtb_ext.ExtRequestPrebid{
 			Targeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: openrtb_ext.PriceGranularityMedium,
-				MaxLength:        20,
 			},
 		},
 	}

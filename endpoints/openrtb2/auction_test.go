@@ -392,6 +392,23 @@ func TestTimeoutParser(t *testing.T) {
 	}
 }
 
+// TestContentType prevents #328
+func TestContentType(t *testing.T) {
+	endpoint, _ := NewEndpoint(
+		&mockExchange{},
+		&bidderParamValidator{},
+		&mockStoredReqFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if recorder.Header().Get("Content-Type") != "application/json" {
+		t.Errorf("Content-Type should be application/json. Got %s", recorder.Header().Get("Content-Type"))
+	}
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
@@ -602,8 +619,7 @@ var validRequests = []string{
 		"ext": {
 			"prebid": {
 				"targeting": {
-					"pricegranularity": "low",
-					"lengthmax": 20
+					"pricegranularity": "low"
 				},
 				"cache": {
 					"bids": {}
@@ -998,7 +1014,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1029,7 +1044,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1086,7 +1100,6 @@ var testStoredRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1123,7 +1136,6 @@ var testFinalRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1153,7 +1165,6 @@ var testFinalRequests = []string{
 					"markup": 1
 				},
 				"targeting": {
-					"lengthmax": 20
 				}
 			}
 		}
@@ -1232,7 +1243,6 @@ var testFinalRequests = []string{
 				"markup": 1
 			},
 			"targeting": {
-				"lengthmax": 20
 			}
 		}
 	}

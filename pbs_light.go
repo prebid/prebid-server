@@ -533,11 +533,17 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
-			pbs_kvs := map[string]string{
-				hbPbBidderKey:      roundedCpm,
-				hbBidderBidderKey:  bid.BidderCode,
-				hbCacheIdBidderKey: bid.CacheID,
+
+			// fixes #288 where map was being overwritten instead of updated
+			if bid.AdServerTargeting == nil {
+				bid.AdServerTargeting = make(map[string]string)
 			}
+			pbs_kvs := bid.AdServerTargeting
+
+			pbs_kvs[hbPbBidderKey] = roundedCpm
+			pbs_kvs[hbBidderBidderKey] = bid.BidderCode
+			pbs_kvs[hbCacheIdBidderKey] = bid.CacheID
+
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
@@ -561,7 +567,6 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
 				}
 			}
-			bid.AdServerTargeting = pbs_kvs
 		}
 	}
 }
@@ -754,7 +759,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
+		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
 		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint, cfg.Adapters["sovrn"].UserSyncURL, cfg.ExternalURL),
