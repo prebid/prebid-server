@@ -1,0 +1,17 @@
+{
+    "id": "req-id",
+    "site": {},
+    "imp": [
+        {
+            "id": "imp-id",
+            "video": {
+                "mimes": [
+                    "video/mp4"
+                ]
+            },
+            "ext": {
+                "appnexus": "good"
+            }
+        }
+    ]
+}

@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 // From auction_test.go
@@ -77,41 +78,41 @@ var testAmpStoredRequestData = map[string]json.RawMessage{
 	"10":  json.RawMessage(validRequests[0]),
 	"11":  json.RawMessage(validRequests[1]),
 	"12":  json.RawMessage(validRequests[2]),
-	"100": json.RawMessage(invalidRequests[0]),
-	"101": json.RawMessage(invalidRequests[0]),
-	"102": json.RawMessage(invalidRequests[0]),
-	"103": json.RawMessage(invalidRequests[0]),
-	"104": json.RawMessage(invalidRequests[0]),
-	"105": json.RawMessage(invalidRequests[0]),
-	"106": json.RawMessage(invalidRequests[0]),
-	"107": json.RawMessage(invalidRequests[0]),
-	"108": json.RawMessage(invalidRequests[0]),
-	"109": json.RawMessage(invalidRequests[0]),
-	"110": json.RawMessage(invalidRequests[0]),
-	"111": json.RawMessage(invalidRequests[0]),
-	"112": json.RawMessage(invalidRequests[0]),
-	"113": json.RawMessage(invalidRequests[0]),
-	"114": json.RawMessage(invalidRequests[0]),
-	"115": json.RawMessage(invalidRequests[0]),
-	"116": json.RawMessage(invalidRequests[0]),
-	"117": json.RawMessage(invalidRequests[0]),
-	"118": json.RawMessage(invalidRequests[0]),
-	"119": json.RawMessage(invalidRequests[0]),
-	"120": json.RawMessage(invalidRequests[0]),
-	"121": json.RawMessage(invalidRequests[0]),
-	"122": json.RawMessage(invalidRequests[0]),
-	"123": json.RawMessage(invalidRequests[0]),
-	"124": json.RawMessage(invalidRequests[0]),
-	"125": json.RawMessage(invalidRequests[0]),
-	"126": json.RawMessage(invalidRequests[0]),
-	"127": json.RawMessage(invalidRequests[0]),
-	"128": json.RawMessage(invalidRequests[0]),
-	"129": json.RawMessage(invalidRequests[0]),
-	"130": json.RawMessage(invalidRequests[0]),
-	"131": json.RawMessage(invalidRequests[0]),
-	"132": json.RawMessage(invalidRequests[0]),
-	"133": json.RawMessage(invalidRequests[0]),
-	"134": json.RawMessage(invalidRequests[0]),
+	"100": json.RawMessage("5"),
+	"101": json.RawMessage("5"),
+	"102": json.RawMessage("5"),
+	"103": json.RawMessage("5"),
+	"104": json.RawMessage("5"),
+	"105": json.RawMessage("5"),
+	"106": json.RawMessage("5"),
+	"107": json.RawMessage("5"),
+	"108": json.RawMessage("5"),
+	"109": json.RawMessage("5"),
+	"110": json.RawMessage("5"),
+	"111": json.RawMessage("5"),
+	"112": json.RawMessage("5"),
+	"113": json.RawMessage("5"),
+	"114": json.RawMessage("5"),
+	"115": json.RawMessage("5"),
+	"116": json.RawMessage("5"),
+	"117": json.RawMessage("5"),
+	"118": json.RawMessage("5"),
+	"119": json.RawMessage("5"),
+	"120": json.RawMessage("5"),
+	"121": json.RawMessage("5"),
+	"122": json.RawMessage("5"),
+	"123": json.RawMessage("5"),
+	"124": json.RawMessage("5"),
+	"125": json.RawMessage("5"),
+	"126": json.RawMessage("5"),
+	"127": json.RawMessage("5"),
+	"128": json.RawMessage("5"),
+	"129": json.RawMessage("5"),
+	"130": json.RawMessage("5"),
+	"131": json.RawMessage("5"),
+	"132": json.RawMessage("5"),
+	"133": json.RawMessage("5"),
+	"134": json.RawMessage("5"),
 }
 
 type mockAmpStoredReqFetcher struct {

@@ -18,6 +18,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -255,6 +256,9 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		}
 	}
 
+	if err := validateNative(imp.Native); err != nil {
+		return err
+	}
 	if imp.Native != nil {
 		if imp.Native.Request == "" {
 			return fmt.Errorf("request.imp[%d].native.request must be a JSON encoded string conforming to the openrtb 1.2 Native spec", index)
@@ -296,6 +300,24 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// validateNative makes sure that the Native request is valid.
+func validateNative(n *openrtb.Native) error {
+	if n == nil {
+		return nil
+	}
+
+	var decoded string
+	if err := json.Unmarshal([]byte(n.Request), &decoded); err != nil {
+		return err
+	}
+
+	var nativePayload nativeRequests.Request
+	if err := json.Unmarshal([]byte(decoded), &nativePayload); err != nil {
+		return err
 	}
 	return nil
 }

@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -150,14 +152,20 @@ func TestImplicitUserId(t *testing.T) {
 func TestBadRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	for _, badRequest := range invalidRequests {
-		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
-		recorder := httptest.NewRecorder()
+	if requestFiles, err := ioutil.ReadDir("badRequests"); err == nil {
+		for _, requestFile := range requestFiles {
+			filename := fmt.Sprintf("%s/%s", "badRequests", requestFile.Name())
+			requestData, err := ioutil.ReadFile(filename)
+			if err != nil {
+				t.Fatalf("Failed to read file %s: %v", filename, err)
+			}
+			request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
+			recorder := httptest.NewRecorder()
+			endpoint(recorder, request, nil)
 
-		endpoint(recorder, request, nil)
-
-		if recorder.Code != http.StatusBadRequest {
-			t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusBadRequest, recorder.Code, badRequest)
+			if recorder.Code != http.StatusBadRequest {
+				t.Errorf("Expected a 400 response from %v. Got %d", filename, recorder.Code)
+			}
 		}
 	}
 }
@@ -702,261 +710,6 @@ var validRequests = []string{
 			"prebid": {
 				"aliases": {
 					"unknown": "appnexus"
-				}
-			}
-		}
-	}`,
-}
-
-var invalidRequests = []string{
-	"5",
-	"6.3",
-	"null",
-	"false",
-	"",
-	"[]",
-	"{}",
-	`{"id":"req-id"}`,
-	`{"id":"req-id","tmax":-2}`,
-	`{"id":"req-id","imp":[]}`,
-	`{"id":"req-id","imp":[{}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"metric": [{}]
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id"
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":null
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"wmin":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"wmax":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"hmin":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"hmax":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{"w":30,"wratio":23}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{"w":30,"h":0}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{"wratio":30}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{
-			"mimes":[]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"audio":{
-			"mimes":[]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"native":{}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{
-			"mimes":["video/mp4"]
-		},
-		"pmp":{
-			"deals":[{"private_auction":1, "id":""}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{
-			"mimes":["video/mp4"]
-		},
-		"ext": {}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"audio":{
-			"mimes":["video/mp4"]
-		},
-		"ext": {
-			"noBidderShouldEverHaveThisName": {
-				"bogusParam":5
-			}
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"audio":{
-			"mimes":["video/mp4"]
-		},
-		"ext": {
-			"appnexus": "invalidParams"
-		}
-	}]}`,
-	`{"id":"req-id",
-		"imp":[{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}]}`,
-	`{"id":"req-id",
-		"site": {},
-		"imp":[{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}]
-	}`,
-	`{"id":"req-id",
-		"site": {"page":"test.mysite.com"},
-		"app": {},
-		"imp":[{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}]
-	}`,
-	`{"id": "some-request-id",
-		"site": {"page": "test.somepage.com"},
-		"imp": [{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"storedrequest": {
-					"id": 13
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {"page": "test.somepage.com"},
-		"imp": [{
-			"id": "my-imp-id",
-			"video": {
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"cache": {}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"video": {
-					"mimes":["video/mp4"]
-				},
-				"ext": {
-					"unknown": "good"
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"aliases": {
-					"unknown": "other-unknown"
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"video": {
-					"mimes":["video/mp4"]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"aliases": {
-					"appnexus": "appnexus"
 				}
 			}
 		}

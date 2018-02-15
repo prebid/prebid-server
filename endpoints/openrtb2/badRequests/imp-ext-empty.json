@@ -1,0 +1,14 @@
+{
+    "id": "req-id",
+    "imp": [
+        {
+            "id": "imp-id",
+            "video": {
+                "mimes": [
+                    "video/mp4"
+                ]
+            },
+            "ext": {}
+        }
+    ]
+}
