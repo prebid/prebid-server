@@ -1,5 +1,5 @@
-hash: c2cb3f98a7fb53f594f9ea7492a9bde76453c2964e67b8cf4dcee2857f07f384
-updated: 2018-01-04T15:37:18.181155224-05:00
+hash: df48123f9cd400234264795207b4dca1f90b46ee3b919e5162c1cbc057e93da4
+updated: 2018-02-15T11:31:18.101391-05:00
 imports:
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
@@ -53,7 +53,7 @@ imports:
 - name: github.com/mssola/user_agent
   version: a2f39d5a9b15ecc1fa1005b6aae73cd83da240ef
 - name: github.com/mxmCherry/openrtb
-  version: 53a357476a774def318ed6c4d8d4105787d3bd90
+  version: 3f56f5d84c99cf28c575a90ffddbf9f0337c39bd
 - name: github.com/pelletier/go-toml
   version: 1d6b12b7cb290426e27e6b4e38b89fcda3aeef03
 - name: github.com/rcrowley/go-metrics
@@ -124,6 +124,6 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
