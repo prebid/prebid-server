@@ -22,6 +22,7 @@ type Configuration struct {
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize  int64              `mapstructure:"max_request_size"`
+	Analytics       Analytics          `mapstructure:"analytics"`
 }
 
 func (cfg *Configuration) validate() error {
@@ -82,6 +83,14 @@ type Cache struct {
 type Cookie struct {
 	Name  string `mapstructure:"name"`
 	Value string `mapstructure:"value"`
+}
+
+type Analytics struct {
+	File FileLogs `mapstructure:"file"`
+}
+
+type FileLogs struct {
+	Config string `mapstructure:"filename"`
 }
 
 // New uses viper to get our server configurations

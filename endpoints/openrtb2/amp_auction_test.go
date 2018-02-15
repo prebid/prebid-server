@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -21,7 +22,7 @@ import (
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 
 	for _, requestID := range storedValidRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -51,7 +52,7 @@ func TestGoodAmpRequests(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	for _, requestID := range storedInvalidRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()

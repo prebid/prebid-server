@@ -14,6 +14,7 @@ import (
 
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -27,7 +28,7 @@ const maxSize = 1024 * 256
 // TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
 func TestGoodRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 
 	for _, requestData := range validRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
@@ -104,7 +105,7 @@ func TestExplicitUserId(t *testing.T) {
 		Value: mockId,
 	})
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest.User == nil {
@@ -134,7 +135,7 @@ func TestImplicitUserId(t *testing.T) {
 		Value: mockId,
 	})
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest.User == nil {
@@ -149,7 +150,7 @@ func TestImplicitUserId(t *testing.T) {
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestBadRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	for _, badRequest := range invalidRequests {
 		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
 		recorder := httptest.NewRecorder()
@@ -165,7 +166,7 @@ func TestBadRequests(t *testing.T) {
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -174,7 +175,7 @@ func TestNilExchange(t *testing.T) {
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -183,7 +184,7 @@ func TestNilValidator(t *testing.T) {
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -230,7 +231,7 @@ func TestUserAgentOverride(t *testing.T) {
 func TestImplicitIPs(t *testing.T) {
 	ex := &nobidExchange{}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{}))
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
 	recorder := httptest.NewRecorder()
@@ -296,7 +297,7 @@ func TestDigiTrust(t *testing.T) {
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics}
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analytics.NewPBSAnalytics(&config.Analytics{})}
 
 	for i, requestData := range testStoredRequests {
 		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
@@ -325,6 +326,7 @@ func TestOversizedRequest(t *testing.T) {
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		analytics.NewPBSAnalytics(&config.Analytics{}),
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -349,7 +351,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()), analytics.NewPBSAnalytics(&config.Analytics{}),
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -373,7 +375,8 @@ func TestNoEncoding(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		analytics.NewPBSAnalytics(&config.Analytics{}))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -399,7 +402,7 @@ func TestContentType(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()), analytics.NewPBSAnalytics(&config.Analytics{}))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)

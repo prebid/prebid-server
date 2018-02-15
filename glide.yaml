@@ -2,6 +2,7 @@ package: github.com/prebid/prebid-server
 import:
 - package: github.com/blang/semver
 - package: github.com/golang/glog
+- package: github.com/chasex/glog
 - package: github.com/golang/protobuf
   subpackages:
   - proto
