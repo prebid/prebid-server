@@ -226,6 +226,28 @@ A typical `storedrequest` value looks like this:
 
 For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
 
+#### Cache bids
+
+Bids can be temporarily cached on the server by sending the following data as `request.ext.prebid.cache`:
+
+```
+{
+  "bids": {}
+}
+```
+
+If `request.ext.prebid.targeting` was also in the request, then Prebid Server will make a _best effort_ to
+include these extra `bid.ext.prebid.targeting` keys:
+
+- `hb_cache_id`: On the highest overall Bid in each Imp.
+- `hb_cache_id_{bidderName}`: On the highest Bid from {bidderName} in each Imp.
+
+Clients _should not assume_ that these keys will exist, just because they were requested, though.
+If they exist, the value will be a UUID which can be used to fetch Bid JSON [Prebid Cache](https://github.com/prebid/prebid-cache).
+They may not exist if the host company's cache is full, having connection problems, or other things like that.
+
+This is mainly intended for certain limited Prebid Mobile setups, where bids cannot be cached client-side.
+
 ### OpenRTB Differences
 
 This section describes the ways in which Prebid Server **breaks** the OpenRTB spec.
