@@ -713,6 +713,7 @@ func init() {
 	viper.SetDefault("max_request_size", 1024*256)
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
+	viper.SetDefault("host_cookie.ttl_days", 90)
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
