@@ -1,0 +1,12 @@
+{
+    "context": 1,
+    "plcmttype": 1,
+    "assets": [
+        {
+            "id": 0,
+            "data": {
+                "type": 364
+            }
+        }
+    ]
+}

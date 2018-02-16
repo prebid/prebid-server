@@ -310,13 +310,8 @@ func validateNative(n *openrtb.Native) error {
 		return nil
 	}
 
-	var decoded string
-	if err := json.Unmarshal([]byte(n.Request), &decoded); err != nil {
-		return err
-	}
-
 	var nativePayload nativeRequests.Request
-	if err := json.Unmarshal([]byte(decoded), &nativePayload); err != nil {
+	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
 		return err
 	}
 	return nil

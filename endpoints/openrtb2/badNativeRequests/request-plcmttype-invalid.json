@@ -1,0 +1,13 @@
+{
+    "context": 1,
+    "plcmttype": 423,
+    "assets": [
+        {
+            "id": 0,
+            "img": {
+                "hmin": 30,
+                "wmin": 20
+            }
+        }
+    ]
+}

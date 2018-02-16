@@ -152,22 +152,59 @@ func TestImplicitUserId(t *testing.T) {
 func TestBadRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	if requestFiles, err := ioutil.ReadDir("badRequests"); err == nil {
-		for _, requestFile := range requestFiles {
-			filename := fmt.Sprintf("%s/%s", "badRequests", requestFile.Name())
-			requestData, err := ioutil.ReadFile(filename)
-			if err != nil {
-				t.Fatalf("Failed to read file %s: %v", filename, err)
-			}
-			request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
-			recorder := httptest.NewRecorder()
-			endpoint(recorder, request, nil)
+	requestFiles, err := ioutil.ReadDir("badRequests")
+	if err != nil {
+		t.Fatalf("Failed to read folder: badRequests")
+	}
+	for _, requestFile := range requestFiles {
+		filename := fmt.Sprintf("%s/%s", "badRequests", requestFile.Name())
+		requestData, err := ioutil.ReadFile(filename)
+		if err != nil {
+			t.Fatalf("Failed to read file %s: %v", filename, err)
+		}
+		request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
+		recorder := httptest.NewRecorder()
+		endpoint(recorder, request, nil)
 
-			if recorder.Code != http.StatusBadRequest {
-				t.Errorf("Expected a 400 response from %v. Got %d", filename, recorder.Code)
-			}
+		if recorder.Code != http.StatusBadRequest {
+			t.Errorf("Expected a 400 response from %v. Got %d", filename, recorder.Code)
 		}
 	}
+
+	requestFiles, err = ioutil.ReadDir("badNativeRequests")
+	if err != nil {
+		t.Fatalf("Failed to read folder: badNativeRequests")
+	}
+	for _, requestFile := range requestFiles {
+		filename := fmt.Sprintf("%s/%s", "badNativeRequests", requestFile.Name())
+		requestData, err := ioutil.ReadFile(filename)
+		if err != nil {
+			t.Fatalf("Failed to read file %s: %v", filename, err)
+		}
+
+		request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(buildNativeRequest(t, requestData)))
+		recorder := httptest.NewRecorder()
+		endpoint(recorder, request, nil)
+
+		if recorder.Code != http.StatusBadRequest {
+			t.Errorf("Expected a 400 response from %v. Got %d", filename, recorder.Code)
+		}
+	}
+}
+
+// buildNativeRequest JSON-encodes the nativeData as a string, and puts it into request.imp[0].native.request
+// of a request which is valid otherwise.
+func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
+	serialized, err := json.Marshal(string(nativeData))
+	if err != nil {
+		t.Fatalf("Failed to string-escape JSON data: %v", err)
+	}
+
+	buf := bytes.NewBuffer(nil)
+	buf.WriteString(`{"id":"req-id","site":{"page":"some.page.com"},"tmax":500,"imp":[{"id":"some-imp","native":{"request":`)
+	buf.Write(serialized)
+	buf.WriteString(`},"ext":{"appnexus":"good"}}]}`)
+	return buf.Bytes()
 }
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
@@ -293,7 +330,7 @@ func TestDigiTrust(t *testing.T) {
 			if err != nil {
 				t.Fatalf("validateUser should not return an error due to digitrust.")
 			}
-		case "request-with-invalid-digitrust-obj":
+		case "request-with-invalid-dig itrust-obj":
 			if err == nil {
 				t.Fatalf("validateUser should return an error due to digitrust.")
 			}
