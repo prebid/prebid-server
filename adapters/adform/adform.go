@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -19,10 +18,9 @@ import (
 )
 
 type AdformAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
-	version      string
+	http    *adapters.HTTPAdapter
+	URI     string
+	version string
 }
 
 type adformRequest struct {
@@ -55,8 +53,8 @@ type adformBid struct {
 
 // ADAPTER Interface
 
-func NewAdformAdapter(config *adapters.HTTPAdapterConfig, endpointURL string, usersyncURL string, externalURL string) *AdformAdapter {
-	return NewAdformBidder(adapters.NewHTTPAdapter(config).Client, endpointURL, usersyncURL, externalURL)
+func NewAdformAdapter(config *adapters.HTTPAdapterConfig, endpointURL string) *AdformAdapter {
+	return NewAdformBidder(adapters.NewHTTPAdapter(config).Client, endpointURL)
 }
 
 /* Name - export adapter name */
@@ -67,10 +65,6 @@ func (a *AdformAdapter) Name() string {
 // used for cookies and such
 func (a *AdformAdapter) FamilyName() string {
 	return "adform"
-}
-
-func (a *AdformAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *AdformAdapter) SkipNoCookies() bool {
@@ -235,22 +229,13 @@ func parseAdformBids(response []byte) ([]*adformBid, error) {
 
 // BIDDER Interface
 
-func NewAdformBidder(client *http.Client, endpointURL string, usersyncURL string, externalURL string) *AdformAdapter {
+func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
-	redirectUri := fmt.Sprintf("%s/setuid?bidder=adform&uid=$UID", externalURL)
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectUri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &AdformAdapter{
-		http:         a,
-		URI:          endpointURL,
-		usersyncInfo: info,
-		version:      "0.1.0",
+		http:    a,
+		URI:     endpointURL,
+		version: "0.1.0",
 	}
 }
 
@@ -276,9 +261,8 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	adUnits := make([]*adformAdUnit, 0, len(request.Imp))
 	errors := make([]error, 0, len(request.Imp))
 	for _, imp := range request.Imp {
-		// adapter supports only banner impressions for now.
-		if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
-			errors = append(errors, fmt.Errorf("Adform adapter doesn't support audio,video or native Imps for now. Ignoring Imp ID=%s", imp.ID))
+		if imp.Banner == nil {
+			errors = append(errors, fmt.Errorf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID))
 			continue
 		}
 

@@ -162,7 +162,7 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
-	adapter := NewAdformAdapter(&conf, "adx.adform.net/adx", "//cm.adform.net?return_url=", server.URL)
+	adapter := NewAdformAdapter(&conf, "adx.adform.net/adx")
 	adapter.URI = server.URL
 
 	prebidRequest := preparePrebidRequest(server.URL, t)
@@ -320,16 +320,19 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 				ID:     testData.tags[0].code,
 				Secure: &secure,
 				Ext:    openrtb.RawJSON(`{"bidder": { "mid": "32344" }}`),
+				Banner: &openrtb.Banner{},
 			},
 			{
 				ID:     testData.tags[1].code,
 				Secure: &secure,
 				Ext:    openrtb.RawJSON(`{"bidder": { "mid": 32345 }}`),
+				Banner: &openrtb.Banner{},
 			},
 			{
 				ID:     testData.tags[2].code,
 				Secure: &secure,
 				Ext:    openrtb.RawJSON(`{"bidder": { "mid": 32346 }}`),
+				Banner: &openrtb.Banner{},
 			},
 		},
 		Site: &openrtb.Site{
@@ -422,22 +425,11 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 	}
 }
 
-// User sync tests
+// Properties tests
 
-func TestAdformUserSyncInfo(t *testing.T) {
-	url := "//cm.adform.net?return_url=localhost%2Fsetuid%3Fbidder%3Dadform%26uid%3D%24UID"
+func TestAdformProperties(t *testing.T) {
+	adapter := NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx")
 
-	adapter := NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, "adx.adform.net/adx", "//cm.adform.net?return_url=", "localhost")
-
-	if adapter.GetUsersyncInfo().URL != url {
-		t.Fatalf("should have matched")
-	}
-	if adapter.GetUsersyncInfo().Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if adapter.GetUsersyncInfo().SupportCORS != false {
-		t.Fatalf("should have been false")
-	}
 	if adapter.SkipNoCookies() != false {
 		t.Fatalf("should have been false")
 	}

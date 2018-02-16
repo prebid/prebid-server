@@ -37,7 +37,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderPulsepoint: adaptLegacyAdapter(pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint)),
 		openrtb_ext.BidderRubicon: adaptBidder(rubicon.NewRubiconBidder(client, cfg.Adapters["rubicon"].Endpoint, cfg.Adapters["rubicon"].XAPI.Username,
 			cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker), client),
-		openrtb_ext.BidderAdform: adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint, cfg.Adapters["adform"].UserSyncURL, cfg.ExternalURL), client),
+		openrtb_ext.BidderAdform: adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
 	}
 }
 
