@@ -3,10 +3,7 @@
     "plcmttype": 1,
     "assets": [
         {
-            "id": 0,
-            "img": {
-                "hmin": 30
-            }
+            "data": {}
         }
     ]
 }

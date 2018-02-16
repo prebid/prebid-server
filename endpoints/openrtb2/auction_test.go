@@ -152,12 +152,12 @@ func TestImplicitUserId(t *testing.T) {
 func TestBadRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	requestFiles, err := ioutil.ReadDir("badRequests")
+	requestFiles, err := ioutil.ReadDir("sample-requests/invalid-whole")
 	if err != nil {
-		t.Fatalf("Failed to read folder: badRequests")
+		t.Fatalf("Failed to read folder: sample-requests/invalid-whole")
 	}
 	for _, requestFile := range requestFiles {
-		filename := fmt.Sprintf("%s/%s", "badRequests", requestFile.Name())
+		filename := fmt.Sprintf("%s/%s", "sample-requests/invalid-whole", requestFile.Name())
 		requestData, err := ioutil.ReadFile(filename)
 		if err != nil {
 			t.Fatalf("Failed to read file %s: %v", filename, err)
@@ -171,12 +171,12 @@ func TestBadRequests(t *testing.T) {
 		}
 	}
 
-	requestFiles, err = ioutil.ReadDir("badNativeRequests")
+	requestFiles, err = ioutil.ReadDir("sample-requests/invalid-native")
 	if err != nil {
-		t.Fatalf("Failed to read folder: badNativeRequests")
+		t.Fatalf("Failed to read folder: sample-requests/invalid-native")
 	}
 	for _, requestFile := range requestFiles {
-		filename := fmt.Sprintf("%s/%s", "badNativeRequests", requestFile.Name())
+		filename := fmt.Sprintf("%s/%s", "sample-requests/invalid-native", requestFile.Name())
 		requestData, err := ioutil.ReadFile(filename)
 		if err != nil {
 			t.Fatalf("Failed to read file %s: %v", filename, err)

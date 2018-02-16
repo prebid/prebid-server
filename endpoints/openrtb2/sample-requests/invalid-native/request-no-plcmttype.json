@@ -1,8 +1,7 @@
 {
-    "plcmttype": 2,
+    "context": 1,
     "assets": [
         {
-            "id": 0,
             "img": {
                 "hmin": 30,
                 "wmin": 20

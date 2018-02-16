@@ -3,11 +3,11 @@
     "plcmttype": 1,
     "assets": [
         {
-            "id": 0,
             "video": {
-                "mimes": ["video/mp4"],
+                "mimes": [],
                 "minduration": 30,
-                "maxduration": 120
+                "maxduration": 120,
+                "protocols": [3]
             }
         }
     ]
