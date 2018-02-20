@@ -450,8 +450,8 @@ func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIn
 }
 
 func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
-	if data.Type < 1 || data.Type > 11 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type must in the range [1, 11]. Got %d.", impIndex, assetIndex, data.Type)
+	if data.Type < 1 || data.Type > 12 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type must in the range [1, 12]. Got %d.", impIndex, assetIndex, data.Type)
 	}
 
 	return nil
