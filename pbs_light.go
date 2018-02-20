@@ -211,13 +211,36 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	defer r.Body.Close()
 
 	csReq := &cookieSyncRequest{}
-	err := json.NewDecoder(r.Body).Decode(&csReq)
+	csReqRaw := map[string]json.RawMessage{}
+	err := json.NewDecoder(r.Body).Decode(&csReqRaw)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
+	}
+	if UUID, ok := csReqRaw["uuid"]; ok {
+		err := json.Unmarshal(UUID, &csReq.UUID)
+		if err != nil {
+			if glog.V(2) {
+				glog.Infof("Failed to parse /cookie_sync request body (UUID): %v", err)
+			}
+			http.Error(w, "JSON parse failed (uuid)", http.StatusBadRequest)
+			return
+		}
+	}
+	biddersOmitted := true
+	if biddersRaw, ok := csReqRaw["bidders"]; ok {
+		biddersOmitted = false
+		err := json.Unmarshal(biddersRaw, &csReq.Bidders)
+		if err != nil {
+			if glog.V(2) {
+				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
+			}
+			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
+			return
+		}
 	}
 
 	csResp := cookieSyncResponse{
@@ -229,6 +252,14 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
+	}
+
+	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
+	// and "bidders" is not found in the JSON, sync all bidders
+	if len(csReq.Bidders) == 0 && biddersOmitted {
+		for bidder, _ := range deps.syncers {
+			csReq.Bidders = append(csReq.Bidders, string(bidder))
+		}
 	}
 
 	for _, bidder := range csReq.Bidders {
