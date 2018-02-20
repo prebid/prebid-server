@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestEmptyQuery(t *testing.T) {
@@ -162,6 +163,33 @@ func TestContextCancelled(t *testing.T) {
 	_, errs := fetcher.FetchRequests(ctx, []string{"id"})
 	if len(errs) < 1 {
 		t.Errorf("dbFetcher should return an error when the context is cancelled.")
+	}
+}
+
+// Prevents #338?
+func TestRowErrors(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock: %v", err)
+	}
+	rows := sqlmock.NewRows([]string{"id", "config"})
+	rows.AddRow("foo", []byte(`{"data":1}`))
+	rows.AddRow("bar", []byte(`{"data":2}`))
+	rows.RowError(1, errors.New("Error reading from row 1"))
+	mock.ExpectQuery(".*").WillReturnRows(rows)
+	fetcher := &dbFetcher{
+		db:         db,
+		queryMaker: successfulQueryMaker("SELECT id, config FROM my_table WHERE id IN (?)"),
+	}
+	data, errs := fetcher.FetchRequests(context.Background(), []string{"foo", "bar"})
+	if len(errs) != 1 {
+		t.Fatalf("Expected 1 error. Got %v", errs)
+	}
+	if errs[0].Error() != "Error reading from row 1" {
+		t.Errorf("Unexpected error message: %v", errs[0].Error())
+	}
+	if len(data) != 0 {
+		t.Errorf("We should not return data from the row where the error occurred.")
 	}
 }
 
