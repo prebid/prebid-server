@@ -156,15 +156,20 @@ func fetchFiles(t *testing.T, dir string) []os.FileInfo {
 	return requestFiles
 }
 
+func readFile(t *testing.T, filename string) []byte {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to read file %s: %v", filename, err)
+	}
+	return data
+}
+
 // runFile reads the data from filename, sends it through the preprocessor (if non-nil),
 // and returns the status code that the /openrtb2/auction endpoint gives for that request data,
 func runFile(t *testing.T, filename string, preprocessor func(*testing.T, []byte) []byte) int {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	requestData, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Fatalf("Failed to read file %s: %v", filename, err)
-	}
+	requestData := readFile(t, filename)
 
 	if preprocessor != nil {
 		requestData = preprocessor(t, requestData)
