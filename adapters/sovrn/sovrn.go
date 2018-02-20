@@ -34,10 +34,6 @@ func (s *SovrnAdapter) FamilyName() string {
 	return "sovrn"
 }
 
-type sovrnParams struct {
-	TagID int `json:"tagid"`
-}
-
 func (s *SovrnAdapter) SkipNoCookies() bool {
 	return false
 }
@@ -59,14 +55,13 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	// add tag ids to impressions
 	for i, unit := range bidder.AdUnits {
-		var params sovrnParams
+		var params openrtb_ext.ExtImpSovrn
 		err = json.Unmarshal(unit.Params, &params)
 		if err != nil {
 			return nil, err
 		}
 		sovrnReq.Imp[i].Secure = sReq.Imp[i].Secure
-		sovrnReq.Imp[i].TagID = strconv.Itoa(params.TagID)
-		sovrnReq.Imp[i].Banner.Format = nil // todo: need to do this?
+		sovrnReq.Imp[i].TagID = params.TagId
 	}
 
 	reqJSON, err := json.Marshal(sovrnReq)
@@ -85,16 +80,20 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	httpReq, _ := http.NewRequest("POST", s.URI, bytes.NewReader(reqJSON))
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("User-Agent", sReq.Device.UA)
-	httpReq.Header.Set("X-Forwarded-For", sReq.Device.IP)
-	httpReq.Header.Set("Accept-Language", sReq.Device.Language)
-	httpReq.Header.Set("DNT", strconv.Itoa(int(sReq.Device.DNT)))
-
-	userID := strings.TrimSpace(sReq.User.BuyerUID)
-	if len(userID) > 0 {
-		httpReq.AddCookie(&http.Cookie{Name: "ljt_reader", Value: userID})
+	if sReq.Device != nil {
+		addHeaderIfNonEmpty(httpReq.Header, "User-Agent", sReq.Device.UA)
+		addHeaderIfNonEmpty(httpReq.Header, "X-Forwarded-For", sReq.Device.IP)
+		addHeaderIfNonEmpty(httpReq.Header, "Accept-Language", sReq.Device.Language)
+		addHeaderIfNonEmpty(httpReq.Header, "DNT", strconv.Itoa(int(sReq.Device.DNT)))
+	}
+	if sReq.User != nil {
+		userID := strings.TrimSpace(sReq.User.BuyerUID)
+		if len(userID) > 0 {
+			httpReq.AddCookie(&http.Cookie{Name: "ljt_reader", Value: userID})
+		}
 	}
 	sResp, err := ctxhttp.Do(ctx, s.http.Client, httpReq)
+	defer sResp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +104,6 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		return nil, nil
 	}
 
-	defer sResp.Body.Close()
 	body, err := ioutil.ReadAll(sResp.Body)
 	if err != nil {
 		return nil, err
@@ -181,14 +179,18 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json")
-	headers.Add("User-Agent", request.Device.UA)
-	headers.Add("X-Forwarded-For", request.Device.IP)
-	headers.Add("Accept-Language", request.Device.Language)
-	headers.Add("DNT", strconv.Itoa(int(request.Device.DNT)))
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
+	}
 
-	userID := strings.TrimSpace(request.User.BuyerUID)
-	if len(userID) > 0 {
-		headers.Add("Cookie", fmt.Sprintf("%s=%s", "ljt_reader", userID))
+	if request.User != nil {
+		userID := strings.TrimSpace(request.User.BuyerUID)
+		if len(userID) > 0 {
+			headers.Add("Cookie", fmt.Sprintf("%s=%s", "ljt_reader", userID))
+		}
 	}
 
 	return []*adapters.RequestData{{
@@ -199,6 +201,11 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	}}, errs
 }
 
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
+	if len(headerValue) > 0 {
+		headers.Add(headerName, headerValue)
+	}
+}
 func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -219,7 +226,7 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		for _, bid := range sb.Bid {
 			bids = append(bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
@@ -228,7 +235,7 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 }
 
 func preprocess(imp *openrtb.Imp) (string, error) {
-	// We only support banner and video impressions for now.
+	// We currently only support banner impressions
 	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
 		return "", fmt.Errorf("Sovrn doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID)
 	}
@@ -248,15 +255,6 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	imp.Banner.Format = nil
 
 	return imp.TagID, nil
-}
-
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	for _, imp := range imps {
-		if imp.ID == impId && imp.Video != nil {
-			return openrtb_ext.BidTypeVideo
-		}
-	}
-	return openrtb_ext.BidTypeBanner
 }
 
 // NewSovrnAdapter create a new SovrnAdapter instance
