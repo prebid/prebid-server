@@ -226,7 +226,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 
 	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
