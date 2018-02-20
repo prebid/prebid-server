@@ -21,8 +21,49 @@ import (
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
+	testAmpStoredRequestData := map[string]json.RawMessage{
+		"10":  json.RawMessage(validRequest(t, "site.json")),
+		"11":  json.RawMessage(validRequest(t, "app.json")),
+		"12":  json.RawMessage(validRequest(t, "timeout.json")),
+		"100": json.RawMessage("5"),
+		"101": json.RawMessage("5"),
+		"102": json.RawMessage("5"),
+		"103": json.RawMessage("5"),
+		"104": json.RawMessage("5"),
+		"105": json.RawMessage("5"),
+		"106": json.RawMessage("5"),
+		"107": json.RawMessage("5"),
+		"108": json.RawMessage("5"),
+		"109": json.RawMessage("5"),
+		"110": json.RawMessage("5"),
+		"111": json.RawMessage("5"),
+		"112": json.RawMessage("5"),
+		"113": json.RawMessage("5"),
+		"114": json.RawMessage("5"),
+		"115": json.RawMessage("5"),
+		"116": json.RawMessage("5"),
+		"117": json.RawMessage("5"),
+		"118": json.RawMessage("5"),
+		"119": json.RawMessage("5"),
+		"120": json.RawMessage("5"),
+		"121": json.RawMessage("5"),
+		"122": json.RawMessage("5"),
+		"123": json.RawMessage("5"),
+		"124": json.RawMessage("5"),
+		"125": json.RawMessage("5"),
+		"126": json.RawMessage("5"),
+		"127": json.RawMessage("5"),
+		"128": json.RawMessage("5"),
+		"129": json.RawMessage("5"),
+		"130": json.RawMessage("5"),
+		"131": json.RawMessage("5"),
+		"132": json.RawMessage("5"),
+		"133": json.RawMessage("5"),
+		"134": json.RawMessage("5"),
+	}
+
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{testAmpStoredRequestData}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
 	for _, requestID := range storedValidRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -73,53 +114,12 @@ var storedInvalidRequests = []string{"11", "12", "100", "101", "102", "103", "10
 	"120", "121", "122", "123", "124", "125", "126", "127", "128", "129",
 	"103", "131", "132", "133", "134"}
 
-// Test stored request data
-var testAmpStoredRequestData = map[string]json.RawMessage{
-	"10":  json.RawMessage(validRequests[0]),
-	"11":  json.RawMessage(validRequests[1]),
-	"12":  json.RawMessage(validRequests[2]),
-	"100": json.RawMessage("5"),
-	"101": json.RawMessage("5"),
-	"102": json.RawMessage("5"),
-	"103": json.RawMessage("5"),
-	"104": json.RawMessage("5"),
-	"105": json.RawMessage("5"),
-	"106": json.RawMessage("5"),
-	"107": json.RawMessage("5"),
-	"108": json.RawMessage("5"),
-	"109": json.RawMessage("5"),
-	"110": json.RawMessage("5"),
-	"111": json.RawMessage("5"),
-	"112": json.RawMessage("5"),
-	"113": json.RawMessage("5"),
-	"114": json.RawMessage("5"),
-	"115": json.RawMessage("5"),
-	"116": json.RawMessage("5"),
-	"117": json.RawMessage("5"),
-	"118": json.RawMessage("5"),
-	"119": json.RawMessage("5"),
-	"120": json.RawMessage("5"),
-	"121": json.RawMessage("5"),
-	"122": json.RawMessage("5"),
-	"123": json.RawMessage("5"),
-	"124": json.RawMessage("5"),
-	"125": json.RawMessage("5"),
-	"126": json.RawMessage("5"),
-	"127": json.RawMessage("5"),
-	"128": json.RawMessage("5"),
-	"129": json.RawMessage("5"),
-	"130": json.RawMessage("5"),
-	"131": json.RawMessage("5"),
-	"132": json.RawMessage("5"),
-	"133": json.RawMessage("5"),
-	"134": json.RawMessage("5"),
-}
-
 type mockAmpStoredReqFetcher struct {
+	data map[string]json.RawMessage
 }
 
-func (cf mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	return testAmpStoredRequestData, nil
+func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+	return cf.data, nil
 }
 
 type mockAmpExchange struct {
