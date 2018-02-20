@@ -3,8 +3,8 @@
     "imp": [
         {
             "id": "imp-id",
-            "native": {
-                "request": "{\"assets\": [{}]"
+            "audio": {
+                "mimes": []
             }
         }
     ]

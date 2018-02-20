@@ -425,21 +425,10 @@ func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIn
 }
 
 func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetIndex int) error {
-	if image.W < 0 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.w cannot be negative", impIndex, assetIndex)
-	}
-	if image.WMin < 0 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.wmin cannot be negative", impIndex, assetIndex)
-	}
+	// Note that w, wmin, h, and hmin cannot be negative because these variables use unsigned ints.
+	// Those fail during the standard json.Unmarshal() call.
 	if image.W == 0 && image.WMin == 0 {
 		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "w" or "wmin"`, impIndex, assetIndex)
-	}
-
-	if image.H < 0 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.h cannot be negative", impIndex, assetIndex)
-	}
-	if image.HMin < 0 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].img.hmin cannot be negative", impIndex, assetIndex)
 	}
 	if image.H == 0 && image.HMin == 0 {
 		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "h" or "hmin"`, impIndex, assetIndex)

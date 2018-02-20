@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -119,49 +119,66 @@ func TestImplicitUserId(t *testing.T) {
 
 // TestGoodRequests makes sure we return 200s on good requests.
 func TestGoodRequests(t *testing.T) {
-	assertResponseCode(t, "sample-requests/valid-whole", nil, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole", nil, http.StatusOK)
 }
 
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
 func TestGoodNativeRequests(t *testing.T) {
-	assertResponseCode(t, "sample-requests/valid-native", buildNativeRequest, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-native", buildNativeRequest, http.StatusOK)
 }
 
 // TestBadRequests makes sure we return 400s on bad requests.
 func TestBadRequests(t *testing.T) {
-	assertResponseCode(t, "sample-requests/invalid-whole", nil, http.StatusBadRequest)
+	assertResponseFromDirectory(t, "sample-requests/invalid-whole", nil, http.StatusBadRequest)
 }
 
 // TestBadRequests makes sure we return 400s on requests with bad Native requests.
 func TestBadNativeRequests(t *testing.T) {
-	assertResponseCode(t, "sample-requests/invalid-native", buildNativeRequest, http.StatusBadRequest)
+	assertResponseFromDirectory(t, "sample-requests/invalid-native", buildNativeRequest, http.StatusBadRequest)
 }
 
-func assertResponseCode(t *testing.T, dir string, preprocessor func(*testing.T, []byte) []byte, expectedCode int) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+// assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
+// from the /openrtb2/auction endpoint.
+func assertResponseFromDirectory(t *testing.T, dir string, preprocessor func(*testing.T, []byte) []byte, expectedCode int) {
+	for _, fileInfo := range fetchFiles(t, dir) {
+		filename := dir + "/" + fileInfo.Name()
+		assertResponseCode(t, filename, runFile(t, filename, preprocessor), expectedCode)
+	}
+}
+
+// fetchFiles returns a list of the files from dir, or fails the test if an error occurs.
+func fetchFiles(t *testing.T, dir string) []os.FileInfo {
+	t.Helper()
 	requestFiles, err := ioutil.ReadDir(dir)
 	if err != nil {
 		t.Fatalf("Failed to read folder: %s", dir)
 	}
-	for _, requestFile := range requestFiles {
-		filename := fmt.Sprintf("%s/%s", dir, requestFile.Name())
-		requestData, err := ioutil.ReadFile(filename)
-		if err != nil {
-			t.Fatalf("Failed to read file %s: %v", filename, err)
-		}
+	return requestFiles
+}
 
-		if preprocessor != nil {
-			requestData = preprocessor(t, requestData)
-		}
+// runFile reads the data from filename, sends it through the preprocessor (if non-nil),
+// and returns the status code that the /openrtb2/auction endpoint gives for that request data,
+func runFile(t *testing.T, filename string, preprocessor func(*testing.T, []byte) []byte) int {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	requestData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to read file %s: %v", filename, err)
+	}
 
-		request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
-		recorder := httptest.NewRecorder()
-		endpoint(recorder, request, nil)
+	if preprocessor != nil {
+		requestData = preprocessor(t, requestData)
+	}
 
-		if recorder.Code != expectedCode {
-			t.Errorf("Expected a %d response from %v. Got %d", expectedCode, filename, recorder.Code)
-		}
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+	return recorder.Code
+}
+
+func assertResponseCode(t *testing.T, filename string, actual int, expected int) {
+	if actual != expected {
+		t.Errorf("Expected a %d response from %v. Got %d", expected, filename, actual)
 	}
 }
 
