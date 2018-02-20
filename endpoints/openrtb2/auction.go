@@ -320,7 +320,7 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return err
 	}
 
-	// TODO: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
+	// TODO #218: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
 
 	serialized, err := json.Marshal(nativePayload)
 	if err != nil {
