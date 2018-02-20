@@ -259,11 +259,6 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 	if err := fillAndValidateNative(imp.Native, index); err != nil {
 		return err
 	}
-	if imp.Native != nil {
-		if imp.Native.Request == "" {
-			return fmt.Errorf("request.imp[%d].native.request must be a JSON encoded string conforming to the openrtb 1.2 Native spec", index)
-		}
-	}
 
 	if err := validatePmp(imp.PMP, index); err != nil {
 		return err
