@@ -40,11 +40,15 @@ else
   test $GOFMT_LINES -eq 0 || die "gofmt needs to be run, ${GOFMT_LINES} files have issues.  Below is a list of files to review:\n`gofmt -l *.go pbs adapters`"
 fi
 
+# Run the actual tests. Make sure there's enough coverage too, if the flags call for it.
 if $COVERAGE; then
   ./scripts/check_coverage.sh
 else
   go test $(go list ./... | grep -v /vendor/)
 fi
+
+# In both cases, make sure to run any tests which target race conditions under the race detector.
+go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count 2
 
 if $VET; then
   for SOURCE in $GOGLOB ; do
