@@ -184,12 +184,10 @@ func getAccountMetrics(id string) *AccountMetrics {
 }
 
 type cookieSyncRequest struct {
-	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
 }
 
 type cookieSyncResponse struct {
-	UUID         string           `json:"uuid"`
 	Status       string           `json:"status"`
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
@@ -220,16 +218,6 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
-	if UUID, ok := csReqRaw["uuid"]; ok {
-		err := json.Unmarshal(UUID, &csReq.UUID)
-		if err != nil {
-			if glog.V(2) {
-				glog.Infof("Failed to parse /cookie_sync request body (UUID): %v", err)
-			}
-			http.Error(w, "JSON parse failed (uuid)", http.StatusBadRequest)
-			return
-		}
-	}
 	biddersOmitted := true
 	if biddersRaw, ok := csReqRaw["bidders"]; ok {
 		biddersOmitted = false
@@ -244,7 +232,6 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	}
 
 	csResp := cookieSyncResponse{
-		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
 

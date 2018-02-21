@@ -30,7 +30,6 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
-		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
@@ -52,10 +51,6 @@ func TestCookieSyncNoCookies(t *testing.T) {
 		t.Fatalf("Unmarshal response failed: %v", err)
 	}
 
-	if csresp.UUID != csreq.UUID {
-		t.Errorf("UUIDs didn't match (expected: %s   found: %s)", csreq.UUID, csresp.UUID)
-	}
-
 	if csresp.Status != "no_cookie" {
 		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
 	}
@@ -72,7 +67,6 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
-		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
@@ -100,10 +94,6 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unmarshal response failed: %v", err)
 	}
 
-	if csresp.UUID != csreq.UUID {
-		t.Error("UUIDs didn't match")
-	}
-
 	if csresp.Status != "ok" {
 		t.Errorf("Expected status = ok; got %s", csresp.Status)
 	}
@@ -120,7 +110,7 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	// First test a declared empty bidders returns no syncs
-	csreq := []byte("{\"uuid\": \"abcdefg\", \"bidders\": []}")
+	csreq := []byte("{\"bidders\": []}")
 	csbuf := bytes.NewBuffer(csreq)
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
@@ -136,10 +126,6 @@ func TestCookieSyncNoBidders(t *testing.T) {
 		t.Fatalf("Unmarshal response failed: %v", err)
 	}
 
-	if csresp.UUID != "abcdefg" {
-		t.Errorf("UUIDs didn't match (expected: abcdefg   found: %s)", csresp.UUID)
-	}
-
 	if csresp.Status != "no_cookie" {
 		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
 	}
@@ -149,7 +135,7 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	}
 
 	// Now test a missing bidders returns all syncs
-	csreq = []byte("{\"uuid\": \"abcdefg\"}")
+	csreq = []byte("{}")
 	csbuf = bytes.NewBuffer(csreq)
 
 	req, _ = http.NewRequest("POST", "/cookie_sync", csbuf)
@@ -163,10 +149,6 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &csresp)
 	if err != nil {
 		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.UUID != "abcdefg" {
-		t.Errorf("UUIDs didn't match (expected: abcdefg   found: %s)", csresp.UUID)
 	}
 
 	if csresp.Status != "no_cookie" {
