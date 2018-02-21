@@ -93,10 +93,10 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		}
 	}
 	sResp, err := ctxhttp.Do(ctx, s.http.Client, httpReq)
-	defer sResp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer sResp.Body.Close()
 
 	debug.StatusCode = sResp.StatusCode
 
@@ -252,7 +252,6 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 
 	imp.TagID = sovrnExt.TagId
 	imp.BidFloor = sovrnExt.BidFloor
-	imp.Banner.Format = nil
 
 	return imp.TagID, nil
 }
