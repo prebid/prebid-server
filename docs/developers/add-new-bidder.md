@@ -46,6 +46,11 @@ This comes with several benefits, which are described in the source code docs.
 If your HTTP requests don't use JSON, you'll need to write your tests in the code.
 We expect to see at least 90% code coverage on each Bidder.
 
+Bidders should also define a `adapters/{bidder}/{bidder}test/params/race/{mediaType}.json` file for any supported
+Media Types (banner, video, audio, or native). These files should contain a JSON object with all the bidder params
+(required & optional) which are expected in supporting that video type. This will be used in automated tests which
+check for race conditions across Bidders.
+
 ### Manual Tests
 
 Build and start your server:
