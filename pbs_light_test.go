@@ -103,7 +103,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 }
 
-func TestCookieSyncNoBidders(t *testing.T) {
+func TestCookieSyncEmptyBidders(t *testing.T) {
 	endpoint := testableEndpoint()
 
 	router := httprouter.New()
@@ -133,20 +133,27 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	if len(csresp.BidderStatus) != 0 {
 		t.Errorf("Expected 0 bidder status rows; got %d", len(csresp.BidderStatus))
 	}
+}
+
+func TestCookieSyncNoBidders(t *testing.T) {
+	endpoint := testableEndpoint()
+
+	router := httprouter.New()
+	router.POST("/cookie_sync", endpoint)
 
 	// Now test a missing bidders returns all syncs
-	csreq = []byte("{}")
-	csbuf = bytes.NewBuffer(csreq)
+	csreq := []byte("{}")
+	csbuf := bytes.NewBuffer(csreq)
 
-	req, _ = http.NewRequest("POST", "/cookie_sync", csbuf)
-	rr = httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
+	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
 	}
 
-	csresp = cookieSyncResponse{}
-	err = json.Unmarshal(rr.Body.Bytes(), &csresp)
+	csresp := cookieSyncResponse{}
+	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
 	if err != nil {
 		t.Fatalf("Unmarshal response failed: %v", err)
 	}
