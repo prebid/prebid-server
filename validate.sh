@@ -45,7 +45,7 @@ if $COVERAGE; then
   ./scripts/check_coverage.sh
 
   # Tests take a *really* long time with both the race detector and code coverage, so...
-  # just re-run the tests designed for concurrency again.
+  # just re-run the tests designed for concurrency again, without code coverage.
   go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count 2
 else
   go test -race $(go list ./... | grep -v /vendor/) -count 2
