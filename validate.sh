@@ -43,12 +43,13 @@ fi
 # Run the actual tests. Make sure there's enough coverage too, if the flags call for it.
 if $COVERAGE; then
   ./scripts/check_coverage.sh
-else
-  go test $(go list ./... | grep -v /vendor/)
-fi
 
-# In both cases, make sure to run any tests which target race conditions under the race detector.
-go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count 2
+  # Tests take a *really* long time with both the race detector and code coverage, so...
+  # run the race detector separately in this case, targeting only the tests which are designed for it.
+  go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count 2
+else
+  go test -race $(go list ./... | grep -v /vendor/) -count 2
+fi
 
 if $VET; then
   for SOURCE in $GOGLOB ; do
