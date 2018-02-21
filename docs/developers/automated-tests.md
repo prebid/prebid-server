@@ -18,7 +18,7 @@ If your adapter makes HTTP calls using standard JSON, you should use the
 [RunJSONBidderTest](https://github.com/prebid/prebid-server/blob/master/adapters/adapterstest/test_json.go#L50) function.
 
 This will be much more thorough, convenient, maintainable, and reusable than writing standard Go tests
-for yoru adapter.
+for your adapter.
 
 ## Concurrency Tests
 
