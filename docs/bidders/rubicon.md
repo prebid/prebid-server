@@ -1,6 +1,5 @@
 # Rubicon Bidder
 
-## User syncs
+Please contact [Rubicon Project](../../adapters/rubicon/info.yaml) to get set up with a login and cookie-sync URL to run your own Prebid Server.
 
-Prebid Server host companies must contact Rubicon directly if they want to sync cookies.
-Email [the Bidder's maintainer](../../adapters/rubicon/info.yaml) to arrange this.
+You will be given instructions, including the available endpoints.
