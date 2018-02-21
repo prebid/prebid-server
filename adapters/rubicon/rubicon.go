@@ -572,11 +572,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			thisImp.Banner.Ext, err = json.Marshal(&bannerExt)
+			bannerCopy := *thisImp.Banner
+			bannerCopy.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
+			thisImp.Banner = &bannerCopy
 		}
 
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}

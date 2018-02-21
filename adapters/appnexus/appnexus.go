@@ -302,18 +302,20 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil {
+		bannerCopy := *imp.Banner
 		if appnexusExt.Position == "above" {
-			imp.Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+			bannerCopy.Pos = openrtb.AdPositionAboveTheFold.Ptr()
 		} else if appnexusExt.Position == "below" {
-			imp.Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+			bannerCopy.Pos = openrtb.AdPositionBelowTheFold.Ptr()
 		}
 
 		// Fixes #307
-		if imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
-			firstFormat := imp.Banner.Format[0]
-			imp.Banner.W = &(firstFormat.W)
-			imp.Banner.H = &(firstFormat.H)
+		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+			firstFormat := bannerCopy.Format[0]
+			bannerCopy.W = &(firstFormat.W)
+			bannerCopy.H = &(firstFormat.H)
 		}
+		imp.Banner = &bannerCopy
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
