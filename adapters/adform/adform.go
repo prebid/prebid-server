@@ -260,6 +260,7 @@ func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []error) {
 	adUnits := make([]*adformAdUnit, 0, len(request.Imp))
 	errors := make([]error, 0, len(request.Imp))
+	secure := false
 	for _, imp := range request.Imp {
 		if imp.Banner == nil {
 			errors = append(errors, fmt.Errorf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID))
@@ -287,6 +288,10 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 			continue
 		}
 
+		if !secure && imp.Secure != nil && *imp.Secure == 1 {
+			secure = true
+		}
+
 		adformAdUnit.bidId = imp.ID
 		adformAdUnit.adUnitCode = imp.ID
 		adUnits = append(adUnits, &adformAdUnit)
@@ -300,14 +305,6 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	tid := ""
 	if request.Source != nil {
 		tid = request.Source.TID
-	}
-
-	secure := false
-	for _, imp := range request.Imp {
-		if imp.Secure != nil && *imp.Secure == 1 {
-			secure = true
-			break
-		}
 	}
 
 	return &adformRequest{
