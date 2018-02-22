@@ -19,6 +19,9 @@ The following is a "hello world" request which fetches the [Prebid sample ad](ht
 ```
 {
   "id": "some-request-id",
+  "site": {
+    "page": "prebid.org"
+  },
   "imp": [
     {
       "id": "some-impression-id",
