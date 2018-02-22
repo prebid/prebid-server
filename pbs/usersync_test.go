@@ -84,7 +84,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		optOut:   false,
 		birthday: timestamp(),
 	}
-	parsed := ParsePBSCookie(raw.ToHTTPCookie())
+	parsed := ParsePBSCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
 	if parsed.HasLiveSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
@@ -293,7 +293,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		}
 	}
 
-	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie())
+	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie(90 * 24 * time.Hour))
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
@@ -320,7 +320,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 
 func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	w := httptest.NewRecorder()
-	cookie.SetCookieOnResponse(w, "mock-domain")
+	cookie.SetCookieOnResponse(w, "mock-domain", 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 
 	header := http.Header{}

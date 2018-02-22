@@ -609,7 +609,7 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	httpReq := httptest.NewRequest("POST", "/foo", body)
 	cookie := pbs.NewPBSCookie()
 	cookie.TrySync("conversant", ExpectedBuyerUID)
-	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie().String())
+	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
 	cache, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}

@@ -2,11 +2,14 @@ package exchange
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs/buckets"
-	"strconv"
 )
+
+const maxKeyLength = 20
 
 // targetData tracks information about the winning Bid in each Imp.
 //
@@ -16,7 +19,6 @@ import (
 // All functions on this struct are all nil-safe.
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
-	lengthMax        int
 	priceGranularity openrtb_ext.PriceGranularity
 	includeCache     bool
 }
@@ -46,10 +48,10 @@ func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb
 		hbSize = w + "x" + h
 	}
 
-	hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(name, t.lengthMax)
-	hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(name, t.lengthMax)
-	hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(name, t.lengthMax)
-	hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(name, t.lengthMax)
+	hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(name, maxKeyLength)
+	hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(name, maxKeyLength)
+	hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(name, maxKeyLength)
+	hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(name, maxKeyLength)
 
 	pbs_kvs := map[string]string{
 		hbPbBidderKey:     roundedCpm,
@@ -82,10 +84,10 @@ func (t *targetData) addTargetsToCompletedAuction(auction *auction) {
 		if err1 == nil && overallWinner && bidExt.Prebid.Targeting != nil {
 			cacheId, hasCacheId := auction.cacheId(bid)
 			if overallWinner {
-				hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(bidderName, t.lengthMax)
-				hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(bidderName, t.lengthMax)
-				hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(bidderName, t.lengthMax)
-				hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(bidderName, t.lengthMax)
+				hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(bidderName, maxKeyLength)
+				hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(bidderName, maxKeyLength)
+				hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(bidderName, maxKeyLength)
+				hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(bidderName, maxKeyLength)
 
 				bidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)] = bidExt.Prebid.Targeting[hbPbBidderKey]
 				bidExt.Prebid.Targeting[string(openrtb_ext.HbBidderConstantKey)] = bidExt.Prebid.Targeting[hbBidderBidderKey]
@@ -106,7 +108,7 @@ func (t *targetData) addTargetsToCompletedAuction(auction *auction) {
 			}
 
 			if hasCacheId {
-				bidExt.Prebid.Targeting[openrtb_ext.HbCacheKey.BidderKey(bidderName, t.lengthMax)] = cacheId
+				bidExt.Prebid.Targeting[openrtb_ext.HbCacheKey.BidderKey(bidderName, maxKeyLength)] = cacheId
 			}
 
 			bid.Ext, err1 = json.Marshal(bidExt)
