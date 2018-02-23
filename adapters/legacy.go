@@ -21,7 +21,7 @@ import (
 type Adapter interface {
 	// FamilyName must be identical to the BidderName.
 	FamilyName() string
-	// This must return false.
+	// Determines whether this adapter should get callouts if there is not a synched user ID.
 	SkipNoCookies() bool
 	// Call produces bids which should be considered, given the auction params.
 	//
