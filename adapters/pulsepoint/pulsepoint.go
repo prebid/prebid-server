@@ -22,11 +22,6 @@ type PulsePointAdapter struct {
 	URI  string
 }
 
-// adapter name
-func (a *PulsePointAdapter) Name() string {
-	return "pulsepoint"
-}
-
 // used for cookies and such
 func (a *PulsePointAdapter) FamilyName() string {
 	return "pulsepoint"

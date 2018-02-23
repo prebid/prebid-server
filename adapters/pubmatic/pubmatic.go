@@ -25,11 +25,6 @@ type PubmaticAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *PubmaticAdapter) Name() string {
-	return "Pubmatic"
-}
-
 // used for cookies and such
 func (a *PubmaticAdapter) FamilyName() string {
 	return "pubmatic"

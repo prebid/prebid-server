@@ -22,11 +22,6 @@ type IndexAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *IndexAdapter) Name() string {
-	return "indexExchange"
-}
-
 // used for cookies and such
 func (a *IndexAdapter) FamilyName() string {
 	return "indexExchange"

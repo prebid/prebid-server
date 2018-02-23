@@ -57,11 +57,6 @@ func NewAdformAdapter(config *adapters.HTTPAdapterConfig, endpointURL string) *A
 	return NewAdformBidder(adapters.NewHTTPAdapter(config).Client, endpointURL)
 }
 
-/* Name - export adapter name */
-func (a *AdformAdapter) Name() string {
-	return "Adform"
-}
-
 // used for cookies and such
 func (a *AdformAdapter) FamilyName() string {
 	return "adform"

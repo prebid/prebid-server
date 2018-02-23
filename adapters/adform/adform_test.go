@@ -433,9 +433,6 @@ func TestAdformProperties(t *testing.T) {
 	if adapter.SkipNoCookies() != false {
 		t.Fatalf("should have been false")
 	}
-	if adapter.Name() != "Adform" {
-		t.Fatalf("should have been Adform")
-	}
 }
 
 // helpers

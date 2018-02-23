@@ -32,11 +32,6 @@ var supportedHeight = map[uint64]bool{
 	250: true,
 }
 
-/* Name - export adapter name */
-func (a *FacebookAdapter) Name() string {
-	return "audienceNetwork"
-}
-
 // used for cookies and such
 func (a *FacebookAdapter) FamilyName() string {
 	return "audienceNetwork"

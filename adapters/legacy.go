@@ -19,13 +19,9 @@ import (
 // PBS is currently being rewritten to use Bidder, and this will be removed after.
 // Their primary purpose is to produce bids in response to Auction requests.
 type Adapter interface {
-	// Name uniquely identifies this adapter. This must be identical to the code in Prebid.js,
-	// but cannot overlap with any other adapters in prebid-server.
-	Name() string
-	// FamilyName identifies the space of cookies which this adapter accesses. For example, an adapter
-	// using the adnxs.com cookie space should return "adnxs".
+	// FamilyName must be identical to the BidderName.
 	FamilyName() string
-	// Determines whether this adapter should get callouts if there is not a synched user ID
+	// This must return false.
 	SkipNoCookies() bool
 	// Call produces bids which should be considered, given the auction params.
 	//

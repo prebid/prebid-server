@@ -21,11 +21,6 @@ type LifestreetAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *LifestreetAdapter) Name() string {
-	return "Lifestreet"
-}
-
 // used for cookies and such
 func (a *LifestreetAdapter) FamilyName() string {
 	return "lifestreet"

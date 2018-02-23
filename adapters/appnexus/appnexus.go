@@ -26,11 +26,6 @@ type AppNexusAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *AppNexusAdapter) Name() string {
-	return "AppNexus"
-}
-
 // used for cookies and such
 func (a *AppNexusAdapter) FamilyName() string {
 	return "adnxs"

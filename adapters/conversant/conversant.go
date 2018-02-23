@@ -19,11 +19,6 @@ type ConversantAdapter struct {
 	URI  string
 }
 
-// Name - export adapter name
-func (a *ConversantAdapter) Name() string {
-	return "conversant"
-}
-
 // Corresponds to the bidder name in cookies and requests
 func (a *ConversantAdapter) FamilyName() string {
 	return "conversant"

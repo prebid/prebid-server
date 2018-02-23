@@ -26,11 +26,6 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-/* Name - export adapter name */
-func (a *RubiconAdapter) Name() string {
-	return "Rubicon"
-}
-
 // used for cookies and such
 func (a *RubiconAdapter) FamilyName() string {
 	return "rubicon"
