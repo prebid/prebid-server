@@ -31,7 +31,6 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
-		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
@@ -44,17 +43,13 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d", rr.Code)
+		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
 	}
 
 	csresp := cookieSyncResponse{}
 	err = json.Unmarshal(rr.Body.Bytes(), &csresp)
 	if err != nil {
 		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.UUID != csreq.UUID {
-		t.Error("UUIDs didn't match")
 	}
 
 	if csresp.Status != "no_cookie" {
@@ -73,7 +68,6 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
-		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
@@ -101,10 +95,6 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unmarshal response failed: %v", err)
 	}
 
-	if csresp.UUID != csreq.UUID {
-		t.Error("UUIDs didn't match")
-	}
-
 	if csresp.Status != "ok" {
 		t.Errorf("Expected status = ok; got %s", csresp.Status)
 	}
@@ -114,10 +104,77 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 }
 
+func TestCookieSyncEmptyBidders(t *testing.T) {
+	endpoint := testableEndpoint()
+
+	router := httprouter.New()
+	router.POST("/cookie_sync", endpoint)
+
+	// First test a declared empty bidders returns no syncs
+	csreq := []byte("{\"bidders\": []}")
+	csbuf := bytes.NewBuffer(csreq)
+
+	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
+	}
+
+	csresp := cookieSyncResponse{}
+	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
+	if err != nil {
+		t.Fatalf("Unmarshal response failed: %v", err)
+	}
+
+	if csresp.Status != "no_cookie" {
+		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
+	}
+
+	if len(csresp.BidderStatus) != 0 {
+		t.Errorf("Expected 0 bidder status rows; got %d", len(csresp.BidderStatus))
+	}
+}
+
+func TestCookieSyncNoBidders(t *testing.T) {
+	endpoint := testableEndpoint()
+
+	router := httprouter.New()
+	router.POST("/cookie_sync", endpoint)
+
+	// Now test a missing bidders returns all syncs
+	csreq := []byte("{}")
+	csbuf := bytes.NewBuffer(csreq)
+
+	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
+	}
+
+	csresp := cookieSyncResponse{}
+	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
+	if err != nil {
+		t.Fatalf("Unmarshal response failed: %v", err)
+	}
+
+	if csresp.Status != "no_cookie" {
+		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
+	}
+
+	if len(csresp.BidderStatus) != 4 {
+		t.Errorf("Expected %d bidder status rows; got %d", 4, len(csresp.BidderStatus))
+	}
+
+}
+
 func testableEndpoint() httprouter.Handle {
 	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
-		openrtb_ext.BidderAppnexus: usersyncers.NewAppnexusSyncer("someurl.com"),
-		openrtb_ext.BidderFacebook: usersyncers.NewFacebookSyncer("facebookurl.com"),
+		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
+		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
+		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
+		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
 	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, metrics.NewMeter()}).CookieSync
 }

@@ -226,7 +226,7 @@ func enforceAMPCache(req *openrtb.BidRequest) (errs []error) {
 
 	// Ensure Targeting and caching is on
 	if extRequest.Prebid.Targeting == nil || extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {
-		errs = []error{fmt.Errorf("AMP requests require Trageting and Caching to be set")}
+		errs = []error{fmt.Errorf("AMP requests require Targeting and Caching to be set")}
 	}
 
 	return
