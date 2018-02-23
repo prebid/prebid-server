@@ -80,6 +80,7 @@
                   "appnexus": {
                     "brand_id": 1,
                     "auction_id": 8189378542222915032,
+                    "bid_ad_type": 0,
                     "bidder_id": 2,
                     "ranking_price": 0.000000
                   }
@@ -112,6 +113,7 @@
           "appnexus": {
             "brand_id": 1,
             "auction_id": 8189378542222915032,
+            "bid_ad_type": 0,
             "bidder_id": 2,
             "ranking_price": 0.000000
           }

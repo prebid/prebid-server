@@ -36,6 +36,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -185,12 +186,10 @@ func getAccountMetrics(id string) *AccountMetrics {
 }
 
 type cookieSyncRequest struct {
-	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
 }
 
 type cookieSyncResponse struct {
-	UUID         string           `json:"uuid"`
 	Status       string           `json:"status"`
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
@@ -212,7 +211,8 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	defer r.Body.Close()
 
 	csReq := &cookieSyncRequest{}
-	err := json.NewDecoder(r.Body).Decode(&csReq)
+	csReqRaw := map[string]json.RawMessage{}
+	err := json.NewDecoder(r.Body).Decode(&csReqRaw)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
@@ -220,9 +220,20 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
+	biddersOmitted := true
+	if biddersRaw, ok := csReqRaw["bidders"]; ok {
+		biddersOmitted = false
+		err := json.Unmarshal(biddersRaw, &csReq.Bidders)
+		if err != nil {
+			if glog.V(2) {
+				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
+			}
+			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
+			return
+		}
+	}
 
 	csResp := cookieSyncResponse{
-		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
 
@@ -230,6 +241,14 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
+	}
+
+	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
+	// and "bidders" is not found in the JSON, sync all bidders
+	if len(csReq.Bidders) == 0 && biddersOmitted {
+		for bidder, _ := range deps.syncers {
+			csReq.Bidders = append(csReq.Bidders, string(bidder))
+		}
 	}
 
 	for _, bidder := range csReq.Bidders {
@@ -763,6 +782,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint),
 		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint),
 	}
 }
