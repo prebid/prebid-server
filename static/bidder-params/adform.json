@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adform Adapter Params",
+  "description": "A schema which validates params accepted by the Adform adapter",
+  "type": "object",
+  "properties": {
+    "mid": {
+      "type": ["integer", "string"],
+      "description": "An ID which identifies the placement selling the impression"
+    }
+  },
+  "required": ["mid"]
+}

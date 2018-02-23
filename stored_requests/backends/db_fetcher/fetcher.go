@@ -49,23 +49,31 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 		}
 		return nil, []error{err}
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			glog.Errorf("error closing DB connection: %v", err)
+		}
+	}()
 
 	reqData := make(map[string]json.RawMessage, len(ids))
-	var errs []error = nil
 	for rows.Next() {
 		var id string
 		var thisReqData []byte
+
+		// Fixes #338?
 		if err := rows.Scan(&id, &thisReqData); err != nil {
-			errs = append(errs, err)
+			return nil, []error{err}
 		}
 
 		reqData[id] = thisReqData
 	}
+
+	// Fixes #338?
 	if rows.Err() != nil {
-		errs = append(errs, rows.Err())
+		return nil, []error{rows.Err()}
 	}
 
+	var errs []error
 	for _, id := range ids {
 		if _, ok := reqData[id]; !ok {
 			errs = append(errs, fmt.Errorf(`Stored Request with ID="%s" not found.`, id))

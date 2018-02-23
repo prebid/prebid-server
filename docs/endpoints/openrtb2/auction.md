@@ -20,7 +20,7 @@ The following is a "hello world" request which fetches the [Prebid sample ad](ht
 {
   "id": "some-request-id",
   "site": {
-    "page": "some.page.com"
+    "page": "prebid.org"
   },
   "imp": [
     {
