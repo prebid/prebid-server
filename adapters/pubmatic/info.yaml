@@ -1,2 +1,9 @@
 maintainer:
   email: "header-bidding@pubmatic.com"
+capabilities:
+  app:
+    banner:
+    video:
+  site:
+    banner:
+    video:

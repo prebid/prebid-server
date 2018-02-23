@@ -1,2 +1,9 @@
 maintainer:
   email: "mediapsr@conversantmedia.com"
+capabilities:
+  app:
+    banner:
+    video:
+  site:
+    banner:
+    video:

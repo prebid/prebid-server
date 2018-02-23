@@ -1,2 +1,10 @@
 maintainer:
   email: "info@prebid.org"
+capabilities:
+  app:
+    banner:
+    native:
+  site:
+    banner:
+    video:
+    native:
