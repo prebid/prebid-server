@@ -28,3 +28,10 @@ func NewBiddersEndpoint() httprouter.Handle {
 		}
 	})
 }
+
+// TODO: Implement this
+func NewBidderDetailsEndpoint() httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		w.Write([]byte(ps.ByName("bidderName")))
+	})
+}
