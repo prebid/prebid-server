@@ -211,6 +211,8 @@ func toPBSAdUnits(req *openrtb.BidRequest) ([]pbs.PBSAdUnit, []error) {
 }
 
 func initPBSAdUnit(imp *openrtb.Imp, adUnit *pbs.PBSAdUnit) error {
+	var sizes []openrtb.Format = nil
+
 	video := pbs.PBSVideo{}
 	if imp.Video != nil {
 		video.Mimes = imp.Video.MIMEs
@@ -231,12 +233,18 @@ func initPBSAdUnit(imp *openrtb.Imp, adUnit *pbs.PBSAdUnit) error {
 				video.Protocols[i] = int8(imp.Video.Protocols[i])
 			}
 		}
+		// Fixes #360
+		if imp.Video.W != 0 && imp.Video.H != 0 {
+			sizes = append(sizes, openrtb.Format{
+				W: imp.Video.W,
+				H: imp.Video.H,
+			})
+		}
 	}
 	topFrame := int8(0)
-	var sizes []openrtb.Format = nil
 	if imp.Banner != nil {
 		topFrame = imp.Banner.TopFrame
-		sizes = imp.Banner.Format
+		sizes = append(sizes, imp.Banner.Format...)
 	}
 
 	params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
