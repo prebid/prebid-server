@@ -55,7 +55,18 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "banner": {},
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
               "tagid": "123456",
               "ext": {
                 "bidder": {

@@ -60,7 +60,7 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		if err != nil {
 			return nil, err
 		}
-		sovrnReq.Imp[i].Secure = sReq.Imp[i].Secure
+
 		sovrnReq.Imp[i].TagID = params.TagId
 	}
 
@@ -71,11 +71,6 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	debug := &pbs.BidderDebug{
 		RequestURI: s.URI,
-	}
-
-	if req.IsDebug {
-		debug.RequestBody = string(reqJSON)
-		bidder.Debug = append(bidder.Debug, debug)
 	}
 
 	httpReq, _ := http.NewRequest("POST", s.URI, bytes.NewReader(reqJSON))
@@ -115,6 +110,8 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 
 	if req.IsDebug {
+		debug.RequestBody = string(reqJSON)
+		bidder.Debug = append(bidder.Debug, debug)
 		debug.ResponseBody = responseBody
 	}
 
