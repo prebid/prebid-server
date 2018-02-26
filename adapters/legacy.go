@@ -19,8 +19,8 @@ import (
 // PBS is currently being rewritten to use Bidder, and this will be removed after.
 // Their primary purpose is to produce bids in response to Auction requests.
 type Adapter interface {
-	// FamilyName must be identical to the BidderName.
-	FamilyName() string
+	// Name must be identical to the BidderName.
+	Name() string
 	// Determines whether this adapter should get callouts if there is not a synched user ID.
 	SkipNoCookies() bool
 	// Call produces bids which should be considered, given the auction params.
@@ -77,17 +77,12 @@ type CallOneResult struct {
 }
 
 type MisconfiguredAdapter struct {
-	TheName       string
-	TheFamilyName string
-	Err           error
+	TheName string
+	Err     error
 }
 
 func (b *MisconfiguredAdapter) Name() string {
 	return b.TheName
-}
-
-func (b *MisconfiguredAdapter) FamilyName() string {
-	return b.TheFamilyName
 }
 func (b *MisconfiguredAdapter) SkipNoCookies() bool {
 	return false

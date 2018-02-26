@@ -36,7 +36,7 @@ const DefaultParam = `{"site_id": "12345"}`
 func TestConversantProperties(t *testing.T) {
 	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
-	assertNotEqual(t, an.FamilyName(), "", "Missing family name")
+	assertNotEqual(t, an.Name(), "", "Missing family name")
 	assertTrue(t, an.SkipNoCookies(), "SkipNoCookies should be true")
 }
 

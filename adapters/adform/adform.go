@@ -58,7 +58,7 @@ func NewAdformAdapter(config *adapters.HTTPAdapterConfig, endpointURL string) *A
 }
 
 // used for cookies and such
-func (a *AdformAdapter) FamilyName() string {
+func (a *AdformAdapter) Name() string {
 	return "adform"
 }
 
@@ -141,7 +141,7 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		adUnits = append(adUnits, &adformAdUnit)
 	}
 
-	userId, _, _ := request.Cookie.GetUID(a.FamilyName())
+	userId, _, _ := request.Cookie.GetUID(a.Name())
 
 	return &adformRequest{
 		adUnits:    adUnits,

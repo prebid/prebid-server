@@ -32,7 +32,7 @@ type PulsePointOrtbMockService struct {
  */
 func TestPulsePointAdapterNames(t *testing.T) {
 	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
-	VerifyStringValue(adapter.FamilyName(), "pulsepoint", t)
+	VerifyStringValue(adapter.Name(), "pulsepoint", t)
 }
 
 /**
