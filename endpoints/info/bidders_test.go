@@ -142,7 +142,7 @@ func TestGetUnknownBidder(t *testing.T) {
 	}
 }
 
-// TestInfoFiles makes sure that every bidder contains a valid info.yaml file.
+// TestInfoFiles makes sure that static/bidder-info contains a .yaml file for every BidderName.
 func TestInfoFiles(t *testing.T) {
 	fileInfos, err := ioutil.ReadDir("../../static/bidder-info")
 	if err != nil {
