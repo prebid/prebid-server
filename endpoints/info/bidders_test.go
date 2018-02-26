@@ -124,7 +124,7 @@ func TestGetBidderAccuracy(t *testing.T) {
 }
 
 func TestGetUnknownBidder(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info")
+	endpoint := NewBidderDetailsEndpoint("./sample")
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someUnknownBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders/someUnknownBidder request: %v", err)
