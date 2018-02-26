@@ -11,11 +11,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/julienschmidt/httprouter"
+
 	"github.com/prebid/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func TestBiddersEndpoint(t *testing.T) {
+func TestGetBidders(t *testing.T) {
 	endpoint := NewBiddersEndpoint()
 
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders", strings.NewReader(""))
@@ -43,6 +45,100 @@ func TestBiddersEndpoint(t *testing.T) {
 	}
 	if len(bidderSlice) != len(openrtb_ext.BidderMap) {
 		t.Errorf("Response from /info/bidders did not match BidderMap. Expected %d elements. Got %d", len(openrtb_ext.BidderMap), len(bidderSlice))
+	}
+}
+
+// TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
+func TestGetSpecificBidders(t *testing.T) {
+	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info")
+
+	for bidderName, _ := range openrtb_ext.BidderMap {
+		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
+		if err != nil {
+			t.Errorf("Failed to create a GET /info/bidders request: %v", err)
+			continue
+		}
+		params := []httprouter.Param{{
+			Key:   "bidderName",
+			Value: bidderName,
+		}}
+		r := httptest.NewRecorder()
+
+		endpoint(r, req, params)
+
+		if r.Code != http.StatusOK {
+			t.Errorf("GET /info/bidders/"+bidderName+" returned a %d. Expected 200", r.Code)
+		}
+		if r.HeaderMap.Get("Content-Type") != "application/json" {
+			t.Errorf("GET /info/bidders/"+bidderName+" returned Content-Type %s. Expected application/json", r.HeaderMap.Get("Content-Type"))
+		}
+	}
+}
+
+// TestGetBidderAccuracy validates the output for a known file.
+func TestGetBidderAccuracy(t *testing.T) {
+	endpoint := NewBidderDetailsEndpoint("./sample")
+	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someBidder", strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("Failed to create a GET /info/bidders request: %v", err)
+	}
+	params := []httprouter.Param{{
+		Key:   "bidderName",
+		Value: "someBidder",
+	}}
+
+	r := httptest.NewRecorder()
+	endpoint(r, req, params)
+
+	var fileData infoFile
+	if err := json.Unmarshal(r.Body.Bytes(), &fileData); err != nil {
+		t.Fatalf("Failed to unmarshal JSON from endpoints/info/sample/someBidder.yaml: %v", err)
+	}
+
+	if fileData.Maintainer.Email != "some-email@domain.com" {
+		t.Errorf("maintainer.email should be some-email@domain.com. Got %s", fileData.Maintainer.Email)
+	}
+
+	if len(fileData.Capabilities.App.MediaTypes) != 2 {
+		t.Fatalf("Expected 2 supported mediaTypes on app. Got %d", len(fileData.Capabilities.App.MediaTypes))
+	}
+	if fileData.Capabilities.App.MediaTypes[0] != "banner" {
+		t.Errorf("capabilities.app.mediaTypes[0] should be banner. Got %s", fileData.Capabilities.App.MediaTypes[0])
+	}
+	if fileData.Capabilities.App.MediaTypes[1] != "native" {
+		t.Errorf("capabilities.app.mediaTypes[1] should be native. Got %s", fileData.Capabilities.App.MediaTypes[1])
+	}
+
+	if len(fileData.Capabilities.Site.MediaTypes) != 3 {
+		t.Fatalf("Expected 3 supported mediaTypes on app. Got %d", len(fileData.Capabilities.Site.MediaTypes))
+	}
+	if fileData.Capabilities.Site.MediaTypes[0] != "banner" {
+		t.Errorf("capabilities.app.mediaTypes[0] should be banner. Got %s", fileData.Capabilities.Site.MediaTypes[0])
+	}
+	if fileData.Capabilities.Site.MediaTypes[1] != "video" {
+		t.Errorf("capabilities.app.mediaTypes[1] should be video. Got %s", fileData.Capabilities.Site.MediaTypes[1])
+	}
+	if fileData.Capabilities.Site.MediaTypes[2] != "native" {
+		t.Errorf("capabilities.app.mediaTypes[2] should be native. Got %s", fileData.Capabilities.Site.MediaTypes[2])
+	}
+}
+
+func TestGetUnknownBidder(t *testing.T) {
+	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info")
+	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someUnknownBidder", strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("Failed to create a GET /info/bidders/someUnknownBidder request: %v", err)
+	}
+
+	params := []httprouter.Param{{
+		Key:   "bidderName",
+		Value: "someUnknownBidder",
+	}}
+	r := httptest.NewRecorder()
+
+	endpoint(r, req, params)
+	if r.Code != http.StatusNotFound {
+		t.Errorf("GET /info/bidders/* should return a 404 on unknown bidders. Got %d", r.Code)
 	}
 }
 

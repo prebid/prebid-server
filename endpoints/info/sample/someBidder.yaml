@@ -1,0 +1,12 @@
+maintainer:
+  email: "some-email@domain.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
