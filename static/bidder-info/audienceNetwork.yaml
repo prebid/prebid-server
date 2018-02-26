@@ -2,7 +2,9 @@ maintainer:
   email: "info@prebid.org"
 capabilities:
   app:
-    banner:
+    mediaTypes:
+      - banner
   site:
-    banner:
-    video:
+    mediaTypes:
+      - banner
+      - video

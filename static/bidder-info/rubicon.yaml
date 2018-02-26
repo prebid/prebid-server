@@ -2,8 +2,9 @@ maintainer:
   email: "header-bidding@rubiconproject.com"
 capabilities:
   app:
-    banner:
-    video:
+    mediaTypes:
+      - banner
   site:
-    banner:
-    video:
+    mediaTypes:
+      - banner
+      - video
