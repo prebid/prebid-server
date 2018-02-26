@@ -30,6 +30,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]Usersync
 		openrtb_ext.BidderPubmatic:   NewPubmaticSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderPulsepoint: NewPulsepointSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderRubicon:    NewRubiconSyncer(cfg.Adapters["rubicon"].UserSyncURL),
+		openrtb_ext.BidderAdform:     NewAdformSyncer(cfg.Adapters["adform"].UserSyncURL, cfg.ExternalURL),
 	}
 }
 

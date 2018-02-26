@@ -35,6 +35,8 @@ type HostCookie struct {
 	OptOutURL    string `mapstructure:"opt_out_url"`
 	OptInURL     string `mapstructure:"opt_in_url"`
 	OptOutCookie Cookie `mapstructure:"optout_cookie"`
+	// Cookie timeout in days
+	TTL int64 `mapstructure:"ttl_days"`
 }
 
 type Adapter struct {

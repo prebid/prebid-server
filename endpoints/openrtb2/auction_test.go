@@ -301,6 +301,51 @@ func TestRefererParsing(t *testing.T) {
 	}
 }
 
+func TestEmptyUserExtPrebid(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{}}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("If user.ext.prebid exists, user.ext.prebid.buyeruids must exist.")
+	}
+}
+
+func TestEmptyBuyerUIDs(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{}}}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("If user.ext.prebid.buyeruids exists, it must have at least one element.")
+	}
+}
+
+func TestUnknownBidderBuyerUIDs(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"unknown":"123"}}}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("If user.ext.prebid.buyeruids exists, its keys must be known bidders.")
+	}
+}
+
+func TestAliasedBidderBuyerUIDs(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"unknown":"123"}}}`),
+	}
+	if err := validateUser(user, map[string]string{"unknown": "appnexus"}); err != nil {
+		t.Errorf("If user.ext.prebid.buyeruids exists, it should allow aliased values.")
+	}
+}
+
+func TestEmptyUserExt(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("user.ext should not allow empty values.")
+	}
+}
+
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
