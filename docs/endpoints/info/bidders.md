@@ -1,4 +1,4 @@
-# Prebid Server Bidders
+# Prebid Server Bidder List
 
 ## `GET /info/bidders`
 
