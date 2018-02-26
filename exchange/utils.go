@@ -27,23 +27,57 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, met *pb
 		return
 	}
 
-	requestsByBidder = splitBidRequest(orig, impsByBidder, aliases, usersyncs, met)
+	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, met)
 	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, met *pbsmetrics.Metrics) map[openrtb_ext.BidderName]*openrtb.BidRequest {
+func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, met *pbsmetrics.Metrics) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
+	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
+	if err != nil {
+		return nil, []error{err}
+	}
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
 		met.AdapterMetrics[coreBidder].RequestMeter.Mark(1)
-		if hadSync := prepareUser(&reqCopy, coreBidder, usersyncs); !hadSync && req.App == nil {
+		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, usersyncs); !hadSync && req.App == nil {
 			met.AdapterMetrics[coreBidder].NoCookieMeter.Mark(1)
 		}
 		reqCopy.Imp = imps
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
-	return requestsByBidder
+	return requestsByBidder, nil
+}
+
+// extractBuyerUIDs parses the values from user.ext.prebid.buyeruids, and then deletes those values from the ext.
+// This prevents a Bidder from using these values to figure out who else is involved in the Auction.
+func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
+	if user == nil {
+		return nil, nil
+	}
+	if len(user.Ext) == 0 {
+		return nil, nil
+	}
+
+	var userExt openrtb_ext.ExtUser
+	if err := json.Unmarshal(user.Ext, &userExt); err != nil {
+		return nil, err
+	}
+	if userExt.Prebid == nil {
+		return nil, nil
+	}
+
+	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
+	// as long as user.ext.prebid exists.
+	buyerUIDs := userExt.Prebid.BuyerUIDs
+	userExt.Prebid.BuyerUIDs = nil
+	if newUserExtBytes, err := json.Marshal(userExt); err != nil {
+		return nil, err
+	} else {
+		user.Ext = newUserExtBytes
+		return buyerUIDs, nil
+	}
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.
@@ -103,22 +137,34 @@ func sanitizedImpCopy(imp *openrtb.Imp, ext map[string]openrtb.RawJSON, intended
 // prepareUser changes req.User so that it's ready for the given bidder.
 // This *will* mutate the request, but will *not* mutate any objects nested inside it.
 //
-// This function expects bidder to be a "known" bidder name. It will not work on aliases.
-// It returns true if an ID sync existed, and false otherwise.
-func prepareUser(req *openrtb.BidRequest, bidder openrtb_ext.BidderName, usersyncs IdFetcher) bool {
-	if id, ok := usersyncs.GetId(bidder); ok {
-		if req.User == nil {
-			req.User = &openrtb.User{
-				BuyerUID: id,
-			}
-		} else if req.User.BuyerUID == "" {
-			clone := *req.User
-			clone.BuyerUID = id
-			req.User = &clone
-		}
-		return true
+// In this function, "givenBidder" may or may not be an alias. "coreBidder" must *not* be an alias.
+// It returns true if a Cookie User Sync existed, and false otherwise.
+func prepareUser(req *openrtb.BidRequest, givenBidder string, coreBidder openrtb_ext.BidderName, explicitBuyerUIDs map[string]string, usersyncs IdFetcher) bool {
+	cookieId, hadCookie := usersyncs.GetId(coreBidder)
+
+	if id, ok := explicitBuyerUIDs[givenBidder]; ok {
+		req.User = copyWithBuyerUID(req.User, id)
+	} else if hadCookie {
+		req.User = copyWithBuyerUID(req.User, cookieId)
 	}
-	return false
+
+	return hadCookie
+}
+
+// copyWithBuyerUID either overwrites the BuyerUID property on user with the argument, or returns
+// a new (empty) User with the BuyerUID already set.
+func copyWithBuyerUID(user *openrtb.User, buyerUID string) *openrtb.User {
+	if user == nil {
+		return &openrtb.User{
+			BuyerUID: buyerUID,
+		}
+	}
+	if user.BuyerUID == "" {
+		clone := *user
+		clone.BuyerUID = buyerUID
+		return &clone
+	}
+	return user
 }
 
 // resolveBidder returns the known BidderName associated with bidder, if bidder is an alias. If it's not an alias, the bidder is returned.

@@ -143,6 +143,32 @@ The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_siz
 **NOTE**: Targeting keys are limited to 20 characters. If {bidderName} is too long, the returned key
 will be truncated to only include the first 20 characters.
 
+#### Cookie syncs
+
+Each Bidder should receive their own ID in the `request.user.buyeruid` property.
+Prebid Server has three ways to popualte this field. In order of priority:
+
+1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
+In most cases, this is probably a bad idea.
+
+2. The request payload can store a `buyeruid` for each Bidder by defining `request.user.ext.prebid.buyeruids` like so:
+
+```
+{
+  "appnexus": "some-appnexus-id",
+  "rubicon": "some-rubicon-id"
+}
+```
+
+Prebid Server's core logic will preprocess the request so that each Bidder sees their own value in the `request.user.buyeruid` field.
+
+3. Prebid Server will use its Cookie to map IDs for each Bidder.
+
+If you're using [Prebid.js](https://github.com/prebid/Prebid.js), this is happening automatically.
+
+If you're using another client, you can populate the Cookie of the Prebid Server host with User IDs
+for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that it returns in the response.
+
 #### Bidder Aliases
 
 Requests can define Bidder aliases if they want to refer to a Bidder by a separate name.
