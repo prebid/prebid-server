@@ -146,7 +146,7 @@ func TestGetUnknownBidder(t *testing.T) {
 func TestInfoFiles(t *testing.T) {
 	fileInfos, err := ioutil.ReadDir("../../static/bidder-info")
 	if err != nil {
-		t.Fatalf("Error reading the ../static/bidder-info directory: %v", err)
+		t.Fatalf("Error reading the static/bidder-info directory: %v", err)
 	}
 
 	// Make sure that files exist for each BidderName
@@ -154,6 +154,10 @@ func TestInfoFiles(t *testing.T) {
 		if _, err := os.Stat(fmt.Sprintf("../../static/bidder-info/%s.yaml", bidderName)); os.IsNotExist(err) {
 			t.Errorf("static/bidder-info/%s.yaml not found. Did you forget to create it?", bidderName)
 		}
+	}
+
+	if len(fileInfos) != len(openrtb_ext.BidderMap) {
+		t.Errorf("static/bidder-info contains %d files, but the BidderMap has %d entries. These two should be in sync.", len(fileInfos), len(openrtb_ext.BidderMap))
 	}
 
 	// Make sure that all the files have valid content
