@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Docs for this API can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 const uri = "http://ib.adnxs.com/openrtb2"
 
 type AppNexusAdapter struct {
@@ -282,9 +283,9 @@ func keys(m map[string]bool) []string {
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
 func preprocess(imp *openrtb.Imp) (string, error) {
-	// We only support banner and video impressions for now.
-	if imp.Native != nil || imp.Audio != nil {
-		return "", fmt.Errorf("Appnexus doesn't support audio or native Imps. Ignoring Imp ID=%s", imp.ID)
+	// We don't support audio imps yet.
+	if imp.Audio != nil {
+		return "", fmt.Errorf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID)
 	}
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
