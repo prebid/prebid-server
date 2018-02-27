@@ -67,7 +67,7 @@ func TestRaceIntegration(t *testing.T) {
 		},
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics)
 	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{})
 	if err != nil {
