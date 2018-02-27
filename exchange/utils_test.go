@@ -94,11 +94,79 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	if dummymap["placementId"] != "1234567" {
 		t.Errorf("CleanOpenRTBRequests: dummy3 adapter did not get proper placementId, got \"%s\" instead", cleanImpExt["dummy"]["placementId"])
 	}
+}
 
+func TestBuyerUIDs(t *testing.T) {
+	bidRequest := openrtb.BidRequest{
+		ID: "This Bid",
+		Imp: []openrtb.Imp{{
+			Ext: openrtb.RawJSON(`{"dummy":{},"appnexus":{},"rubicon":{}}`),
+		}},
+		User: &openrtb.User{
+			Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"dummy":"explicitDummyID","rubicon":"explicitRubiID"}}}`),
+		},
+		Ext: openrtb.RawJSON(`{"prebid":{"aliases":{"dummy":"appnexus"}}}`),
+	}
+	syncs := &mockUsersync{
+		syncs: map[string]string{
+			"appnexus": "apnCookie",
+		},
+	}
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
+	if len(errList) > 0 {
+		t.Fatalf("Unexpected errors: %v", errList)
+	}
+	if len(cleanRequests) != 3 {
+		t.Errorf("Unexpected number of requets: %v", cleanRequests)
+	}
+	if cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID != "apnCookie" {
+		t.Errorf("request.user.buyeruid to appnexus should be apnCookie. Got %s", cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID)
+	}
+	if cleanRequests[openrtb_ext.BidderRubicon].User.BuyerUID != "explicitRubiID" {
+		t.Errorf("request.user.buyeruid to appnexus should be explicitRubiID. Got %s", cleanRequests[openrtb_ext.BidderRubicon].User.BuyerUID)
+	}
+	if cleanRequests[openrtb_ext.BidderName("dummy")].User.BuyerUID != "explicitDummyID" {
+		t.Errorf("request.user.buyeruid to dummy should be explicitDummyID. Got %s", cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID)
+	}
+}
+
+func TestUserExplicitUID(t *testing.T) {
+	bidRequest := openrtb.BidRequest{
+		ID: "This Bid",
+		Imp: []openrtb.Imp{{
+			Ext: openrtb.RawJSON(`{"dummy":{},"appnexus":{},"rubicon":{}}`),
+		}},
+		User: &openrtb.User{
+			BuyerUID: "apnExplicit",
+			Ext:      openrtb.RawJSON(`{"digitrust":{"id":"abc","keyv":1,"pref":2}}`),
+		},
+		Ext: openrtb.RawJSON(`{"prebid":{"aliases":{"dummy":"appnexus"}}}`),
+	}
+	syncs := &mockUsersync{
+		syncs: map[string]string{
+			"appnexus": "apnCookie",
+		},
+	}
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
+	if len(errList) > 0 {
+		t.Fatalf("Got unexpected errors: %v", errList)
+	}
+	if cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID != "apnExplicit" {
+		t.Errorf("Appnexus should get the explicit buyeruid. Instead got %s", cleanRequests[openrtb_ext.BidderAppnexus].User.BuyerUID)
+	}
 }
 
 type emptyUsersync struct{}
 
 func (e *emptyUsersync) GetId(bidder openrtb_ext.BidderName) (string, bool) {
 	return "", false
+}
+
+type mockUsersync struct {
+	syncs map[string]string
+}
+
+func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists bool) {
+	id, exists = e.syncs[string(bidder)]
+	return
 }

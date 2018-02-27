@@ -270,7 +270,7 @@ func TestDigiTrust(t *testing.T) {
 			t.Errorf("Error unmashalling bid request: %s", err.Error())
 		}
 
-		err = validateUser(bidReq.User)
+		err = validateUser(bidReq.User, nil)
 
 		switch bidReq.ID {
 		case "request-without-user-obj":
@@ -290,6 +290,51 @@ func TestDigiTrust(t *testing.T) {
 				t.Fatalf("validateUser should return an error due to digitrust.")
 			}
 		}
+	}
+}
+
+func TestEmptyUserExtPrebid(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{}}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("If user.ext.prebid exists, user.ext.prebid.buyeruids must exist.")
+	}
+}
+
+func TestEmptyBuyerUIDs(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{}}}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("If user.ext.prebid.buyeruids exists, it must have at least one element.")
+	}
+}
+
+func TestUnknownBidderBuyerUIDs(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"unknown":"123"}}}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("If user.ext.prebid.buyeruids exists, its keys must be known bidders.")
+	}
+}
+
+func TestAliasedBidderBuyerUIDs(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"unknown":"123"}}}`),
+	}
+	if err := validateUser(user, map[string]string{"unknown": "appnexus"}); err != nil {
+		t.Errorf("If user.ext.prebid.buyeruids exists, it should allow aliased values.")
+	}
+}
+
+func TestEmptyUserExt(t *testing.T) {
+	user := &openrtb.User{
+		Ext: openrtb.RawJSON(`{}`),
+	}
+	if err := validateUser(user, nil); err == nil {
+		t.Errorf("user.ext should not allow empty values.")
 	}
 }
 
