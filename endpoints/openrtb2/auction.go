@@ -219,7 +219,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
-	if err := validateUser(req.User); err != nil {
+	if err := validateUser(req.User, aliases); err != nil {
 		return err
 	}
 
@@ -391,16 +391,33 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	return nil
 }
 
-func validateUser(user *openrtb.User) error {
+func validateUser(user *openrtb.User, aliases map[string]string) error {
 	// DigiTrust support
 	if user != nil && user.Ext != nil {
 		// Creating ExtUser object to check if DigiTrust is valid
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			// Checking if DigiTrust is valid
-			if userExt.DigiTrust == nil || userExt.DigiTrust.Pref != 0 {
+			if userExt.DigiTrust == nil {
+				// Make sure that user.ext is not empty.
+				if userExt.Prebid == nil {
+					return errors.New("request.user.ext should not be an empty object.")
+				}
+			} else if userExt.DigiTrust.Pref != 0 {
 				// DigiTrust is not valid. Return error.
 				return errors.New("request.user contains a digitrust object that is not valid.")
+			}
+			// Check if the buyeruids are valid
+			if userExt.Prebid != nil {
+				if len(userExt.Prebid.BuyerUIDs) < 1 {
+					return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
+				}
+				for bidderName, _ := range userExt.Prebid.BuyerUIDs {
+					if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
+						if _, ok := aliases[bidderName]; !ok {
+							return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
+						}
+					}
+				}
 			}
 		} else {
 			// Return error.

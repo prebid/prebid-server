@@ -36,6 +36,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -49,6 +50,7 @@ import (
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -184,12 +186,10 @@ func getAccountMetrics(id string) *AccountMetrics {
 }
 
 type cookieSyncRequest struct {
-	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
 }
 
 type cookieSyncResponse struct {
-	UUID         string           `json:"uuid"`
 	Status       string           `json:"status"`
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
@@ -211,7 +211,8 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	defer r.Body.Close()
 
 	csReq := &cookieSyncRequest{}
-	err := json.NewDecoder(r.Body).Decode(&csReq)
+	csReqRaw := map[string]json.RawMessage{}
+	err := json.NewDecoder(r.Body).Decode(&csReqRaw)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
@@ -219,9 +220,20 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
+	biddersOmitted := true
+	if biddersRaw, ok := csReqRaw["bidders"]; ok {
+		biddersOmitted = false
+		err := json.Unmarshal(biddersRaw, &csReq.Bidders)
+		if err != nil {
+			if glog.V(2) {
+				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
+			}
+			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
+			return
+		}
+	}
 
 	csResp := cookieSyncResponse{
-		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
 
@@ -229,6 +241,14 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
+	}
+
+	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
+	// and "bidders" is not found in the JSON, sync all bidders
+	if len(csReq.Bidders) == 0 && biddersOmitted {
+		for bidder, _ := range deps.syncers {
+			csReq.Bidders = append(csReq.Bidders, string(bidder))
+		}
 	}
 
 	for _, bidder := range csReq.Bidders {
@@ -749,6 +769,7 @@ func setupExchanges(cfg *config.Configuration) {
 }
 
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
 		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
 		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
@@ -760,6 +781,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint),
 	}
 }
 
@@ -848,7 +870,7 @@ func serve(cfg *config.Configuration) error {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, openrtb_ext.BidderList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
@@ -872,6 +894,8 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
+	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
+	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
 	router.POST("/validate", validate)
