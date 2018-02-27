@@ -40,14 +40,3 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderAdform: adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
 	}
 }
-
-// AdapterList returns a list of adapters available in the auction.
-func AdapterList() []openrtb_ext.BidderName {
-	theNames := make([]openrtb_ext.BidderName, len(openrtb_ext.BidderMap))
-	i := 0
-	for _, bidderName := range openrtb_ext.BidderMap {
-		theNames[i] = bidderName
-		i++
-	}
-	return theNames
-}

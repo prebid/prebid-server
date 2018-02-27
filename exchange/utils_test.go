@@ -56,7 +56,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 
 	if len(errList) > 0 {
 		for _, e := range errList {
@@ -112,7 +112,7 @@ func TestBuyerUIDs(t *testing.T) {
 			"appnexus": "apnCookie",
 		},
 	}
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 	if len(errList) > 0 {
 		t.Fatalf("Unexpected errors: %v", errList)
 	}
@@ -147,7 +147,7 @@ func TestUserExplicitUID(t *testing.T) {
 			"appnexus": "apnCookie",
 		},
 	}
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), AdapterList()))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 	if len(errList) > 0 {
 		t.Fatalf("Got unexpected errors: %v", errList)
 	}

@@ -23,7 +23,7 @@ func TestRequestConcurrently(t *testing.T) {
 
 	cfg := &config.Configuration{}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	ex := exchange.NewExchange(server.Client(), &mockCache{}, cfg, theMetrics)
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
