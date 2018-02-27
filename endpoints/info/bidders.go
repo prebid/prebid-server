@@ -18,14 +18,14 @@ func NewBiddersEndpoint() httprouter.Handle {
 		bidderNames = append(bidderNames, bidderName)
 	}
 
-	jsonData, err := json.Marshal(bidderNames)
+	biddersJson, err := json.Marshal(bidderNames)
 	if err != nil {
 		glog.Fatalf("error creating /info/bidders endpoint response: %v", err)
 	}
 
 	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
-		if _, err := w.Write(jsonData); err != nil {
+		if _, err := w.Write(biddersJson); err != nil {
 			glog.Errorf("error writing response to /info/bidders: %v", err)
 		}
 	})
