@@ -2,6 +2,7 @@
 
 set -e
 
+RACE=0
 AUTOFMT=true
 COVERAGE=false
 VET=true
@@ -9,6 +10,7 @@ VET=true
 while true; do
   case "$1" in
      --nofmt ) AUTOFMT=false; shift ;;
+     --race ) RACE=$2; shift; shift; ;;
      --cov ) COVERAGE=true; shift ;;
      --novet ) VET=false; shift ;;
      * ) break ;;
@@ -44,11 +46,14 @@ fi
 if $COVERAGE; then
   ./scripts/check_coverage.sh
 
-  # Tests take a *really* long time with both the race detector and code coverage, so...
-  # just re-run the tests designed for concurrency again, without code coverage.
-  go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count 2
+  if [ "$RACE" -ne "0" ]; then
+    go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count $RACE
+  fi
 else
-  go test -race $(go list ./... | grep -v /vendor/) -count 2
+  go test $(go list ./... | grep -v /vendor/)
+  if [ "$RACE" -ne "0" ]; then
+    go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count $RACE
+  fi
 fi
 
 if $VET; then
