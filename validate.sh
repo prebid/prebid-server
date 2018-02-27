@@ -45,15 +45,16 @@ fi
 # Run the actual tests. Make sure there's enough coverage too, if the flags call for it.
 if $COVERAGE; then
   ./scripts/check_coverage.sh
-
-  if [ "$RACE" -ne "0" ]; then
-    go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count $RACE
-  fi
 else
   go test $(go list ./... | grep -v /vendor/)
-  if [ "$RACE" -ne "0" ]; then
-    go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count $RACE
-  fi
+fi
+
+# Then run the race condition tests. These only run on tests named TestRace.* for two reasons.
+#
+#   1. To speed things up (for large -count values)
+#   2. Because some tests open up files on the filesystem, and some operating systems limit the number of open files for a single proecss.
+if [ "$RACE" -ne "0" ]; then
+  go test -race $(go list ./... | grep -v /vendor/) -run ^TestRace.*$ -count $RACE
 fi
 
 if $VET; then
