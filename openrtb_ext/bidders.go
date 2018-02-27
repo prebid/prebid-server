@@ -42,6 +42,15 @@ var BidderMap = map[string]BidderName{
 	"adform":          BidderAdform,
 }
 
+// BidderList returns the values of the BidderMap
+func BidderList() []BidderName {
+	bidders := make([]BidderName, 0, len(BidderMap))
+	for _, value := range BidderMap {
+		bidders = append(bidders, value)
+	}
+	return bidders
+}
+
 func (name BidderName) MarshalJSON() ([]byte, error) {
 	return []byte(name), nil
 }

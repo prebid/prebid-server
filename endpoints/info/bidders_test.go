@@ -50,7 +50,7 @@ func TestGetBidders(t *testing.T) {
 
 // TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
 func TestGetSpecificBidders(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info")
+	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info", openrtb_ext.BidderList())
 
 	for bidderName, _ := range openrtb_ext.BidderMap {
 		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
@@ -77,7 +77,7 @@ func TestGetSpecificBidders(t *testing.T) {
 
 // TestGetBidderAccuracy validates the output for a known file.
 func TestGetBidderAccuracy(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("./sample")
+	endpoint := NewBidderDetailsEndpoint("./sample", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders request: %v", err)
@@ -124,7 +124,7 @@ func TestGetBidderAccuracy(t *testing.T) {
 }
 
 func TestGetUnknownBidder(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("./sample")
+	endpoint := NewBidderDetailsEndpoint("./sample", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someUnknownBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders/someUnknownBidder request: %v", err)

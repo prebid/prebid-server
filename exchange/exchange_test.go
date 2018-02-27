@@ -24,7 +24,7 @@ func TestNewExchange(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	knownAdapters := AdapterList()
+	knownAdapters := openrtb_ext.BidderList()
 
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -33,33 +32,29 @@ func NewBiddersEndpoint() httprouter.Handle {
 }
 
 // NewBiddersEndpoint implements /info/bidders/*
-func NewBidderDetailsEndpoint(infoDir string) httprouter.Handle {
+func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) httprouter.Handle {
 	// Build all the responses up front, since there are a finite number and it won't use much memory.
-	files, err := ioutil.ReadDir(infoDir)
-	if err != nil {
-		glog.Fatalf("error reading directory %s: %v", infoDir, err)
-	}
-
-	responses := make(map[string]json.RawMessage, len(files))
-	for _, file := range files {
-		fileData, err := ioutil.ReadFile(infoDir + "/" + file.Name())
+	responses := make(map[string]json.RawMessage, len(bidders))
+	for _, bidderName := range bidders {
+		bidderString := string(bidderName)
+		fileData, err := ioutil.ReadFile(infoDir + "/" + bidderString + ".yaml")
 		if err != nil {
-			glog.Fatalf("error reading from file %s: %v", infoDir+"/"+file.Name(), err)
+			glog.Fatalf("error reading from file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
 
 		var parsedInfo infoFile
 		if err := yaml.Unmarshal(fileData, &parsedInfo); err != nil {
-			glog.Fatalf("error parsing yaml in file %s: %v", infoDir+"/"+file.Name(), err)
+			glog.Fatalf("error parsing yaml in file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
 
 		jsonBytes, err := json.Marshal(parsedInfo)
 		if err != nil {
-			glog.Fatalf("error writing JSON of file %s: %v", infoDir+"/"+file.Name(), err)
+			glog.Fatalf("error writing JSON of file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
-		responses[strings.TrimSuffix(file.Name(), ".yaml")] = json.RawMessage(jsonBytes)
+		responses[bidderString] = json.RawMessage(jsonBytes)
 	}
 
-	// Return an endpoint which writes the responses as quickly as possible.
+	// Return an endpoint which writes the responses from memory.
 	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		forBidder := ps.ByName("bidderName")
 		if response, ok := responses[forBidder]; ok {

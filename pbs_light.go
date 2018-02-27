@@ -869,7 +869,7 @@ func serve(cfg *config.Configuration) error {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, openrtb_ext.BidderList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
@@ -894,7 +894,7 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
-	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info"))
+	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
 	router.POST("/validate", validate)
