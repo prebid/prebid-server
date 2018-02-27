@@ -17,7 +17,10 @@ const schemaDirectory = "static/bidder-params"
 // BidderName may refer to a bidder ID, or an Alias which is defined in the request.
 type BidderName string
 
+// These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
+// Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
+	BidderAdform     BidderName = "adform"
 	BidderAppnexus   BidderName = "appnexus"
 	BidderConversant BidderName = "conversant"
 	BidderFacebook   BidderName = "audienceNetwork"
@@ -26,11 +29,11 @@ const (
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
 	BidderRubicon    BidderName = "rubicon"
-	BidderAdform     BidderName = "adform"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
+	"adform":          BidderAdform,
 	"appnexus":        BidderAppnexus,
 	"audienceNetwork": BidderFacebook,
 	"conversant":      BidderConversant,
@@ -39,7 +42,6 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
-	"adform":          BidderAdform,
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {

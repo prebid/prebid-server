@@ -19,13 +19,8 @@ type ConversantAdapter struct {
 	URI  string
 }
 
-// Name - export adapter name
-func (a *ConversantAdapter) Name() string {
-	return "conversant"
-}
-
 // Corresponds to the bidder name in cookies and requests
-func (a *ConversantAdapter) FamilyName() string {
+func (a *ConversantAdapter) Name() string {
 	return "conversant"
 }
 
@@ -49,7 +44,7 @@ type conversantParams struct {
 
 func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	cnvrReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	cnvrReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
 
 	if err != nil {
 		return nil, err

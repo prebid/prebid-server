@@ -32,13 +32,8 @@ var supportedHeight = map[uint64]bool{
 	250: true,
 }
 
-/* Name - export adapter name */
-func (a *FacebookAdapter) Name() string {
-	return "audienceNetwork"
-}
-
 // used for cookies and such
-func (a *FacebookAdapter) FamilyName() string {
+func (a *FacebookAdapter) Name() string {
 	return "audienceNetwork"
 }
 
@@ -114,7 +109,7 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 
 func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, placementId string, mtype pbs.MediaType, pubId string, unitInd int) (openrtb.BidRequest, error) {
 	// this method creates imps for all ad units for the bidder with a single media type
-	fbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+	fbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), []pbs.MediaType{mtype}, true)
 
 	if err != nil {
 		return openrtb.BidRequest{}, err
@@ -266,9 +261,8 @@ func NewAdapterFromFacebook(config *adapters.HTTPAdapterConfig, partnerID string
 	if partnerID == "" {
 		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
 		return &adapters.MisconfiguredAdapter{
-			TheName:       "audienceNetwork",
-			TheFamilyName: "audienceNetwork",
-			Err:           errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
+			TheName: "audienceNetwork",
+			Err:     errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
 		}
 	}
 	return NewFacebookAdapter(config, partnerID)

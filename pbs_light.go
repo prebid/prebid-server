@@ -768,6 +768,7 @@ func setupExchanges(cfg *config.Configuration) {
 }
 
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
 		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
 		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),

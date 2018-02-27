@@ -27,13 +27,8 @@ type AppNexusAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *AppNexusAdapter) Name() string {
-	return "AppNexus"
-}
-
 // used for cookies and such
-func (a *AppNexusAdapter) FamilyName() string {
+func (a *AppNexusAdapter) Name() string {
 	return "adnxs"
 }
 
@@ -76,7 +71,7 @@ type appnexusImpExt struct {
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
+	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes, true)
 
 	if err != nil {
 		return nil, err

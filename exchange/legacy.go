@@ -97,7 +97,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 	cookie := pbs.NewPBSCookie()
 	if req.User != nil {
 		if req.User.BuyerUID != "" {
-			cookie.TrySync(bidder.adapter.FamilyName(), req.User.BuyerUID)
+			cookie.TrySync(bidder.adapter.Name(), req.User.BuyerUID)
 		}
 
 		// This shouldn't be appnexus-specific... but this line does correctly invert the
