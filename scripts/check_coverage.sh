@@ -25,8 +25,6 @@ if [ "$?" = "0" ]; then
 
 # Fixes #315. If it has errors, print those and exit with an error code
 else
-  while read -r LINE; do
-    echo -e "$LINE"
-  done <<< "$OUTPUT"
+  echo -e "$OUTPUT"
   exit 1
 fi
