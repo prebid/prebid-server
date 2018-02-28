@@ -740,7 +740,7 @@ func init() {
 }
 
 func main() {
-	cfg, err := config.New()
+	cfg, err := config.New(viper.GetViper())
 	if err != nil {
 		glog.Fatalf("Viper was unable to read configurations: %v", err)
 	}

@@ -87,9 +87,9 @@ type Cookie struct {
 }
 
 // New uses viper to get our server configurations
-func New() (*Configuration, error) {
+func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
-	if err := viper.Unmarshal(&c); err != nil {
+	if err := v.Unmarshal(&c); err != nil {
 		return nil, err
 	}
 	return &c, c.validate()

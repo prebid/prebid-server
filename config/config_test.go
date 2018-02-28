@@ -7,26 +7,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
-	viper.SetConfigName("pbs")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/config")
-
-	viper.SetDefault("external_url", "http://localhost:8000")
-	viper.SetDefault("port", 8000)
-	viper.SetDefault("admin_port", 6060)
-	viper.SetDefault("default_timeout_ms", 250)
-	viper.SetDefault("datacache.type", "dummy")
-
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
-	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
-	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-}
-
 func TestDefaults(t *testing.T) {
 
-	cfg, err := New()
+	cfg, err := New(newViperWithDefaults())
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -108,9 +91,10 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 }
 
 func TestFullConfig(t *testing.T) {
-	viper.SetConfigType("yaml")
-	viper.ReadConfig(bytes.NewBuffer(fullConfig))
-	cfg, err := New()
+	v := newViperWithDefaults()
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(fullConfig))
+	cfg, err := New(v)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -148,6 +132,25 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
+}
+
+func newViperWithDefaults() *viper.Viper {
+	v := viper.New()
+	v.SetConfigName("pbs")
+	v.AddConfigPath(".")
+	v.AddConfigPath("/etc/config")
+
+	v.SetDefault("external_url", "http://localhost:8000")
+	v.SetDefault("port", 8000)
+	v.SetDefault("admin_port", 6060)
+	v.SetDefault("default_timeout_ms", 250)
+	v.SetDefault("datacache.type", "dummy")
+
+	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	v.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	return v
 }
 
 func TestValidConfig(t *testing.T) {
