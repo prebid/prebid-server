@@ -12,6 +12,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
 )
@@ -25,7 +26,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		"10": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{goodRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
 	for requestID, _ := range goodRequests {
@@ -65,7 +66,7 @@ func TestAmpBadRequests(t *testing.T) {
 		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{badRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	for requestID, _ := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)

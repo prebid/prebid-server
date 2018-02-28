@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"errors"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -36,7 +37,7 @@ const (
 	USERSYNC_SUCCESS     = "usersync.%s.sets"
 )
 
-// bidderToFamilyNames maps the BidderName to Adapter.FamilyName() for the early adapters.
+// bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
 // If a mapping isn't listed here, then we assume that the two are the same.
 var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
 	openrtb_ext.BidderAppnexus: "adnxs",

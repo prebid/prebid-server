@@ -74,7 +74,7 @@ func TestExplicitUserId(t *testing.T) {
 		Name:  cookieName,
 		Value: mockId,
 	})
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
 	endpoint(httptest.NewRecorder(), request, nil)
 
@@ -104,7 +104,7 @@ func TestImplicitUserId(t *testing.T) {
 		Name:  cookieName,
 		Value: mockId,
 	})
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
 	endpoint(httptest.NewRecorder(), request, nil)
 
@@ -167,7 +167,7 @@ func readFile(t *testing.T, filename string) []byte {
 // runFile reads the data from filename, sends it through the preprocessor (if non-nil),
 // and returns the status code that the /openrtb2/auction endpoint gives for that request data,
 func runFile(t *testing.T, filename string, preprocessor func(*testing.T, []byte) []byte) int {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	requestData := readFile(t, filename)
 
@@ -204,7 +204,7 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
@@ -213,7 +213,7 @@ func TestNilExchange(t *testing.T) {
 
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
@@ -222,7 +222,7 @@ func TestNilValidator(t *testing.T) {
 
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -269,7 +269,7 @@ func TestUserAgentOverride(t *testing.T) {
 // TestImplicitIPs prevents #230
 func TestImplicitIPs(t *testing.T) {
 	ex := &nobidExchange{}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
@@ -303,7 +303,7 @@ func TestRefererParsing(t *testing.T) {
 
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics}
 
 	for i, requestData := range testStoredRequests {
@@ -332,7 +332,7 @@ func TestOversizedRequest(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody) - 1)},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -357,7 +357,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()),
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
 	}
 
 	req := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(reqBody))
@@ -381,7 +381,7 @@ func TestNoEncoding(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -407,7 +407,7 @@ func TestContentType(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), exchange.AdapterList()))
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)

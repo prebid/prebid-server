@@ -1,0 +1,10 @@
+maintainer:
+  email: "mobile.tech@lifestreet.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+      - video

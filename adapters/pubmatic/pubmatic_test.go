@@ -82,11 +82,6 @@ func TestPubmaticInvalidCall(t *testing.T) {
 
 	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
 
-	s := an.Name()
-	if s == "" {
-		t.Fatal("Missing name")
-	}
-
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{}
