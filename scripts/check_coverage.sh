@@ -21,7 +21,7 @@ while IFS= read -r LINE; do
   if [[ $LINE =~ "%" ]]; then
     PERCENT=$(echo "$LINE"|cut -d: -f2-|cut -d% -f1|cut -d. -f1|tr -d ' ')
     if [[ $PERCENT -lt $COV_MIN ]]; then
-      echo "Package has less than $COV_MIN% code coverage. Run ./scripts/coverage.sh --html to see a detailed coverage report, and add tests to improve your coverage"
+      echo "Package has less than ${COV_MIN}% code coverage. Run ./scripts/coverage.sh --html to see a detailed coverage report, and add tests to improve your coverage"
       exit 1
     fi
   fi
