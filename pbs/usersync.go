@@ -43,6 +43,7 @@ var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
 	openrtb_ext.BidderAppnexus: "adnxs",
 	openrtb_ext.BidderFacebook: "audienceNetwork",
 	openrtb_ext.BidderIndex:    "indexExchange",
+	openrtb_ext.BidderSovrn:    "sovrn",
 }
 
 // PBSCookie is the cookie used in Prebid Server.
