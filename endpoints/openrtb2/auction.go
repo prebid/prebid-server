@@ -397,12 +397,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 		// Creating ExtUser object to check if DigiTrust is valid
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			if userExt.DigiTrust == nil {
-				// Make sure that user.ext is not empty.
-				if userExt.Prebid == nil {
-					return errors.New("request.user.ext should not be an empty object.")
-				}
-			} else if userExt.DigiTrust.Pref != 0 {
+			if userExt.DigiTrust != nil && userExt.DigiTrust.Pref != 0 {
 				// DigiTrust is not valid. Return error.
 				return errors.New("request.user contains a digitrust object that is not valid.")
 			}
