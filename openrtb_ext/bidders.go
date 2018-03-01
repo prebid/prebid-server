@@ -29,7 +29,6 @@ const (
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
 	BidderRubicon    BidderName = "rubicon"
-	BidderAdform     BidderName = "adform"
 	BidderSovrn      BidderName = "sovrn"
 )
 
@@ -44,7 +43,6 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
-	"adform":          BidderAdform,
 	"sovrn":           BidderSovrn,
 }
 
