@@ -223,6 +223,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	if err := validateRegs(req.Regs); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -420,6 +424,19 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 		}
 	}
 
+	return nil
+}
+
+func validateRegs(regs *openrtb.Regs) error {
+	if regs != nil && len(regs.Ext) > 0 {
+		var regsExt openrtb_ext.ExtRegs
+		if err := json.Unmarshal(regs.Ext, &regsExt); err != nil {
+			return fmt.Errorf("request.regs.ext is invalid: %v", err)
+		}
+		if regsExt.GDPR != nil && (*regsExt.GDPR < 0 || *regsExt.GDPR > 1) {
+			return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
+		}
+	}
 	return nil
 }
 
