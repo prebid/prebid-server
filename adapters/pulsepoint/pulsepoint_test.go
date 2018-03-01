@@ -25,7 +25,6 @@ import (
 func TestPulsePointAdapterNames(t *testing.T) {
 	adapter := NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, "http://localhost/bid")
 	adapterstest.VerifyStringValue(adapter.Name(), "pulsepoint", t)
-	adapterstest.VerifyStringValue(adapter.FamilyName(), "pulsepoint", t)
 }
 
 /**

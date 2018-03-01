@@ -1,8 +1,7 @@
 #!/bin/bash
 
-set -e
 
-CHECKCOV=false
+COV_MIN=30
 
 #cleanup
 finish() {
@@ -17,17 +16,13 @@ trap finish EXIT ERR INT TERM
 #start script logic
 OUTPUT=`./scripts/coverage.sh`
 
-while read -r LINE; do
+while IFS= read -r LINE; do
   echo -e "$LINE"
   if [[ $LINE =~ "%" ]]; then
     PERCENT=$(echo "$LINE"|cut -d: -f2-|cut -d% -f1|cut -d. -f1|tr -d ' ')
-    if [[ $PERCENT -lt 30 ]]; then
-      CHECKCOV=true
+    if [[ $PERCENT -lt $COV_MIN ]]; then
+      echo "Package has less than ${COV_MIN}% code coverage. Run ./scripts/coverage.sh --html to see a detailed coverage report, and add tests to improve your coverage"
+      exit 1
     fi
   fi
 done <<< "$OUTPUT"
-
-if $CHECKCOV; then
-  echo "Detected at least one package had less than 20% code coverage.  Please review results below or from your terminal run ./scripts/coverage.sh --html for more detailed results"
-  exit 1
-fi

@@ -36,8 +36,7 @@ const DefaultParam = `{"site_id": "12345"}`
 func TestConversantProperties(t *testing.T) {
 	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
-	assertNotEqual(t, an.Name(), "", "Missing name")
-	assertNotEqual(t, an.FamilyName(), "", "Missing family name")
+	assertNotEqual(t, an.Name(), "", "Missing family name")
 	assertTrue(t, an.SkipNoCookies(), "SkipNoCookies should be true")
 }
 
@@ -389,7 +388,7 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 	param := `{ "site_id": "12345",
 		   "tag_id": "bottom left",
 		   "position": 3,
-		   "bidfloor": 1.01, 
+		   "bidfloor": 1.01,
 		   "mimes": ["video/x-ms-wmv"],
 		   "protocols": [1, 2],
 		   "api": [1, 2],
