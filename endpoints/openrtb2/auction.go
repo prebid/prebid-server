@@ -420,7 +420,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 			}
 		} else {
 			// Return error.
-			return errors.New("request.user.ext object is not valid.")
+			return fmt.Errorf("request.user.ext object is not valid: %v", err)
 		}
 	}
 
