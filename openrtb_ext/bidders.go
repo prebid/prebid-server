@@ -29,6 +29,7 @@ const (
 	BidderPubmatic   BidderName = "pubmatic"
 	BidderPulsepoint BidderName = "pulsepoint"
 	BidderRubicon    BidderName = "rubicon"
+	BidderSovrn      BidderName = "sovrn"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -42,6 +43,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
+	"sovrn":           BidderSovrn,
 }
 
 // BidderList returns the values of the BidderMap

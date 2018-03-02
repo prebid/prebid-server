@@ -111,6 +111,8 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
+Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
+
 #### Targeting
 
 Targeting refers to strings which are sent to the adserver to
@@ -254,6 +256,17 @@ A typical `storedrequest` value looks like this:
 ```
 
 For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
+
+#### GDPR
+
+Prebid Server supports the IAB's GDPR recommendations, which can be found [here](https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf).
+
+This adds two optional properties:
+
+- `request.user.ext.consent`: Is the consent string required by the IAB standards.
+- `request.regs.ext.gdpr`: Is 0 if the caller believes that the user is *not* under GDPR, 1 if the user *is* under GDPR, and undefined if we're not certain.
+
+These fields will be forwarded to each Bidder, so they can decide how to process them.
 
 ### OpenRTB Differences
 
