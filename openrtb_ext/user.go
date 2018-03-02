@@ -5,9 +5,9 @@ type ExtUser struct {
 
 	// Consent is a GDPR consent string. See "Advised Extensions" of
 	// https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf
-	Consent string `json:"consent"`
+	Consent string `json:"consent,omitempty"`
 
-	Prebid *ExtUserPrebid `json:"prebid"`
+	Prebid *ExtUserPrebid `json:"prebid,omitempty"`
 
 	// DigiTrust breaks the typical Prebid Server convention of namespacing "global" options inside "ext.prebid.*"
 	// to match the recommendation from the broader digitrust community.
