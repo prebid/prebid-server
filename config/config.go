@@ -51,10 +51,24 @@ type Adapter struct {
 }
 
 type Metrics struct {
+	GoMetrics  GoMetrics         `mapstructure:"gometrics"`
+	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
+	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
+}
+
+type InfluxMetrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+}
+
+type PrometheusMetrics struct {
+	Enabled string `mapstructure:"enabled"`
+}
+
+type GoMetrics struct {
+	Enabled string `mapstructure:"enabled"`
 }
 
 type DataCache struct {

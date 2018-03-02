@@ -2,12 +2,15 @@ package pbsmetrics
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/rcrowley/go-metrics"
 )
 
+// Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
 	metricsRegistry     metrics.Registry
 	RequestMeter        metrics.Meter
@@ -22,12 +25,17 @@ type Metrics struct {
 	ORTBRequestMeter metrics.Meter
 	AmpRequestMeter  metrics.Meter
 	AmpNoCookieMeter metrics.Meter
+	CookieSyncMeter  metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
+	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
+	accountMetrics        map[string]*accountMetrics
+	accountMetricsRWMutex sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
 }
 
+// AdapterMetrics houses the metrics for a particular adapter
 type AdapterMetrics struct {
 	NoCookieMeter     metrics.Meter
 	ErrorMeter        metrics.Meter
@@ -39,9 +47,16 @@ type AdapterMetrics struct {
 	BidsReceivedMeter metrics.Meter
 }
 
-// Create a new Metrics object with all blank metrics object. This may also be useful for
-// testing routines to ensure that no metrics are written anywhere.
+type accountMetrics struct {
+	requestMeter      metrics.Meter
+	bidsReceivedMeter metrics.Meter
+	priceHistogram    metrics.Histogram
+	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
+	adapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
+}
 
+// NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
+// testing routines to ensure that no metrics are written anywhere.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := &Metrics{
 		metricsRegistry:     registry,
@@ -55,6 +70,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ORTBRequestMeter:    blankMeter(0),
 		AmpRequestMeter:     blankMeter(0),
 		AmpNoCookieMeter:    blankMeter(0),
+		CookieSyncMeter:     blankMeter(0),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 
@@ -67,12 +83,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	return newMetrics
 }
 
-// Create a new Metrics object with needed metrics defined. In time we may develop to the point
+// NewMetrics creates a new Metrics object with needed metrics defined. In time we may develop to the point
 // where Metrics contains all the metrics we might want to record, and then we build the actual
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
 	newMetrics.RequestMeter = metrics.GetOrRegisterMeter("requests", registry)
@@ -85,7 +100,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ORTBRequestMeter = metrics.GetOrRegisterMeter("ortb_requests", registry)
 	newMetrics.AmpRequestMeter = metrics.GetOrRegisterMeter("amp_requests", registry)
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
-
+	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
 	for _, a := range exchanges {
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
@@ -119,6 +134,163 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
 
+}
+
+// getAccountMetrics gets or registers the account metrics for account "id".
+// There is no getBlankAccountMetrics() as all metrics are generated dynamically.
+func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
+	var am *accountMetrics
+	var ok bool
+
+	me.accountMetricsRWMutex.RLock()
+	am, ok = me.accountMetrics[id]
+	me.accountMetricsRWMutex.RUnlock()
+
+	if ok {
+		return am
+	}
+
+	me.accountMetricsRWMutex.Lock()
+	// Made sure to use defer as we have two exit points: we want to unlock the mutex as quickly as possible.
+	defer me.accountMetricsRWMutex.Unlock()
+
+	am, ok = me.accountMetrics[id]
+	if ok {
+		// Unlock and return as quickly as possible
+		return am
+	}
+	am = &accountMetrics{}
+	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.metricsRegistry)
+	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.metricsRegistry)
+	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
+	for _, a := range me.exchanges {
+		am.adapterMetrics[a] = makeBlankAdapterMetrics(me.metricsRegistry, a)
+		registerAdapterMetrics(me.metricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
+	}
+
+	me.accountMetrics[id] = am
+
+	return am
+}
+
+// Implement the MetricsEngine interface
+
+// RecordRequest implements a part of the MetricsEngine interface
+func (me *Metrics) RecordRequest(labels Labels) {
+	me.RequestMeter.Mark(1)
+	if labels.Source == DemandApp {
+		me.AppRequestMeter.Mark(1)
+	} else {
+		if labels.Browser == BrowserSafari {
+			me.SafariRequestMeter.Mark(1)
+			if labels.CookieFlag == CookieFLagNo {
+				me.SafariNoCookieMeter.Mark(1)
+			}
+		}
+		if labels.CookieFlag == CookieFLagNo {
+			// NOTE: Old behavior was log me.AMPNoCookieMeter here for AMP requests.
+			// AMP is still new and OpenRTB does not do this, so changing to match
+			// OpenRTB endpoint
+			me.NoCookieMeter.Mark(1)
+		}
+	}
+	switch labels.RType {
+	case ReqTypeORTB2:
+		me.ORTBRequestMeter.Mark(1)
+	case ReqTypeAMP:
+		me.AmpRequestMeter.Mark(1)
+	}
+	if labels.RequestStatus == RequestStatusErr {
+		me.ErrorMeter.Mark(1)
+	}
+	// Handle the account metrics now.
+	am := me.getAccountMetrics(labels.PubID)
+	am.requestMeter.Mark(1)
+}
+
+// RecordTime implements a part of the MetricsEngine interface. The calling code is responsible
+// for determining the call duration.
+func (me *Metrics) RecordTime(labels Labels, length time.Duration) {
+	me.RequestTimer.Update(length)
+}
+
+// RecordAdapterRequest implements a part of the MetricsEngine interface
+func (me *Metrics) RecordAdapterRequest(labels Labels) {
+	_, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	// Adapter metrics
+	am := me.AdapterMetrics[labels.Adapter]
+	am.RequestMeter.Mark(1)
+	// Account-Adapter metrics
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	aam.RequestMeter.Mark(1)
+
+	switch labels.RequestStatus {
+	case RequestStatusErr:
+		am.ErrorMeter.Mark(1)
+	case RequestStatusNoBid:
+		am.NoBidMeter.Mark(1)
+	case RequestStatusTimeout:
+		am.TimeoutMeter.Mark(1)
+	}
+	if labels.CookieFlag == CookieFLagNo {
+		am.NoCookieMeter.Mark(1)
+	}
+}
+
+// RecordAdapterBidsReceived implements a part of the MetricsEngine interface. This tracks the number of bids received
+// from a bidder.
+func (me *Metrics) RecordAdapterBidsReceived(labels Labels, bids int64) {
+	_, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	// Adapter metrics
+	am := me.AdapterMetrics[labels.Adapter]
+	am.BidsReceivedMeter.Mark(bids)
+	// Account-Adapter metrics
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	aam.BidsReceivedMeter.Mark(bids)
+}
+
+// RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
+func (me *Metrics) RecordAdapterPrice(labels Labels, cpm float64) {
+	_, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	// Adapter metrics
+	am := me.AdapterMetrics[labels.Adapter]
+	am.PriceHistogram.Update(int64(cpm))
+	// Account-Adapter metrics
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	aam.PriceHistogram.Update(int64(cpm))
+}
+
+// RecordAdapterTime implements a part of the MetricsEngine interface. Records the adapter response time
+func (me *Metrics) RecordAdapterTime(labels Labels, length time.Duration) {
+	_, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	// Adapter metrics
+	am := me.AdapterMetrics[labels.Adapter]
+	am.RequestTimer.Update(length)
+	// Account-Adapter metrics
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	aam.RequestTimer.Update(length)
+}
+
+// RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
+func (me *Metrics) RecordCookieSync(labels Labels) {
+	me.CookieSyncMeter.Mark(1)
 }
 
 // Set up blank metrics objects so we can add/subtract active metrics without refactoring a lot of code.
