@@ -223,6 +223,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	if err := validateRegs(req.Regs); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -397,12 +401,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 		// Creating ExtUser object to check if DigiTrust is valid
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			if userExt.DigiTrust == nil {
-				// Make sure that user.ext is not empty.
-				if userExt.Prebid == nil {
-					return errors.New("request.user.ext should not be an empty object.")
-				}
-			} else if userExt.DigiTrust.Pref != 0 {
+			if userExt.DigiTrust != nil && userExt.DigiTrust.Pref != 0 {
 				// DigiTrust is not valid. Return error.
 				return errors.New("request.user contains a digitrust object that is not valid.")
 			}
@@ -421,10 +420,23 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 			}
 		} else {
 			// Return error.
-			return errors.New("request.user.ext object is not valid.")
+			return fmt.Errorf("request.user.ext object is not valid: %v", err)
 		}
 	}
 
+	return nil
+}
+
+func validateRegs(regs *openrtb.Regs) error {
+	if regs != nil && len(regs.Ext) > 0 {
+		var regsExt openrtb_ext.ExtRegs
+		if err := json.Unmarshal(regs.Ext, &regsExt); err != nil {
+			return fmt.Errorf("request.regs.ext is invalid: %v", err)
+		}
+		if regsExt.GDPR != nil && (*regsExt.GDPR < 0 || *regsExt.GDPR > 1) {
+			return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
+		}
+	}
 	return nil
 }
 

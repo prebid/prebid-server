@@ -329,12 +329,12 @@ func TestAliasedBidderBuyerUIDs(t *testing.T) {
 	}
 }
 
-func TestEmptyUserExt(t *testing.T) {
+func TestGDPRExt(t *testing.T) {
 	user := &openrtb.User{
-		Ext: openrtb.RawJSON(`{}`),
+		Ext: openrtb.RawJSON(`{"consent":"some-string"}`),
 	}
-	if err := validateUser(user, nil); err == nil {
-		t.Errorf("user.ext should not allow empty values.")
+	if err := validateUser(user, nil); err != nil {
+		t.Errorf("user.ext.consent should accept strings")
 	}
 }
 
