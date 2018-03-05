@@ -17,7 +17,7 @@ import (
 )
 
 func TestTargeting(t *testing.T) {
-	winner, loser, contender := runAuction(t, false)
+	winner, loser, contender := runTargetingAuction(t, false)
 
 	// Make sure that the normal keys exist on the bids where they're expected to exist
 	assertKeyExists(t, winner, string(openrtb_ext.HbpbConstantKey), true)
@@ -40,7 +40,7 @@ func TestTargeting(t *testing.T) {
 	assertKeyExists(t, loser, openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
 }
 func TestTargetingCache(t *testing.T) {
-	winner, loser, contender := runAuction(t, true)
+	winner, loser, contender := runTargetingAuction(t, true)
 
 	// Make sure that the cache keys exist on the bids where they're expected to
 	assertKeyExists(t, winner, string(openrtb_ext.HbCacheKey), true)
@@ -62,7 +62,7 @@ func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) 
 
 // runAuction takes a bunch of mock bids by Bidder and runs an auction. It returns a map of Bids indexed by their ImpID.
 // If includeCache is true, the auction will be run with cacheing as well, so the cache targeting keys should exist.
-func runAuction(t *testing.T, includeCache bool) (winner *openrtb.Bid, loser *openrtb.Bid, contender *openrtb.Bid) {
+func runTargetingAuction(t *testing.T, includeCache bool) (winner *openrtb.Bid, loser *openrtb.Bid, contender *openrtb.Bid) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer))
 	defer server.Close()
 
