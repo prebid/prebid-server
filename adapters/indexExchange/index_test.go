@@ -20,10 +20,6 @@ func TestIndexInvalidCall(t *testing.T) {
 
 	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932")
 	an.URI = "blah"
-	s := an.Name()
-	if s == "" {
-		t.Fatal("Missing name")
-	}
 
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}

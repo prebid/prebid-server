@@ -316,14 +316,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 func TestRubiconUserSyncInfo(t *testing.T) {
 	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker")
 
-	name := an.Name()
-	if name != "Rubicon" {
-		t.Errorf("Name '%s' != 'Rubicon'", name)
-	}
-
-	familyName := an.FamilyName()
-	if familyName != "rubicon" {
-		t.Errorf("FamilyName '%s' != 'rubicon'", familyName)
+	adapterName := an.Name()
+	if adapterName != "rubicon" {
+		t.Errorf("Name '%s' != 'rubicon'", adapterName)
 	}
 
 	skipNoCookies := an.SkipNoCookies()
@@ -834,7 +829,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

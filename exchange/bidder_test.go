@@ -151,6 +151,7 @@ func TestBidderTimeout(t *testing.T) {
 		numCalls := atomic.AddInt32(&counter, 1)
 		if numCalls == 2 {
 			cancelFunc()
+			<-ctx.Done() // Fixes #369 (hopefully)
 		}
 
 		w.WriteHeader(200)

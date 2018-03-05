@@ -36,8 +36,7 @@ const DefaultParam = `{"site_id": "12345"}`
 func TestConversantProperties(t *testing.T) {
 	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
-	assertNotEqual(t, an.Name(), "", "Missing name")
-	assertNotEqual(t, an.FamilyName(), "", "Missing family name")
+	assertNotEqual(t, an.Name(), "", "Missing family name")
 	assertTrue(t, an.SkipNoCookies(), "SkipNoCookies should be true")
 }
 
@@ -389,7 +388,7 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 	param := `{ "site_id": "12345",
 		   "tag_id": "bottom left",
 		   "position": 3,
-		   "bidfloor": 1.01, 
+		   "bidfloor": 1.01,
 		   "mimes": ["video/x-ms-wmv"],
 		   "protocols": [1, 2],
 		   "api": [1, 2],
@@ -609,7 +608,7 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	httpReq := httptest.NewRequest("POST", "/foo", body)
 	cookie := pbs.NewPBSCookie()
 	cookie.TrySync("conversant", ExpectedBuyerUID)
-	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie().String())
+	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
 	cache, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}

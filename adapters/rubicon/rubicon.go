@@ -26,13 +26,8 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-/* Name - export adapter name */
-func (a *RubiconAdapter) Name() string {
-	return "Rubicon"
-}
-
 // used for cookies and such
-func (a *RubiconAdapter) FamilyName() string {
+func (a *RubiconAdapter) Name() string {
 	return "rubicon"
 }
 
@@ -305,7 +300,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	callOneObjects := make([]callOneObject, 0, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
-	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
+	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes, true)
 	if err != nil {
 		return nil, err
 	}
@@ -572,11 +567,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				continue
 			}
 			bannerExt := rubiconBannerExt{RP: rubiconBannerExtRP{SizeID: primarySizeID, AltSizeIDs: altSizeIDs, MIME: "text/html"}}
-			thisImp.Banner.Ext, err = json.Marshal(&bannerExt)
+			bannerCopy := *thisImp.Banner
+			bannerCopy.Ext, err = json.Marshal(&bannerExt)
 			if err != nil {
 				errs = append(errs, err)
 				continue
 			}
+			thisImp.Banner = &bannerCopy
 		}
 
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}

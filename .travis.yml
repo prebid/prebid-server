@@ -7,4 +7,4 @@ install:
     - glide install
 
 script:
-    - ./validate.sh --nofmt --cov
+    - ./validate.sh --nofmt --cov --race 10
