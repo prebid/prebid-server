@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Prevents #378
 func TestTargeting(t *testing.T) {
 	winner, loser, contender := runTargetingAuction(t, false)
 
@@ -39,6 +40,8 @@ func TestTargeting(t *testing.T) {
 	assertKeyExists(t, loser, string(openrtb_ext.HbCacheKey), false)
 	assertKeyExists(t, loser, openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
 }
+
+// Prevents #378
 func TestTargetingCache(t *testing.T) {
 	winner, loser, contender := runTargetingAuction(t, true)
 
