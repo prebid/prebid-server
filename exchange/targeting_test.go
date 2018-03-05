@@ -17,40 +17,7 @@ import (
 )
 
 func TestTargeting(t *testing.T) {
-	impId := "some-imp"
-	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
-		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "losing-bid",
-			ImpID: impId,
-			Price: 0.5,
-		}, &openrtb.Bid{
-			ID:    "winning-bid",
-			ImpID: impId,
-			Price: 0.7,
-		}},
-		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "contending-bid",
-			ImpID: impId,
-			Price: 0.6,
-		}},
-	}
-	bids := runAuction(t, mockBids, false)
-
-	var winner *openrtb.Bid
-	var loser *openrtb.Bid
-	var contender *openrtb.Bid
-	for i := 0; i < len(bids[impId]); i++ {
-		switch bids[impId][i].ID {
-		case "winning-bid":
-			winner = bids[impId][i]
-		case "losing-bid":
-			loser = bids[impId][i]
-		case "contending-bid":
-			contender = bids[impId][i]
-		default:
-			t.Fatalf("Unexpected bid: %s", bids[impId][i].ImpID)
-		}
-	}
+	winner, loser, contender := runAuction(t, false)
 
 	// Make sure that the normal keys exist on the bids where they're expected to exist
 	assertKeyExists(t, winner, string(openrtb_ext.HbpbConstantKey), true)
@@ -73,43 +40,9 @@ func TestTargeting(t *testing.T) {
 	assertKeyExists(t, loser, openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
 }
 func TestTargetingCache(t *testing.T) {
-	impId := "some-imp"
+	winner, loser, contender := runAuction(t, true)
 
-	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
-		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "losing-bid",
-			ImpID: impId,
-			Price: 0.5,
-		}, &openrtb.Bid{
-			ID:    "winning-bid",
-			ImpID: impId,
-			Price: 0.7,
-		}},
-		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "contending-bid",
-			ImpID: impId,
-			Price: 0.6,
-		}},
-	}
-	bids := runAuction(t, mockBids, true)
-
-	var winner *openrtb.Bid
-	var loser *openrtb.Bid
-	var contender *openrtb.Bid
-	for i := 0; i < len(bids[impId]); i++ {
-		switch bids[impId][i].ID {
-		case "winning-bid":
-			winner = bids[impId][i]
-		case "losing-bid":
-			loser = bids[impId][i]
-		case "contending-bid":
-			contender = bids[impId][i]
-		default:
-			t.Fatalf("Unexpected bid: %s", bids[impId][i].ImpID)
-		}
-	}
-
-	// Make sure that the cache keys exist on the bids where they're expected to exist
+	// Make sure that the cache keys exist on the bids where they're expected to
 	assertKeyExists(t, winner, string(openrtb_ext.HbCacheKey), true)
 	assertKeyExists(t, winner, openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
 
@@ -129,9 +62,28 @@ func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) 
 
 // runAuction takes a bunch of mock bids by Bidder and runs an auction. It returns a map of Bids indexed by their ImpID.
 // If includeCache is true, the auction will be run with cacheing as well, so the cache targeting keys should exist.
-func runAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool) map[string][]*openrtb.Bid {
+func runAuction(t *testing.T, includeCache bool) (winner *openrtb.Bid, loser *openrtb.Bid, contender *openrtb.Bid) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer))
 	defer server.Close()
+
+	impId := "some-imp"
+
+	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
+		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
+			ID:    "losing-bid",
+			ImpID: impId,
+			Price: 0.5,
+		}, &openrtb.Bid{
+			ID:    "winning-bid",
+			ImpID: impId,
+			Price: 0.7,
+		}},
+		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
+			ID:    "contending-bid",
+			ImpID: impId,
+			Price: 0.6,
+		}},
+	}
 
 	ex := &exchange{
 		adapterMap: buildAdapterMap(mockBids, server.URL, server.Client()),
@@ -152,7 +104,22 @@ func runAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid
 	if len(bidResp.SeatBid) != len(mockBids) {
 		t.Fatalf("Unexpected number of SeatBids. Expected %d, got %d", len(mockBids), len(bidResp.SeatBid))
 	}
-	return splitByImp(bidResp.SeatBid, len(imps))
+
+	bidsByImp := splitByImp(bidResp.SeatBid, len(imps))
+
+	for i := 0; i < len(bidsByImp[impId]); i++ {
+		switch bidsByImp[impId][i].ID {
+		case "winning-bid":
+			winner = bidsByImp[impId][i]
+		case "losing-bid":
+			loser = bidsByImp[impId][i]
+		case "contending-bid":
+			contender = bidsByImp[impId][i]
+		default:
+			t.Fatalf("Unexpected bid: %s", bidsByImp[impId][i].ImpID)
+		}
+	}
+	return
 }
 
 func buildBidderList(bids map[openrtb_ext.BidderName][]*openrtb.Bid) []openrtb_ext.BidderName {
