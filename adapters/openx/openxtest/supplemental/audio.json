@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "unit": "538225635"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "OpenX doesn't support video, audio or native Imps. Ignoring Imp ID=unsupported-audio-imp"
+  ]
+}
