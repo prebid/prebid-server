@@ -25,13 +25,8 @@ type PubmaticAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *PubmaticAdapter) Name() string {
-	return "Pubmatic"
-}
-
 // used for cookies and such
-func (a *PubmaticAdapter) FamilyName() string {
+func (a *PubmaticAdapter) Name() string {
 	return "pubmatic"
 }
 
@@ -51,7 +46,7 @@ func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...inte
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
 
 	if err != nil {
 		glog.Warningf("[PUBMATIC] Failed to make ortb request for request id [%s] \n", pbReq.ID)
@@ -152,7 +147,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
-	userId, _, _ := req.Cookie.GetUID(a.FamilyName())
+	userId, _, _ := req.Cookie.GetUID(a.Name())
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")

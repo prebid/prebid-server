@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
@@ -38,16 +39,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderRubicon: adaptBidder(rubicon.NewRubiconBidder(client, cfg.Adapters["rubicon"].Endpoint, cfg.Adapters["rubicon"].XAPI.Username,
 			cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker), client),
 		openrtb_ext.BidderAdform: adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
+		openrtb_ext.BidderSovrn:  adaptBidder(sovrn.NewSovrnBidder(client, cfg.Adapters["sovrn"].Endpoint), client),
 	}
-}
-
-// AdapterList returns a list of adapters available in the auction.
-func AdapterList() []openrtb_ext.BidderName {
-	theNames := make([]openrtb_ext.BidderName, len(openrtb_ext.BidderMap))
-	i := 0
-	for _, bidderName := range openrtb_ext.BidderMap {
-		theNames[i] = bidderName
-		i++
-	}
-	return theNames
 }

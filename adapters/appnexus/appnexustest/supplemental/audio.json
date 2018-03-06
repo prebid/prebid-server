@@ -17,6 +17,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Appnexus doesn't support audio or native Imps. Ignoring Imp ID=unsupported-audio-imp"
+    "Appnexus doesn't support audio Imps. Ignoring Imp ID=unsupported-audio-imp"
   ]
 }

@@ -316,14 +316,9 @@ func TestRubiconBasicResponse(t *testing.T) {
 func TestRubiconUserSyncInfo(t *testing.T) {
 	an := NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, "uri", "xuser", "xpass", "pbs-test-tracker")
 
-	name := an.Name()
-	if name != "Rubicon" {
-		t.Errorf("Name '%s' != 'Rubicon'", name)
-	}
-
-	familyName := an.FamilyName()
-	if familyName != "rubicon" {
-		t.Errorf("FamilyName '%s' != 'rubicon'", familyName)
+	adapterName := an.Name()
+	if adapterName != "rubicon" {
+		t.Errorf("Name '%s' != 'rubicon'", adapterName)
 	}
 
 	skipNoCookies := an.SkipNoCookies()

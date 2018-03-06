@@ -477,10 +477,6 @@ type mockLegacyAdapter struct {
 }
 
 func (a *mockLegacyAdapter) Name() string {
-	return "someBidder"
-}
-
-func (a *mockLegacyAdapter) FamilyName() string {
 	return "someFamily"
 }
 
