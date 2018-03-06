@@ -34,16 +34,14 @@ type Browser string
 // CookieFlag : User ID cookie exists flag
 type CookieFlag string
 
-// ErrorFlag : Error condition on request flag
-type ErrorFlag string
-
 // RequestStatus : The request/adapter return status
 type RequestStatus string
 
 // The demand sources
 const (
-	DemandWeb DemandSource = "web"
-	DemandApp DemandSource = "app"
+	DemandWeb     DemandSource = "web"
+	DemandApp     DemandSource = "app"
+	DemandUnknown DemandSource = "unknown"
 )
 
 // The request types (endpoints)
@@ -61,14 +59,9 @@ const (
 
 // Cookie flag
 const (
-	CookieFLagYes CookieFlag = "1"
-	CookieFLagNo  CookieFlag = "0"
-)
-
-// Error flag
-const (
-	ErrorFLagYes ErrorFlag = "1"
-	ErrorFLagNo  ErrorFlag = "0"
+	CookieFlagYes     CookieFlag = "2"
+	CookieFlagNo      CookieFlag = "1"
+	CookieFlagUnknown CookieFlag = "0"
 )
 
 // Request/return status
@@ -77,6 +70,22 @@ const (
 	RequestStatusErr     RequestStatus = "err"
 	RequestStatusNoBid   RequestStatus = "nobid"   // Only for adapters
 	RequestStatusTimeout RequestStatus = "timeout" // Only for adapters
+)
+
+// UserLabels : Labels for /setuid endpoint
+type UserLabels struct {
+	Action RequestAction
+	Bidder openrtb_ext.BidderName
+}
+
+// RequestAction : The setuid request result
+type RequestAction string
+
+// /setuid action labels
+const (
+	RequestActionSet    RequestAction = "set"
+	RequestActionOptOut RequestAction = "opt_out"
+	RequestActionErr    RequestAction = "err"
 )
 
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
@@ -92,12 +101,13 @@ type MetricsEngine interface {
 	RecordAdapterBidsReceived(labels Labels, bids int64)
 	RecordAdapterPrice(labels Labels, cpm float64)
 	RecordAdapterTime(labels Labels, length time.Duration)
-	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordCookieSync(labels Labels)        // May ignore all labels
+	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 }
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
 // for this instance.
-func NewMetricsEngine(cfg config.Configuration, adapterList []openrtb_ext.BidderName) MetricsEngine {
+func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName) MetricsEngine {
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
@@ -130,6 +140,12 @@ func NewMetricsEngine(cfg config.Configuration, adapterList []openrtb_ext.Bidder
 		// Influx is not added to the engine list as goMetrics takes care of it already.
 	}
 
+	// Now return the proper metrics engine
+	if len(engineList) > 1 {
+		return &MultiMetricsEngine{engineList: engineList}
+	} else if len(engineList) == 1 {
+		return engineList[0]
+	}
 	return &DummyMetricsEngine{0}
 }
 
@@ -188,6 +204,13 @@ func (me *MultiMetricsEngine) RecordCookieSync(labels Labels) {
 	}
 }
 
+// RecordUserIDSet across all engines
+func (me *MultiMetricsEngine) RecordUserIDSet(userLabels UserLabels) {
+	for _, thisME := range me.engineList {
+		thisME.RecordUserIDSet(userLabels)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct {
 	dummy int
@@ -225,5 +248,10 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels Labels, length time.Durat
 
 // RecordCookieSync as a noop
 func (me *DummyMetricsEngine) RecordCookieSync(labels Labels) {
+	return
+}
+
+// RecordUserIDSet as a noop
+func (me *DummyMetricsEngine) RecordUserIDSet(userLabels UserLabels) {
 	return
 }

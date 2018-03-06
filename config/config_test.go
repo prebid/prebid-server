@@ -71,10 +71,11 @@ cache:
   query: uuid=%PBS_CACHE_UUID%
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
-  host: upstream:8232
-  database: metricsdb
-  username: admin
-  password: admin1324
+  influxdb:
+    host: upstream:8232
+    database: metricsdb
+    username: admin
+    password: admin1324
 datacache:
   type: postgres
   filename: /usr/db/db.db

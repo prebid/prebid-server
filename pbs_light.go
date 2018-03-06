@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
-
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -24,7 +22,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
-	"github.com/vrischmann/go-metrics-influxdb"
 	"github.com/xeipuuv/gojsonschema"
 
 	"os"
@@ -55,6 +52,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbs/buckets"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -196,11 +194,11 @@ type cookieSyncResponse struct {
 type cookieSyncDeps struct {
 	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
 	optOutCookie *config.Cookie
-	metric       metrics.Meter
+	metric       pbsmetrics.MetricsEngine
 }
 
 func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	deps.metric.Mark(1)
+	deps.metric.RecordCookieSync(pbsmetrics.Labels{})
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
@@ -270,21 +268,29 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 }
 
 type auctionDeps struct {
-	cfg     *config.Configuration
-	syncers map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	cfg           *config.Configuration
+	syncers       map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	metricsEngine pbsmetrics.MetricsEngine
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
-	mRequestMeter.Mark(1)
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeLegacy,
+		Adapter:       "",
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	defer deps.metricsEngine.RecordRequest(labels)
 
-	isSafari := false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
-			isSafari = true
-			mSafariRequestMeter.Mark(1)
+			labels.Browser = pbsmetrics.BrowserSafari
 		}
 	}
 
@@ -294,19 +300,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			glog.Infof("Failed to parse /auction request: %v", err)
 		}
 		writeAuctionError(w, "Error parsing request", err)
-		mErrorMeter.Mark(1)
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
 	}
 
 	status := "OK"
 	if pbs_req.App != nil {
-		mAppRequestMeter.Mark(1)
-	} else if pbs_req.Cookie.LiveSyncCount() == 0 {
-		mNoCookieMeter.Mark(1)
-		if isSafari {
-			mSafariNoCookieMeter.Mark(1)
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if pbs_req.Cookie.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			status = "no_cookie"
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		status = "no_cookie"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
@@ -318,12 +326,10 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			glog.Infof("Invalid account id: %v", err)
 		}
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
-		mErrorMeter.Mark(1)
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
 	}
-
-	am := getAccountMetrics(pbs_req.AccountID)
-	am.RequestMeter.Mark(1)
+	labels.PubID = pbs_req.AccountID
 
 	pbs_resp := pbs.PBSResponse{
 		Status:       status,
@@ -333,12 +339,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 
 	ch := make(chan bidResult)
 	sentBids := 0
+	bidderLabels := make(map[string]*pbsmetrics.Labels)
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
-			ametrics := adapterMetrics[bidder.BidderCode]
-			accountAdapterMetric := am.AdapterMetrics[bidder.BidderCode]
-			ametrics.RequestMeter.Mark(1)
-			accountAdapterMetric.RequestMeter.Mark(1)
+			// Make sure we have an indpendent lable struct for each bidder. We don't want to run into issues with the goroutine below.
+			blabels := labels
+			blabels.Adapter = openrtb_ext.BidderMap[bidder.BidderCode]
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
@@ -355,57 +361,51 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				if uid == "" {
 					bidder.NoCookie = true
 					bidder.UsersyncInfo = syncer.GetUsersyncInfo()
-					ametrics.NoCookieMeter.Mark(1)
-					accountAdapterMetric.NoCookieMeter.Mark(1)
+					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
 						continue
 					}
 				}
 			}
 			sentBids++
-			go func(bidder *pbs.PBSBidder) {
+			go func(bidder *pbs.PBSBidder, blables pbsmetrics.Labels) {
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
+				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
-				ametrics.RequestTimer.UpdateSince(start)
-				accountAdapterMetric.RequestTimer.UpdateSince(start)
 				if err != nil {
 					switch err {
 					case context.DeadlineExceeded:
-						ametrics.TimeoutMeter.Mark(1)
-						accountAdapterMetric.TimeoutMeter.Mark(1)
+						bidderLabels[bidder.BidderCode].RequestStatus = pbsmetrics.RequestStatusTimeout
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						ametrics.ErrorMeter.Mark(1)
-						accountAdapterMetric.ErrorMeter.Mark(1)
+						bidderLabels[bidder.BidderCode].RequestStatus = pbsmetrics.RequestStatusErr
 						bidder.Error = err.Error()
 						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
 				} else if bid_list != nil {
 					bid_list = checkForValidBidSize(bid_list, bidder)
 					bidder.NumBids = len(bid_list)
-					am.BidsReceivedMeter.Mark(int64(bidder.NumBids))
-					accountAdapterMetric.BidsReceivedMeter.Mark(int64(bidder.NumBids))
+					deps.metricsEngine.RecordAdapterBidsReceived(blabels, int64(bidder.NumBids))
 					for _, bid := range bid_list {
-						var cpm = int64(bid.Price * 1000)
-						ametrics.PriceHistogram.Update(cpm)
-						am.PriceHistogram.Update(cpm)
-						accountAdapterMetric.PriceHistogram.Update(cpm)
+						var cpm = float64(bid.Price * 1000)
+						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
-					ametrics.NoBidMeter.Mark(1)
-					accountAdapterMetric.NoBidMeter.Mark(1)
+					bidderLabels[bidder.BidderCode].RequestStatus = pbsmetrics.RequestStatusNoBid
 				}
 
 				ch <- bidResult{
 					bidder:   bidder,
 					bid_list: bid_list,
+					// Bidder done, record bidder metrics
 				}
-			}(bidder)
+				deps.metricsEngine.RecordAdapterRequest(blabels)
+			}(bidder, blabels)
 
 		} else {
 			bidder.Error = "Unsupported bidder"
@@ -464,7 +464,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
-	mRequestTimer.UpdateSince(pbs_req.Start)
+	deps.metricsEngine.RecordTime(labels, time.Since(pbs_req.Start))
 }
 
 // checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
@@ -749,24 +749,6 @@ func main() {
 	}
 }
 
-func setupExchanges(cfg *config.Configuration) {
-	exchanges = newExchangeMap(cfg)
-
-	metricsRegistry = metrics.NewPrefixedRegistry("prebidserver.")
-	mRequestMeter = metrics.GetOrRegisterMeter("requests", metricsRegistry)
-	mAppRequestMeter = metrics.GetOrRegisterMeter("app_requests", metricsRegistry)
-	mNoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", metricsRegistry)
-	mSafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", metricsRegistry)
-	mSafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", metricsRegistry)
-	mErrorMeter = metrics.GetOrRegisterMeter("error_requests", metricsRegistry)
-	mInvalidMeter = metrics.GetOrRegisterMeter("invalid_requests", metricsRegistry)
-	mRequestTimer = metrics.GetOrRegisterTimer("request_time", metricsRegistry)
-	mCookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", metricsRegistry)
-
-	accountMetrics = make(map[string]*AccountMetrics)
-	adapterMetrics = makeExchangeMetrics("adapter")
-}
-
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	return map[string]adapters.Adapter{
 		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
@@ -816,18 +798,7 @@ func serve(cfg *config.Configuration) error {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
-	setupExchanges(cfg)
-
-	if cfg.Metrics.Host != "" {
-		go influxdb.InfluxDB(
-			metricsRegistry,      // metrics registry
-			time.Second*10,       // interval
-			cfg.Metrics.Host,     // the InfluxDB url
-			cfg.Metrics.Database, // your InfluxDB database
-			cfg.Metrics.Username, // your InfluxDB user
-			cfg.Metrics.Password, // your InfluxDB password
-		)
-	}
+	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, exchange.AdapterList())
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
 	if err != nil {
@@ -868,20 +839,19 @@ func serve(cfg *config.Configuration) error {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine)
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, metricsEngine)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, metricsEngine)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -889,11 +859,11 @@ func serve(cfg *config.Configuration) error {
 	syncers := usersyncers.NewSyncerMap(cfg)
 
 	router := httprouter.New()
-	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
+	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), metricsEngine}).CookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
@@ -913,7 +883,7 @@ func serve(cfg *config.Configuration) error {
 		HostCookieSettings: &hostCookieSettings,
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
-		Metrics:            metricsRegistry,
+		MetricsEngine:      metricsEngine,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)

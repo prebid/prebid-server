@@ -22,15 +22,19 @@ type Metrics struct {
 	RequestTimer        metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	ORTBRequestMeter metrics.Meter
-	AmpRequestMeter  metrics.Meter
-	AmpNoCookieMeter metrics.Meter
-	CookieSyncMeter  metrics.Meter
+	ORTBRequestMeter   metrics.Meter
+	AmpRequestMeter    metrics.Meter
+	AmpNoCookieMeter   metrics.Meter
+	CookieSyncMeter    metrics.Meter
+	userSyncOptout     metrics.Meter
+	userSyncBadRequest metrics.Meter
+	userSyncSet        map[openrtb_ext.BidderName]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
 	accountMetricsRWMutex sync.RWMutex
+	userSyncRwMutex       sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
 }
@@ -55,6 +59,9 @@ type accountMetrics struct {
 	adapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 }
 
+// Defining an "unknown" bidder
+const unknownBidder openrtb_ext.BidderName = "unknown"
+
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
@@ -71,8 +78,12 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		AmpRequestMeter:     blankMeter(0),
 		AmpNoCookieMeter:    blankMeter(0),
 		CookieSyncMeter:     blankMeter(0),
+		userSyncOptout:      blankMeter(0),
+		userSyncBadRequest:  blankMeter(0),
+		userSyncSet:         make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
+		accountMetrics: make(map[string]*accountMetrics),
 
 		exchanges: exchanges,
 	}
@@ -101,9 +112,13 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.AmpRequestMeter = metrics.GetOrRegisterMeter("amp_requests", registry)
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
+	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
+	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
 	for _, a := range exchanges {
+		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
+	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	return newMetrics
 }
 
@@ -184,11 +199,11 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	} else {
 		if labels.Browser == BrowserSafari {
 			me.SafariRequestMeter.Mark(1)
-			if labels.CookieFlag == CookieFLagNo {
+			if labels.CookieFlag == CookieFlagNo {
 				me.SafariNoCookieMeter.Mark(1)
 			}
 		}
-		if labels.CookieFlag == CookieFLagNo {
+		if labels.CookieFlag == CookieFlagNo {
 			// NOTE: Old behavior was log me.AMPNoCookieMeter here for AMP requests.
 			// AMP is still new and OpenRTB does not do this, so changing to match
 			// OpenRTB endpoint
@@ -237,7 +252,7 @@ func (me *Metrics) RecordAdapterRequest(labels Labels) {
 	case RequestStatusTimeout:
 		am.TimeoutMeter.Mark(1)
 	}
-	if labels.CookieFlag == CookieFLagNo {
+	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}
 }
@@ -291,6 +306,26 @@ func (me *Metrics) RecordAdapterTime(labels Labels, length time.Duration) {
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
 func (me *Metrics) RecordCookieSync(labels Labels) {
 	me.CookieSyncMeter.Mark(1)
+}
+
+// RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request
+func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
+	switch userLabels.Action {
+	case RequestActionOptOut:
+		me.userSyncOptout.Mark(1)
+		return
+	case RequestActionErr:
+		me.userSyncBadRequest.Mark(1)
+		return
+	case RequestActionSet:
+		met, ok := me.userSyncSet[userLabels.Bidder]
+		if ok {
+			met.Mark(1)
+		} else {
+			me.userSyncSet[unknownBidder].Mark(1)
+		}
+
+	}
 }
 
 // Set up blank metrics objects so we can add/subtract active metrics without refactoring a lot of code.
