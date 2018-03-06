@@ -317,7 +317,6 @@ func TestWithTargeting(t *testing.T) {
 	}
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
 	targ := &targetData{
-		lengthMax:        20,
 		priceGranularity: openrtb_ext.PriceGranularityMedium,
 	}
 	bid, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, targ, openrtb_ext.BidderFacebook)
@@ -478,10 +477,6 @@ type mockLegacyAdapter struct {
 }
 
 func (a *mockLegacyAdapter) Name() string {
-	return "someBidder"
-}
-
-func (a *mockLegacyAdapter) FamilyName() string {
 	return "someFamily"
 }
 

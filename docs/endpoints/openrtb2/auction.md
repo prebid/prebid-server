@@ -19,6 +19,9 @@ The following is a "hello world" request which fetches the [Prebid sample ad](ht
 ```
 {
   "id": "some-request-id",
+  "site": {
+    "page": "prebid.org"
+  },
   "imp": [
     {
       "id": "some-impression-id",
@@ -108,7 +111,7 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
-#### Details
+Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
 
 #### Targeting
 
@@ -123,7 +126,6 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 ```
 {
   "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']", // Required property.
-  "lengthmax": 20 // Max characters allowed in a targeting value. If omitted, there is no max.
 }
 ```
 
@@ -139,6 +141,35 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 
 The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
 (with _no_ {bidderName} suffix).
+
+**NOTE**: Targeting keys are limited to 20 characters. If {bidderName} is too long, the returned key
+will be truncated to only include the first 20 characters.
+
+#### Cookie syncs
+
+Each Bidder should receive their own ID in the `request.user.buyeruid` property.
+Prebid Server has three ways to popualte this field. In order of priority:
+
+1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
+In most cases, this is probably a bad idea.
+
+2. The request payload can store a `buyeruid` for each Bidder by defining `request.user.ext.prebid.buyeruids` like so:
+
+```
+{
+  "appnexus": "some-appnexus-id",
+  "rubicon": "some-rubicon-id"
+}
+```
+
+Prebid Server's core logic will preprocess the request so that each Bidder sees their own value in the `request.user.buyeruid` field.
+
+3. Prebid Server will use its Cookie to map IDs for each Bidder.
+
+If you're using [Prebid.js](https://github.com/prebid/Prebid.js), this is happening automatically.
+
+If you're using another client, you can populate the Cookie of the Prebid Server host with User IDs
+for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that it returns in the response.
 
 #### Bidder Aliases
 
@@ -225,6 +256,17 @@ A typical `storedrequest` value looks like this:
 ```
 
 For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
+
+#### GDPR
+
+Prebid Server supports the IAB's GDPR recommendations, which can be found [here](https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf).
+
+This adds two optional properties:
+
+- `request.user.ext.consent`: Is the consent string required by the IAB standards.
+- `request.regs.ext.gdpr`: Is 0 if the caller believes that the user is *not* under GDPR, 1 if the user *is* under GDPR, and undefined if we're not certain.
+
+These fields will be forwarded to each Bidder, so they can decide how to process them.
 
 ### OpenRTB Differences
 

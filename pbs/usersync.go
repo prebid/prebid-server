@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"errors"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -36,12 +37,13 @@ const (
 	USERSYNC_SUCCESS     = "usersync.%s.sets"
 )
 
-// bidderToFamilyNames maps the BidderName to Adapter.FamilyName() for the early adapters.
+// bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
 // If a mapping isn't listed here, then we assume that the two are the same.
 var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
 	openrtb_ext.BidderAppnexus: "adnxs",
 	openrtb_ext.BidderFacebook: "audienceNetwork",
 	openrtb_ext.BidderIndex:    "indexExchange",
+	openrtb_ext.BidderSovrn:    "sovrn",
 }
 
 // PBSCookie is the cookie used in Prebid Server.
@@ -61,6 +63,7 @@ type HostCookieSettings struct {
 	OptOutURL    string
 	OptInURL     string
 	OptOutCookie config.Cookie
+	TTL          time.Duration
 }
 
 // uidWithExpiry bundles the UID with an Expiration date.
@@ -136,14 +139,14 @@ func (cookie *PBSCookie) SetPreference(allow bool) {
 }
 
 // Gets an HTTP cookie containing all the data from this UserSyncMap. This is a snapshot--not a live view.
-func (cookie *PBSCookie) ToHTTPCookie() *http.Cookie {
+func (cookie *PBSCookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 	j, _ := json.Marshal(cookie)
 	b64 := base64.URLEncoding.EncodeToString(j)
 
 	return &http.Cookie{
 		Name:    UID_COOKIE_NAME,
 		Value:   b64,
-		Expires: time.Now().Add(180 * 24 * time.Hour),
+		Expires: time.Now().Add(ttl),
 	}
 }
 
@@ -173,8 +176,8 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string) {
-	httpCookie := cookie.ToHTTPCookie()
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
+	httpCookie := cookie.ToHTTPCookie(ttl)
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
@@ -296,7 +299,7 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
+	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -343,7 +346,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
 	}
 
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
+	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
 }
 
 // Struct for parsing json in google's response
@@ -397,7 +400,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	pc.SetPreference(optout == "")
 
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain)
+	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
 	if optout == "" {
 		http.Redirect(w, r, deps.HostCookieSettings.OptInURL, 301)
 	} else {

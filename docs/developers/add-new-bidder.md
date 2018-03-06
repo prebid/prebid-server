@@ -22,11 +22,11 @@ your bidder will access them at `request.imp[i].ext.bidder`--regardless of what 
 Bidder implementations are scattered throughout several files.
 
 - `adapters/{bidder}/{bidder}.go`: contains an implementation of [the Bidder interface](../../adapters/bidder.go).
-- `adapters/{bidder}/info.yaml`: contains contact info for the adapter's maintainer.
 - `openrtb_ext/imp_{bidder}.go`: contract classes for your Bidder's params.
 - `usersync/{bidder}.go`: A [Usersyncer](../../usersync/usersync.go) which returns cookie sync info for your bidder.
 - `usersync/{bidder}_test.go`: Unit tests for your Usersyncer
 - `static/bidder-params/{bidder}.json`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
+- `static/bidder-info/{bidder}.yaml`: contains metadata (e.g. contact email, platform & media type support) about the adapter
 
 Bidder implementations may assume that any params have already been validated against the defined json-schema.
 
@@ -45,6 +45,11 @@ This comes with several benefits, which are described in the source code docs.
 
 If your HTTP requests don't use JSON, you'll need to write your tests in the code.
 We expect to see at least 90% code coverage on each Bidder.
+
+Bidders should also define a `adapters/{bidder}/{bidder}test/params/race/{mediaType}.json` file for any supported
+Media Types (banner, video, audio, or native). These files should contain a JSON object with all the bidder params
+(required & optional) which are expected in supporting that video type. This will be used in automated tests which
+check for race conditions across Bidders.
 
 ### Manual Tests
 

@@ -2,9 +2,10 @@ package adapters
 
 import (
 	"encoding/base64"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 // Bidder describes how to connect to external demand.
