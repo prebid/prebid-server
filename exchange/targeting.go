@@ -1,12 +1,14 @@
 package exchange
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs/buckets"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
 const maxKeyLength = 20
@@ -114,4 +116,14 @@ func (t *targetData) addTargetsToCompletedAuction(auction *auction) {
 			bid.Ext, err1 = json.Marshal(bidExt)
 		}
 	})
+}
+
+// setTargeting writes all the targeting params into the bids.
+// If any errors occur when setting the targeting params for a particular bid, then that bid will be ejected from the auction.
+//
+// The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
+// it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
+// In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
+func setTargeting(ctx context.Context, cache prebid_cache_client.Client, bids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, ext map[openrtb_ext.BidderName]*seatResponseExtra) {
+	// TODO: Implement this
 }
