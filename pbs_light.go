@@ -247,7 +247,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
 	// and "bidders" is not found in the JSON, sync all bidders
 	if len(csReq.Bidders) == 0 && biddersOmitted {
-		for bidder, _ := range deps.syncers {
+		for bidder := range deps.syncers {
 			csReq.Bidders = append(csReq.Bidders, string(bidder))
 		}
 	}
@@ -452,6 +452,35 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
+		}
+	}
+
+	// cache video only for web
+	if pbs_req.CacheMarkup == 2 {
+		var cobjs []*pbc.CacheObject
+		for _, bid := range pbs_resp.Bids {
+			if bid.CreativeMediaType == "video" {
+				cobjs = append(cobjs, &pbc.CacheObject{
+					Value:   bid.Adm,
+					IsVideo: true,
+				})
+			}
+		}
+		err = pbc.Put(ctx, cobjs)
+		if err != nil {
+			writeAuctionError(w, "Prebid cache failed", err)
+			mErrorMeter.Mark(1)
+			return
+		}
+		videoIndex := 0
+		for _, bid := range pbs_resp.Bids {
+			if bid.CreativeMediaType == "video" {
+				bid.CacheID = cobjs[videoIndex].UUID
+				bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
+				bid.NURL = ""
+				bid.Adm = ""
+				videoIndex++
+			}
 		}
 	}
 
