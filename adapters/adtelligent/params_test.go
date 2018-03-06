@@ -38,10 +38,10 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"sourceId":123}`,
-	`{"sourceId":123,"placementId":1234}`,
-	`{"sourceId":123,"siteId":4321}`,
-	`{"sourceId":123,"siteId":0,"bidFloor":0}`,
+	`{"aid":123}`,
+	`{"aid":123,"placementId":1234}`,
+	`{"aid":123,"siteId":4321}`,
+	`{"aid":123,"siteId":0,"bidFloor":0}`,
 }
 
 var invalidParams = []string{
@@ -52,8 +52,8 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"sourceId":"123"}`,
-	`{"sourceId":"0"}`,
-	`{"sourceId":"123","placementId":"123"}`,
-	`{"sourceId":123, "placementId":"123", "siteId":"321"}`,
+	`{"aid":"123"}`,
+	`{"aid":"0"}`,
+	`{"aid":"123","placementId":"123"}`,
+	`{"aid":123, "placementId":"123", "siteId":"321"}`,
 }

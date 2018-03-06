@@ -13,7 +13,7 @@
       "type": "integer",
       "description": "An ID which identifies the site selling the impression"
     },
-    "sourceId": {
+    "aid": {
       "type": "integer",
       "description": "An ID which identifies the channel"
     },
@@ -22,5 +22,5 @@
       "description": "BidFloor, US Dollars"
     }
   },
-  "required": ["sourceId"]
+  "required": ["aid"]
 }

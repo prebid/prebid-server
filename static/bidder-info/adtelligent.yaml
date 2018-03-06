@@ -1,5 +1,5 @@
 maintainer:
-  email: "scope.sspp@adform.com"
+  email: "hb@adtelligent.com"
 capabilities:
   app:
     mediaTypes:
@@ -7,3 +7,4 @@ capabilities:
   site:
     mediaTypes:
       - banner
+      - video

@@ -13,22 +13,6 @@ import (
 const uri = "http://hb.adtelligent.com/auction"
 
 type AdtelligentAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
-}
-
-/* Name - export adapter name */
-func (a *AdtelligentAdapter) Name() string {
-	return "Adtelligent"
-}
-
-// used for cookies and such
-func (a *AdtelligentAdapter) FamilyName() string {
-	return "adtelligent"
-}
-
-func (a *AdtelligentAdapter) SkipNoCookies() bool {
-	return false
 }
 
 type adtelligentImpExt struct {
@@ -37,23 +21,9 @@ type adtelligentImpExt struct {
 
 func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 
-	if len(request.Imp) == 0 {
-		return nil, []error{
-			fmt.Errorf("there are no impressions"),
-		}
-	}
-
-	var err error
-
-	if nil != err {
-		return nil, []error{
-			fmt.Errorf("error while encoding impExt, err: %s", err),
-		}
-	}
-
-	errors := make([]error, 0, len(request.Imp))
-	imp2source := make(map[int][]int)
 	totalImps := len(request.Imp)
+	errors := make([]error, 0, totalImps)
+	imp2source := make(map[int][]int)
 
 	for i := 0; i < totalImps; i++ {
 
@@ -121,10 +91,6 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 		return nil, nil
 	}
 
-	if httpRes.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", httpRes.StatusCode)}
-	}
-
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
 		return nil, []error{fmt.Errorf("error while decoding response, err: %s", err)}
@@ -147,6 +113,7 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 					if imp.Video != nil {
 						mediaType = openrtb_ext.BidTypeVideo
 						break
+
 					}
 				}
 			}
@@ -170,7 +137,6 @@ func validateImpression(imp *openrtb.Imp) (int, error) {
 
 	if imp.Banner == nil && imp.Video == nil {
 		return 0, fmt.Errorf("ignoring imp id=%s, Adtelligent supports only Video and Banner", imp.ID)
-
 	}
 
 	if 0 == len(imp.Ext) {
@@ -189,10 +155,6 @@ func validateImpression(imp *openrtb.Imp) (int, error) {
 		return 0, fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
 	}
 
-	if impExt.SourceId == 0 {
-		return 0, fmt.Errorf("ignoring imp id=%s, impExt doesn't contain the required field sourceId", imp.ID)
-	}
-
 	// common extension for all impressions
 	var impExtBuffer []byte
 
@@ -208,14 +170,7 @@ func validateImpression(imp *openrtb.Imp) (int, error) {
 
 	return impExt.SourceId, nil
 }
-func NewAdtelligentAdapter(config *adapters.HTTPAdapterConfig) *AdtelligentAdapter {
-	return NewAdtelligentBidder(adapters.NewHTTPAdapter(config).Client)
-}
 
 func NewAdtelligentBidder(client *http.Client) *AdtelligentAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-	return &AdtelligentAdapter{
-		http: a,
-		URI:  uri,
-	}
+	return &AdtelligentAdapter{}
 }
