@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -23,37 +25,6 @@ import (
 )
 
 const maxSize = 1024 * 256
-
-// TestGoodRequests makes sure that the auction runs properly-formatted bids correctly.
-func TestGoodRequests(t *testing.T) {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-
-	for _, requestData := range validRequests {
-		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
-		recorder := httptest.NewRecorder()
-		endpoint(recorder, request, nil)
-
-		if recorder.Code != http.StatusOK {
-			t.Fatalf("Expected status %d. Got %d. Request data was %s\n\nResponse body was: %s", http.StatusOK, recorder.Code, requestData, recorder.Body.String())
-		}
-
-		var response openrtb.BidResponse
-		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
-			t.Fatalf("Error unmarshalling response: %s", err.Error())
-		}
-
-		if response.ID != "some-request-id" {
-			t.Errorf("Bad response.id. Expected %s, got %s.", "some-request-id", response.ID)
-		}
-		if response.BidID != "test bid id" {
-			t.Errorf("Bad response.id. Expected %s, got %s.", "test bid id", response.BidID)
-		}
-		if *response.NBR != openrtb.NoBidReasonCodeUnknownError {
-			t.Errorf("Bad response.nbr. Expected %d, got %d.", openrtb.NoBidReasonCodeUnknownError, response.NBR)
-		}
-	}
-}
 
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
 func TestExplicitUserId(t *testing.T) {
@@ -128,7 +99,7 @@ func TestImplicitUserId(t *testing.T) {
 	}
 	ex := &mockExchange{}
 
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	request.AddCookie(&http.Cookie{
 		Name:  cookieName,
 		Value: mockId,
@@ -146,20 +117,89 @@ func TestImplicitUserId(t *testing.T) {
 	}
 }
 
-// TestBadRequests makes sure we return 400's on bad requests.
+// TestGoodRequests makes sure we return 200s on good requests.
+func TestGoodRequests(t *testing.T) {
+	assertResponseFromDirectory(t, "sample-requests/valid-whole", nil, http.StatusOK)
+}
+
+// TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
+func TestGoodNativeRequests(t *testing.T) {
+	assertResponseFromDirectory(t, "sample-requests/valid-native", buildNativeRequest, http.StatusOK)
+}
+
+// TestBadRequests makes sure we return 400s on bad requests.
 func TestBadRequests(t *testing.T) {
+	assertResponseFromDirectory(t, "sample-requests/invalid-whole", nil, http.StatusBadRequest)
+}
+
+// TestBadRequests makes sure we return 400s on requests with bad Native requests.
+func TestBadNativeRequests(t *testing.T) {
+	assertResponseFromDirectory(t, "sample-requests/invalid-native", buildNativeRequest, http.StatusBadRequest)
+}
+
+// assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
+// from the /openrtb2/auction endpoint.
+func assertResponseFromDirectory(t *testing.T, dir string, preprocessor func(*testing.T, []byte) []byte, expectedCode int) {
+	for _, fileInfo := range fetchFiles(t, dir) {
+		filename := dir + "/" + fileInfo.Name()
+		assertResponseCode(t, filename, runFile(t, filename, preprocessor), expectedCode)
+	}
+}
+
+// fetchFiles returns a list of the files from dir, or fails the test if an error occurs.
+func fetchFiles(t *testing.T, dir string) []os.FileInfo {
+	t.Helper()
+	requestFiles, err := ioutil.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("Failed to read folder: %s", dir)
+	}
+	return requestFiles
+}
+
+func readFile(t *testing.T, filename string) []byte {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("Failed to read file %s: %v", filename, err)
+	}
+	return data
+}
+
+// runFile reads the data from filename, sends it through the preprocessor (if non-nil),
+// and returns the status code that the /openrtb2/auction endpoint gives for that request data,
+func runFile(t *testing.T, filename string, preprocessor func(*testing.T, []byte) []byte) int {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	for _, badRequest := range invalidRequests {
-		request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(badRequest))
-		recorder := httptest.NewRecorder()
+	requestData := readFile(t, filename)
 
-		endpoint(recorder, request, nil)
-
-		if recorder.Code != http.StatusBadRequest {
-			t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusBadRequest, recorder.Code, badRequest)
-		}
+	if preprocessor != nil {
+		requestData = preprocessor(t, requestData)
 	}
+
+	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+	return recorder.Code
+}
+
+func assertResponseCode(t *testing.T, filename string, actual int, expected int) {
+	if actual != expected {
+		t.Errorf("Expected a %d response from %v. Got %d", expected, filename, actual)
+	}
+}
+
+// buildNativeRequest JSON-encodes the nativeData as a string, and puts it into request.imp[0].native.request
+// of a request which is valid otherwise.
+func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
+	serialized, err := json.Marshal(string(nativeData))
+	if err != nil {
+		t.Fatalf("Failed to string-escape JSON data: %v", err)
+	}
+
+	buf := bytes.NewBuffer(nil)
+	buf.WriteString(`{"id":"req-id","site":{"page":"some.page.com"},"tmax":500,"imp":[{"id":"some-imp","native":{"request":`)
+	buf.Write(serialized)
+	buf.WriteString(`},"ext":{"appnexus":"good"}}]}`)
+	return buf.Bytes()
 }
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
@@ -184,18 +224,18 @@ func TestNilValidator(t *testing.T) {
 func TestExchangeError(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
 	if recorder.Code != http.StatusInternalServerError {
-		t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusInternalServerError, recorder.Code, validRequests[0])
+		t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusInternalServerError, recorder.Code, validRequest(t, "site.json"))
 	}
 }
 
 // TestUserAgentSetting makes sure we read the User-Agent header if it wasn't defined on the request.
 func TestUserAgentSetting(t *testing.T) {
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("User-Agent", "foo")
 	bidReq := &openrtb.BidRequest{}
 
@@ -211,7 +251,7 @@ func TestUserAgentSetting(t *testing.T) {
 
 // TestUserAgentOverride makes sure that the explicit UA from the request takes precedence.
 func TestUserAgentOverride(t *testing.T) {
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("User-Agent", "foo")
 	bidReq := &openrtb.BidRequest{
 		Device: &openrtb.Device{
@@ -231,7 +271,7 @@ func TestImplicitIPs(t *testing.T) {
 	ex := &nobidExchange{}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
 	recorder := httptest.NewRecorder()
 
@@ -243,7 +283,7 @@ func TestImplicitIPs(t *testing.T) {
 }
 
 func TestRefererParsing(t *testing.T) {
-	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("Referer", "http://test.mysite.com")
 	bidReq := &openrtb.BidRequest{}
 
@@ -258,83 +298,6 @@ func TestRefererParsing(t *testing.T) {
 	}
 	if bidReq.Site.Page != "http://test.mysite.com" {
 		t.Errorf("Bad bidrequest.site.page. Expected mysite.com, got %s", bidReq.Site.Page)
-	}
-}
-
-// Test valid/invalid DigiTrust functionality
-func TestDigiTrust(t *testing.T) {
-	for _, requestData := range digiTrustTestRequests {
-		bidReq := &openrtb.BidRequest{}
-		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
-		if err != nil {
-			t.Errorf("Error unmashalling bid request: %s", err.Error())
-		}
-
-		err = validateUser(bidReq.User, nil)
-
-		switch bidReq.ID {
-		case "request-without-user-obj":
-			if err != nil {
-				t.Fatalf("validateUser should not return an error due to digitrust.")
-			}
-		case "request-without-user-ext-obj":
-			if err != nil {
-				t.Fatalf("validateUser should not return an error due to digitrust.")
-			}
-		case "request-with-valid-digitrust-obj":
-			if err != nil {
-				t.Fatalf("validateUser should not return an error due to digitrust.")
-			}
-		case "request-with-invalid-digitrust-obj":
-			if err == nil {
-				t.Fatalf("validateUser should return an error due to digitrust.")
-			}
-		}
-	}
-}
-
-func TestEmptyUserExtPrebid(t *testing.T) {
-	user := &openrtb.User{
-		Ext: openrtb.RawJSON(`{"prebid":{}}`),
-	}
-	if err := validateUser(user, nil); err == nil {
-		t.Errorf("If user.ext.prebid exists, user.ext.prebid.buyeruids must exist.")
-	}
-}
-
-func TestEmptyBuyerUIDs(t *testing.T) {
-	user := &openrtb.User{
-		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{}}}`),
-	}
-	if err := validateUser(user, nil); err == nil {
-		t.Errorf("If user.ext.prebid.buyeruids exists, it must have at least one element.")
-	}
-}
-
-func TestUnknownBidderBuyerUIDs(t *testing.T) {
-	user := &openrtb.User{
-		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"unknown":"123"}}}`),
-	}
-	if err := validateUser(user, nil); err == nil {
-		t.Errorf("If user.ext.prebid.buyeruids exists, its keys must be known bidders.")
-	}
-}
-
-func TestAliasedBidderBuyerUIDs(t *testing.T) {
-	user := &openrtb.User{
-		Ext: openrtb.RawJSON(`{"prebid":{"buyeruids":{"unknown":"123"}}}`),
-	}
-	if err := validateUser(user, map[string]string{"unknown": "appnexus"}); err != nil {
-		t.Errorf("If user.ext.prebid.buyeruids exists, it should allow aliased values.")
-	}
-}
-
-func TestGDPRExt(t *testing.T) {
-	user := &openrtb.User{
-		Ext: openrtb.RawJSON(`{"consent":"some-string"}`),
-	}
-	if err := validateUser(user, nil); err != nil {
-		t.Errorf("user.ext.consent should accept strings")
 	}
 }
 
@@ -388,7 +351,7 @@ func TestOversizedRequest(t *testing.T) {
 
 // TestRequestSizeEdgeCase makes sure we behave properly when the request size *equals* the configured max.
 func TestRequestSizeEdgeCase(t *testing.T) {
-	reqBody := validRequests[0]
+	reqBody := validRequest(t, "site.json")
 	deps := &endpointDeps{
 		&nobidExchange{},
 		&bidderParamValidator{},
@@ -419,7 +382,7 @@ func TestNoEncoding(t *testing.T) {
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -445,13 +408,21 @@ func TestContentType(t *testing.T) {
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequests[0]))
+	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
 	if recorder.Header().Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type should be application/json. Got %s", recorder.Header().Get("Content-Type"))
 	}
+}
+
+func validRequest(t *testing.T, filename string) string {
+	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/" + filename)
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	return string(requestData)
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".
@@ -490,541 +461,23 @@ func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) strin
 	return "{}"
 }
 
-var digiTrustTestRequests = []string{
-	`{
-		"id": "request-without-user-obj",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		]
-	}`,
-	`{
-		"id": "request-without-user-ext-obj",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"user": {
-			"yob": 1989
-		}
-	}`,
-	`{
-		"id": "request-with-valid-digitrust-obj",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"user": {
-			"yob": 1989,
-			"ext": {
-				"digitrust": {
-					"id": "sample-digitrust-id",
-					"keyv": 1,
-					"pref": 0
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "request-with-invalid-digitrust-obj",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"user": {
-			"yob": 1989,
-			"ext": {
-				"digitrust": {
-					"id": "sample-digitrust-id",
-					"keyv": 1,
-					"pref": 1
-				}
-			}
-		}
-	}`,
-}
-
-var validRequests = []string{
-	`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"targeting": {
-					"pricegranularity": "low"
-				},
-				"cache": {
-					"bids": {}
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"app": { },
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		]
-	}`,
-	`{
-		"id": "some-request-id",
-		"app": { },
-		"tmax": 500,
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		]
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"video": {
-					"mimes":["video/mp4"]
-				},
-				"ext": {
-					"unknown": "good"
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"aliases": {
-					"unknown": "appnexus"
-				}
-			}
-		}
-	}`,
-}
-
-var invalidRequests = []string{
-	"5",
-	"6.3",
-	"null",
-	"false",
-	"",
-	"[]",
-	"{}",
-	`{"id":"req-id"}`,
-	`{"id":"req-id","tmax":-2}`,
-	`{"id":"req-id","imp":[]}`,
-	`{"id":"req-id","imp":[{}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"metric": [{}]
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id"
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":null
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"wmin":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"wmax":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"hmin":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"hmax":50
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{"w":30,"wratio":23}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{"w":30,"h":0}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"banner":{
-			"format":[{"wratio":30}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{
-			"mimes":[]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"audio":{
-			"mimes":[]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"native":{}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{
-			"mimes":["video/mp4"]
-		},
-		"pmp":{
-			"deals":[{"private_auction":1, "id":""}]
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"video":{
-			"mimes":["video/mp4"]
-		},
-		"ext": {}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"audio":{
-			"mimes":["video/mp4"]
-		},
-		"ext": {
-			"noBidderShouldEverHaveThisName": {
-				"bogusParam":5
-			}
-		}
-	}]}`,
-	`{"id":"req-id","imp":[{
-		"id":"imp-id",
-		"audio":{
-			"mimes":["video/mp4"]
-		},
-		"ext": {
-			"appnexus": "invalidParams"
-		}
-	}]}`,
-	`{"id":"req-id",
-		"imp":[{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}]}`,
-	`{"id":"req-id",
-		"site": {},
-		"imp":[{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}]
-	}`,
-	`{"id":"req-id",
-		"site": {"page":"test.mysite.com"},
-		"app": {},
-		"imp":[{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}]
-	}`,
-	`{"id": "some-request-id",
-		"site": {"page": "test.somepage.com"},
-		"imp": [{
-			"id":"imp-id",
-			"video":{
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"storedrequest": {
-					"id": 13
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {"page": "test.somepage.com"},
-		"imp": [{
-			"id": "my-imp-id",
-			"video": {
-				"mimes":["video/mp4"]
-			},
-			"ext": {
-				"appnexus": "good"
-			}
-		}],
-		"ext": {
-			"prebid": {
-				"cache": {}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"video": {
-					"mimes":["video/mp4"]
-				},
-				"ext": {
-					"unknown": "good"
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"aliases": {
-					"unknown": "other-unknown"
-				}
-			}
-		}
-	}`,
-	`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"video": {
-					"mimes":["video/mp4"]
-				},
-				"ext": {
-					"appnexus": "good"
-				}
-			}
-		],
-		"ext": {
-			"prebid": {
-				"aliases": {
-					"appnexus": "appnexus"
-				}
-			}
-		}
-	}`,
-}
-
 // StoredRequest testing
 
 // Test stored request data
 var testStoredRequestData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
 		"id": "adUnit1",
-		"ext": {
-			"appnexus": {
-				"placementId": "abc",
-				"position": "above",
-				"reserve": 0.35
-			},
-			"rubicon": {
-				"accountId": "abc"
+			"ext": {
+				"appnexus": {
+					"placementId": "abc",
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": "abc"
+				}
 			}
-		}
-	}`),
+		}`),
 	"": json.RawMessage(""),
 	"2": json.RawMessage(`{
 		"tmax": 500,

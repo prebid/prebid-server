@@ -18,6 +18,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -259,10 +260,8 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		}
 	}
 
-	if imp.Native != nil {
-		if imp.Native.Request == "" {
-			return fmt.Errorf("request.imp[%d].native.request must be a JSON encoded string conforming to the openrtb 1.2 Native spec", index)
-		}
+	if err := fillAndValidateNative(imp.Native, index); err != nil {
+		return err
 	}
 
 	if err := validatePmp(imp.PMP, index); err != nil {
@@ -300,6 +299,183 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// fillAndValidateNative validates the request, and assigns the Asset IDs as recommended by the Native v1.2 spec.
+func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
+	if n == nil {
+		return nil
+	}
+
+	var nativePayload nativeRequests.Request
+	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
+		return err
+	}
+
+	if err := validateNativeContext(nativePayload.Context, impIndex); err != nil {
+		return err
+	}
+	if err := validateNativePlacementType(nativePayload.PlcmtType, impIndex); err != nil {
+		return err
+	}
+	if err := fillAndValidateNativeAssets(nativePayload.Assets, impIndex); err != nil {
+		return err
+	}
+
+	// TODO #218: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
+
+	serialized, err := json.Marshal(nativePayload)
+	if err != nil {
+		return err
+	}
+	encoded, err := json.Marshal(string(serialized))
+	if err != nil {
+		return err
+	}
+	n.Request = string(encoded)
+	return nil
+}
+
+func validateNativeContext(c nativeRequests.ContextType, impIndex int) error {
+	if c < 1 || c > 3 {
+		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, c)
+	}
+	return nil
+}
+
+func validateNativePlacementType(pt nativeRequests.PlacementType, impIndex int) error {
+	if pt < 1 || pt > 4 {
+		return fmt.Errorf("request.imp[%d].native.request.plcmttype must be in the range [1, 4]. Got %d", impIndex, pt)
+	}
+	return nil
+}
+
+func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) error {
+	if len(assets) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object.", impIndex)
+	}
+
+	for i := 0; i < len(assets); i++ {
+		// Per the OpenRTB spec docs, this is a "unique asset ID, assigned by exchange. Typically a counter for the array"
+		// To avoid conflict with the Request, we'll return a 400 if the Request _did_ define this ID,
+		// and then populate it as the spec suggests.
+		if err := validateNativeAsset(assets[i], impIndex, i); err != nil {
+			return err
+		}
+		assets[i].ID = int64(i)
+	}
+	return nil
+}
+
+func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
+	if asset.ID != 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.`, impIndex, assetIndex)
+	}
+
+	foundType := false
+
+	if asset.Title != nil {
+		foundType = true
+		if err := validateNativeAssetTitle(asset.Title, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	if asset.Img != nil {
+		if foundType {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	if asset.Video != nil {
+		if foundType {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	if asset.Data != nil {
+		if foundType {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
+	if title.Len < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
+	}
+	return nil
+}
+
+func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetIndex int) error {
+	// Note that w, wmin, h, and hmin cannot be negative because these variables use unsigned ints.
+	// Those fail during the standard json.Unmarshal() call.
+	if image.W == 0 && image.WMin == 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "w" or "wmin"`, impIndex, assetIndex)
+	}
+	if image.H == 0 && image.HMin == 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "h" or "hmin"`, impIndex, assetIndex)
+	}
+
+	return nil
+}
+
+func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIndex int) error {
+	if len(video.MIMEs) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.mimes must be an array with at least one MIME type.", impIndex, assetIndex)
+	}
+	if video.MinDuration < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.minduration must be a positive integer.", impIndex, assetIndex)
+	}
+	if video.MaxDuration < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.maxduration must be a positive integer.", impIndex, assetIndex)
+	}
+	if err := validateNativeVideoProtocols(video.Protocols, impIndex, assetIndex); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
+	if data.Type < 1 || data.Type > 12 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type must in the range [1, 12]. Got %d.", impIndex, assetIndex, data.Type)
+	}
+
+	return nil
+}
+
+func validateNativeVideoProtocols(protocols []nativeRequests.Protocol, impIndex int, assetIndex int) error {
+	if len(protocols) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
+	}
+	for i := 0; i < len(protocols); i++ {
+		if err := validateNativeVideoProtocol(protocols[i], impIndex, assetIndex, i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateNativeVideoProtocol(protocol nativeRequests.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
+	if protocol < 0 || protocol > 10 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] must be in the range [1, 10]. Got %d", impIndex, assetIndex, protocolIndex, protocol)
 	}
 	return nil
 }
