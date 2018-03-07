@@ -265,6 +265,7 @@ func TestGetAllBids(t *testing.T) {
 	}
 }
 
+// TODO: (@cirla) test debug output when `bidRequest.Test=1`
 func TestBuildBidResponse(t *testing.T) {
 	//  BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*adapters.pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.BidResponse
 	respStatus := 200

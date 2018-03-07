@@ -183,9 +183,13 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	debugParam, ok := httpRequest.URL.Query()["debug"]
+	debug := ok && len(debugParam) > 0 && debugParam[0] == "1"
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
+	// TODO: (@cirla) if debug is set to true, invalidate cache before fetching stored requests
 	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId})
 	if len(errs) > 0 {
 		return nil, errs
@@ -200,6 +204,10 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	if err := json.Unmarshal(requestJson, req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	if debug {
+		req.Test = 1
 	}
 
 	// Two checks so users know which way the Imp check failed.

@@ -62,6 +62,8 @@ func TestGoodAmpRequests(t *testing.T) {
 	}
 }
 
+// TODO: (@cirla) test `debug=1` query param
+
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	files := fetchFiles(t, "sample-requests/invalid-whole")
