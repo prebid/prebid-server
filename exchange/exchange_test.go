@@ -328,21 +328,16 @@ func TestBuildBidResponse(t *testing.T) {
 		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
 	}
 	// Find the seat index for BidderDummy
-	bidderDummySeat := -1
-	for i, seat := range bidResponse.SeatBid {
-		if seat.Seat == "dummy" {
-			bidderDummySeat = i
-		}
-	}
-	if bidderDummySeat == -1 {
+	dummySeat := findSeat(bidResponse, BidderDummy)
+	if dummySeat == nil {
 		t.Error("Could not find the SeatBid for BidderDummy!")
 	} else {
 		bidder1BidExt := make([]openrtb_ext.ExtBid, 2)
-		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[0].Ext, &bidder1BidExt[0])
+		err = json.Unmarshal(dummySeat.Bid[0].Ext, &bidder1BidExt[0])
 		if err != nil {
 			t.Errorf("Unpacking extensions for bid[0]: %s", err.Error())
 		}
-		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[1].Ext, &bidder1BidExt[1])
+		err = json.Unmarshal(dummySeat.Bid[1].Ext, &bidder1BidExt[1])
 		if err != nil {
 			t.Errorf("Unpacking extensions for bid[1]: %s", err.Error())
 		}
@@ -366,19 +361,14 @@ func TestBuildBidResponse(t *testing.T) {
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
-	bidderDummySeat = -1
-	for i, seat := range bidResponse.SeatBid {
-		if seat.Seat == "dummy" {
-			bidderDummySeat = i
-		}
-	}
-
+	dummySeat = findSeat(bidResponse, BidderDummy)
 	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(bidResponse.SeatBid[bidderDummySeat].Bid) != 2 {
-		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
+	if len(dummySeat.Bid) != 2 {
+		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(dummySeat.Bid))
 	}
-	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
-		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
+	dummy3Seat := findSeat(bidResponse, BidderDummy3)
+	if dummy3Seat.Bid[0].ID != "MyBid" {
+		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", dummy3Seat.Bid[0].ID)
 	}
 
 	// Test with null bid response error
@@ -392,20 +382,24 @@ func TestBuildBidResponse(t *testing.T) {
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
-	bidderDummySeat = -1
-	for i, seat := range bidResponse.SeatBid {
-		if seat.Seat == "dummy" {
-			bidderDummySeat = i
-		}
+	dummySeat = findSeat(bidResponse, BidderDummy)
+	if len(dummySeat.Bid) != 2 {
+		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(dummySeat.Bid))
 	}
 
-	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(bidResponse.SeatBid[bidderDummySeat].Bid) != 2 {
-		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
+	dummy3Seat = findSeat(bidResponse, BidderDummy3)
+	if dummy3Seat.Bid[0].ID != "MyBid" {
+		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", dummy3Seat.Bid[0].ID)
 	}
-	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
-		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
+}
+
+func findSeat(resp *openrtb.BidResponse, seat openrtb_ext.BidderName) *openrtb.SeatBid {
+	for i := 0; i < len(resp.SeatBid); i++ {
+		if resp.SeatBid[i].Seat == string(seat) {
+			return &resp.SeatBid[i]
+		}
 	}
+	return nil
 }
 
 var baseRequest = openrtb.BidRequest{

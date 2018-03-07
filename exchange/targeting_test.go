@@ -34,7 +34,7 @@ func TestTargetingWinners(t *testing.T) {
 			Price: 0.6,
 		}},
 	}
-	bids := runTargetingAuction(t, mockBids, true)
+	bids := runTargetingAuction(t, mockBids, false)
 
 	// Make sure that the normal keys exist on the bids where they're expected to exist
 	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbpbConstantKey), true)
