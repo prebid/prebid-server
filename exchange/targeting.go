@@ -38,7 +38,7 @@ func (targData *targetData) setTargeting(ctx context.Context, cache prebid_cache
 	}
 
 	winningBids, _, winningBidsByBidder := findWinners(seatBids, numImps)
-	roundedPrices := makeRoundedPrices(openrtb_ext.PriceGranularityLow /* TODO: Fix */, winningBids, winningBidsByBidder)
+	roundedPrices := makeRoundedPrices(targData.priceGranularity, winningBids, winningBidsByBidder)
 	var cacheIds map[*openrtb.Bid]string
 	if targData.includeCache {
 		cacheIds = doCache(ctx, cache, winningBids, winningBidsByBidder, roundedPrices)
