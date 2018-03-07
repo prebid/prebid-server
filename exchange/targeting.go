@@ -3,7 +3,6 @@ package exchange
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"strconv"
 	"strings"
 
@@ -147,9 +146,6 @@ func findWinners(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps in
 	winningBidsByBidder = make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
 
 	for bidderName, seatBid := range seatBids {
-		if seatBid == nil {
-			log.Printf("Nil bids for bidder: %s", string(bidderName))
-		}
 		for _, bid := range seatBid.bids {
 			cpm := bid.bid.Price
 			wbid, ok := winningBids[bid.bid.ImpID]
@@ -178,7 +174,7 @@ func makeRoundedPrices(priceGranularity openrtb_ext.PriceGranularity, winningBid
 		for _, topBidPerBidder := range topBidsPerImp {
 			roundedPrice, err := buckets.GetPriceBucketString(topBidPerBidder.bid.Price, priceGranularity)
 			if err != nil {
-				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%s".`, priceGranularity, err)
+				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%s".`, priceGranularity)
 			}
 			roundedPrices[topBidPerBidder] = roundedPrice
 		}
