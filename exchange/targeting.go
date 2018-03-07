@@ -107,7 +107,7 @@ func doCache(ctx context.Context, cache prebid_cache_client.Client, winningBids 
 			}
 		}
 	}
-	return cacheOrtbBids(ctx, cache, toCache)
+	return cacheBids(ctx, cache, toCache)
 }
 
 func setTargetingKeys(roundedPrices map[*pbsOrtbBid]string, cacheIds map[*openrtb.Bid]string, winningBids map[string]*pbsOrtbBid, winningBidsByBidder map[string]map[openrtb_ext.BidderName]*pbsOrtbBid) {

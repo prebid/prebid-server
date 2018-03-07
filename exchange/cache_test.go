@@ -28,7 +28,7 @@ func TestBidSerialization(t *testing.T) {
 		},
 	}
 
-	bidMap := cacheOrtbBids(context.Background(), mockClient, []*openrtb.Bid{winningBid, otherBid})
+	bidMap := cacheBids(context.Background(), mockClient, []*openrtb.Bid{winningBid, otherBid})
 
 	assertStringValue(t, `bid "bar"`, "0", bidMap[winningBid])
 	assertStringValue(t, `bid "foo"`, "1", bidMap[otherBid])
@@ -52,7 +52,7 @@ func TestCacheFailures(t *testing.T) {
 			otherBid:   "1",
 		},
 	}
-	bidMap := cacheOrtbBids(context.Background(), mockClient, []*openrtb.Bid{winningBid, otherBid})
+	bidMap := cacheBids(context.Background(), mockClient, []*openrtb.Bid{winningBid, otherBid})
 
 	assertStringValue(t, `bid "foo"`, "1", bidMap[otherBid])
 	if _, ok := bidMap[winningBid]; ok {
@@ -78,7 +78,7 @@ func TestMarshalFailure(t *testing.T) {
 		},
 	}
 
-	bidMap := cacheOrtbBids(context.Background(), mockClient, []*openrtb.Bid{goodBid, badBid})
+	bidMap := cacheBids(context.Background(), mockClient, []*openrtb.Bid{goodBid, badBid})
 	if _, ok := bidMap[badBid]; ok {
 		t.Errorf("bids with malformed JSON should not be cached.")
 	}

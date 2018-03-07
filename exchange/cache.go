@@ -9,7 +9,7 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
-func cacheOrtbBids(ctx context.Context, cache prebid_cache_client.Client, bids []*openrtb.Bid) map[*openrtb.Bid]string {
+func cacheBids(ctx context.Context, cache prebid_cache_client.Client, bids []*openrtb.Bid) map[*openrtb.Bid]string {
 	// Marshal the bids into JSON payloads. If any errors occur during marshalling, eject that bid from the array.
 	// After this block, we expect "bids" and "jsonValues" to have the same number of elements in the same order.
 	jsonValues := make([]json.RawMessage, 0, len(bids))
