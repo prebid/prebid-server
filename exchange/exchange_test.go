@@ -311,7 +311,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
 
 	errList := make([]error, 0, 1)
-	bidResponse, err := e.buildBidResponse(context.Background(), adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -354,7 +354,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -375,7 +375,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
