@@ -381,6 +381,7 @@ func TestBuildBidResponse(t *testing.T) {
 	// This case we know the order of the adapters, as GetAllBids have not scrambled them
 	if len(bidResponse.SeatBid[0].Bid) != 2 {
 		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
+	} else {
 	}
 	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
 		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)

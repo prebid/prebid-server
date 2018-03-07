@@ -57,8 +57,9 @@ func TestTargetingCache(t *testing.T) {
 }
 
 func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) {
+	t.Helper()
 	targets := parseTargets(t, bid)
-	if _, ok := targets[string(key)]; ok != expected {
+	if _, ok := targets[key]; ok != expected {
 		t.Errorf("Bid %s has wrong key: %s. Expected? %t, Exists? %t", bid.ID, key, expected, ok)
 	}
 }
