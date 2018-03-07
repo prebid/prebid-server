@@ -101,7 +101,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if targData.includeCache {
 			auc.doCache(ctx, e.cache)
 		}
-		setTargeting(auc)
+		setTargeting(auc, bidRequest.App != nil)
 	}
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, errs)
