@@ -328,16 +328,21 @@ func TestBuildBidResponse(t *testing.T) {
 		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
 	}
 	// Find the seat index for BidderDummy
-	dummySeat := findSeat(bidResponse, BidderDummy)
-	if dummySeat == nil {
+	bidderDummySeat := -1
+	for i, seat := range bidResponse.SeatBid {
+		if seat.Seat == "dummy" {
+			bidderDummySeat = i
+		}
+	}
+	if bidderDummySeat == -1 {
 		t.Error("Could not find the SeatBid for BidderDummy!")
 	} else {
 		bidder1BidExt := make([]openrtb_ext.ExtBid, 2)
-		err = json.Unmarshal(dummySeat.Bid[0].Ext, &bidder1BidExt[0])
+		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[0].Ext, &bidder1BidExt[0])
 		if err != nil {
 			t.Errorf("Unpacking extensions for bid[0]: %s", err.Error())
 		}
-		err = json.Unmarshal(dummySeat.Bid[1].Ext, &bidder1BidExt[1])
+		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[1].Ext, &bidder1BidExt[1])
 		if err != nil {
 			t.Errorf("Unpacking extensions for bid[1]: %s", err.Error())
 		}
@@ -345,10 +350,14 @@ func TestBuildBidResponse(t *testing.T) {
 		assertStringValue(t, "bid[0].Targeting[hb_pb_dummy]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_dummy"])
 		assertStringValue(t, "bid[0]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder_dummy"])
 		assertStringValue(t, "bid[0]Targeting[hb_size_dummy]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_dummy"])
-
 		assertStringValue(t, "bid[1].Targeting[hb_pb_dummy]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_dummy"])
 		assertStringValue(t, "bid[1]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[1].Prebid.Targeting["hb_bidder_dummy"])
 		assertStringValue(t, "bid[1]Targeting[hb_size_dummy]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_dummy"])
+		_, ok := bidder1BidExt[1].Prebid.Targeting["hb_pb"]
+		if ok {
+			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
+		}
+
 	}
 	// Now test with an error condition
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
@@ -361,14 +370,12 @@ func TestBuildBidResponse(t *testing.T) {
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
-	dummySeat = findSeat(bidResponse, BidderDummy)
 	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(dummySeat.Bid) != 2 {
-		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(dummySeat.Bid))
+	if len(bidResponse.SeatBid[0].Bid) != 2 {
+		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
 	}
-	dummy3Seat := findSeat(bidResponse, BidderDummy3)
-	if dummy3Seat.Bid[0].ID != "MyBid" {
-		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", dummy3Seat.Bid[0].ID)
+	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
+		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
 	}
 
 	// Test with null bid response error
@@ -382,24 +389,13 @@ func TestBuildBidResponse(t *testing.T) {
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
-	dummySeat = findSeat(bidResponse, BidderDummy)
-	if len(dummySeat.Bid) != 2 {
-		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(dummySeat.Bid))
+	// This case we know the order of the adapters, as GetAllBids have not scrambled them
+	if len(bidResponse.SeatBid[0].Bid) != 2 {
+		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
 	}
-
-	dummy3Seat = findSeat(bidResponse, BidderDummy3)
-	if dummy3Seat.Bid[0].ID != "MyBid" {
-		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", dummy3Seat.Bid[0].ID)
+	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
+		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
 	}
-}
-
-func findSeat(resp *openrtb.BidResponse, seat openrtb_ext.BidderName) *openrtb.SeatBid {
-	for i := 0; i < len(resp.SeatBid); i++ {
-		if resp.SeatBid[i].Seat == string(seat) {
-			return &resp.SeatBid[i]
-		}
-	}
-	return nil
 }
 
 var baseRequest = openrtb.BidRequest{
