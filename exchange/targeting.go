@@ -26,10 +26,6 @@ type targetData struct {
 	includeCache     bool
 }
 
-func (t *targetData) shouldCache() bool {
-	return t != nil && t.includeCache
-}
-
 // setTargeting writes all the targeting params into the bids.
 // If any errors occur when setting the targeting params for a particular bid, then that bid will be ejected from the auction.
 //
