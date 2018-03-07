@@ -40,9 +40,9 @@ type adaptedBidder interface {
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
 //
-// pbsOrtbBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
-// pbsOrtbBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
-// pbsOrtbBid
+// pbsOrtbBid.bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+// pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 type pbsOrtbBid struct {
 	bid        *openrtb.Bid
 	bidType    openrtb_ext.BidType
