@@ -350,22 +350,10 @@ func TestBuildBidResponse(t *testing.T) {
 		assertStringValue(t, "bid[0].Targeting[hb_pb_dummy]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_dummy"])
 		assertStringValue(t, "bid[0]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder_dummy"])
 		assertStringValue(t, "bid[0]Targeting[hb_size_dummy]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_dummy"])
-		// This should be the winning bid
-		assertStringValue(t, "bid[0].Targeting[hb_pb]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb"])
-		_, ok := bidder1BidExt[0].Prebid.Targeting["hb_pb"]
-		if !ok {
-			t.Errorf("bid[0].Targeting[hb_pb] doesn't exist, but was winning bid.")
-		}
-		assertStringValue(t, "bid[0]Targeting[hb_bidder]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder"])
-		assertStringValue(t, "bid[0]Targeting[hb_size]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size"])
+
 		assertStringValue(t, "bid[1].Targeting[hb_pb_dummy]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_dummy"])
 		assertStringValue(t, "bid[1]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[1].Prebid.Targeting["hb_bidder_dummy"])
 		assertStringValue(t, "bid[1]Targeting[hb_size_dummy]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_dummy"])
-		_, ok = bidder1BidExt[1].Prebid.Targeting["hb_pb"]
-		if ok {
-			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
-		}
-
 	}
 	// Now test with an error condition
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
@@ -378,10 +366,16 @@ func TestBuildBidResponse(t *testing.T) {
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
+	bidderDummySeat = -1
+	for i, seat := range bidResponse.SeatBid {
+		if seat.Seat == "dummy" {
+			bidderDummySeat = i
+		}
+	}
+
 	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(bidResponse.SeatBid[0].Bid) != 2 {
+	if len(bidResponse.SeatBid[bidderDummySeat].Bid) != 2 {
 		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
-	} else {
 	}
 	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
 		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
@@ -398,8 +392,15 @@ func TestBuildBidResponse(t *testing.T) {
 	bidResponseExt = new(openrtb_ext.ExtBidResponse)
 	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
 
+	bidderDummySeat = -1
+	for i, seat := range bidResponse.SeatBid {
+		if seat.Seat == "dummy" {
+			bidderDummySeat = i
+		}
+	}
+
 	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(bidResponse.SeatBid[0].Bid) != 2 {
+	if len(bidResponse.SeatBid[bidderDummySeat].Bid) != 2 {
 		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
 	}
 	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
