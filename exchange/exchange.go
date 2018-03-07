@@ -95,11 +95,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	defer cancel()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases)
-	if shouldCacheBids {
-		setTargeting(ctx, e.cache, len(bidRequest.Imp), adapterBids, adapterExtra)
-	} else {
-		setTargeting(ctx, nil, len(bidRequest.Imp), adapterBids, adapterExtra)
-	}
+	targData.setTargeting(ctx, e.cache, len(bidRequest.Imp), adapterBids, adapterExtra)
 	// Build the response
 	return e.buildBidResponse(ctx, adapterBids, bidRequest, adapterExtra, errs)
 }
