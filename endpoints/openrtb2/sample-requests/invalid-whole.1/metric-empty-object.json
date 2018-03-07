@@ -1,9 +1,0 @@
-{
-    "id":"req-id",
-    "imp":[
-        {
-            "id":"imp-id",
-            "metric": [{}]
-        }
-    ]
-}
