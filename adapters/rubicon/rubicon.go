@@ -26,6 +26,17 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
+var viewabilityMap = map[string]string{
+	"moat":         "moat.com",
+	"adform":       "adform.com",
+	"active_view":  "doubleclickbygoogle.com",
+	"doubleverify": "doubleverify.com",
+	"comscore":     "comscore.com",
+	"integralads":  "integralads.com",
+	"sizemek":      "sizemek.com",
+	"whiteops":     "whiteops.com",
+}
+
 // used for cookies and such
 func (a *RubiconAdapter) Name() string {
 	return "rubicon"
@@ -56,7 +67,8 @@ type rubiconImpExtRP struct {
 }
 
 type rubiconImpExt struct {
-	RP rubiconImpExtRP `json:"rp"`
+	RP                 rubiconImpExtRP `json:"rp"`
+	ViewabilityVendors []string        `json:"viewabilityvendors"`
 }
 
 type rubiconUserExtRP struct {
@@ -521,7 +533,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 		}
+
+		if len(bidderExt.Prebid.ViewabilityVendors) > 0 {
+			impExt.ViewabilityVendors = make([]string, len(bidderExt.Prebid.ViewabilityVendors))
+			if err:= getVendorUrls(bidderExt.Prebid.ViewabilityVendors, impExt.ViewabilityVendors, i) ; err!= nil {
+				errs = append(errs, err)
+				continue
+			}
+		}
+
 		thisImp.Ext, err = json.Marshal(&impExt)
+
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -653,4 +675,15 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bids, nil
+}
+
+func getVendorUrls(vendors []string, vendorUrls []string, index int) (error) {
+	for i, vendor := range vendors {
+		if val, ok := viewabilityMap[vendor]; !ok {
+			return fmt.Errorf("Cannot find vendor url for %v in imp[%d].ext.prebid.viewabilityvendors",  vendor, index)
+		} else {
+			vendorUrls[i] = val
+		}
+	}
+	return nil
 }
