@@ -8,8 +8,8 @@ For a User's Guide, see the [AMP feature docs](http://prebid.org/dev-docs/show-p
 The `tag_id` ID must reference a [Stored BidRequest](../../developers/stored-requests.md#stored-bidrequests), with a few caveats:
 
 - The `imp` array must contain one, and only one, object
-- `ext.prebid.targeting` _must_ be defined (`ext.prebid.targeting.pricegranularity` is still optional)
-- `ext.prebid.cache.bids` _must_ be defined to be an empty object
+- `request.ext.prebid.targeting` _must_ be defined (`ext.prebid.targeting.pricegranularity` is still optional)
+- `request.ext.prebid.cache.bids` _must_ be defined to be an empty object
 
 Otherwise, the Stored BidRequest payload supports all the same OpenRTB properties as [/openrtb2/auction](./auction.md) does.
 
