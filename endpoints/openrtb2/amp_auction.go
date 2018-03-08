@@ -135,6 +135,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		var extResponse openrtb_ext.ExtBidResponse
 		if err := json.Unmarshal(response.Ext, &extResponse); err == nil {
 			ampResponse.Debug = extResponse.Debug
+		} else {
+			glog.Errorf("Test set on request but debug not present in response: %v", err)
 		}
 	}
 

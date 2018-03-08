@@ -59,10 +59,6 @@ func TestGoodAmpRequests(t *testing.T) {
 		if len(response.Targeting) != 3 {
 			t.Errorf("Bad targeting data. Expected 3 keys, got %d.", len(response.Targeting))
 		}
-
-		if response.Debug != nil {
-			t.Error("Debug info should not be present when debug param is not provided")
-		}
 	}
 }
 

@@ -265,7 +265,6 @@ func TestGetAllBids(t *testing.T) {
 	}
 }
 
-// TODO: (@cirla) test debug output when `bidRequest.Test=1`
 func TestBuildBidResponse(t *testing.T) {
 	//  BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*adapters.pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.BidResponse
 	respStatus := 200
@@ -294,6 +293,7 @@ func TestBuildBidResponse(t *testing.T) {
 		Test: 0,
 		Ext:  bidReqExtRaw,
 	}
+	var resolvedRequest openrtb.RawJSON
 
 	liveAdapters := make([]openrtb_ext.BidderName, 3)
 	liveAdapters[0] = BidderDummy
@@ -312,7 +312,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
 
 	errList := make([]error, 0, 1)
-	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -364,7 +364,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -383,7 +383,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
