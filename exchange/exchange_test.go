@@ -249,8 +249,8 @@ func TestGetAllBids(t *testing.T) {
 	if len(adapterExtra[BidderDummy].Errors) != 0 {
 		t.Errorf("GetAllBids found errors on Bidder1, found %d errors", len(adapterExtra[BidderDummy2].Errors))
 	}
-	if bid, bidExists := adapterBids[BidderDummy2]; bidExists {
-		t.Errorf("GetAllBids found bids on Bidder2, found %d bids", len(bid.bids))
+	if len(adapterBids[BidderDummy2].bids) != 0 {
+		t.Errorf("GetAllBids found bids on Bidder2, found %d bids", len(adapterBids[BidderDummy2].bids))
 	}
 
 	// Test with null pointer for bid response

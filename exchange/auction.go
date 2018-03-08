@@ -16,20 +16,22 @@ func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
 
 	for bidderName, seatBid := range seatBids {
-		for _, bid := range seatBid.bids {
-			cpm := bid.bid.Price
-			wbid, ok := winningBids[bid.bid.ImpID]
-			if !ok || cpm > wbid.bid.Price {
-				winningBids[bid.bid.ImpID] = bid
-			}
-			if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
-				bestSoFar, ok := bidMap[bidderName]
-				if !ok || cpm > bestSoFar.bid.Price {
-					bidMap[bidderName] = bid
+		if seatBid != nil {
+			for _, bid := range seatBid.bids {
+				cpm := bid.bid.Price
+				wbid, ok := winningBids[bid.bid.ImpID]
+				if !ok || cpm > wbid.bid.Price {
+					winningBids[bid.bid.ImpID] = bid
 				}
-			} else {
-				winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
-				winningBidsByBidder[bid.bid.ImpID][bidderName] = bid
+				if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
+					bestSoFar, ok := bidMap[bidderName]
+					if !ok || cpm > bestSoFar.bid.Price {
+						bidMap[bidderName] = bid
+					}
+				} else {
+					winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
+					winningBidsByBidder[bid.bid.ImpID][bidderName] = bid
+				}
 			}
 		}
 	}

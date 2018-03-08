@@ -174,9 +174,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {
 		brw := <-chBids
-		if brw.adapterBids != nil && len(brw.adapterBids.bids) > 0 {
-			adapterBids[brw.bidder] = brw.adapterBids
-		}
+		adapterBids[brw.bidder] = brw.adapterBids
 		adapterExtra[brw.bidder] = brw.adapterExtra
 	}
 
