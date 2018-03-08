@@ -1,4 +1,3 @@
-
 package rubicon
 
 import (
@@ -886,7 +885,7 @@ func TestOpenRTBRequest(t *testing.T) {
 				"visitor": {"key2" : "val2"}
 			}}`),
 		}, {
-			ID: "test-imp-video-id",
+			ID:     "test-imp-video-id",
 			Metric: []openrtb.Metric{},
 			Video: &openrtb.Video{
 				W:           640,
@@ -1006,8 +1005,6 @@ func TestOpenRTBRequest(t *testing.T) {
 	}
 }
 
-
-
 func TestOpenRTBEmptyResponse(t *testing.T) {
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusNoContent,
@@ -1090,12 +1087,11 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
 }
 
-
-func TestGetVendorUrls(t *testing.T){
-	v1 := []string{"moat", "integralads", "activeview"}
+func TestGetVendorUrls(t *testing.T) {
+	v1 := []string{"moat", "integralads", "activeview", "comscore.com"}
 	v2 := make([]string, len(v1))
-	v3 := []string{viewabilityVendorUrlMap["moat"], viewabilityVendorUrlMap["integralads"], viewabilityVendorUrlMap["activeview"]}
-	if err := getVendorUrls(v1, v2, 1); err!=nil {
+	v3 := []string{viewabilityVendorUrlMap["moat"], viewabilityVendorUrlMap["integralads"], viewabilityVendorUrlMap["activeview"], "comscore.com"}
+	if err := getVendorUrls(v1, v2, 1); err != nil {
 		t.Errorf("Fix GetVendorUrl in rubicon adapter: %v", err)
 	} else {
 		for i, v := range v2 {
@@ -1106,7 +1102,7 @@ func TestGetVendorUrls(t *testing.T){
 	}
 	v1 = append(v1, "random")
 	v4 := make([]string, len(v1))
-	if err := getVendorUrls(v1, v4, 1); err==nil {
+	if err := getVendorUrls(v1, v4, 1); err == nil {
 		t.Errorf("Should display error for unknown value")
 	}
 }

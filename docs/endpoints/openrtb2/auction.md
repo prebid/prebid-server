@@ -268,6 +268,12 @@ This adds two optional properties:
 
 These fields will be forwarded to each Bidder, so they can decide how to process them.
 
+
+#### Viewability
+
+`bidrequest.imp[i].metric` is now supported. `type` and `score` are mandatory fields. The viewability vendors can be sent as a string array through `bidrequest.imp[i].ext.prebid.viewabilityvendors`
+
+
 ### OpenRTB Differences
 
 This section describes the ways in which Prebid Server **breaks** the OpenRTB spec.

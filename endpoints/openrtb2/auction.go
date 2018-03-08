@@ -236,7 +236,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
 	}
 
-	if err:=validateMetric(imp.Metric, index); err!=nil{
+	if err := validateMetric(imp.Metric, index); err != nil {
 		return err
 	}
 
@@ -280,18 +280,16 @@ func validateMetric(metrics []openrtb.Metric, impIndex int) error {
 		return nil
 	}
 
-	for i, metric:= range metrics{
-		if len(metric.Type)==0 {
+	for i, metric := range metrics {
+		if len(metric.Type) == 0 {
 			return fmt.Errorf("Missing request.imp[%d].metric[%d].type", impIndex, i)
 		}
-		if metric.Value<0.0 || metric.Value>1.0{
+		if metric.Value < 0.0 || metric.Value > 1.0 {
 			return fmt.Errorf("request.imp[%d].metric[%d].value must be in the range [0.0, 1.0]", impIndex, i)
 		}
 	}
 	return nil
 }
-
-
 
 func validateBanner(banner *openrtb.Banner, impIndex int) error {
 	if banner == nil {

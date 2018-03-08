@@ -10,8 +10,8 @@ type ExtImp struct {
 
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid
 type ExtImpPrebid struct {
-	StoredRequest *ExtStoredRequest `json:"storedrequest"`
-	ViewabilityVendors []string `json:"viewabilityvendors"`
+	StoredRequest      *ExtStoredRequest `json:"storedrequest"`
+	ViewabilityVendors []string          `json:"viewabilityvendors"`
 }
 
 // ExtStoredRequest defines the contract for bidrequest.imp[i].ext.prebid.storedrequest
