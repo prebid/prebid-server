@@ -293,7 +293,7 @@ These fields will be forwarded to each Bidder, so they can decide how to process
 
 #### Viewability
 
-`bidrequest.imp[i].metric` is now supported. `type` and `score` are mandatory fields. The viewability vendors can be sent as a string array through `bidrequest.imp[i].ext.prebid.viewabilityvendors`
+`bidrequest.imp[i].metric` is now supported. `type` and `value` are mandatory fields. The viewability vendors can be sent as a string array through `bidrequest.imp[i].ext.prebid.viewabilityvendors`
 
 
 ### OpenRTB Differences
