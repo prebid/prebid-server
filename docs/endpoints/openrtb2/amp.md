@@ -17,6 +17,7 @@ Otherwise, the Stored BidRequest payload supports all the same OpenRTB propertie
 
 A sample response payload looks like this:
 
+```
 {
 	"targeting": {
 		"hb_pb": 1.30
@@ -25,6 +26,7 @@ A sample response payload looks like this:
 		"hb_uuid": "6768-FB78-9890-7878"
 	}
 }
+```
 
 In [the typical AMP setup](http://prebid.org/dev-docs/show-prebid-ads-on-amp-pages.html),
 these targeting params will be sent to DFP.
