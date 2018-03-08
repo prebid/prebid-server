@@ -1,7 +1,7 @@
 # Prebid Server AMP Endpoint
 
 This document describes the behavior of the Prebid Server AMP endpoint in detail.
-For a User's Guide, see the [AMP feature docs](http://prebid.org/dev-docs/show-prebid-ads-on-amp-pages.html)
+For a User's Guide, see the [AMP feature docs](http://prebid.org/dev-docs/show-prebid-ads-on-amp-pages.html).
 
 ## `GET /openrtb2/amp?tag_id={ID}`
 
