@@ -26,10 +26,12 @@ type RubiconAdapter struct {
 	XAPIPassword string
 }
 
-var viewabilityMap = map[string]string{
+
+//Maps vendor constants to their respective urls
+var viewabilityVendorUrlMap = map[string]string{
 	"moat":         "moat.com",
 	"adform":       "adform.com",
-	"active_view":  "doubleclickbygoogle.com",
+	"activeview":  "doubleclickbygoogle.com",
 	"doubleverify": "doubleverify.com",
 	"comscore":     "comscore.com",
 	"integralads":  "integralads.com",
@@ -534,7 +536,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			},
 		}
 
-		if len(bidderExt.Prebid.ViewabilityVendors) > 0 {
+		if bidderExt.Prebid!=nil && len(bidderExt.Prebid.ViewabilityVendors) > 0 {
 			impExt.ViewabilityVendors = make([]string, len(bidderExt.Prebid.ViewabilityVendors))
 			if err:= getVendorUrls(bidderExt.Prebid.ViewabilityVendors, impExt.ViewabilityVendors, i) ; err!= nil {
 				errs = append(errs, err)
@@ -677,10 +679,13 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bids, nil
 }
 
+/*
+
+ */
 func getVendorUrls(vendors []string, vendorUrls []string, index int) (error) {
 	for i, vendor := range vendors {
-		if val, ok := viewabilityMap[vendor]; !ok {
-			return fmt.Errorf("Cannot find vendor url for %v in imp[%d].ext.prebid.viewabilityvendors",  vendor, index)
+		if val, ok := viewabilityVendorUrlMap[vendor]; !ok {
+			return fmt.Errorf("Cannot find vendor url for unknown vendor: '%v' in imp[%d].ext.prebid.viewabilityvendors",  vendor, index)
 		} else {
 			vendorUrls[i] = val
 		}
