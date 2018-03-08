@@ -23,7 +23,15 @@ import (
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
 	goodRequests := map[string]json.RawMessage{
-		"10": json.RawMessage(validRequest(t, "site.json")),
+		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
+		"2": json.RawMessage(validRequest(t, "aliases.json")),
+		"3": json.RawMessage(validRequest(t, "app.json")),
+		"4": json.RawMessage(validRequest(t, "digitrust.json")),
+		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
+		"6": json.RawMessage(validRequest(t, "gdpr.json")),
+		"7": json.RawMessage(validRequest(t, "site.json")),
+		"8": json.RawMessage(validRequest(t, "timeout.json")),
+		"9": json.RawMessage(validRequest(t, "user.json")),
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
@@ -56,12 +64,8 @@ func TestGoodAmpRequests(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
-	badRequests := map[string]json.RawMessage{
-		"11": json.RawMessage(validRequest(t, "app.json")),
-		"12": json.RawMessage(validRequest(t, "timeout.json")),
-	}
-
 	files := fetchFiles(t, "sample-requests/invalid-whole")
+	badRequests := make(map[string]json.RawMessage, len(files))
 	for index, file := range files {
 		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
 	}
