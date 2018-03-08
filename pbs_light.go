@@ -459,7 +459,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	if pbs_req.CacheMarkup == 2 {
 		var cobjs []*pbc.CacheObject
 		for _, bid := range pbs_resp.Bids {
-			if bid.CreativeMediaType == "video" {
+			if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
 				cobjs = append(cobjs, &pbc.CacheObject{
 					Value:   bid.Adm,
 					IsVideo: true,
@@ -474,7 +474,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 		videoIndex := 0
 		for _, bid := range pbs_resp.Bids {
-			if bid.CreativeMediaType == "video" {
+			if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
 				bid.CacheID = cobjs[videoIndex].UUID
 				bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
 				bid.NURL = ""
