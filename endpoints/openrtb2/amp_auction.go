@@ -21,7 +21,8 @@ import (
 )
 
 type AmpResponse struct {
-	Targeting map[string]string `json:"targeting"`
+	Targeting map[string]string             `json:"targeting"`
+	Debug     *openrtb_ext.ExtResponseDebug `json:"debug,omitempty"`
 }
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -127,6 +128,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Now JSONify the tragets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
+	}
+
+	// add debug information if requested
+	if req.Test == 1 {
+		var extResponse openrtb_ext.ExtBidResponse
+		if err := json.Unmarshal(response.Ext, &extResponse); err == nil {
+			ampResponse.Debug = extResponse.Debug
+		}
 	}
 
 	// Fixes #231

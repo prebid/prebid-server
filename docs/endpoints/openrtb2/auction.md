@@ -245,7 +245,7 @@ It is only returned on `test` bids for performance reasons, but may be useful du
 
 `response.ext.debug.resolvedrequest` will be populated **only if** `request.test` **was set to 1**.
 
-This contains the request after the resolution of stored requests and debug overrides.
+This contains the request after the resolution of stored requests and implicit information (e.g. site domain, device user agent).
 
 #### Stored Requests
 
