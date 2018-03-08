@@ -683,15 +683,7 @@ func getVendorUrls(vendors []string, vendorUrls []string, index int) error {
 		if val, ok := viewabilityVendorUrlMap[vendor]; ok {
 			vendorUrls[i] = val
 		} else {
-			for _, url := range viewabilityVendorUrlMap {
-				if vendor == url {
-					vendorUrls[i] = url
-					break
-				}
-			}
-			if vendorUrls[i] == "" {
-				return fmt.Errorf("Cannot find vendor url for unknown vendor: '%v' in imp[%d].ext.prebid.viewabilityvendors", vendor, index)
-			}
+			return fmt.Errorf("Cannot find vendor url for unknown vendor: '%v' in imp[%d].ext.prebid.viewabilityvendors", vendor, index)
 		}
 	}
 	return nil

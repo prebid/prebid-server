@@ -1088,9 +1088,9 @@ func TestJsonSamples(t *testing.T) {
 }
 
 func TestGetVendorUrls(t *testing.T) {
-	v1 := []string{"moat", "integralads", "activeview", "comscore.com"}
+	v1 := []string{"moat", "integralads", "activeview"}
 	v2 := make([]string, len(v1))
-	v3 := []string{viewabilityVendorUrlMap["moat"], viewabilityVendorUrlMap["integralads"], viewabilityVendorUrlMap["activeview"], "comscore.com"}
+	v3 := []string{viewabilityVendorUrlMap["moat"], viewabilityVendorUrlMap["integralads"], viewabilityVendorUrlMap["activeview"]}
 	if err := getVendorUrls(v1, v2, 1); err != nil {
 		t.Errorf("Fix GetVendorUrl in rubicon adapter: %v", err)
 	} else {
