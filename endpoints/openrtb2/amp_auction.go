@@ -46,6 +46,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	start := time.Now()
 	deps.metrics.AmpRequestMeter.Mark(1)
 
+	// Add AMP headers
+	origin := r.FormValue("__amp_source_origin")
+	if len(origin) == 0 {
+		// Just to be safe
+		origin = r.Header.Get("Origin")
+	}
+
+	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
+	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
+	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
+	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
+
 	req, errL := deps.parseAmpRequest(r)
 	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
 
@@ -116,17 +128,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ampResponse := AmpResponse{
 		Targeting: targets,
 	}
-
-	// Add AMP headers
-	origin := r.FormValue("__amp_source_origin")
-	if len(origin) == 0 {
-		// Just to be safe
-		origin = r.Header.Get("Origin")
-	}
-	// Heders "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
-	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
-	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
-	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
 	// Fixes #231
 	enc := json.NewEncoder(w)
