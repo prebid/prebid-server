@@ -293,7 +293,7 @@ func TestBuildBidResponse(t *testing.T) {
 		Test: 0,
 		Ext:  bidReqExtRaw,
 	}
-	var resolvedRequest openrtb.RawJSON
+	var resolvedRequest json.RawMessage
 
 	liveAdapters := make([]openrtb_ext.BidderName, 3)
 	liveAdapters[0] = BidderDummy

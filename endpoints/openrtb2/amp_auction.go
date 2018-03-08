@@ -200,7 +200,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
-	// TODO: (@cirla) if debug is set to true, invalidate cache before fetching stored requests
 	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId})
 	if len(errs) > 0 {
 		return nil, errs
