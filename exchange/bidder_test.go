@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -48,7 +47,7 @@ func TestSingleBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -124,7 +123,7 @@ func TestMultiBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -337,7 +336,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 	bids, _ := bidder.requestBid(context.Background(), &openrtb.BidRequest{
 		Test: 1,
-	}, nil, "test")
+	}, "test")
 
 	if len(bids.httpCalls) != 1 {
 		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
@@ -358,7 +357,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -368,83 +367,6 @@ func TestErrorReporting(t *testing.T) {
 	if errs[0].Error() != "Invalid params on BidRequest." {
 		t.Errorf(`Error message was mutated. Expected "%s", Got "%s"`, "Invalid params on BidRequest.", errs[0].Error())
 	}
-}
-
-func TestTargetingKeys(t *testing.T) {
-	respStatus := 200
-	respBody := "{\"bid\":false}"
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-
-	requestHeaders := http.Header{}
-	requestHeaders.Add("Content-Type", "application/json")
-
-	mockBids := []*adapters.TypedBid{
-		{
-			Bid: &openrtb.Bid{
-				ID:    "123456",
-				W:     728,
-				H:     90,
-				Price: 1.34,
-				ImpID: "Imp1",
-			},
-			BidType: openrtb_ext.BidTypeBanner,
-		},
-		{
-			Bid: &openrtb.Bid{
-				ID:    "567890",
-				W:     300,
-				H:     250,
-				Price: 0.97,
-				ImpID: "Imp2",
-			},
-			BidType: openrtb_ext.BidTypeBanner,
-		},
-	}
-
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     server.URL,
-			Body:    []byte("{\"key\":\"val\"}"),
-			Headers: http.Header{},
-		},
-		bids: mockBids,
-	}
-	bidder := adaptBidder(bidderImpl, server.Client())
-
-	// Very simple Bid request. At this point we are just reading these two values
-	// Adding targeting to enable targeting tests
-	bidReqExt := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &openrtb_ext.ExtRequestTargeting{
-				PriceGranularity: openrtb_ext.PriceGranularityMedium,
-			},
-		},
-	}
-	var bidReqExtRaw openrtb.RawJSON
-	bidReqExtRaw, _ = json.Marshal(bidReqExt)
-	bidRequest := &openrtb.BidRequest{
-		ID:   "This Bid",
-		Test: 0,
-		Ext:  bidReqExtRaw,
-	}
-
-	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{}, "dummy")
-	if len(errs) > 0 {
-		t.Errorf("Errors processing requestBid")
-		for _, e := range errs {
-			t.Errorf("requestBid: %s", e.Error())
-		}
-	}
-	// All tests except for winning bid no longer valid as setting pre bid targeting values moved to exchange/bidder.go
-	assertStringValue(t, "bids[0].bidTargets[hb_pb_dummy]", "1.30", seatBid.bids[0].bidTargets["hb_pb_dummy"])
-	assertStringValue(t, "bids[0].bidTargets[hb_bidder_dummy]", "dummy", seatBid.bids[0].bidTargets["hb_bidder_dummy"])
-	assertStringValue(t, "bids[0].bidTargets[hb_size_dummy]", "728x90", seatBid.bids[0].bidTargets["hb_size_dummy"])
-	assertStringValue(t, "bids[1].bidTargets[hb_pb_dummy]", "0.90", seatBid.bids[1].bidTargets["hb_pb_dummy"])
-	assertStringValue(t, "bids[1].bidTargets[hb_bidder_dummy]", "dummy", seatBid.bids[1].bidTargets["hb_bidder_dummy"])
-	assertStringValue(t, "bids[1].bidTargets[hb_size_dummy]", "300x250", seatBid.bids[1].bidTargets["hb_size_dummy"])
-
 }
 
 type goodSingleBidder struct {

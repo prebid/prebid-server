@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -13,7 +14,6 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -22,12 +22,24 @@ import (
 
 // TestGoodRequests makes sure that the auction runs properly-formatted stored bids correctly.
 func TestGoodAmpRequests(t *testing.T) {
+	goodRequests := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
+		"2": json.RawMessage(validRequest(t, "aliases.json")),
+		"3": json.RawMessage(validRequest(t, "app.json")),
+		"4": json.RawMessage(validRequest(t, "digitrust.json")),
+		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
+		"6": json.RawMessage(validRequest(t, "gdpr.json")),
+		"7": json.RawMessage(validRequest(t, "site.json")),
+		"8": json.RawMessage(validRequest(t, "timeout.json")),
+		"9": json.RawMessage(validRequest(t, "user.json")),
+	}
+
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{goodRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
-	for _, requestID := range storedValidRequests {
+	for requestID, _ := range goodRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 		endpoint(recorder, request, nil)
@@ -35,7 +47,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		if recorder.Code != http.StatusOK {
 			t.Errorf("Expected status %d. Got %d. Request config ID was %s", http.StatusOK, recorder.Code, requestID)
 			t.Errorf("Response body was: %s", recorder.Body)
-			t.Errorf("Request was: %s", testAmpStoredRequestData[requestID])
+			t.Errorf("Request was: %s", string(goodRequests[requestID]))
 		}
 
 		var response AmpResponse
@@ -54,11 +66,17 @@ func TestGoodAmpRequests(t *testing.T) {
 
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
+	files := fetchFiles(t, "sample-requests/invalid-whole")
+	badRequests := make(map[string]json.RawMessage, len(files))
+	for index, file := range files {
+		badRequests[strconv.Itoa(100+index)] = readFile(t, "sample-requests/invalid-whole/"+file.Name())
+	}
+
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	for _, requestID := range storedInvalidRequests {
+	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{badRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	for requestID, _ := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 
@@ -70,61 +88,12 @@ func TestAmpBadRequests(t *testing.T) {
 	}
 }
 
-// StoredRequest testing
-
-var storedValidRequests = []string{"10"}
-var storedInvalidRequests = []string{"11", "12", "100", "101", "102", "103", "104", "105", "106", "107", "108", "109",
-	"110", "111", "112", "113", "114", "115", "116", "117", "118", "119",
-	"120", "121", "122", "123", "124", "125", "126", "127", "128", "129",
-	"103", "131", "132", "133", "134"}
-
-// Test stored request data
-var testAmpStoredRequestData = map[string]json.RawMessage{
-	"10":  json.RawMessage(validRequests[0]),
-	"11":  json.RawMessage(validRequests[1]),
-	"12":  json.RawMessage(validRequests[2]),
-	"100": json.RawMessage(invalidRequests[0]),
-	"101": json.RawMessage(invalidRequests[0]),
-	"102": json.RawMessage(invalidRequests[0]),
-	"103": json.RawMessage(invalidRequests[0]),
-	"104": json.RawMessage(invalidRequests[0]),
-	"105": json.RawMessage(invalidRequests[0]),
-	"106": json.RawMessage(invalidRequests[0]),
-	"107": json.RawMessage(invalidRequests[0]),
-	"108": json.RawMessage(invalidRequests[0]),
-	"109": json.RawMessage(invalidRequests[0]),
-	"110": json.RawMessage(invalidRequests[0]),
-	"111": json.RawMessage(invalidRequests[0]),
-	"112": json.RawMessage(invalidRequests[0]),
-	"113": json.RawMessage(invalidRequests[0]),
-	"114": json.RawMessage(invalidRequests[0]),
-	"115": json.RawMessage(invalidRequests[0]),
-	"116": json.RawMessage(invalidRequests[0]),
-	"117": json.RawMessage(invalidRequests[0]),
-	"118": json.RawMessage(invalidRequests[0]),
-	"119": json.RawMessage(invalidRequests[0]),
-	"120": json.RawMessage(invalidRequests[0]),
-	"121": json.RawMessage(invalidRequests[0]),
-	"122": json.RawMessage(invalidRequests[0]),
-	"123": json.RawMessage(invalidRequests[0]),
-	"124": json.RawMessage(invalidRequests[0]),
-	"125": json.RawMessage(invalidRequests[0]),
-	"126": json.RawMessage(invalidRequests[0]),
-	"127": json.RawMessage(invalidRequests[0]),
-	"128": json.RawMessage(invalidRequests[0]),
-	"129": json.RawMessage(invalidRequests[0]),
-	"130": json.RawMessage(invalidRequests[0]),
-	"131": json.RawMessage(invalidRequests[0]),
-	"132": json.RawMessage(invalidRequests[0]),
-	"133": json.RawMessage(invalidRequests[0]),
-	"134": json.RawMessage(invalidRequests[0]),
-}
-
 type mockAmpStoredReqFetcher struct {
+	data map[string]json.RawMessage
 }
 
-func (cf mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	return testAmpStoredRequestData, nil
+func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
+	return cf.data, nil
 }
 
 type mockAmpExchange struct {

@@ -1,0 +1,15 @@
+{
+	"id": "req-id",
+	"imp": [
+		{
+			"id": "imp-id",
+			"banner": {
+				"format": [
+					{
+						"wratio": 30
+					}
+				]
+			}
+		}
+	]
+}
