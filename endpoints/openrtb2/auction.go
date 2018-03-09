@@ -330,11 +330,7 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	if err != nil {
 		return err
 	}
-	encoded, err := json.Marshal(string(serialized))
-	if err != nil {
-		return err
-	}
-	n.Request = string(encoded)
+	n.Request = string(serialized)
 	return nil
 }
 
