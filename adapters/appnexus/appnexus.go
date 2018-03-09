@@ -88,6 +88,10 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			return nil, errors.New("No placement or member+invcode provided")
 		}
 
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(anReq.Imp) <= i {
+			break
+		}
 		if params.InvCode != "" {
 			anReq.Imp[i].TagID = params.InvCode
 			if params.Member != "" {
