@@ -211,6 +211,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampId, len(req.Imp))}
 		return
 	}
+
+	// Force HTTPS as AMP requires it, but pubs can forget to set it.
+	if req.Imp[0].Secure == nil {
+		secure := int8(1)
+		req.Imp[0].Secure = &secure
+	} else {
+		*req.Imp[0].Secure = 1
+	}
+
 	return
 }
 
