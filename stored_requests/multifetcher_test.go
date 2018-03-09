@@ -9,7 +9,7 @@ import (
 
 func TestMultiFetcher(t *testing.T) {
 	mf0 := &mockFetcher{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"abc": json.RawMessage(`{}`),
 		},
 		mockGetImps: map[string]json.RawMessage{
@@ -18,7 +18,7 @@ func TestMultiFetcher(t *testing.T) {
 		returnErrs: []error{NotFoundError{"def", "Request"}, NotFoundError{"imp-1", "Imp"}},
 	}
 	mf1 := &mockFetcher{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"def": json.RawMessage(`{}`),
 		},
 		mockGetImps: map[string]json.RawMessage{
@@ -40,7 +40,7 @@ func TestMultiFetcher(t *testing.T) {
 
 func TestMissingID(t *testing.T) {
 	mf0 := &mockFetcher{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"abc": json.RawMessage(`{}`),
 		},
 		mockGetImps: map[string]json.RawMessage{
@@ -49,7 +49,7 @@ func TestMissingID(t *testing.T) {
 		returnErrs: []error{NotFoundError{"def", "Request"}, NotFoundError{"ghi", "Request"}, NotFoundError{"456", "Imp"}, NotFoundError{"789", "Imp"}},
 	}
 	mf1 := &mockFetcher{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"def": json.RawMessage(`{}`),
 		},
 		mockGetImps: map[string]json.RawMessage{
@@ -70,13 +70,13 @@ func TestMissingID(t *testing.T) {
 
 func TestOtherError(t *testing.T) {
 	mf0 := &mockFetcher{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"abc": json.RawMessage(`{}`),
 		},
 		returnErrs: []error{NotFoundError{"def", "Request"}, NotFoundError{"123", "Imp"}, errors.New("Other error")},
 	}
 	mf1 := &mockFetcher{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"def": json.RawMessage(`{}`),
 		},
 		mockGetImps: map[string]json.RawMessage{

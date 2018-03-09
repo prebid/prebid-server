@@ -2,20 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
-
-	"context"
-	"io/ioutil"
-	"os"
-	"time"
-
-	"fmt"
+	"github.com/spf13/viper"
 
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -25,7 +24,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	usersyncers "github.com/prebid/prebid-server/usersync"
-	"github.com/spf13/viper"
 )
 
 const adapterDirectory = "adapters"
@@ -742,9 +740,9 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewFilesFetcher(t *testing.T) {
-	fetcher, _, err := NewFetchers(&config.StoredRequests{
+	fetcher, _, _, err := NewFetchers(&config.StoredRequests{
 		Files: true,
-	}, nil)
+	}, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Error constructing file backends. %v", err)
 	}
@@ -754,7 +752,7 @@ func TestNewFilesFetcher(t *testing.T) {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, _, err := NewFetchers(&config.StoredRequests{}, nil)
+	fetcher, _, _, err := NewFetchers(&config.StoredRequests{}, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Error constructing backends. %v", err)
 	}
