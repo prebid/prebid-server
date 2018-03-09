@@ -10,6 +10,8 @@ For a thorough description of BidRequest JSON, see the [/openrtb2/auction](./auc
 
 The only caveat is that AMP BidRequests must contain an `imp` array with one, and only one, impression object.
 
+All AMP content must be secure, so this endpoint will enforce that request.imp[0].secure = 1. Saves on publishers forgetting to set this.
+
 ### Response
 
 A sample response payload looks like this:
