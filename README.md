@@ -26,7 +26,7 @@ Then download and prepare Prebid Server:
 cd $GOPATH
 git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server
 cd src/github.com/prebid/prebid-server
-glide install
+dep ensure
 ```
 
 Run the automated tests:

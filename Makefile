@@ -13,6 +13,7 @@ all:
 
 # install dep https://golang.github.io/dep/ (assumes go is already installed)
 install:
+	export DEP_RELEASE_TAG=v0.4.1
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
 # deps will clean out the vendor directory and use dep for a fresh install
