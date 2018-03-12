@@ -10,9 +10,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
 	metrics "github.com/rcrowley/go-metrics"
+	"github.com/spf13/viper"
 
 	"context"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -621,5 +623,30 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 		return "{\"appnexus\":true}"
 	} else {
 		return "{\"appnexus\":false}"
+	}
+}
+
+// Test the viper setup
+func TestViperInit(t *testing.T) {
+	CompareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
+	CompareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
+}
+
+func TestViperEnv(t *testing.T) {
+	os.Setenv("PBS_PORT", "7777")
+	os.Setenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT", "not_an_endpoint")
+	os.Setenv("PBS_HOST_COOKIE_TTL_DAYS", "60")
+
+	// Basic config set
+	CompareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
+	// Nested config set
+	CompareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
+	// Config set with underscores
+	CompareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
+}
+
+func CompareStrings(t *testing.T, message string, expect string, actual string) {
+	if expect != actual {
+		t.Errorf(message, expect, actual)
 	}
 }

@@ -739,6 +739,11 @@ func init() {
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.SetDefault("host_cookie.ttl_days", 90)
+
+	// Set environment variable support:
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetEnvPrefix("PBS")
+	viper.AutomaticEnv()
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
