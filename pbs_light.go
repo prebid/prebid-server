@@ -733,6 +733,8 @@ func init() {
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
+	viper.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
+	viper.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	viper.SetDefault("max_request_size", 1024*256)
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
