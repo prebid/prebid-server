@@ -243,6 +243,10 @@ However, the publisher can improve performance by only offering impressions whic
 This contains info about every request and response sent by the bidder to its server.
 It is only returned on `test` bids for performance reasons, but may be useful during debugging.
 
+`response.ext.debug.resolvedrequest` will be populated **only if** `request.test` **was set to 1**.
+
+This contains the request after the resolution of stored requests and implicit information (e.g. site domain, device user agent).
+
 #### Stored Requests
 
 `request.imp[i].ext.prebid.storedrequest` incorporates a [Stored Request](../../developers/stored-requests.md) from the server.

@@ -21,7 +21,8 @@ import (
 )
 
 type AmpResponse struct {
-	Targeting map[string]string `json:"targeting"`
+	Targeting map[string]string             `json:"targeting"`
+	Debug     *openrtb_ext.ExtResponseDebug `json:"debug,omitempty"`
 }
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -129,6 +130,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Targeting: targets,
 	}
 
+	// add debug information if requested
+	if req.Test == 1 {
+		var extResponse openrtb_ext.ExtBidResponse
+		if err := json.Unmarshal(response.Ext, &extResponse); err == nil && extResponse.Debug != nil {
+			ampResponse.Debug = extResponse.Debug
+		} else {
+			glog.Errorf("Test set on request but debug not present in response: %v", err)
+		}
+	}
+
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -183,6 +194,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	debugParam, ok := httpRequest.URL.Query()["debug"]
+	debug := ok && len(debugParam) > 0 && debugParam[0] == "1"
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
@@ -200,6 +214,10 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	if err := json.Unmarshal(requestJson, req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	if debug {
+		req.Test = 1
 	}
 
 	// Two checks so users know which way the Imp check failed.
