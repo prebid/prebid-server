@@ -224,10 +224,13 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	am.requestMeter.Mark(1)
 }
 
-// RecordTime implements a part of the MetricsEngine interface. The calling code is responsible
+// RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible
 // for determining the call duration.
-func (me *Metrics) RecordTime(labels Labels, length time.Duration) {
-	me.RequestTimer.Update(length)
+func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
+	// Only record times for successful requests, as we don't have labels to screen out bad requests.
+	if labels.RequestStatus == RequestStatusOK {
+		me.RequestTimer.Update(length)
+	}
 }
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface

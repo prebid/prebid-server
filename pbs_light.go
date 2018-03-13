@@ -287,7 +287,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	defer deps.metricsEngine.RecordRequest(labels)
 
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
@@ -297,6 +296,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
+	// Defer here because we need pbs_req defined.
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
+	}()
+
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /auction request: %v", err)
@@ -466,7 +471,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
-	deps.metricsEngine.RecordTime(labels, time.Since(pbs_req.Start))
 }
 
 // checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined

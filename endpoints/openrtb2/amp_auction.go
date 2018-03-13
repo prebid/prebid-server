@@ -53,7 +53,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	defer deps.metricsEngine.RecordRequest(labels)
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+	}()
 
 	isSafari := checkSafari(r)
 	if isSafari {

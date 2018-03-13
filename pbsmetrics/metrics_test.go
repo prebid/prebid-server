@@ -21,7 +21,7 @@ func TestDummyMetricsEngine(t *testing.T) {
 
 func TestGoMetricsEngine(t *testing.T) {
 	cfg := config.Configuration{}
-	cfg.Metrics.GoMetrics.Enabled = "yes"
+	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := NewMetricsEngine(&cfg, adapterList)
 	_, ok := testEngine.(*Metrics)
@@ -33,14 +33,14 @@ func TestGoMetricsEngine(t *testing.T) {
 // Test the multiengine
 func TestMultiMetricsEngine(t *testing.T) {
 	cfg := config.Configuration{}
-	cfg.Metrics.GoMetrics.Enabled = "yes"
+	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.BidderList()
 	goEngine := NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
-	engineList := make([]MetricsEngine, 2)
+	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &DummyMetricsEngine{}
 	var metricsEngine MetricsEngine
-	metricsEngine = &MultiMetricsEngine{engineList: engineList}
+	metricsEngine = &engineList
 	labels := Labels{
 		Source:        DemandWeb,
 		RType:         ReqTypeORTB2,
@@ -52,7 +52,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
-		metricsEngine.RecordTime(labels, time.Millisecond*20)
+		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(labels)
 		metricsEngine.RecordAdapterPrice(labels, 1.34)
 		metricsEngine.RecordAdapterBidsReceived(labels, 2)

@@ -5,7 +5,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/rcrowley/go-metrics"
 	"github.com/vrischmann/go-metrics-influxdb"
-	"strings"
 	"time"
 )
 
@@ -59,9 +58,9 @@ const (
 
 // Cookie flag
 const (
-	CookieFlagYes     CookieFlag = "2"
-	CookieFlagNo      CookieFlag = "1"
-	CookieFlagUnknown CookieFlag = "0"
+	CookieFlagYes     CookieFlag = "exists"
+	CookieFlagNo      CookieFlag = "no"
+	CookieFlagUnknown CookieFlag = "unknown"
 )
 
 // Request/return status
@@ -95,8 +94,8 @@ const (
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
 type MetricsEngine interface {
-	RecordRequest(labels Labels)                    // ignores adapter. only statusOk and statusErr fom status
-	RecordTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
+	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
+	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels Labels)
 	RecordAdapterBidsReceived(labels Labels, bids int64)
 	RecordAdapterPrice(labels Labels, cpm float64)
@@ -111,23 +110,12 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
-	engineList := make([]MetricsEngine, 0, 2)
-
-	// Initializze the go metrics package seperately in case we get a second backend that uses it.
-	// NOTE: it is currently not an error to initialize go-metrics, but not export the data to a backend.
-	var goMetrics *Metrics
-	goME := strings.ToLower(cfg.Metrics.GoMetrics.Enabled)
-	if len(goME) > 0 && goME != "no" && goME != "false" {
-		goMetrics := NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
-		engineList = append(engineList, goMetrics)
-	}
+	engineList := make(MultiMetricsEngine, 0, 2)
 
 	if cfg.Metrics.Influxdb.Host != "" {
-		// Seperate check in case we find another metrics library we want to hook to InfluxDB
-		// If we want to support tagging, then we will need something other than the legacy goMetrics
-		if goMetrics == nil {
-			panic("Configuration error: InfluxDB turned on, but go-metrics is not enabled")
-		}
+		// Currently use go-metrics as the metrics piece for influx
+		goMetrics := NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
+		engineList = append(engineList, goMetrics)
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
 			goMetrics.metricsRegistry,     // metrics registry
@@ -142,87 +130,83 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	// Now return the proper metrics engine
 	if len(engineList) > 1 {
-		return &MultiMetricsEngine{engineList: engineList}
+		return &engineList
 	} else if len(engineList) == 1 {
 		return engineList[0]
 	}
-	return &DummyMetricsEngine{0}
+	return &DummyMetricsEngine{}
 }
 
 // MultiMetricsEngine logs metrics to multiple metrics databases The can be useful in transitioning
 // an instance from one engine to another, you can run both in parallel to verify stats match up.
-type MultiMetricsEngine struct {
-	engineList []MetricsEngine
-}
+type MultiMetricsEngine []MetricsEngine
 
 // RecordRequest across all engines
 func (me *MultiMetricsEngine) RecordRequest(labels Labels) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordRequest(labels)
 	}
 }
 
-// RecordTime across all engines
-func (me *MultiMetricsEngine) RecordTime(labels Labels, length time.Duration) {
-	for _, thisME := range me.engineList {
-		thisME.RecordTime(labels, length)
+// RecordRequestTime across all engines
+func (me *MultiMetricsEngine) RecordRequestTime(labels Labels, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordRequestTime(labels, length)
 	}
 }
 
 // RecordAdapterRequest across all engines
 func (me *MultiMetricsEngine) RecordAdapterRequest(labels Labels) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordAdapterRequest(labels)
 	}
 }
 
 // RecordAdapterBidsReceived across all engines
 func (me *MultiMetricsEngine) RecordAdapterBidsReceived(labels Labels, bids int64) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordAdapterBidsReceived(labels, bids)
 	}
 }
 
 // RecordAdapterPrice across all engines
 func (me *MultiMetricsEngine) RecordAdapterPrice(labels Labels, cpm float64) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordAdapterPrice(labels, cpm)
 	}
 }
 
 // RecordAdapterTime across all engines
 func (me *MultiMetricsEngine) RecordAdapterTime(labels Labels, length time.Duration) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordAdapterTime(labels, length)
 	}
 }
 
 // RecordCookieSync across all engines
 func (me *MultiMetricsEngine) RecordCookieSync(labels Labels) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordCookieSync(labels)
 	}
 }
 
 // RecordUserIDSet across all engines
 func (me *MultiMetricsEngine) RecordUserIDSet(userLabels UserLabels) {
-	for _, thisME := range me.engineList {
+	for _, thisME := range *me {
 		thisME.RecordUserIDSet(userLabels)
 	}
 }
 
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
-type DummyMetricsEngine struct {
-	dummy int
-}
+type DummyMetricsEngine struct{}
 
 // RecordRequest as a noop
 func (me *DummyMetricsEngine) RecordRequest(labels Labels) {
 	return
 }
 
-// RecordTime as a noop
-func (me *DummyMetricsEngine) RecordTime(labels Labels, length time.Duration) {
+// RecordRequestTime as a noop
+func (me *DummyMetricsEngine) RecordRequestTime(labels Labels, length time.Duration) {
 	return
 }
 

@@ -65,7 +65,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	defer deps.metricsEngine.RecordRequest(labels)
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+	}()
 
 	isSafari := checkSafari(r)
 	if isSafari {
@@ -109,6 +112,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
 	if err != nil {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
