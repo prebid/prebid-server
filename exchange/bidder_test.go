@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -138,21 +138,15 @@ func TestMultiBidder(t *testing.T) {
 
 }
 
-// TestBidderTimeout makes sure that things work smoothly if the context is cancelled in the middle
-// of an auction.
-//
-// If the context is "live", bidderAdapter.doRequest() should send responses back successfully.
-// If the context dies mid-request, or has already died before the request started, it should return errors.
+// TestBidderTimeout makes sure that things work smoothly if the context expires before the Bidder
+// manages to complete its task.
 func TestBidderTimeout(t *testing.T) {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	counter := int32(0)
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		numCalls := atomic.AddInt32(&counter, 1)
-		if numCalls == 2 {
-			cancelFunc()
-			<-ctx.Done() // Fixes #369 (hopefully)
-		}
+	// Fixes #369 (hopefully): Define a context which has already expired
+	ctx, cancelFunc := context.WithDeadline(context.Background(), time.Now().Add(-7*time.Hour))
+	cancelFunc()
+	<-ctx.Done()
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		if r.Method == "GET" {
 			w.Write([]byte("getBody"))
@@ -173,36 +167,11 @@ func TestBidderTimeout(t *testing.T) {
 		Method: "POST",
 		Uri:    server.URL,
 	})
-	if callInfo.err != nil {
-		t.Errorf("The first call should not result in an error.")
-	}
-	if callInfo.response.StatusCode != 200 {
-		t.Errorf("The first call should result in a 200. Got %d", callInfo.response.StatusCode)
-	}
-	if string(callInfo.response.Body) != "postBody" {
-		t.Errorf("The first call should return the body \"postBody\". Got %s", callInfo.response.Body)
-	}
-
-	callInfo = bidder.doRequest(ctx, &adapters.RequestData{
-		Method: "POST",
-		Uri:    server.URL,
-	})
 	if callInfo.err == nil {
-		t.Errorf("The bidder should report an error if the context is cancelled mid-request.")
+		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
 	if callInfo.response != nil {
-		t.Errorf("There should be no response if the request was cancelled.")
-	}
-
-	callInfo = bidder.doRequest(ctx, &adapters.RequestData{
-		Method: "POST",
-		Uri:    server.URL,
-	})
-	if callInfo.err == nil {
-		t.Errorf("The bidder should report an error if the context was cancelled before the request was made.")
-	}
-	if callInfo.response != nil {
-		t.Errorf("There should be no response if the context had already been cancelled.")
+		t.Errorf("There should be no response if the request never completed.")
 	}
 }
 

@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "native": {
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "ignoring imp id=unsupported-native-imp, Adtelligent supports only Video and Banner"
+  ]
+}

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang/glog"
+
 	"github.com/mxmCherry/openrtb"
 
 	"github.com/prebid/prebid-server/config"
@@ -57,6 +59,16 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher) (*openrtb.BidResponse, error) {
+	// Snapshot of resolved bid request for debug if test request
+	var resolvedRequest json.RawMessage
+	if bidRequest.Test == 1 {
+		if r, err := json.Marshal(bidRequest); err != nil {
+			glog.Errorf("Error marshalling bid request for debug: %v", err)
+		} else {
+			resolvedRequest = r
+		}
+	}
+
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	cleanRequests, aliases, errs := cleanOpenRTBRequests(bidRequest, usersyncs, e.m)
 	// List of bidders we have requests for.
@@ -104,7 +116,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		setTargeting(auc, bidRequest.App != nil)
 	}
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, adapterExtra, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel func()) {
@@ -182,7 +194,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -203,27 +215,30 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 
 	bidResponse.SeatBid = seatBids
 
-	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest.Test, errList)
+	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errList)
 	ext, err := json.Marshal(bidResponseExt)
 	bidResponse.Ext = ext
 	return bidResponse, err
 }
 
 // Extract all the data from the SeatBids and build the ExtBidResponse
-func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, test int8, errList []error) *openrtb_ext.ExtBidResponse {
+func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
 		Errors:             make(map[openrtb_ext.BidderName][]string, len(adapterBids)),
 		ResponseTimeMillis: make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 	}
-	if test == 1 {
+	if req.Test == 1 {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
 			HttpCalls: make(map[openrtb_ext.BidderName][]*openrtb_ext.ExtHttpCall),
+		}
+		if err := json.Unmarshal(resolvedRequest, &bidResponseExt.Debug.ResolvedRequest); err != nil {
+			glog.Errorf("Error unmarshalling bid request snapshot: %v", err)
 		}
 	}
 
 	for a, b := range adapterBids {
 		if b != nil {
-			if test == 1 {
+			if req.Test == 1 {
 				// Fill debug info
 				bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
 			}

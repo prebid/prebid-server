@@ -37,7 +37,7 @@ func TestGoodAmpRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{goodRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
 
-	for requestID, _ := range goodRequests {
+	for requestID := range goodRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 		endpoint(recorder, request, nil)
@@ -59,6 +59,10 @@ func TestGoodAmpRequests(t *testing.T) {
 		if len(response.Targeting) != 3 {
 			t.Errorf("Bad targeting data. Expected 3 keys, got %d.", len(response.Targeting))
 		}
+
+		if response.Debug != nil {
+			t.Errorf("Debug present but not requested")
+		}
 	}
 }
 
@@ -72,7 +76,7 @@ func TestAmpBadRequests(t *testing.T) {
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{badRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
-	for requestID, _ := range badRequests {
+	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
 
@@ -80,6 +84,45 @@ func TestAmpBadRequests(t *testing.T) {
 
 		if recorder.Code != http.StatusBadRequest {
 			t.Errorf("Expected status %d. Got %d. Input was: %s", http.StatusBadRequest, recorder.Code, fmt.Sprintf("/openrtb2/auction/amp?config=%s", requestID))
+		}
+	}
+}
+
+// TestAmpDebug makes sure we get debug information back when requested
+func TestAmpDebug(t *testing.T) {
+	requests := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "app.json")),
+		"2": json.RawMessage(validRequest(t, "site.json")),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+
+	for requestID := range requests {
+		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1", requestID), nil)
+		recorder := httptest.NewRecorder()
+		endpoint(recorder, request, nil)
+
+		if recorder.Code != http.StatusOK {
+			t.Errorf("Expected status %d. Got %d. Request config ID was %s", http.StatusOK, recorder.Code, requestID)
+			t.Errorf("Response body was: %s", recorder.Body)
+			t.Errorf("Request was: %s", string(requests[requestID]))
+		}
+
+		var response AmpResponse
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatalf("Error unmarshalling response: %s", err.Error())
+		}
+
+		if response.Targeting == nil || len(response.Targeting) == 0 {
+			t.Errorf("Bad response, no targeting data.\n Response was: %v", recorder.Body)
+		}
+		if len(response.Targeting) != 3 {
+			t.Errorf("Bad targeting data. Expected 3 keys, got %d.", len(response.Targeting))
+		}
+
+		if response.Debug == nil {
+			t.Errorf("Debug requested but not present")
 		}
 	}
 }
@@ -98,12 +141,19 @@ type mockAmpExchange struct {
 
 func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
-	return &openrtb.BidResponse{
+
+	response := &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
 				AdM: "<script></script>",
 				Ext: openrtb.RawJSON(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
 			}},
 		}},
-	}, nil
+	}
+
+	if bidRequest.Test == 1 {
+		response.Ext = openrtb.RawJSON(`{"debug": {"httpcalls": {}, "resolvedrequest": {}}}`)
+	}
+
+	return response, nil
 }
