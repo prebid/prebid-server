@@ -153,9 +153,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				// in the metrics. Need to remember that in analyzing the data.
 				switch err[i] {
 				case context.DeadlineExceeded:
-					blabels[aName].RequestStatus = pbsmetrics.RequestStatusTimeout
+					blabels[coreBidder].RequestStatus = pbsmetrics.RequestStatusTimeout
 				default:
-					blabels[aName].RequestStatus = pbsmetrics.RequestStatusErr
+					blabels[coreBidder].RequestStatus = pbsmetrics.RequestStatusErr
 				}
 			}
 			ae.Errors = serr
@@ -163,7 +163,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if len(err) == 0 {
 				if bids == nil || len(bids.bids) == 0 {
 					// Don't want to mark no bids on error topreserve legacy behavior.
-					blabels[aName].RequestStatus = pbsmetrics.RequestStatusNoBid
+					blabels[coreBidder].RequestStatus = pbsmetrics.RequestStatusNoBid
 				} else {
 					for _, bid := range bids.bids {
 						var cpm = float64(bid.bid.Price * 1000)
