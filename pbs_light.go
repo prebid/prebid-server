@@ -457,31 +457,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 
 	// cache video only for web
 	if pbs_req.CacheMarkup == 2 {
-		var cobjs []*pbc.CacheObject
-		for _, bid := range pbs_resp.Bids {
-			if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
-				cobjs = append(cobjs, &pbc.CacheObject{
-					Value:   bid.Adm,
-					IsVideo: true,
-				})
-			}
-		}
-		err = pbc.Put(ctx, cobjs)
-		if err != nil {
-			writeAuctionError(w, "Prebid cache failed", err)
-			mErrorMeter.Mark(1)
-			return
-		}
-		videoIndex := 0
-		for _, bid := range pbs_resp.Bids {
-			if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
-				bid.CacheID = cobjs[videoIndex].UUID
-				bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
-				bid.NURL = ""
-				bid.Adm = ""
-				videoIndex++
-			}
-		}
+		cacheVideoOnly(pbs_resp.Bids, ctx, w, deps)
 	}
 
 	if pbs_req.SortBids == 1 {
@@ -496,6 +472,35 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// cache rubicon video bids only for Web
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps) {
+	var cobjs []*pbc.CacheObject
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
+			cobjs = append(cobjs, &pbc.CacheObject{
+				Value:   bid.Adm,
+				IsVideo: true,
+			})
+		}
+	}
+	err := pbc.Put(ctx, cobjs)
+	if err != nil {
+		writeAuctionError(w, "Prebid cache failed", err)
+		mErrorMeter.Mark(1)
+		return
+	}
+	videoIndex := 0
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
+			bid.CacheID = cobjs[videoIndex].UUID
+			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
+			bid.NURL = ""
+			bid.Adm = ""
+			videoIndex++
+		}
+	}
 }
 
 // checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
