@@ -633,9 +633,40 @@ func TestViperInit(t *testing.T) {
 }
 
 func TestViperEnv(t *testing.T) {
-	os.Setenv("PBS_PORT", "7777")
-	os.Setenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT", "not_an_endpoint")
-	os.Setenv("PBS_HOST_COOKIE_TTL_DAYS", "60")
+	// Record environment
+	port, set := os.LookupEnv("PBS_PORT")
+	if set {
+		defer os.Setenv("PBS_PORT", port)
+	} else {
+		defer os.Unsetenv("PBS_PORT")
+	}
+
+	endpt, set := os.LookupEnv("PBS_ADAPTERS_PUBMATIC_ENDPOINT")
+	if set {
+		defer os.Setenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT", endpt)
+	} else {
+		defer os.Unsetenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT")
+	}
+
+	ttl, set := os.LookupEnv("PBS_HOST_COOKIE_TTL_DAYS")
+	if set {
+		defer os.Setenv("PBS_HOST_COOKIE_TTL_DAYS", ttl)
+	} else {
+		defer os.Unsetenv("PBS_HOST_COOKIE_TTL_DAYS")
+	}
+
+	err := os.Setenv("PBS_PORT", "7777")
+	if err != nil {
+		t.Fatal("Error setting evnvironment PBS_PORT")
+	}
+	err = os.Setenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT", "not_an_endpoint")
+	if err != nil {
+		t.Fatal("Error setting evnvironment PBS_ADAPTERS_PUBMATIC_ENDPOINT")
+	}
+	err = os.Setenv("PBS_HOST_COOKIE_TTL_DAYS", "60")
+	if err != nil {
+		t.Fatal("Error setting evnvironment PBS_HOST_COOKIE_TTL_DAYS")
+	}
 
 	// Basic config set
 	CompareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
