@@ -101,7 +101,9 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 
 	var impOK bool
 	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
+		for i := 0; i < len(sb.Bid); i++ {
+
+			bid := sb.Bid[i]
 
 			impOK = false
 			mediaType := openrtb_ext.BidTypeBanner
