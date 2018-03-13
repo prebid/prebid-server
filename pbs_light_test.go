@@ -362,8 +362,6 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	}
 }
 
-var delay time.Duration
-
 var (
 	MaxValueLength = 1024 * 10
 	MaxNumValues   = 10
@@ -430,9 +428,7 @@ func DummyPrebidCacheServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to serialize UUIDs into JSON.", http.StatusInternalServerError)
 		return
 	}
-	if delay > 0 {
-		<-time.After(delay)
-	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(bytes)
 }
