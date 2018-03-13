@@ -633,40 +633,14 @@ func TestViperInit(t *testing.T) {
 }
 
 func TestViperEnv(t *testing.T) {
-	// Record environment
-	port, set := os.LookupEnv("PBS_PORT")
-	if set {
-		defer os.Setenv("PBS_PORT", port)
-	} else {
-		defer os.Unsetenv("PBS_PORT")
-	}
+	port := forceEnv(t, "PBS_PORT", "7777")
+	defer port()
 
-	endpt, set := os.LookupEnv("PBS_ADAPTERS_PUBMATIC_ENDPOINT")
-	if set {
-		defer os.Setenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT", endpt)
-	} else {
-		defer os.Unsetenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT")
-	}
+	endpt := forceEnv(t, "PBS_ADAPTERS_PUBMATIC_ENDPOINT", "not_an_endpoint")
+	defer endpt()
 
-	ttl, set := os.LookupEnv("PBS_HOST_COOKIE_TTL_DAYS")
-	if set {
-		defer os.Setenv("PBS_HOST_COOKIE_TTL_DAYS", ttl)
-	} else {
-		defer os.Unsetenv("PBS_HOST_COOKIE_TTL_DAYS")
-	}
-
-	err := os.Setenv("PBS_PORT", "7777")
-	if err != nil {
-		t.Fatal("Error setting evnvironment PBS_PORT")
-	}
-	err = os.Setenv("PBS_ADAPTERS_PUBMATIC_ENDPOINT", "not_an_endpoint")
-	if err != nil {
-		t.Fatal("Error setting evnvironment PBS_ADAPTERS_PUBMATIC_ENDPOINT")
-	}
-	err = os.Setenv("PBS_HOST_COOKIE_TTL_DAYS", "60")
-	if err != nil {
-		t.Fatal("Error setting evnvironment PBS_HOST_COOKIE_TTL_DAYS")
-	}
+	ttl := forceEnv(t, "PBS_HOST_COOKIE_TTL_DAYS", "60")
+	defer ttl()
 
 	// Basic config set
 	CompareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
@@ -679,5 +653,27 @@ func TestViperEnv(t *testing.T) {
 func CompareStrings(t *testing.T, message string, expect string, actual string) {
 	if expect != actual {
 		t.Errorf(message, expect, actual)
+	}
+}
+
+// forceEnv sets an environment variable to a certain value, and return a deferable function to reset it to the original value.
+func forceEnv(t *testing.T, key string, val string) func() {
+	orig, set := os.LookupEnv(key)
+	err := os.Setenv(key, val)
+	if err != nil {
+		t.Fatalf("Error setting evnvironment %s", key)
+	}
+	if set {
+		return func() {
+			if os.Setenv(key, orig) != nil {
+				t.Fatalf("Error unsetting evnvironment %s", key)
+			}
+		}
+	} else {
+		return func() {
+			if os.Unsetenv(key) != nil {
+				t.Fatalf("Error unsetting evnvironment %s", key)
+			}
+		}
 	}
 }
