@@ -126,6 +126,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 ```
 {
   "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']", // Required property.
+  "includewinners": false // Optional param defaulting to true
 }
 ```
 
@@ -140,7 +141,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 ```
 
 The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
-(with _no_ {bidderName} suffix).
+(with _no_ {bidderName} suffix). To prevent these keys, set `request.ext.prebid.targeting.includeWinners` to false.
 
 **NOTE**: Targeting keys are limited to 20 characters. If {bidderName} is too long, the returned key
 will be truncated to only include the first 20 characters.
@@ -173,7 +174,7 @@ for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that 
 
 #### Native Request
 
-For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID. 
+For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.
 
 
 #### Bidder Aliases
