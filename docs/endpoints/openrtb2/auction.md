@@ -171,6 +171,11 @@ If you're using [Prebid.js](https://github.com/prebid/Prebid.js), this is happen
 If you're using another client, you can populate the Cookie of the Prebid Server host with User IDs
 for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that it returns in the response.
 
+#### Native Request
+
+For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID. 
+
+
 #### Bidder Aliases
 
 Requests can define Bidder aliases if they want to refer to a Bidder by a separate name.
