@@ -539,14 +539,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			},
 		}
 
-		if bidderExt.Prebid != nil && len(bidderExt.Prebid.ViewabilityVendors) > 0 {
-			impExt.ViewabilityVendors = make([]string, len(bidderExt.Prebid.ViewabilityVendors))
-			if err := getVendorUrls(bidderExt.Prebid.ViewabilityVendors, impExt.ViewabilityVendors, i); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-		}
-
 		thisImp.Ext, err = json.Marshal(&impExt)
 
 		if err != nil {
@@ -680,15 +672,4 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bids, nil
-}
-
-func getVendorUrls(vendors []string, vendorUrls []string, index int) error {
-	for i, vendor := range vendors {
-		if val, ok := viewabilityVendorUrlMap[vendor]; ok {
-			vendorUrls[i] = val
-		} else {
-			return fmt.Errorf("Cannot find vendor url for unknown vendor: '%v' in imp[%d].ext.prebid.viewabilityvendors", vendor, index)
-		}
-	}
-	return nil
 }

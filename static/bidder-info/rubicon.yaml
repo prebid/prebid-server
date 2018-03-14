@@ -8,3 +8,8 @@ capabilities:
     mediaTypes:
       - banner
       - video
+vendors:
+    - moat
+    - comscore
+    - activeview
+    - integralads
