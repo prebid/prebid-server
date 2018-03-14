@@ -455,7 +455,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 
-	// cache video only for web
 	if pbs_req.CacheMarkup == 2 {
 		cacheVideoOnly(pbs_resp.Bids, ctx, w, deps)
 	}
@@ -474,11 +473,11 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	mRequestTimer.UpdateSince(pbs_req.Start)
 }
 
-// cache rubicon video bids only for Web
+// cache video bids only for Web
 func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps) {
 	var cobjs []*pbc.CacheObject
 	for _, bid := range bids {
-		if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
+		if bid.CreativeMediaType == "video" {
 			cobjs = append(cobjs, &pbc.CacheObject{
 				Value:   bid.Adm,
 				IsVideo: true,
@@ -493,7 +492,7 @@ func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWr
 	}
 	videoIndex := 0
 	for _, bid := range bids {
-		if bid.CreativeMediaType == "video" && bid.BidderCode == "rubicon" {
+		if bid.CreativeMediaType == "video" {
 			bid.CacheID = cobjs[videoIndex].UUID
 			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
 			bid.NURL = ""

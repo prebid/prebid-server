@@ -508,8 +508,8 @@ func TestCacheVideoOnly(t *testing.T) {
 	syncers := usersyncers.NewSyncerMap(cfg)
 	prebid_cache_client.InitPrebidCache(server.URL)
 	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers})
-	if bids[0].CacheID != "" {
-		t.Errorf("UUID was '%s', should have been empty", bids[0].CacheID)
+	if bids[0].CacheID != "UUID-1" {
+		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}
 	if bids[1].CacheID != "" {
 		t.Errorf("UUID was '%s', should have been empty", bids[1].CacheID)
@@ -517,11 +517,11 @@ func TestCacheVideoOnly(t *testing.T) {
 	if bids[2].CacheID != "" {
 		t.Errorf("UUID was '%s', should have been empty", bids[2].CacheID)
 	}
-	if bids[3].CacheID != "UUID-1" {
-		t.Errorf("First object UUID was '%s', should have been 'UUID-1'", bids[3].CacheID)
+	if bids[3].CacheID != "UUID-2" {
+		t.Errorf("First object UUID was '%s', should have been 'UUID-2'", bids[3].CacheID)
 	}
-	if bids[4].CacheID != "UUID-2" {
-		t.Errorf("Second object UUID was '%s', should have been 'UUID-2'", bids[4].CacheID)
+	if bids[4].CacheID != "UUID-3" {
+		t.Errorf("Second object UUID was '%s', should have been 'UUID-3'", bids[4].CacheID)
 	}
 }
 
