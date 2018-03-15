@@ -28,7 +28,12 @@ This endpoint returns JSON like:
         "native"
       ]
     }
-  }
+  },
+  "vendors":[
+    "vendor1",
+    "vendor2",
+    "vendor3"
+  ]
 }
 ```
 
@@ -41,3 +46,5 @@ The fields hold the following information:
 If `capabilities.app` or `capabilities.site` do not exist, then this Bidder does not support that platform.
 OpenRTB Requests which define a `request.app` or `request.site` property will fail if a
 `request.imp[i].ext.{bidderName}` exists for a Bidder which doesn't support them.
+
+- `vendors` : A list of vendors this Bidder supports for viewability scores.

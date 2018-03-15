@@ -529,13 +529,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		var supportedVendors []string
 		if infoFile := info.GetBidderInfo("rubicon"); infoFile != nil {
-			supportedVendors = infoFile.SupportedVendors
+			supportedVendors = (*infoFile).SupportedVendors
 		}
 
 		if len(thisImp.Metric) > 0 && supportedVendors != nil {
 			viewabilityvendors := make([]string, 0)
 			for j, metric := range thisImp.Metric {
-				if metric.Type == "viewability" && isSupportedVendor(supportedVendors, metric.Vendor) {
+				if metric.Type == "viewability" && isSupportedVendor(supportedVendors, &metric.Vendor) {
 					if url, err := openrtb_ext.GetVendorUrl(metric.Vendor); err == nil {
 						viewabilityvendors = append(viewabilityvendors, url)
 						thisImp.Metric[j].Vendor = "seller-declared"
@@ -681,9 +681,9 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	return bids, nil
 }
 
-func isSupportedVendor(supportedVendors []string, vendor string) bool {
+func isSupportedVendor(supportedVendors []string, vendor *string) bool {
 	for _, vend := range supportedVendors {
-		if vend == vendor {
+		if vend == *vendor {
 			return true
 		}
 	}

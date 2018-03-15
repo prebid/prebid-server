@@ -9,7 +9,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"gopkg.in/yaml.v2"
-	"log"
 )
 
 var responses map[string]json.RawMessage
@@ -55,7 +54,6 @@ func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) 
 			glog.Fatalf("error writing JSON of file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
 		responses[bidderString] = json.RawMessage(jsonBytes)
-		log.Printf("InfoDir=%v, Response: %v", infoDir,string(responses[bidderString]))
 	}
 
 	// Return an endpoint which writes the responses from memory.
@@ -75,11 +73,11 @@ func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) 
 //Get information from /static/bidder-info/{bidder}.yaml
 func GetBidderInfo(bidder string) *InfoFile {
 	if jsoninfo, ok := responses[bidder]; ok {
-		var bidderInfo *InfoFile
+		var bidderInfo InfoFile
 
 		// Would have reported error in NewBidderDetailsEndpoint() on startup so no need to report error.
-		if err := json.Unmarshal(jsoninfo, bidderInfo); err == nil {
-			return bidderInfo
+		if err := json.Unmarshal(jsoninfo, &bidderInfo); err == nil {
+			return &bidderInfo
 		}
 	}
 	return nil
