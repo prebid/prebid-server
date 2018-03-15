@@ -19,6 +19,9 @@ The following is a "hello world" request which fetches the [Prebid sample ad](ht
 ```
 {
   "id": "some-request-id",
+  "site": {
+    "page": "prebid.org"
+  },
   "imp": [
     {
       "id": "some-impression-id",
@@ -108,6 +111,8 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
+Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
+
 #### Targeting
 
 Targeting refers to strings which are sent to the adserver to
@@ -139,6 +144,37 @@ The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_siz
 
 **NOTE**: Targeting keys are limited to 20 characters. If {bidderName} is too long, the returned key
 will be truncated to only include the first 20 characters.
+
+#### Cookie syncs
+
+Each Bidder should receive their own ID in the `request.user.buyeruid` property.
+Prebid Server has three ways to popualte this field. In order of priority:
+
+1. If the request payload contains `request.user.buyeruid`, then that value will be sent to all Bidders.
+In most cases, this is probably a bad idea.
+
+2. The request payload can store a `buyeruid` for each Bidder by defining `request.user.ext.prebid.buyeruids` like so:
+
+```
+{
+  "appnexus": "some-appnexus-id",
+  "rubicon": "some-rubicon-id"
+}
+```
+
+Prebid Server's core logic will preprocess the request so that each Bidder sees their own value in the `request.user.buyeruid` field.
+
+3. Prebid Server will use its Cookie to map IDs for each Bidder.
+
+If you're using [Prebid.js](https://github.com/prebid/Prebid.js), this is happening automatically.
+
+If you're using another client, you can populate the Cookie of the Prebid Server host with User IDs
+for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that it returns in the response.
+
+#### Native Request
+
+For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID. 
+
 
 #### Bidder Aliases
 
@@ -212,6 +248,10 @@ However, the publisher can improve performance by only offering impressions whic
 This contains info about every request and response sent by the bidder to its server.
 It is only returned on `test` bids for performance reasons, but may be useful during debugging.
 
+`response.ext.debug.resolvedrequest` will be populated **only if** `request.test` **was set to 1**.
+
+This contains the request after the resolution of stored requests and implicit information (e.g. site domain, device user agent).
+
 #### Stored Requests
 
 `request.imp[i].ext.prebid.storedrequest` incorporates a [Stored Request](../../developers/stored-requests.md) from the server.
@@ -225,6 +265,39 @@ A typical `storedrequest` value looks like this:
 ```
 
 For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
+
+#### Cache bids
+
+Bids can be temporarily cached on the server by sending the following data as `request.ext.prebid.cache`:
+
+```
+{
+  "bids": {}
+}
+```
+
+This property has no effect unless `request.ext.prebid.targeting` is also set in the request.
+If present, Prebid Server will make a _best effort_ to include these extra `bid.ext.prebid.targeting` keys:
+
+- `hb_cache_id`: On the highest overall Bid in each Imp.
+- `hb_cache_id_{bidderName}`: On the highest Bid from {bidderName} in each Imp.
+
+Clients _should not assume_ that these keys will exist, just because they were requested, though.
+If they exist, the value will be a UUID which can be used to fetch Bid JSON from [Prebid Cache](https://github.com/prebid/prebid-cache).
+They may not exist if the host company's cache is full, having connection problems, or other issues like that.
+
+This is mainly intended for certain limited Prebid Mobile setups, where bids cannot be cached client-side.
+
+#### GDPR
+
+Prebid Server supports the IAB's GDPR recommendations, which can be found [here](https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf).
+
+This adds two optional properties:
+
+- `request.user.ext.consent`: Is the consent string required by the IAB standards.
+- `request.regs.ext.gdpr`: Is 0 if the caller believes that the user is *not* under GDPR, 1 if the user *is* under GDPR, and undefined if we're not certain.
+
+These fields will be forwarded to each Bidder, so they can decide how to process them.
 
 ### OpenRTB Differences
 

@@ -21,7 +21,8 @@ import (
 )
 
 type AmpResponse struct {
-	Targeting map[string]string `json:"targeting"`
+	Targeting map[string]string             `json:"targeting"`
+	Debug     *openrtb_ext.ExtResponseDebug `json:"debug,omitempty"`
 }
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -45,6 +46,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Set this as an AMP request in Metrics.
 	start := time.Now()
 	deps.metrics.AmpRequestMeter.Mark(1)
+
+	// Add AMP headers
+	origin := r.FormValue("__amp_source_origin")
+	if len(origin) == 0 {
+		// Just to be safe
+		origin = r.Header.Get("Origin")
+	}
+
+	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
+	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
+	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
+	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
 	req, errL := deps.parseAmpRequest(r)
 	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
@@ -117,16 +130,15 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Targeting: targets,
 	}
 
-	// Add AMP headers
-	origin := r.FormValue("__amp_source_origin")
-	if len(origin) == 0 {
-		// Just to be safe
-		origin = r.Header.Get("Origin")
+	// add debug information if requested
+	if req.Test == 1 {
+		var extResponse openrtb_ext.ExtBidResponse
+		if err := json.Unmarshal(response.Ext, &extResponse); err == nil && extResponse.Debug != nil {
+			ampResponse.Debug = extResponse.Debug
+		} else {
+			glog.Errorf("Test set on request but debug not present in response: %v", err)
+		}
 	}
-	// Heders "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
-	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
-	w.Header().Set("AMP-Access-Control-Allow-Source-Origin", origin)
-	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
 	// Fixes #231
 	enc := json.NewEncoder(w)
@@ -157,7 +169,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	errs = enforceAMPCache(req)
+	errs = defaultRequestExt(req)
 	if len(errs) > 0 {
 		return
 	}
@@ -182,6 +194,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	debugParam, ok := httpRequest.URL.Query()["debug"]
+	debug := ok && len(debugParam) > 0 && debugParam[0] == "1"
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
@@ -201,20 +216,34 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	if debug {
+		req.Test = 1
+	}
+
 	// Two checks so users know which way the Imp check failed.
 	if len(req.Imp) == 0 {
-		errs = []error{fmt.Errorf("AMP tag_id '%s' does not include an Imp object. One id required", ampId)}
+		errs = []error{fmt.Errorf("data for tag_id='%s' does not define the required imp array.", ampId)}
 		return
 	}
 	if len(req.Imp) > 1 {
-		errs = []error{fmt.Errorf("AMP tag_id '%s' includes multiple Imp objects. We must have only one", ampId)}
+		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampId, len(req.Imp))}
 		return
 	}
+
+	// Force HTTPS as AMP requires it, but pubs can forget to set it.
+	if req.Imp[0].Secure == nil {
+		secure := int8(1)
+		req.Imp[0].Secure = &secure
+	} else {
+		*req.Imp[0].Secure = 1
+	}
+
 	return
 }
 
-// Enforce that Targeting and Caching are turned on for an AMP OpenRTB request.
-func enforceAMPCache(req *openrtb.BidRequest) (errs []error) {
+// AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
+// If the user didn't include them, default those here.
+func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	errs = nil
 	extRequest := &openrtb_ext.ExtRequest{}
 	if req.Ext != nil && len(req.Ext) > 0 {
@@ -224,9 +253,27 @@ func enforceAMPCache(req *openrtb.BidRequest) (errs []error) {
 		}
 	}
 
+	setDefaults := false
 	// Ensure Targeting and caching is on
-	if extRequest.Prebid.Targeting == nil || extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {
-		errs = []error{fmt.Errorf("AMP requests require Trageting and Caching to be set")}
+	if extRequest.Prebid.Targeting == nil {
+		setDefaults = true
+		extRequest.Prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
+			PriceGranularity: openrtb_ext.PriceGranularityMedium,
+		}
+	}
+	if extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {
+		setDefaults = true
+		extRequest.Prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
+			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
+		}
+	}
+	if setDefaults {
+		newExt, err := json.Marshal(extRequest)
+		if err == nil {
+			req.Ext = newExt
+		} else {
+			errs = []error{err}
+		}
 	}
 
 	return

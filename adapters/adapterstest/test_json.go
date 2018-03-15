@@ -10,6 +10,8 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
+
+	"net/http"
 )
 
 // RunJSONBidderTest is a helper method intended for Bidders which use OpenRTB to communicate with their servers.
@@ -137,8 +139,9 @@ func (req *httpRequest) ToRequestData(t *testing.T) *adapters.RequestData {
 }
 
 type httpRequest struct {
-	Body json.RawMessage `json:"body"`
-	Uri  string          `json:"uri"`
+	Body    json.RawMessage `json:"body"`
+	Uri     string          `json:"uri"`
+	Headers http.Header     `json:"headers"`
 }
 
 type httpResponse struct {

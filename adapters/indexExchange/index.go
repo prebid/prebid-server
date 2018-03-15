@@ -22,13 +22,8 @@ type IndexAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *IndexAdapter) Name() string {
-	return "indexExchange"
-}
-
 // used for cookies and such
-func (a *IndexAdapter) FamilyName() string {
+func (a *IndexAdapter) Name() string {
 	return "indexExchange"
 }
 
@@ -45,7 +40,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		return nil, fmt.Errorf("Index doesn't support apps")
 	}
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	indexReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes, true)
+	indexReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
 
 	if err != nil {
 		return nil, err
@@ -59,6 +54,11 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		}
 		if params.SiteID == 0 {
 			return nil, errors.New("Missing siteID param")
+		}
+
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(indexReq.Imp) <= i {
+			break
 		}
 
 		indexReq.Imp[i].TagID = unit.Code

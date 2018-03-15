@@ -2,12 +2,11 @@ package exchange
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -48,7 +47,7 @@ func TestSingleBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -124,7 +123,7 @@ func TestMultiBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -139,20 +138,15 @@ func TestMultiBidder(t *testing.T) {
 
 }
 
-// TestBidderTimeout makes sure that things work smoothly if the context is cancelled in the middle
-// of an auction.
-//
-// If the context is "live", bidderAdapter.doRequest() should send responses back successfully.
-// If the context dies mid-request, or has already died before the request started, it should return errors.
+// TestBidderTimeout makes sure that things work smoothly if the context expires before the Bidder
+// manages to complete its task.
 func TestBidderTimeout(t *testing.T) {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	counter := int32(0)
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		numCalls := atomic.AddInt32(&counter, 1)
-		if numCalls == 2 {
-			cancelFunc()
-		}
+	// Fixes #369 (hopefully): Define a context which has already expired
+	ctx, cancelFunc := context.WithDeadline(context.Background(), time.Now().Add(-7*time.Hour))
+	cancelFunc()
+	<-ctx.Done()
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		if r.Method == "GET" {
 			w.Write([]byte("getBody"))
@@ -173,36 +167,11 @@ func TestBidderTimeout(t *testing.T) {
 		Method: "POST",
 		Uri:    server.URL,
 	})
-	if callInfo.err != nil {
-		t.Errorf("The first call should not result in an error.")
-	}
-	if callInfo.response.StatusCode != 200 {
-		t.Errorf("The first call should result in a 200. Got %d", callInfo.response.StatusCode)
-	}
-	if string(callInfo.response.Body) != "postBody" {
-		t.Errorf("The first call should return the body \"postBody\". Got %s", callInfo.response.Body)
-	}
-
-	callInfo = bidder.doRequest(ctx, &adapters.RequestData{
-		Method: "POST",
-		Uri:    server.URL,
-	})
 	if callInfo.err == nil {
-		t.Errorf("The bidder should report an error if the context is cancelled mid-request.")
+		t.Errorf("The bidder should report an error if the context has expired already.")
 	}
 	if callInfo.response != nil {
-		t.Errorf("There should be no response if the request was cancelled.")
-	}
-
-	callInfo = bidder.doRequest(ctx, &adapters.RequestData{
-		Method: "POST",
-		Uri:    server.URL,
-	})
-	if callInfo.err == nil {
-		t.Errorf("The bidder should report an error if the context was cancelled before the request was made.")
-	}
-	if callInfo.response != nil {
-		t.Errorf("There should be no response if the context had already been cancelled.")
+		t.Errorf("There should be no response if the request never completed.")
 	}
 }
 
@@ -336,7 +305,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 	bids, _ := bidder.requestBid(context.Background(), &openrtb.BidRequest{
 		Test: 1,
-	}, nil, "test")
+	}, "test")
 
 	if len(bids.httpCalls) != 1 {
 		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
@@ -357,7 +326,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, nil, "test")
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -367,83 +336,6 @@ func TestErrorReporting(t *testing.T) {
 	if errs[0].Error() != "Invalid params on BidRequest." {
 		t.Errorf(`Error message was mutated. Expected "%s", Got "%s"`, "Invalid params on BidRequest.", errs[0].Error())
 	}
-}
-
-func TestTargetingKeys(t *testing.T) {
-	respStatus := 200
-	respBody := "{\"bid\":false}"
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-
-	requestHeaders := http.Header{}
-	requestHeaders.Add("Content-Type", "application/json")
-
-	mockBids := []*adapters.TypedBid{
-		{
-			Bid: &openrtb.Bid{
-				ID:    "123456",
-				W:     728,
-				H:     90,
-				Price: 1.34,
-				ImpID: "Imp1",
-			},
-			BidType: openrtb_ext.BidTypeBanner,
-		},
-		{
-			Bid: &openrtb.Bid{
-				ID:    "567890",
-				W:     300,
-				H:     250,
-				Price: 0.97,
-				ImpID: "Imp2",
-			},
-			BidType: openrtb_ext.BidTypeBanner,
-		},
-	}
-
-	bidderImpl := &goodSingleBidder{
-		httpRequest: &adapters.RequestData{
-			Method:  "POST",
-			Uri:     server.URL,
-			Body:    []byte("{\"key\":\"val\"}"),
-			Headers: http.Header{},
-		},
-		bids: mockBids,
-	}
-	bidder := adaptBidder(bidderImpl, server.Client())
-
-	// Very simple Bid request. At this point we are just reading these two values
-	// Adding targeting to enable targeting tests
-	bidReqExt := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &openrtb_ext.ExtRequestTargeting{
-				PriceGranularity: openrtb_ext.PriceGranularityMedium,
-			},
-		},
-	}
-	var bidReqExtRaw openrtb.RawJSON
-	bidReqExtRaw, _ = json.Marshal(bidReqExt)
-	bidRequest := &openrtb.BidRequest{
-		ID:   "This Bid",
-		Test: 0,
-		Ext:  bidReqExtRaw,
-	}
-
-	seatBid, errs := bidder.requestBid(context.Background(), bidRequest, &targetData{}, "dummy")
-	if len(errs) > 0 {
-		t.Errorf("Errors processing requestBid")
-		for _, e := range errs {
-			t.Errorf("requestBid: %s", e.Error())
-		}
-	}
-	// All tests except for winning bid no longer valid as setting pre bid targeting values moved to exchange/bidder.go
-	assertStringValue(t, "bids[0].bidTargets[hb_pb_dummy]", "1.30", seatBid.bids[0].bidTargets["hb_pb_dummy"])
-	assertStringValue(t, "bids[0].bidTargets[hb_bidder_dummy]", "dummy", seatBid.bids[0].bidTargets["hb_bidder_dummy"])
-	assertStringValue(t, "bids[0].bidTargets[hb_size_dummy]", "728x90", seatBid.bids[0].bidTargets["hb_size_dummy"])
-	assertStringValue(t, "bids[1].bidTargets[hb_pb_dummy]", "0.90", seatBid.bids[1].bidTargets["hb_pb_dummy"])
-	assertStringValue(t, "bids[1].bidTargets[hb_bidder_dummy]", "dummy", seatBid.bids[1].bidTargets["hb_bidder_dummy"])
-	assertStringValue(t, "bids[1].bidTargets[hb_size_dummy]", "300x250", seatBid.bids[1].bidTargets["hb_size_dummy"])
-
 }
 
 type goodSingleBidder struct {

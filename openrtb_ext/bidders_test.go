@@ -48,3 +48,22 @@ func TestInvalidParams(t *testing.T) {
 		t.Error("These params should be invalid.")
 	}
 }
+
+func TestBidderList(t *testing.T) {
+	list := BidderList()
+	for _, bidderName := range BidderMap {
+		adapterInList(t, bidderName, list)
+	}
+}
+
+func adapterInList(t *testing.T, a BidderName, l []BidderName) {
+	found := false
+	for _, n := range l {
+		if a == n {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("Adapter %s not found in the adapter map!", a)
+	}
+}
