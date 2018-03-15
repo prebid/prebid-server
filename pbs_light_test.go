@@ -628,8 +628,8 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 
 // Test the viper setup
 func TestViperInit(t *testing.T) {
-	CompareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
-	CompareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
+	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
+	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
 }
 
 func TestViperEnv(t *testing.T) {
@@ -643,14 +643,14 @@ func TestViperEnv(t *testing.T) {
 	defer ttl()
 
 	// Basic config set
-	CompareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
+	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
 	// Nested config set
-	CompareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
+	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
 	// Config set with underscores
-	CompareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
+	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
 }
 
-func CompareStrings(t *testing.T, message string, expect string, actual string) {
+func compareStrings(t *testing.T, message string, expect string, actual string) {
 	if expect != actual {
 		t.Errorf(message, expect, actual)
 	}
