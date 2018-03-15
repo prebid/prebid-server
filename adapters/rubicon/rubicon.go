@@ -16,6 +16,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -24,18 +25,6 @@ type RubiconAdapter struct {
 	URI          string
 	XAPIUsername string
 	XAPIPassword string
-}
-
-//Maps vendor constants to their respective urls
-var viewabilityVendorUrlMap = map[string]string{
-	"moat":         "moat.com",
-	"adform":       "adform.com",
-	"activeview":   "doubleclickbygoogle.com",
-	"doubleverify": "doubleverify.com",
-	"comscore":     "comscore.com",
-	"integralads":  "integralads.com",
-	"sizemek":      "sizemek.com",
-	"whiteops":     "whiteops.com",
 }
 
 // used for cookies and such
@@ -530,7 +519,6 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			errs = append(errs, err)
 			continue
 		}
-
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
 				ZoneID: rubiconExt.ZoneId,
@@ -539,8 +527,27 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			},
 		}
 
-		thisImp.Ext, err = json.Marshal(&impExt)
+		var supportedVendors []string
+		if infoFile := info.GetBidderInfo("rubicon"); infoFile != nil {
+			supportedVendors = infoFile.SupportedVendors
+		}
 
+		if len(thisImp.Metric) > 0 && supportedVendors != nil {
+			viewabilityvendors := make([]string, 0)
+			for j, metric := range thisImp.Metric {
+				if metric.Type == "viewability" && isSupportedVendor(supportedVendors, metric.Vendor) {
+					if url, err := openrtb_ext.GetVendorUrl(metric.Vendor); err == nil {
+						viewabilityvendors = append(viewabilityvendors, url)
+						thisImp.Metric[j].Vendor = "seller-declared"
+					} else {
+						errs = append(errs, fmt.Errorf("Can't find vendor url for supported vendor: '%v'", metric.Vendor))
+					}
+				}
+			}
+			impExt.ViewabilityVendors = append(impExt.ViewabilityVendors, viewabilityvendors...)
+		}
+
+		thisImp.Ext, err = json.Marshal(&impExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -672,4 +679,13 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	return bids, nil
+}
+
+func isSupportedVendor(supportedVendors []string, vendor string) bool {
+	for _, vend := range supportedVendors {
+		if vend == vendor {
+			return true
+		}
+	}
+	return false
 }

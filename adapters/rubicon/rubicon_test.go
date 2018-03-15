@@ -1086,23 +1086,3 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
 }
-
-func TestGetVendorUrls(t *testing.T) {
-	v1 := []string{"moat", "integralads", "activeview"}
-	v2 := make([]string, len(v1))
-	v3 := []string{viewabilityVendorUrlMap["moat"], viewabilityVendorUrlMap["integralads"], viewabilityVendorUrlMap["activeview"]}
-	if err := getVendorUrls(v1, v2, 1); err != nil {
-		t.Errorf("Fix GetVendorUrl in rubicon adapter: %v", err)
-	} else {
-		for i, v := range v2 {
-			if v != v3[i] {
-				t.Error("Error in rubicon adapters GetVendorUrl")
-			}
-		}
-	}
-	v1 = append(v1, "random")
-	v4 := make([]string, len(v1))
-	if err := getVendorUrls(v1, v4, 1); err == nil {
-		t.Errorf("Should display error for unknown value")
-	}
-}

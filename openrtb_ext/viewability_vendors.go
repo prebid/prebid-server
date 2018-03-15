@@ -13,8 +13,8 @@ var viewabilityVendorMap = map[string]string{
 	"whiteops":     "whiteops.com",
 }
 
-func GetVendorUrl(vendor string) (string, error){
-	if vendorUrl, ok := viewabilityVendorMap[vendor]; !ok{
+func GetVendorUrl(vendor string) (string, error) {
+	if vendorUrl, ok := viewabilityVendorMap[vendor]; !ok {
 		return "", fmt.Errorf("Vendor unknown: %v", vendor)
 	} else {
 		return vendorUrl, nil
