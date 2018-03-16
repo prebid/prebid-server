@@ -11,7 +11,7 @@
     },
     "placementId": {
       "type": "integer",
-      "description": "Deprecated"
+      "description": "Deprecated, use placement_id instead."
     },
     "inv_code": {
       "type": "string",
@@ -19,7 +19,7 @@
     },
     "invCode": {
       "type": "string",
-      "description": "Deprecated"
+      "description": "Deprecated, use inv_code instead."
     },
     "member": {
       "type": "string",
@@ -52,7 +52,7 @@
     },
     "trafficSourceCode": {
       "type": "string",
-      "description": "Deprecated"
+      "description": "Deprecated, use traffic_source_code instead."
     },
     "reserve": {
       "type": "number",
