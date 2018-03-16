@@ -27,7 +27,8 @@
               {"key": "foo", "value": ["bar","baz"]},
               {"key": "valueless"}
             ],
-            "use_pmt_rule": true
+            "use_pmt_rule": true,
+            "private_sizes": [{"w": 300, "h": 250}]
           }
         }
       }
@@ -58,7 +59,8 @@
                 "appnexus": {
                   "keywords": "foo=bar,foo=baz,valueless",
                   "traffic_source_code": "trafficSource",
-                  "use_pmt_rule": true
+                  "use_pmt_rule": true,
+                  "private_sizes": [{"w": 300, "h": 250}]
                 }
               }
             }

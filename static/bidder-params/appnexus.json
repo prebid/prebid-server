@@ -66,6 +66,18 @@
     "use_pmt_rule": {
       "type": "boolean",
       "description": "Boolean to signal AppNexus to apply the relevant payment rule"
+    },
+    "private_sizes" :{
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "w": { "type": "integer" },
+          "h": { "type": "integer" }
+        },
+        "required": [ "w", "h"]
+      },
+      "description": "Private sizes (ex: [{\"w\": 300, \"h\": 250},{...}]), experimental, may not be supported."
     }
   },
 

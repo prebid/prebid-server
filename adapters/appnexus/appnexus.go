@@ -42,24 +42,26 @@ type KeyVal struct {
 }
 
 type appnexusParams struct {
-	LegacyPlacementId       int      `json:"placementId"`
-	LegacyInvCode           string   `json:"invCode"`
-	LegacyTrafficSourceCode string   `json:"trafficSourceCode"`
-	PlacementId             int      `json:"placement_id"`
-	InvCode                 string   `json:"inv_code"`
-	Member                  string   `json:"member"`
-	Keywords                []KeyVal `json:"keywords"`
-	TrafficSourceCode       string   `json:"traffic_source_code"`
-	Reserve                 float64  `json:"reserve"`
-	Position                string   `json:"position"`
-	UsePmtRule              *bool    `json:"use_pmt_rule"`
+	LegacyPlacementId       int             `json:"placementId"`
+	LegacyInvCode           string          `json:"invCode"`
+	LegacyTrafficSourceCode string          `json:"trafficSourceCode"`
+	PlacementId             int             `json:"placement_id"`
+	InvCode                 string          `json:"inv_code"`
+	Member                  string          `json:"member"`
+	Keywords                []KeyVal        `json:"keywords"`
+	TrafficSourceCode       string          `json:"traffic_source_code"`
+	Reserve                 float64         `json:"reserve"`
+	Position                string          `json:"position"`
+	UsePmtRule              *bool           `json:"use_pmt_rule"`
+	PrivateSizes            json.RawMessage `json:"private_sizes"`
 }
 
 type appnexusImpExtAppnexus struct {
-	PlacementID       int    `json:"placement_id,omitempty"`
-	Keywords          string `json:"keywords,omitempty"`
-	TrafficSourceCode string `json:"traffic_source_code,omitempty"`
-	UsePmtRule        *bool  `json:"use_pmt_rule,omitempty"`
+	PlacementID       int             `json:"placement_id,omitempty"`
+	Keywords          string          `json:"keywords,omitempty"`
+	TrafficSourceCode string          `json:"traffic_source_code,omitempty"`
+	UsePmtRule        *bool           `json:"use_pmt_rule,omitempty"`
+	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
 }
 
 type appnexusBidExt struct {
@@ -146,6 +148,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			TrafficSourceCode: params.TrafficSourceCode,
 			Keywords:          keywordStr,
 			UsePmtRule:        params.UsePmtRule,
+			PrivateSizes:      params.PrivateSizes,
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 	}
@@ -357,6 +360,7 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          makeKeywordStr(appnexusExt.Keywords),
 		UsePmtRule:        appnexusExt.UsePmtRule,
+		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
