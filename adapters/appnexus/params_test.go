@@ -39,13 +39,13 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"placementId":123}`,
+	`{"placement_id":123}`,
 	`{"placementId":123,"position":"above"}`,
-	`{"placementId":123,"position":"below"}`,
-	`{"member":"123","invCode":"456"}`,
+	`{"placement_id":123,"position":"below"}`,
+	`{"member":"123","inv_code":"456"}`,
 	`{"placementId":123, "keywords":[{"key":"foo","value":["bar"]}]}`,
-	`{"placementId":123, "keywords":[{"key":"foo","value":["bar", "baz"]}]}`,
-	`{"placementId":123, "keywords":[{"key":"foo"}]}`,
+	`{"placement_id":123, "keywords":[{"key":"foo","value":["bar", "baz"]}]}`,
+	`{"placement_id":123, "keywords":[{"key":"foo"}]}`,
 }
 
 var invalidParams = []string{
@@ -56,15 +56,16 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"placementId":"123"}`,
+	`{"placement_id":"123"}`,
+	`{"placement_id":123, "placementId":123}`,
 	`{"member":"123"}`,
 	`{"member":"123","invCode":45}`,
 	`{"placementId":"123","member":"123","invCode":45}`,
-	`{"placementId":123, "position":"left"}`,
-	`{"placementId":123, "position":"left"}`,
-	`{"placementId":123, "reserve":"45"}`,
-	`{"placementId":123, "keywords":[]}`,
-	`{"placementId":123, "keywords":["foo"]}`,
+	`{"placement_id":123, "position":"left"}`,
+	`{"placement_id":123, "position":"left"}`,
+	`{"placement_id":123, "reserve":"45"}`,
+	`{"placement_id":123, "keywords":[]}`,
+	`{"placement_id":123, "keywords":["foo"]}`,
 	`{"placementId":123, "keywords":[{"key":"foo","value":[]}]}`,
 	`{"placementId":123, "keywords":[{"value":["bar"]}]}`,
 }
