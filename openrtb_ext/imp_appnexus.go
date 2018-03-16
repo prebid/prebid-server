@@ -15,7 +15,8 @@ type ExtImpAppnexus struct {
 	Reserve                 float64                 `json:"reserve"`
 	Position                string                  `json:"position"`
 	UsePmtRule              *bool                   `json:"use_pmt_rule"`
-	PrivateSizes            json.RawMessage         `json:"private_sizes"`
+	// At this time we do no processing on the private sizes, so just leaving it as a JSON blob.
+	PrivateSizes json.RawMessage `json:"private_sizes"`
 }
 
 // ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]
