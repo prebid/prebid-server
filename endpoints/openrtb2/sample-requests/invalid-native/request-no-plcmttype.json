@@ -1,0 +1,11 @@
+{
+    "context": 1,
+    "assets": [
+        {
+            "img": {
+                "hmin": 30,
+                "wmin": 20
+            }
+        }
+    ]
+}

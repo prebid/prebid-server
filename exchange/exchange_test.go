@@ -219,7 +219,7 @@ func TestGetAllBids(t *testing.T) {
 		BidderDummy2: nil,
 		BidderDummy3: nil,
 	}
-	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, nil)
+	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
@@ -238,7 +238,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -255,7 +255,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil)
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -293,6 +293,7 @@ func TestBuildBidResponse(t *testing.T) {
 		Test: 0,
 		Ext:  bidReqExtRaw,
 	}
+	var resolvedRequest json.RawMessage
 
 	liveAdapters := make([]openrtb_ext.BidderName, 3)
 	liveAdapters[0] = BidderDummy
@@ -311,10 +312,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
 
 	errList := make([]error, 0, 1)
-	targData := &targetData{
-		priceGranularity: openrtb_ext.PriceGranularityMedium,
-	}
-	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
+	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -353,18 +351,10 @@ func TestBuildBidResponse(t *testing.T) {
 		assertStringValue(t, "bid[0].Targeting[hb_pb_dummy]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_dummy"])
 		assertStringValue(t, "bid[0]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder_dummy"])
 		assertStringValue(t, "bid[0]Targeting[hb_size_dummy]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_dummy"])
-		// This should be the winning bid
-		assertStringValue(t, "bid[0].Targeting[hb_pb]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb"])
-		_, ok := bidder1BidExt[0].Prebid.Targeting["hb_pb"]
-		if !ok {
-			t.Errorf("bid[0].Targeting[hb_pb] doesn't exist, but was winning bid.")
-		}
-		assertStringValue(t, "bid[0]Targeting[hb_bidder]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder"])
-		assertStringValue(t, "bid[0]Targeting[hb_size]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size"])
 		assertStringValue(t, "bid[1].Targeting[hb_pb_dummy]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_dummy"])
 		assertStringValue(t, "bid[1]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[1].Prebid.Targeting["hb_bidder_dummy"])
 		assertStringValue(t, "bid[1]Targeting[hb_size_dummy]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_dummy"])
-		_, ok = bidder1BidExt[1].Prebid.Targeting["hb_pb"]
+		_, ok := bidder1BidExt[1].Prebid.Targeting["hb_pb"]
 		if ok {
 			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
 		}
@@ -374,7 +364,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -393,7 +383,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -504,7 +494,7 @@ type mockBidder struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	b.lastRequest = request
 	return nil, nil
 }
@@ -530,7 +520,7 @@ type mockAdapter struct {
 	errs    []error
 }
 
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	return a.seatBid, a.errs
 }
 

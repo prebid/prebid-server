@@ -84,7 +84,10 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		adSlotStr := strings.TrimSpace(params.AdSlot)
 		adSlot := strings.Split(adSlotStr, "@")
 		if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
-
+			// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+			if len(pbReq.Imp) <= i {
+				break
+			}
 			if pbReq.Imp[i].Banner != nil {
 				pbReq.Imp[i].Banner.Format = nil // pubmatic doesn't support
 				adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
