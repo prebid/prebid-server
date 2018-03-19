@@ -236,7 +236,7 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	return &AdformAdapter{
 		http:    a,
 		URI:     endpointURL,
-		version: "0.1.0",
+		version: "0.1.1",
 	}
 }
 
