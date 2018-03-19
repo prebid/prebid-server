@@ -1,8 +1,8 @@
 {
-  "placementId": 10433394,
+  "placement_id": 10433394,
   "reserve": 20,
   "position": "below",
-  "trafficSourceCode": "trafficSource",
+  "traffic_source_code": "trafficSource",
   "keywords": [
     {"key": "foo", "value": ["bar","baz"]},
     {"key": "valueless"}
