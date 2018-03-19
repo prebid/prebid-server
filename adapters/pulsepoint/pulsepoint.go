@@ -61,6 +61,10 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		if params.AdSize == "" {
 			return nil, fmt.Errorf("Missing AdSize param cf")
 		}
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(ppReq.Imp) <= i {
+			break
+		}
 		ppReq.Imp[i].TagID = strconv.Itoa(params.TagId)
 		publisher := &openrtb.Publisher{ID: strconv.Itoa(params.PublisherId)}
 		if ppReq.Site != nil {

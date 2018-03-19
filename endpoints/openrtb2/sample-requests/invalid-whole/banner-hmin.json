@@ -1,0 +1,11 @@
+{
+    "id":"req-id",
+    "imp": [
+        {
+            "id":"imp-id",
+            "banner": {
+                "hmin":50
+            }
+        }
+    ]
+}

@@ -7,11 +7,9 @@ import (
 
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestBidSerialization(t *testing.T) {
-	a := newAuction(1)
 	winningBid := &openrtb.Bid{
 		ID:    "bar",
 		ImpID: "a",
@@ -22,8 +20,6 @@ func TestBidSerialization(t *testing.T) {
 		ImpID: "a",
 		Price: 0.5,
 	}
-	a.addBid(openrtb_ext.BidderAppnexus, winningBid)
-	a.addBid(openrtb_ext.BidderIndex, otherBid)
 
 	mockClient := &mockCacheClient{
 		mockReturns: map[*openrtb.Bid]string{
@@ -32,13 +28,13 @@ func TestBidSerialization(t *testing.T) {
 		},
 	}
 
-	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium)
-	assertStringValue(t, `bid "bar"`, "0", a.cachedBids[winningBid])
-	assertStringValue(t, `bid "foo"`, "1", a.cachedBids[otherBid])
+	bidMap := cacheBids(context.Background(), mockClient, []*openrtb.Bid{winningBid, otherBid})
+
+	assertStringValue(t, `bid "bar"`, "0", bidMap[winningBid])
+	assertStringValue(t, `bid "foo"`, "1", bidMap[otherBid])
 }
 
 func TestCacheFailures(t *testing.T) {
-	a := newAuction(1)
 	winningBid := &openrtb.Bid{
 		ID:    "bar",
 		ImpID: "a",
@@ -49,8 +45,6 @@ func TestCacheFailures(t *testing.T) {
 		ImpID: "a",
 		Price: 0.5,
 	}
-	a.addBid(openrtb_ext.BidderAppnexus, winningBid)
-	a.addBid(openrtb_ext.BidderIndex, otherBid)
 
 	mockClient := &mockCacheClient{
 		mockReturns: map[*openrtb.Bid]string{
@@ -58,16 +52,15 @@ func TestCacheFailures(t *testing.T) {
 			otherBid:   "1",
 		},
 	}
-	cacheBids(context.Background(), mockClient, a, openrtb_ext.PriceGranularityMedium)
-	assertStringValue(t, `bid "foo"`, "1", a.cachedBids[otherBid])
-	if _, ok := a.cachedBids[winningBid]; ok {
+	bidMap := cacheBids(context.Background(), mockClient, []*openrtb.Bid{winningBid, otherBid})
+
+	assertStringValue(t, `bid "foo"`, "1", bidMap[otherBid])
+	if _, ok := bidMap[winningBid]; ok {
 		t.Error("If the cache call fails, no ID should exist for that bid.")
 	}
 }
 
 func TestMarshalFailure(t *testing.T) {
-	auc := newAuction(2)
-
 	badBid := &openrtb.Bid{
 		ImpID: "foo",
 		Price: 1,
@@ -77,8 +70,6 @@ func TestMarshalFailure(t *testing.T) {
 		ImpID: "bar",
 		Price: 2,
 	}
-	auc.addBid(openrtb_ext.BidderAppnexus, badBid)
-	auc.addBid(openrtb_ext.BidderAppnexus, goodBid)
 
 	mockClient := &mockCacheClient{
 		mockReturns: map[*openrtb.Bid]string{
@@ -87,11 +78,11 @@ func TestMarshalFailure(t *testing.T) {
 		},
 	}
 
-	cacheBids(context.Background(), mockClient, auc, openrtb_ext.PriceGranularityMedium)
-	if _, ok := auc.cacheId(badBid); ok {
+	bidMap := cacheBids(context.Background(), mockClient, []*openrtb.Bid{goodBid, badBid})
+	if _, ok := bidMap[badBid]; ok {
 		t.Errorf("bids with malformed JSON should not be cached.")
 	}
-	if id, ok := auc.cacheId(goodBid); ok {
+	if id, ok := bidMap[goodBid]; ok {
 		if id != "1" {
 			t.Errorf("Wrong id for good bid. Expected 1, got %s", id)
 		}

@@ -308,6 +308,10 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	rubiReqImpCopy := rubiReq.Imp
 
 	for i, unit := range bidder.AdUnits {
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(rubiReqImpCopy) <= i {
+			break
+		}
 		// Only grab this ad unit
 		// Not supporting multi-media-type add-unit yet
 		thisImp := rubiReqImpCopy[i]

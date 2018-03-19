@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
-	"io/ioutil"
-	"net/http"
 )
 
 // adaptedBidder defines the contract needed to participate in an Auction within an Exchange.
@@ -34,13 +35,14 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
 //
-// pbsOrtbBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
-// pbsOrtbBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+// pbsOrtbBid.bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
+// pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+// pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 type pbsOrtbBid struct {
 	bid        *openrtb.Bid
 	bidType    openrtb_ext.BidType
@@ -53,7 +55,7 @@ type pbsOrtbBid struct {
 type pbsOrtbSeatBid struct {
 	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
-	// httpcalls is the list of debugging info. It should only be populated if the request.test == 1.
+	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
 	// ext contains the extension for this seatbid.
@@ -78,7 +80,7 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
@@ -116,15 +118,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 			for _, bid := range bids {
-				targets, err := bidderTarg.makePrebidTargets(name, bid.Bid)
-				if err != nil {
-					errs = append(errs, err)
-				}
-
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:        bid.Bid,
-					bidType:    bid.BidType,
-					bidTargets: targets,
+					bid:     bid.Bid,
+					bidType: bid.BidType,
 				})
 			}
 		} else {

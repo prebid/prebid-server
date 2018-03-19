@@ -1,0 +1,16 @@
+{
+    "id": "req-id",
+    "imp": [
+        {
+            "id": "imp-id",
+            "audio": {
+                "mimes": [
+                    "video/mp4"
+                ]
+            },
+            "ext": {
+                "appnexus": "invalidParams"
+            }
+        }
+    ]
+}
