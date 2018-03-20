@@ -12,13 +12,13 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/analytics"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -49,10 +49,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Set this as an AMP request in Metrics.
 
 	ao := analytics.AmpObject{
-		Type: analytics.AMP,
-		Status: http.StatusOK,
-		UserAgent:r.UserAgent(),
-		Error: make([]error, 0),
+		Type:      analytics.AMP,
+		Status:    http.StatusOK,
+		UserAgent: r.UserAgent(),
+		Error:     make([]error, 0),
 	}
 
 	start := time.Now()
@@ -65,7 +65,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		origin = r.Header.Get("Origin")
 		ao.Origin = origin
 	}
-
 
 	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
 	// and "Access-Control-Allow-Credentials" are handled in CORS middleware

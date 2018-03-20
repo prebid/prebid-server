@@ -19,6 +19,7 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -28,7 +29,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
-	"github.com/prebid/prebid-server/analytics"
 )
 
 const defaultRequestTimeoutMillis = 5000
@@ -59,9 +59,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	ao := analytics.AuctionObject{
-		Type: analytics.AUCTION,
-		Status: http.StatusOK,
-		Error: make([]error, 0),
+		Type:      analytics.AUCTION,
+		Status:    http.StatusOK,
+		Error:     make([]error, 0),
 		UserAgent: r.UserAgent(),
 	}
 

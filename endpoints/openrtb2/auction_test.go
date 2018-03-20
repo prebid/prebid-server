@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 const maxSize = 1024 * 256
@@ -75,7 +76,7 @@ func TestExplicitUserId(t *testing.T) {
 		Value: mockId,
 	})
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics)
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), cfg, theMetrics, )
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest.User == nil {
@@ -381,7 +382,8 @@ func TestNoEncoding(t *testing.T) {
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
-		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
+			analytics.NewPBSAnalytics(&config.Analytics{}))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -768,3 +770,5 @@ func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidR
 		}},
 	}, nil
 }
+
+

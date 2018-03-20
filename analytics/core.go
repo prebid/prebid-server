@@ -11,7 +11,7 @@ import (
 	New modules can use the /analytics/endpoint_data_objects, extract the
 	information required and are responsible for handling all their logging activities inside LogAuctionObject, LogAmpObject
 	LogCookieSyncObject and LogSetUIDObject method implementations.
- */
+*/
 
 type PBSAnalyticsModule interface {
 	LogAuctionObject(*AuctionObject)
@@ -38,7 +38,7 @@ func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
 
 /*
 	This could be confusing. `enabledAnalytics` itself implements `PBSAnalyticsModule` as well wherein it iterates through each analytic module and calls it's respective `Log{loggable_object}Object` method.
- */
+*/
 
 func (ea *enabledAnalytics) LogAuctionObject(ao *AuctionObject) {
 	for _, module := range *ea {

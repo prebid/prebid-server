@@ -46,6 +46,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -65,7 +66,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	usersyncers "github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/analytics"
 )
 
 type DomainMetrics struct {
@@ -207,16 +207,16 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
-		Type:analytics.COOKIE_SYNC,
-		Status:http.StatusOK,
-		Error: make([]error, 0),
+		Type:   analytics.COOKIE_SYNC,
+		Status: http.StatusOK,
+		Error:  make([]error, 0),
 	}
 
 	deps.metric.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
-		co.Status=http.StatusUnauthorized
+		co.Status = http.StatusUnauthorized
 		co.Error = append(co.Error, fmt.Errorf("user has opted out"))
 		deps.pbsAnalytics.LogCookieSyncObject(&co)
 		return
@@ -231,7 +231,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
-		co.Status=http.StatusBadRequest
+		co.Status = http.StatusBadRequest
 		co.Error = append(co.Error, fmt.Errorf("JSON parse failed"))
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
@@ -283,9 +283,8 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		}
 	}
 
-
-	if len(csResp.BidderStatus)>0{
-		if jsonBidders, err:=json.Marshal(csResp.BidderStatus); err==nil{
+	if len(csResp.BidderStatus) > 0 {
+		if jsonBidders, err := json.Marshal(csResp.BidderStatus); err == nil {
 			co.Bidders = string(jsonBidders)
 		}
 	}
