@@ -146,6 +146,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			brw.adapterBids = bids
 			// validate bids ASAP, so we don't waste time on invalid bids.
 			err2 := brw.validateBids()
+			if len(err2) > 0 {
+				err = append(err, err2...)
+			}
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
@@ -164,9 +167,6 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				}
 			}
 			// Append any bid validation errors to the error list
-			for _, e := range err2 {
-				serr = append(serr, e.Error())
-			}
 			ae.Errors = serr
 			brw.adapterExtra = ae
 			if len(err) == 0 {
@@ -186,7 +186,6 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {
 		brw := <-chBids
-		brw.validateBids()
 		adapterBids[brw.bidder] = brw.adapterBids
 		adapterExtra[brw.bidder] = brw.adapterExtra
 	}
