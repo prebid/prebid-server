@@ -990,6 +990,7 @@ func serve(cfg *config.Configuration) error {
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		Metrics:            metricsRegistry,
+		PBSAnalytics:       pbsAnalytics,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)

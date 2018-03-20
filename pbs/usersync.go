@@ -81,7 +81,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret    string
 	HostCookieSettings *HostCookieSettings
 	Metrics            metrics.Registry
-	pbsAnalytics       analytics.PBSAnalyticsModule
+	PBSAnalytics       analytics.PBSAnalyticsModule
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -333,7 +333,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
 		so.Status = http.StatusUnauthorized
-		deps.pbsAnalytics.LogSetUIDObject(&so)
+		deps.PBSAnalytics.LogSetUIDObject(&so)
 		return
 	}
 
@@ -364,7 +364,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
-	deps.pbsAnalytics.LogSetUIDObject(&so)
+	deps.PBSAnalytics.LogSetUIDObject(&so)
 }
 
 // Struct for parsing json in google's response
