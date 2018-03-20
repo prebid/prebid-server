@@ -20,6 +20,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
+const defaultAmpRequestTimeoutMillis = 900
+
 type AmpResponse struct {
 	Targeting map[string]string             `json:"targeting"`
 	Debug     *openrtb_ext.ExtResponseDebug `json:"debug,omitempty"`
@@ -76,7 +78,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if req.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
 
