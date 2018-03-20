@@ -19,14 +19,16 @@
         "ext": {
           "bidder": {
             "member": "103",
-            "invCode": "abc",
+            "inv_code": "abc",
             "reserve": 20,
             "position": "below",
-            "trafficSourceCode": "trafficSource",
+            "traffic_source_code": "trafficSource",
             "keywords": [
               {"key": "foo", "value": ["bar","baz"]},
               {"key": "valueless"}
-            ]
+            ],
+            "use_pmt_rule": true,
+            "private_sizes": [{"w": 300, "h": 250}]
           }
         }
       }
@@ -56,7 +58,9 @@
               "ext": {
                 "appnexus": {
                   "keywords": "foo=bar,foo=baz,valueless",
-                  "traffic_source_code": "trafficSource"
+                  "traffic_source_code": "trafficSource",
+                  "use_pmt_rule": true,
+                  "private_sizes": [{"w": 300, "h": 250}]
                 }
               }
             }

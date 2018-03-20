@@ -9,19 +9,21 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
-	metrics "github.com/rcrowley/go-metrics"
-	"github.com/spf13/viper"
+	"github.com/rcrowley/go-metrics"
 
 	"context"
 	"io/ioutil"
 	"os"
 	"time"
 
+	"fmt"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/spf13/viper"
 )
 
 const adapterDirectory = "adapters"
@@ -361,6 +363,169 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	}
 }
 
+var (
+	MaxValueLength = 1024 * 10
+	MaxNumValues   = 10
+)
+
+type responseObject struct {
+	UUID string `json:"uuid"`
+}
+
+type response struct {
+	Responses []responseObject `json:"responses"`
+}
+
+type putAnyObject struct {
+	Type  string          `json:"type"`
+	Value json.RawMessage `json:"value"`
+}
+
+type putAnyRequest struct {
+	Puts []putAnyObject `json:"puts"`
+}
+
+func DummyPrebidCacheServer(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read the request body.", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+	var put putAnyRequest
+
+	err = json.Unmarshal(body, &put)
+	if err != nil {
+		http.Error(w, "Request body "+string(body)+" is not valid JSON.", http.StatusBadRequest)
+		return
+	}
+
+	if len(put.Puts) > MaxNumValues {
+		http.Error(w, fmt.Sprintf("More keys than allowed: %d", MaxNumValues), http.StatusBadRequest)
+		return
+	}
+
+	resp := response{
+		Responses: make([]responseObject, len(put.Puts)),
+	}
+	for i, p := range put.Puts {
+		resp.Responses[i].UUID = fmt.Sprintf("UUID-%d", i+1) // deterministic for testing
+		if len(p.Value) > MaxValueLength {
+			http.Error(w, fmt.Sprintf("Value is larger than allowed size: %d", MaxValueLength), http.StatusBadRequest)
+			return
+		}
+		if len(p.Value) == 0 {
+			http.Error(w, "Missing value.", http.StatusBadRequest)
+			return
+		}
+		if p.Type != "xml" && p.Type != "json" {
+			http.Error(w, fmt.Sprintf("Type must be one of [\"json\", \"xml\"]. Found %v", p.Type), http.StatusBadRequest)
+			return
+		}
+	}
+
+	bytes, err := json.Marshal(&resp)
+	if err != nil {
+		http.Error(w, "Failed to serialize UUIDs into JSON.", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bytes)
+}
+
+func TestCacheVideoOnly(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(DummyPrebidCacheServer))
+	defer server.Close()
+
+	bids := make(pbs.PBSBidSlice, 0)
+	fbBid := pbs.PBSBid{
+		BidID:             "test_bidid0",
+		AdUnitCode:        "test_adunitcode0",
+		BidderCode:        "audienceNetwork",
+		Price:             2.00,
+		Adm:               "fb_test_adm",
+		Width:             300,
+		Height:            250,
+		DealId:            "2345",
+		CreativeMediaType: "video",
+	}
+	bids = append(bids, &fbBid)
+	anBid := pbs.PBSBid{
+		BidID:             "test_bidid1",
+		AdUnitCode:        "test_adunitcode1",
+		BidderCode:        "appnexus",
+		Price:             1.00,
+		Adm:               "an_test_adm",
+		Width:             320,
+		Height:            50,
+		DealId:            "1234",
+		CreativeMediaType: "banner",
+	}
+	bids = append(bids, &anBid)
+	rbBannerBid := pbs.PBSBid{
+		BidID:             "test_bidid2",
+		AdUnitCode:        "test_adunitcode2",
+		BidderCode:        "rubicon",
+		Price:             1.00,
+		Adm:               "rb_banner_test_adm",
+		Width:             300,
+		Height:            250,
+		DealId:            "7890",
+		CreativeMediaType: "banner",
+	}
+	bids = append(bids, &rbBannerBid)
+	rbVideoBid1 := pbs.PBSBid{
+		BidID:             "test_bidid3",
+		AdUnitCode:        "test_adunitcode3",
+		BidderCode:        "rubicon",
+		Price:             1.00,
+		Adm:               "rb_video_test_adm1",
+		Width:             300,
+		Height:            250,
+		DealId:            "7890",
+		CreativeMediaType: "video",
+	}
+	bids = append(bids, &rbVideoBid1)
+	rbVideoBid2 := pbs.PBSBid{
+		BidID:             "test_bidid4",
+		AdUnitCode:        "test_adunitcode4",
+		BidderCode:        "rubicon",
+		Price:             1.00,
+		Adm:               "rb_video_test_adm2",
+		Width:             300,
+		Height:            250,
+		DealId:            "7890",
+		CreativeMediaType: "video",
+	}
+	bids = append(bids, &rbVideoBid2)
+
+	ctx := context.TODO()
+	w := httptest.NewRecorder()
+	cfg, err := config.New(viper.New())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	syncers := usersyncers.NewSyncerMap(cfg)
+	prebid_cache_client.InitPrebidCache(server.URL)
+	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers})
+	if bids[0].CacheID != "UUID-1" {
+		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
+	}
+	if bids[1].CacheID != "" {
+		t.Errorf("UUID was '%s', should have been empty", bids[1].CacheID)
+	}
+	if bids[2].CacheID != "" {
+		t.Errorf("UUID was '%s', should have been empty", bids[2].CacheID)
+	}
+	if bids[3].CacheID != "UUID-2" {
+		t.Errorf("First object UUID was '%s', should have been 'UUID-2'", bids[3].CacheID)
+	}
+	if bids[4].CacheID != "UUID-3" {
+		t.Errorf("Second object UUID was '%s', should have been 'UUID-3'", bids[4].CacheID)
+	}
+}
+
 func TestBidSizeValidate(t *testing.T) {
 
 	bids := make(pbs.PBSBidSlice, 0)
@@ -425,14 +590,14 @@ func TestBidSizeValidate(t *testing.T) {
 		BidderCode: "randNetwork",
 		AdUnitCode: "test_adunitcode",
 		AdUnits: []pbs.PBSAdUnit{
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid1",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 350,
 						H: 250,
 					},
-					openrtb.Format{
+					{
 						W: 300,
 						H: 50,
 					},
@@ -442,10 +607,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid2",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 100,
 						H: 100,
 					},
@@ -455,10 +620,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid3",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 200,
 						H: 200,
 					},
@@ -468,10 +633,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid_video",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 400,
 						H: 400,
 					},
@@ -481,10 +646,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_VIDEO,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid3",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 150,
 						H: 150,
 					},
@@ -494,10 +659,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid_y",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 150,
 						H: 150,
 					},
@@ -603,7 +768,7 @@ func TestNewEmptyFetcher(t *testing.T) {
 
 func TestExchangeMap(t *testing.T) {
 	exchanges := newExchangeMap(&config.Configuration{})
-	for bidderName, _ := range exchanges {
+	for bidderName := range exchanges {
 		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
 		// which was the only alias in the legacy adapter map.
 		if _, ok := openrtb_ext.BidderMap[bidderName]; bidderName != "districtm" && !ok {
