@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"fmt"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -180,7 +181,7 @@ func testableEndpoint() httprouter.Handle {
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
 		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
-	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, metrics.NewMeter()}).CookieSync
+	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, metrics.NewMeter(), analytics.NewPBSAnalytics(&config.Analytics{})}).CookieSync
 }
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {

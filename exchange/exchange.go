@@ -11,7 +11,6 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -31,11 +30,10 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap   map[openrtb_ext.BidderName]adaptedBidder
-	m            *pbsmetrics.Metrics
-	cache        prebid_cache_client.Client
-	cacheTime    time.Duration
-	pbsAnalytics analytics.PBSAnalyticsModule
+	adapterMap map[openrtb_ext.BidderName]adaptedBidder
+	m          *pbsmetrics.Metrics
+	cache      prebid_cache_client.Client
+	cacheTime  time.Duration
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -50,14 +48,13 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics, module analytics.PBSAnalyticsModule) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.m = registry
-	e.pbsAnalytics = module
 	return e
 }
 

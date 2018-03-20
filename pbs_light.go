@@ -295,6 +295,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	enc.Encode(csResp)
 
 	deps.pbsAnalytics.LogCookieSyncObject(&co)
+
 }
 
 type auctionDeps struct {
@@ -942,7 +943,7 @@ func serve(cfg *config.Configuration) error {
 		},
 	}
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, openrtb_ext.BidderList())
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics, pbsAnalytics)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
 	if err != nil {
