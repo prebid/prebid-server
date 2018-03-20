@@ -5,6 +5,14 @@ import (
 	"github.com/prebid/prebid-server/config"
 )
 
+/*
+  	PBSAnalyticsModule must be implemented by any analytics module that does transactional logging.
+
+	New modules can use the /analytics/endpoint_data_objects, extract the
+	information required and are responsible for handling all their logging activities inside LogAuctionObject, LogAmpObject
+	LogCookieSyncObject and LogSetUIDObject method implementations.
+ */
+
 type PBSAnalyticsModule interface {
 	LogAuctionObject(*AuctionObject)
 	LogCookieSyncObject(*CookieSyncObject)
@@ -15,6 +23,7 @@ type PBSAnalyticsModule interface {
 //Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
 type enabledAnalytics []PBSAnalyticsModule
 
+//Modules that need to be logged to need to be initialized here
 func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
 	if len(analytics.File.Config) >= 0 {
@@ -26,6 +35,10 @@ func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
 	}
 	return &modules
 }
+
+/*
+	This could be confusing. `enabledAnalytics` itself implements `PBSAnalyticsModule` as well wherein it iterates through each analytic module and calls it's respective `Log{loggable_object}Object` method.
+ */
 
 func (ea *enabledAnalytics) LogAuctionObject(ao *AuctionObject) {
 	for _, module := range *ea {

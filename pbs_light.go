@@ -217,7 +217,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		co.Status=http.StatusUnauthorized
-		co.Error = append(co.Error, fmt.Errorf("User has opted out"))
+		co.Error = append(co.Error, fmt.Errorf("user has opted out"))
 		deps.pbsAnalytics.LogCookieSyncObject(&co)
 		return
 	}

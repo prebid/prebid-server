@@ -33,6 +33,7 @@ type Analytics struct {
 	File FileLogs `mapstructure:"file"`
 }
 
+//Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Config string `mapstructure:"filename"`
 }
