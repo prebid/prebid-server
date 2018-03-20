@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 type AmpResponse struct {
@@ -27,12 +28,12 @@ type AmpResponse struct {
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
 // of the request, and the return value, using the OpenRTB machinery to handle everything inbetween.
-func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).AmpAuction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).AmpAuction), nil
 }
 
 func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -44,6 +45,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// to compute the auction timeout.
 
 	// Set this as an AMP request in Metrics.
+
+	ao := analytics.AmpObject{
+		Type: analytics.AMP,
+		Status: http.StatusOK,
+		UserAgent:r.UserAgent(),
+		Error: make([]error, 0),
+	}
+
 	start := time.Now()
 	deps.metrics.AmpRequestMeter.Mark(1)
 
@@ -52,7 +61,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if len(origin) == 0 {
 		// Just to be safe
 		origin = r.Header.Get("Origin")
+		ao.Origin = origin
 	}
+
 
 	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
 	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
@@ -67,7 +78,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
+		copy(ao.Error, errL)
 		deps.metrics.ErrorMeter.Mark(1)
+		deps.analytics.LogAmpObject(&ao)
 		return
 	}
 
@@ -91,10 +104,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	ao.AuctionResponse = response
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Error = append(ao.Error, err)
+		deps.analytics.LogAmpObject(&ao)
 		return
 	}
 
@@ -116,6 +133,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 					w.WriteHeader(http.StatusInternalServerError)
 					fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
 					glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
+					ao.Status = http.StatusInternalServerError
+					deps.analytics.LogAmpObject(&ao)
 					return
 				}
 				for key, value := range bidExt.Prebid.Targeting {
@@ -125,10 +144,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		}
 	}
 
-	// Now JSONify the tragets for the AMP response.
+	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
 	}
+
+	ao.AmpResponse = targets
 
 	// add debug information if requested
 	if req.Test == 1 {
@@ -137,6 +158,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			ampResponse.Debug = extResponse.Debug
 		} else {
 			glog.Errorf("Test set on request but debug not present in response: %v", err)
+			ao.Error = append(ao.Error, fmt.Errorf("Test set on request but debug not present in response: %v", err))
 		}
 	}
 
@@ -149,7 +171,10 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
 		glog.Errorf("/openrtb2/amp Error encoding response: %v", err)
+		ao.Error = append(ao.Error, fmt.Errorf("/openrtb2/amp Error encoding response: %v", err))
 	}
+
+	deps.analytics.LogAmpObject(&ao)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.

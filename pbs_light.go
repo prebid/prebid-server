@@ -65,6 +65,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 type DomainMetrics struct {
@@ -199,13 +200,25 @@ type cookieSyncDeps struct {
 	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
 	optOutCookie *config.Cookie
 	metric       metrics.Meter
+	pbsAnalytics analytics.PBSAnalyticsModule
 }
 
 func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
+	co := analytics.CookieSyncObject{
+		Type:analytics.COOKIE_SYNC,
+		Status:http.StatusOK,
+		Error: make([]error, 0),
+	}
+
 	deps.metric.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		co.Status=http.StatusUnauthorized
+		co.Error = append(co.Error, fmt.Errorf("User has opted out"))
+		deps.pbsAnalytics.LogCookieSyncObject(&co)
 		return
 	}
 
@@ -218,6 +231,8 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
+		co.Status=http.StatusBadRequest
+		co.Error = append(co.Error, fmt.Errorf("JSON parse failed"))
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
@@ -229,7 +244,10 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 			if glog.V(2) {
 				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
 			}
+			co.Status = http.StatusBadRequest
+			co.Error = append(co.Error, fmt.Errorf("JSON parse failed (bidders"))
 			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
+			deps.pbsAnalytics.LogCookieSyncObject(&co)
 			return
 		}
 	}
@@ -265,10 +283,19 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		}
 	}
 
+
+	if len(csResp.BidderStatus)>0{
+		if jsonBidders, err:=json.Marshal(csResp.BidderStatus); err==nil{
+			co.Bidders = string(jsonBidders)
+		}
+	}
+
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	//enc.SetIndent("", "  ")
 	enc.Encode(csResp)
+
+	deps.pbsAnalytics.LogCookieSyncObject(&co)
 }
 
 type auctionDeps struct {
@@ -830,6 +857,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	setupExchanges(cfg)
+	pbsAnalytics := analytics.NewPBSAnalytics(&cfg.Analytics)
 
 	if cfg.Metrics.Host != "" {
 		go influxdb.InfluxDB(
@@ -882,19 +910,19 @@ func serve(cfg *config.Configuration) error {
 		},
 	}
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, openrtb_ext.BidderList())
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics, pbsAnalytics)
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
 	if err != nil {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, theMetrics, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, theMetrics, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -908,7 +936,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter, pbsAnalytics}).CookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)

@@ -28,17 +28,18 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -47,6 +48,7 @@ type endpointDeps struct {
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
 	metrics          *pbsmetrics.Metrics
+	analytics        analytics.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -56,6 +58,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If so, then the trip to the backend might use a significant amount of this time.
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
+	ao := analytics.AuctionObject{
+		Type: analytics.AUCTION,
+		Status: http.StatusOK,
+		Error: make([]error, 0),
+		UserAgent: r.UserAgent(),
+	}
+
 	start := time.Now()
 	deps.metrics.RequestMeter.Mark(1)
 	deps.metrics.ORTBRequestMeter.Mark(1)
@@ -65,6 +74,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	req, errL := deps.parseRequest(r)
 
 	if writeError(errL, deps.metrics.ErrorMeter, w) {
+		copy(ao.Error, errL)
+		deps.analytics.LogAuctionObject(&ao)
 		return
 	}
 
@@ -88,10 +99,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	ao.Request = req
+	ao.Response = response
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Error = append(ao.Error, err)
+		deps.analytics.LogAuctionObject(&ao)
 		return
 	}
 
@@ -107,7 +123,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+		ao.Error = append(ao.Error, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
+
+	deps.analytics.LogAuctionObject(&ao)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:

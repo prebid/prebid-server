@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/analytics"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
@@ -30,10 +31,11 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	m          *pbsmetrics.Metrics
-	cache      prebid_cache_client.Client
-	cacheTime  time.Duration
+	adapterMap   map[openrtb_ext.BidderName]adaptedBidder
+	m            *pbsmetrics.Metrics
+	cache        prebid_cache_client.Client
+	cacheTime    time.Duration
+	pbsAnalytics analytics.PBSAnalyticsModule
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -48,13 +50,14 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics, module analytics.PBSAnalyticsModule) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.m = registry
+	e.pbsAnalytics = module
 	return e
 }
 
