@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
-	"time"
 )
 
 type RequestType string
@@ -40,14 +39,12 @@ type AmpObject struct {
 
 //Loggable object of a transaction at /setuid
 type SetUIDObject struct {
-	Type     RequestType
-	Status   int
-	Bidder   string
-	UID      string
-	Usersync bool
-	Expiry   time.Duration
-	Error    []error
-	Success  bool
+	Type    RequestType
+	Status  int
+	Bidder  string
+	UID     string
+	Error   []error
+	Success bool
 }
 
 //Loggable object of a transaction at /cookie_sync
@@ -58,7 +55,7 @@ type CookieSyncObject struct {
 	Bidders string
 }
 
-func (ao AuctionObject) ToJson() string {
+func (ao *AuctionObject) ToJson() string {
 	if content, err := json.Marshal(ao); err != nil {
 		return fmt.Sprintf("Transactional Logs Error: Auction object badly formed %v", err)
 	} else {
@@ -66,7 +63,7 @@ func (ao AuctionObject) ToJson() string {
 	}
 }
 
-func (cso CookieSyncObject) ToJson() string {
+func (cso *CookieSyncObject) ToJson() string {
 	if content, err := json.Marshal(cso); err != nil {
 		return fmt.Sprintf("Transactional Logs Error: CookieSync object badly formed %v", err)
 	} else {
@@ -74,7 +71,7 @@ func (cso CookieSyncObject) ToJson() string {
 	}
 }
 
-func (so SetUIDObject) ToJson() string {
+func (so *SetUIDObject) ToJson() string {
 	if content, err := json.Marshal(so); err != nil {
 		return fmt.Sprintf("Transactional Logs Error: Set UID object badly formed %v", err)
 	} else {
@@ -82,7 +79,7 @@ func (so SetUIDObject) ToJson() string {
 	}
 }
 
-func (ao AmpObject) ToJson() string {
+func (ao *AmpObject) ToJson() string {
 	if content, err := json.Marshal(ao); err != nil {
 		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
 	} else {

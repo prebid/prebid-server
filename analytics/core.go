@@ -26,7 +26,7 @@ type enabledAnalytics []PBSAnalyticsModule
 //Modules that need to be logged to need to be initialized here
 func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Config) >= 0 {
+	if len(analytics.File.Config) > 0 {
 		if mod, err := NewFileLogger(analytics.File.Config); err == nil {
 			modules = append(modules, mod)
 		} else {
