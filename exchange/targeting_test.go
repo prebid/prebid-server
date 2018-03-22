@@ -18,6 +18,14 @@ import (
 
 // Prevents #378
 func TestTargetingWinners(t *testing.T) {
+	doTargetingWinnersTest(t, true)
+}
+
+func TestTargetingWithoutWinners(t *testing.T) {
+	doTargetingWinnersTest(t, false)
+}
+
+func doTargetingWinnersTest(t *testing.T, includeWinners bool) {
 	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
 		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
 			ID:    "losing-bid",
@@ -34,10 +42,10 @@ func TestTargetingWinners(t *testing.T) {
 			Price: 0.6,
 		}},
 	}
-	bids := runTargetingAuction(t, mockBids, false, false)
+	bids := runTargetingAuction(t, mockBids, false, includeWinners, false)
 
 	// Make sure that the normal keys exist on the bids where they're expected to exist
-	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbpbConstantKey), true)
+	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbpbConstantKey), includeWinners)
 	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
 
 	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbpbConstantKey), false)
@@ -76,7 +84,7 @@ func TestEnvKey(t *testing.T) {
 			Price: 0.6,
 		}},
 	}
-	bids := runTargetingAuction(t, mockBids, false, true)
+	bids := runTargetingAuction(t, mockBids, false, true, true)
 
 	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbEnvKey), true)
 	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbEnvKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
@@ -104,7 +112,7 @@ func TestTargetingCache(t *testing.T) {
 			Price: 0.6,
 		}},
 	}
-	bids := runTargetingAuction(t, mockBids, true, false)
+	bids := runTargetingAuction(t, mockBids, true, true, false)
 
 	// Make sure that the cache keys exist on the bids where they're expected to
 	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbCacheKey), true)
@@ -127,7 +135,7 @@ func TestTargetingKeys(t *testing.T) {
 			H:     200,
 		}},
 	}
-	bids := runTargetingAuction(t, mockBids, true, false)
+	bids := runTargetingAuction(t, mockBids, true, true, false)
 
 	assertKeyValue(t, bids["some-bid"], string(openrtb_ext.HbpbConstantKey), "0.50")
 	assertKeyValue(t, bids["some-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), "0.50")
@@ -161,7 +169,7 @@ func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) 
 
 // runAuction takes a bunch of mock bids by Bidder and runs an auction. It returns a map of Bids indexed by their ImpID.
 // If includeCache is true, the auction will be run with cacheing as well, so the cache targeting keys should exist.
-func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool, isApp bool) map[string]*openrtb.Bid {
+func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool, includeWinners bool, isApp bool) map[string]*openrtb.Bid {
 	server := httptest.NewServer(http.HandlerFunc(mockServer))
 	defer server.Close()
 
@@ -176,7 +184,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 
 	req := &openrtb.BidRequest{
 		Imp: imps,
-		Ext: buildTargetingExt(includeCache),
+		Ext: buildTargetingExt(includeCache, includeWinners),
 	}
 	if isApp {
 		req.App = &openrtb.App{}
@@ -215,12 +223,19 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 	return adapterMap
 }
 
-func buildTargetingExt(includeCache bool) openrtb.RawJSON {
-	if includeCache {
-		return openrtb.RawJSON(`{"prebid":{"targeting":{},"cache":{"bids":{}}}}`)
+func buildTargetingExt(includeCache bool, includeWinners bool) openrtb.RawJSON {
+	var targeting string
+	if includeWinners {
+		targeting = "{}"
+	} else {
+		targeting = `{"includeWinners": false}`
 	}
 
-	return openrtb.RawJSON(`{"prebid":{"targeting":{}}}`)
+	if includeCache {
+		return openrtb.RawJSON(`{"prebid":{"targeting":` + targeting + `,"cache":{"bids":{}}}}`)
+	}
+
+	return openrtb.RawJSON(`{"prebid":{"targeting":` + targeting + `}}`)
 }
 
 func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid) openrtb.RawJSON {
