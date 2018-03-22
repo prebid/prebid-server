@@ -1,0 +1,10 @@
+maintainer:
+  email: "hb@adtelligent.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+      - video

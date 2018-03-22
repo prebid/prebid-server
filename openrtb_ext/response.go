@@ -1,5 +1,9 @@
 package openrtb_ext
 
+import (
+	"github.com/mxmCherry/openrtb"
+)
+
 // ExtBidResponse defines the contract for bidresponse.ext
 type ExtBidResponse struct {
 	Debug *ExtResponseDebug `json:"debug,omitempty"`
@@ -15,6 +19,8 @@ type ExtBidResponse struct {
 type ExtResponseDebug struct {
 	// HttpCalls defines the contract for bidresponse.ext.debug.httpcalls
 	HttpCalls map[BidderName][]*ExtHttpCall `json:"httpcalls,omitempty"`
+	// Request after resolution of stored requests and debug overrides
+	ResolvedRequest *openrtb.BidRequest `json:"resolvedrequest,omitempty"`
 }
 
 // ExtResponseSyncData defines the contract for bidresponse.ext.usersync.{bidder}

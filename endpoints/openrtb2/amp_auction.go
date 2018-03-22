@@ -20,8 +20,11 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
+const defaultAmpRequestTimeoutMillis = 900
+
 type AmpResponse struct {
-	Targeting map[string]string `json:"targeting"`
+	Targeting map[string]string             `json:"targeting"`
+	Debug     *openrtb_ext.ExtResponseDebug `json:"debug,omitempty"`
 }
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
@@ -91,7 +94,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	if req.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
+		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultAmpRequestTimeoutMillis)*time.Millisecond))
 	}
 	defer cancel()
 
@@ -144,6 +147,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Now JSONify the tragets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
+	}
+
+	// add debug information if requested
+	if req.Test == 1 {
+		var extResponse openrtb_ext.ExtBidResponse
+		if err := json.Unmarshal(response.Ext, &extResponse); err == nil && extResponse.Debug != nil {
+			ampResponse.Debug = extResponse.Debug
+		} else {
+			glog.Errorf("Test set on request but debug not present in response: %v", err)
+		}
 	}
 
 	// Fixes #231
@@ -200,6 +213,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	debugParam, ok := httpRequest.URL.Query()["debug"]
+	debug := ok && len(debugParam) > 0 && debugParam[0] == "1"
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
@@ -219,6 +235,10 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	if debug {
+		req.Test = 1
+	}
+
 	// Two checks so users know which way the Imp check failed.
 	if len(req.Imp) == 0 {
 		errs = []error{fmt.Errorf("data for tag_id='%s' does not define the required imp array.", ampId)}
@@ -228,6 +248,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampId, len(req.Imp))}
 		return
 	}
+
+	// Force HTTPS as AMP requires it, but pubs can forget to set it.
+	if req.Imp[0].Secure == nil {
+		secure := int8(1)
+		req.Imp[0].Secure = &secure
+	} else {
+		*req.Imp[0].Secure = 1
+	}
+
 	return
 }
 

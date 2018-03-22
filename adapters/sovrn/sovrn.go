@@ -61,6 +61,10 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 			return nil, err
 		}
 
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(sovrnReq.Imp) <= i {
+			break
+		}
 		sovrnReq.Imp[i].TagID = params.TagId
 	}
 

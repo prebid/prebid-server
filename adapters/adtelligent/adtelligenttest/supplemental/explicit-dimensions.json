@@ -1,0 +1,58 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 100,
+          "h": 400
+        },
+        "ext": {
+          "bidder": {
+            "aid": 1000
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://hb.adtelligent.com/auction?aid=1000",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 100,
+                "h": 400
+              },
+              "ext": {
+                "adtelligent": {
+                 "aid": 1000
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ]
+}

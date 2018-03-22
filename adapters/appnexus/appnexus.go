@@ -42,19 +42,26 @@ type KeyVal struct {
 }
 
 type appnexusParams struct {
-	PlacementId       int      `json:"placementId"`
-	InvCode           string   `json:"invCode"`
-	Member            string   `json:"member"`
-	Keywords          []KeyVal `json:"keywords"`
-	TrafficSourceCode string   `json:"trafficSourceCode"`
-	Reserve           float64  `json:"reserve"`
-	Position          string   `json:"position"`
+	LegacyPlacementId       int             `json:"placementId"`
+	LegacyInvCode           string          `json:"invCode"`
+	LegacyTrafficSourceCode string          `json:"trafficSourceCode"`
+	PlacementId             int             `json:"placement_id"`
+	InvCode                 string          `json:"inv_code"`
+	Member                  string          `json:"member"`
+	Keywords                []KeyVal        `json:"keywords"`
+	TrafficSourceCode       string          `json:"traffic_source_code"`
+	Reserve                 float64         `json:"reserve"`
+	Position                string          `json:"position"`
+	UsePmtRule              *bool           `json:"use_pmt_rule"`
+	PrivateSizes            json.RawMessage `json:"private_sizes"`
 }
 
 type appnexusImpExtAppnexus struct {
-	PlacementID       int    `json:"placement_id,omitempty"`
-	Keywords          string `json:"keywords,omitempty"`
-	TrafficSourceCode string `json:"traffic_source_code,omitempty"`
+	PlacementID       int             `json:"placement_id,omitempty"`
+	Keywords          string          `json:"keywords,omitempty"`
+	TrafficSourceCode string          `json:"traffic_source_code,omitempty"`
+	UsePmtRule        *bool           `json:"use_pmt_rule,omitempty"`
+	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
 }
 
 type appnexusBidExt struct {
@@ -83,11 +90,26 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if err != nil {
 			return nil, err
 		}
+		// Accept legacy Appnexus parameters if we don't have modern ones
+		// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
+		if params.PlacementId == 0 && params.LegacyPlacementId != 0 {
+			params.PlacementId = params.LegacyPlacementId
+		}
+		if params.InvCode == "" && params.LegacyInvCode != "" {
+			params.InvCode = params.LegacyInvCode
+		}
+		if params.TrafficSourceCode == "" && params.LegacyTrafficSourceCode != "" {
+			params.TrafficSourceCode = params.LegacyTrafficSourceCode
+		}
 
 		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
 			return nil, errors.New("No placement or member+invcode provided")
 		}
 
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(anReq.Imp) <= i {
+			break
+		}
 		if params.InvCode != "" {
 			anReq.Imp[i].TagID = params.InvCode
 			if params.Member != "" {
@@ -125,6 +147,8 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			PlacementID:       params.PlacementId,
 			TrafficSourceCode: params.TrafficSourceCode,
 			Keywords:          keywordStr,
+			UsePmtRule:        params.UsePmtRule,
+			PrivateSizes:      params.PrivateSizes,
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 	}
@@ -292,6 +316,18 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		return "", err
 	}
 
+	// Accept legacy Appnexus parameters if we don't have modern ones
+	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
+	if appnexusExt.PlacementId == 0 && appnexusExt.LegacyPlacementId != 0 {
+		appnexusExt.PlacementId = appnexusExt.LegacyPlacementId
+	}
+	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
+		appnexusExt.InvCode = appnexusExt.LegacyInvCode
+	}
+	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
+		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
+	}
+
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
 		return "", errors.New("No placement or member+invcode provided")
 	}
@@ -323,6 +359,8 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		PlacementID:       appnexusExt.PlacementId,
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		UsePmtRule:        appnexusExt.UsePmtRule,
+		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
