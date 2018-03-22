@@ -20,7 +20,7 @@ func (brw *bidResponseWrapper) validateBids() (err []error) {
 	err = make([]error, 0, len(brw.adapterBids.bids))
 	validBids := make([]*pbsOrtbBid, 0, len(brw.adapterBids.bids))
 	for _, bid := range brw.adapterBids.bids {
-		if ok, berr := brw.validateBid(bid); ok {
+		if ok, berr := validateBid(bid); ok {
 			validBids = append(validBids, bid)
 		} else {
 			err = append(err, berr)
@@ -34,7 +34,7 @@ func (brw *bidResponseWrapper) validateBids() (err []error) {
 }
 
 // validateBid will run the supplied bid through validation checks and return true if it passes, false otherwise.
-func (brw *bidResponseWrapper) validateBid(bid *pbsOrtbBid) (bool, error) {
+func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid == nil {
 		return false, fmt.Errorf("Empty bid object submitted.")
 	}
