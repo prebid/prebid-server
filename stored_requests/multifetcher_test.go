@@ -28,11 +28,34 @@ func TestMultiFetcher(t *testing.T) {
 
 	result, errs := fetcher.FetchRequests(context.Background(), ids)
 
-	if len(result) != 2 {
-		t.Errorf("Expected 2 results, found %d", len(result))
-	}
+	assertResults(t, "results", 2, len(result))
+	assertResults(t, "errors", 0, len(errs))
+}
 
-	if len(errs) != 2 {
-		t.Errorf("Expected 2 errors, found %d", len(errs))
+func TestMissingID(t *testing.T) {
+	mf0 := &mockFetcher{
+		returnData: map[string]json.RawMessage{
+			"abc": json.RawMessage(`{}`),
+		},
+		returnErrs: []error{errors.New("Id 'def' not found"), errors.New("Id 'ghi' not found")},
+	}
+	mf1 := &mockFetcher{
+		returnData: map[string]json.RawMessage{
+			"def": json.RawMessage(`{}`),
+		},
+		returnErrs: []error{errors.New("Id 'abc' not found"), errors.New("Id 'ghi' not found")},
+	}
+	mf := &MultiFetcher{mf0, mf1}
+	ids := []string{"abc", "def"}
+
+	result, errs := mf.FetchRequests(context.Background(), ids)
+
+	assertResults(t, "results", 2, len(result))
+	assertResults(t, "errors", 4, len(errs))
+}
+
+func assertResults(t *testing.T, obj string, expect int, found int) {
+	if expect != found {
+		t.Errorf("Expected %d %s, found %d", expect, obj, found)
 	}
 }
