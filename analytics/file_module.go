@@ -2,6 +2,8 @@ package analytics
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/chasex/glog"
 )
 
@@ -60,5 +62,37 @@ func NewFileLogger(filename string) (PBSAnalyticsModule, error) {
 		}, nil
 	} else {
 		return nil, err
+	}
+}
+
+func (ao *AuctionObject) ToJson() string {
+	if content, err := json.Marshal(ao); err != nil {
+		return fmt.Sprintf("Transactional Logs Error: Auction object badly formed %v", err)
+	} else {
+		return string(content)
+	}
+}
+
+func (cso *CookieSyncObject) ToJson() string {
+	if content, err := json.Marshal(cso); err != nil {
+		return fmt.Sprintf("Transactional Logs Error: CookieSync object badly formed %v", err)
+	} else {
+		return string(content)
+	}
+}
+
+func (so *SetUIDObject) ToJson() string {
+	if content, err := json.Marshal(so); err != nil {
+		return fmt.Sprintf("Transactional Logs Error: Set UID object badly formed %v", err)
+	} else {
+		return string(content)
+	}
+}
+
+func (ao *AmpObject) ToJson() string {
+	if content, err := json.Marshal(ao); err != nil {
+		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
+	} else {
+		return string(content)
 	}
 }

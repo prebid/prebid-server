@@ -1,8 +1,6 @@
 package analytics
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/mxmCherry/openrtb"
 )
 
@@ -53,36 +51,4 @@ type CookieSyncObject struct {
 	Status  int
 	Error   []error
 	Bidders string
-}
-
-func (ao *AuctionObject) ToJson() string {
-	if content, err := json.Marshal(ao); err != nil {
-		return fmt.Sprintf("Transactional Logs Error: Auction object badly formed %v", err)
-	} else {
-		return string(content)
-	}
-}
-
-func (cso *CookieSyncObject) ToJson() string {
-	if content, err := json.Marshal(cso); err != nil {
-		return fmt.Sprintf("Transactional Logs Error: CookieSync object badly formed %v", err)
-	} else {
-		return string(content)
-	}
-}
-
-func (so *SetUIDObject) ToJson() string {
-	if content, err := json.Marshal(so); err != nil {
-		return fmt.Sprintf("Transactional Logs Error: Set UID object badly formed %v", err)
-	} else {
-		return string(content)
-	}
-}
-
-func (ao *AmpObject) ToJson() string {
-	if content, err := json.Marshal(ao); err != nil {
-		return fmt.Sprintf("Transactional Logs Error: Amp object badly formed %v", err)
-	} else {
-		return string(content)
-	}
 }
