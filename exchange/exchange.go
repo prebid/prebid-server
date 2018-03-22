@@ -94,6 +94,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if requestExt.Prebid.Targeting != nil {
 			targData = &targetData{
 				priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+				includeWinners:   requestExt.Prebid.Targeting.IncludeWinners,
 			}
 			if shouldCacheBids {
 				targData.includeCache = true
@@ -113,7 +114,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if targData.includeCache {
 			auc.doCache(ctx, e.cache)
 		}
-		setTargeting(auc, bidRequest.App != nil)
+		targData.setTargeting(auc, bidRequest.App != nil)
 	}
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
