@@ -24,14 +24,15 @@ type AdformAdapter struct {
 }
 
 type adformRequest struct {
-	tid        string
-	userAgent  string
-	ip         string
-	bidderCode string
-	isSecure   bool
-	referer    string
-	userId     string
-	adUnits    []*adformAdUnit
+	tid           string
+	userAgent     string
+	ip            string
+	advertisingId string
+	bidderCode    string
+	isSecure      bool
+	referer       string
+	userId        string
+	adUnits       []*adformAdUnit
 }
 
 type adformAdUnit struct {
@@ -144,14 +145,15 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 	userId, _, _ := request.Cookie.GetUID(a.Name())
 
 	return &adformRequest{
-		adUnits:    adUnits,
-		ip:         request.Device.IP,
-		userAgent:  request.Device.UA,
-		bidderCode: bidder.BidderCode,
-		isSecure:   request.Secure == 1,
-		referer:    request.Url,
-		userId:     userId,
-		tid:        request.Tid,
+		adUnits:       adUnits,
+		ip:            request.Device.IP,
+		advertisingId: request.Device.IFA,
+		userAgent:     request.Device.UA,
+		bidderCode:    bidder.BidderCode,
+		isSecure:      request.Secure == 1,
+		referer:       request.Url,
+		userId:        userId,
+		tid:           request.Tid,
 	}, nil
 }
 
@@ -192,7 +194,11 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	if r.isSecure {
 		uri = strings.Replace(uri, "http://", "https://", 1)
 	}
-	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&%s", uri, r.tid, strings.Join(adUnitsParams, "&"))
+	adid := ""
+	if r.advertisingId != "" {
+		adid = fmt.Sprintf("&adid=%s", r.advertisingId)
+	}
+	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s&%s", uri, r.tid, r.ip, adid, strings.Join(adUnitsParams, "&"))
 }
 
 func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
@@ -230,7 +236,7 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	return &AdformAdapter{
 		http:    a,
 		URI:     endpointURL,
-		version: "0.1.0",
+		version: "0.1.1",
 	}
 }
 
@@ -303,13 +309,14 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	}
 
 	return &adformRequest{
-		adUnits:   adUnits,
-		ip:        request.Device.IP,
-		userAgent: request.Device.UA,
-		isSecure:  secure,
-		referer:   referer,
-		userId:    request.User.BuyerUID,
-		tid:       tid,
+		adUnits:       adUnits,
+		ip:            request.Device.IP,
+		advertisingId: request.Device.IFA,
+		userAgent:     request.Device.UA,
+		isSecure:      secure,
+		referer:       referer,
+		userId:        request.User.BuyerUID,
+		tid:           tid,
 	}, errors
 }
 

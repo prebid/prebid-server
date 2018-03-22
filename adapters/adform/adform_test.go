@@ -30,16 +30,17 @@ type aTagInfo struct {
 }
 
 type aBidInfo struct {
-	deviceIP string
-	deviceUA string
-	tags     []aTagInfo
-	referrer string
-	width    uint64
-	height   uint64
-	tid      string
-	buyerUID string
-	secure   bool
-	delay    time.Duration
+	deviceIP  string
+	deviceUA  string
+	deviceIFA string
+	tags      []aTagInfo
+	referrer  string
+	width     uint64
+	height    uint64
+	tid       string
+	buyerUID  string
+	secure    bool
+	delay     time.Duration
 }
 
 var adformTestData aBidInfo
@@ -146,15 +147,16 @@ func TestAdformBasicResponse(t *testing.T) {
 
 func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, context.Context, *pbs.PBSRequest) {
 	adformTestData = aBidInfo{
-		deviceIP: "111.111.111.111",
-		deviceUA: "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Mobile/14E8301",
-		tags:     make([]aTagInfo, 3),
-		referrer: "http://test.com",
-		width:    200,
-		height:   300,
-		tid:      "transaction-id",
-		buyerUID: "user-id",
-		secure:   false,
+		deviceIP:  "111.111.111.111",
+		deviceUA:  "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Mobile/14E8301",
+		deviceIFA: "6D92078A-8246-4BA4-AE5B-76104861E7DC",
+		tags:      make([]aTagInfo, 3),
+		referrer:  "http://test.com",
+		width:     200,
+		height:    300,
+		tid:       "transaction-id",
+		buyerUID:  "user-id",
+		secure:    false,
 	}
 	adformTestData.tags[0] = aTagInfo{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1"}
 	adformTestData.tags[1] = aTagInfo{mid: 32345, code: "code2"} // no bid for ad unit
@@ -202,8 +204,9 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 	prebidRequest := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 3),
 		Device: &openrtb.Device{
-			UA: requestData.deviceUA,
-			IP: requestData.deviceIP,
+			UA:  requestData.deviceUA,
+			IP:  requestData.deviceIP,
+			IFA: requestData.deviceIFA,
 		},
 		Tid:    requestData.tid,
 		Secure: 0,
@@ -293,11 +296,12 @@ func TestOpenRTBIncorrectRequest(t *testing.T) {
 
 func createTestData() *aBidInfo {
 	testData := &aBidInfo{
-		deviceIP: "111.111.111.111",
-		deviceUA: "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Mobile/14E8301",
-		referrer: "http://test.com",
-		tid:      "transaction-id",
-		buyerUID: "user-id",
+		deviceIP:  "111.111.111.111",
+		deviceUA:  "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Mobile/14E8301",
+		deviceIFA: "6D92078A-8246-4BA4-AE5B-76104861E7DC",
+		referrer:  "http://test.com",
+		tid:       "transaction-id",
+		buyerUID:  "user-id",
 		tags: []aTagInfo{
 			{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1"},
 			{mid: 32345, code: "code2"}, // no bid for ad unit
@@ -339,8 +343,9 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 			Page: testData.referrer,
 		},
 		Device: &openrtb.Device{
-			UA: testData.deviceUA,
-			IP: testData.deviceIP,
+			UA:  testData.deviceUA,
+			IP:  testData.deviceIP,
+			IFA: testData.deviceIFA,
 		},
 		Source: &openrtb.Source{
 			TID: testData.tid,
@@ -446,7 +451,7 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 			return err
 		}
 	}
-	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&bWlkPTMyMzQ0&bWlkPTMyMzQ1&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
+	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&ip=111.111.111.111&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&bWlkPTMyMzQ0&bWlkPTMyMzQ1&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
 		return err
 	}
 	if ok, err := equal("application/json;charset=utf-8", r.Header.Get("Content-Type"), "Content type"); !ok {
