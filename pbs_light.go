@@ -37,6 +37,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
@@ -45,11 +46,13 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
 	"github.com/prebid/prebid-server/cache/postgrescache"
 	"github.com/prebid/prebid-server/config"
+	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -189,12 +192,10 @@ func getAccountMetrics(id string) *AccountMetrics {
 }
 
 type cookieSyncRequest struct {
-	UUID    string   `json:"uuid"`
 	Bidders []string `json:"bidders"`
 }
 
 type cookieSyncResponse struct {
-	UUID         string           `json:"uuid"`
 	Status       string           `json:"status"`
 	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
 }
@@ -216,7 +217,8 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	defer r.Body.Close()
 
 	csReq := &cookieSyncRequest{}
-	err := json.NewDecoder(r.Body).Decode(&csReq)
+	csReqRaw := map[string]json.RawMessage{}
+	err := json.NewDecoder(r.Body).Decode(&csReqRaw)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
@@ -224,9 +226,20 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
+	biddersOmitted := true
+	if biddersRaw, ok := csReqRaw["bidders"]; ok {
+		biddersOmitted = false
+		err := json.Unmarshal(biddersRaw, &csReq.Bidders)
+		if err != nil {
+			if glog.V(2) {
+				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
+			}
+			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
+			return
+		}
+	}
 
 	csResp := cookieSyncResponse{
-		UUID:         csReq.UUID,
 		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
 	}
 
@@ -234,6 +247,14 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		csResp.Status = "no_cookie"
 	} else {
 		csResp.Status = "ok"
+	}
+
+	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
+	// and "bidders" is not found in the JSON, sync all bidders
+	if len(csReq.Bidders) == 0 && biddersOmitted {
+		for bidder := range deps.syncers {
+			csReq.Bidders = append(csReq.Bidders, string(bidder))
+		}
 	}
 
 	for _, bidder := range csReq.Bidders {
@@ -439,6 +460,10 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 
+	if pbs_req.CacheMarkup == 2 {
+		cacheVideoOnly(pbs_resp.Bids, ctx, w, deps)
+	}
+
 	if pbs_req.SortBids == 1 {
 		sortBidsAddKeywordsMobile(pbs_resp.Bids, pbs_req, account.PriceGranularity)
 	}
@@ -451,6 +476,35 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
 	mRequestTimer.UpdateSince(pbs_req.Start)
+}
+
+// cache video bids only for Web
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps) {
+	var cobjs []*pbc.CacheObject
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "video" {
+			cobjs = append(cobjs, &pbc.CacheObject{
+				Value:   bid.Adm,
+				IsVideo: true,
+			})
+		}
+	}
+	err := pbc.Put(ctx, cobjs)
+	if err != nil {
+		writeAuctionError(w, "Prebid cache failed", err)
+		mErrorMeter.Mark(1)
+		return
+	}
+	videoIndex := 0
+	for _, bid := range bids {
+		if bid.CreativeMediaType == "video" {
+			bid.CacheID = cobjs[videoIndex].UUID
+			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
+			bid.NURL = ""
+			bid.Adm = ""
+			videoIndex++
+		}
+	}
 }
 
 // checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
@@ -537,11 +591,17 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
-			pbs_kvs := map[string]string{
-				hbPbBidderKey:      roundedCpm,
-				hbBidderBidderKey:  bid.BidderCode,
-				hbCacheIdBidderKey: bid.CacheID,
+
+			// fixes #288 where map was being overwritten instead of updated
+			if bid.AdServerTargeting == nil {
+				bid.AdServerTargeting = make(map[string]string)
 			}
+			pbs_kvs := bid.AdServerTargeting
+
+			pbs_kvs[hbPbBidderKey] = roundedCpm
+			pbs_kvs[hbBidderBidderKey] = bid.BidderCode
+			pbs_kvs[hbCacheIdBidderKey] = bid.CacheID
+
 			if hbSize != "" {
 				pbs_kvs[hbSizeBidderKey] = hbSize
 			}
@@ -565,7 +625,6 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
 				}
 			}
-			bid.AdServerTargeting = pbs_kvs
 		}
 	}
 }
@@ -710,16 +769,26 @@ func init() {
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
+	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
+	viper.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
+	viper.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	viper.SetDefault("max_request_size", 1024*256)
 	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
+	viper.SetDefault("host_cookie.ttl_days", 90)
+
+	// Set environment variable support:
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetEnvPrefix("PBS")
+	viper.AutomaticEnv()
 	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
 }
 
 func main() {
-	cfg, err := config.New()
+	cfg, err := config.New(viper.GetViper())
 	if err != nil {
 		glog.Fatalf("Viper was unable to read configurations: %v", err)
 	}
@@ -748,6 +817,7 @@ func setupExchanges(cfg *config.Configuration) {
 }
 
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
+	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
 		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
 		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
@@ -756,9 +826,11 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
 			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewFacebookAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
+		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
 		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
 		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
+		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint),
+		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint),
 	}
 }
 
@@ -876,7 +948,7 @@ func serve(cfg *config.Configuration) error {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, exchange.AdapterList())
+	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, openrtb_ext.BidderList())
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics, CurrencyRates.Load().([]byte))
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
@@ -900,6 +972,8 @@ func serve(cfg *config.Configuration) error {
 	router.POST("/auction", (&auctionDeps{cfg, syncers}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
+	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
+	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), mCookieSyncMeter}).CookieSync)
 	router.POST("/validate", validate)
@@ -914,6 +988,7 @@ func serve(cfg *config.Configuration) error {
 		OptOutURL:    cfg.HostCookie.OptOutURL,
 		OptInURL:     cfg.HostCookie.OptInURL,
 		OptOutCookie: cfg.HostCookie.OptOutCookie,
+		TTL:          time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour,
 	}
 
 	userSyncDeps := &pbs.UserSyncDeps{

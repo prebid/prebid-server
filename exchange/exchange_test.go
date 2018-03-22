@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -24,7 +25,7 @@ func TestNewExchange(t *testing.T) {
 	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
 	defer server.Close()
 
-	knownAdapters := AdapterList()
+	knownAdapters := openrtb_ext.BidderList()
 
 	cfg := &config.Configuration{
 		CacheURL: config.Cache{
@@ -41,6 +42,97 @@ func TestNewExchange(t *testing.T) {
 	if e.cacheTime != time.Duration(cfg.CacheURL.ExpectedTimeMillis)*time.Millisecond {
 		t.Errorf("Bad cacheTime. Expected 20 ms, got %s", e.cacheTime.String())
 	}
+}
+
+// TestRaceIntegration runs an integration test using all the sample params from
+// adapters/{bidder}/{bidder}test/params/race/*.json files.
+//
+// Its primary goal is to catch race conditions, since parts of the BidRequest passed into MakeBids()
+// are shared across many goroutines.
+//
+// The "known" file names right now are "banner.json" and "video.json". These files should hold params
+// which the Bidder would expect on banner or video Imps, respectively.
+func TestRaceIntegration(t *testing.T) {
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Adapters: map[string]config.Adapter{
+			"facebook": config.Adapter{
+				PlatformID: "abc",
+			},
+		},
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, []byte{})
+	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{})
+	if err != nil {
+		t.Errorf("HoldAuction returned unexpected error: %v", err)
+	}
+}
+
+// newRaceCheckingRequest builds a BidRequest from all the params in the
+// adapters/{bidder}/{bidder}test/params/race/*.json files
+func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
+	return &openrtb.BidRequest{
+		Site: &openrtb.Site{
+			Page:   "www.some.domain.com",
+			Domain: "domain.com",
+			Publisher: &openrtb.Publisher{
+				ID: "some-publisher-id",
+			},
+		},
+		Imp: []openrtb.Imp{{
+			ID: "some-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: buildImpExt(t, "banner"),
+		}, {
+			Video: &openrtb.Video{
+				MIMEs:       []string{"video/mp4"},
+				MinDuration: 1,
+				MaxDuration: 300,
+				W:           300,
+				H:           600,
+			},
+			Ext: buildImpExt(t, "video"),
+		}},
+	}
+}
+
+func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
+	adapterFolders, err := ioutil.ReadDir("../adapters")
+	if err != nil {
+		t.Fatalf("Failed to open adapters directory: %v", err)
+	}
+	bidderExts := make(map[string]json.RawMessage, len(openrtb_ext.BidderMap))
+	for _, adapterFolder := range adapterFolders {
+		if adapterFolder.IsDir() && adapterFolder.Name() != "adapterstest" {
+			bidderName := adapterFolder.Name()
+			sampleParams := "../adapters/" + bidderName + "/" + bidderName + "test/params/race/" + jsonFilename + ".json"
+			// If the file doesn't exist, don't worry about it. I don't think the Go APIs offer a reliable way to check for this.
+			fileContents, err := ioutil.ReadFile(sampleParams)
+			if err == nil {
+				bidderExts[bidderName] = json.RawMessage(fileContents)
+			}
+		}
+	}
+	toReturn, err := json.Marshal(bidderExts)
+	if err != nil {
+		t.Fatalf("Failed to marshal JSON: %v", err)
+	}
+	return openrtb.RawJSON(toReturn)
 }
 
 func TestHoldAuction(t *testing.T) {
@@ -127,7 +219,7 @@ func TestGetAllBids(t *testing.T) {
 		BidderDummy2: nil,
 		BidderDummy3: nil,
 	}
-	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, nil)
+	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from appnexus, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
@@ -146,7 +238,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -163,7 +255,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil)
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -191,7 +283,6 @@ func TestBuildBidResponse(t *testing.T) {
 		Prebid: openrtb_ext.ExtRequestPrebid{
 			Targeting: &openrtb_ext.ExtRequestTargeting{
 				PriceGranularity: openrtb_ext.PriceGranularityMedium,
-				MaxLength:        20,
 			},
 		},
 	}
@@ -202,6 +293,7 @@ func TestBuildBidResponse(t *testing.T) {
 		Test: 0,
 		Ext:  bidReqExtRaw,
 	}
+	var resolvedRequest json.RawMessage
 
 	liveAdapters := make([]openrtb_ext.BidderName, 3)
 	liveAdapters[0] = BidderDummy
@@ -220,10 +312,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
 
 	errList := make([]error, 0, 1)
-	targData := &targetData{
-		priceGranularity: openrtb_ext.PriceGranularityMedium,
-	}
-	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, targData, errList)
+	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -262,18 +351,10 @@ func TestBuildBidResponse(t *testing.T) {
 		assertStringValue(t, "bid[0].Targeting[hb_pb_appnexus]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_appnexus"])
 		assertStringValue(t, "bid[0]Targeting[hb_bidder_appnexus]", "appnexus", bidder1BidExt[0].Prebid.Targeting["hb_bidder_appnexus"])
 		assertStringValue(t, "bid[0]Targeting[hb_size_appnexus]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_appnexus"])
-		// This should be the winning bid
-		assertStringValue(t, "bid[0].Targeting[hb_pb]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb"])
-		_, ok := bidder1BidExt[0].Prebid.Targeting["hb_pb"]
-		if !ok {
-			t.Errorf("bid[0].Targeting[hb_pb] doesn't exist, but was winning bid.")
-		}
-		assertStringValue(t, "bid[0]Targeting[hb_bidder]", "appnexus", bidder1BidExt[0].Prebid.Targeting["hb_bidder"])
-		assertStringValue(t, "bid[0]Targeting[hb_size]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size"])
 		assertStringValue(t, "bid[1].Targeting[hb_pb_appnexus]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_appnexus"])
 		assertStringValue(t, "bid[1]Targeting[hb_bidder_appnexus]", "appnexus", bidder1BidExt[1].Prebid.Targeting["hb_bidder_appnexus"])
 		assertStringValue(t, "bid[1]Targeting[hb_size_appnexus]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_appnexus"])
-		_, ok = bidder1BidExt[1].Prebid.Targeting["hb_pb"]
+		_, ok := bidder1BidExt[1].Prebid.Targeting["hb_pb"]
 		if ok {
 			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
 		}
@@ -283,7 +364,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -302,7 +383,7 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, adapterExtra, nil, errList)
+	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
 	if err != nil {
 		t.Errorf("BuildBidResponse: %s", err.Error())
 	}
@@ -413,7 +494,7 @@ type mockBidder struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, bidderTarg *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	b.lastRequest = request
 	return nil, nil
 }
@@ -439,7 +520,7 @@ type mockAdapter struct {
 	errs    []error
 }
 
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, targetData *targetData, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
 	return a.seatBid, a.errs
 }
 

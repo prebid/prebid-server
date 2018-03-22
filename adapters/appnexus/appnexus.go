@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Docs for this API can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 const uri = "http://ib.adnxs.com/openrtb2"
 
 type AppNexusAdapter struct {
@@ -26,13 +27,8 @@ type AppNexusAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *AppNexusAdapter) Name() string {
-	return "AppNexus"
-}
-
 // used for cookies and such
-func (a *AppNexusAdapter) FamilyName() string {
+func (a *AppNexusAdapter) Name() string {
 	return "adnxs"
 }
 
@@ -46,19 +42,34 @@ type KeyVal struct {
 }
 
 type appnexusParams struct {
-	PlacementId       int      `json:"placementId"`
-	InvCode           string   `json:"invCode"`
-	Member            string   `json:"member"`
-	Keywords          []KeyVal `json:"keywords"`
-	TrafficSourceCode string   `json:"trafficSourceCode"`
-	Reserve           float64  `json:"reserve"`
-	Position          string   `json:"position"`
+	LegacyPlacementId       int             `json:"placementId"`
+	LegacyInvCode           string          `json:"invCode"`
+	LegacyTrafficSourceCode string          `json:"trafficSourceCode"`
+	PlacementId             int             `json:"placement_id"`
+	InvCode                 string          `json:"inv_code"`
+	Member                  string          `json:"member"`
+	Keywords                []KeyVal        `json:"keywords"`
+	TrafficSourceCode       string          `json:"traffic_source_code"`
+	Reserve                 float64         `json:"reserve"`
+	Position                string          `json:"position"`
+	UsePmtRule              *bool           `json:"use_pmt_rule"`
+	PrivateSizes            json.RawMessage `json:"private_sizes"`
 }
 
 type appnexusImpExtAppnexus struct {
-	PlacementID       int    `json:"placement_id,omitempty"`
-	Keywords          string `json:"keywords,omitempty"`
-	TrafficSourceCode string `json:"traffic_source_code,omitempty"`
+	PlacementID       int             `json:"placement_id,omitempty"`
+	Keywords          string          `json:"keywords,omitempty"`
+	TrafficSourceCode string          `json:"traffic_source_code,omitempty"`
+	UsePmtRule        *bool           `json:"use_pmt_rule,omitempty"`
+	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
+}
+
+type appnexusBidExt struct {
+	Appnexus appnexusBidExtAppnexus `json:"appnexus"`
+}
+
+type appnexusBidExtAppnexus struct {
+	BidType int `json:"bid_ad_type"`
 }
 
 type appnexusImpExt struct {
@@ -67,7 +78,7 @@ type appnexusImpExt struct {
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), supportedMediaTypes, true)
+	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes, true)
 
 	if err != nil {
 		return nil, err
@@ -79,11 +90,26 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		if err != nil {
 			return nil, err
 		}
+		// Accept legacy Appnexus parameters if we don't have modern ones
+		// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
+		if params.PlacementId == 0 && params.LegacyPlacementId != 0 {
+			params.PlacementId = params.LegacyPlacementId
+		}
+		if params.InvCode == "" && params.LegacyInvCode != "" {
+			params.InvCode = params.LegacyInvCode
+		}
+		if params.TrafficSourceCode == "" && params.LegacyTrafficSourceCode != "" {
+			params.TrafficSourceCode = params.LegacyTrafficSourceCode
+		}
 
 		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
 			return nil, errors.New("No placement or member+invcode provided")
 		}
 
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(anReq.Imp) <= i {
+			break
+		}
 		if params.InvCode != "" {
 			anReq.Imp[i].TagID = params.InvCode
 			if params.Member != "" {
@@ -121,6 +147,8 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			PlacementID:       params.PlacementId,
 			TrafficSourceCode: params.TrafficSourceCode,
 			Keywords:          keywordStr,
+			UsePmtRule:        params.UsePmtRule,
+			PrivateSizes:      params.PrivateSizes,
 		}}
 		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
 	}
@@ -177,11 +205,8 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	bids := make(pbs.PBSBidSlice, 0)
 
-	numBids := 0
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			numBids++
-
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
 				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
@@ -200,9 +225,10 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				NURL:        bid.NURL,
 			}
 
-			mediaType := getMediaTypeForImp(bid.ImpID, anReq.Imp)
-			pbid.CreativeMediaType = string(mediaType)
-			bids = append(bids, &pbid)
+			if mediaType, err := getMediaTypeForBid(&bid); err == nil {
+				pbid.CreativeMediaType = string(mediaType)
+				bids = append(bids, &pbid)
+			}
 		}
 	}
 
@@ -276,11 +302,10 @@ func keys(m map[string]bool) []string {
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
 func preprocess(imp *openrtb.Imp) (string, error) {
-	// We only support banner and video impressions for now.
-	if imp.Native != nil || imp.Audio != nil {
-		return "", fmt.Errorf("Appnexus doesn't support audio or native Imps. Ignoring Imp ID=%s", imp.ID)
+	// We don't support audio imps yet.
+	if imp.Audio != nil {
+		return "", fmt.Errorf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID)
 	}
-
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", err
@@ -289,6 +314,18 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	var appnexusExt openrtb_ext.ExtImpAppnexus
 	if err := json.Unmarshal(bidderExt.Bidder, &appnexusExt); err != nil {
 		return "", err
+	}
+
+	// Accept legacy Appnexus parameters if we don't have modern ones
+	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
+	if appnexusExt.PlacementId == 0 && appnexusExt.LegacyPlacementId != 0 {
+		appnexusExt.PlacementId = appnexusExt.LegacyPlacementId
+	}
+	if appnexusExt.InvCode == "" && appnexusExt.LegacyInvCode != "" {
+		appnexusExt.InvCode = appnexusExt.LegacyInvCode
+	}
+	if appnexusExt.TrafficSourceCode == "" && appnexusExt.LegacyTrafficSourceCode != "" {
+		appnexusExt.TrafficSourceCode = appnexusExt.LegacyTrafficSourceCode
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
@@ -302,24 +339,28 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		imp.BidFloor = appnexusExt.Reserve // This will be broken for non-USD currency.
 	}
 	if imp.Banner != nil {
+		bannerCopy := *imp.Banner
 		if appnexusExt.Position == "above" {
-			imp.Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+			bannerCopy.Pos = openrtb.AdPositionAboveTheFold.Ptr()
 		} else if appnexusExt.Position == "below" {
-			imp.Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+			bannerCopy.Pos = openrtb.AdPositionBelowTheFold.Ptr()
 		}
 
 		// Fixes #307
-		if imp.Banner.W == nil && imp.Banner.H == nil && len(imp.Banner.Format) > 0 {
-			firstFormat := imp.Banner.Format[0]
-			imp.Banner.W = &(firstFormat.W)
-			imp.Banner.H = &(firstFormat.H)
+		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+			firstFormat := bannerCopy.Format[0]
+			bannerCopy.W = &(firstFormat.W)
+			bannerCopy.H = &(firstFormat.H)
 		}
+		imp.Banner = &bannerCopy
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{
 		PlacementID:       appnexusExt.PlacementId,
 		TrafficSourceCode: appnexusExt.TrafficSourceCode,
 		Keywords:          makeKeywordStr(appnexusExt.Keywords),
+		UsePmtRule:        appnexusExt.UsePmtRule,
+		PrivateSizes:      appnexusExt.PrivateSizes,
 	}}
 	var err error
 	if imp.Ext, err = json.Marshal(&impExt); err != nil {
@@ -360,33 +401,40 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 
 	bids := make([]*adapters.TypedBid, 0, 5)
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			bids = append(bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
-			})
+			if bidType, err := getMediaTypeForBid(&bid); err == nil {
+				bids = append(bids, &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				})
+			} else {
+				errs = append(errs, err)
+			}
 		}
 	}
-	return bids, nil
+	return bids, errs
 }
 
-// getMediaTypeForImp figures out which media type this bid is for.
-//
-// This is only safe for multi-type impressions because the AN server prioritizes video over banner,
-// and we duplicate that logic here. A ticket exists to return the media type in the bid response,
-// at which point we can delete this.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			return mediaType
-		}
+// getMediaTypeForBid determines which type of bid.
+func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
+	var impExt appnexusBidExt
+	if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
+		return "", err
 	}
-	return mediaType
+	switch impExt.Appnexus.BidType {
+	case 0:
+		return openrtb_ext.BidTypeBanner, nil
+	case 1:
+		return openrtb_ext.BidTypeVideo, nil
+	case 2:
+		return openrtb_ext.BidTypeAudio, nil
+	case 3:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", impExt.Appnexus.BidType)
+	}
 }
 
 func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig) *AppNexusAdapter {

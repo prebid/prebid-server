@@ -3,13 +3,14 @@ package exchange
 import (
 	"context"
 	"errors"
+	"reflect"
+	"testing"
+
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"reflect"
-	"testing"
 )
 
 func TestSiteVideo(t *testing.T) {
@@ -53,7 +54,7 @@ func TestSiteVideo(t *testing.T) {
 	mockAdapter := mockLegacyAdapter{}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderRubicon)
 	if len(errs) > 0 {
 		t.Errorf("Unexpected error requesting bids: %v", errs)
 	}
@@ -86,7 +87,7 @@ func TestAppBanner(t *testing.T) {
 	mockAdapter := mockLegacyAdapter{}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderRubicon)
 	if len(errs) > 0 {
 		t.Errorf("Unexpected error requesting bids: %v", errs)
 	}
@@ -129,7 +130,7 @@ func TestBidTransforms(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), nil, openrtb_ext.BidderRubicon)
+	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), openrtb_ext.BidderRubicon)
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
 	}
@@ -277,12 +278,53 @@ func TestErrorResponse(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, nil, openrtb_ext.BidderRubicon)
+	_, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderRubicon)
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
 	}
 	if errs[0].Error() != "adapter failed" {
 		t.Errorf("Unexpected error message. Got %s", errs[0].Error())
+	}
+}
+
+func TestWithTargeting(t *testing.T) {
+	ortbRequest := &openrtb.BidRequest{
+		ID: "request-id",
+		App: &openrtb.App{
+			Publisher: &openrtb.Publisher{
+				ID: "b1c81a38-1415-42b7-8238-0d2d64016c27",
+			},
+		},
+		Source: &openrtb.Source{
+			TID: "transaction-id",
+		},
+		Imp: []openrtb.Imp{{
+			ID: "imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {"placementId": "1959066997713356_1959836684303054"}}`),
+		}},
+	}
+
+	mockAdapter := mockLegacyAdapter{
+		returnedBids: []*pbs.PBSBid{{
+			CreativeMediaType: "banner",
+		}},
+	}
+	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
+	bid, errs := exchangeBidder.requestBid(context.Background(), ortbRequest, openrtb_ext.BidderFacebook)
+	if len(errs) != 0 {
+		t.Fatalf("This should not produce errors. Got %v", errs)
+	}
+	if len(bid.bids) != 1 {
+		t.Fatalf("We should get one bid back.")
+	}
+	if bid.bids[0] == nil {
+		t.Errorf("The returned bid should not be nil.")
 	}
 }
 
@@ -432,10 +474,6 @@ type mockLegacyAdapter struct {
 }
 
 func (a *mockLegacyAdapter) Name() string {
-	return "someBidder"
-}
-
-func (a *mockLegacyAdapter) FamilyName() string {
 	return "someFamily"
 }
 

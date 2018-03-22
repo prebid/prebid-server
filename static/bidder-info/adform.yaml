@@ -1,0 +1,9 @@
+maintainer:
+  email: "scope.sspp@adform.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

@@ -9,16 +9,21 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
-	metrics "github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics"
 
 	"context"
 	"io/ioutil"
+	"os"
+	"time"
 
+	"fmt"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/spf13/viper"
 )
 
 const adapterDirectory = "adapters"
@@ -30,7 +35,6 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
-		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
@@ -43,17 +47,13 @@ func TestCookieSyncNoCookies(t *testing.T) {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d", rr.Code)
+		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
 	}
 
 	csresp := cookieSyncResponse{}
 	err = json.Unmarshal(rr.Body.Bytes(), &csresp)
 	if err != nil {
 		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.UUID != csreq.UUID {
-		t.Error("UUIDs didn't match")
 	}
 
 	if csresp.Status != "no_cookie" {
@@ -72,7 +72,6 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	router.POST("/cookie_sync", endpoint)
 
 	csreq := cookieSyncRequest{
-		UUID:    "abcdefg",
 		Bidders: []string{"appnexus", "audienceNetwork", "random"},
 	}
 	csbuf := new(bytes.Buffer)
@@ -86,7 +85,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	pcs := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
-	req.AddCookie(pcs.ToHTTPCookie())
+	req.AddCookie(pcs.ToHTTPCookie(90 * 24 * time.Hour))
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -100,10 +99,6 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		t.Fatalf("Unmarshal response failed: %v", err)
 	}
 
-	if csresp.UUID != csreq.UUID {
-		t.Error("UUIDs didn't match")
-	}
-
 	if csresp.Status != "ok" {
 		t.Errorf("Expected status = ok; got %s", csresp.Status)
 	}
@@ -113,10 +108,77 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	}
 }
 
+func TestCookieSyncEmptyBidders(t *testing.T) {
+	endpoint := testableEndpoint()
+
+	router := httprouter.New()
+	router.POST("/cookie_sync", endpoint)
+
+	// First test a declared empty bidders returns no syncs
+	csreq := []byte("{\"bidders\": []}")
+	csbuf := bytes.NewBuffer(csreq)
+
+	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
+	}
+
+	csresp := cookieSyncResponse{}
+	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
+	if err != nil {
+		t.Fatalf("Unmarshal response failed: %v", err)
+	}
+
+	if csresp.Status != "no_cookie" {
+		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
+	}
+
+	if len(csresp.BidderStatus) != 0 {
+		t.Errorf("Expected 0 bidder status rows; got %d", len(csresp.BidderStatus))
+	}
+}
+
+func TestCookieSyncNoBidders(t *testing.T) {
+	endpoint := testableEndpoint()
+
+	router := httprouter.New()
+	router.POST("/cookie_sync", endpoint)
+
+	// Now test a missing bidders returns all syncs
+	csreq := []byte("{}")
+	csbuf := bytes.NewBuffer(csreq)
+
+	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
+	}
+
+	csresp := cookieSyncResponse{}
+	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
+	if err != nil {
+		t.Fatalf("Unmarshal response failed: %v", err)
+	}
+
+	if csresp.Status != "no_cookie" {
+		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
+	}
+
+	if len(csresp.BidderStatus) != 4 {
+		t.Errorf("Expected %d bidder status rows; got %d", 4, len(csresp.BidderStatus))
+	}
+
+}
+
 func testableEndpoint() httprouter.Handle {
 	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
-		openrtb_ext.BidderAppnexus: usersyncers.NewAppnexusSyncer("someurl.com"),
-		openrtb_ext.BidderFacebook: usersyncers.NewFacebookSyncer("facebookurl.com"),
+		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
+		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
+		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
+		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
 	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, metrics.NewMeter()}).CookieSync
 }
@@ -200,6 +262,21 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 		DealId:     "1234",
 	}
 	bids = append(bids, &an_bid)
+	rb_bid := pbs.PBSBid{
+		BidID:      "test_bidid2",
+		AdUnitCode: "test_adunitcode",
+		BidderCode: "rubicon",
+		Price:      1.00,
+		Adm:        "test_adm",
+		Width:      300,
+		Height:     250,
+		CacheID:    "test_cache_id2",
+		DealId:     "7890",
+	}
+	rb_bid.AdServerTargeting = map[string]string{
+		"rpfl_1001": "15_tier0100",
+	}
+	bids = append(bids, &rb_bid)
 	nosize_bid := pbs.PBSBid{
 		BidID:      "test_bidid2",
 		AdUnitCode: "test_adunitcode",
@@ -268,6 +345,11 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
 			}
 		}
+		if bid.BidderCode == "rubicon" {
+			if bid.AdServerTargeting["rpfl_1001"] != "15_tier0100" {
+				t.Error("custom ad_server_targeting KVPs from adapter were not preserved")
+			}
+		}
 		if bid.BidderCode == "nosizebidder" {
 			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
 				t.Error("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
@@ -278,6 +360,169 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 				t.Error("hb_deal_id key for nodeal bidder was not parsed correctly")
 			}
 		}
+	}
+}
+
+var (
+	MaxValueLength = 1024 * 10
+	MaxNumValues   = 10
+)
+
+type responseObject struct {
+	UUID string `json:"uuid"`
+}
+
+type response struct {
+	Responses []responseObject `json:"responses"`
+}
+
+type putAnyObject struct {
+	Type  string          `json:"type"`
+	Value json.RawMessage `json:"value"`
+}
+
+type putAnyRequest struct {
+	Puts []putAnyObject `json:"puts"`
+}
+
+func DummyPrebidCacheServer(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read the request body.", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+	var put putAnyRequest
+
+	err = json.Unmarshal(body, &put)
+	if err != nil {
+		http.Error(w, "Request body "+string(body)+" is not valid JSON.", http.StatusBadRequest)
+		return
+	}
+
+	if len(put.Puts) > MaxNumValues {
+		http.Error(w, fmt.Sprintf("More keys than allowed: %d", MaxNumValues), http.StatusBadRequest)
+		return
+	}
+
+	resp := response{
+		Responses: make([]responseObject, len(put.Puts)),
+	}
+	for i, p := range put.Puts {
+		resp.Responses[i].UUID = fmt.Sprintf("UUID-%d", i+1) // deterministic for testing
+		if len(p.Value) > MaxValueLength {
+			http.Error(w, fmt.Sprintf("Value is larger than allowed size: %d", MaxValueLength), http.StatusBadRequest)
+			return
+		}
+		if len(p.Value) == 0 {
+			http.Error(w, "Missing value.", http.StatusBadRequest)
+			return
+		}
+		if p.Type != "xml" && p.Type != "json" {
+			http.Error(w, fmt.Sprintf("Type must be one of [\"json\", \"xml\"]. Found %v", p.Type), http.StatusBadRequest)
+			return
+		}
+	}
+
+	bytes, err := json.Marshal(&resp)
+	if err != nil {
+		http.Error(w, "Failed to serialize UUIDs into JSON.", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bytes)
+}
+
+func TestCacheVideoOnly(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(DummyPrebidCacheServer))
+	defer server.Close()
+
+	bids := make(pbs.PBSBidSlice, 0)
+	fbBid := pbs.PBSBid{
+		BidID:             "test_bidid0",
+		AdUnitCode:        "test_adunitcode0",
+		BidderCode:        "audienceNetwork",
+		Price:             2.00,
+		Adm:               "fb_test_adm",
+		Width:             300,
+		Height:            250,
+		DealId:            "2345",
+		CreativeMediaType: "video",
+	}
+	bids = append(bids, &fbBid)
+	anBid := pbs.PBSBid{
+		BidID:             "test_bidid1",
+		AdUnitCode:        "test_adunitcode1",
+		BidderCode:        "appnexus",
+		Price:             1.00,
+		Adm:               "an_test_adm",
+		Width:             320,
+		Height:            50,
+		DealId:            "1234",
+		CreativeMediaType: "banner",
+	}
+	bids = append(bids, &anBid)
+	rbBannerBid := pbs.PBSBid{
+		BidID:             "test_bidid2",
+		AdUnitCode:        "test_adunitcode2",
+		BidderCode:        "rubicon",
+		Price:             1.00,
+		Adm:               "rb_banner_test_adm",
+		Width:             300,
+		Height:            250,
+		DealId:            "7890",
+		CreativeMediaType: "banner",
+	}
+	bids = append(bids, &rbBannerBid)
+	rbVideoBid1 := pbs.PBSBid{
+		BidID:             "test_bidid3",
+		AdUnitCode:        "test_adunitcode3",
+		BidderCode:        "rubicon",
+		Price:             1.00,
+		Adm:               "rb_video_test_adm1",
+		Width:             300,
+		Height:            250,
+		DealId:            "7890",
+		CreativeMediaType: "video",
+	}
+	bids = append(bids, &rbVideoBid1)
+	rbVideoBid2 := pbs.PBSBid{
+		BidID:             "test_bidid4",
+		AdUnitCode:        "test_adunitcode4",
+		BidderCode:        "rubicon",
+		Price:             1.00,
+		Adm:               "rb_video_test_adm2",
+		Width:             300,
+		Height:            250,
+		DealId:            "7890",
+		CreativeMediaType: "video",
+	}
+	bids = append(bids, &rbVideoBid2)
+
+	ctx := context.TODO()
+	w := httptest.NewRecorder()
+	cfg, err := config.New(viper.New())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	syncers := usersyncers.NewSyncerMap(cfg)
+	prebid_cache_client.InitPrebidCache(server.URL)
+	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers})
+	if bids[0].CacheID != "UUID-1" {
+		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
+	}
+	if bids[1].CacheID != "" {
+		t.Errorf("UUID was '%s', should have been empty", bids[1].CacheID)
+	}
+	if bids[2].CacheID != "" {
+		t.Errorf("UUID was '%s', should have been empty", bids[2].CacheID)
+	}
+	if bids[3].CacheID != "UUID-2" {
+		t.Errorf("First object UUID was '%s', should have been 'UUID-2'", bids[3].CacheID)
+	}
+	if bids[4].CacheID != "UUID-3" {
+		t.Errorf("Second object UUID was '%s', should have been 'UUID-3'", bids[4].CacheID)
 	}
 }
 
@@ -345,14 +590,14 @@ func TestBidSizeValidate(t *testing.T) {
 		BidderCode: "randNetwork",
 		AdUnitCode: "test_adunitcode",
 		AdUnits: []pbs.PBSAdUnit{
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid1",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 350,
 						H: 250,
 					},
-					openrtb.Format{
+					{
 						W: 300,
 						H: 50,
 					},
@@ -362,10 +607,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid2",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 100,
 						H: 100,
 					},
@@ -375,10 +620,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid3",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 200,
 						H: 200,
 					},
@@ -388,10 +633,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid_video",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 400,
 						H: 400,
 					},
@@ -401,10 +646,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_VIDEO,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid3",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 150,
 						H: 150,
 					},
@@ -414,10 +659,10 @@ func TestBidSizeValidate(t *testing.T) {
 					pbs.MEDIA_TYPE_BANNER,
 				},
 			},
-			pbs.PBSAdUnit{
+			{
 				BidID: "test_bidid_y",
 				Sizes: []openrtb.Format{
-					openrtb.Format{
+					{
 						W: 150,
 						H: 150,
 					},
@@ -523,7 +768,7 @@ func TestNewEmptyFetcher(t *testing.T) {
 
 func TestExchangeMap(t *testing.T) {
 	exchanges := newExchangeMap(&config.Configuration{})
-	for bidderName, _ := range exchanges {
+	for bidderName := range exchanges {
 		// OpenRTB doesn't support hardcoded aliases... so this test skips districtm,
 		// which was the only alias in the legacy adapter map.
 		if _, ok := openrtb_ext.BidderMap[bidderName]; bidderName != "districtm" && !ok {
@@ -543,5 +788,57 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 		return "{\"appnexus\":true}"
 	} else {
 		return "{\"appnexus\":false}"
+	}
+}
+
+// Test the viper setup
+func TestViperInit(t *testing.T) {
+	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
+	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
+}
+
+func TestViperEnv(t *testing.T) {
+	port := forceEnv(t, "PBS_PORT", "7777")
+	defer port()
+
+	endpt := forceEnv(t, "PBS_ADAPTERS_PUBMATIC_ENDPOINT", "not_an_endpoint")
+	defer endpt()
+
+	ttl := forceEnv(t, "PBS_HOST_COOKIE_TTL_DAYS", "60")
+	defer ttl()
+
+	// Basic config set
+	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
+	// Nested config set
+	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
+	// Config set with underscores
+	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
+}
+
+func compareStrings(t *testing.T, message string, expect string, actual string) {
+	if expect != actual {
+		t.Errorf(message, expect, actual)
+	}
+}
+
+// forceEnv sets an environment variable to a certain value, and return a deferable function to reset it to the original value.
+func forceEnv(t *testing.T, key string, val string) func() {
+	orig, set := os.LookupEnv(key)
+	err := os.Setenv(key, val)
+	if err != nil {
+		t.Fatalf("Error setting evnvironment %s", key)
+	}
+	if set {
+		return func() {
+			if os.Setenv(key, orig) != nil {
+				t.Fatalf("Error unsetting evnvironment %s", key)
+			}
+		}
+	} else {
+		return func() {
+			if os.Unsetenv(key) != nil {
+				t.Fatalf("Error unsetting evnvironment %s", key)
+			}
+		}
 	}
 }

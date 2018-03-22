@@ -1,0 +1,15 @@
+{
+    "context": 1,
+    "plcmttype": 1,
+    "assets": [
+        {
+            "title": {
+                "len": 140
+            },
+            "img": {
+                "wmin": 20,
+                "hmin": 30
+            }
+        }
+    ]
+}

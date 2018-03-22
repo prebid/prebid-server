@@ -22,10 +22,10 @@ type currencyCode map[string]float64
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Aliases       map[string]string      `json:"aliases"`
-	Cache         *ExtRequestPrebidCache `json:"cache"`
-	StoredRequest *ExtStoredRequest      `json:"storedrequest"`
-	Targeting     *ExtRequestTargeting   `json:"targeting"`
+	Aliases       map[string]string      `json:"aliases,omitempty"`
+	Cache         *ExtRequestPrebidCache `json:"cache,omitempty"`
+	StoredRequest *ExtStoredRequest      `json:"storedrequest,omitempty"`
+	Targeting     *ExtRequestTargeting   `json:"targeting,omitempty"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
@@ -33,7 +33,7 @@ type ExtRequestPrebidCache struct {
 	Bids *ExtRequestPrebidCacheBids `json:"bids"`
 }
 
-// UnmarhshalJSON prevents nil bids arguments.
+// UnmarshalJSON prevents nil bids arguments.
 func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
 	var proxy typesAlias
@@ -55,30 +55,25 @@ type ExtRequestPrebidCacheBids struct{}
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
 	PriceGranularity PriceGranularity `json:"pricegranularity"`
-	MaxLength        int              `json:"lengthmax"`
 }
 
-// ExtRequestTargeting without Unmashall override to prevent infinite loops
-type ExtRequestTargetingPlain struct {
-	PriceGranularity PriceGranularity `json:"pricegranularity"`
-	MaxLength        int              `json:"lengthmax"`
-}
-
-// Make an unmashaller that will set a default PriceGranularity
+// Make an unmarshaller that will set a default PriceGranularity
 func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 	if string(b) == "null" {
 		return nil
 	}
-	ertRaw := &ExtRequestTargetingPlain{}
-	err := json.Unmarshal(b, ertRaw)
-	ert.PriceGranularity = ertRaw.PriceGranularity
-	ert.MaxLength = ertRaw.MaxLength
-	if err == nil {
-		// set default value
-		if ert.PriceGranularity == "" {
-			ert.PriceGranularity = PriceGranularityMedium
-		}
+
+	// define seperate type to prevent infinite recursive calls to UnmarshalJSON
+	type extRequestTargetingDefaults ExtRequestTargeting
+	defaults := &extRequestTargetingDefaults{
+		PriceGranularity: PriceGranularityMedium,
 	}
+
+	err := json.Unmarshal(b, defaults)
+	if err == nil {
+		*ert = ExtRequestTargeting(*defaults)
+	}
+
 	return err
 }
 

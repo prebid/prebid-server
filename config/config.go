@@ -36,6 +36,8 @@ type HostCookie struct {
 	OptOutURL    string `mapstructure:"opt_out_url"`
 	OptInURL     string `mapstructure:"opt_in_url"`
 	OptOutCookie Cookie `mapstructure:"optout_cookie"`
+	// Cookie timeout in days
+	TTL int64 `mapstructure:"ttl_days"`
 }
 
 type Adapter struct {
@@ -86,9 +88,9 @@ type Cookie struct {
 }
 
 // New uses viper to get our server configurations
-func New() (*Configuration, error) {
+func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
-	if err := viper.Unmarshal(&c); err != nil {
+	if err := v.Unmarshal(&c); err != nil {
 		return nil, err
 	}
 	return &c, c.validate()

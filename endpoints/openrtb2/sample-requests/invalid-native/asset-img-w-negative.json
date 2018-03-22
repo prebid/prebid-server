@@ -1,0 +1,12 @@
+{
+    "context": 1,
+    "plcmttype": 1,
+    "assets": [
+        {
+            "img": {
+                "h": 30,
+                "w": -20
+            }
+        }
+    ]
+}

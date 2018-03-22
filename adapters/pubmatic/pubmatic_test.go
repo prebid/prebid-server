@@ -82,11 +82,6 @@ func TestPubmaticInvalidCall(t *testing.T) {
 
 	an := NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, "blah")
 
-	s := an.Name()
-	if s == "" {
-		t.Fatal("Missing name")
-	}
-
 	ctx := context.Background()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{}
@@ -633,7 +628,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	pc := pbs.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

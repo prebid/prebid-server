@@ -77,8 +77,7 @@ const ext1 = `{
 const ext2 = `{
 	"prebid": {
 		"targeting": {
-			"pricegranularity": "dense",
-			"lengthmax": 20
+			"pricegranularity": "dense"
 		}
 	}
 }`

@@ -2,6 +2,7 @@ package openrtb_ext
 
 import (
 	"fmt"
+
 	"github.com/mxmCherry/openrtb"
 )
 
@@ -65,6 +66,10 @@ type TargetingKey string
 const (
 	HbpbConstantKey TargetingKey = "hb_pb"
 
+	// HbEnvKey exists to support the Prebid Universal Creative. If it exists, the only legal value is mobile-app.
+	// It will exist only if the incoming bidRequest defiend request.app instead of request.site.
+	HbEnvKey TargetingKey = "hb_env"
+
 	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"
@@ -77,9 +82,13 @@ const (
 	// HbCacheKey stores the UUID which can be used to fetch the bid data from prebid cache.
 	// Callers should *never* assume that this exists, since the call to the cache may always fail.
 	HbCacheKey TargetingKey = "hb_cache_id"
+
 	// These are not keys, but values used by hbCreativeLoadMethodConstantKey
 	HbCreativeLoadMethodHTML      string = "html"
 	HbCreativeLoadMethodDemandSDK string = "demand_sdk"
+
+	// This is not a key, but values used by the HbEnvKey
+	HbEnvKeyApp string = "mobile-app"
 )
 
 func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {
