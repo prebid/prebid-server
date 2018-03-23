@@ -33,7 +33,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}
 
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters)).(*exchange)
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters), []byte{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
@@ -68,7 +68,7 @@ func TestRaceIntegration(t *testing.T) {
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics)
+	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, []byte{})
 	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{})
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -144,9 +144,9 @@ func TestHoldAuction(t *testing.T) {
 	defer cancel()
 
 	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
+	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "appnexus")
+	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "rubicon")
+	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "audienceNetwork")
 
 	// Very simple Bid request. The dummy bidders know what to do.
 	bidRequest := new(openrtb.BidRequest)
@@ -155,9 +155,9 @@ func TestHoldAuction(t *testing.T) {
 
 	// Need extensions for all the bidders so we know to hold auctions for them.
 	impExt := make(map[string]map[string]string)
-	impExt["dummy"] = make(map[string]string)
-	impExt["dummy2"] = make(map[string]string)
-	impExt["dummy3"] = make(map[string]string)
+	impExt["appnexus"] = make(map[string]string)
+	impExt["rubicon"] = make(map[string]string)
+	impExt["audienceNetwork"] = make(map[string]string)
 	b, _ := json.Marshal(impExt)
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
@@ -185,18 +185,18 @@ func TestHoldAuction(t *testing.T) {
 		dummy3 = -1
 	)
 	for i, sb := range bidResponse.SeatBid {
-		if sb.Seat == "dummy" {
+		if sb.Seat == "appnexus" {
 			dummy1 = i
 		}
-		if sb.Seat == "dummy3" {
+		if sb.Seat == "audienceNetwork" {
 			dummy3 = i
 		}
 	}
 	if len(bidResponse.SeatBid[dummy1].Bid) != 2 {
-		t.Errorf("HoldAuction: Expected 2 bids from dummy bidder, found %d instead", len(bidResponse.SeatBid[dummy1].Bid))
+		t.Errorf("HoldAuction: Expected 2 bids from appnexus bidder, found %d instead", len(bidResponse.SeatBid[dummy1].Bid))
 	}
 	if len(bidResponse.SeatBid[dummy3].Bid) != 1 {
-		t.Errorf("HoldAuction: Expected 2 bids from dummy bidder, found %d instead", len(bidResponse.SeatBid[dummy1].Bid))
+		t.Errorf("HoldAuction: Expected 2 bids from audienceNetwork bidder, found %d instead", len(bidResponse.SeatBid[dummy3].Bid))
 	}
 
 }
@@ -210,9 +210,9 @@ func TestGetAllBids(t *testing.T) {
 	defer cancel()
 
 	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
+	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "appnexus")
+	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "rubicon")
+	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "audienceNetwork")
 
 	cleanRequests := map[openrtb_ext.BidderName]*openrtb.BidRequest{
 		BidderDummy:  nil,
@@ -221,13 +221,13 @@ func TestGetAllBids(t *testing.T) {
 	}
 	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil)
 	if len(adapterBids[BidderDummy].bids) != 2 {
-		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
+		t.Errorf("GetAllBids failed to get 2 bids from appnexus, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
 	if adapterBids[BidderDummy].bids[0].bid.ID != "1234567890" {
-		t.Errorf("GetAllBids failed to get the first bid of BidderDummy")
+		t.Errorf("GetAllBids failed to get the first bid of appnexus")
 	}
 	if adapterBids[BidderDummy3].bids[0].bid.ID != "MyBid" {
-		t.Errorf("GetAllBids failed to get the bid from BidderDummy3")
+		t.Errorf("GetAllBids failed to get the bid from audienceNetwork")
 	}
 	if len(adapterExtra) != 3 {
 		t.Errorf("GetAllBids failed to return 3 adapterExtra's, got %d instead", len(adapterExtra))
@@ -273,9 +273,9 @@ func TestBuildBidResponse(t *testing.T) {
 	defer server.Close()
 
 	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
+	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "appnexus")
+	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "rubicon")
+	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "audienceNetwork")
 
 	// Very simple Bid request. At this point we are just reading these two values
 	// Adding targeting to enable targeting tests
@@ -304,9 +304,9 @@ func TestBuildBidResponse(t *testing.T) {
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra)
 
 	var errs1, errs2, errs3 []error
-	adapterBids[BidderDummy], errs1 = mockDummyBids1("dummy")
-	adapterBids[BidderDummy2], errs2 = mockDummyBids2("dummy2")
-	adapterBids[BidderDummy3], errs3 = mockDummyBids3("dummy3")
+	adapterBids[BidderDummy], errs1 = mockDummyBids1("appnexus")
+	adapterBids[BidderDummy2], errs2 = mockDummyBids2("rubicon")
+	adapterBids[BidderDummy3], errs3 = mockDummyBids3("audienceNetwork")
 	adapterExtra[BidderDummy] = &seatResponseExtra{ResponseTimeMillis: 131, Errors: convertErr2Str(errs1)}
 	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
 	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
@@ -331,7 +331,7 @@ func TestBuildBidResponse(t *testing.T) {
 	// Find the seat index for BidderDummy
 	bidderDummySeat := -1
 	for i, seat := range bidResponse.SeatBid {
-		if seat.Seat == "dummy" {
+		if seat.Seat == "appnexus" {
 			bidderDummySeat = i
 		}
 	}
@@ -348,12 +348,12 @@ func TestBuildBidResponse(t *testing.T) {
 			t.Errorf("Unpacking extensions for bid[1]: %s", err.Error())
 		}
 		// All tests except for winning bid no longer valid as setting pre bid targeting values moved to exchange/bidder.go
-		assertStringValue(t, "bid[0].Targeting[hb_pb_dummy]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_dummy"])
-		assertStringValue(t, "bid[0]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder_dummy"])
-		assertStringValue(t, "bid[0]Targeting[hb_size_dummy]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_dummy"])
-		assertStringValue(t, "bid[1].Targeting[hb_pb_dummy]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_dummy"])
-		assertStringValue(t, "bid[1]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[1].Prebid.Targeting["hb_bidder_dummy"])
-		assertStringValue(t, "bid[1]Targeting[hb_size_dummy]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_dummy"])
+		assertStringValue(t, "bid[0].Targeting[hb_pb_appnexus]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_appnexus"])
+		assertStringValue(t, "bid[0]Targeting[hb_bidder_appnexus]", "appnexus", bidder1BidExt[0].Prebid.Targeting["hb_bidder_appnexus"])
+		assertStringValue(t, "bid[0]Targeting[hb_size_appnexus]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_appnexus"])
+		assertStringValue(t, "bid[1].Targeting[hb_pb_appnexus]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_appnexus"])
+		assertStringValue(t, "bid[1]Targeting[hb_bidder_appnexus]", "appnexus", bidder1BidExt[1].Prebid.Targeting["hb_bidder_appnexus"])
+		assertStringValue(t, "bid[1]Targeting[hb_size_appnexus]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_appnexus"])
 		_, ok := bidder1BidExt[1].Prebid.Targeting["hb_pb"]
 		if ok {
 			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
@@ -525,9 +525,9 @@ func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidReques
 }
 
 const (
-	BidderDummy  openrtb_ext.BidderName = "dummy"
-	BidderDummy2 openrtb_ext.BidderName = "dummy2"
-	BidderDummy3 openrtb_ext.BidderName = "dummy3"
+	BidderDummy  openrtb_ext.BidderName = "appnexus"
+	BidderDummy2 openrtb_ext.BidderName = "rubicon"
+	BidderDummy3 openrtb_ext.BidderName = "audienceNetwork"
 )
 
 // Tester is responsible for filling bid results into the adapters

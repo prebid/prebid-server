@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -65,6 +66,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"golang.org/x/text/currency"
 )
 
 type DomainMetrics struct {
@@ -113,6 +115,7 @@ var (
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
+var CurrencyRates atomic.Value
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -136,6 +139,8 @@ const hbSizeConstantKey = "hb_size"
 // `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
 const hbCreativeLoadMethodHTML = "html"
 const hbCreativeLoadMethodDemandSDK = "demand_sdk"
+
+const latestConversionRatesUrl = "http://currency.prebid.org/latest.json"
 
 func min(x, y int) int {
 	if x < y {
@@ -862,6 +867,35 @@ func serve(cfg *config.Configuration) error {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
+	// Validate currency set in config
+	if cfg.AdServerCurrency != "" {
+		currency.MustParseISO(cfg.AdServerCurrency)
+	}
+
+	// Load latest currency conversion rates in blocking call
+	currencyLoadStopSignal := make(chan os.Signal, 1)
+	signal.Notify(currencyLoadStopSignal, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		fetchLatestCurrencyConversionRates()
+
+		if CurrencyRates.Load() == nil {
+			glog.Errorf("Unable to load latest currency conversion rates")
+		}
+
+		currencyLoadStopSignal <- syscall.SIGTERM
+	}()
+
+	<-currencyLoadStopSignal
+
+	// Fetch latest currency rates every 24 hours
+	currencyFetchTicker := time.NewTicker(time.Hour * 24)
+	go func() {
+		for _ = range currencyFetchTicker.C {
+			fetchLatestCurrencyConversionRates()
+		}
+	}()
+
 	setupExchanges(cfg)
 
 	if cfg.Metrics.Host != "" {
@@ -915,7 +949,7 @@ func serve(cfg *config.Configuration) error {
 		},
 	}
 	theMetrics := pbsmetrics.NewMetrics(metricsRegistry, openrtb_ext.BidderList())
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, theMetrics, CurrencyRates.Load().([]byte))
 
 	byId, byAmpId, err := NewFetchers(&(cfg.StoredRequests), db)
 	if err != nil {
@@ -1038,4 +1072,20 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.F
 		byAmpId = stored_requests.WithCache(byAmpId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}
 	return
+}
+
+func fetchLatestCurrencyConversionRates() {
+	var rates []byte
+	// Fetching latest currency conversion rates
+	resp, err := http.Get(latestConversionRatesUrl)
+	if err != nil {
+		glog.Warning("Error fetching latest currency rates: %v", err)
+	}
+	defer resp.Body.Close()
+	rates, err = ioutil.ReadAll(resp.Body)
+	if err != nil || rates == nil {
+		glog.Warning("Error fetching latest currency rates: %v", err)
+	}
+	// Storing rates
+	CurrencyRates.Store(rates)
 }

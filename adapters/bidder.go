@@ -33,8 +33,9 @@ type Bidder interface {
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 type TypedBid struct {
-	Bid     *openrtb.Bid
-	BidType openrtb_ext.BidType
+	Bid         *openrtb.Bid
+	BidType     openrtb_ext.BidType
+	BidCurrency string // Currency strings must be ISO 4217 alpha codes
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality

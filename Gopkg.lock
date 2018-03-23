@@ -246,9 +246,14 @@
 [[projects]]
   name = "golang.org/x/text"
   packages = [
+    "currency",
+    "internal",
+    "internal/format",
     "internal/gen",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -266,6 +271,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a9f8c2e9ba7b9ce731088a21061072e4aa90131ecc775d9888658968ecd56a41"
+  inputs-digest = "1f3c6b5fca5f7bb92bf5cb1258f5209f645bab89a867d7e992176b9d1374094b"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -191,6 +191,10 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)
 	}
 
+	if len(req.Cur) != 1 {
+		return errors.New("Ad server currency must be set either in bidrequest.cur (exactly one element) or in config.")
+	}
+
 	if len(req.Imp) < 1 {
 		return errors.New("request.imp must contain at least one element.")
 	}
@@ -626,6 +630,15 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 
 	deps.setUserImplicitly(httpReq, bidReq)
+
+	deps.setCurImplicitly(httpReq, bidReq)
+}
+
+// setCurImplicitly sets the Currency on bidReq to that found in the config, if it's not explicitly defined in the request.
+func (deps *endpointDeps) setCurImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
+	if bidReq.Cur == nil && deps.cfg.AdServerCurrency != "" {
+		bidReq.Cur = []string{deps.cfg.AdServerCurrency}
+	}
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device

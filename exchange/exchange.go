@@ -17,6 +17,8 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
+const defaultAdServerCurrency = "USD"
+
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
@@ -30,10 +32,11 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	m          *pbsmetrics.Metrics
-	cache      prebid_cache_client.Client
-	cacheTime  time.Duration
+	adapterMap    map[openrtb_ext.BidderName]adaptedBidder
+	m             *pbsmetrics.Metrics
+	cache         prebid_cache_client.Client
+	cacheTime     time.Duration
+	currencyRates []byte
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -48,13 +51,14 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, registry *pbsmetrics.Metrics, currencyRates []byte) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.m = registry
+	e.currencyRates = currencyRates
 	return e
 }
 
@@ -146,7 +150,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			brw.bidder = aName
 			start := time.Now()
 
-			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName)
+			bids, errs := e.adapterMap[coreBidder].requestBid(ctx, request, aName)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -156,12 +160,13 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			// Timing statistics
 			e.m.AdapterMetrics[coreBidder].RequestTimer.UpdateSince(start)
-			serr := make([]string, len(err))
-			for i := 0; i < len(err); i++ {
-				serr[i] = err[i].Error()
+			serr := make([]string, len(errs))
+			for i := 0; i < len(errs); i++ {
+				serr[i] = errs[i].Error()
+
 				// TODO: #142: for a bidder that return multiple errors, we will log multiple errors for that request
 				// in the metrics. Need to remember that in analyzing the data.
-				switch err[i] {
+				switch errs[i] {
 				case context.DeadlineExceeded:
 					e.m.AdapterMetrics[coreBidder].TimeoutMeter.Mark(1)
 				default:
@@ -170,7 +175,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			}
 			ae.Errors = serr
 			brw.adapterExtra = ae
-			if len(err) == 0 {
+			if len(errs) == 0 {
 				if bids == nil || len(bids.bids) == 0 {
 					// Don't want to mark no bids on error topreserve legacy behavior.
 					e.m.AdapterMetrics[coreBidder].NoBidMeter.Mark(1)
@@ -214,6 +219,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 		}
 	}
 
+	bidResponse.Cur = getCurrency(e.currencyRates, &seatBids, bidRequest, &adapterExtra)
 	bidResponse.SeatBid = seatBids
 
 	bidResponseExt := e.makeExtBidResponse(adapterBids, adapterExtra, bidRequest, resolvedRequest, errList)
@@ -302,6 +308,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 				Targeting: thisBid.bidTargets,
 				Type:      thisBid.bidType,
 			},
+			AdServerCurrency: thisBid.bidCurrency,
 		}
 
 		ext, err := json.Marshal(bidExt)

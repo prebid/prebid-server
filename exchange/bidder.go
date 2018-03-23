@@ -44,9 +44,10 @@ type adaptedBidder interface {
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
 type pbsOrtbBid struct {
-	bid        *openrtb.Bid
-	bidType    openrtb_ext.BidType
-	bidTargets map[string]string
+	bid         *openrtb.Bid
+	bidType     openrtb_ext.BidType
+	bidTargets  map[string]string
+	bidCurrency string // Currency strings must be ISO 4217 alpha codes
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -117,10 +118,12 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		if httpInfo.err == nil {
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
+
 			for _, bid := range bids {
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:     bid.Bid,
-					bidType: bid.BidType,
+					bid:         bid.Bid,
+					bidType:     bid.BidType,
+					bidCurrency: bid.BidCurrency,
 				})
 			}
 		} else {

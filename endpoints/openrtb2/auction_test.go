@@ -25,6 +25,7 @@ import (
 )
 
 const maxSize = 1024 * 256
+const usdCurrency = "USD"
 
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
 func TestExplicitUserId(t *testing.T) {
@@ -35,6 +36,7 @@ func TestExplicitUserId(t *testing.T) {
 		HostCookie: config.HostCookie{
 			CookieName: cookieName,
 		},
+		AdServerCurrency: usdCurrency,
 	}
 	ex := &mockExchange{}
 
@@ -96,6 +98,7 @@ func TestImplicitUserId(t *testing.T) {
 		HostCookie: config.HostCookie{
 			CookieName: cookieName,
 		},
+		AdServerCurrency: usdCurrency,
 	}
 	ex := &mockExchange{}
 
@@ -168,7 +171,7 @@ func readFile(t *testing.T, filename string) []byte {
 // and returns the status code that the /openrtb2/auction endpoint gives for that request data,
 func runFile(t *testing.T, filename string, preprocessor func(*testing.T, []byte) []byte) int {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(&nobidExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency}, theMetrics)
 	requestData := readFile(t, filename)
 
 	if preprocessor != nil {
@@ -205,7 +208,7 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 // TestNilExchange makes sure we fail when given nil for the Exchange.
 func TestNilExchange(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	_, err := NewEndpoint(nil, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency}, theMetrics)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -214,7 +217,7 @@ func TestNilExchange(t *testing.T) {
 // TestNilValidator makes sure we fail when given nil for the BidderParamValidator.
 func TestNilValidator(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency}, theMetrics)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -223,7 +226,7 @@ func TestNilValidator(t *testing.T) {
 // TestExchangeError makes sure we return a 500 if the exchange auction fails.
 func TestExchangeError(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(&brokenExchange{}, &bidderParamValidator{}, empty_fetcher.EmptyFetcher(), &config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency}, theMetrics)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -270,7 +273,7 @@ func TestUserAgentOverride(t *testing.T) {
 func TestImplicitIPs(t *testing.T) {
 	ex := &nobidExchange{}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics)
+	endpoint, _ := NewEndpoint(ex, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency}, theMetrics)
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
 	recorder := httptest.NewRecorder()
@@ -304,7 +307,7 @@ func TestRefererParsing(t *testing.T) {
 // Test the stored request functionality
 func TestStoredRequests(t *testing.T) {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics}
+	edep := &endpointDeps{&nobidExchange{}, &bidderParamValidator{}, &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency}, theMetrics}
 
 	for i, requestData := range testStoredRequests {
 		newRequest, errList := edep.processStoredRequests(context.Background(), json.RawMessage(requestData))
@@ -356,7 +359,7 @@ func TestRequestSizeEdgeCase(t *testing.T) {
 		&nobidExchange{},
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
-		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		&config.Configuration{MaxRequestSize: int64(len(reqBody)), AdServerCurrency: usdCurrency},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
 	}
 
@@ -380,7 +383,7 @@ func TestNoEncoding(t *testing.T) {
 		&mockExchange{},
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -388,6 +391,127 @@ func TestNoEncoding(t *testing.T) {
 
 	if !strings.Contains(recorder.Body.String(), "<script></script>") {
 		t.Errorf("The Response from the exchange should not be html-encoded")
+	}
+}
+
+// Testing currency support
+func TestImplicitCur(t *testing.T) {
+	for _, requestData := range currencyTestRequests {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
+		bidReq := &openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		// First testing with currency not set in config
+		deps := &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{},
+			pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
+		}
+		deps.setCurImplicitly(httpReq, bidReq)
+
+		switch bidReq.ID {
+		case "request-with-no-currency":
+			if bidReq.Cur != nil {
+				t.Fatalf("bidrequest.cur should not be set, got %s", bidReq.Cur)
+			}
+		case "request-should-default-currency":
+			if bidReq.Cur != nil {
+				t.Fatalf("bidrequest.cur should not be set, got %s", bidReq.Cur)
+			}
+		case "request-with-valid-currency":
+			if bidReq.Cur == nil || bidReq.Cur[0] != "GBP" {
+				t.Fatalf("bidrequest.cur[0] should be GBP as set in request, got %s", bidReq.Cur[0])
+			}
+		}
+
+		// Testing with currency set in config
+		deps = &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{AdServerCurrency: "JPY"},
+			pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
+		}
+		deps.setCurImplicitly(httpReq, bidReq)
+
+		switch bidReq.ID {
+		case "request-with-no-currency":
+			if bidReq.Cur == nil || bidReq.Cur[0] != "JPY" {
+				t.Fatalf("bidrequest.cur[0] should be JPY as set in config, got %s", bidReq.Cur[0])
+			}
+		case "request-should-default-currency":
+			if bidReq.Cur == nil || bidReq.Cur[0] != "JPY" {
+				t.Fatalf("bidrequest.cur[0] should be JPY as set in config, got %s", bidReq.Cur[0])
+			}
+		case "request-with-valid-currency":
+			if bidReq.Cur == nil || bidReq.Cur[0] != "GBP" {
+				t.Fatalf("bidrequest.cur[0] should be GBP as set in request, got %s", bidReq.Cur[0])
+			}
+		}
+	}
+}
+
+func TestValidateCur(t *testing.T) {
+	for _, requestData := range currencyTestRequests {
+		httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(requestData))
+		bidReq := &openrtb.BidRequest{}
+		err := json.Unmarshal(json.RawMessage(requestData), &bidReq)
+		if err != nil {
+			t.Errorf("Error unmashalling bid request: %s", err.Error())
+		}
+
+		// First testing with currency not set in config
+		deps := &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{},
+			pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
+		}
+		deps.setCurImplicitly(httpReq, bidReq)
+		err = deps.validateRequest(bidReq)
+
+		switch bidReq.ID {
+		case "request-with-no-currency":
+			if err == nil {
+				t.Fatalf("currency was not set in bidrequest.cur or config, should have gotten error.")
+			}
+		case "request-should-default-currency":
+			if err == nil {
+				t.Fatalf("currency was not set in bidrequest.cur or config, should have gotten error.")
+			}
+		case "request-with-valid-currency":
+			if err != nil {
+				t.Fatalf("currency was set in bidrequest.cur, should not have gotten error.")
+			}
+		}
+
+		err = nil
+
+		// Testing with currency set in config
+		deps = &endpointDeps{
+			&nobidExchange{},
+			&bidderParamValidator{},
+			&mockStoredReqFetcher{},
+			&config.Configuration{AdServerCurrency: "JPY"},
+			pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
+		}
+		deps.setCurImplicitly(httpReq, bidReq)
+		err = deps.validateRequest(bidReq)
+
+		switch bidReq.ID {
+		case "request-with-no-currency":
+		case "request-should-default-currency":
+		case "request-with-valid-currency":
+			if err != nil {
+				t.Fatalf("currency was set in config, should not have gotten error.")
+			}
+		}
 	}
 }
 
@@ -406,7 +530,7 @@ func TestContentType(t *testing.T) {
 		&mockExchange{},
 		&bidderParamValidator{},
 		&mockStoredReqFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{MaxRequestSize: maxSize, AdServerCurrency: usdCurrency},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
@@ -459,6 +583,102 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bi
 
 func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) string {
 	return "{}"
+}
+
+var currencyTestRequests = []string{
+	`{
+		"id": "request-with-no-currency",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		]
+	}`,
+	`{
+		"id": "request-should-default-currency",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"ext": {
+			"currency": {
+				"some-key": "some-val"
+			}
+		}
+	}`,
+	`{
+		"id": "request-with-valid-currency",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": "good"
+				}
+			}
+		],
+		"cur": ["GBP"]
+	}`,
 }
 
 // StoredRequest testing
