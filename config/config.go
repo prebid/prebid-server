@@ -63,7 +63,7 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Enabled string `mapstructure:"enabled"`
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type DataCache struct {

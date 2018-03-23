@@ -44,19 +44,27 @@ func TestMultiMetricsEngine(t *testing.T) {
 	labels := Labels{
 		Source:        DemandWeb,
 		RType:         ReqTypeORTB2,
-		Adapter:       openrtb_ext.BidderPubmatic,
 		PubID:         "test1",
 		Browser:       BrowserSafari,
 		CookieFlag:    CookieFlagYes,
 		RequestStatus: RequestStatusOK,
 	}
+	blabels := AdapterLabels{
+		Source:        DemandWeb,
+		RType:         ReqTypeORTB2,
+		Adapter:       openrtb_ext.BidderPubmatic,
+		PubID:         "test1",
+		Browser:       BrowserSafari,
+		CookieFlag:    CookieFlagYes,
+		AdapterStatus: AdapterStatusOK,
+	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
-		metricsEngine.RecordAdapterRequest(labels)
-		metricsEngine.RecordAdapterPrice(labels, 1.34)
-		metricsEngine.RecordAdapterBidsReceived(labels, 2)
-		metricsEngine.RecordAdapterTime(labels, time.Millisecond*20)
+		metricsEngine.RecordAdapterRequest(blabels)
+		metricsEngine.RecordAdapterPrice(blabels, 1.34)
+		metricsEngine.RecordAdapterBidsReceived(blabels, 2)
+		metricsEngine.RecordAdapterTime(blabels, time.Millisecond*20)
 	}
 	VerifyMetrics(t, "RequestMeter", goEngine.RequestMeter.Count(), 5)
 	VerifyMetrics(t, "AppRequestMeter", goEngine.AmpRequestMeter.Count(), 0)

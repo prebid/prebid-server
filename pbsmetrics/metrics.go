@@ -12,11 +12,21 @@ import (
 type Labels struct {
 	Source        DemandSource
 	RType         RequestType
-	Adapter       openrtb_ext.BidderName
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
+}
+
+// AdapterLabels defines the labels that can be attached to the adapter metrics.
+type AdapterLabels struct {
+	Source        DemandSource
+	RType         RequestType
+	Adapter       openrtb_ext.BidderName
+	PubID         string // exchange specific ID, so we cannot compile in values
+	Browser       Browser
+	CookieFlag    CookieFlag
+	AdapterStatus AdapterStatus
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -33,8 +43,11 @@ type Browser string
 // CookieFlag : User ID cookie exists flag
 type CookieFlag string
 
-// RequestStatus : The request/adapter return status
+// RequestStatus : The request return status
 type RequestStatus string
+
+// AdapterStatus : The radapter execution status
+type AdapterStatus string
 
 // The demand sources
 const (
@@ -65,10 +78,16 @@ const (
 
 // Request/return status
 const (
-	RequestStatusOK      RequestStatus = "ok"
-	RequestStatusErr     RequestStatus = "err"
-	RequestStatusNoBid   RequestStatus = "nobid"   // Only for adapters
-	RequestStatusTimeout RequestStatus = "timeout" // Only for adapters
+	RequestStatusOK  RequestStatus = "ok"
+	RequestStatusErr RequestStatus = "err"
+)
+
+// Adapter execution status
+const (
+	AdapterStatusOK      AdapterStatus = "ok"
+	AdapterStatusErr     AdapterStatus = "err"
+	AdapterStatusNoBid   AdapterStatus = "nobid"
+	AdapterStatusTimeout AdapterStatus = "timeout"
 )
 
 // UserLabels : Labels for /setuid endpoint
@@ -96,10 +115,10 @@ const (
 type MetricsEngine interface {
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
-	RecordAdapterRequest(labels Labels)
-	RecordAdapterBidsReceived(labels Labels, bids int64)
-	RecordAdapterPrice(labels Labels, cpm float64)
-	RecordAdapterTime(labels Labels, length time.Duration)
+	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterBidsReceived(labels AdapterLabels, bids int64)
+	RecordAdapterPrice(labels AdapterLabels, cpm float64)
+	RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	RecordCookieSync(labels Labels)        // May ignore all labels
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 }
@@ -156,28 +175,28 @@ func (me *MultiMetricsEngine) RecordRequestTime(labels Labels, length time.Durat
 }
 
 // RecordAdapterRequest across all engines
-func (me *MultiMetricsEngine) RecordAdapterRequest(labels Labels) {
+func (me *MultiMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterRequest(labels)
 	}
 }
 
 // RecordAdapterBidsReceived across all engines
-func (me *MultiMetricsEngine) RecordAdapterBidsReceived(labels Labels, bids int64) {
+func (me *MultiMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterBidsReceived(labels, bids)
 	}
 }
 
 // RecordAdapterPrice across all engines
-func (me *MultiMetricsEngine) RecordAdapterPrice(labels Labels, cpm float64) {
+func (me *MultiMetricsEngine) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterPrice(labels, cpm)
 	}
 }
 
 // RecordAdapterTime across all engines
-func (me *MultiMetricsEngine) RecordAdapterTime(labels Labels, length time.Duration) {
+func (me *MultiMetricsEngine) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterTime(labels, length)
 	}
@@ -211,22 +230,22 @@ func (me *DummyMetricsEngine) RecordRequestTime(labels Labels, length time.Durat
 }
 
 // RecordAdapterRequest as a noop
-func (me *DummyMetricsEngine) RecordAdapterRequest(labels Labels) {
+func (me *DummyMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 	return
 }
 
 // RecordAdapterBidsReceived as a noop
-func (me *DummyMetricsEngine) RecordAdapterBidsReceived(labels Labels, bids int64) {
+func (me *DummyMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	return
 }
 
 // RecordAdapterPrice as a noop
-func (me *DummyMetricsEngine) RecordAdapterPrice(labels Labels, cpm float64) {
+func (me *DummyMetricsEngine) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	return
 }
 
 // RecordAdapterTime as a noop
-func (me *DummyMetricsEngine) RecordAdapterTime(labels Labels, length time.Duration) {
+func (me *DummyMetricsEngine) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
 	return
 }
 

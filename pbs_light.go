@@ -12,14 +12,12 @@ import (
 	_ "net/http/pprof"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
-	"github.com/rcrowley/go-metrics"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/xeipuuv/gojsonschema"
@@ -65,48 +63,7 @@ import (
 	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
-type DomainMetrics struct {
-	RequestMeter metrics.Meter
-}
-
-type AccountMetrics struct {
-	RequestMeter      metrics.Meter
-	BidsReceivedMeter metrics.Meter
-	PriceHistogram    metrics.Histogram
-	// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
-	AdapterMetrics map[string]*AdapterMetrics
-}
-
-type AdapterMetrics struct {
-	NoCookieMeter     metrics.Meter
-	ErrorMeter        metrics.Meter
-	NoBidMeter        metrics.Meter
-	TimeoutMeter      metrics.Meter
-	RequestMeter      metrics.Meter
-	RequestTimer      metrics.Timer
-	PriceHistogram    metrics.Histogram
-	BidsReceivedMeter metrics.Meter
-}
-
-var (
-	metricsRegistry      metrics.Registry
-	mRequestMeter        metrics.Meter
-	mAppRequestMeter     metrics.Meter
-	mNoCookieMeter       metrics.Meter
-	mSafariRequestMeter  metrics.Meter
-	mSafariNoCookieMeter metrics.Meter
-	mErrorMeter          metrics.Meter
-	mInvalidMeter        metrics.Meter
-	mRequestTimer        metrics.Timer
-	mCookieSyncMeter     metrics.Meter
-
-	adapterMetrics map[string]*AdapterMetrics
-
-	accountMetrics        map[string]*AccountMetrics // FIXME -- this seems like an unbounded queue
-	accountMetricsRWMutex sync.RWMutex
-
-	hostCookieSettings pbs.HostCookieSettings
-)
+var hostCookieSettings pbs.HostCookieSettings
 
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
@@ -155,33 +112,6 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	} else {
 		w.Write(b)
 	}
-}
-
-func getAccountMetrics(id string) *AccountMetrics {
-	var am *AccountMetrics
-	var ok bool
-
-	accountMetricsRWMutex.RLock()
-	am, ok = accountMetrics[id]
-	accountMetricsRWMutex.RUnlock()
-
-	if ok {
-		return am
-	}
-
-	accountMetricsRWMutex.Lock()
-	am, ok = accountMetrics[id]
-	if !ok {
-		am = &AccountMetrics{}
-		am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), metricsRegistry)
-		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), metricsRegistry)
-		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		am.AdapterMetrics = makeExchangeMetrics(fmt.Sprintf("account.%s", id))
-		accountMetrics[id] = am
-	}
-	accountMetricsRWMutex.Unlock()
-
-	return am
 }
 
 type cookieSyncRequest struct {
@@ -281,7 +211,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeLegacy,
-		Adapter:       "",
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
@@ -346,12 +275,19 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 
 	ch := make(chan bidResult)
 	sentBids := 0
-	bidderLabels := make(map[string]*pbsmetrics.Labels)
+	bidderLabels := make(map[string]*pbsmetrics.AdapterLabels)
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an indpendent lable struct for each bidder. We don't want to run into issues with the goroutine below.
-			blabels := labels
-			blabels.Adapter = openrtb_ext.BidderMap[bidder.BidderCode]
+			blabels := pbsmetrics.AdapterLabels{
+				Source:        labels.Source,
+				RType:         labels.RType,
+				Adapter:       openrtb_ext.BidderMap[bidder.BidderCode],
+				PubID:         labels.PubID,
+				Browser:       labels.Browser,
+				CookieFlag:    labels.CookieFlag,
+				AdapterStatus: pbsmetrics.AdapterStatusOK,
+			}
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
@@ -375,7 +311,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				}
 			}
 			sentBids++
-			go func(bidder *pbs.PBSBidder, blables pbsmetrics.Labels) {
+			go func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
@@ -383,12 +319,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				if err != nil {
 					switch err {
 					case context.DeadlineExceeded:
-						bidderLabels[bidder.BidderCode].RequestStatus = pbsmetrics.RequestStatusTimeout
+						bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusTimeout
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						bidderLabels[bidder.BidderCode].RequestStatus = pbsmetrics.RequestStatusErr
+						bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
 						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
@@ -403,7 +339,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					}
 				} else {
 					bidder.NoBid = true
-					bidderLabels[bidder.BidderCode].RequestStatus = pbsmetrics.RequestStatusNoBid
+					bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusNoBid
 				}
 
 				ch <- bidResult{
@@ -449,7 +385,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		err = pbc.Put(ctx, cobjs)
 		if err != nil {
 			writeAuctionError(w, "Prebid cache failed", err)
-			mErrorMeter.Mark(1)
+			labels.RequestStatus = pbsmetrics.RequestStatusErr
 			return
 		}
 		for i, bid := range pbs_resp.Bids {
@@ -461,7 +397,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	if pbs_req.CacheMarkup == 2 {
-		cacheVideoOnly(pbs_resp.Bids, ctx, w, deps)
+		cacheVideoOnly(pbs_resp.Bids, ctx, w, deps, &labels)
 	}
 
 	if pbs_req.SortBids == 1 {
@@ -478,7 +414,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 }
 
 // cache video bids only for Web
-func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps) {
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps, labels *pbsmetrics.Labels) {
 	var cobjs []*pbc.CacheObject
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "video" {
@@ -491,7 +427,7 @@ func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWr
 	err := pbc.Put(ctx, cobjs)
 	if err != nil {
 		writeAuctionError(w, "Prebid cache failed", err)
-		mErrorMeter.Mark(1)
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
 	}
 	videoIndex := 0
@@ -813,26 +749,6 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint),
 		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint),
 	}
-}
-
-func makeExchangeMetrics(adapterOrAccount string) map[string]*AdapterMetrics {
-	var adapterMetrics = make(map[string]*AdapterMetrics)
-	for exchange := range exchanges {
-		a := AdapterMetrics{}
-		a.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.error_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), metricsRegistry)
-		a.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_bid_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.timeout_requests", adapterOrAccount, exchange), metricsRegistry)
-		a.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), metricsRegistry)
-		a.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
-		if adapterOrAccount != "adapter" {
-			a.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), metricsRegistry)
-		}
-
-		adapterMetrics[exchange] = &a
-	}
-	return adapterMetrics
 }
 
 func serve(cfg *config.Configuration) error {

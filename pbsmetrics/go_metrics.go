@@ -234,25 +234,24 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 }
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface
-func (me *Metrics) RecordAdapterRequest(labels Labels) {
-	_, ok := me.AdapterMetrics[labels.Adapter]
+func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
-	am := me.AdapterMetrics[labels.Adapter]
 	am.RequestMeter.Mark(1)
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
 	aam.RequestMeter.Mark(1)
 
-	switch labels.RequestStatus {
-	case RequestStatusErr:
+	switch labels.AdapterStatus {
+	case AdapterStatusErr:
 		am.ErrorMeter.Mark(1)
-	case RequestStatusNoBid:
+	case AdapterStatusNoBid:
 		am.NoBidMeter.Mark(1)
-	case RequestStatusTimeout:
+	case AdapterStatusTimeout:
 		am.TimeoutMeter.Mark(1)
 	}
 	if labels.CookieFlag == CookieFlagNo {
@@ -262,14 +261,13 @@ func (me *Metrics) RecordAdapterRequest(labels Labels) {
 
 // RecordAdapterBidsReceived implements a part of the MetricsEngine interface. This tracks the number of bids received
 // from a bidder.
-func (me *Metrics) RecordAdapterBidsReceived(labels Labels, bids int64) {
-	_, ok := me.AdapterMetrics[labels.Adapter]
+func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
-	am := me.AdapterMetrics[labels.Adapter]
 	am.BidsReceivedMeter.Mark(bids)
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
@@ -277,14 +275,13 @@ func (me *Metrics) RecordAdapterBidsReceived(labels Labels, bids int64) {
 }
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
-func (me *Metrics) RecordAdapterPrice(labels Labels, cpm float64) {
-	_, ok := me.AdapterMetrics[labels.Adapter]
+func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
-	am := me.AdapterMetrics[labels.Adapter]
 	am.PriceHistogram.Update(int64(cpm))
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
@@ -292,14 +289,13 @@ func (me *Metrics) RecordAdapterPrice(labels Labels, cpm float64) {
 }
 
 // RecordAdapterTime implements a part of the MetricsEngine interface. Records the adapter response time
-func (me *Metrics) RecordAdapterTime(labels Labels, length time.Duration) {
-	_, ok := me.AdapterMetrics[labels.Adapter]
+func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
-	am := me.AdapterMetrics[labels.Adapter]
 	am.RequestTimer.Update(length)
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]

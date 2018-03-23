@@ -219,10 +219,10 @@ func TestGetAllBids(t *testing.T) {
 		BidderDummy2: nil,
 		BidderDummy3: nil,
 	}
-	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.Labels)
-	blabels[openrtb_ext.BidderName("dummy")] = &pbsmetrics.Labels{}
-	blabels[openrtb_ext.BidderName("dummy2")] = &pbsmetrics.Labels{}
-	blabels[openrtb_ext.BidderName("dummy3")] = &pbsmetrics.Labels{}
+	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
+	blabels[openrtb_ext.BidderName("dummy")] = &pbsmetrics.AdapterLabels{}
+	blabels[openrtb_ext.BidderName("dummy2")] = &pbsmetrics.AdapterLabels{}
+	blabels[openrtb_ext.BidderName("dummy3")] = &pbsmetrics.AdapterLabels{}
 	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, blabels)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
