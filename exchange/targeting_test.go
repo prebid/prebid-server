@@ -31,15 +31,18 @@ func doTargetingWinnersTest(t *testing.T, includeWinners bool) {
 			ID:    "losing-bid",
 			ImpID: "some-imp",
 			Price: 0.5,
+			CrID:  "1",
 		}, &openrtb.Bid{
 			ID:    "winning-bid",
 			ImpID: "some-imp",
 			Price: 0.7,
+			CrID:  "2",
 		}},
 		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
 			ID:    "contending-bid",
 			ImpID: "some-imp",
 			Price: 0.6,
+			CrID:  "3",
 		}},
 	}
 	bids := runTargetingAuction(t, mockBids, false, includeWinners, false)
@@ -73,15 +76,18 @@ func TestEnvKey(t *testing.T) {
 			ID:    "losing-bid",
 			ImpID: "some-imp",
 			Price: 0.5,
+			CrID:  "1",
 		}, &openrtb.Bid{
 			ID:    "winning-bid",
 			ImpID: "some-imp",
 			Price: 0.7,
+			CrID:  "2",
 		}},
 		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
 			ID:    "contending-bid",
 			ImpID: "some-imp",
 			Price: 0.6,
+			CrID:  "3",
 		}},
 	}
 	bids := runTargetingAuction(t, mockBids, false, true, true)
@@ -101,15 +107,18 @@ func TestTargetingCache(t *testing.T) {
 			ID:    "losing-bid",
 			ImpID: "some-imp",
 			Price: 0.5,
+			CrID:  "1",
 		}, &openrtb.Bid{
 			ID:    "winning-bid",
 			ImpID: "some-imp",
 			Price: 0.7,
+			CrID:  "2",
 		}},
 		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
 			ID:    "contending-bid",
 			ImpID: "some-imp",
 			Price: 0.6,
+			CrID:  "3",
 		}},
 	}
 	bids := runTargetingAuction(t, mockBids, true, true, false)
@@ -133,6 +142,7 @@ func TestTargetingKeys(t *testing.T) {
 			Price: 0.5,
 			W:     500,
 			H:     200,
+			CrID:  "1",
 		}},
 	}
 	bids := runTargetingAuction(t, mockBids, true, true, false)
