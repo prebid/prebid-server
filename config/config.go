@@ -51,8 +51,7 @@ type Adapter struct {
 }
 
 type Metrics struct {
-	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
-	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
+	Influxdb InfluxMetrics `mapstructure:"influxdb"`
 }
 
 type InfluxMetrics struct {
@@ -60,10 +59,6 @@ type InfluxMetrics struct {
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
-}
-
-type PrometheusMetrics struct {
-	Enabled bool `mapstructure:"enabled"`
 }
 
 type DataCache struct {
