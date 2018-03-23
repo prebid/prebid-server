@@ -95,6 +95,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if requestExt.Prebid.Targeting != nil {
 			targData = &targetData{
 				priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+				includeWinners:   requestExt.Prebid.Targeting.IncludeWinners,
 			}
 			if shouldCacheBids {
 				targData.includeCache = true
@@ -114,7 +115,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		if targData.includeCache {
 			auc.doCache(ctx, e.cache)
 		}
-		setTargeting(auc, bidRequest.App != nil)
+		targData.setTargeting(auc, bidRequest.App != nil)
 	}
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
@@ -153,6 +154,11 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterBids = bids
+			// validate bids ASAP, so we don't waste time on invalid bids.
+			err2 := brw.validateBids()
+			if len(err2) > 0 {
+				err = append(err, err2...)
+			}
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
@@ -170,6 +176,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					blabels[coreBidder].AdapterStatus = pbsmetrics.AdapterStatusErr
 				}
 			}
+			// Append any bid validation errors to the error list
 			ae.Errors = serr
 			brw.adapterExtra = ae
 			if len(err) == 0 {
@@ -315,4 +322,48 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
+}
+
+// validateBids will run some validation checks on the returned bids and excise any invalid bids
+func (brw *bidResponseWrapper) validateBids() (err []error) {
+	// Exit early if there is nothing to do.
+	if brw.adapterBids == nil || len(brw.adapterBids.bids) == 0 {
+		return
+	}
+	err = make([]error, 0, len(brw.adapterBids.bids))
+	validBids := make([]*pbsOrtbBid, 0, len(brw.adapterBids.bids))
+	for _, bid := range brw.adapterBids.bids {
+		if ok, berr := validateBid(bid); ok {
+			validBids = append(validBids, bid)
+		} else {
+			err = append(err, berr)
+		}
+	}
+	if len(validBids) != len(brw.adapterBids.bids) {
+		// If all bids are valid, the two slices should be equal. Otherwise replace the list of bids with the valid bids.
+		brw.adapterBids.bids = validBids
+	}
+	return err
+}
+
+// validateBid will run the supplied bid through validation checks and return true if it passes, false otherwise.
+func validateBid(bid *pbsOrtbBid) (bool, error) {
+	if bid.bid == nil {
+		return false, fmt.Errorf("Empty bid object submitted.")
+	}
+	// These are the three required fields for bids
+	if bid.bid.ID == "" {
+		return false, fmt.Errorf("Bid missing required field 'id'")
+	}
+	if bid.bid.ImpID == "" {
+		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
+	}
+	if bid.bid.Price == 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" missing required field 'price'", bid.bid.ID)
+	}
+	// Check creative ID
+	if bid.bid.CrID == "" {
+		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
+	}
+	return true, nil
 }
