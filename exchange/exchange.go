@@ -348,8 +348,14 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 		return false, fmt.Errorf("Empty bid object submitted.")
 	}
 	// These are the three required fields for bids
-	if bid.bid.ID == "" || bid.bid.ImpID == "" || bid.bid.Price == 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" missing required field (id, impid, price)", bid.bid.ID)
+	if bid.bid.ID == "" {
+		return false, fmt.Errorf("Bid missing required field 'id'")
+	}
+	if bid.bid.ImpID == "" {
+		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
+	}
+	if bid.bid.Price == 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" missing required field 'price'", bid.bid.ID)
 	}
 	// Check creative ID
 	if bid.bid.CrID == "" {
