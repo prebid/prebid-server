@@ -599,6 +599,7 @@ func mockDummyBids1(adapter string) (*pbsOrtbSeatBid, []error) {
 	sb1.bids[0].bid.H = 90
 	sb1.bids[0].bid.Price = 1.34
 	sb1.bids[0].bid.ImpID = "1stImp"
+	sb1.bids[0].bid.CrID = "12"
 	targ := make(map[string]string)
 	targ["hb_pb_"+adapter] = "1.30"
 	targ["hb_bidder_"+adapter] = adapter
@@ -613,6 +614,7 @@ func mockDummyBids1(adapter string) (*pbsOrtbSeatBid, []error) {
 	sb1.bids[1].bid.H = 250
 	sb1.bids[1].bid.Price = 0.73
 	sb1.bids[1].bid.ImpID = "2ndImp"
+	sb1.bids[1].bid.CrID = "34"
 	targ = make(map[string]string)
 	targ["hb_pb_"+adapter] = "0.70"
 	targ["hb_bidder_"+adapter] = adapter
@@ -641,6 +643,7 @@ func mockDummyBids2(adapter string) (*pbsOrtbSeatBid, []error) {
 	sb1.bids[0].bid.H = 90
 	sb1.bids[0].bid.Price = 0.94
 	sb1.bids[0].bid.ImpID = "1stImp"
+	sb1.bids[0].bid.CrID = "123"
 	targ := make(map[string]string)
 	targ["hb_pb_"+adapter] = "0.90"
 	targ["hb_bidder_"+adapter] = adapter
@@ -655,6 +658,7 @@ func mockDummyBids2(adapter string) (*pbsOrtbSeatBid, []error) {
 	sb1.bids[1].bid.H = 250
 	sb1.bids[1].bid.Price = 1.89
 	sb1.bids[1].bid.ImpID = "2ndImp"
+	sb1.bids[1].bid.CrID = "456"
 	targ = make(map[string]string)
 	targ["hb_pb_"+adapter] = "1.80"
 	targ["hb_bidder_"+adapter] = adapter
@@ -680,6 +684,7 @@ func mockDummyBids3(adapter string) (*pbsOrtbSeatBid, []error) {
 	sb1.bids[0].bid.H = 90
 	sb1.bids[0].bid.Price = 0.34
 	sb1.bids[0].bid.ImpID = "1stImp"
+	sb1.bids[0].bid.CrID = "135"
 	targ := make(map[string]string)
 	targ["hb_pb_"+adapter] = "0.30"
 	targ["hb_bidder_"+adapter] = adapter
