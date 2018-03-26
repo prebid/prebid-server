@@ -7,7 +7,8 @@ import (
 )
 
 func TestNewPBSAnalytics(t *testing.T) {
-	am := initAnalytics()
+	var count int
+	am := initAnalytics(&count)
 	am.LogAuctionObject(&AuctionObject{AUCTION, http.StatusOK, nil, &openrtb.BidRequest{}, &openrtb.BidResponse{}})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObejct")
@@ -29,20 +30,20 @@ func TestNewPBSAnalytics(t *testing.T) {
 	}
 }
 
-var count int = 0
+type sampleModule struct {
+	count *int
+}
 
-type sampleModule struct{}
+func (m *sampleModule) LogAuctionObject(ao *AuctionObject) { *m.count++ }
 
-func (m *sampleModule) LogAuctionObject(ao *AuctionObject) { count++ }
+func (m *sampleModule) LogCookieSyncObject(cso *CookieSyncObject) { *m.count++ }
 
-func (m *sampleModule) LogCookieSyncObject(cso *CookieSyncObject) { count++ }
+func (m *sampleModule) LogSetUIDObject(so *SetUIDObject) { *m.count++ }
 
-func (m *sampleModule) LogSetUIDObject(so *SetUIDObject) { count++ }
+func (m *sampleModule) LogAmpObject(ao *AmpObject) { *m.count++ }
 
-func (m *sampleModule) LogAmpObject(ao *AmpObject) { count++ }
-
-func initAnalytics() PBSAnalyticsModule {
+func initAnalytics(count *int) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
-	modules = append(modules, &sampleModule{})
+	modules = append(modules, &sampleModule{count})
 	return &modules
 }
