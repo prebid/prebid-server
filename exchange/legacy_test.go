@@ -11,6 +11,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func TestSiteVideo(t *testing.T) {
@@ -481,7 +482,7 @@ func (a *mockLegacyAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *mockLegacyAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *mockLegacyAdapter) GetUsersyncInfo() *usersync.UsersyncInfo {
 	return nil
 }
 

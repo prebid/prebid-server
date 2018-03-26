@@ -49,11 +49,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Set this as an AMP request in Metrics.
 
 	ao := analytics.AmpObject{
-		Type:      analytics.AMP,
-		Status:    http.StatusOK,
-		UserAgent: r.UserAgent(),
-		Error:     make([]error, 0),
+		Type:   analytics.AMP,
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
 	}
+
+	defer func() {
+		deps.analytics.LogAmpObject(&ao)
+	}()
 
 	start := time.Now()
 	deps.metrics.AmpRequestMeter.Mark(1)
@@ -79,9 +82,8 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		copy(ao.Error, errL)
+		copy(ao.Errors, errL)
 		deps.metrics.ErrorMeter.Mark(1)
-		deps.analytics.LogAmpObject(&ao)
 		return
 	}
 
@@ -111,8 +113,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/amp Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
-		ao.Error = append(ao.Error, err)
-		deps.analytics.LogAmpObject(&ao)
+		ao.Errors = append(ao.Errors, err)
 		return
 	}
 
@@ -135,7 +136,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 					fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
 					glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
 					ao.Status = http.StatusInternalServerError
-					deps.analytics.LogAmpObject(&ao)
 					return
 				}
 				for key, value := range bidExt.Prebid.Targeting {
@@ -150,7 +150,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Targeting: targets,
 	}
 
-	ao.AmpResponse = targets
+	ao.AmpTargetingValues = targets
 
 	// add debug information if requested
 	if req.Test == 1 {
@@ -159,7 +159,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			ampResponse.Debug = extResponse.Debug
 		} else {
 			glog.Errorf("Test set on request but debug not present in response: %v", err)
-			ao.Error = append(ao.Error, fmt.Errorf("Test set on request but debug not present in response: %v", err))
+			ao.Errors = append(ao.Errors, fmt.Errorf("Test set on request but debug not present in response: %v", err))
 		}
 	}
 
@@ -172,10 +172,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
 		glog.Errorf("/openrtb2/amp Error encoding response: %v", err)
-		ao.Error = append(ao.Error, fmt.Errorf("/openrtb2/amp Error encoding response: %v", err))
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Error encoding response: %v", err))
 	}
 
-	deps.analytics.LogAmpObject(&ao)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request.

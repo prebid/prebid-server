@@ -17,6 +17,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 const MAX_BIDDERS = 8
@@ -116,15 +117,15 @@ type SDK struct {
 }
 
 type PBSBidder struct {
-	BidderCode   string         `json:"bidder"`
-	AdUnitCode   string         `json:"ad_unit,omitempty"` // for index to dedup responses
-	ResponseTime int            `json:"response_time_ms,omitempty"`
-	NumBids      int            `json:"num_bids,omitempty"`
-	Error        string         `json:"error,omitempty"`
-	NoCookie     bool           `json:"no_cookie,omitempty"`
-	NoBid        bool           `json:"no_bid,omitempty"`
-	UsersyncInfo *UsersyncInfo  `json:"usersync,omitempty"`
-	Debug        []*BidderDebug `json:"debug,omitempty"`
+	BidderCode   string                 `json:"bidder"`
+	AdUnitCode   string                 `json:"ad_unit,omitempty"` // for index to dedup responses
+	ResponseTime int                    `json:"response_time_ms,omitempty"`
+	NumBids      int                    `json:"num_bids,omitempty"`
+	Error        string                 `json:"error,omitempty"`
+	NoCookie     bool                   `json:"no_cookie,omitempty"`
+	NoBid        bool                   `json:"no_bid,omitempty"`
+	UsersyncInfo *usersync.UsersyncInfo `json:"usersync,omitempty"`
+	Debug        []*BidderDebug         `json:"debug,omitempty"`
 
 	AdUnits []PBSAdUnit `json:"-"`
 }

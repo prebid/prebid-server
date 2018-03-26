@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 type RequestType string
@@ -15,24 +16,22 @@ const (
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
-	Type      RequestType
-	Status    int
-	Error     []error
-	Request   *openrtb.BidRequest
-	Response  *openrtb.BidResponse
-	UserAgent string
+	Type     RequestType
+	Status   int
+	Errors   []error
+	Request  *openrtb.BidRequest
+	Response *openrtb.BidResponse
 }
 
 //Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
-	Type            RequestType
-	Status          int
-	Error           []error
-	Request         *openrtb.BidRequest
-	AuctionResponse *openrtb.BidResponse
-	AmpResponse     map[string]string
-	UserAgent       string
-	Origin          string
+	Type               RequestType
+	Status             int
+	Errors             []error
+	Request            *openrtb.BidRequest
+	AuctionResponse    *openrtb.BidResponse
+	AmpTargetingValues map[string]string
+	Origin             string
 }
 
 //Loggable object of a transaction at /setuid
@@ -41,14 +40,14 @@ type SetUIDObject struct {
 	Status  int
 	Bidder  string
 	UID     string
-	Error   []error
+	Errors  []error
 	Success bool
 }
 
 //Loggable object of a transaction at /cookie_sync
 type CookieSyncObject struct {
-	Type    RequestType
-	Status  int
-	Error   []error
-	Bidders string
+	Type         RequestType
+	Status       int
+	Errors       []error
+	BidderStatus []*usersync.CookieSyncBidders
 }

@@ -59,11 +59,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	ao := analytics.AuctionObject{
-		Type:      analytics.AUCTION,
-		Status:    http.StatusOK,
-		Error:     make([]error, 0),
-		UserAgent: r.UserAgent(),
+		Type:   analytics.AUCTION,
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
 	}
+
+	defer func() {
+		deps.analytics.LogAuctionObject(&ao)
+	}()
 
 	start := time.Now()
 	deps.metrics.RequestMeter.Mark(1)
@@ -74,7 +77,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	req, errL := deps.parseRequest(r)
 
 	if writeError(errL, deps.metrics.ErrorMeter, w) {
-		copy(ao.Error, errL)
+		copy(ao.Errors, errL)
 		deps.analytics.LogAuctionObject(&ao)
 		return
 	}
@@ -106,7 +109,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
 		ao.Status = http.StatusInternalServerError
-		ao.Error = append(ao.Error, err)
+		ao.Errors = append(ao.Errors, err)
 		deps.analytics.LogAuctionObject(&ao)
 		return
 	}
@@ -123,7 +126,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
-		ao.Error = append(ao.Error, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
 
 	deps.analytics.LogAuctionObject(&ao)

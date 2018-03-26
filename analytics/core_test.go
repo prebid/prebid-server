@@ -8,7 +8,7 @@ import (
 
 func TestNewPBSAnalytics(t *testing.T) {
 	am := initAnalytics()
-	am.LogAuctionObject(&AuctionObject{AUCTION, http.StatusOK, nil, &openrtb.BidRequest{}, &openrtb.BidResponse{}, "user-agentx"})
+	am.LogAuctionObject(&AuctionObject{AUCTION, http.StatusOK, nil, &openrtb.BidRequest{}, &openrtb.BidResponse{}})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObejct")
 	}

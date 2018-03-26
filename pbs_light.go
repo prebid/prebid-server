@@ -192,8 +192,8 @@ type cookieSyncRequest struct {
 }
 
 type cookieSyncResponse struct {
-	Status       string           `json:"status"`
-	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
+	Status       string                           `json:"status"`
+	BidderStatus []*usersyncers.CookieSyncBidders `json:"bidder_status"`
 }
 
 type cookieSyncDeps struct {
@@ -207,18 +207,22 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
-		Type:   analytics.COOKIE_SYNC,
-		Status: http.StatusOK,
-		Error:  make([]error, 0),
+		Type:         analytics.COOKIE_SYNC,
+		Status:       http.StatusOK,
+		Errors:       make([]error, 0),
+		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),
 	}
+
+	defer func() {
+		deps.pbsAnalytics.LogCookieSyncObject(&co)
+	}()
 
 	deps.metric.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		co.Status = http.StatusUnauthorized
-		co.Error = append(co.Error, fmt.Errorf("user has opted out"))
-		deps.pbsAnalytics.LogCookieSyncObject(&co)
+		co.Errors = append(co.Errors, fmt.Errorf("user has opted out"))
 		return
 	}
 
@@ -232,7 +236,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
 		co.Status = http.StatusBadRequest
-		co.Error = append(co.Error, fmt.Errorf("JSON parse failed"))
+		co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed"))
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
@@ -245,15 +249,14 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
 			}
 			co.Status = http.StatusBadRequest
-			co.Error = append(co.Error, fmt.Errorf("JSON parse failed (bidders"))
+			co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed (bidders"))
 			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
-			deps.pbsAnalytics.LogCookieSyncObject(&co)
 			return
 		}
 	}
 
 	csResp := cookieSyncResponse{
-		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
+		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0, len(csReq.Bidders)),
 	}
 
 	if userSyncCookie.LiveSyncCount() == 0 {
@@ -273,7 +276,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	for _, bidder := range csReq.Bidders {
 		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
 			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
-				b := pbs.PBSBidder{
+				b := usersyncers.CookieSyncBidders{
 					BidderCode:   bidder,
 					NoCookie:     true,
 					UsersyncInfo: syncer.GetUsersyncInfo(),
@@ -284,17 +287,13 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	}
 
 	if len(csResp.BidderStatus) > 0 {
-		if jsonBidders, err := json.Marshal(csResp.BidderStatus); err == nil {
-			co.Bidders = string(jsonBidders)
-		}
+		co.BidderStatus = append(co.BidderStatus, csResp.BidderStatus...)
 	}
 
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	//enc.SetIndent("", "  ")
 	enc.Encode(csResp)
-
-	deps.pbsAnalytics.LogCookieSyncObject(&co)
 
 }
 

@@ -325,15 +325,18 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	so := analytics.SetUIDObject{
 		Type:   analytics.SETUID,
 		Status: http.StatusOK,
-		Error:  make([]error, 0),
+		Errors: make([]error, 0),
 	}
+
+	defer func() {
+		deps.PBSAnalytics.LogSetUIDObject(&so)
+	}()
 
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
 		so.Status = http.StatusUnauthorized
-		deps.PBSAnalytics.LogSetUIDObject(&so)
 		return
 	}
 
@@ -343,7 +346,6 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		w.WriteHeader(http.StatusBadRequest)
 		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
 		so.Status = http.StatusBadRequest
-
 		return
 	}
 	so.Bidder = bidder
@@ -364,7 +366,6 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
-	deps.PBSAnalytics.LogSetUIDObject(&so)
 }
 
 // Struct for parsing json in google's response

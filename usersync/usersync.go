@@ -3,7 +3,6 @@ package usersync
 import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 )
 
 type Usersyncer interface {
@@ -11,11 +10,23 @@ type Usersyncer interface {
 	// The returned UsersyncInfo object must not be mutated by callers.
 	//
 	// For more information about user syncs, see http://clearcode.cc/2015/12/cookie-syncing/
-	GetUsersyncInfo() *pbs.UsersyncInfo
+	GetUsersyncInfo() *UsersyncInfo
 	// FamilyName identifies the space of cookies for this usersyncer.
 	// For example, if this Usersyncer syncs with adnxs.com, then this
 	// should return "adnxs".
 	FamilyName() string
+}
+
+type UsersyncInfo struct {
+	URL         string `json:"url,omitempty"`
+	Type        string `json:"type,omitempty"`
+	SupportCORS bool   `json:"supportCORS,omitempty"`
+}
+
+type CookieSyncBidders struct {
+	BidderCode   string        `json:"bidder"`
+	NoCookie     bool          `json:"no_cookie,omitempty"`
+	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
 }
 
 // NewSyncerMap returns a map of all the usersyncer objects.
@@ -38,10 +49,10 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]Usersync
 
 type syncer struct {
 	familyName string
-	syncInfo   *pbs.UsersyncInfo
+	syncInfo   *UsersyncInfo
 }
 
-func (s *syncer) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (s *syncer) GetUsersyncInfo() *UsersyncInfo {
 	return s.syncInfo
 }
 

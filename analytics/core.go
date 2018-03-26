@@ -26,11 +26,11 @@ type enabledAnalytics []PBSAnalyticsModule
 //Modules that need to be logged to need to be initialized here
 func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Config) > 0 {
-		if mod, err := NewFileLogger(analytics.File.Config); err == nil {
+	if len(analytics.File.Filename) > 0 {
+		if mod, err := NewFileLogger(analytics.File.Filename); err == nil {
 			modules = append(modules, mod)
 		} else {
-			glog.Errorf("Could not initialize FileLogger for file %v :%v", analytics.File.Config, err)
+			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
 	return modules

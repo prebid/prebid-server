@@ -35,7 +35,7 @@ type Analytics struct {
 
 //Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
-	Config string `mapstructure:"filename"`
+	Filename string `mapstructure:"filename"`
 }
 
 type HostCookie struct {
