@@ -77,7 +77,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	req, errL := deps.parseRequest(r)
 
 	if writeError(errL, deps.metrics.ErrorMeter, w) {
-		copy(ao.Errors, errL)
+		ao.Errors = append(ao.Errors, errL...)
 		deps.analytics.LogAuctionObject(&ao)
 		return
 	}

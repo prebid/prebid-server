@@ -82,7 +82,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		copy(ao.Errors, errL)
+		ao.Errors = append(ao.Errors, errL...)
 		deps.metrics.ErrorMeter.Mark(1)
 		return
 	}
@@ -120,13 +120,14 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Need to extract the targeting parameters from the response, as those are all that
 	// go in the AMP response
 	targets := map[string]string{}
+
 	byteCache := []byte("\"hb_cache_id")
 	for _, seatBids := range response.SeatBid {
 		for _, bid := range seatBids.Bid {
 			if bytes.Contains(bid.Ext, byteCache) {
 				// Looking for cache_id to be set, as this should only be set on winning bids (or
 				// deal bids), and AMP can only deliver cached ads in any case.
-				// Note, this could casue issues if a targeting key value starts with "hb_cache_id",
+				// Note, this could cause issues if a targeting key value starts with "hb_cache_id",
 				// but this is a very unlikely corner case. Doing this so we can catch "hb_cache_id"
 				// and "hb_cache_id_{deal}", which allows for deal support in AMP.
 				bidExt := &openrtb_ext.ExtBid{}
@@ -135,6 +136,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 					w.WriteHeader(http.StatusInternalServerError)
 					fmt.Fprintf(w, "Critical error while unpacking AMP targets: %v", err)
 					glog.Errorf("/openrtb2/amp Critical error unpacking targets: %v", err)
+					ao.Errors = append(ao.Errors, fmt.Errorf("Critical error while unpacking AMP targets: %v", err))
 					ao.Status = http.StatusInternalServerError
 					return
 				}
@@ -144,7 +146,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			}
 		}
 	}
-
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
