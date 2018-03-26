@@ -33,33 +33,33 @@ func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
 			glog.Errorf("Could not initialize FileLogger for file %v :%v", analytics.File.Config, err)
 		}
 	}
-	return &modules
+	return modules
 }
 
 /*
 	This could be confusing. `enabledAnalytics` itself implements `PBSAnalyticsModule` as well wherein it iterates through each analytic module and calls it's respective `Log{loggable_object}Object` method.
 */
 
-func (ea *enabledAnalytics) LogAuctionObject(ao *AuctionObject) {
-	for _, module := range *ea {
+func (ea enabledAnalytics) LogAuctionObject(ao *AuctionObject) {
+	for _, module := range ea {
 		module.LogAuctionObject(ao)
 	}
 }
 
-func (ea *enabledAnalytics) LogCookieSyncObject(cso *CookieSyncObject) {
-	for _, module := range *ea {
+func (ea enabledAnalytics) LogCookieSyncObject(cso *CookieSyncObject) {
+	for _, module := range ea {
 		module.LogCookieSyncObject(cso)
 	}
 }
 
-func (ea *enabledAnalytics) LogSetUIDObject(so *SetUIDObject) {
-	for _, module := range *ea {
+func (ea enabledAnalytics) LogSetUIDObject(so *SetUIDObject) {
+	for _, module := range ea {
 		module.LogSetUIDObject(so)
 	}
 }
 
-func (ea *enabledAnalytics) LogAmpObject(ao *AmpObject) {
-	for _, module := range *ea {
+func (ea enabledAnalytics) LogAmpObject(ao *AmpObject) {
+	for _, module := range ea {
 		module.LogAmpObject(ao)
 	}
 }
