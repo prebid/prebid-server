@@ -282,7 +282,7 @@ func TestBuildBidResponse(t *testing.T) {
 	bidReqExt := openrtb_ext.ExtRequest{
 		Prebid: openrtb_ext.ExtRequestPrebid{
 			Targeting: &openrtb_ext.ExtRequestTargeting{
-				PriceGranularity: openrtb_ext.PriceGranularityMedium,
+				PriceGranularity: openrtb_ext.PriceGranularityFromString("medium"),
 			},
 		},
 	}

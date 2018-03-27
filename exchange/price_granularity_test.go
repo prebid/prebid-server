@@ -1,6 +1,7 @@
-package buckets
+package exchange
 
 import (
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
 )
 
@@ -24,7 +25,7 @@ func TestGetPriceBucketString(t *testing.T) {
 
 func getOnePriceBucket(t *testing.T, granularity string, price float64, expected string) {
 	t.Helper()
-	priceBucket, err := GetPriceBucketString(price, granularity)
+	priceBucket, err := GetCpmStringValue(price, openrtb_ext.PriceGranularityFromString(granularity))
 	if err != nil {
 		t.Errorf("GetPriceBucketString: %s", err.Error())
 	}

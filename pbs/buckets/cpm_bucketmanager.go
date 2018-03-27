@@ -3,7 +3,6 @@ package buckets
 import "math"
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"strconv"
 )
 
@@ -19,13 +18,13 @@ type priceBucketParams struct {
 // A type to hold the price bucket configurations
 type priceBucketConf []priceBucketParams
 
-var priceBucketConfigMap = map[openrtb_ext.PriceGranularity]priceBucketConf{
-	openrtb_ext.PriceGranularityLow:    priceBucketLow,
-	openrtb_ext.PriceGranularityMedium: priceBucketMed,
-	openrtb_ext.PriceGranularityMedPBS: priceBucketMed,
-	openrtb_ext.PriceGranularityHigh:   priceBucketHigh,
-	openrtb_ext.PriceGranularityAuto:   priceBucketAuto,
-	openrtb_ext.PriceGranularityDense:  priceBucketDense,
+var priceBucketConfigMap = map[string]priceBucketConf{
+	"low":    priceBucketLow,
+	"medium": priceBucketMed,
+	"med":    priceBucketMed,
+	"high":   priceBucketHigh,
+	"auto":   priceBucketAuto,
+	"dense":  priceBucketDense,
 }
 var priceBucketLow = priceBucketConf{
 	{
@@ -126,7 +125,7 @@ func getCpmTarget(cpm float64, increment float64, precision int) string {
 
 // Externally facing function for computing CPM buckets
 // We don't currently have a precision config, so enforcing the default here.
-func GetPriceBucketString(cpm float64, granularity openrtb_ext.PriceGranularity) (string, error) {
+func GetPriceBucketString(cpm float64, granularity string) (string, error) {
 	// Default to medium if no granularity is given
 	if granularity == "" {
 		granularity = "medium"
