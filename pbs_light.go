@@ -213,9 +213,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),
 	}
 
-	defer func() {
-		deps.pbsAnalytics.LogCookieSyncObject(&co)
-	}()
+	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
 	deps.metric.Mark(1)
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)

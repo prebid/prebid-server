@@ -54,9 +54,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Errors: make([]error, 0),
 	}
 
-	defer func() {
-		deps.analytics.LogAmpObject(&ao)
-	}()
+	defer deps.analytics.LogAmpObject(&ao)
 
 	start := time.Now()
 	deps.metrics.AmpRequestMeter.Mark(1)

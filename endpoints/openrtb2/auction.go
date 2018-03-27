@@ -64,9 +64,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Errors: make([]error, 0),
 	}
 
-	defer func() {
-		deps.analytics.LogAuctionObject(&ao)
-	}()
+	defer deps.analytics.LogAuctionObject(&ao)
 
 	start := time.Now()
 	deps.metrics.RequestMeter.Mark(1)
@@ -128,8 +126,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
-
-	deps.analytics.LogAuctionObject(&ao)
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:

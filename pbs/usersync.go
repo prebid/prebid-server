@@ -328,9 +328,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 		Errors: make([]error, 0),
 	}
 
-	defer func() {
-		deps.PBSAnalytics.LogSetUIDObject(&so)
-	}()
+	defer deps.PBSAnalytics.LogSetUIDObject(&so)
 
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	if !pc.AllowSyncs() {
