@@ -115,20 +115,21 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 		// We only need to loop over the ranges if we have more than one (inter-range checks)
 		precision := gran[0].Precision
 		var prevMax float64 = 0
-		for _, gr := range gran {
+		for i, gr := range gran {
 			if gr.Precision != precision {
 				return errors.New("Price granularity error: precision not consistent across entires")
 			}
 			if gr.Max < prevMax {
 				return errors.New("Price granularity error: range list must be ordered with increasing \"max\"")
 			}
-			if gr.Min < prevMax {
-				return errors.New("Price granularity error: overlapping granularity ranges")
-			}
 			if gr.Min == 0.0 {
 				// Default min to be the previous max
 				// On the first entry, we will likely overwrite 0.0 with 0.0, which should be ok. Adding a conditional to skip likely won't save any processing time.
 				gr.Min = prevMax
+				gran[i].Min = prevMax
+			}
+			if gr.Min < prevMax {
+				return errors.New("Price granularity error: overlapping granularity ranges")
 			}
 			prevMax = gr.Max
 		}

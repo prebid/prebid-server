@@ -90,19 +90,45 @@ func TestCacheLegal(t *testing.T) {
 	}
 }
 
+type granularityTestData struct {
+	json   []byte
+	target PriceGranularity
+}
+
 func TestGranularityUnmarshal(t *testing.T) {
-	granJSON := []byte(`[{ "precision": 4, "min": 0, "max": 5, "increment": 0.1}, {"precision": 4, "min": 5, "max":10, "increment":0.5}, {"precision":4, "min":10, "max":20, "increment":1}]`)
-	target := PriceGranularity{GranularityRange{Precision: 4, Min: 0.0, Max: 5.0, Increment: 0.1},
-		GranularityRange{Precision: 4, Min: 5.0, Max: 10.0, Increment: 0.5},
-		GranularityRange{Precision: 4, Min: 10.0, Max: 20.0, Increment: 1.0}}
-	var resolved PriceGranularity
-	err := json.Unmarshal(granJSON, &resolved)
-	if err != nil {
-		t.Errorf("Failed to Unmarshall granularity: %s", err.Error())
+	for _, test := range validGranularityTests {
+		var resolved PriceGranularity
+		err := json.Unmarshal(test.json, &resolved)
+		if err != nil {
+			t.Errorf("Failed to Unmarshall granularity: %s", err.Error())
+		}
+		if !reflect.DeepEqual(test.target, resolved) {
+			t.Errorf("Granularity unmarshal failed, the unmarshalled JSON did not match the target\nExpected: %v\nActual  : %v", test.target, resolved)
+		}
 	}
-	if !reflect.DeepEqual(target, resolved) {
-		t.Errorf("Granularity unmarshal failed, the unmarshalled JSON did not match the target\nExpected: %v\nActual  : %v", target, resolved)
-	}
+}
+
+var validGranularityTests []granularityTestData = []granularityTestData{
+	{
+		json: []byte(`[{ "precision": 4, "min": 0, "max": 5, "increment": 0.1}, {"precision": 4, "min": 5, "max":10, "increment":0.5}, {"precision":4, "min":10, "max":20, "increment":1}]`),
+		target: PriceGranularity{GranularityRange{Precision: 4, Min: 0.0, Max: 5.0, Increment: 0.1},
+			GranularityRange{Precision: 4, Min: 5.0, Max: 10.0, Increment: 0.5},
+			GranularityRange{Precision: 4, Min: 10.0, Max: 20.0, Increment: 1.0}},
+	},
+	{
+		json: []byte(`[{ "max":5, "increment": 0.05}, {"max": 10, "increment": 0.25}, {"max": 20, "increment": 0.5}]`),
+		target: PriceGranularity{GranularityRange{Precision: 2, Min: 0.0, Max: 5.0, Increment: 0.05},
+			GranularityRange{Precision: 2, Min: 5.0, Max: 10.0, Increment: 0.25},
+			GranularityRange{Precision: 2, Min: 10.0, Max: 20.0, Increment: 0.5}},
+	},
+	{
+		json:   []byte(`"medium"`),
+		target: priceGranularityMed,
+	},
+	{
+		json:   []byte(`[{ "precision": 3, "max":20, "increment":0.005}]`),
+		target: PriceGranularity{GranularityRange{Precision: 3, Min: 0.0, Max: 20.0, Increment: 0.005}},
+	},
 }
 
 func TestGranularityUnmarshalBad(t *testing.T) {
@@ -115,6 +141,7 @@ func TestGranularityUnmarshalBad(t *testing.T) {
 		[]byte(`[{"min":"0", "max":"20", "increment": "0.1"}]`),
 		[]byte(`[{"min":0, "max":20, "increment":0.1}, {"min":15, "max":30, "increment":1.0}]`),
 		[]byte(`[{"precision": 2, "min":0, "max":10, "increment":0.1}, {"precision": 1, "min":10, "max":50, "increment":1}]`),
+		[]byte(`[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]`),
 	}
 	var resolved PriceGranularity
 	for _, b := range tests {
