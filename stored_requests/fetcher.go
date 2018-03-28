@@ -3,6 +3,7 @@ package stored_requests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.
@@ -15,6 +16,15 @@ type Fetcher interface {
 	//
 	// The returned objects can only be read from. They may not be written to.
 	FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error)
+}
+
+// NotFoundError is an error type to flag that an ID was not found, but there was otherwise no issue
+// with the query. This was added to support Multifetcher and any other case where we might expect
+// that all IDs would not be found, and want to disentangle those errors from the others.
+type NotFoundError string
+
+func (e NotFoundError) Error() string {
+	return fmt.Sprintf(`Stored Request with ID="%s" not found.`, string(e))
 }
 
 // Cache is an intermediate layer which can be used to create more complex Fetchers by composition.

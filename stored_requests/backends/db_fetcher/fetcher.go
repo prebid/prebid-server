@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
@@ -76,7 +75,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 	var errs []error
 	for _, id := range ids {
 		if _, ok := reqData[id]; !ok {
-			errs = append(errs, fmt.Errorf(`Stored Request with ID="%s" not found.`, id))
+			errs = append(errs, stored_requests.NotFoundError(id))
 		}
 	}
 

@@ -40,7 +40,7 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, ids []string) (m
 	var errors []error = nil
 	for _, id := range ids {
 		if _, ok := fetcher.storedReqs[id]; !ok {
-			errors = append(errors, fmt.Errorf("No config found for id: %s", id))
+			errors = append(errors, stored_requests.NotFoundError(id))
 		}
 	}
 
