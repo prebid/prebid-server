@@ -4,9 +4,10 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"net/http"
 	"testing"
+	"github.com/prebid/prebid-server/config"
 )
 
-func TestNewPBSAnalytics(t *testing.T) {
+func TestSampleModule(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
 	am.LogAuctionObject(&AuctionObject{AUCTION, http.StatusOK, nil, &openrtb.BidRequest{}, &openrtb.BidResponse{}})
@@ -46,4 +47,16 @@ func initAnalytics(count *int) PBSAnalyticsModule {
 	modules := make(enabledAnalytics, 0)
 	modules = append(modules, &sampleModule{count})
 	return &modules
+}
+
+func TestNewPBSAnalytics(t *testing.T) {
+	mod := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: "test"}})
+	switch modType := mod.(type) {
+	case enabledAnalytics:
+		if len(enabledAnalytics(modType)) != 1 {
+			t.Fatalf("Failed to add analytics module")
+		}
+	default:
+		t.Fatalf("Failed to initialize analytics module")
+	}
 }
