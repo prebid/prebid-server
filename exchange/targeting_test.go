@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
-	metrics "github.com/rcrowley/go-metrics"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -185,7 +184,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 
 	ex := &exchange{
 		adapterMap: buildAdapterMap(mockBids, server.URL, server.Client()),
-		m:          pbsmetrics.NewMetrics(metrics.NewRegistry(), buildBidderList(mockBids)),
+		me:         &pbsmetrics.DummyMetricsEngine{},
 		cache:      &wellBehavedCache{},
 		cacheTime:  time.Duration(0),
 	}
@@ -202,7 +201,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb.Site{}
 	}
 
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{})
+	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{})
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)

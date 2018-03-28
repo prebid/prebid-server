@@ -19,7 +19,6 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -27,19 +26,18 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
 )
 
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -47,8 +45,7 @@ type endpointDeps struct {
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
-	metrics          *pbsmetrics.Metrics
-	analytics        analytics.PBSAnalyticsModule
+	metricsEngine    pbsmetrics.MetricsEngine
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -58,26 +55,37 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If so, then the trip to the backend might use a significant amount of this time.
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
-	ao := analytics.AuctionObject{
-		Type:   analytics.AUCTION,
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
-	}
-
-	defer deps.analytics.LogAuctionObject(&ao)
-
 	start := time.Now()
-	deps.metrics.RequestMeter.Mark(1)
-	deps.metrics.ORTBRequestMeter.Mark(1)
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeORTB2,
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+	}()
 
-	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
+	isSafari := checkSafari(r)
+	if isSafari {
+		labels.Browser = pbsmetrics.BrowserSafari
+	}
 
 	req, errL := deps.parseRequest(r)
 
-	if writeError(errL, deps.metrics.ErrorMeter, w) {
-		ao.Errors = append(ao.Errors, errL...)
-		deps.analytics.LogAuctionObject(&ao)
+	if writeError(errL, w) {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
+	}
+
+	if req.Site != nil && req.Site.Publisher != nil {
+		labels.PubID = req.Site.Publisher.ID
+	}
+	if req.App != nil && req.App.Publisher != nil {
+		labels.PubID = req.App.Publisher.ID
 	}
 
 	ctx := context.Background()
@@ -91,24 +99,22 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
-		deps.metrics.AppRequestMeter.Mark(1)
-	} else if usersyncs.LiveSyncCount() == 0 {
-		deps.metrics.NoCookieMeter.Mark(1)
-		if isSafari {
-			deps.metrics.SafariNoCookieMeter.Mark(1)
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if usersyncs.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
-	ao.Request = req
-	ao.Response = response
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
 	if err != nil {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		ao.Status = http.StatusInternalServerError
-		ao.Errors = append(ao.Errors, err)
-		deps.analytics.LogAuctionObject(&ao)
 		return
 	}
 
@@ -124,7 +130,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
 }
 
@@ -820,26 +825,24 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 }
 
 // Check if a request comes from a Safari browser
-func checkSafari(r *http.Request, safariRequestsMeter metrics.Meter) (isSafari bool) {
+func checkSafari(r *http.Request) (isSafari bool) {
 	isSafari = false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
 			isSafari = true
-			safariRequestsMeter.Mark(1)
 		}
 	}
 	return
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, errMeter metrics.Meter, w http.ResponseWriter) bool {
+func writeError(errs []error, w http.ResponseWriter) bool {
 	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errs {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		errMeter.Mark(1)
 		return true
 	}
 	return false
