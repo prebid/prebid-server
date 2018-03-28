@@ -32,6 +32,7 @@ type Bidder interface {
 //
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+// TypedBid.BidCurrency will become "response.cur" in the final OpenRTB response.
 type TypedBid struct {
 	Bid         *openrtb.Bid
 	BidType     openrtb_ext.BidType
