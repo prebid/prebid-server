@@ -9,7 +9,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
-	"github.com/rcrowley/go-metrics"
 
 	"context"
 	"io/ioutil"
@@ -21,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	usersyncers "github.com/prebid/prebid-server/usersync"
 	"github.com/spf13/viper"
@@ -180,7 +180,7 @@ func testableEndpoint() httprouter.Handle {
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
 		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
-	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, metrics.NewMeter()}).CookieSync
+	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}}).CookieSync
 }
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -508,7 +508,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	}
 	syncers := usersyncers.NewSyncerMap(cfg)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers})
+	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, &pbsmetrics.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}

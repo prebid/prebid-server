@@ -29,7 +29,7 @@ type AmpResponse struct {
 
 // We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
 // of the request, and the return value, using the OpenRTB machinery to handle everything inbetween.
-func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
@@ -47,7 +47,23 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	// Set this as an AMP request in Metrics.
 	start := time.Now()
-	deps.metrics.AmpRequestMeter.Mark(1)
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeAMP,
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+	}()
+
+	isSafari := checkSafari(r)
+	if isSafari {
+		labels.Browser = pbsmetrics.BrowserSafari
+	}
 
 	// Add AMP headers
 	origin := r.FormValue("__amp_source_origin")
@@ -62,14 +78,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	w.Header().Set("Access-Control-Expose-Headers", "AMP-Access-Control-Allow-Source-Origin")
 
 	req, errL := deps.parseAmpRequest(r)
-	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
 
 	if len(errL) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		deps.metrics.ErrorMeter.Mark(1)
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
 	}
 
@@ -84,15 +99,16 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
-		deps.metrics.AppRequestMeter.Mark(1)
-	} else if usersyncs.LiveSyncCount() == 0 {
-		deps.metrics.AmpNoCookieMeter.Mark(1)
-		if isSafari {
-			deps.metrics.SafariNoCookieMeter.Mark(1)
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if usersyncs.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
-
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
