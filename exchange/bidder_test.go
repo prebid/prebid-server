@@ -47,7 +47,7 @@ func TestSingleBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0)
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -123,7 +123,7 @@ func TestMultiBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -305,7 +305,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 	bids, _ := bidder.requestBid(context.Background(), &openrtb.BidRequest{
 		Test: 1,
-	}, "test")
+	}, "test", 1.0)
 
 	if len(bids.httpCalls) != 1 {
 		t.Errorf("We should log the server call if this is a test bid. Got %d", len(bids.httpCalls))
@@ -326,7 +326,7 @@ func TestServerCallDebugging(t *testing.T) {
 
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test")
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
