@@ -649,12 +649,22 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 
 	deps.setUserImplicitly(httpReq, bidReq)
+	setAuctionTypeImplicitly(bidReq)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
 func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	setIPImplicitly(httpReq, bidReq) // Fixes #230
 	setUAImplicitly(httpReq, bidReq)
+}
+
+// setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
+// since header bidding is generally a first-price auction.
+func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
+	if bidReq.AT == 0 {
+		bidReq.AT = 1
+	}
+	return
 }
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
