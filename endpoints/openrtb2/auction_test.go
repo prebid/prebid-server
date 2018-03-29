@@ -278,6 +278,15 @@ func TestUserAgentOverride(t *testing.T) {
 	}
 }
 
+func TestAuctionTypeDefault(t *testing.T) {
+	bidReq := &openrtb.BidRequest{}
+	setAuctionTypeImplicitly(bidReq)
+
+	if bidReq.AT != 1 {
+		t.Errorf("Expected request.at to be 1. Got %d", bidReq.AT)
+	}
+}
+
 // TestImplicitIPs prevents #230
 func TestImplicitIPs(t *testing.T) {
 	ex := &nobidExchange{}
