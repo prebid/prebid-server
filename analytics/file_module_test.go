@@ -1,11 +1,11 @@
 package analytics
 
 import (
-	"testing"
-	"net/http"
 	"github.com/mxmCherry/openrtb"
-	"strings"
 	"github.com/prebid/prebid-server/usersync"
+	"net/http"
+	"strings"
+	"testing"
 )
 
 func TestAmpObject_ToJson(t *testing.T) {

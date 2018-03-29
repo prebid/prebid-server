@@ -2,9 +2,9 @@ package analytics
 
 import (
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"testing"
-	"github.com/prebid/prebid-server/config"
 )
 
 func TestSampleModule(t *testing.T) {

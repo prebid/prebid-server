@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"fmt"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -174,13 +175,14 @@ func TestCookieSyncNoBidders(t *testing.T) {
 }
 
 func testableEndpoint() httprouter.Handle {
+
 	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
 		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
 		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
 		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
-	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}}).CookieSync
+	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analytics.NewPBSAnalytics(&config.Analytics{})}).CookieSync
 }
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
