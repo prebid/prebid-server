@@ -41,6 +41,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -119,21 +120,34 @@ type cookieSyncRequest struct {
 }
 
 type cookieSyncResponse struct {
-	Status       string           `json:"status"`
-	BidderStatus []*pbs.PBSBidder `json:"bidder_status"`
+	Status       string                           `json:"status"`
+	BidderStatus []*usersyncers.CookieSyncBidders `json:"bidder_status"`
 }
 
 type cookieSyncDeps struct {
 	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
 	optOutCookie *config.Cookie
 	metric       pbsmetrics.MetricsEngine
+	pbsAnalytics analytics.PBSAnalyticsModule
 }
 
 func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
+	co := analytics.CookieSyncObject{
+		Status:       http.StatusOK,
+		Errors:       make([]error, 0),
+		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),
+	}
+
+	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
+
 	deps.metric.RecordCookieSync(pbsmetrics.Labels{})
 	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
+		co.Status = http.StatusUnauthorized
+		co.Errors = append(co.Errors, fmt.Errorf("user has opted out"))
 		return
 	}
 
@@ -146,6 +160,8 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 		if glog.V(2) {
 			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
 		}
+		co.Status = http.StatusBadRequest
+		co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed"))
 		http.Error(w, "JSON parse failed", http.StatusBadRequest)
 		return
 	}
@@ -157,13 +173,15 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 			if glog.V(2) {
 				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
 			}
+			co.Status = http.StatusBadRequest
+			co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed (bidders"))
 			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
 			return
 		}
 	}
 
 	csResp := cookieSyncResponse{
-		BidderStatus: make([]*pbs.PBSBidder, 0, len(csReq.Bidders)),
+		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0, len(csReq.Bidders)),
 	}
 
 	if userSyncCookie.LiveSyncCount() == 0 {
@@ -183,7 +201,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	for _, bidder := range csReq.Bidders {
 		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
 			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
-				b := pbs.PBSBidder{
+				b := usersyncers.CookieSyncBidders{
 					BidderCode:   bidder,
 					NoCookie:     true,
 					UsersyncInfo: syncer.GetUsersyncInfo(),
@@ -191,6 +209,10 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 				csResp.BidderStatus = append(csResp.BidderStatus, &b)
 			}
 		}
+	}
+
+	if len(csResp.BidderStatus) > 0 {
+		co.BidderStatus = append(co.BidderStatus, csResp.BidderStatus...)
 	}
 
 	enc := json.NewEncoder(w)
@@ -764,6 +786,8 @@ func serve(cfg *config.Configuration) error {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
+	pbsAnalytics := analytics.NewPBSAnalytics(&cfg.Analytics)
+
 	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, openrtb_ext.BidderList())
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
@@ -812,12 +836,12 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to initialize config backends. %v", err)
 	}
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, metricsEngine)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, metricsEngine, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, metricsEngine)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, metricsEngine, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -831,7 +855,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), metricsEngine}).CookieSync)
+	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), metricsEngine, pbsAnalytics}).CookieSync)
 	router.POST("/validate", validate)
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
@@ -852,6 +876,7 @@ func serve(cfg *config.Configuration) error {
 		ExternalUrl:        cfg.ExternalURL,
 		RecaptchaSecret:    cfg.RecaptchaSecret,
 		MetricsEngine:      metricsEngine,
+		PBSAnalytics:       pbsAnalytics,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)

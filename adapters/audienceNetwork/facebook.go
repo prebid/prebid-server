@@ -15,6 +15,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -22,7 +23,7 @@ type FacebookAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
 	nonSecureUri string
-	usersyncInfo *pbs.UsersyncInfo
+	usersyncInfo *usersync.UsersyncInfo
 	platformJSON openrtb.RawJSON
 }
 
@@ -42,7 +43,7 @@ func (a *FacebookAdapter) SplitAdUnits() bool {
 	return true
 }
 
-func (a *FacebookAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
+func (a *FacebookAdapter) GetUsersyncInfo() *usersync.UsersyncInfo {
 	return a.usersyncInfo
 }
 

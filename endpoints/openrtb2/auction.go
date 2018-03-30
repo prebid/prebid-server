@@ -19,6 +19,7 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -32,12 +33,12 @@ import (
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -46,9 +47,16 @@ type endpointDeps struct {
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
 	metricsEngine    pbsmetrics.MetricsEngine
+	analytics        analytics.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	ao := analytics.AuctionObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -67,6 +75,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao)
 	}()
 
 	isSafari := checkSafari(r)
@@ -110,11 +119,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	ao.Request = req
+	ao.Response = response
 	if err != nil {
 		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, err)
 		return
 	}
 
@@ -130,6 +143,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
 }
 

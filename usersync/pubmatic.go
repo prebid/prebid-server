@@ -3,8 +3,6 @@ package usersync
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/pbs"
 )
 
 func NewPubmaticSyncer(externalURL string) Usersyncer {
@@ -13,7 +11,7 @@ func NewPubmaticSyncer(externalURL string) Usersyncer {
 
 	return &syncer{
 		familyName: "pubmatic",
-		syncInfo: &pbs.UsersyncInfo{
+		syncInfo: &UsersyncInfo{
 			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectUri)),
 			Type:        "iframe",
 			SupportCORS: false,

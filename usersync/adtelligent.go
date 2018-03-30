@@ -3,8 +3,6 @@ package usersync
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/pbs"
 )
 
 func NewAdtelligentSyncer(externalURL string) Usersyncer {
@@ -14,7 +12,7 @@ func NewAdtelligentSyncer(externalURL string) Usersyncer {
 
 	return &syncer{
 		familyName: "adtelligent",
-		syncInfo: &pbs.UsersyncInfo{
+		syncInfo: &UsersyncInfo{
 			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectURI)),
 			Type:        "redirect",
 			SupportCORS: false,

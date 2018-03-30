@@ -19,6 +19,12 @@
   revision = "5096fddd2cca678b0801ece8513a06e580981fd2"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/chasex/glog"
+  packages = ["."]
+  revision = "c62392af379ca40e0f383bdec8044ee25545c29f"
+
+[[projects]]
   name = "github.com/cloudfoundry/gosigar"
   packages = ["."]
   revision = "14c0a766933d517675369dae6f551f5c1a10f0d8"
@@ -266,6 +272,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a9f8c2e9ba7b9ce731088a21061072e4aa90131ecc775d9888658968ecd56a41"
+  inputs-digest = "b9c694fc64651643a2d5f053100a99ebe7c178c87da625aa334fbfc22cb4d1d3"
   solver-name = "gps-cdcl"
   solver-version = 1
