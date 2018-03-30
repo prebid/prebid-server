@@ -108,12 +108,14 @@ func TestAppBanner(t *testing.T) {
 }
 
 func TestBidTransforms(t *testing.T) {
+	bidAdjustment := 0.3
+	initialBidPrice := 0.5
 	legalBid := &pbs.PBSBid{
 		BidID:             "bid-1",
 		AdUnitCode:        "adunit-1",
 		Creative_id:       "creative-1",
 		CreativeMediaType: "banner",
-		Price:             0.5,
+		Price:             initialBidPrice,
 		NURL:              "nurl",
 		Adm:               "ad-markup",
 		Width:             10,
@@ -130,7 +132,7 @@ func TestBidTransforms(t *testing.T) {
 	}
 
 	exchangeBidder := adaptLegacyAdapter(&mockAdapter)
-	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), openrtb_ext.BidderRubicon, 1.0)
+	seatBid, errs := exchangeBidder.requestBid(context.Background(), newAppOrtbRequest(), openrtb_ext.BidderRubicon, bidAdjustment)
 	if len(errs) != 1 {
 		t.Fatalf("Bad error count. Expected 1, got %d", len(errs))
 	}
@@ -154,8 +156,8 @@ func TestBidTransforms(t *testing.T) {
 	if theBid.bid.CrID != legalBid.Creative_id {
 		t.Errorf("Bad creativeid. Expected %s, got %s", legalBid.Creative_id, theBid.bid.CrID)
 	}
-	if theBid.bid.Price != legalBid.Price {
-		t.Errorf("Bad price. Expected %f, got %f", legalBid.Price, theBid.bid.Price)
+	if theBid.bid.Price != initialBidPrice*bidAdjustment {
+		t.Errorf("Bad price. Expected %f, got %f", initialBidPrice*bidAdjustment, theBid.bid.Price)
 	}
 	if theBid.bid.NURL != legalBid.NURL {
 		t.Errorf("Bad NURL. Expected %s, got %s", legalBid.NURL, theBid.bid.NURL)
