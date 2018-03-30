@@ -53,7 +53,6 @@ type endpointDeps struct {
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	ao := analytics.AuctionObject{
-		Type:   analytics.AUCTION,
 		Status: http.StatusOK,
 		Errors: make([]error, 0),
 	}

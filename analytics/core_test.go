@@ -10,12 +10,12 @@ import (
 func TestSampleModule(t *testing.T) {
 	var count int
 	am := initAnalytics(&count)
-	am.LogAuctionObject(&AuctionObject{AUCTION, http.StatusOK, nil, &openrtb.BidRequest{}, &openrtb.BidResponse{}})
+	am.LogAuctionObject(&AuctionObject{http.StatusOK, nil, &openrtb.BidRequest{}, &openrtb.BidResponse{}})
 	if count != 1 {
 		t.Errorf("PBSAnalyticsModule failed at LogAuctionObejct")
 	}
 
-	am.LogSetUIDObject(&SetUIDObject{SETUID, http.StatusOK, "bidders string", "uid", nil, true})
+	am.LogSetUIDObject(&SetUIDObject{http.StatusOK, "bidders string", "uid", nil, true})
 	if count != 2 {
 		t.Errorf("PBSAnalyticsModule failed at LogSetUIDObejct")
 	}

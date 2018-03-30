@@ -7,6 +7,15 @@ import (
 	"github.com/chasex/glog"
 )
 
+type RequestType string
+
+const (
+	COOKIE_SYNC RequestType = "/cookie_sync"
+	AUCTION     RequestType = "/openrtb2/auction"
+	SETUID      RequestType = "/set_uid"
+	AMP         RequestType = "/openrtb2/amp"
+)
+
 //Module that can perform transactional logging
 type FileLogger struct {
 	Logger *glog.Logger
@@ -95,4 +104,48 @@ func (ao *AmpObject) ToJson() string {
 	} else {
 		return string(content)
 	}
+}
+
+func (ao *AuctionObject) MarshalJSON() ([]byte, error) {
+	type alias AuctionObject
+	return json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:          AUCTION,
+		alias: (*alias)(ao),
+	})
+}
+
+func (ao *AmpObject) MarshalJSON() ([]byte, error) {
+	type alias AmpObject
+	return json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:      AMP,
+		alias: (*alias)(ao),
+	})
+}
+
+func (so *SetUIDObject) MarshalJSON() ([]byte, error) {
+	type alias SetUIDObject
+	return json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:         SETUID,
+		alias: (*alias)(so),
+	})
+}
+
+func (cso *CookieSyncObject) MarshalJSON() ([]byte, error) {
+	type alias CookieSyncObject
+	return json.Marshal(&struct {
+		Type RequestType `json:"type"`
+		*alias
+	}{
+		Type:             COOKIE_SYNC,
+		alias: (*alias)(cso),
+	})
 }

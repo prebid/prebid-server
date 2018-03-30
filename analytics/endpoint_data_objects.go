@@ -5,18 +5,9 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-type RequestType string
-
-const (
-	COOKIE_SYNC RequestType = "/cookie_sync"
-	AUCTION     RequestType = "/openrtb2/auction"
-	SETUID      RequestType = "/set_uid"
-	AMP         RequestType = "/openrtb2/amp"
-)
 
 //Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
-	Type     RequestType
 	Status   int
 	Errors   []error
 	Request  *openrtb.BidRequest
@@ -25,7 +16,6 @@ type AuctionObject struct {
 
 //Loggable object of a transaction at /openrtb2/amp endpoint
 type AmpObject struct {
-	Type               RequestType
 	Status             int
 	Errors             []error
 	Request            *openrtb.BidRequest
@@ -36,7 +26,6 @@ type AmpObject struct {
 
 //Loggable object of a transaction at /setuid
 type SetUIDObject struct {
-	Type    RequestType
 	Status  int
 	Bidder  string
 	UID     string
@@ -46,7 +35,6 @@ type SetUIDObject struct {
 
 //Loggable object of a transaction at /cookie_sync
 type CookieSyncObject struct {
-	Type         RequestType
 	Status       int
 	Errors       []error
 	BidderStatus []*usersync.CookieSyncBidders

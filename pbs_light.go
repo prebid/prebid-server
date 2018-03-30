@@ -135,7 +135,6 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
-		Type:         analytics.COOKIE_SYNC,
 		Status:       http.StatusOK,
 		Errors:       make([]error, 0),
 		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),

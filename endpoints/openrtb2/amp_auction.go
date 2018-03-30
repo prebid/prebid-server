@@ -41,7 +41,6 @@ func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValid
 func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	ao := analytics.AmpObject{
-		Type:   analytics.AMP,
 		Status: http.StatusOK,
 		Errors: make([]error, 0),
 	}

@@ -323,7 +323,6 @@ func getRawQueryMap(query string) map[string]string {
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	so := analytics.SetUIDObject{
-		Type:   analytics.SETUID,
 		Status: http.StatusOK,
 		Errors: make([]error, 0),
 	}
