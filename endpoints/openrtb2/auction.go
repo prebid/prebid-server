@@ -260,7 +260,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 
 func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
 	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
-		if adjustmentFactor < 0 {
+		if adjustmentFactor <= 0 {
 			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must not be negative. Got %f", bidderToAdjust, adjustmentFactor)
 		}
 		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
