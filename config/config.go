@@ -51,6 +51,10 @@ type Adapter struct {
 }
 
 type Metrics struct {
+	Influxdb InfluxMetrics `mapstructure:"influxdb"`
+}
+
+type InfluxMetrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`

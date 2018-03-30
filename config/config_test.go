@@ -54,10 +54,11 @@ cache:
   query: uuid=%PBS_CACHE_UUID%
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
-  host: upstream:8232
-  database: metricsdb
-  username: admin
-  password: admin1324
+  influxdb:
+    host: upstream:8232
+    database: metricsdb
+    username: admin
+    password: admin1324
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -114,10 +115,10 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
-	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
-	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
-	cmpStrings(t, "metrics.username", cfg.Metrics.Username, "admin")
-	cmpStrings(t, "metrics.password", cfg.Metrics.Password, "admin1324")
+	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
+	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
+	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
+	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)

@@ -69,7 +69,7 @@ func TestRaceIntegration(t *testing.T) {
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics)
-	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{})
+	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
 	}
@@ -162,7 +162,7 @@ func TestHoldAuction(t *testing.T) {
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
 
-	bidResponse, err := e.HoldAuction(ctx, bidRequest, &emptyUsersync{})
+	bidResponse, err := e.HoldAuction(ctx, bidRequest, &emptyUsersync{}, pbsmetrics.Labels{})
 	if err != nil {
 		t.Errorf("HoldAuction: %s", err.Error())
 	}
@@ -219,7 +219,11 @@ func TestGetAllBids(t *testing.T) {
 		BidderDummy2: nil,
 		BidderDummy3: nil,
 	}
-	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil)
+	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
+	blabels[openrtb_ext.BidderName("dummy")] = &pbsmetrics.AdapterLabels{}
+	blabels[openrtb_ext.BidderName("dummy2")] = &pbsmetrics.AdapterLabels{}
+	blabels[openrtb_ext.BidderName("dummy3")] = &pbsmetrics.AdapterLabels{}
+	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, blabels)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
@@ -238,7 +242,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, blabels)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -255,7 +259,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, blabels)
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -473,9 +477,9 @@ func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverr
 		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
 			openrtb_ext.BidderAppnexus: bidder,
 		},
-		m: pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}),
+		me: &pbsmetrics.DummyMetricsEngine{},
 	}
-	ex.HoldAuction(context.Background(), incoming, syncs)
+	ex.HoldAuction(context.Background(), incoming, syncs, pbsmetrics.Labels{})
 
 	if bidder.lastRequest == nil {
 		t.Fatalf("The Bidder never received a request.")
@@ -548,9 +552,9 @@ func NewDummyExchange(client *http.Client) *exchange {
 		BidderDummy3: c,
 	}
 
-	adapterList := []openrtb_ext.BidderName{BidderDummy, BidderDummy2, BidderDummy3}
+	// adapterList := []openrtb_ext.BidderName{BidderDummy, BidderDummy2, BidderDummy3}
 
-	e.m = pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), adapterList)
+	e.me = &pbsmetrics.DummyMetricsEngine{}
 	e.cache = &wellBehavedCache{}
 	return e
 }

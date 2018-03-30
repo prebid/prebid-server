@@ -16,8 +16,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/ssl"
-	"github.com/rcrowley/go-metrics"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -79,7 +79,7 @@ type UserSyncDeps struct {
 	ExternalUrl        string
 	RecaptchaSecret    string
 	HostCookieSettings *HostCookieSettings
-	Metrics            metrics.Registry
+	MetricsEngine      pbsmetrics.MetricsEngine
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -322,7 +322,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
-		metrics.GetOrRegisterMeter(USERSYNC_OPT_OUT, deps.Metrics).Mark(1)
+		deps.MetricsEngine.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})
 		return
 	}
 
@@ -330,7 +330,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	bidder := query["bidder"]
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		metrics.GetOrRegisterMeter(USERSYNC_BAD_REQUEST, deps.Metrics).Mark(1)
+		deps.MetricsEngine.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionErr})
 		return
 	}
 
@@ -343,7 +343,11 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	}
 
 	if err == nil {
-		metrics.GetOrRegisterMeter(fmt.Sprintf(USERSYNC_SUCCESS, bidder), deps.Metrics).Mark(1)
+		labels := pbsmetrics.UserLabels{
+			Action: pbsmetrics.RequestActionSet,
+			Bidder: openrtb_ext.BidderName(bidder),
+		}
+		deps.MetricsEngine.RecordUserIDSet(labels)
 	}
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
