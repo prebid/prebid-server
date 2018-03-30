@@ -112,7 +112,7 @@ func (ao *AuctionObject) MarshalJSON() ([]byte, error) {
 		Type RequestType `json:"type"`
 		*alias
 	}{
-		Type:          AUCTION,
+		Type:  AUCTION,
 		alias: (*alias)(ao),
 	})
 }
@@ -123,7 +123,7 @@ func (ao *AmpObject) MarshalJSON() ([]byte, error) {
 		Type RequestType `json:"type"`
 		*alias
 	}{
-		Type:      AMP,
+		Type:  AMP,
 		alias: (*alias)(ao),
 	})
 }
@@ -134,7 +134,7 @@ func (so *SetUIDObject) MarshalJSON() ([]byte, error) {
 		Type RequestType `json:"type"`
 		*alias
 	}{
-		Type:         SETUID,
+		Type:  SETUID,
 		alias: (*alias)(so),
 	})
 }
@@ -145,7 +145,7 @@ func (cso *CookieSyncObject) MarshalJSON() ([]byte, error) {
 		Type RequestType `json:"type"`
 		*alias
 	}{
-		Type:             COOKIE_SYNC,
+		Type:  COOKIE_SYNC,
 		alias: (*alias)(cso),
 	})
 }

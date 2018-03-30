@@ -5,7 +5,6 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-
 //Loggable object of a transaction at /openrtb2/auction endpoint
 type AuctionObject struct {
 	Status   int

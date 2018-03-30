@@ -10,7 +10,6 @@ import (
 
 func TestAmpObject_ToJson(t *testing.T) {
 	ao := AmpObject{
-		Type:               AMP,
 		Status:             http.StatusOK,
 		Errors:             make([]error, 0),
 		AuctionResponse:    &openrtb.BidResponse{},
@@ -23,7 +22,6 @@ func TestAmpObject_ToJson(t *testing.T) {
 
 func TestAuctionObject_ToJson(t *testing.T) {
 	ao := AuctionObject{
-		Type:   AUCTION,
 		Status: http.StatusOK,
 	}
 	if aoJson := ao.ToJson(); strings.Contains(aoJson, "Transactional Logs Error") {
@@ -33,7 +31,6 @@ func TestAuctionObject_ToJson(t *testing.T) {
 
 func TestSetUIDObject_ToJson(t *testing.T) {
 	so := SetUIDObject{
-		Type:   SETUID,
 		Status: http.StatusOK,
 		Bidder: "any-bidder",
 		UID:    "uid string",
@@ -45,7 +42,6 @@ func TestSetUIDObject_ToJson(t *testing.T) {
 
 func TestCookieSyncObject_ToJson(t *testing.T) {
 	cso := CookieSyncObject{
-		Type:         COOKIE_SYNC,
 		Status:       http.StatusOK,
 		BidderStatus: []*usersync.CookieSyncBidders{},
 	}
