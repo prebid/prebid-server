@@ -135,6 +135,13 @@ func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
 	return openrtb.RawJSON(toReturn)
 }
 
+// TODO: Replace most stuff in this file with "exchangetest" specs, to be executed by exchange_json_test.go.
+// Benefits include:
+//   1. The assertions are much more comprehensive and strict.
+//   2. No assupmtions about Exchange implementation details.
+//   3. The error messages are easier to debug.
+//
+// I'm just leaving these here for now to prove that the bidadjustmentfactors feature doesn't break any existing tests.
 func TestHoldAuction(t *testing.T) {
 	respStatus := 200
 	respBody := "{\"bid\":false}"
