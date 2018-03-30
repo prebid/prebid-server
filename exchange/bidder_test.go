@@ -26,13 +26,20 @@ func TestSingleBidder(t *testing.T) {
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
 
+	bidAdjustment := 2.0
+	firstInitialPrice := 3.0
+	secondInitialPrice := 4.0
 	mockBids := []*adapters.TypedBid{
 		{
-			Bid:     &openrtb.Bid{},
+			Bid: &openrtb.Bid{
+				Price: firstInitialPrice,
+			},
 			BidType: openrtb_ext.BidTypeBanner,
 		},
 		{
-			Bid:     &openrtb.Bid{},
+			Bid: &openrtb.Bid{
+				Price: secondInitialPrice,
+			},
 			BidType: openrtb_ext.BidTypeVideo,
 		},
 	}
@@ -47,7 +54,7 @@ func TestSingleBidder(t *testing.T) {
 		bids: mockBids,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment)
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -74,6 +81,12 @@ func TestSingleBidder(t *testing.T) {
 		if typedBid.BidType != seatBid.bids[index].bidType {
 			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
 		}
+	}
+	if mockBids[0].Bid.Price != bidAdjustment*firstInitialPrice {
+		t.Errorf("Bid[0].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*firstInitialPrice, mockBids[0].Bid.Price)
+	}
+	if mockBids[1].Bid.Price != bidAdjustment*secondInitialPrice {
+		t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBids[1].Bid.Price)
 	}
 	if len(seatBid.httpCalls) != 0 {
 		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
