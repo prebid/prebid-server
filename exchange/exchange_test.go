@@ -746,3 +746,18 @@ func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage
 	}
 	return ids
 }
+
+type emptyUsersync struct{}
+
+func (e *emptyUsersync) GetId(bidder openrtb_ext.BidderName) (string, bool) {
+	return "", false
+}
+
+type mockUsersync struct {
+	syncs map[string]string
+}
+
+func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists bool) {
+	id, exists = e.syncs[string(bidder)]
+	return
+}

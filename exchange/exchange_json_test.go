@@ -58,14 +58,16 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases)
 	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{})
 	extractResponseTimes(t, filename, bid)
-	diffOrtbResponses(t, filename, spec.Response.Bids, bid)
-	if err == nil {
-		if spec.Response.Error != "" {
-			t.Errorf("%s: Exchange did not return expected error: %s", filename, spec.Response.Error)
-		}
-	} else {
-		if err.Error() != spec.Response.Error {
-			t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
+	if spec.Response.Bids != nil {
+		diffOrtbResponses(t, filename, spec.Response.Bids, bid)
+		if err == nil {
+			if spec.Response.Error != "" {
+				t.Errorf("%s: Exchange did not return expected error: %s", filename, spec.Response.Error)
+			}
+		} else {
+			if err.Error() != spec.Response.Error {
+				t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
+			}
 		}
 	}
 }
