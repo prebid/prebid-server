@@ -1,4 +1,0 @@
-2018/04/02 15:20:04 DEBUG {"type":"/openrtb2/auction","Status":0,"Errors":null,"Request":null,"Response":null}
-2018/04/02 15:20:04 DEBUG {"type":"/openrtb2/amp","Status":0,"Errors":null,"Request":null,"AuctionResponse":null,"AmpTargetingValues":null,"Origin":""}
-2018/04/02 15:20:04 DEBUG {"type":"/set_uid","Status":0,"Bidder":"","UID":"","Errors":null,"Success":false}
-2018/04/02 15:20:04 DEBUG {"type":"/cookie_sync","Status":0,"Errors":null,"BidderStatus":null}

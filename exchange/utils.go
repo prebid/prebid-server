@@ -82,7 +82,7 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
 	// as long as user.ext.prebid exists.
 	buyerUIDs := userExt.Prebid.BuyerUIDs
-	userExt.Prebid.BuyerUIDs = nil
+	userExt.Prebid = nil
 	if userExt.Consent != "" || userExt.DigiTrust != nil {
 		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
 			return nil, err
