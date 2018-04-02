@@ -4,6 +4,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/usersync"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -51,6 +53,7 @@ func TestCookieSyncObject_ToJson(t *testing.T) {
 }
 
 func TestFileLogger_LogObjects(t *testing.T) {
+	defer deleteTestFiles("test", t)
 	if fl, err := NewFileLogger("test"); err == nil {
 		fl.LogAuctionObject(&AuctionObject{})
 		fl.LogAmpObject(&AmpObject{})
@@ -58,5 +61,17 @@ func TestFileLogger_LogObjects(t *testing.T) {
 		fl.LogCookieSyncObject(&CookieSyncObject{})
 	} else {
 		t.Fatalf("Couldn't initialize file logger: %v", err)
+	}
+}
+
+func deleteTestFiles(filename string, t *testing.T) {
+	files, err := filepath.Glob(filename + "*")
+	if err != nil {
+		return
+	}
+	for _, f := range files {
+		if err := os.Remove(f); err != nil {
+			t.Fatalf("Test analytics file '%v'  not removed", filename)
+		}
 	}
 }
