@@ -358,7 +358,7 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.ImpID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
 	}
-	if bid.bid.Price < 0.0 {
+	if bid.bid.Price <= 0.0 {
 		return false, fmt.Errorf("Bid \"%s\" does not contain a positive 'price'", bid.bid.ID)
 	}
 	if bid.bid.CrID == "" {
