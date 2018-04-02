@@ -403,7 +403,8 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
 			if bidType, err := getMediaTypeForBid(&bid); err == nil {
 				bids = append(bids, &adapters.TypedBid{
 					Bid:     &bid,
