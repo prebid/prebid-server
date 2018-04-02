@@ -119,9 +119,9 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	bids := make([]*adapters.TypedBid, 0, 5)
 
 	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
+		for i := range sb.Bid {
 			bids = append(bids, &adapters.TypedBid{
-				Bid:     &bid,
+				Bid:     &sb.Bid[i],
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}

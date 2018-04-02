@@ -1,0 +1,84 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "unit": "539439964",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "tagid": "539439964"
+            }
+          ],
+          "ext": {
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id",
+                  "price": 0.1
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "test-imp-id",
+                  "price": 0.2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBids": [
+    {
+      "bid": {
+        "id": "bid-1",
+        "impid": "test-imp-id",
+        "price": 0.1
+      },
+      "type": "banner"
+    },
+    {
+      "bid": {
+        "id": "bid-2",
+        "impid": "test-imp-id",
+        "price": 0.2
+      },
+      "type": "banner"
+    }
+  ]
+}
