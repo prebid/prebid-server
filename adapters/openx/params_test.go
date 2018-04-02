@@ -56,5 +56,6 @@ var invalidParams = []string{
 	`{"unit": "123", "delDomain": "foo.barr"}`,
 	`{"unit": "123", "delDomain": ".bar"}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customFloor": "0.1"}`,
+	`{"unit": "123", "delDomain": "foo.bar", "customFloor": -0.1}`,
 	`{"unit": "123", "delDomain": "foo.bar", "customParams": "foo: bar"}`,
 }

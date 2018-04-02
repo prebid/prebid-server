@@ -18,7 +18,8 @@
     },
     "customFloor": {
       "type": "number",
-      "description": "The Minimum CPM price in USD."
+      "description": "The minimum CPM price in USD.",
+      "minimum": 0
     },
     "customParams": {
       "type": "object",
