@@ -41,7 +41,7 @@ func TestAllValidBids(t *testing.T) {
 }
 
 func TestAllBadBids(t *testing.T) {
-	bids := make([]*pbsOrtbBid, 4)
+	bids := make([]*pbsOrtbBid, 5)
 	bids[0] = &pbsOrtbBid{
 		bid: &openrtb.Bid{
 			ID:    "one-bid",
@@ -56,28 +56,27 @@ func TestAllBadBids(t *testing.T) {
 			CrID:  "thatCreative",
 		},
 	}
-	// TODO #427: Add this back in after a breaking change window
-	// bids[2] = &pbsOrtbBid{
-	// 	bid: &openrtb.Bid{
-	// 		ID:    "123",
-	// 		ImpID: "456",
-	// 		Price: 0.44,
-	// 	},
-	// }
 	bids[2] = &pbsOrtbBid{
+		bid: &openrtb.Bid{
+			ID:    "123",
+			ImpID: "456",
+			Price: 0.44,
+		},
+	}
+	bids[3] = &pbsOrtbBid{
 		bid: &openrtb.Bid{
 			ImpID: "456",
 			Price: 0.44,
 			CrID:  "blah",
 		},
 	}
-	bids[3] = &pbsOrtbBid{}
+	bids[4] = &pbsOrtbBid{}
 	brw := &bidResponseWrapper{
 		adapterBids: &pbsOrtbSeatBid{
 			bids: bids,
 		},
 	}
-	assertBids(t, brw, 0, 4)
+	assertBids(t, brw, 0, 5)
 }
 
 func TestMixeddBids(t *testing.T) {
