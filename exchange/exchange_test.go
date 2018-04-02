@@ -135,6 +135,13 @@ func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
 	return openrtb.RawJSON(toReturn)
 }
 
+// TODO: Replace most stuff in this file with "exchangetest" specs, to be executed by exchange_json_test.go.
+// Benefits include:
+//   1. The assertions are much more comprehensive and strict.
+//   2. No assupmtions about Exchange implementation details.
+//   3. The error messages are easier to debug.
+//
+// I'm just leaving these here for now to prove that the bidadjustmentfactors feature doesn't break any existing tests.
 func TestHoldAuction(t *testing.T) {
 	respStatus := 200
 	respBody := "{\"bid\":false}"
@@ -223,7 +230,7 @@ func TestGetAllBids(t *testing.T) {
 	blabels[openrtb_ext.BidderName("dummy")] = &pbsmetrics.AdapterLabels{}
 	blabels[openrtb_ext.BidderName("dummy2")] = &pbsmetrics.AdapterLabels{}
 	blabels[openrtb_ext.BidderName("dummy3")] = &pbsmetrics.AdapterLabels{}
-	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, blabels)
+	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, nil, blabels)
 	if len(adapterBids[BidderDummy].bids) != 2 {
 		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
 	}
@@ -242,7 +249,7 @@ func TestGetAllBids(t *testing.T) {
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
 	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, blabels)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil, blabels)
 
 	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
 		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
@@ -259,7 +266,7 @@ func TestGetAllBids(t *testing.T) {
 
 	// Test with null pointer for bid response
 	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, blabels)
+	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil, blabels)
 
 	if len(adapterExtra[BidderDummy2].Errors) != 1 {
 		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
@@ -498,7 +505,7 @@ type mockBidder struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
 	b.lastRequest = request
 	return nil, nil
 }
@@ -524,7 +531,7 @@ type mockAdapter struct {
 	errs    []error
 }
 
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
 	return a.seatBid, a.errs
 }
 

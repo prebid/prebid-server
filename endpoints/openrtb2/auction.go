@@ -237,10 +237,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	} else if bidExt != nil {
 		aliases = bidExt.Prebid.Aliases
-	}
 
-	if err := deps.validateAliases(aliases); err != nil {
-		return err
+		if err := deps.validateAliases(aliases); err != nil {
+			return err
+		}
+
+		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+			return err
+		}
 	}
 
 	for index, imp := range req.Imp {
@@ -265,6 +269,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	return nil
+}
+
+func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
+		if adjustmentFactor <= 0 {
+			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
+		}
+		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
+			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
+				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
+			}
+		}
+	}
 	return nil
 }
 
