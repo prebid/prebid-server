@@ -129,6 +129,12 @@ var validGranularityTests []granularityTestData = []granularityTestData{
 		json:   []byte(`[{ "precision": 3, "max":20, "increment":0.005}]`),
 		target: PriceGranularity{GranularityRange{Precision: 3, Min: 0.0, Max: 20.0, Increment: 0.005}},
 	},
+	{
+		json: []byte(`[{"precision": 0, "max":5, "increment": 1}, {"precision": 0, "max": 10, "increment": 2}, {"precision":0, "max": 20, "increment": 5}]`),
+		target: PriceGranularity{GranularityRange{Precision: 0, Min: 0.0, Max: 5.0, Increment: 1.0},
+			GranularityRange{Precision: 0, Min: 5.0, Max: 10.0, Increment: 2.0},
+			GranularityRange{Precision: 0, Min: 10.0, Max: 20.0, Increment: 5.0}},
+	},
 }
 
 func TestGranularityUnmarshalBad(t *testing.T) {
@@ -142,6 +148,7 @@ func TestGranularityUnmarshalBad(t *testing.T) {
 		[]byte(`[{"min":0, "max":20, "increment":0.1}, {"min":15, "max":30, "increment":1.0}]`),
 		[]byte(`[{"precision": 2, "min":0, "max":10, "increment":0.1}, {"precision": 1, "min":10, "max":50, "increment":1}]`),
 		[]byte(`[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]`),
+		[]byte(`[{"max":20, "min":10, "increment": 0.1}, {"max":10, "min":0, "increment":0.05}]`),
 	}
 	var resolved PriceGranularity
 	for _, b := range tests {
