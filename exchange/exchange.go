@@ -361,9 +361,9 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.Price == 0.0 {
 		return false, fmt.Errorf("Bid \"%s\" missing required field 'price'", bid.bid.ID)
 	}
-	// Check creative ID
-	if bid.bid.CrID == "" {
-		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
-	}
+	// TODO #427: Check creative ID after Bidders have had time to start returning it.
+	// if bid.bid.CrID == "" {
+	// 	return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
+	// }
 	return true, nil
 }
