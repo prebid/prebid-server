@@ -56,8 +56,14 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 		t.Fatalf("%s: Failed to parse aliases", filename)
 	}
 	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases)
+	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
 	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{})
-	extractResponseTimes(t, filename, bid)
+	responseTimes := extractResponseTimes(t, filename, bid)
+	for _, bidderName := range biddersInAuction {
+		if _, ok := responseTimes[bidderName]; !ok {
+			t.Errorf("%s: Response JSON missing expected ext.responsetimemillis.%s", filename, bidderName)
+		}
+	}
 	if spec.Response.Bids != nil {
 		diffOrtbResponses(t, filename, spec.Response.Bids, bid)
 		if err == nil {
@@ -72,19 +78,40 @@ func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
 	}
 }
 
+func findBiddersInAuction(t *testing.T, context string, req *openrtb.BidRequest) []string {
+	if splitImps, err := splitImps(req.Imp); err != nil {
+		t.Errorf("%s: Failed to parse Bidders from request: %v", context, err)
+		return nil
+	} else {
+		bidders := make([]string, 0, len(splitImps))
+		for bidderName, _ := range splitImps {
+			bidders = append(bidders, bidderName)
+		}
+		return bidders
+	}
+}
+
 // extractResponseTimes validates the format of bid.ext.responsetimemillis, and then removes it.
 // This is done because the response time will change from run to run, so it's impossible to hardcode a value
 // into the JSON. The best we can do is make sure that the property exists.
-func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse) {
-	if _, dataType, _, err := jsonparser.Get(bid.Ext, "responsetimemillis"); err != nil || dataType != jsonparser.Object {
+func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse) map[string]int {
+	if data, dataType, _, err := jsonparser.Get(bid.Ext, "responsetimemillis"); err != nil || dataType != jsonparser.Object {
 		t.Errorf("%s: Exchange did not return ext.responsetimemillis object: %v", context, err)
-		return
-	}
-	// Delete the response times so that they don't appear in the JSON, because they can't be tested reliably anyway.
-	// If there's no other ext, just delete it altogether.
-	bid.Ext = jsonparser.Delete(bid.Ext, "responsetimemillis")
-	if diff, err := gojsondiff.New().Compare(bid.Ext, []byte("{}")); err == nil && !diff.Modified() {
-		bid.Ext = nil
+		return nil
+	} else {
+		responseTimes := make(map[string]int)
+		if err := json.Unmarshal(data, &responseTimes); err != nil {
+			t.Errorf("%s: Failed to unmarshal ext.responsetimemillis into map[string]int: %v", context, err)
+			return nil
+		}
+
+		// Delete the response times so that they don't appear in the JSON, because they can't be tested reliably anyway.
+		// If there's no other ext, just delete it altogether.
+		bid.Ext = jsonparser.Delete(bid.Ext, "responsetimemillis")
+		if diff, err := gojsondiff.New().Compare(bid.Ext, []byte("{}")); err == nil && !diff.Modified() {
+			bid.Ext = nil
+		}
+		return responseTimes
 	}
 }
 
