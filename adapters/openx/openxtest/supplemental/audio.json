@@ -17,6 +17,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "OpenX doesn't support video, audio or native Imps. Ignoring Imp ID=unsupported-audio-imp"
+    "OpenX only supports banner and video imps. Ignoring imp id=unsupported-audio-imp"
   ]
 }
