@@ -4,8 +4,11 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"net/http"
+	"os"
 	"testing"
 )
+
+const TEST_DIR string = "testFiles"
 
 func TestSampleModule(t *testing.T) {
 	var count int
@@ -50,7 +53,13 @@ func initAnalytics(count *int) PBSAnalyticsModule {
 }
 
 func TestNewPBSAnalytics(t *testing.T) {
-	mod := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: "test"}})
+	if _, err := os.Stat(TEST_DIR); os.IsNotExist(err) {
+		if err = os.MkdirAll(TEST_DIR, 0755); err != nil {
+			t.Fatalf("Could not create test directory for FileLogger")
+		}
+	}
+	defer os.RemoveAll(TEST_DIR)
+	mod := NewPBSAnalytics(&config.Analytics{File: config.FileLogs{Filename: TEST_DIR + "/test"}})
 	switch modType := mod.(type) {
 	case enabledAnalytics:
 		if len(enabledAnalytics(modType)) != 1 {

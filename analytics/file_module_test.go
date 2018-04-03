@@ -4,6 +4,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/usersync"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 )
@@ -51,7 +52,13 @@ func TestCookieSyncObject_ToJson(t *testing.T) {
 }
 
 func TestFileLogger_LogObjects(t *testing.T) {
-	if fl, err := NewFileLogger("test"); err == nil {
+	if _, err := os.Stat(TEST_DIR); os.IsNotExist(err) {
+		if err = os.MkdirAll(TEST_DIR, 0755); err != nil {
+			t.Fatalf("Could not create test directory for FileLogger")
+		}
+	}
+	defer os.RemoveAll(TEST_DIR)
+	if fl, err := NewFileLogger(TEST_DIR + "//test"); err == nil {
 		fl.LogAuctionObject(&AuctionObject{})
 		fl.LogAmpObject(&AmpObject{})
 		fl.LogSetUIDObject(&SetUIDObject{})
