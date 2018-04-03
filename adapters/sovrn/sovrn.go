@@ -224,7 +224,8 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	bids := make([]*adapters.TypedBid, 0, 5)
 
 	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
 			bids = append(bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,

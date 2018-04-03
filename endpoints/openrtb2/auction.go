@@ -19,6 +19,7 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -26,19 +27,18 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
 )
 
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -46,10 +46,17 @@ type endpointDeps struct {
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
-	metrics          *pbsmetrics.Metrics
+	metricsEngine    pbsmetrics.MetricsEngine
+	analytics        analytics.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	ao := analytics.AuctionObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -57,15 +64,37 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-	deps.metrics.RequestMeter.Mark(1)
-	deps.metrics.ORTBRequestMeter.Mark(1)
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeORTB2,
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao)
+	}()
 
-	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
+	isSafari := checkSafari(r)
+	if isSafari {
+		labels.Browser = pbsmetrics.BrowserSafari
+	}
 
 	req, errL := deps.parseRequest(r)
 
-	if writeError(errL, deps.metrics.ErrorMeter, w) {
+	if writeError(errL, w) {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
+	}
+
+	if req.Site != nil && req.Site.Publisher != nil {
+		labels.PubID = req.Site.Publisher.ID
+	}
+	if req.App != nil && req.App.Publisher != nil {
+		labels.PubID = req.App.Publisher.ID
 	}
 
 	ctx := context.Background()
@@ -79,19 +108,26 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
-		deps.metrics.AppRequestMeter.Mark(1)
-	} else if usersyncs.LiveSyncCount() == 0 {
-		deps.metrics.NoCookieMeter.Mark(1)
-		if isSafari {
-			deps.metrics.SafariNoCookieMeter.Mark(1)
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if usersyncs.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	ao.Request = req
+	ao.Response = response
 	if err != nil {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, err)
 		return
 	}
 
@@ -107,6 +143,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
 }
 
@@ -200,10 +237,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	} else if bidExt != nil {
 		aliases = bidExt.Prebid.Aliases
-	}
 
-	if err := deps.validateAliases(aliases); err != nil {
-		return err
+		if err := deps.validateAliases(aliases); err != nil {
+			return err
+		}
+
+		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+			return err
+		}
 	}
 
 	for index, imp := range req.Imp {
@@ -228,6 +269,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	return nil
+}
+
+func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
+		if adjustmentFactor <= 0 {
+			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
+		}
+		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
+			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
+				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
+			}
+		}
+	}
 	return nil
 }
 
@@ -626,12 +681,22 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 
 	deps.setUserImplicitly(httpReq, bidReq)
+	setAuctionTypeImplicitly(bidReq)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
 func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	setIPImplicitly(httpReq, bidReq) // Fixes #230
 	setUAImplicitly(httpReq, bidReq)
+}
+
+// setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
+// since header bidding is generally a first-price auction.
+func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
+	if bidReq.AT == 0 {
+		bidReq.AT = 1
+	}
+	return
 }
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
@@ -802,26 +867,24 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 }
 
 // Check if a request comes from a Safari browser
-func checkSafari(r *http.Request, safariRequestsMeter metrics.Meter) (isSafari bool) {
+func checkSafari(r *http.Request) (isSafari bool) {
 	isSafari = false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
 			isSafari = true
-			safariRequestsMeter.Mark(1)
 		}
 	}
 	return
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, errMeter metrics.Meter, w http.ResponseWriter) bool {
+func writeError(errs []error, w http.ResponseWriter) bool {
 	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errs {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		errMeter.Mark(1)
 		return true
 	}
 	return false

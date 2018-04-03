@@ -7,7 +7,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/rcrowley/go-metrics"
 )
 
 func TestRandomizeList(t *testing.T) {
@@ -56,7 +55,7 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	}
 	bidRequest.Imp[0].Ext = b
 	bidRequest.Imp[1].Ext = b
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{}, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, &emptyUsersync{}, make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels), pbsmetrics.Labels{})
 
 	if len(errList) > 0 {
 		for _, e := range errList {
@@ -112,7 +111,7 @@ func TestBuyerUIDs(t *testing.T) {
 			"appnexus": "apnCookie",
 		},
 	}
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels), pbsmetrics.Labels{})
 	if len(errList) > 0 {
 		t.Fatalf("Unexpected errors: %v", errList)
 	}
@@ -147,7 +146,7 @@ func TestUserExplicitUID(t *testing.T) {
 			"appnexus": "apnCookie",
 		},
 	}
-	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, pbsmetrics.NewBlankMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()))
+	cleanRequests, _, errList := cleanOpenRTBRequests(&bidRequest, syncs, make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels), pbsmetrics.Labels{})
 	if len(errList) > 0 {
 		t.Fatalf("Got unexpected errors: %v", errList)
 	}

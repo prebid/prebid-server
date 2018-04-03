@@ -31,7 +31,7 @@ type adaptedAdapter struct {
 //
 // This is not ideal. OpenRTB provides a superset of the legacy data structures.
 // For requests which use those features, the best we can do is respond with "no bid".
-func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
 	legacyRequest, legacyBidder, errs := bidder.toLegacyAdapterInputs(request, name)
 	if legacyRequest == nil || legacyBidder == nil {
 		return nil, errs
@@ -40,6 +40,10 @@ func (bidder *adaptedAdapter) requestBid(ctx context.Context, request *openrtb.B
 	legacyBids, err := bidder.adapter.Call(ctx, legacyRequest, legacyBidder)
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	for i := 0; i < len(legacyBids); i++ {
+		legacyBids[i].Price = legacyBids[i].Price * bidAdjustment
 	}
 
 	finalResponse, moreErrs := toNewResponse(legacyBids, legacyBidder, name)
