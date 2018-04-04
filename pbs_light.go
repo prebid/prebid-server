@@ -313,6 +313,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				CookieFlag:    labels.CookieFlag,
 				AdapterStatus: pbsmetrics.AdapterStatusOK,
 			}
+			bidderLabels[bidder.BidderCode] = &blabels
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
@@ -791,7 +792,11 @@ func serve(cfg *config.Configuration) error {
 
 	pbsAnalytics := analytics.NewPBSAnalytics(&cfg.Analytics)
 
-	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, openrtb_ext.BidderList())
+	// Hack because of how legacy handles districtm
+	bidderList := openrtb_ext.BidderList()
+	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
+
+	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, bidderList)
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
 	if err != nil {
