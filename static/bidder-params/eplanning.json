@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "EPlanning Adapter Params",
+  "description": "A schema which validates params accepted by the EPlanning adapter",
+  "type": "object",
+  "properties": {
+    "ssp_space_id": {
+      "type": ["integer", "string"],
+      "description": "An ID of the space"
+    }
+  },
+  "required": []
+}
