@@ -65,6 +65,8 @@ datacache:
   cache_size: 10000000
   ttl_seconds: 3600
 adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
   indexExchange:
     endpoint: http://ixtest.com/api
   rubicon:
@@ -80,12 +82,14 @@ adapters:
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
+	t.Helper()
 	if a != b {
 		t.Errorf("%s: %s != %s", key, a, b)
 	}
 }
 
 func cmpInts(t *testing.T, key string, a int, b int) {
+	t.Helper()
 	if a != b {
 		t.Errorf("%s: %d != %d", key, a, b)
 	}
@@ -125,6 +129,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
+	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters["appnexus"].Endpoint, "http://ib.adnxs.com/some/endpoint")
 	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
 	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")

@@ -60,7 +60,7 @@ func collectStoredData(directory string) (map[string]json.RawMessage, error) {
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
 	for _, id := range ids {
 		if _, ok := data[id]; !ok {
-			errs = append(errs, fmt.Errorf(`Stored %s with ID="%s" not found.`, dataType, id))
+			errs = append(errs, stored_requests.NotFoundError{id, dataType})
 		}
 	}
 	return errs
