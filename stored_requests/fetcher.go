@@ -19,7 +19,7 @@ type Fetcher interface {
 	// in the impIDs list, unless errors exist.
 	//
 	// The returned objects can only be read from. They may not be written to.
-	FetchRequests(ctx context.Context, requestID string, impIDs []string) (json.RawMessage, map[string]json.RawMessage, []error)
+	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
 // Cache is an intermediate layer which can be used to create more complex Fetchers by composition.
@@ -29,14 +29,14 @@ type Cache interface {
 	// GetRequests works much like Fetcher.FetchRequests, with a few exceptions:
 	//
 	// 1. Any (actionable) errors should be logged by the implementation, rather than returned.
-	// 2. The returned map _may_ be written to.
-	// 3. The returned map must _not_ contain keys unless they were present in the argument ID list.
-	// 4. Callers _should not_ assume that the returned map contains a key for every id.
+	// 2. The returned maps _may_ be written to.
+	// 3. The returned maps must _not_ contain keys unless they were present in the argument ID list.
+	// 4. Callers _should not_ assume that the returned maps contain key for every argument id.
 	//    The returned map will miss entries for keys which don't exist in the cache.
 	//
 	// Nil slices and empty strings are treated as "no ops". That is, a nil requestID will always produce a nil
 	// "stored request data" in the response.
-	GetRequests(ctx context.Context, requestID string, impIDs []string) (json.RawMessage, map[string]json.RawMessage)
+	GetRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
 
 	// SaveRequests stores some data in the cache. The maps are from ID to the cached value.
 	//
@@ -58,35 +58,39 @@ type fetcherWithCache struct {
 	fetcher Fetcher
 }
 
-func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestId string, impIDs []string) (storedRequest json.RawMessage, storedImps map[string]json.RawMessage, errs []error) {
-	storedRequest, storedImps = f.cache.GetRequests(ctx, requestId, impIDs)
-	if len(storedRequest) > 0 {
-		requestId = ""
-	}
+func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	requestData, impData = f.cache.GetRequests(ctx, requestIDs, impIDs)
 
 	// Fixes #311
-	leftoverImps := make([]string, 0, len(impIDs)-len(storedImps))
-	for _, id := range impIDs {
-		if _, gotFromCache := storedImps[id]; !gotFromCache {
-			leftoverImps = append(leftoverImps, id)
+	leftoverImps := findLeftovers(impIDs, impData)
+	leftoverReqs := findLeftovers(requestIDs, requestData)
+
+	fetcherReqData, fetcherImpData, errs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
+
+	f.cache.SaveRequests(ctx, fetcherReqData, fetcherImpData)
+
+	requestData = mergeData(requestData, fetcherReqData)
+	impData = mergeData(impData, fetcherImpData)
+	return
+}
+
+func findLeftovers(ids []string, data map[string]json.RawMessage) (leftovers []string) {
+	leftovers = make([]string, 0, len(ids)-len(data))
+	for _, id := range ids {
+		if _, ok := data[id]; !ok {
+			leftovers = append(leftovers, id)
 		}
 	}
+	return
+}
 
-	fetcherReqData, fetcherImpData, errs := f.fetcher.FetchRequests(ctx, requestId, leftoverImps)
-	var storedRequestToCache map[string]json.RawMessage
-	if requestId != "" {
-		if len(fetcherReqData) > 0 {
-			storedRequestToCache = map[string]json.RawMessage{requestId: fetcherReqData}
-			storedRequest = fetcherReqData
-		}
-	}
-
-	f.cache.SaveRequests(ctx, storedRequestToCache, fetcherImpData)
-	if storedImps == nil {
-		storedImps = fetcherImpData
+func mergeData(cachedData map[string]json.RawMessage, fetchedData map[string]json.RawMessage) (mergedData map[string]json.RawMessage) {
+	mergedData = cachedData
+	if mergedData == nil {
+		mergedData = fetchedData
 	} else {
-		for key, value := range fetcherImpData {
-			storedImps[key] = value
+		for key, value := range fetchedData {
+			mergedData[key] = value
 		}
 	}
 	return

@@ -1,11 +1,11 @@
 package in_memory
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/config"
 	"testing"
+
+	"github.com/prebid/prebid-server/config"
 )
 
 func TestCacheMiss(t *testing.T) {
@@ -13,10 +13,9 @@ func TestCacheMiss(t *testing.T) {
 		Size: 512 * 1024,
 		TTL:  -1,
 	})
-	data := cache.GetRequests(context.Background(), []string{"unknown"})
-	if len(data) > 0 {
-		t.Errorf("An empty cache should not return any data on unknown IDs.")
-	}
+	storedReqs, storedImps := cache.GetRequests(context.Background(), []string{"unknown"}, nil)
+	assertMapLength(t, 0, storedReqs)
+	assertMapLength(t, 0, storedImps)
 }
 
 func TestCacheHit(t *testing.T) {
@@ -25,19 +24,19 @@ func TestCacheHit(t *testing.T) {
 		TTL:  -1,
 	})
 	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
-		"known": json.RawMessage(`{}`),
+		"known-req": json.RawMessage(`{"req":true}`),
+	}, map[string]json.RawMessage{
+		"known-imp": json.RawMessage(`{"imp":true}`),
 	})
-	data := cache.GetRequests(context.Background(), []string{"known"})
-	if len(data) != 1 {
+	reqData, impData := cache.GetRequests(context.Background(), []string{"known-req"}, []string{"known-imp"})
+	if len(reqData) != 1 {
 		t.Errorf("The cache should have returned the data.")
 	}
-	if value, ok := data["known"]; ok {
-		if !bytes.Equal(value, []byte("{}")) {
-			t.Errorf("Cache returned bad data. Expected {}, got %s", value)
-		}
-	} else {
-		t.Errorf(`Missing expected data with key: "known"`)
-	}
+	assertMapLength(t, 1, reqData)
+	assertHasValue(t, reqData, "known-req", `{"req":true}`)
+
+	assertMapLength(t, 1, impData)
+	assertHasValue(t, impData, "known-imp", `{"imp":true}`)
 }
 
 func TestCacheMixed(t *testing.T) {
@@ -46,17 +45,28 @@ func TestCacheMixed(t *testing.T) {
 		TTL:  -1,
 	})
 	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
-		"known": json.RawMessage(`{}`),
-	})
-	data := cache.GetRequests(context.Background(), []string{"known", "unknown"})
-	if len(data) != 1 {
-		t.Errorf("The cache should have returned the available data.")
+		"known-req": json.RawMessage(`{"req":true}`),
+	}, nil)
+	reqData, impData := cache.GetRequests(context.Background(), []string{"known-req", "unknown-req"}, nil)
+	assertMapLength(t, 1, reqData)
+	assertHasValue(t, reqData, "known-req", `{"req":true}`)
+	assertMapLength(t, 0, impData)
+}
+
+func assertMapLength(t *testing.T, expectedLen int, theMap map[string]json.RawMessage) {
+	t.Helper()
+	if len(theMap) != expectedLen {
+		t.Errorf("Wrong map length. Expected %d, Got %d.", expectedLen, len(theMap))
 	}
-	if value, ok := data["known"]; ok {
-		if !bytes.Equal(value, []byte("{}")) {
-			t.Errorf("Cache returned bad data. Expected {}, got %s", value)
-		}
-	} else {
-		t.Errorf(`Missing expected data with key: "known"`)
+}
+
+func assertHasValue(t *testing.T, m map[string]json.RawMessage, key string, val string) {
+	t.Helper()
+	realVal, ok := m[key]
+	if !ok {
+		t.Errorf("Map missing required key: %s", key)
+	}
+	if val != string(realVal) {
+		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, string(realVal))
 	}
 }

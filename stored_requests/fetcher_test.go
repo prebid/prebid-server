@@ -10,7 +10,9 @@ import (
 
 func TestPerfectCache(t *testing.T) {
 	cache := &mockCache{
-		mockGetReq: json.RawMessage(`{}`),
+		mockGetReq: map[string]json.RawMessage{
+			"req-id": json.RawMessage(`{"req":true}`),
+		},
 		mockGetImps: map[string]json.RawMessage{
 			"known": json.RawMessage(`{}`),
 		},
@@ -18,9 +20,9 @@ func TestPerfectCache(t *testing.T) {
 	fetcher := &mockFetcher{}
 	composed := WithCache(fetcher, cache)
 	ids := []string{"known"}
-	composed.FetchRequests(context.Background(), "req-id", ids)
+	composed.FetchRequests(context.Background(), []string{"req-id"}, ids)
 
-	if cache.gotGetReq != "req-id" {
+	if cache.gotGetReq[0] != "req-id" {
 		t.Errorf("The cache called with the wrong request ID. Expected req-id, got %s.", cache.gotGetReq)
 	}
 	if len(cache.gotGetImps) != 1 {
@@ -52,10 +54,10 @@ func TestImperfectCache(t *testing.T) {
 	}
 	composed := WithCache(fetcher, cache)
 	ids := []string{"cached", "uncached"}
-	reqData, fetchedData, errs := composed.FetchRequests(context.Background(), "", ids)
+	reqData, fetchedData, errs := composed.FetchRequests(context.Background(), nil, ids)
 
 	if len(reqData) != 0 {
-		t.Errorf("Got unexpected Request data: %s", string(reqData))
+		t.Errorf("Got unexpected Request data: %v", reqData)
 	}
 	if len(cache.gotGetImps) != 2 {
 		t.Errorf("The cache called with the wrong number of Imp IDs. Expected 2, got %d.", len(cache.gotGetImps))
@@ -97,7 +99,7 @@ func TestMissingData(t *testing.T) {
 		returnErrs: []error{errors.New("Data not found")},
 	}
 	composed := WithCache(fetcher, cache)
-	_, fetchedData, errs := composed.FetchRequests(context.Background(), "", []string{"unknown"})
+	_, fetchedData, errs := composed.FetchRequests(context.Background(), nil, []string{"unknown"})
 	if len(errs) != 1 {
 		t.Errorf("Errors from the delegate fetcher should be returned. Got %d errors.", len(errs))
 	}
@@ -118,23 +120,23 @@ func TestCacheSaves(t *testing.T) {
 	}
 	fetcher := &mockFetcher{}
 	composed := WithCache(fetcher, cache)
-	composed.FetchRequests(context.Background(), "", []string{"abc", "abc"})
+	composed.FetchRequests(context.Background(), nil, []string{"abc", "abc"})
 	if len(fetcher.gotImpQuery) != 0 {
 		t.Errorf("No IDs should be requested from the fetcher for requests with duplicate ID. Got %#v", fetcher.gotImpQuery)
 	}
 }
 
 type mockFetcher struct {
-	mockGetReq  json.RawMessage
+	mockGetReq  map[string]json.RawMessage
 	mockGetImps map[string]json.RawMessage
 	returnErrs  []error
 
-	gotReqQuery string
+	gotReqQuery []string
 	gotImpQuery []string
 }
 
-func (f *mockFetcher) FetchRequests(ctx context.Context, requestID string, impIDs []string) (json.RawMessage, map[string]json.RawMessage, []error) {
-	f.gotReqQuery = requestID
+func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+	f.gotReqQuery = requestIDs
 	f.gotImpQuery = impIDs
 	return f.mockGetReq, f.mockGetImps, f.returnErrs
 }
@@ -143,14 +145,14 @@ type mockCache struct {
 	gotSaveReqs map[string]json.RawMessage
 	gotSaveImps map[string]json.RawMessage
 
-	gotGetReq   string
+	gotGetReq   []string
 	gotGetImps  []string
-	mockGetReq  json.RawMessage
+	mockGetReq  map[string]json.RawMessage
 	mockGetImps map[string]json.RawMessage
 }
 
-func (c *mockCache) GetRequests(ctx context.Context, requestID string, impIDs []string) (json.RawMessage, map[string]json.RawMessage) {
-	c.gotGetReq = requestID
+func (c *mockCache) GetRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage) {
+	c.gotGetReq = requestIDs
 	c.gotGetImps = impIDs
 	return c.mockGetReq, c.mockGetImps
 }

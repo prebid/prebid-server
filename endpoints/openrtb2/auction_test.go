@@ -780,8 +780,8 @@ var testFinalRequests = []string{
 type mockStoredReqFetcher struct {
 }
 
-func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	return testStoredRequestData, nil
+func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return testStoredRequestData, nil, nil
 }
 
 type mockExchange struct {
