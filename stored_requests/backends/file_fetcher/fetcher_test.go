@@ -82,7 +82,7 @@ func validateImp(t *testing.T, storedImps map[string]json.RawMessage) {
 		t.Errorf("some-imp should have had a \"imp\" key, but it didn't.")
 	}
 	if !data {
-		t.Errorf(`Bad data in "imp" of stored request "some-imp". Expected true, Got %t`, "foo", data)
+		t.Errorf(`Bad data in "imp" of stored request "some-imp". Expected true, Got %t`, data)
 	}
 }
 
