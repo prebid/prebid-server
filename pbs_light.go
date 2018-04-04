@@ -250,7 +250,10 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	// Defer here because we need pbs_req defined.
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
+		// handles the case that ParsePBSRequest returns an error, so pbs_req.Start is not defined
+		if pbs_req != nil {
+			deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
+		}
 	}()
 
 	if err != nil {
@@ -819,8 +822,8 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	// TODO: Currently setupExchanges() creates metricsRegistry. We will need to do this
-	// here if/when the legacy endpoint goes away.
+	exchanges = newExchangeMap(cfg)
+
 	theClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        400,
