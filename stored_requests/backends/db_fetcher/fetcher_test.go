@@ -86,17 +86,25 @@ func TestEmptyResponse(t *testing.T) {
 	assertMapLength(t, 0, storedImps)
 }
 
-// 	mock.ExpectQuery(".*").WillReturnError(errors.New("Invalid query."))
+// TestDatabaseError makes sure we exit with an error if the DB query fails.
+func TestDatabaseError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock: %v", err)
+	}
 
-// 	fetcher := &dbFetcher{
-// 		db:         db,
-// 		queryMaker: successfulQueryMaker("SELECT id, requestData FROM my_table WHERE id IN (?, ?)"),
-// 	}
+	mock.ExpectQuery(".*").WillReturnError(errors.New("Invalid query."))
 
-// 	cfgs, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"})
-// 	assertErrorCount(t, 1, errs)
-// 	assertMapLength(t, 0, cfgs)
-// }
+	fetcher := &dbFetcher{
+		db:         db,
+		queryMaker: successfulQueryMaker("SELECT id, data, dataType FROM my_table WHERE id IN (?, ?)"),
+	}
+
+	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"stored-req-id"}, nil)
+	assertErrorCount(t, 1, errs)
+	assertMapLength(t, 0, storedReqs)
+	assertMapLength(t, 0, storedImps)
+}
 
 // TestContextDeadlines makes sure a hung query returns when the timeout expires.
 func TestContextDeadlines(t *testing.T) {
