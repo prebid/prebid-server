@@ -942,21 +942,33 @@ const requestConfigPath = "./stored_requests/data/by_id"
 //
 // This function assumes that the argument config has been validated.
 func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, err error) {
+	idList := make(stored_requests.MultiFetcher, 0, 3)
+	ampIdList := make(stored_requests.MultiFetcher, 0, 3)
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
+		idList = append(idList, byId)
 		// Currently assuming the file store is "flat", that is IDs are unique across all config types
 		// and that the files for all the types sit next to each other.
 		byAmpId = byId
-	} else if cfg.Postgres != nil {
+		ampIdList = append(ampIdList, byAmpId)
+	}
+	if cfg.Postgres != nil {
 		// Be careful not to log the password here, for security reasons
 		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
 		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
+		idList = append(idList, byId)
 		byAmpId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
-	} else {
+		ampIdList = append(ampIdList, byAmpId)
+	}
+	if len(idList) == 0 {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
 		byAmpId = byId
+	} else if len(idList) > 1 {
+		// In the case of len()==1, byId and byAmpId are already set to the correct Fetcher
+		byId = &idList
+		byAmpId = &ampIdList
 	}
 
 	if cfg.InMemoryCache != nil {

@@ -3,7 +3,6 @@ package empty_fetcher
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -18,7 +17,7 @@ type emptyFetcher struct{}
 func (fetcher *emptyFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
 	errs := make([]error, 0, len(ids))
 	for _, id := range ids {
-		errs = append(errs, fmt.Errorf(`Stored request with id="%s" not found.`, id))
+		errs = append(errs, stored_requests.NotFoundError(id))
 	}
 	return nil, errs
 }
