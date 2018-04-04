@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/golang/glog"
@@ -227,30 +228,34 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	req = &openrtb.BidRequest{}
 	errs = nil
 
-	ampId := httpRequest.FormValue("tag_id")
-	if len(ampId) == 0 {
+	ampID := httpRequest.FormValue("tag_id")
+	if ampID == "" {
 		errs = []error{errors.New("AMP requests require an AMP tag_id")}
 		return
 	}
 
-	debugParam, ok := httpRequest.URL.Query()["debug"]
-	debug := ok && len(debugParam) > 0 && debugParam[0] == "1"
+	debugParam := httpRequest.FormValue("debug")
+	debug := debugParam == "1"
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
+<<<<<<< HEAD
 	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId}, nil)
+=======
+	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampID})
+>>>>>>> start supporting AMP query params
 	if len(errs) > 0 {
 		return nil, errs
 	}
 	if len(storedRequests) == 0 {
-		errs = []error{fmt.Errorf("No AMP config found for tag_id '%s'", ampId)}
+		errs = []error{fmt.Errorf("No AMP config found for tag_id '%s'", ampID)}
 		return
 	}
 
 	// The fetched config becomes the entire OpenRTB request
-	requestJson := storedRequests[ampId]
-	if err := json.Unmarshal(requestJson, req); err != nil {
+	requestJSON := storedRequests[ampID]
+	if err := json.Unmarshal(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
 	}
@@ -261,11 +266,11 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	// Two checks so users know which way the Imp check failed.
 	if len(req.Imp) == 0 {
-		errs = []error{fmt.Errorf("data for tag_id='%s' does not define the required imp array.", ampId)}
+		errs = []error{fmt.Errorf("data for tag_id='%s' does not define the required imp array", ampID)}
 		return
 	}
 	if len(req.Imp) > 1 {
-		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampId, len(req.Imp))}
+		errs = []error{fmt.Errorf("data for tag_id '%s' includes %d imp elements. Only one is allowed", ampID, len(req.Imp))}
 		return
 	}
 
@@ -275,6 +280,67 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		req.Imp[0].Secure = &secure
 	} else {
 		*req.Imp[0].Secure = 1
+	}
+
+	// Override query params
+	if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
+		if req.Imp[0].Banner != nil {
+			*req.Imp[0].Banner.W = width
+		}
+		if req.Imp[0].Video != nil {
+			req.Imp[0].Video.W = width
+		}
+	}
+
+	if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
+		if req.Imp[0].Banner != nil {
+			*req.Imp[0].Banner.H = height
+		}
+		if req.Imp[0].Video != nil {
+			req.Imp[0].Video.H = height
+		}
+	}
+
+	// if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
+
+	// }
+
+	// if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
+
+	// }
+
+	slot := httpRequest.FormValue("slot")
+	if slot != "" {
+
+	}
+
+	multiSize := httpRequest.FormValue("ms")
+	if multiSize != "" {
+
+	}
+
+	targeting := httpRequest.FormValue("targeting")
+	if targeting != "" {
+
+	}
+
+	canonicalURL := httpRequest.FormValue("curl")
+	if canonicalURL != "" {
+		//req.Site.Page = canonicalURL
+	}
+
+	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
+		req.TMax = timeout
+	}
+
+	adClientID := httpRequest.FormValue("adcid")
+	if adClientID != "" {
+
+	}
+
+	pageURL := httpRequest.FormValue("purl")
+	if pageURL != "" {
+		req.Site.Page = pageURL
 	}
 
 	return
