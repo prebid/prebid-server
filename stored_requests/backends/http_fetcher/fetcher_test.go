@@ -50,6 +50,23 @@ func TestMalformedResponse(t *testing.T) {
 	doResponseUnpackTest(t, `{`, nil, nil, []string{"unexpected end of JSON input"})
 }
 
+func TestErrorResponse(t *testing.T) {
+	mockResponse := &http.Response{
+		StatusCode: 502,
+		Body:       closeWrapper{strings.NewReader("Bad response")},
+	}
+	requestData, impData, errs := unpackResponse(mockResponse)
+	if len(requestData) > 0 {
+		t.Errorf("Bad requestData length: %d", len(requestData))
+	}
+	if len(impData) > 0 {
+		t.Errorf("Bad impData length: %d", len(impData))
+	}
+	if len(errs) != 1 {
+		t.Fatalf("Bad err length: %d", len(errs))
+	}
+}
+
 func doBuildURLTest(t *testing.T, endpoint string, requests []string, imps []string, expected string) {
 	httpFetcher := NewFetcher(nil, endpoint)
 	req, err := buildRequest(httpFetcher.endpoint, requests, imps)
