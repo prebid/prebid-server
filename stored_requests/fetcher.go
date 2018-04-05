@@ -27,12 +27,12 @@ type Fetcher interface {
 // with the query. This was added to support Multifetcher and any other case where we might expect
 // that all IDs would not be found, and want to disentangle those errors from the others.
 type NotFoundError struct {
-	id       string
-	dataType string
+	ID       string
+	DataType string
 }
 
 func (e NotFoundError) Error() string {
-	return fmt.Sprintf(`Stored %s with ID="%s" not found.`, e.dataType, e.id)
+	return fmt.Sprintf(`Stored %s with ID="%s" not found.`, e.DataType, e.ID)
 }
 
 // Cache is an intermediate layer which can be used to create more complex Fetchers by composition.

@@ -89,7 +89,10 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
 	for _, id := range ids {
 		if _, ok := data[id]; !ok {
-			errs = append(errs, stored_requests.NotFoundError{id, dataType})
+			errs = append(errs, stored_requests.NotFoundError{
+				ID:       id,
+				DataType: dataType,
+			})
 		}
 	}
 	return errs

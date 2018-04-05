@@ -18,10 +18,16 @@ type emptyFetcher struct{}
 func (fetcher *emptyFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	errs = make([]error, 0, len(requestIDs)+len(impIDs))
 	for _, id := range requestIDs {
-		errs = append(errs, stored_requests.NotFoundError{id, "Request"})
+		errs = append(errs, stored_requests.NotFoundError{
+			ID:       id,
+			DataType: "Request",
+		})
 	}
 	for _, id := range impIDs {
-		errs = append(errs, stored_requests.NotFoundError{id, "Imp"})
+		errs = append(errs, stored_requests.NotFoundError{
+			ID:       id,
+			DataType: "Imp",
+		})
 	}
 	return
 }
