@@ -179,7 +179,7 @@ will produce the same auction as if the HTTP request had been:
 ```
 
 Prebid Server does allow Stored BidRequests and Stored Imps in the same HTTP Request.
-The Stored BidRequest will be applied first, and then the Stored Imps after.
+The Stored BidRequest patch will be applied first, and then the Stored Imp patches after.
 
 **Beware**: Stored Request data will not be applied recursively.
 If a Stored BidRequest includes Imps with their own Stored Request IDs,
@@ -198,7 +198,7 @@ stored_requests:
     port: 5432
     user: db-username
     dbname: database-name
-    query: SELECT id, requestData FROM stored_requests WHERE id IN %ID_LIST%;
+    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
 ```
 
 If you need support for a backend that you don't see, please [contribute it](contributing.md).

@@ -44,7 +44,7 @@ type PostgresConfig struct {
 	//     WHERE id in %REQUEST_ID_LIST%
 	//     UNION ALL
 	//   SELECT id, impData, 'imp' as type
-	//     FROM stored_requests
+	//     FROM stored_imps
 	//     WHERE id in %IMP_ID_LIST%
 	//
 	// The MakeQuery function will transform this query into:
