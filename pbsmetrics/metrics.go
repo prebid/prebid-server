@@ -17,7 +17,6 @@ type Labels struct {
 	Browser       Browser
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
-	NumImps       int
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
