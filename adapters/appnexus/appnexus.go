@@ -19,9 +19,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Docs for this API can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-const uri = "http://ib.adnxs.com/openrtb2"
-
 type AppNexusAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
@@ -114,7 +111,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			anReq.Imp[i].TagID = params.InvCode
 			if params.Member != "" {
 				// this assumes that the same member ID is used across all tags, which should be the case
-				uri = fmt.Sprintf("%s?member_id=%s", a.URI, params.Member)
+				uri = appendMemberId(a.URI, params.Member)
 			}
 
 		}
@@ -252,7 +249,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		}
 	}
 
-	thisUri := uri
+	thisURI := a.URI
 
 	// The Appnexus API requires a Member ID in the URL. This means the request may fail if
 	// different impressions have different member IDs.
@@ -260,7 +257,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	if len(memberIds) > 0 {
 		uniqueIds := keys(memberIds)
 		memberId := uniqueIds[0]
-		thisUri = fmt.Sprintf("%s?member_id=%s", thisUri, memberId)
+		thisURI = appendMemberId(thisURI, memberId)
 
 		if len(uniqueIds) > 1 {
 			errs = append(errs, fmt.Errorf("All request.imp[i].ext.appnexus.member params must match. Request contained: %v", uniqueIds))
@@ -283,7 +280,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisUri,
+		Uri:     thisURI,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -438,14 +435,22 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	}
 }
 
-func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig) *AppNexusAdapter {
-	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client)
+func appendMemberId(uri string, memberId string) string {
+	if strings.Contains(uri, "?") {
+		return uri + "&member_id=" + memberId
+	}
+
+	return uri + "?member_id=" + memberId
 }
 
-func NewAppNexusBidder(client *http.Client) *AppNexusAdapter {
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *AppNexusAdapter {
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+}
+
+func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 	return &AppNexusAdapter{
 		http: a,
-		URI:  uri,
+		URI:  endpoint,
 	}
 }

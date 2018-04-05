@@ -22,7 +22,15 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "appnexustest", new(AppNexusAdapter))
+	adapterstest.RunJSONBidderTest(t, "appnexustest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2"))
+}
+
+func TestMemberQueryParam(t *testing.T) {
+	uriWithMember := appendMemberId("http://ib.adnxs.com/openrtb2?query_param=true", "102")
+	expected := "http://ib.adnxs.com/openrtb2?query_param=true&member_id=102"
+	if uriWithMember != expected {
+		t.Errorf("appendMemberId() failed on URI with query string. Expected %s, got %s", expected, uriWithMember)
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -289,8 +297,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf)
-	an.URI = server.URL
+	an := NewAppNexusAdapter(&conf, server.URL)
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),

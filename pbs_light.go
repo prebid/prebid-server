@@ -250,7 +250,10 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	// Defer here because we need pbs_req defined.
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
+		// handles the case that ParsePBSRequest returns an error, so pbs_req.Start is not defined
+		if pbs_req != nil {
+			deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
+		}
 	}()
 
 	if err != nil {
@@ -310,6 +313,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				CookieFlag:    labels.CookieFlag,
 				AdapterStatus: pbsmetrics.AdapterStatusOK,
 			}
+			bidderLabels[bidder.BidderCode] = &blabels
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
@@ -721,6 +725,10 @@ func init() {
 	// no metrics configured by default (metrics{host|database|username|password})
 
 	viper.SetDefault("stored_requests.filesystem", "true")
+
+	// This Appnexus endpoint works for most purposes. Docs can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
+	viper.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2")
+
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
@@ -758,8 +766,8 @@ func main() {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig),
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["appnexus"].Endpoint),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["appnexus"].Endpoint),
 		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
 		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
 		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
@@ -788,7 +796,11 @@ func serve(cfg *config.Configuration) error {
 
 	pbsAnalytics := analytics.NewPBSAnalytics(&cfg.Analytics)
 
-	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, openrtb_ext.BidderList())
+	// Hack because of how legacy handles districtm
+	bidderList := openrtb_ext.BidderList()
+	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
+
+	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, bidderList)
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
 	if err != nil {
@@ -819,8 +831,8 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	// TODO: Currently setupExchanges() creates metricsRegistry. We will need to do this
-	// here if/when the legacy endpoint goes away.
+	exchanges = newExchangeMap(cfg)
+
 	theClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        400,
@@ -930,21 +942,33 @@ const requestConfigPath = "./stored_requests/data/by_id"
 //
 // This function assumes that the argument config has been validated.
 func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, err error) {
+	idList := make(stored_requests.MultiFetcher, 0, 3)
+	ampIdList := make(stored_requests.MultiFetcher, 0, 3)
 	if cfg.Files {
 		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
 		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
+		idList = append(idList, byId)
 		// Currently assuming the file store is "flat", that is IDs are unique across all config types
 		// and that the files for all the types sit next to each other.
 		byAmpId = byId
-	} else if cfg.Postgres != nil {
+		ampIdList = append(ampIdList, byAmpId)
+	}
+	if cfg.Postgres != nil {
 		// Be careful not to log the password here, for security reasons
 		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
 		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
+		idList = append(idList, byId)
 		byAmpId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
-	} else {
+		ampIdList = append(ampIdList, byAmpId)
+	}
+	if len(idList) == 0 {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		byId = empty_fetcher.EmptyFetcher()
 		byAmpId = byId
+	} else if len(idList) > 1 {
+		// In the case of len()==1, byId and byAmpId are already set to the correct Fetcher
+		byId = &idList
+		byAmpId = &ampIdList
 	}
 
 	if cfg.InMemoryCache != nil {
