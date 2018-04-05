@@ -250,10 +250,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	// Defer here because we need pbs_req defined.
 	defer func() {
 		if pbs_req == nil {
-			deps.metricsEngine.RecordRequest(labels, 0)
+			deps.metricsEngine.RecordRequest(labels)
+			deps.metricsEngine.RecordImps(labels, 0)
 		} else {
 			// handles the case that ParsePBSRequest returns an error, so pbs_req.Start is not defined
-			deps.metricsEngine.RecordRequest(labels, len(pbs_req.AdUnits))
+			deps.metricsEngine.RecordRequest(labels)
+			deps.metricsEngine.RecordImps(labels, len(pbs_req.AdUnits))
 			deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
 		}
 	}()

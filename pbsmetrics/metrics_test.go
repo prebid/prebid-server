@@ -60,7 +60,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 		AdapterStatus: AdapterStatusOK,
 	}
 	for i := 0; i < 5; i++ {
-		metricsEngine.RecordRequest(labels, 2)
+		metricsEngine.RecordRequest(labels)
+		metricsEngine.RecordImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(blabels)
 		metricsEngine.RecordAdapterPrice(blabels, 1.34)

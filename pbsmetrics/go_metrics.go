@@ -195,9 +195,8 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 // Implement the MetricsEngine interface
 
 // RecordRequest implements a part of the MetricsEngine interface
-func (me *Metrics) RecordRequest(labels Labels, numImps int) {
+func (me *Metrics) RecordRequest(labels Labels) {
 	me.RequestMeter.Mark(1)
-	me.ImpMeter.Mark(int64(numImps))
 	if labels.Source == DemandApp {
 		me.AppRequestMeter.Mark(1)
 	} else {
@@ -226,6 +225,10 @@ func (me *Metrics) RecordRequest(labels Labels, numImps int) {
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
+}
+
+func (me *Metrics) RecordImps(labels Labels, numImps int) {
+	me.ImpMeter.Mark(int64(numImps))
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible

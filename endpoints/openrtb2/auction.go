@@ -74,7 +74,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	numImps := 0
 	defer func() {
-		deps.metricsEngine.RecordRequest(labels, numImps)
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordImps(labels, numImps)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()

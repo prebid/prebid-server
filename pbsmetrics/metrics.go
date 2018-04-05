@@ -115,7 +115,8 @@ const (
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
 type MetricsEngine interface {
-	RecordRequest(labels Labels, numImps int)              // ignores adapter. only statusOk and statusErr fom status
+	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterBidsReceived(labels AdapterLabels, bids int64)
@@ -163,9 +164,16 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 type MultiMetricsEngine []MetricsEngine
 
 // RecordRequest across all engines
-func (me *MultiMetricsEngine) RecordRequest(labels Labels, numImps int) {
+func (me *MultiMetricsEngine) RecordRequest(labels Labels) {
 	for _, thisME := range *me {
-		thisME.RecordRequest(labels, numImps)
+		thisME.RecordRequest(labels)
+	}
+}
+
+// RecordImps across all engines
+func (me *MultiMetricsEngine) RecordImps(labels Labels, numImps int) {
+	for _, thisME := range *me {
+		thisME.RecordImps(labels, numImps)
 	}
 }
 
@@ -222,7 +230,12 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels UserLabels) {
 type DummyMetricsEngine struct{}
 
 // RecordRequest as a noop
-func (me *DummyMetricsEngine) RecordRequest(labels Labels, numImps int) {
+func (me *DummyMetricsEngine) RecordRequest(labels Labels) {
+	return
+}
+
+// RecordImps as a noop
+func (me *DummyMetricsEngine) RecordImps(labels Labels, numImps int) {
 	return
 }
 
