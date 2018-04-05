@@ -1,11 +1,12 @@
 package pbsmetrics
 
 import (
+	"time"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/rcrowley/go-metrics"
 	"github.com/vrischmann/go-metrics-influxdb"
-	"time"
 )
 
 // Labels defines the labels that can be attached to the metrics.
@@ -16,6 +17,7 @@ type Labels struct {
 	Browser       Browser
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
+	NumImps       int
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
@@ -113,7 +115,7 @@ const (
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
 type MetricsEngine interface {
-	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
+	RecordRequest(labels Labels, numImps int)              // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterBidsReceived(labels AdapterLabels, bids int64)
@@ -161,9 +163,9 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 type MultiMetricsEngine []MetricsEngine
 
 // RecordRequest across all engines
-func (me *MultiMetricsEngine) RecordRequest(labels Labels) {
+func (me *MultiMetricsEngine) RecordRequest(labels Labels, numImps int) {
 	for _, thisME := range *me {
-		thisME.RecordRequest(labels)
+		thisME.RecordRequest(labels, numImps)
 	}
 }
 
@@ -220,7 +222,7 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels UserLabels) {
 type DummyMetricsEngine struct{}
 
 // RecordRequest as a noop
-func (me *DummyMetricsEngine) RecordRequest(labels Labels) {
+func (me *DummyMetricsEngine) RecordRequest(labels Labels, numImps int) {
 	return
 }
 
