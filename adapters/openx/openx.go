@@ -11,6 +11,7 @@ import (
 )
 
 const uri = "http://rtb.openx.net/prebid"
+const config = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
 }
@@ -20,7 +21,8 @@ type openxImpExt struct {
 }
 
 type openxReqExt struct {
-	DelDomain string `json:"delDomain"`
+	DelDomain    string `json:"delDomain"`
+	BidderConfig string `json:"bc"`
 }
 
 func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -67,7 +69,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
-	var reqExt openxReqExt
+	reqExt := openxReqExt{BidderConfig: config}
 
 	for _, imp := range request.Imp {
 		if err := preprocess(&imp, &reqExt); err != nil {
