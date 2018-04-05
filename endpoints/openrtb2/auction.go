@@ -734,7 +734,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	}
 
 	// Fetch the Stored Request data
-	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{storedBidRequestId}, impIds)
+	var storedReqIds []string
+	if hasStoredBidRequest {
+		storedReqIds = []string{storedBidRequestId}
+	}
+	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
