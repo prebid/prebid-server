@@ -15,7 +15,7 @@ stored_requests:
 
 Choose an ID to reference your stored request data. Throughout this doc, replace {id} with the ID you've chosen.
 
-Add the file `stored_requests/data/by_id/{id}.json` and populate it with some [Imp](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=17) data.
+Add the file `stored_requests/data/by_id/stored_imps/{id}.json` and populate it with some [Imp](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=17) data.
 
 ```json
 {
@@ -66,7 +66,7 @@ And then `POST` to [`/openrtb2/auction`](../endpoints/openrtb2/auction.md) with 
 }
 ```
 
-The auction will occur as if the HTTP request had included the content from `stored_requests/data/by_id/{id}.json` instead.
+The auction will occur as if the HTTP request had included the content from `stored_requests/data/by_id/stored_imps/{id}.json` instead.
 
 ## Partially Stored Requests
 
@@ -126,7 +126,7 @@ So far, our examples have only used Stored Imp data. However, Stored Requests
 are also allowed on the [BidRequest](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=15).
 These work exactly the same way, but support storing properties like timeouts and price granularity.
 
-For example, assume the following `stored_requests/data/by_id/stored-request.json`:
+For example, assume the following `stored_requests/data/by_id/stored_requests/stored-request.json`:
 
 ```json
 {
@@ -152,7 +152,7 @@ Then an HTTP request like:
   "ext": {
     "prebid": {
       "storedrequest": {
-        "id": "stored-request.json"
+        "id": "stored-request"
       }
     }
   }
