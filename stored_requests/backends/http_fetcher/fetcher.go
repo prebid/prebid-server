@@ -4,20 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"golang.org/x/net/context/ctxhttp"
 )
 
-// NewFileFetcher returns a Fetcher which uses the Client to pull data from the endpoint.
+// NewFetcher returns a Fetcher which uses the Client to pull data from the endpoint.
 //
 // This file expects the endpoint to satisfy the following API:
 //
-// GET {endpoint}?id=reqID&imp-ids=imp1,imp2,imp3
+// GET {endpoint}?req-id=req1,req2&imp-ids=imp1,imp2,imp3
 //
 // This endpoint should return a payload like:
 //
 // {
-//   "request": { ... stored request data ... },
+//   "request": {
+//     "req1": { ... stored data for req1 ... },
+//     "req2": { ... stored data for req2 ... },
+//   },
 //   "imps": {
 //     "imp1": { ... stored data for imp1 ... },
 //     "imp2": { ... stored data for imp2 ... },
@@ -26,7 +30,7 @@ import (
 // }
 //
 // If the request, or any of the imps are not found, then
-func NewFetcher(client *http.Client, endpoint string) stored_requests.Fetcher {
+func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
 	return &httpFetcher{
 		client:   client,
 		endpoint: endpoint,
@@ -38,16 +42,26 @@ type httpFetcher struct {
 	endpoint string
 }
 
-func (fetcher *httpFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	// TODO: Implement this
-	// var errors []error = nil
-	// for _, id := range ids {
-	// 	if _, ok := fetcher.storedReqs[id]; !ok {
-	// 		errors = append(errors, fmt.Errorf("No config found for id: %s", id))
-	// 	}
-	// }
+func (fetcher *httpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	httpReq, err := buildRequest(fetcher.endpoint, requestIDs, impIDs)
+	if err != nil {
+		return nil, nil, []error{err}
+	}
 
-	// // Even though there may be many other IDs here, the interface contract doesn't prohibit this.
-	// // Returning the whole slice is much cheaper than making partial copies on each call.
-	// return fetcher.storedReqs, errors
+	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
+	if err != nil {
+		return nil, nil, []error{err}
+	}
+	requestData, impData, errs = unpackResponse(httpResp)
+	return
+}
+
+func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
+	// TODO: Build query params
+	return http.NewRequest("GET", endpoint, strings.NewReader(""))
+}
+
+func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	// TODO: Implement
+	return nil, nil, nil
 }
