@@ -13,8 +13,8 @@ import (
 // These prefixes are used when generating cache keys so that there's no chance
 // of conflict between the two types.
 const (
-	reqPrefix = "req"
-	impPrefix = "imp"
+	reqPrefix = "r"
+	impPrefix = "i"
 )
 
 // NewLRUCache returns an in-memory Cache which evicts items if:
