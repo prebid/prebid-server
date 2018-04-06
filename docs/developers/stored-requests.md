@@ -204,7 +204,7 @@ stored_requests:
 ```yaml
 stored_requests:
   http:
-    endpoint: http://prebid.backend.com/stored_requests
+    endpoint: http://stored-requests.prebid.com
 ```
 
 If you need support for a backend that you don't see, please [contribute it](contributing.md).
