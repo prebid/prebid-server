@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"fmt"
+
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -760,11 +761,11 @@ func TestNewEmptyFetcher(t *testing.T) {
 	if fetcher == nil {
 		t.Errorf("The fetcher should be non-nil, even with an empty config.")
 	}
-	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
-		t.Errorf("The returned accountFetcher should fail on any ID.")
+	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
+		t.Errorf("The returned accountFetcher should fail on any IDs.")
 	}
-	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
-		t.Errorf("The returned requestFetcher should fail on any ID.")
+	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
+		t.Errorf("The returned requestFetcher should fail on any IDs.")
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func NewFetcher(db *sql.DB, queryMaker func(int) (string, error)) stored_requests.Fetcher {
+func NewFetcher(db *sql.DB, queryMaker func(int, int) string) stored_requests.Fetcher {
 	return &dbFetcher{
 		db:         db,
 		queryMaker: queryMaker,
@@ -19,22 +19,21 @@ func NewFetcher(db *sql.DB, queryMaker func(int) (string, error)) stored_request
 // dbFetcher fetches Stored Requests from a database. This should be instantiated through the NewFetcher() function.
 type dbFetcher struct {
 	db         *sql.DB
-	queryMaker func(int) (string, error)
+	queryMaker func(numReqs int, numImps int) (query string)
 }
 
-func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	if len(ids) < 1 {
-		return nil, nil
+func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	if len(requestIDs) < 1 && len(impIDs) < 1 {
+		return nil, nil, nil
 	}
 
-	query, err := fetcher.queryMaker(len(ids))
-	if err != nil {
-		return nil, []error{err}
+	query := fetcher.queryMaker(len(requestIDs), len(impIDs))
+	idInterfaces := make([]interface{}, len(requestIDs)+len(impIDs))
+	for i := 0; i < len(requestIDs); i++ {
+		idInterfaces[i] = requestIDs[i]
 	}
-
-	idInterfaces := make([]interface{}, len(ids))
-	for i := 0; i < len(ids); i++ {
-		idInterfaces[i] = ids[i]
+	for i := 0; i < len(impIDs); i++ {
+		idInterfaces[i+len(requestIDs)] = impIDs[i]
 	}
 
 	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
@@ -46,7 +45,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 		if ctxErr == nil || ctxErr != context.DeadlineExceeded {
 			glog.Errorf("Error reading from Stored Request DB: %s", err.Error())
 		}
-		return nil, []error{err}
+		return nil, nil, []error{err}
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
@@ -54,30 +53,47 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, ids []string) (map[
 		}
 	}()
 
-	reqData := make(map[string]json.RawMessage, len(ids))
+	storedRequestData := make(map[string]json.RawMessage, len(requestIDs))
+	storedImpData := make(map[string]json.RawMessage, len(impIDs))
 	for rows.Next() {
 		var id string
-		var thisReqData []byte
+		var data []byte
+		var dataType string
 
-		// Fixes #338?
-		if err := rows.Scan(&id, &thisReqData); err != nil {
-			return nil, []error{err}
+		// Fixes #338
+		if err := rows.Scan(&id, &data, &dataType); err != nil {
+			return nil, nil, []error{err}
 		}
 
-		reqData[id] = thisReqData
+		switch dataType {
+		case "request":
+			storedRequestData[id] = data
+		case "imp":
+			storedImpData[id] = data
+		default:
+			glog.Errorf("Postgres result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
+		}
 	}
 
-	// Fixes #338?
+	// Fixes #338
 	if rows.Err() != nil {
-		return nil, []error{rows.Err()}
+		return nil, nil, []error{rows.Err()}
 	}
 
-	var errs []error
+	errs = appendErrors("Request", requestIDs, storedRequestData, nil)
+	errs = appendErrors("Imp", impIDs, storedImpData, errs)
+
+	return storedRequestData, storedImpData, errs
+}
+
+func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
 	for _, id := range ids {
-		if _, ok := reqData[id]; !ok {
-			errs = append(errs, stored_requests.NotFoundError(id))
+		if _, ok := data[id]; !ok {
+			errs = append(errs, stored_requests.NotFoundError{
+				ID:       id,
+				DataType: dataType,
+			})
 		}
 	}
-
-	return reqData, errs
+	return errs
 }

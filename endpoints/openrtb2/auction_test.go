@@ -495,6 +495,19 @@ func (validator *bidderParamValidator) Schema(name openrtb_ext.BidderName) strin
 
 // Test stored request data
 var testStoredRequestData = map[string]json.RawMessage{
+	"2": json.RawMessage(`{
+		"tmax": 500,
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low"
+				}
+			}
+		}
+	}`),
+}
+
+var testStoredImpData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
 		"id": "adUnit1",
 			"ext": {
@@ -508,17 +521,6 @@ var testStoredRequestData = map[string]json.RawMessage{
 				}
 			}
 		}`),
-	"": json.RawMessage(""),
-	"2": json.RawMessage(`{
-		"tmax": 500,
-		"ext": {
-			"prebid": {
-				"targeting": {
-					"pricegranularity": "low"
-				}
-			}
-		}
-	}`),
 }
 
 // Incoming requests with stored request IDs
@@ -780,8 +782,8 @@ var testFinalRequests = []string{
 type mockStoredReqFetcher struct {
 }
 
-func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	return testStoredRequestData, nil
+func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return testStoredRequestData, testStoredImpData, nil
 }
 
 type mockExchange struct {

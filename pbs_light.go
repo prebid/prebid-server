@@ -972,7 +972,7 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.F
 	}
 
 	if cfg.InMemoryCache != nil {
-		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
+		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
 		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 		byAmpId = stored_requests.WithCache(byAmpId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}

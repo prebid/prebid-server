@@ -9,37 +9,59 @@ import (
 type MultiFetcher []Fetcher
 
 // FetchRequests implements the Fetcher interface for MultiFetcher
-func (mf *MultiFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	var errs []error
-	result := make(map[string]json.RawMessage, len(ids))
+func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	requestData = make(map[string]json.RawMessage, len(requestIDs))
+	impData = make(map[string]json.RawMessage, len(impIDs))
 
 	// Loop over the fetchers
-	for _, f := range *mf {
-		remainingIDs := make([]string, 0, len(ids))
-		for _, id := range ids {
-			if _, ok := result[id]; !ok {
-				remainingIDs = append(remainingIDs, id)
-			}
-		}
-		ids = remainingIDs
-		thisResult, rerrs := f.FetchRequests(ctx, ids)
+	for _, f := range mf {
+		remainingRequestIDs := filter(requestIDs, requestData)
+		requestIDs = remainingRequestIDs
+		remainingImpIDs := filter(impIDs, impData)
+		impIDs = remainingImpIDs
+
+		theseRequestData, theseImpData, rerrs := f.FetchRequests(ctx, remainingRequestIDs, remainingImpIDs)
 		// Drop NotFound errors, as other fetchers may have them. Also don't want multiple NotFound errors per ID.
 		rerrs = dropMissingIDs(rerrs)
 		if len(rerrs) > 0 {
 			errs = append(errs, rerrs...)
 		}
-		// Loop over the results
-		for k, v := range thisResult {
-			result[k] = v
-		}
+		addAll(requestData, theseRequestData)
+		addAll(impData, theseImpData)
 	}
 	// Add missing ID errors back in for any IDs that are still missing
-	for _, id := range ids {
-		if _, ok := result[id]; !ok {
-			errs = append(errs, NotFoundError(id))
+	errs = appendNotFoundErrors("Request", requestIDs, requestData, errs)
+	errs = appendNotFoundErrors("Imp", impIDs, impData, errs)
+	return
+}
+
+func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {
+	for k, v := range toAdd {
+		base[k] = v
+	}
+}
+
+func filter(original []string, exclude map[string]json.RawMessage) (filtered []string) {
+	if len(exclude) == 0 {
+		filtered = original
+		return
+	}
+	filtered = make([]string, 0, len(original))
+	for _, id := range original {
+		if _, ok := exclude[id]; !ok {
+			filtered = append(filtered, id)
 		}
 	}
-	return result, errs
+	return
+}
+
+func appendNotFoundErrors(dataType string, expected []string, contains map[string]json.RawMessage, errs []error) []error {
+	for _, id := range expected {
+		if _, ok := contains[id]; !ok {
+			errs = append(errs, NotFoundError{id, dataType})
+		}
+	}
+	return errs
 }
 
 // dropMissingIDs will scrub the NotFoundError's from a slice of errors.
