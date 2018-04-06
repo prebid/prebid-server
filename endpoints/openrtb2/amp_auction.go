@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -285,10 +286,8 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	// Override query params
 	if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
 		if req.Imp[0].Banner != nil {
+
 			*req.Imp[0].Banner.W = width
-		}
-		if req.Imp[0].Video != nil {
-			req.Imp[0].Video.W = width
 		}
 	}
 
@@ -296,37 +295,71 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		if req.Imp[0].Banner != nil {
 			*req.Imp[0].Banner.H = height
 		}
-		if req.Imp[0].Video != nil {
-			req.Imp[0].Video.H = height
+	}
+
+	if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
+		// override w
+		if req.Imp[0].Banner != nil {
+			*req.Imp[0].Banner.W = overrideWidth
 		}
 	}
 
-	// if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
-
-	// }
-
-	// if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
-
-	// }
-
-	slot := httpRequest.FormValue("slot")
-	if slot != "" {
-
+	if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
+		// override h
+		if req.Imp[0].Banner != nil {
+			*req.Imp[0].Banner.H = overrideHeight
+		}
 	}
 
 	multiSize := httpRequest.FormValue("ms")
 	if multiSize != "" {
+		// override w and h with format
+		req.Imp[0].Banner.H = nil
+		req.Imp[0].Banner.W = nil
+		sizes := strings.Split(multiSize, ",")
 
+		format := make([]openrtb.Format, len(sizes))
+		for _, size := range sizes {
+			wh := strings.Split(size, "x")
+			if len(wh) == 2 {
+				f := openrtb.Format{}
+				if width, err := strconv.ParseUint(wh[0], 10, 64); err == nil {
+					f.W = width
+				} else {
+					continue
+				}
+				if height, err := strconv.ParseUint(wh[1], 10, 64); err == nil {
+					f.H = height
+				} else {
+					continue
+				}
+
+				format = append(format, f)
+			}
+		}
+		req.Imp[0].Banner.Format = format
+	}
+
+	slot := httpRequest.FormValue("slot")
+	if slot != "" {
+		// ad server ad unit ID?
 	}
 
 	targeting := httpRequest.FormValue("targeting")
 	if targeting != "" {
+		// TODO: should parse to a JSON object with KV targeting pairs
+		// Should this go in site.keywords or user.keywords?
+	}
 
+	pageURL := httpRequest.FormValue("purl")
+	if pageURL != "" {
+		req.Site.Page = pageURL
 	}
 
 	canonicalURL := httpRequest.FormValue("curl")
 	if canonicalURL != "" {
-		//req.Site.Page = canonicalURL
+		// override purl
+		req.Site.Page = canonicalURL
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
@@ -335,12 +368,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 
 	adClientID := httpRequest.FormValue("adcid")
 	if adClientID != "" {
-
-	}
-
-	pageURL := httpRequest.FormValue("purl")
-	if pageURL != "" {
-		req.Site.Page = pageURL
+		// currently unused; ignore
 	}
 
 	return
