@@ -2,93 +2,72 @@ package http_fetcher
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
 
-// Tests for buildRequest
 func TestSingleReq(t *testing.T) {
-	doBuildURLTest(t, "http://prebid.com/stored_requests", []string{"req-1"}, nil, "http://prebid.com/stored_requests?req-ids=req-1")
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, nil)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, nil)
+	assertMapKeys(t, reqData, "req-1")
+	assertMapKeys(t, impData)
+	assertErrLength(t, errs, 0)
 }
 
 func TestSeveralReqs(t *testing.T) {
-	doBuildURLTest(t, "http://prebid.com/stored_requests", []string{"req-1", "req-2"}, nil, "http://prebid.com/stored_requests?req-ids=req-1,req-2")
+	fetcher, close := newTestFetcher(t, []string{"req-1", "req-2"}, nil)
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, nil)
+	assertMapKeys(t, reqData, "req-1", "req-2")
+	assertMapKeys(t, impData)
+	assertErrLength(t, errs, 0)
 }
 
 func TestSingleImp(t *testing.T) {
-	doBuildURLTest(t, "http://prebid.com/stored_requests", nil, []string{"imp-1"}, "http://prebid.com/stored_requests?imp-ids=imp-1")
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1"})
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1"})
+	assertMapKeys(t, reqData)
+	assertMapKeys(t, impData, "imp-1")
+	assertErrLength(t, errs, 0)
 }
 
 func TestSeveralImps(t *testing.T) {
-	doBuildURLTest(t, "http://prebid.com/stored_requests", nil, []string{"imp-1", "imp-2"}, "http://prebid.com/stored_requests?imp-ids=imp-1,imp-2")
+	fetcher, close := newTestFetcher(t, nil, []string{"imp-1", "imp-2"})
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), nil, []string{"imp-1", "imp-2"})
+	assertMapKeys(t, reqData)
+	assertMapKeys(t, impData, "imp-1", "imp-2")
+	assertErrLength(t, errs, 0)
 }
 
 func TestReqsAndImps(t *testing.T) {
-	doBuildURLTest(t, "http://prebid.com/stored_requests", []string{"req-1"}, []string{"imp-1"}, "http://prebid.com/stored_requests?req-ids=req-1&imp-ids=imp-1")
+	fetcher, close := newTestFetcher(t, []string{"req-1"}, []string{"imp-1"})
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
+	assertMapKeys(t, reqData, "req-1")
+	assertMapKeys(t, impData, "imp-1")
+	assertErrLength(t, errs, 0)
 }
 
-// Tests for unpackResponse
-func TestReqResp(t *testing.T) {
-	doResponseUnpackTest(t, `{"requests":{"req-1":{"isRequest":true}}}`, map[string]json.RawMessage{"req-1": json.RawMessage(`{"isRequest":true}`)}, nil, nil)
-}
-
-func TestImpResp(t *testing.T) {
-	doResponseUnpackTest(t, `{"imps":{"imp-1":{"isRequest":false}}}`, nil, map[string]json.RawMessage{"imp-1": json.RawMessage(`{"isRequest":false}`)}, nil)
-}
-
-func TestImpReqResp(t *testing.T) {
-	mockResponse := `{"requests":{"req-1":{"isRequest":true}},"imps":{"imp-1":{"isRequest":false}}}`
-	expectedRequestData := map[string]json.RawMessage{"req-1": json.RawMessage(`{"isRequest":true}`)}
-	expectedImpData := map[string]json.RawMessage{"imp-1": json.RawMessage(`{"isRequest":false}`)}
-	doResponseUnpackTest(t, mockResponse, expectedRequestData, expectedImpData, nil)
-}
-
-func TestMalformedResponse(t *testing.T) {
-	doResponseUnpackTest(t, `{`, nil, nil, []string{"unexpected end of JSON input"})
-}
-
-func TestErrorResponse(t *testing.T) {
-	mockResponse := &http.Response{
-		StatusCode: 502,
-		Body:       closeWrapper{strings.NewReader("Bad response")},
-	}
-	requestData, impData, errs := unpackResponse(mockResponse)
-	if len(requestData) > 0 {
-		t.Errorf("Bad requestData length: %d", len(requestData))
-	}
-	if len(impData) > 0 {
-		t.Errorf("Bad impData length: %d", len(impData))
-	}
-	if len(errs) != 1 {
-		t.Fatalf("Bad err length: %d", len(errs))
-	}
-}
-
-func doBuildURLTest(t *testing.T, endpoint string, requests []string, imps []string, expected string) {
-	httpFetcher := NewFetcher(nil, endpoint)
-	req, err := buildRequest(httpFetcher.endpoint, requests, imps)
-	if err != nil {
-		t.Fatalf("Unexpected error building URL: %v", err)
-	}
-
-	if req.URL.String() != expected {
-		t.Errorf("Bad URL. Expected %s, got %s", expected, req.URL.String())
-	}
-}
-
-func doResponseUnpackTest(t *testing.T, resp string, expectedReqs map[string]json.RawMessage, expectedImps map[string]json.RawMessage, expectedErrs []string) {
-	mockResponse := &http.Response{
-		StatusCode: 200,
-		Body:       closeWrapper{strings.NewReader(resp)},
-	}
-
-	requestData, impData, errs := unpackResponse(mockResponse)
-	assertSameContents(t, requestData, expectedReqs)
-	assertSameContents(t, impData, expectedImps)
-	assertSameErrMsgs(t, expectedErrs, errs)
+func TestErrResponse(t *testing.T) {
+	fetcher, close := newFetcherBrokenBackend()
+	defer close()
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1"}, []string{"imp-1"})
+	assertMapKeys(t, reqData)
+	assertMapKeys(t, impData)
+	assertErrLength(t, errs, 1)
 }
 
 func assertSameContents(t *testing.T, expected map[string]json.RawMessage, actual map[string]json.RawMessage) {
@@ -125,4 +104,112 @@ type closeWrapper struct {
 
 func (w closeWrapper) Close() error {
 	return nil
+}
+
+func newFetcherBrokenBackend() (fetcher *httpFetcher, closer func()) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL), server.Close
+}
+
+func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *httpFetcher, closer func()) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		assertMatches(t, query.Get("req-ids"), expectReqIDs)
+		assertMatches(t, query.Get("imp-ids"), expectImpIDs)
+
+		gotReqIDs := strings.Split(query.Get("req-ids"), ",")
+		gotImpIDs := strings.Split(query.Get("imp-ids"), ",")
+
+		reqIDResponse := make(map[string]json.RawMessage, len(gotReqIDs))
+		impIDResponse := make(map[string]json.RawMessage, len(gotImpIDs))
+
+		for _, reqID := range gotReqIDs {
+			if reqID != "" {
+				reqIDResponse[reqID] = jsonify(reqID)
+			}
+		}
+
+		for _, impID := range gotImpIDs {
+			if impID != "" {
+				impIDResponse[impID] = jsonify(impID)
+			}
+		}
+
+		respObj := responseContract{
+			Requests: reqIDResponse,
+			Imps:     impIDResponse,
+		}
+
+		if respBytes, err := json.Marshal(respObj); err != nil {
+			t.Errorf("failed to marshal responseContract in test:  %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.Write(respBytes)
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL), server.Close
+}
+
+func assertMatches(t *testing.T, query string, expected []string) {
+	t.Helper()
+
+	queryVals := strings.Split(query, ",")
+	if len(queryVals) == 1 && queryVals[0] == "" {
+		if len(expected) != 0 {
+			t.Errorf("Expected no query vals, but got %v", queryVals)
+		}
+		return
+	}
+	if len(queryVals) != len(expected) {
+		t.Errorf("Query vals did not match. Expected %v, got %v", expected, queryVals)
+		return
+	}
+
+	for _, expectedQuery := range expected {
+		found := false
+		for _, queryVal := range queryVals {
+			if queryVal == expectedQuery {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Query string missing expected key %s.", expectedQuery)
+		}
+	}
+}
+
+func jsonify(id string) json.RawMessage {
+	if b, err := json.Marshal(id); err != nil {
+		return json.RawMessage([]byte("\"error encoding ID=" + id + "\""))
+	} else {
+		return json.RawMessage(b)
+	}
+}
+
+func assertMapKeys(t *testing.T, m map[string]json.RawMessage, keys ...string) {
+	t.Helper()
+
+	if len(m) != len(keys) {
+		t.Errorf("Expected %d map keys. Map was: %v", len(keys), m)
+	}
+
+	for _, key := range keys {
+		if _, ok := m[key]; !ok {
+			t.Errorf("Map missing expected key %s. Data was %v", key, m)
+		}
+	}
+}
+
+func assertErrLength(t *testing.T, errs []error, expected int) {
+	t.Helper()
+
+	if len(errs) != expected {
+		t.Errorf("Expected %d errors. Got: %v", expected, errs)
+	}
 }
