@@ -7,14 +7,16 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
+// Update represents a bulk update
 type Update struct {
-	Requests map[string]json.RawMessage
-	Imps     map[string]json.RawMessage
+	Requests map[string]json.RawMessage `json:"requests"`
+	Imps     map[string]json.RawMessage `json:"imps"`
 }
 
+// Invalidation represents a bulk invalidation
 type Invalidation struct {
-	Requests []string
-	Imps     []string
+	Requests []string `json:"requests"`
+	Imps     []string `json:"imps"`
 }
 
 // EventProducer will produce cache update and invalidation events on its channels

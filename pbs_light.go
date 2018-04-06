@@ -896,10 +896,10 @@ func serve(cfg *config.Configuration) error {
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	if cfg.StoredRequests.CacheEventsAPI {
-		router.POST("/storedrequests/openrtb2/:id", handleStoredRequests)
-		router.DELETE("/storedrequests/openrtb2/:id", handleStoredRequests)
-		router.POST("/storedrequests/amp/:id", handleAmpStoredRequests)
-		router.DELETE("/storedrequests/amp/:id", handleAmpStoredRequests)
+		router.POST("/storedrequests/openrtb2", handleStoredRequests)
+		router.DELETE("/storedrequests/openrtb2", handleStoredRequests)
+		router.POST("/storedrequests/amp", handleAmpStoredRequests)
+		router.DELETE("/storedrequests/amp", handleAmpStoredRequests)
 	}
 
 	hostCookieSettings = pbs.HostCookieSettings{

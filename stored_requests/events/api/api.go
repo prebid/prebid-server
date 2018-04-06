@@ -19,8 +19,8 @@ type eventsAPI struct {
 // methods and provided an `:id` param via the URL, e.g.:
 //
 // apiEvents, apiEventsHandler, err := NewEventsApi()
-// router.POST("/stored_requests/:id", apiEventsHandler)
-// router.DELETE("/stored_requests/:id", apiEventsHandler)
+// router.POST("/stored_requests", apiEventsHandler)
+// router.DELETE("/stored_requests", apiEventsHandler)
 // listener := events.Listen(cache, apiEvents)
 //
 // The returned HTTP endpoint should not be exposed on a public network without authentication
@@ -33,28 +33,39 @@ func NewEventsAPI() (events.EventProducer, httprouter.Handle) {
 	return api, httprouter.Handle(api.HandleEvent)
 }
 
-func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//id := ps.ByName("id")
-
+func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if r.Method == "POST" {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Missing config data.\n"))
+			w.Write([]byte("Missing update data.\n"))
 			return
 		}
 
-		// check if valid JSON
-		var config json.RawMessage
-		if err := json.Unmarshal(body, &config); err != nil {
+		var update events.Update
+		if err := json.Unmarshal(body, &update); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Invalid config data.\n"))
+			w.Write([]byte("Invalid update.\n"))
 			return
 		}
 
-		//api.updates <- map[string]json.RawMessage{id: config}
+		api.updates <- update
 	} else if r.Method == "DELETE" {
-		//api.invalidations <- []string{id}
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Missing invalidation data.\n"))
+			return
+		}
+
+		var invalidation events.Invalidation
+		if err := json.Unmarshal(body, &invalidation); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Invalid invalidation.\n"))
+			return
+		}
+
+		api.invalidations <- invalidation
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

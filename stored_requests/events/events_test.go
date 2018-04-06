@@ -1,6 +1,9 @@
 package events
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -22,29 +25,33 @@ func TestListen(t *testing.T) {
 	listener := Listen(cache, ep)
 	defer listener.Stop()
 
-	// id := "1"
-	// config := fmt.Sprintf(`{"id": "%s"}`, id)
-	// cache.Save(context.Background(), map[string]json.RawMessage{id: json.RawMessage(config)})
+	id := "1"
+	config := fmt.Sprintf(`{"id": "%s"}`, id)
+	update := Update{
+		Requests: map[string]json.RawMessage{id: json.RawMessage(config)},
+		Imps:     map[string]json.RawMessage{id: json.RawMessage(config)},
+	}
+	cache.Save(context.Background(), update.Requests, update.Imps)
 
-	// config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
-	// ep.updates <- map[string]json.RawMessage{id: json.RawMessage(config)}
+	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
+	update = Update{
+		Requests: map[string]json.RawMessage{id: json.RawMessage(config)},
+		Imps:     map[string]json.RawMessage{id: json.RawMessage(config)},
+	}
+	ep.updates <- update
 
-	// for listener.UpdateCount() < 1 {
-	// 	// wait for listener goroutine to process the event
-	// }
-	// data := cache.Get(context.Background(), []string{id})
-	// if value, ok := data[id]; !ok || string(value) != config {
-	// 	t.Errorf("Updated key/value not present in cache after update.")
-	// }
+	for listener.UpdateCount() < 1 {
+		// wait for listener goroutine to process the event
+	}
 
-	// ep.invalidations <- []string{id}
-	// for listener.InvalidationCount() < 1 {
-	// 	// wait for listener goroutine to process the event
-	// }
-	// data = cache.Get(context.Background(), []string{id})
-	// if _, ok := data[id]; ok {
-	// 	t.Errorf("Key/Value still present in cache after invalidation.")
-	// }
+	invalidation := Invalidation{
+		Requests: []string{id},
+		Imps:     []string{id},
+	}
+	ep.invalidations <- invalidation
+	for listener.InvalidationCount() < 1 {
+		// wait for listener goroutine to process the event
+	}
 }
 
 type dummyProducer struct {

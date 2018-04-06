@@ -1,97 +1,128 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	"github.com/prebid/prebid-server/stored_requests/events"
 )
 
 func TestGoodRequests(t *testing.T) {
-	// cache := in_memory.NewLRUCache(&config.InMemoryCache{
-	// 	RequestCacheSize: 256 * 1024,
-	// 	ImpCacheSize:     256 * 1024,
-	// 	TTL:              -1,
-	// })
+	cache := in_memory.NewLRUCache(&config.InMemoryCache{
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
+	})
 
-	// id := "1"
-	// config := fmt.Sprintf(`{"id": "%s"}`, id)
-	// cache.Save(context.Background(), map[string]json.RawMessage{id: json.RawMessage(config)})
+	id := "1"
+	config := fmt.Sprintf(`{"id": "%s"}`, id)
+	initialValue := map[string]json.RawMessage{id: json.RawMessage(config)}
+	cache.Save(context.Background(), initialValue, initialValue)
 
-	// apiEvents, endpoint := NewEventsAPI()
-	// listener := events.Listen(cache, apiEvents)
-	// defer listener.Stop()
+	apiEvents, endpoint := NewEventsAPI()
+	listener := events.Listen(cache, apiEvents)
+	defer listener.Stop()
 
-	// config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
-	// request, params := newRequest("POST", id, config)
+	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
+	update := fmt.Sprintf(`{"requests": {"%s": %s}, "imps": {"%s": %s}}`, id, config, id, config)
+	request := newRequest("POST", update)
 
-	// recorder := httptest.NewRecorder()
-	// endpoint(recorder, request, params)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
 
-	// if recorder.Code != http.StatusOK {
-	// 	t.Errorf("Unexpected error from request: %s", recorder.Body.String())
-	// }
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("Unexpected error from request: %s", recorder.Body.String())
+	}
 
-	// for listener.UpdateCount() < 1 {
-	// 	// wait for listener goroutine to process the event
-	// }
-	// data := cache.Get(context.Background(), []string{id})
-	// if value, ok := data[id]; !ok || string(value) != config {
-	// 	t.Errorf("Updated key/value not present in cache after update.")
-	// }
+	for listener.UpdateCount() < 1 {
+		// wait for listener goroutine to process the event
+	}
+	reqData, impData := cache.Get(context.Background(), []string{id}, []string{id})
+	assertHasValue(t, reqData, id, config)
+	assertHasValue(t, impData, id, config)
 
-	// request, params = newRequest("DELETE", id, "")
-	// recorder = httptest.NewRecorder()
-	// endpoint(recorder, request, params)
+	invalidation := fmt.Sprintf(`{"requests": ["%s"], "imps": ["%s"]}`, id, id)
+	request = newRequest("DELETE", invalidation)
+	recorder = httptest.NewRecorder()
+	endpoint(recorder, request, nil)
 
-	// if recorder.Code != http.StatusOK {
-	// 	t.Errorf("Unexpected error from request: %s", recorder.Body.String())
-	// }
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("Unexpected error from request: %s", recorder.Body.String())
+	}
 
-	// for listener.InvalidationCount() < 1 {
-	// 	// wait for listener goroutine to process the event
-	// }
-	// data = cache.Get(context.Background(), []string{id})
-	// if _, ok := data[id]; ok {
-	// 	t.Errorf("Key/Value still present in cache after invalidation.")
-	// }
+	for listener.InvalidationCount() < 1 {
+		// wait for listener goroutine to process the event
+	}
+	reqData, impData = cache.Get(context.Background(), []string{id}, []string{id})
+	assertMapLength(t, 0, reqData)
+	assertMapLength(t, 0, impData)
 }
 
 func TestBadRequests(t *testing.T) {
-	// cache := in_memory.NewLRUCache(&config.InMemoryCache{
-	// 	RequestCacheSize: 256 * 1024,
-	// 	ImpCacheSize:     256 * 1024,
-	// 	TTL:              -1,
-	// })
+	cache := in_memory.NewLRUCache(&config.InMemoryCache{
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
+	})
 
-	// apiEvents, endpoint := NewEventsAPI()
-	// listener := events.Listen(cache, apiEvents)
-	// defer listener.Stop()
+	apiEvents, endpoint := NewEventsAPI()
+	listener := events.Listen(cache, apiEvents)
+	defer listener.Stop()
 
-	// id := "1"
-	// config := "NOT JSON"
-	// request, params := newRequest("POST", id, config)
+	update := "NOT JSON"
+	request := newRequest("POST", update)
 
-	// recorder := httptest.NewRecorder()
-	// endpoint(recorder, request, params)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
 
-	// if recorder.Code != http.StatusBadRequest {
-	// 	t.Errorf("Expected error from request, got OK")
-	// }
+	if recorder.Code != http.StatusBadRequest {
+		t.Errorf("Expected error from request, got OK")
+	}
 
-	// request, params = newRequest("GET", id, "")
-	// recorder = httptest.NewRecorder()
-	// endpoint(recorder, request, params)
+	invalidation := "NOT JSON"
+	request = newRequest("DELETE", invalidation)
 
-	// if recorder.Code != http.StatusMethodNotAllowed {
-	// 	t.Errorf("Expected error from request, got OK")
-	// }
+	recorder = httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Errorf("Expected error from request, got OK")
+	}
+
+	request = newRequest("GET", "")
+	recorder = httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if recorder.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected error from request, got OK")
+	}
 }
 
-func newRequest(method string, id string, body string) (*http.Request, httprouter.Params) {
-	return httptest.NewRequest(method, fmt.Sprintf("/stored_requests/%s", id), strings.NewReader(body)),
-		httprouter.Params{httprouter.Param{Key: "id", Value: id}}
+func newRequest(method string, body string) *http.Request {
+	return httptest.NewRequest(method, "/stored_requests", strings.NewReader(body))
+}
+
+func assertMapLength(t *testing.T, expectedLen int, theMap map[string]json.RawMessage) {
+	t.Helper()
+	if len(theMap) != expectedLen {
+		t.Errorf("Wrong map length. Expected %d, Got %d.", expectedLen, len(theMap))
+	}
+}
+
+func assertHasValue(t *testing.T, m map[string]json.RawMessage, key string, val string) {
+	t.Helper()
+	realVal, ok := m[key]
+	if !ok {
+		t.Errorf("Map missing required key: %s", key)
+	}
+	if val != string(realVal) {
+		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, string(realVal))
+	}
 }
