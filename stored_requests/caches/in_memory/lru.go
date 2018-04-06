@@ -3,6 +3,7 @@ package in_memory
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
@@ -17,32 +18,44 @@ import (
 // For no TTL, use ttlSeconds <= 0
 func NewLRUCache(cfg *config.InMemoryCache) stored_requests.Cache {
 	return &cache{
-		lru:        freecache.NewCache(cfg.Size),
-		ttlSeconds: cfg.TTL,
+		requestDataCache: freecache.NewCache(cfg.RequestCacheSize),
+		impDataCache:     freecache.NewCache(cfg.ImpCacheSize),
+		ttlSeconds:       cfg.TTL,
 	}
 }
 
 type cache struct {
-	lru        *freecache.Cache
-	ttlSeconds int
+	requestDataCache *freecache.Cache
+	impDataCache     *freecache.Cache
+	ttlSeconds       int
 }
 
-func (c *cache) GetRequests(ctx context.Context, ids []string) map[string]json.RawMessage {
-	data := make(map[string]json.RawMessage, len(ids))
+func (c *cache) GetRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
+	requestData = doGet(c.requestDataCache, requestIDs)
+	impData = doGet(c.impDataCache, impIDs)
+	return
+}
+
+func (c *cache) SaveRequests(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
+	c.doSave(c.requestDataCache, storedRequests)
+	c.doSave(c.impDataCache, storedImps)
+}
+
+func doGet(cache *freecache.Cache, ids []string) (data map[string]json.RawMessage) {
+	data = make(map[string]json.RawMessage, len(ids))
 	for _, id := range ids {
-		if bytes, err := c.lru.Get([]byte(id)); err == nil {
+		if bytes, err := cache.Get([]byte(id)); err == nil {
 			data[id] = bytes
 		} else if err != freecache.ErrNotFound {
 			glog.Errorf("unexpected error from freecache: %v", err)
 		}
 	}
-
-	return data
+	return
 }
 
-func (c *cache) SaveRequests(ctx context.Context, values map[string]json.RawMessage) {
+func (c *cache) doSave(cache *freecache.Cache, values map[string]json.RawMessage) {
 	for id, data := range values {
-		if err := c.lru.Set([]byte(id), data, c.ttlSeconds); err != nil {
+		if err := cache.Set([]byte(id), data, c.ttlSeconds); err != nil {
 			glog.Errorf("error saving value in freecache: %v", err)
 		}
 	}

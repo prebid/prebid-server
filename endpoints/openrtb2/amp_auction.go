@@ -238,7 +238,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId})
+	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId}, nil)
 	if len(errs) > 0 {
 		return nil, errs
 	}

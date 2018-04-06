@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_requests"
 	"io/ioutil"
 	"strings"
+
+	"github.com/prebid/prebid-server/stored_requests"
 )
 
 // NewFileFetcher _immediately_ loads stored request data from local files.
@@ -15,36 +16,55 @@ import (
 // This expects each file in the directory to be named "{config_id}.json".
 // For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
 func NewFileFetcher(directory string) (stored_requests.Fetcher, error) {
+	storedReqData, err := collectStoredData(directory + "/stored_requests")
+	if err != nil {
+		return nil, err
+	}
+	storedImpData, err := collectStoredData(directory + "/stored_imps")
+	if err != nil {
+		return nil, err
+	}
+
+	return &eagerFetcher{storedReqData, storedImpData}, nil
+}
+
+type eagerFetcher struct {
+	storedReqs map[string]json.RawMessage
+	storedImps map[string]json.RawMessage
+}
+
+func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
+	errs := appendErrors("Request", requestIDs, fetcher.storedReqs, nil)
+	errs = appendErrors("Imp", impIDs, fetcher.storedImps, errs)
+	return fetcher.storedReqs, fetcher.storedImps, errs
+}
+
+func collectStoredData(directory string) (map[string]json.RawMessage, error) {
 	fileInfos, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err
 	}
-	storedReqs := make(map[string]json.RawMessage, len(fileInfos))
+	data := make(map[string]json.RawMessage, len(fileInfos))
 	for _, fileInfo := range fileInfos {
 		fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
 		if err != nil {
 			return nil, err
 		}
 		if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-			storedReqs[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
+			data[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
 		}
 	}
-	return &eagerFetcher{storedReqs}, nil
+	return data, nil
 }
 
-type eagerFetcher struct {
-	storedReqs map[string]json.RawMessage
-}
-
-func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	var errors []error = nil
+func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
 	for _, id := range ids {
-		if _, ok := fetcher.storedReqs[id]; !ok {
-			errors = append(errors, stored_requests.NotFoundError(id))
+		if _, ok := data[id]; !ok {
+			errs = append(errs, stored_requests.NotFoundError{
+				ID:       id,
+				DataType: dataType,
+			})
 		}
 	}
-
-	// Even though there may be many other IDs here, the interface contract doesn't prohibit this.
-	// Returning the whole slice is much cheaper than making partial copies on each call.
-	return fetcher.storedReqs, errors
+	return errs
 }
