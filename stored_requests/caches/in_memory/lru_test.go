@@ -53,6 +53,23 @@ func TestCacheMixed(t *testing.T) {
 	assertMapLength(t, 0, impData)
 }
 
+func TestCacheOverlap(t *testing.T) {
+	cache := NewLRUCache(&config.InMemoryCache{
+		Size: 512 * 1024,
+		TTL:  -1,
+	})
+	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
+		"id": json.RawMessage(`{"req":true}`),
+	}, map[string]json.RawMessage{
+		"id": json.RawMessage(`{"imp":true}`),
+	})
+	reqData, impData := cache.GetRequests(context.Background(), []string{"id"}, []string{"id"})
+	assertMapLength(t, 1, reqData)
+	assertHasValue(t, reqData, "id", `{"req":true}`)
+	assertMapLength(t, 1, impData)
+	assertHasValue(t, impData, "id", `{"imp":true}`)
+}
+
 func assertMapLength(t *testing.T, expectedLen int, theMap map[string]json.RawMessage) {
 	t.Helper()
 	if len(theMap) != expectedLen {
