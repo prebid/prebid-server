@@ -126,6 +126,8 @@ type InMemoryCache struct {
 	// TTL is the maximum number of seconds that an unused value will stay in the cache.
 	// TTL <= 0 can be used for "no ttl". Elements will still be evicted based on the Size.
 	TTL int `mapstructure:"ttl_seconds"`
-	// Size is the max number of bytes allowed in the cache.
-	Size int `mapstructure:"size_bytes"`
+	// RequestCacheSize is the max number of bytes allowed in the cache for Stored Requests.
+	RequestCacheSize int `mapstructure:"request_cache_size_bytes"`
+	// ImpCacheSize is the max number of bytes allowed in the cache for Stored Imps.
+	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }

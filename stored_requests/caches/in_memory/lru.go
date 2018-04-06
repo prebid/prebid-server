@@ -10,13 +10,6 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-// These prefixes are used when generating cache keys so that there's no chance
-// of conflict between the two types.
-const (
-	reqPrefix = "r"
-	impPrefix = "i"
-)
-
 // NewLRUCache returns an in-memory Cache which evicts items if:
 //
 // 1. They haven't been used within the TTL.
@@ -25,31 +18,33 @@ const (
 // For no TTL, use ttlSeconds <= 0
 func NewLRUCache(cfg *config.InMemoryCache) stored_requests.Cache {
 	return &cache{
-		lru:        freecache.NewCache(cfg.Size),
-		ttlSeconds: cfg.TTL,
+		requestDataCache: freecache.NewCache(cfg.RequestCacheSize),
+		impDataCache:     freecache.NewCache(cfg.ImpCacheSize),
+		ttlSeconds:       cfg.TTL,
 	}
 }
 
 type cache struct {
-	lru        *freecache.Cache
-	ttlSeconds int
+	requestDataCache *freecache.Cache
+	impDataCache     *freecache.Cache
+	ttlSeconds       int
 }
 
 func (c *cache) GetRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
-	requestData = c.doGet(reqPrefix, requestIDs)
-	impData = c.doGet(impPrefix, impIDs)
+	requestData = doGet(c.requestDataCache, requestIDs)
+	impData = doGet(c.impDataCache, impIDs)
 	return
 }
 
 func (c *cache) SaveRequests(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
-	c.doSave(reqPrefix, storedRequests)
-	c.doSave(impPrefix, storedImps)
+	c.doSave(c.requestDataCache, storedRequests)
+	c.doSave(c.impDataCache, storedImps)
 }
 
-func (c *cache) doGet(prefix string, ids []string) (data map[string]json.RawMessage) {
+func doGet(cache *freecache.Cache, ids []string) (data map[string]json.RawMessage) {
 	data = make(map[string]json.RawMessage, len(ids))
 	for _, id := range ids {
-		if bytes, err := c.lru.Get([]byte(prefix + id)); err == nil {
+		if bytes, err := cache.Get([]byte(id)); err == nil {
 			data[id] = bytes
 		} else if err != freecache.ErrNotFound {
 			glog.Errorf("unexpected error from freecache: %v", err)
@@ -58,9 +53,9 @@ func (c *cache) doGet(prefix string, ids []string) (data map[string]json.RawMess
 	return
 }
 
-func (c *cache) doSave(prefix string, values map[string]json.RawMessage) {
+func (c *cache) doSave(cache *freecache.Cache, values map[string]json.RawMessage) {
 	for id, data := range values {
-		if err := c.lru.Set([]byte(prefix+id), data, c.ttlSeconds); err != nil {
+		if err := cache.Set([]byte(id), data, c.ttlSeconds); err != nil {
 			glog.Errorf("error saving value in freecache: %v", err)
 		}
 	}

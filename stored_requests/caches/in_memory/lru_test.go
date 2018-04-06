@@ -10,8 +10,9 @@ import (
 
 func TestCacheMiss(t *testing.T) {
 	cache := NewLRUCache(&config.InMemoryCache{
-		Size: 512 * 1024,
-		TTL:  -1,
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
 	})
 	storedReqs, storedImps := cache.GetRequests(context.Background(), []string{"unknown"}, nil)
 	assertMapLength(t, 0, storedReqs)
@@ -20,8 +21,9 @@ func TestCacheMiss(t *testing.T) {
 
 func TestCacheHit(t *testing.T) {
 	cache := NewLRUCache(&config.InMemoryCache{
-		Size: 512 * 1024,
-		TTL:  -1,
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
 	})
 	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
 		"known-req": json.RawMessage(`{"req":true}`),
@@ -41,8 +43,9 @@ func TestCacheHit(t *testing.T) {
 
 func TestCacheMixed(t *testing.T) {
 	cache := NewLRUCache(&config.InMemoryCache{
-		Size: 512 * 1024,
-		TTL:  -1,
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
 	})
 	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
 		"known-req": json.RawMessage(`{"req":true}`),
@@ -55,8 +58,9 @@ func TestCacheMixed(t *testing.T) {
 
 func TestCacheOverlap(t *testing.T) {
 	cache := NewLRUCache(&config.InMemoryCache{
-		Size: 512 * 1024,
-		TTL:  -1,
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
 	})
 	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
 		"id": json.RawMessage(`{"req":true}`),
