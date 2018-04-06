@@ -201,4 +201,10 @@ stored_requests:
     query: SELECT id, requestData FROM stored_requests WHERE id IN %ID_LIST%;
 ```
 
+```yaml
+stored_requests:
+  http:
+    endpoint: http://prebid.backend.com/stored_requests
+```
+
 If you need support for a backend that you don't see, please [contribute it](contributing.md).

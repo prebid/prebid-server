@@ -16,7 +16,7 @@ import (
 //
 // This file expects the endpoint to satisfy the following API:
 //
-// GET {endpoint}?req-ids=req1,req2&imp-ids=imp1,imp2,imp3
+// GET {endpoint}?request-ids=req1,req2&imp-ids=imp1,imp2,imp3
 //
 // This endpoint should return a payload like:
 //
@@ -35,8 +35,8 @@ import (
 //
 func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
 	// Do some work up-front to figure out if the (configurable) endpoint has a query string or not.
-	// When we build requests, we'll either want to add `?req-ids=...&imp-ids=...` _or_
-	// `&req-ids=...&imp-ids=...`, depending.
+	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
+	// `&request-ids=...&imp-ids=...`, depending.
 	urlPrefix := endpoint
 	if strings.Contains(endpoint, "?") {
 		urlPrefix += "&"
@@ -44,7 +44,7 @@ func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
 		urlPrefix += "?"
 	}
 
-	glog.Infof("http_fetcher will use: GET " + urlPrefix + "req-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
+	glog.Infof("http_fetcher will use: GET " + urlPrefix + "request-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
 
 	return &httpFetcher{
 		client:   client,
@@ -78,9 +78,9 @@ func (fetcher *httpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
 	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"req-ids="+strings.Join(requestIDs, ",")+"&imp-ids="+strings.Join(impIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"request-ids="+strings.Join(requestIDs, ",")+"&imp-ids="+strings.Join(impIDs, ","), nil)
 	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"req-ids="+strings.Join(requestIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"request-ids="+strings.Join(requestIDs, ","), nil)
 	} else {
 		return http.NewRequest("GET", endpoint+"imp-ids="+strings.Join(impIDs, ","), nil)
 	}

@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,16 +13,32 @@ type StoredRequests struct {
 	Files bool `mapstructure:"filesystem"`
 	// Postgres should be non-nil if Stored Requests should be loaded from a Postgres database.
 	Postgres *PostgresConfig `mapstructure:"postgres"`
+	// HTTP should be non-nil if Stored Requests should be loaded from a remote endpoint over HTTP.
+	HTTP *HTTPFetcherConfig `mapstructure:"http"`
 	// Cache should be non-nil if an in-memory cache should be used to store Stored Requests locally.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
 }
 
 func (cfg *StoredRequests) validate() error {
-	if cfg.Files && cfg.Postgres != nil {
-		return errors.New("stored request backend is ambiguous. If stored_requests.postgres is defined, then stored_requests.filesystem must be false")
+	backends := make([]string, 0, 3)
+	if cfg.Files {
+		backends = append(backends, "filesystem")
+	}
+	if cfg.Postgres != nil {
+		backends = append(backends, "postgres")
+	}
+	if cfg.HTTP != nil {
+		backends = append(backends, "http")
+	}
+	if len(backends) > 1 {
+		return fmt.Errorf("config defines Stored Request backends to include %v. Only one is allowed", backends)
 	}
 
 	return nil
+}
+
+type HTTPFetcherConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 // PostgresConfig configures the Postgres connection for Stored Requests

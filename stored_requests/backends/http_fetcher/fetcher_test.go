@@ -117,11 +117,11 @@ func newFetcherBrokenBackend() (fetcher *httpFetcher, closer func()) {
 func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *httpFetcher, closer func()) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		assertMatches(t, query.Get("req-ids"), expectReqIDs)
+		assertMatches(t, query.Get("request-ids"), expectReqIDs)
 		assertMatches(t, query.Get("imp-ids"), expectImpIDs)
 
-		gotReqIDs := strings.Split(query.Get("req-ids"), ",")
-		gotImpIDs := strings.Split(query.Get("imp-ids"), ",")
+		gotReqIDs := strings.Split(query.Get("request-ids"), ",")
+		gotImpIDs := strings.Split(query.Get("imp-ids"), ",")\
 
 		reqIDResponse := make(map[string]json.RawMessage, len(gotReqIDs))
 		impIDResponse := make(map[string]json.RawMessage, len(gotImpIDs))
