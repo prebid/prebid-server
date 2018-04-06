@@ -121,7 +121,7 @@ func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) 
 		assertMatches(t, query.Get("imp-ids"), expectImpIDs)
 
 		gotReqIDs := strings.Split(query.Get("request-ids"), ",")
-		gotImpIDs := strings.Split(query.Get("imp-ids"), ",")\
+		gotImpIDs := strings.Split(query.Get("imp-ids"), ",")
 
 		reqIDResponse := make(map[string]json.RawMessage, len(gotReqIDs))
 		impIDResponse := make(map[string]json.RawMessage, len(gotImpIDs))
