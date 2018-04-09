@@ -82,13 +82,17 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
 	// as long as user.ext.prebid exists.
 	buyerUIDs := userExt.Prebid.BuyerUIDs
-	userExt.Prebid.BuyerUIDs = nil
-	if newUserExtBytes, err := json.Marshal(userExt); err != nil {
-		return nil, err
+	userExt.Prebid = nil
+	if userExt.Consent != "" || userExt.DigiTrust != nil {
+		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
+			return nil, err
+		} else {
+			user.Ext = newUserExtBytes
+		}
 	} else {
-		user.Ext = newUserExtBytes
-		return buyerUIDs, nil
+		user.Ext = nil
 	}
+	return buyerUIDs, nil
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.

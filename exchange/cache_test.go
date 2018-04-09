@@ -108,3 +108,10 @@ func (c *mockCacheClient) PutJson(ctx context.Context, values []json.RawMessage)
 	}
 	return returns
 }
+
+func assertStringValue(t *testing.T, object string, expect string, value string) {
+	t.Helper()
+	if expect != value {
+		t.Errorf("Wrong value for %s, expected \"%s\", got \"%s\"", object, expect, value)
+	}
+}
