@@ -970,7 +970,7 @@ const requestConfigPath = "./stored_requests/data/by_id"
 // If it can't generate both of those from the given config, then an error will be returned.
 //
 // This function assumes that the argument config has been validated.
-func NewFetchers(cfg *config.StoredRequests, db *sql.DB, eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, listeners []events.EventListener, err error) {
+func NewFetchers(cfg *config.StoredRequests, db *sql.DB, eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, listeners []*events.EventListener, err error) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIdList := make(stored_requests.MultiFetcher, 0, 3)
 

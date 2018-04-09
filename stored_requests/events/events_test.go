@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
@@ -38,19 +39,28 @@ func TestListen(t *testing.T) {
 		Requests: map[string]json.RawMessage{id: json.RawMessage(config)},
 		Imps:     map[string]json.RawMessage{id: json.RawMessage(config)},
 	}
-	ep.updates <- update
 
-	for listener.UpdateCount() < 1 {
-		// wait for listener goroutine to process the event
-	}
+	updates, invalidations := listener.Counts()
+	ep.updates <- update
+	waitFor(t, listener, updates+1, invalidations)
 
 	invalidation := Invalidation{
 		Requests: []string{id},
 		Imps:     []string{id},
 	}
+
+	updates, invalidations = listener.Counts()
 	ep.invalidations <- invalidation
-	for listener.InvalidationCount() < 1 {
-		// wait for listener goroutine to process the event
+	waitFor(t, listener, updates, invalidations+1)
+}
+
+func waitFor(t *testing.T, listener *EventListener, updates int, invalidations int) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	listener.WaitFor(ctx, updates, invalidations)
+	if err := ctx.Err(); err != nil {
+		t.Error(err.Error())
 	}
 }
 

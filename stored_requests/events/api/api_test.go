@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
@@ -34,6 +35,7 @@ func TestGoodRequests(t *testing.T) {
 	update := fmt.Sprintf(`{"requests": {"%s": %s}, "imps": {"%s": %s}}`, id, config, id, config)
 	request := newRequest("POST", update)
 
+	updates, invalidations := listener.Counts()
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -41,15 +43,15 @@ func TestGoodRequests(t *testing.T) {
 		t.Fatalf("Unexpected error from request: %s", recorder.Body.String())
 	}
 
-	for listener.UpdateCount() < 1 {
-		// wait for listener goroutine to process the event
-	}
+	waitFor(t, listener, updates+1, invalidations)
 	reqData, impData := cache.Get(context.Background(), []string{id}, []string{id})
 	assertHasValue(t, reqData, id, config)
 	assertHasValue(t, impData, id, config)
 
 	invalidation := fmt.Sprintf(`{"requests": ["%s"], "imps": ["%s"]}`, id, id)
 	request = newRequest("DELETE", invalidation)
+
+	updates, invalidations = listener.Counts()
 	recorder = httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -57,9 +59,7 @@ func TestGoodRequests(t *testing.T) {
 		t.Fatalf("Unexpected error from request: %s", recorder.Body.String())
 	}
 
-	for listener.InvalidationCount() < 1 {
-		// wait for listener goroutine to process the event
-	}
+	waitFor(t, listener, updates, invalidations+1)
 	reqData, impData = cache.Get(context.Background(), []string{id}, []string{id})
 	assertMapLength(t, 0, reqData)
 	assertMapLength(t, 0, impData)
@@ -124,5 +124,15 @@ func assertHasValue(t *testing.T, m map[string]json.RawMessage, key string, val 
 	}
 	if val != string(realVal) {
 		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, string(realVal))
+	}
+}
+
+func waitFor(t *testing.T, listener *events.EventListener, updates int, invalidations int) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	listener.WaitFor(ctx, updates, invalidations)
+	if err := ctx.Err(); err != nil {
+		t.Error(err.Error())
 	}
 }
