@@ -201,4 +201,12 @@ stored_requests:
     query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
 ```
 
+```yaml
+stored_requests:
+  http:
+    endpoint: http://stored-requests.prebid.com
+    amp_endpoint: http://stored-requests.prebid.com?amp=true
+
+```
+
 If you need support for a backend that you don't see, please [contribute it](contributing.md).

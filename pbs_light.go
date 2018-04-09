@@ -60,6 +60,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	usersyncers "github.com/prebid/prebid-server/usersync"
 )
@@ -963,6 +964,13 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.F
 		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
 		idList = append(idList, byId)
 		byAmpId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
+		ampIdList = append(ampIdList, byAmpId)
+	}
+	if cfg.HTTP != nil {
+		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
+		byId = http_fetcher.NewFetcher(nil, cfg.HTTP.Endpoint)
+		idList = append(idList, byId)
+		byAmpId = http_fetcher.NewFetcher(nil, cfg.HTTP.AmpEndpoint)
 		ampIdList = append(ampIdList, byAmpId)
 	}
 	if len(idList) == 0 {
