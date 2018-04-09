@@ -44,7 +44,7 @@ func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
 		urlPrefix = urlPrefix + "?"
 	}
 
-	glog.Infof("http_fetcher will use: GET " + urlPrefix + "request-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
+	glog.Info("Making http_fetcher which calls GET " + urlPrefix + "request-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
 
 	return &httpFetcher{
 		client:   client,
