@@ -1,0 +1,52 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "unit": "539439964",
+            "delDomain": "se-demo-d.openx.net",
+            "customFloor": 0.1,
+            "customParams": {"foo": "bar"}
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [{"w": 728, "h": 90}]
+              },
+              "tagid": "539439964",
+              "bidfloor": 0.1,
+              "ext": {
+                "customParams": {"foo": "bar"}
+              }
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ]
+}
