@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"runtime"
 
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -29,9 +28,27 @@ type EventProducer interface {
 // EventListener provides information about how many events a listener has processed
 // and a mechanism to stop the listener goroutine
 type EventListener struct {
-	stop              chan struct{}
-	updateCount       int
-	invalidationCount int
+	stop         chan struct{}
+	onUpdate     func()
+	onInvalidate func()
+}
+
+// SimpleEventListener creates a new EventListener that solely propagates cache updates and invalidations
+func SimpleEventListener() *EventListener {
+	return &EventListener{
+		stop:         make(chan struct{}),
+		onUpdate:     nil,
+		onInvalidate: nil,
+	}
+}
+
+// NewEventListener creates a new EventListener that may perform additional work after propagating cache updates and invalidations
+func NewEventListener(onUpdate func(), onInvalidate func()) *EventListener {
+	return &EventListener{
+		stop:         make(chan struct{}),
+		onUpdate:     onUpdate,
+		onInvalidate: onInvalidate,
+	}
 }
 
 // Stop the event listener
@@ -39,54 +56,22 @@ func (e *EventListener) Stop() {
 	e.stop <- struct{}{}
 }
 
-// Counts returns the number of updates and invalidations that were propagated
-func (e *EventListener) Counts() (updates int, invalidations int) {
-	return e.updateCount, e.invalidationCount
-}
-
-// InvalidationCount is the number of propagated Invalidations
-func (e *EventListener) InvalidationCount() int {
-	return e.invalidationCount
-}
-
-// WaitFor the specified number of events to be propagated
-func (e *EventListener) WaitFor(ctx context.Context, updates int, invalidations int) {
+// Listen is meant to be run as a goroutine that updates/invalidates the cache when events occur
+func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer) {
 	for {
 		select {
-		case <-ctx.Done():
-			return
-		default:
-			if e.updateCount >= updates && e.invalidationCount >= invalidations {
-				return
+		case update := <-events.Updates():
+			cache.Update(context.Background(), update.Requests, update.Requests)
+			if e.onUpdate != nil {
+				e.onUpdate()
 			}
-			runtime.Gosched()
+		case invalidation := <-events.Invalidations():
+			cache.Invalidate(context.Background(), invalidation.Requests, invalidation.Imps)
+			if e.onInvalidate != nil {
+				e.onInvalidate()
+			}
+		case <-e.stop:
+			break
 		}
 	}
-}
-
-// Listen will run a goroutine that updates/invalidates the cache when events occur
-func Listen(cache stored_requests.Cache, events EventProducer) *EventListener {
-	listener := &EventListener{
-		stop:              make(chan struct{}),
-		updateCount:       0,
-		invalidationCount: 0,
-	}
-
-	go func() {
-		defer close(listener.stop)
-		for {
-			select {
-			case update := <-events.Updates():
-				cache.Update(context.Background(), update.Requests, update.Requests)
-				listener.updateCount++
-			case invalidation := <-events.Invalidations():
-				cache.Invalidate(context.Background(), invalidation.Requests, invalidation.Imps)
-				listener.invalidationCount++
-			case <-listener.stop:
-				break
-			}
-		}
-	}()
-
-	return listener
 }

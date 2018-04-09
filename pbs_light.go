@@ -1017,11 +1017,15 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB, eventProducers []events
 		byAmpId = stored_requests.WithCache(byAmpId, byAmpIdCache)
 
 		for _, ep := range eventProducers {
-			listeners = append(listeners, events.Listen(byIdCache, ep))
+			listener := events.SimpleEventListener()
+			go listener.Listen(byIdCache, ep)
+			listeners = append(listeners, listener)
 		}
 
 		for _, ep := range ampEventProducers {
-			listeners = append(listeners, events.Listen(byAmpIdCache, ep))
+			listener := events.SimpleEventListener()
+			go listener.Listen(byAmpIdCache, ep)
+			listeners = append(listeners, listener)
 		}
 	}
 	return

@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
@@ -28,14 +27,22 @@ func TestGoodRequests(t *testing.T) {
 	cache.Save(context.Background(), initialValue, initialValue)
 
 	apiEvents, endpoint := NewEventsAPI()
-	listener := events.Listen(cache, apiEvents)
+
+	// create channels to syncronize
+	updateOccurred := make(chan struct{})
+	invalidateOccurred := make(chan struct{})
+	listener := events.NewEventListener(
+		func() { updateOccurred <- struct{}{} },
+		func() { invalidateOccurred <- struct{}{} },
+	)
+
+	go listener.Listen(cache, apiEvents)
 	defer listener.Stop()
 
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
 	update := fmt.Sprintf(`{"requests": {"%s": %s}, "imps": {"%s": %s}}`, id, config, id, config)
 	request := newRequest("POST", update)
 
-	updates, invalidations := listener.Counts()
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -43,7 +50,7 @@ func TestGoodRequests(t *testing.T) {
 		t.Fatalf("Unexpected error from request: %s", recorder.Body.String())
 	}
 
-	waitFor(t, listener, updates+1, invalidations)
+	<-updateOccurred
 	reqData, impData := cache.Get(context.Background(), []string{id}, []string{id})
 	assertHasValue(t, reqData, id, config)
 	assertHasValue(t, impData, id, config)
@@ -51,7 +58,6 @@ func TestGoodRequests(t *testing.T) {
 	invalidation := fmt.Sprintf(`{"requests": ["%s"], "imps": ["%s"]}`, id, id)
 	request = newRequest("DELETE", invalidation)
 
-	updates, invalidations = listener.Counts()
 	recorder = httptest.NewRecorder()
 	endpoint(recorder, request, nil)
 
@@ -59,7 +65,7 @@ func TestGoodRequests(t *testing.T) {
 		t.Fatalf("Unexpected error from request: %s", recorder.Body.String())
 	}
 
-	waitFor(t, listener, updates, invalidations+1)
+	<-invalidateOccurred
 	reqData, impData = cache.Get(context.Background(), []string{id}, []string{id})
 	assertMapLength(t, 0, reqData)
 	assertMapLength(t, 0, impData)
@@ -73,7 +79,8 @@ func TestBadRequests(t *testing.T) {
 	})
 
 	apiEvents, endpoint := NewEventsAPI()
-	listener := events.Listen(cache, apiEvents)
+	listener := events.SimpleEventListener()
+	go listener.Listen(cache, apiEvents)
 	defer listener.Stop()
 
 	update := "NOT JSON"
@@ -124,15 +131,5 @@ func assertHasValue(t *testing.T, m map[string]json.RawMessage, key string, val 
 	}
 	if val != string(realVal) {
 		t.Errorf("Unexpected value at key %s. Expected %s, Got %s", key, val, string(realVal))
-	}
-}
-
-func waitFor(t *testing.T, listener *events.EventListener, updates int, invalidations int) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	listener.WaitFor(ctx, updates, invalidations)
-	if err := ctx.Err(); err != nil {
-		t.Error(err.Error())
 	}
 }

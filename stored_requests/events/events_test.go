@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
-	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
@@ -23,44 +23,53 @@ func TestListen(t *testing.T) {
 		TTL:              -1,
 	})
 
-	listener := Listen(cache, ep)
+	// create channels to syncronize
+	updateOccurred := make(chan struct{})
+	invalidateOccurred := make(chan struct{})
+	listener := NewEventListener(
+		func() { updateOccurred <- struct{}{} },
+		func() { invalidateOccurred <- struct{}{} },
+	)
+
+	go listener.Listen(cache, ep)
 	defer listener.Stop()
 
 	id := "1"
+	idSlice := []string{id}
 	config := fmt.Sprintf(`{"id": "%s"}`, id)
+	data := map[string]json.RawMessage{id: json.RawMessage(config)}
 	update := Update{
-		Requests: map[string]json.RawMessage{id: json.RawMessage(config)},
-		Imps:     map[string]json.RawMessage{id: json.RawMessage(config)},
+		Requests: data,
+		Imps:     data,
 	}
 	cache.Save(context.Background(), update.Requests, update.Imps)
 
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
+	data = map[string]json.RawMessage{id: json.RawMessage(config)}
 	update = Update{
-		Requests: map[string]json.RawMessage{id: json.RawMessage(config)},
-		Imps:     map[string]json.RawMessage{id: json.RawMessage(config)},
+		Requests: data,
+		Imps:     data,
 	}
 
-	updates, invalidations := listener.Counts()
 	ep.updates <- update
-	waitFor(t, listener, updates+1, invalidations)
+	<-updateOccurred
+
+	requestData, impData := cache.Get(context.Background(), idSlice, idSlice)
+	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) {
+		t.Error("Update failed")
+	}
 
 	invalidation := Invalidation{
-		Requests: []string{id},
-		Imps:     []string{id},
+		Requests: idSlice,
+		Imps:     idSlice,
 	}
 
-	updates, invalidations = listener.Counts()
 	ep.invalidations <- invalidation
-	waitFor(t, listener, updates, invalidations+1)
-}
+	<-invalidateOccurred
 
-func waitFor(t *testing.T, listener *EventListener, updates int, invalidations int) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	listener.WaitFor(ctx, updates, invalidations)
-	if err := ctx.Err(); err != nil {
-		t.Error(err.Error())
+	requestData, impData = cache.Get(context.Background(), idSlice, idSlice)
+	if len(requestData) > 0 || len(impData) > 0 {
+		t.Error("Invalidate failed")
 	}
 }
 
