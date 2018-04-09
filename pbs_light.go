@@ -249,9 +249,13 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
 	// Defer here because we need pbs_req defined.
 	defer func() {
-		deps.metricsEngine.RecordRequest(labels)
-		// handles the case that ParsePBSRequest returns an error, so pbs_req.Start is not defined
-		if pbs_req != nil {
+		if pbs_req == nil {
+			deps.metricsEngine.RecordRequest(labels)
+			deps.metricsEngine.RecordImps(labels, 0)
+		} else {
+			// handles the case that ParsePBSRequest returns an error, so pbs_req.Start is not defined
+			deps.metricsEngine.RecordRequest(labels)
+			deps.metricsEngine.RecordImps(labels, len(pbs_req.AdUnits))
 			deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
 		}
 	}()
@@ -591,7 +595,7 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 }
 
 func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// could add more logic here, but doing nothing means 200 OK
+	w.Write([]byte("ready"))
 }
 
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
@@ -972,7 +976,7 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB) (byId stored_requests.F
 	}
 
 	if cfg.InMemoryCache != nil {
-		glog.Infof("Using a Stored Request in-memory cache. Max size: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.Size, cfg.InMemoryCache.TTL)
+		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
 		byId = stored_requests.WithCache(byId, in_memory.NewLRUCache(cfg.InMemoryCache))
 		byAmpId = stored_requests.WithCache(byAmpId, in_memory.NewLRUCache(cfg.InMemoryCache))
 	}

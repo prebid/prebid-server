@@ -1,11 +1,12 @@
 package pbsmetrics
 
 import (
+	"time"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/rcrowley/go-metrics"
 	"github.com/vrischmann/go-metrics-influxdb"
-	"time"
 )
 
 // Labels defines the labels that can be attached to the metrics.
@@ -114,6 +115,7 @@ const (
 // is generally not useful.
 type MetricsEngine interface {
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterBidsReceived(labels AdapterLabels, bids int64)
@@ -164,6 +166,13 @@ type MultiMetricsEngine []MetricsEngine
 func (me *MultiMetricsEngine) RecordRequest(labels Labels) {
 	for _, thisME := range *me {
 		thisME.RecordRequest(labels)
+	}
+}
+
+// RecordImps across all engines
+func (me *MultiMetricsEngine) RecordImps(labels Labels, numImps int) {
+	for _, thisME := range *me {
+		thisME.RecordImps(labels, numImps)
 	}
 }
 
@@ -221,6 +230,11 @@ type DummyMetricsEngine struct{}
 
 // RecordRequest as a noop
 func (me *DummyMetricsEngine) RecordRequest(labels Labels) {
+	return
+}
+
+// RecordImps as a noop
+func (me *DummyMetricsEngine) RecordImps(labels Labels, numImps int) {
 	return
 }
 

@@ -3,6 +3,7 @@ package empty_fetcher
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -14,12 +15,21 @@ func EmptyFetcher() stored_requests.Fetcher {
 
 type emptyFetcher struct{}
 
-func (fetcher *emptyFetcher) FetchRequests(ctx context.Context, ids []string) (map[string]json.RawMessage, []error) {
-	errs := make([]error, 0, len(ids))
-	for _, id := range ids {
-		errs = append(errs, stored_requests.NotFoundError(id))
+func (fetcher *emptyFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	errs = make([]error, 0, len(requestIDs)+len(impIDs))
+	for _, id := range requestIDs {
+		errs = append(errs, stored_requests.NotFoundError{
+			ID:       id,
+			DataType: "Request",
+		})
 	}
-	return nil, errs
+	for _, id := range impIDs {
+		errs = append(errs, stored_requests.NotFoundError{
+			ID:       id,
+			DataType: "Imp",
+		})
+	}
+	return
 }
 
 var instance = emptyFetcher{}
