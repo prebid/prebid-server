@@ -595,7 +595,7 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 }
 
 func status(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// could add more logic here, but doing nothing means 200 OK
+	w.Write([]byte("ready"))
 }
 
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
