@@ -75,6 +75,7 @@ func (fetcher *httpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	if err != nil {
 		return nil, nil, []error{err}
 	}
+	defer httpResp.Body.Close()
 	requestData, impData, errs = unpackResponse(httpResp)
 	return
 }
@@ -95,7 +96,6 @@ func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage
 		errs = append(errs, err)
 		return
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
 		var responseObj responseContract
