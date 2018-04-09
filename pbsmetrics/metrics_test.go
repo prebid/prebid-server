@@ -1,11 +1,12 @@
 package pbsmetrics
 
 import (
+	"testing"
+	"time"
+
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/rcrowley/go-metrics"
-	"testing"
-	"time"
 )
 
 // Start a simple test to insure we get valid MetricsEngines for various configurations
@@ -60,6 +61,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
+		metricsEngine.RecordImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(blabels)
 		metricsEngine.RecordAdapterPrice(blabels, 1.34)
@@ -67,6 +69,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterTime(blabels, time.Millisecond*20)
 	}
 	VerifyMetrics(t, "RequestMeter", goEngine.RequestMeter.Count(), 5)
+	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 10)
 	VerifyMetrics(t, "AppRequestMeter", goEngine.AmpRequestMeter.Count(), 0)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)
