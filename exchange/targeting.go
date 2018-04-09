@@ -18,6 +18,7 @@ const maxKeyLength = 20
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
 	priceGranularity openrtb_ext.PriceGranularity
+	includeWinners   bool
 	includeCache     bool
 }
 
@@ -27,7 +28,7 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func setTargeting(auc *auction, isApp bool) {
+func (targData *targetData) setTargeting(auc *auction, isApp bool) {
 	for impId, topBidsPerImp := range auc.winningBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for bidderName, topBidPerBidder := range topBidsPerImp {
@@ -35,17 +36,17 @@ func setTargeting(auc *auction, isApp bool) {
 
 			targets := make(map[string]string, 10)
 			if cpm, ok := auc.roundedPrices[topBidPerBidder]; ok {
-				addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, bidderName, isOverallWinner)
 			}
-			addKeys(targets, openrtb_ext.HbBidderConstantKey, string(bidderName), bidderName, isOverallWinner)
+			targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(bidderName), bidderName, isOverallWinner)
 			if hbSize := makeHbSize(topBidPerBidder.bid); hbSize != "" {
-				addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, bidderName, isOverallWinner)
 			}
 			if cacheId, ok := auc.cacheIds[topBidPerBidder.bid]; ok {
-				addKeys(targets, openrtb_ext.HbCacheKey, cacheId, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheId, bidderName, isOverallWinner)
 			}
 			if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
-				addKeys(targets, openrtb_ext.HbDealIdConstantKey, deal, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbDealIdConstantKey, deal, bidderName, isOverallWinner)
 			}
 
 			if bidderName == "audienceNetwork" {
@@ -55,7 +56,7 @@ func setTargeting(auc *auction, isApp bool) {
 			}
 
 			if isApp {
-				addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner)
 			}
 
 			topBidPerBidder.bidTargets = targets
@@ -63,9 +64,9 @@ func setTargeting(auc *auction, isApp bool) {
 	}
 }
 
-func addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool) {
+func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool) {
 	keys[key.BidderKey(bidderName, maxKeyLength)] = value
-	if overallWinner {
+	if targData.includeWinners && overallWinner {
 		keys[string(key)] = value
 	}
 }

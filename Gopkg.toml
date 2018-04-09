@@ -77,6 +77,10 @@
   name = "github.com/yudai/gojsondiff"
   version = "1.0.0"
 
+[[override]]
+  name = "github.com/chasex/log"
+  branch = "analytics"
+
 [prune]
   go-tests = true
   unused-packages = true

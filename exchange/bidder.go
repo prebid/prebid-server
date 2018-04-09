@@ -25,7 +25,7 @@ import (
 type adaptedBidder interface {
 	// requestBid fetches bids for the given request.
 	//
-	// An adaptedBidder *may* return non-nil values here. Errors should describe situations which
+	// An adaptedBidder *may* return two non-nil values here. Errors should describe situations which
 	// make the bid (or no-bid) "less than ideal." Common examples include:
 	//
 	// 1. Connection issues.
@@ -35,7 +35,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -80,7 +80,7 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
@@ -117,10 +117,13 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		if httpInfo.err == nil {
 			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
-			for _, bid := range bids {
+			for i := 0; i < len(bids); i++ {
+				if bids[i].Bid != nil {
+					bids[i].Bid.Price = bids[i].Bid.Price * bidAdjustment
+				}
 				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:     bid.Bid,
-					bidType: bid.BidType,
+					bid:     bids[i].Bid,
+					bidType: bids[i].BidType,
 				})
 			}
 		} else {

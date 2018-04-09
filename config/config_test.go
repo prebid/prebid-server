@@ -54,16 +54,19 @@ cache:
   query: uuid=%PBS_CACHE_UUID%
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
-  host: upstream:8232
-  database: metricsdb
-  username: admin
-  password: admin1324
+  influxdb:
+    host: upstream:8232
+    database: metricsdb
+    username: admin
+    password: admin1324
 datacache:
   type: postgres
   filename: /usr/db/db.db
   cache_size: 10000000
   ttl_seconds: 3600
 adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
   indexExchange:
     endpoint: http://ixtest.com/api
   rubicon:
@@ -79,12 +82,14 @@ adapters:
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
+	t.Helper()
 	if a != b {
 		t.Errorf("%s: %s != %s", key, a, b)
 	}
 }
 
 func cmpInts(t *testing.T, key string, a int, b int) {
+	t.Helper()
 	if a != b {
 		t.Errorf("%s: %d != %d", key, a, b)
 	}
@@ -114,16 +119,17 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
-	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
-	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
-	cmpStrings(t, "metrics.username", cfg.Metrics.Username, "admin")
-	cmpStrings(t, "metrics.password", cfg.Metrics.Password, "admin1324")
+	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
+	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
+	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
+	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
+	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters["appnexus"].Endpoint, "http://ib.adnxs.com/some/endpoint")
 	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
 	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
@@ -175,48 +181,5 @@ func TestInvalidStoredRequestsConfig(t *testing.T) {
 
 	if err := cfg.validate(); err == nil {
 		t.Error("OpenRTB Configs should not be allowed from both files and postgres.")
-	}
-}
-
-func TestQueryMaker(t *testing.T) {
-	cfg := PostgresConfig{
-		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
-	}
-	madeQuery, err := cfg.MakeQuery(3)
-	if err != nil {
-		t.Errorf("Unexpected error making query: %v", err)
-	}
-	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3)" {
-		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
-	}
-
-	madeQuery, err = cfg.MakeQuery(11)
-	if err != nil {
-		t.Errorf("Unexpected error making query: %v", err)
-	}
-	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)" {
-		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
-	}
-}
-
-func TestQueryMakerMultilist(t *testing.T) {
-	cfg := PostgresConfig{
-		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST% UNION ALL SELECT id, config FROM other_table WHERE id in %ID_LIST%",
-	}
-	madeQuery, err := cfg.MakeQuery(3)
-	if err != nil {
-		t.Errorf("Unexpected error making query: %v", err)
-	}
-	if madeQuery != "SELECT id, config FROM table WHERE id in ($1, $2, $3) UNION ALL SELECT id, config FROM other_table WHERE id in ($1, $2, $3)" {
-		t.Errorf(`Final query was not as expeted. Got "%s"`, madeQuery)
-	}
-}
-
-func TestQueryMakerInvalid(t *testing.T) {
-	cfg := PostgresConfig{
-		QueryTemplate: "SELECT id, config FROM table WHERE id in %ID_LIST%",
-	}
-	if _, err := cfg.MakeQuery(0); err == nil {
-		t.Errorf("MakeQuery function should return an error if given no IDs.")
 	}
 }

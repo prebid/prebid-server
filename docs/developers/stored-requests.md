@@ -15,7 +15,7 @@ stored_requests:
 
 Choose an ID to reference your stored request data. Throughout this doc, replace {id} with the ID you've chosen.
 
-Add the file `stored_requests/data/by_id/{id}.json` and populate it with some [Imp](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=17) data.
+Add the file `stored_requests/data/by_id/stored_imps/{id}.json` and populate it with some [Imp](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=17) data.
 
 ```json
 {
@@ -66,7 +66,7 @@ And then `POST` to [`/openrtb2/auction`](../endpoints/openrtb2/auction.md) with 
 }
 ```
 
-The auction will occur as if the HTTP request had included the content from `stored_requests/data/by_id/{id}.json` instead.
+The auction will occur as if the HTTP request had included the content from `stored_requests/data/by_id/stored_imps/{id}.json` instead.
 
 ## Partially Stored Requests
 
@@ -126,7 +126,7 @@ So far, our examples have only used Stored Imp data. However, Stored Requests
 are also allowed on the [BidRequest](https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=15).
 These work exactly the same way, but support storing properties like timeouts and price granularity.
 
-For example, assume the following `stored_requests/data/by_id/stored-request.json`:
+For example, assume the following `stored_requests/data/by_id/stored_requests/stored-request.json`:
 
 ```json
 {
@@ -152,7 +152,7 @@ Then an HTTP request like:
   "ext": {
     "prebid": {
       "storedrequest": {
-        "id": "stored-request.json"
+        "id": "stored-request"
       }
     }
   }
@@ -179,7 +179,7 @@ will produce the same auction as if the HTTP request had been:
 ```
 
 Prebid Server does allow Stored BidRequests and Stored Imps in the same HTTP Request.
-The Stored BidRequest will be applied first, and then the Stored Imps after.
+The Stored BidRequest patch will be applied first, and then the Stored Imp patches after.
 
 **Beware**: Stored Request data will not be applied recursively.
 If a Stored BidRequest includes Imps with their own Stored Request IDs,
@@ -198,7 +198,7 @@ stored_requests:
     port: 5432
     user: db-username
     dbname: database-name
-    query: SELECT id, requestData FROM stored_requests WHERE id IN %ID_LIST%;
+    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
 ```
 
 If you need support for a backend that you don't see, please [contribute it](contributing.md).

@@ -1,0 +1,126 @@
+{
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": ["video/mp4"]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            },
+            "districtm": {
+              "placementId": 2
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "aliases": {
+            "districtm": "appnexus"
+          },
+          "bidadjustmentfactors": {
+            "appnexus": 2.5,
+            "districtm": 0.3
+          }
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "aliases": {
+                "districtm": "appnexus"
+              },
+              "bidadjustmentfactors": {
+                "appnexus": 2.5,
+                "districtm": 0.3
+              }
+            }
+          }
+        },
+        "bidAdjustment": 2.5
+      },
+      "mockResponse": {
+        "errors": ["appnexus-error"]
+      }
+    },
+    "districtm": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 2
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "aliases": {
+                "districtm": "appnexus"
+              },
+              "bidadjustmentfactors": {
+                "appnexus": 2.5,
+                "districtm": 0.3
+              }
+            }
+          }
+        },
+        "bidAdjustment": 0.3
+      },
+      "mockResponse": {
+        "errors": ["districtm-error"]
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "ext": {
+        "errors": {
+          "appnexus": ["appnexus-error"],
+          "districtm": ["districtm-error"]
+        }
+      }
+    }
+  }
+}
