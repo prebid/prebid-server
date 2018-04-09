@@ -170,3 +170,13 @@ func TestValidConfig(t *testing.T) {
 		t.Errorf("OpenRTB filesystem config should work. %v", err)
 	}
 }
+
+func TestNegativeRequestSize(t *testing.T) {
+	cfg := Configuration{
+		MaxRequestSize: -1,
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("cfg.max_request_size should prevent negative values, but it doesn't")
+	}
+}

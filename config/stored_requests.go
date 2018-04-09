@@ -20,10 +20,6 @@ type StoredRequests struct {
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
 }
 
-func (cfg *StoredRequests) validate() error {
-	return nil
-}
-
 type HTTPFetcherConfig struct {
 	Endpoint    string `mapstructure:"endpoint"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
