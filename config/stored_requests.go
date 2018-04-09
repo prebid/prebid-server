@@ -32,14 +32,6 @@ type HTTPFetcherConfig struct {
 }
 
 func (cfg *StoredRequests) validate() error {
-	if cfg.Files && cfg.Postgres != nil {
-		return errors.New("stored request backend is ambiguous. If stored_requests.postgres is defined, then stored_requests.filesystem must be false")
-	}
-
-	if cfg.InMemoryCache != nil && !cfg.Files && cfg.Postgres == nil {
-		return errors.New("in_memory_cache requires at least one of filesystem or postgres must be configured")
-	}
-
 	if cfg.CacheEventsAPI && cfg.InMemoryCache == nil {
 		return errors.New("cache_events_api requires a configured in_memory_cache")
 	}
