@@ -27,6 +27,7 @@ const (
 	BidderFacebook    BidderName = "audienceNetwork"
 	BidderIndex       BidderName = "indexExchange"
 	BidderLifestreet  BidderName = "lifestreet"
+	BidderOpenx       BidderName = "openx"
 	BidderPubmatic    BidderName = "pubmatic"
 	BidderPulsepoint  BidderName = "pulsepoint"
 	BidderRubicon     BidderName = "rubicon"
@@ -42,6 +43,7 @@ var BidderMap = map[string]BidderName{
 	"conversant":      BidderConversant,
 	"indexExchange":   BidderIndex,
 	"lifestreet":      BidderLifestreet,
+	"openx":           BidderOpenx,
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
