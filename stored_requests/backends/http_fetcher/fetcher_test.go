@@ -61,6 +61,16 @@ func TestReqsAndImps(t *testing.T) {
 	assertErrLength(t, errs, 0)
 }
 
+func TestMissingValues(t *testing.T) {
+	fetcher, close := newEmptyFetcher(t, []string{"req-1", "req-2"}, []string{"imp-1"})
+	defer close()
+
+	reqData, impData, errs := fetcher.FetchRequests(context.Background(), []string{"req-1", "req-2"}, []string{"imp-1"})
+	assertMapKeys(t, reqData)
+	assertMapKeys(t, impData)
+	assertErrLength(t, errs, 3)
+}
+
 func TestErrResponse(t *testing.T) {
 	fetcher, close := newFetcherBrokenBackend()
 	defer close()
@@ -114,8 +124,20 @@ func newFetcherBrokenBackend() (fetcher *httpFetcher, closer func()) {
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
+func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *httpFetcher, closer func()) {
+	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyToNull)
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL), server.Close
+}
+
 func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *httpFetcher, closer func()) {
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyID)
+	server := httptest.NewServer(http.HandlerFunc(handler))
+	return NewFetcher(server.Client(), server.URL), server.Close
+}
+
+func newHandler(t *testing.T, expectReqIDs []string, expectImpIDs []string, jsonifier func(string) json.RawMessage) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		assertMatches(t, query.Get("request-ids"), expectReqIDs)
 		assertMatches(t, query.Get("imp-ids"), expectImpIDs)
@@ -128,13 +150,13 @@ func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) 
 
 		for _, reqID := range gotReqIDs {
 			if reqID != "" {
-				reqIDResponse[reqID] = jsonify(reqID)
+				reqIDResponse[reqID] = jsonifier(reqID)
 			}
 		}
 
 		for _, impID := range gotImpIDs {
 			if impID != "" {
-				impIDResponse[impID] = jsonify(impID)
+				impIDResponse[impID] = jsonifier(impID)
 			}
 		}
 
@@ -150,9 +172,6 @@ func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) 
 			w.Write(respBytes)
 		}
 	}
-
-	server := httptest.NewServer(http.HandlerFunc(handler))
-	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
 func assertMatches(t *testing.T, query string, expected []string) {
@@ -184,12 +203,16 @@ func assertMatches(t *testing.T, query string, expected []string) {
 	}
 }
 
-func jsonify(id string) json.RawMessage {
+func jsonifyID(id string) json.RawMessage {
 	if b, err := json.Marshal(id); err != nil {
 		return json.RawMessage([]byte("\"error encoding ID=" + id + "\""))
 	} else {
 		return json.RawMessage(b)
 	}
+}
+
+func jsonifyToNull(id string) json.RawMessage {
+	return json.RawMessage("null")
 }
 
 func assertMapKeys(t *testing.T, m map[string]json.RawMessage, keys ...string) {

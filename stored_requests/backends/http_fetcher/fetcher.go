@@ -1,12 +1,15 @@
 package http_fetcher
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context/ctxhttp"
@@ -89,20 +92,42 @@ func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.
 func unpackResponse(resp *http.Response) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, []error{err}
+		errs = append(errs, err)
+		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
 		var responseObj responseContract
 		if err := json.Unmarshal(respBytes, &responseObj); err != nil {
-			return nil, nil, []error{err}
+			errs = append(errs, err)
+			return
 		}
 
-		return responseObj.Requests, responseObj.Imps, nil
+		requestData = responseObj.Requests
+		impData = responseObj.Imps
+
+		errs = convertNullsToErrs(requestData, "Request", errs)
+		errs = convertNullsToErrs(impData, "Imp", errs)
+
+		return
 	}
 
-	return nil, nil, []error{fmt.Errorf("Error fetching Stored Requests via HTTP. Response code was %d", resp.StatusCode)}
+	errs = append(errs, fmt.Errorf("Error fetching Stored Requests via HTTP. Response code was %d", resp.StatusCode))
+	return
+}
+
+func convertNullsToErrs(m map[string]json.RawMessage, dataType string, errs []error) []error {
+	for id, val := range m {
+		if bytes.Equal(val, []byte("null")) {
+			delete(m, id)
+			errs = append(errs, stored_requests.NotFoundError{
+				ID:       id,
+				DataType: dataType,
+			})
+		}
+	}
+	return errs
 }
 
 // responseContract is used to unmarshal  for the endpoint
