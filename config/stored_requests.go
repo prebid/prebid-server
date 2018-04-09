@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -22,25 +21,12 @@ type StoredRequests struct {
 }
 
 func (cfg *StoredRequests) validate() error {
-	backends := make([]string, 0, 3)
-	if cfg.Files {
-		backends = append(backends, "filesystem")
-	}
-	if cfg.Postgres != nil {
-		backends = append(backends, "postgres")
-	}
-	if cfg.HTTP != nil {
-		backends = append(backends, "http")
-	}
-	if len(backends) > 1 {
-		return fmt.Errorf("config defines Stored Request backends to include %v. Only one is allowed", backends)
-	}
-
 	return nil
 }
 
 type HTTPFetcherConfig struct {
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint    string `mapstructure:"endpoint"`
+	AmpEndpoint string `mapstructure:"amp_endpoint"`
 }
 
 // PostgresConfig configures the Postgres connection for Stored Requests

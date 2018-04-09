@@ -39,9 +39,9 @@ func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
 	// `&request-ids=...&imp-ids=...`, depending.
 	urlPrefix := endpoint
 	if strings.Contains(endpoint, "?") {
-		urlPrefix += "&"
+		urlPrefix = urlPrefix + "&"
 	} else {
-		urlPrefix += "?"
+		urlPrefix = urlPrefix + "?"
 	}
 
 	glog.Infof("http_fetcher will use: GET " + urlPrefix + "request-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
