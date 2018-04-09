@@ -205,6 +205,8 @@ stored_requests:
 stored_requests:
   http:
     endpoint: http://stored-requests.prebid.com
+    amp_endpoint: http://stored-requests.prebid.com?amp=true
+
 ```
 
 If you need support for a backend that you don't see, please [contribute it](contributing.md).
