@@ -3,7 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"time"
+	"runtime"
 
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -59,7 +59,7 @@ func (e *EventListener) WaitFor(ctx context.Context, updates int, invalidations 
 			if e.updateCount >= updates && e.invalidationCount >= invalidations {
 				return
 			}
-			time.Sleep(1 * time.Millisecond)
+			runtime.Gosched()
 		}
 	}
 }
