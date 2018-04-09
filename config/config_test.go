@@ -170,16 +170,3 @@ func TestValidConfig(t *testing.T) {
 		t.Errorf("OpenRTB filesystem config should work. %v", err)
 	}
 }
-
-func TestInvalidStoredRequestsConfig(t *testing.T) {
-	cfg := Configuration{
-		StoredRequests: StoredRequests{
-			Files:    true,
-			Postgres: &PostgresConfig{},
-		},
-	}
-
-	if err := cfg.validate(); err == nil {
-		t.Error("OpenRTB Configs should not be allowed from both files and postgres.")
-	}
-}
