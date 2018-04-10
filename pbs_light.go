@@ -867,7 +867,7 @@ func serve(cfg *config.Configuration) error {
 		}
 		refreshRate := time.Duration(cfg.StoredRequests.HTTPEvents.RefreshRate) * time.Second
 		eventProducers = append(eventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.Endpoint, ctxProducer, refreshRate))
-		eventProducers = append(ampEventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.AmpEndpoint, ctxProducer, refreshRate))
+		ampEventProducers = append(ampEventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.AmpEndpoint, ctxProducer, refreshRate))
 	}
 	byId, byAmpId, listeners, err := NewFetchers(&(cfg.StoredRequests), db, eventProducers, ampEventProducers)
 	if err != nil {
