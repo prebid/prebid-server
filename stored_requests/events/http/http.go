@@ -57,7 +57,7 @@ func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() 
 		ctxProducer:   ctxProducer,
 		endpoint:      endpoint,
 		lastUpdate:    time.Now().UTC(),
-		updates:       make(chan events.Save, 1),
+		saves:         make(chan events.Save, 1),
 		invalidations: make(chan events.Invalidation, 1),
 	}
 	glog.Infof("Loading HTTP cache from GET %s", endpoint)
@@ -73,7 +73,7 @@ type httpEvents struct {
 	endpoint      string
 	invalidations chan events.Invalidation
 	lastUpdate    time.Time
-	updates       chan events.Save
+	saves         chan events.Save
 }
 
 func (e *httpEvents) fetchAll() {
@@ -82,7 +82,7 @@ func (e *httpEvents) fetchAll() {
 	resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
 	if respObj, ok := e.parse(e.endpoint, resp, err); ok {
 		if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
-			e.updates <- events.Save{
+			e.saves <- events.Save{
 				Requests: respObj.StoredRequests,
 				Imps:     respObj.StoredImps,
 			}
@@ -104,7 +104,7 @@ func (e *httpEvents) refresh(ticker <-chan time.Time) {
 					Imps:     extractInvalidations(respObj.StoredImps),
 				}
 				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
-					e.updates <- events.Save{
+					e.saves <- events.Save{
 						Requests: respObj.StoredRequests,
 						Imps:     respObj.StoredImps,
 					}
@@ -160,7 +160,7 @@ func extractInvalidations(changes map[string]json.RawMessage) []string {
 }
 
 func (e *httpEvents) Saves() <-chan events.Save {
-	return e.updates
+	return e.saves
 }
 
 func (e *httpEvents) Invalidations() <-chan events.Invalidation {

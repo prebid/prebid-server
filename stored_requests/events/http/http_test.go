@@ -18,13 +18,13 @@ func TestStartupReqsOnly(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theUpdate := <-ev.Saves()
+	theSave := <-ev.Saves()
 
-	assertLen(t, theUpdate.Requests, 2)
-	assertHasValue(t, theUpdate.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, theUpdate.Requests, "request2", `{"value":2}`)
+	assertLen(t, theSave.Requests, 2)
+	assertHasValue(t, theSave.Requests, "request1", `{"value":1}`)
+	assertHasValue(t, theSave.Requests, "request2", `{"value":2}`)
 
-	assertLen(t, theUpdate.Imps, 0)
+	assertLen(t, theSave.Imps, 0)
 }
 
 func TestStartupImpsOnly(t *testing.T) {
@@ -35,12 +35,12 @@ func TestStartupImpsOnly(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theUpdate := <-ev.Saves()
+	theSave := <-ev.Saves()
 
-	assertLen(t, theUpdate.Requests, 0)
+	assertLen(t, theSave.Requests, 0)
 
-	assertLen(t, theUpdate.Imps, 1)
-	assertHasValue(t, theUpdate.Imps, "imp1", `{"value":1}`)
+	assertLen(t, theSave.Imps, 1)
+	assertHasValue(t, theSave.Imps, "imp1", `{"value":1}`)
 }
 
 func TestStartupBothTypes(t *testing.T) {
@@ -51,14 +51,14 @@ func TestStartupBothTypes(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theUpdate := <-ev.Saves()
+	theSave := <-ev.Saves()
 
-	assertLen(t, theUpdate.Requests, 2)
-	assertHasValue(t, theUpdate.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, theUpdate.Requests, "request2", `{"value":2}`)
+	assertLen(t, theSave.Requests, 2)
+	assertHasValue(t, theSave.Requests, "request1", `{"value":1}`)
+	assertHasValue(t, theSave.Requests, "request2", `{"value":2}`)
 
-	assertLen(t, theUpdate.Imps, 1)
-	assertHasValue(t, theUpdate.Imps, "imp1", `{"value":1}`)
+	assertLen(t, theSave.Imps, 1)
+	assertHasValue(t, theSave.Imps, "imp1", `{"value":1}`)
 }
 
 func TestUpdates(t *testing.T) {
@@ -75,21 +75,21 @@ func TestUpdates(t *testing.T) {
 	timeChan := make(chan time.Time, 1)
 	timeChan <- time.Now()
 	go ev.refresh(timeChan)
-	firstUpdate := <-ev.Saves()
-	secondUpdate := <-ev.Saves()
+	firstSave := <-ev.Saves()
+	secondSave := <-ev.Saves()
 	inv := <-ev.Invalidations()
 
-	assertLen(t, firstUpdate.Requests, 2)
-	assertHasValue(t, firstUpdate.Requests, "request1", `{"value":1}`)
-	assertHasValue(t, firstUpdate.Requests, "request2", `{"value":2}`)
-	assertLen(t, firstUpdate.Imps, 2)
-	assertHasValue(t, firstUpdate.Imps, "imp1", `{"value":3}`)
-	assertHasValue(t, firstUpdate.Imps, "imp2", `{"value":4}`)
+	assertLen(t, firstSave.Requests, 2)
+	assertHasValue(t, firstSave.Requests, "request1", `{"value":1}`)
+	assertHasValue(t, firstSave.Requests, "request2", `{"value":2}`)
+	assertLen(t, firstSave.Imps, 2)
+	assertHasValue(t, firstSave.Imps, "imp1", `{"value":3}`)
+	assertHasValue(t, firstSave.Imps, "imp2", `{"value":4}`)
 
-	assertLen(t, secondUpdate.Requests, 1)
-	assertHasValue(t, secondUpdate.Requests, "request1", `{"value":5}`)
-	assertLen(t, secondUpdate.Imps, 1)
-	assertHasValue(t, secondUpdate.Imps, "imp2", `{"value":6}`)
+	assertLen(t, secondSave.Requests, 1)
+	assertHasValue(t, secondSave.Requests, "request1", `{"value":5}`)
+	assertLen(t, secondSave.Imps, 1)
+	assertHasValue(t, secondSave.Imps, "imp2", `{"value":6}`)
 
 	assertArrLen(t, inv.Requests, 1)
 	assertArrContains(t, inv.Requests, "request2")
