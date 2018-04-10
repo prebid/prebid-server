@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 )
 
 func TestPerfectCache(t *testing.T) {
 	cache := &mockCache{
-		mockGetReq: map[string]json.RawMessage{
+		mockGetReqs: map[string]json.RawMessage{
 			"req-id": json.RawMessage(`{"req":true}`),
 		},
 		mockGetImps: map[string]json.RawMessage{
@@ -22,8 +23,8 @@ func TestPerfectCache(t *testing.T) {
 	ids := []string{"known"}
 	composed.FetchRequests(context.Background(), []string{"req-id"}, ids)
 
-	if cache.gotGetReq[0] != "req-id" {
-		t.Errorf("The cache called with the wrong request ID. Expected req-id, got %s.", cache.gotGetReq)
+	if cache.gotGetReqs[0] != "req-id" {
+		t.Errorf("The cache called with the wrong request ID. Expected req-id, got %s.", cache.gotGetReqs)
 	}
 	if len(cache.gotGetImps) != 1 {
 		t.Errorf("The cache called with the wrong number of Imp IDs. Expected 1, got %d.", len(cache.gotGetImps))
@@ -126,8 +127,71 @@ func TestCacheSaves(t *testing.T) {
 	}
 }
 
+func TestComposedCache(t *testing.T) {
+	c1 := &mockCache{
+		mockGetReqs: map[string]json.RawMessage{
+			"1": json.RawMessage(`{"id": "1"}`),
+		},
+		mockGetImps: map[string]json.RawMessage{
+			"1": json.RawMessage(`{"id": "1"}`),
+		},
+	}
+	c2 := &mockCache{
+		mockGetReqs: map[string]json.RawMessage{
+			"2": json.RawMessage(`{"id": "2"}`),
+		},
+		mockGetImps: map[string]json.RawMessage{
+			"2": json.RawMessage(`{"id": "2"}`),
+		},
+	}
+	c3 := &mockCache{
+		mockGetReqs: map[string]json.RawMessage{
+			"3": json.RawMessage(`{"id": "3"}`),
+		},
+		mockGetImps: map[string]json.RawMessage{
+			"3": json.RawMessage(`{"id": "3"}`),
+		},
+	}
+	c4 := &mockCache{
+		mockGetReqs: map[string]json.RawMessage{
+			"1": json.RawMessage(`{"id": "4"}`),
+		},
+		mockGetImps: map[string]json.RawMessage{
+			"1": json.RawMessage(`{"id": "4"}`),
+		},
+	}
+
+	cache := ComposedCache{c1, c2, c3, c4}
+
+	fetcher := &mockFetcher{}
+	composed := WithCache(fetcher, cache)
+	fetchedReqs, fetchedImps, errs := composed.FetchRequests(context.Background(), []string{"1", "2", "3"}, []string{"1", "2", "3"})
+
+	if len(errs) != 0 {
+		t.Errorf("Got unexpected errors: %v", errs)
+	}
+
+	if len(c4.gotGetReqs) > 0 || len(c4.gotGetImps) > 0 {
+		t.Error("Composed cache Get should have returned once all keys were filled.")
+	}
+
+	expectedData := map[string]json.RawMessage{
+		"1": json.RawMessage(`{"id": "1"}`),
+		"2": json.RawMessage(`{"id": "2"}`),
+		"3": json.RawMessage(`{"id": "3"}`),
+	}
+
+	if !reflect.DeepEqual(fetchedReqs, expectedData) {
+		t.Errorf("Expected %v, got: %v", expectedData, fetchedReqs)
+	}
+
+	if !reflect.DeepEqual(fetchedImps, expectedData) {
+		t.Errorf("Expected %v, got: %v", expectedData, fetchedImps)
+	}
+}
+
 type mockFetcher struct {
-	mockGetReq  map[string]json.RawMessage
+	mockGetReqs map[string]json.RawMessage
 	mockGetImps map[string]json.RawMessage
 	returnErrs  []error
 
@@ -138,27 +202,43 @@ type mockFetcher struct {
 func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
 	f.gotReqQuery = requestIDs
 	f.gotImpQuery = impIDs
-	return f.mockGetReq, f.mockGetImps, f.returnErrs
+	return f.mockGetReqs, f.mockGetImps, f.returnErrs
 }
 
 type mockCache struct {
+	gotGetReqs []string
+	gotGetImps []string
+
 	gotSaveReqs map[string]json.RawMessage
 	gotSaveImps map[string]json.RawMessage
 
-	gotGetReq   []string
-	gotGetImps  []string
-	mockGetReq  map[string]json.RawMessage
+	gotUpdateReqs map[string]json.RawMessage
+	gotUpdateImps map[string]json.RawMessage
+
+	gotInvalidateReqs []string
+	gotInvalidateImps []string
+
+	mockGetReqs map[string]json.RawMessage
 	mockGetImps map[string]json.RawMessage
 }
 
-func (c *mockCache) GetRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage) {
-	c.gotGetReq = requestIDs
+func (c *mockCache) Get(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage) {
+	c.gotGetReqs = requestIDs
 	c.gotGetImps = impIDs
-	return c.mockGetReq, c.mockGetImps
+	return c.mockGetReqs, c.mockGetImps
 }
 
-func (c *mockCache) SaveRequests(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
+func (c *mockCache) Save(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
 	c.gotSaveReqs = storedRequests
 	c.gotSaveImps = storedImps
-	return
+}
+
+func (c *mockCache) Update(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
+	c.gotUpdateReqs = storedRequests
+	c.gotUpdateImps = storedImps
+}
+
+func (c *mockCache) Invalidate(ctx context.Context, requestIDs []string, impIDs []string) {
+	c.gotInvalidateReqs = requestIDs
+	c.gotInvalidateImps = impIDs
 }

@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -18,11 +19,24 @@ type StoredRequests struct {
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
 	// Cache should be non-nil if an in-memory cache should be used to store Stored Requests locally.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
+	// CacheEventsAPI should be non-nil if a API endpoints to invalidate/update the caches should be exposed.
+	// This is intended to be a useful development tool and not recommended for a production environment.
+	// It should not be exposed to public networks without authentication.
+	CacheEventsAPI bool `mapstructure:"cache_events_api"`
 }
 
+// HTTPFetcherConfig configures an HTTP stored requests fetcher
 type HTTPFetcherConfig struct {
 	Endpoint    string `mapstructure:"endpoint"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
+}
+
+func (cfg *StoredRequests) validate() error {
+	if cfg.CacheEventsAPI && cfg.InMemoryCache == nil {
+		return errors.New("cache_events_api requires a configured in_memory_cache")
+	}
+
+	return nil
 }
 
 // PostgresConfig configures the Postgres connection for Stored Requests
