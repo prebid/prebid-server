@@ -2,10 +2,13 @@ package stored_requests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
 
@@ -41,9 +44,16 @@ import (
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
 //
-func NewHTTPEvents(client *http.Client, endpoint string, refreshRate time.Duration) *httpEvents {
+func NewHTTPEvents(client *http.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *httpEvents {
+	// If we're not given a function to produce Contexts, use the Background one.
+	if ctxProducer == nil {
+		ctxProducer = func() (ctx context.Context, canceller func()) {
+			return context.Background(), func() {}
+		}
+	}
 	e := &httpEvents{
 		client:        client,
+		ctxProducer:   ctxProducer,
 		endpoint:      endpoint,
 		lastUpdate:    time.Now().UTC(),
 		updates:       make(chan Update, 1),
@@ -57,10 +67,11 @@ func NewHTTPEvents(client *http.Client, endpoint string, refreshRate time.Durati
 
 type httpEvents struct {
 	client        *http.Client
-	lastUpdate    time.Time
+	ctxProducer   func() (ctx context.Context, canceller func())
 	endpoint      string
-	updates       chan Update
 	invalidations chan Invalidation
+	lastUpdate    time.Time
+	updates       chan Update
 }
 
 func (e *httpEvents) Updates() <-chan Update {
@@ -72,7 +83,9 @@ func (e *httpEvents) Invalidations() <-chan Invalidation {
 }
 
 func (e *httpEvents) fetchAll() {
-	resp, err := e.client.Get(e.endpoint)
+	ctx, cancel := e.ctxProducer()
+	defer cancel()
+	resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
 	if respObj, ok := e.parse(e.endpoint, resp, err); ok {
 		if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
 			e.updates <- Update{
@@ -89,7 +102,8 @@ func (e *httpEvents) refresh(ticker <-chan time.Time) {
 		case thisTime := <-ticker:
 			thisTimeInUTC := thisTime.UTC()
 			thisEndpoint := e.endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
-			resp, err := e.client.Get(thisEndpoint)
+			ctx, cancel := e.ctxProducer()
+			resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
 			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
 				invalidations := Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
@@ -106,6 +120,7 @@ func (e *httpEvents) refresh(ticker <-chan time.Time) {
 				}
 				e.lastUpdate = thisTimeInUTC
 			}
+			cancel()
 		}
 	}
 }
@@ -122,6 +137,11 @@ func (e *httpEvents) parse(endpoint string, resp *http.Response, err error) (*re
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		glog.Errorf("Failed to read body of GET %s for Stored Requests: %v", endpoint, err)
+		return nil, false
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		glog.Errorf("Got %d response from GET %s for Stored Requests. Response body was: %s", resp.StatusCode, endpoint, string(respBytes))
 		return nil, false
 	}
 

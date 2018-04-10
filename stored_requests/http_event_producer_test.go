@@ -16,7 +16,7 @@ func TestStartupReqsOnly(t *testing.T) {
 	})
 	defer server.Close()
 
-	ev := NewHTTPEvents(server.Client(), server.URL, -1)
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
 	theUpdate := <-ev.Updates()
 
 	assertLen(t, theUpdate.Requests, 2)
@@ -33,7 +33,7 @@ func TestStartupImpsOnly(t *testing.T) {
 	})
 	defer server.Close()
 
-	ev := NewHTTPEvents(server.Client(), server.URL, -1)
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
 	theUpdate := <-ev.Updates()
 
 	assertLen(t, theUpdate.Requests, 0)
@@ -49,7 +49,7 @@ func TestStartupBothTypes(t *testing.T) {
 	})
 	defer server.Close()
 
-	ev := NewHTTPEvents(server.Client(), server.URL, -1)
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
 	theUpdate := <-ev.Updates()
 
 	assertLen(t, theUpdate.Requests, 2)
@@ -68,7 +68,7 @@ func TestUpdates(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	ev := NewHTTPEvents(server.Client(), server.URL, -1)
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
 
 	handler.response = `{"requests":{"request1":{"value":5}, "request2":{"deleted":true}},"imps":{"imp1":{"deleted":true},"imp2":{"value":6}}}`
 	timeChan := make(chan time.Time, 1)
@@ -94,6 +94,34 @@ func TestUpdates(t *testing.T) {
 	assertArrContains(t, inv.Requests, "request2")
 	assertArrLen(t, inv.Imps, 1)
 	assertArrContains(t, inv.Imps, "imp1")
+}
+
+func TestErrorResponse(t *testing.T) {
+	handler := &mockResponseHandler{
+		statusCode: http.StatusInternalServerError,
+		response:   "Something horrible happened.",
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
+	if len(ev.Updates()) != 0 {
+		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Updates()))
+	}
+}
+
+func TestMalformedResponse(t *testing.T) {
+	handler := &mockResponseHandler{
+		statusCode: http.StatusOK,
+		response:   "This isn't JSON.",
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
+	if len(ev.Updates()) != 0 {
+		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Updates()))
+	}
 }
 
 type mockResponseHandler struct {
