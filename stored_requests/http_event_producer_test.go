@@ -2,6 +2,7 @@ package stored_requests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -107,6 +108,24 @@ func TestErrorResponse(t *testing.T) {
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
 	if len(ev.Updates()) != 0 {
 		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Updates()))
+	}
+}
+
+func TestExpiredContext(t *testing.T) {
+	handler := &mockResponseHandler{
+		statusCode: http.StatusInternalServerError,
+		response:   "Something horrible happened.",
+	}
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	ctxProducer := func() (context.Context, func()) {
+		return context.WithTimeout(context.Background(), -1)
+	}
+
+	ev := NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1)
+	if len(ev.Updates()) != 0 {
+		t.Errorf("No updates should be emitted if the HTTP call is cancelled. Got %d", len(ev.Updates()))
 	}
 }
 
