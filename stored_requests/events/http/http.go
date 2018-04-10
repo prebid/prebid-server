@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/stored_requests/events"
 
 	"github.com/golang/glog"
 )
@@ -56,8 +57,8 @@ func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() 
 		ctxProducer:   ctxProducer,
 		endpoint:      endpoint,
 		lastUpdate:    time.Now().UTC(),
-		updates:       make(chan Update, 1),
-		invalidations: make(chan Invalidation, 1),
+		updates:       make(chan events.Save, 1),
+		invalidations: make(chan events.Invalidation, 1),
 	}
 	e.fetchAll()
 
@@ -69,17 +70,9 @@ type httpEvents struct {
 	client        *httpCore.Client
 	ctxProducer   func() (ctx context.Context, canceller func())
 	endpoint      string
-	invalidations chan Invalidation
+	invalidations chan events.Invalidation
 	lastUpdate    time.Time
-	updates       chan Update
-}
-
-func (e *httpEvents) Updates() <-chan Update {
-	return e.updates
-}
-
-func (e *httpEvents) Invalidations() <-chan Invalidation {
-	return e.invalidations
+	updates       chan events.Save
 }
 
 func (e *httpEvents) fetchAll() {
@@ -88,7 +81,7 @@ func (e *httpEvents) fetchAll() {
 	resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
 	if respObj, ok := e.parse(e.endpoint, resp, err); ok {
 		if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
-			e.updates <- Update{
+			e.updates <- events.Save{
 				Requests: respObj.StoredRequests,
 				Imps:     respObj.StoredImps,
 			}
@@ -105,12 +98,12 @@ func (e *httpEvents) refresh(ticker <-chan time.Time) {
 			ctx, cancel := e.ctxProducer()
 			resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
 			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
-				invalidations := Invalidation{
+				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
 					Imps:     extractInvalidations(respObj.StoredImps),
 				}
 				if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
-					e.updates <- Update{
+					e.updates <- events.Save{
 						Requests: respObj.StoredRequests,
 						Imps:     respObj.StoredImps,
 					}
@@ -165,17 +158,15 @@ func extractInvalidations(changes map[string]json.RawMessage) []string {
 	return deletedIDs
 }
 
+func (e *httpEvents) Saves() <-chan events.Save {
+	return e.updates
+}
+
+func (e *httpEvents) Invalidations() <-chan events.Invalidation {
+	return e.invalidations
+}
+
 type responseContract struct {
 	StoredRequests map[string]json.RawMessage `json:"requests"`
 	StoredImps     map[string]json.RawMessage `json:"imps"`
-}
-
-type Update struct {
-	Requests map[string]json.RawMessage `json:"requests"`
-	Imps     map[string]json.RawMessage `json:"imps"`
-}
-
-type Invalidation struct {
-	Requests []string `json:"requests"`
-	Imps     []string `json:"imps"`
 }

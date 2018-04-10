@@ -18,7 +18,7 @@ func TestStartupReqsOnly(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theUpdate := <-ev.Updates()
+	theUpdate := <-ev.Saves()
 
 	assertLen(t, theUpdate.Requests, 2)
 	assertHasValue(t, theUpdate.Requests, "request1", `{"value":1}`)
@@ -35,7 +35,7 @@ func TestStartupImpsOnly(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theUpdate := <-ev.Updates()
+	theUpdate := <-ev.Saves()
 
 	assertLen(t, theUpdate.Requests, 0)
 
@@ -51,7 +51,7 @@ func TestStartupBothTypes(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	theUpdate := <-ev.Updates()
+	theUpdate := <-ev.Saves()
 
 	assertLen(t, theUpdate.Requests, 2)
 	assertHasValue(t, theUpdate.Requests, "request1", `{"value":1}`)
@@ -75,8 +75,8 @@ func TestUpdates(t *testing.T) {
 	timeChan := make(chan time.Time, 1)
 	timeChan <- time.Now()
 	go ev.refresh(timeChan)
-	firstUpdate := <-ev.Updates()
-	secondUpdate := <-ev.Updates()
+	firstUpdate := <-ev.Saves()
+	secondUpdate := <-ev.Saves()
 	inv := <-ev.Invalidations()
 
 	assertLen(t, firstUpdate.Requests, 2)
@@ -106,8 +106,8 @@ func TestErrorResponse(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	if len(ev.Updates()) != 0 {
-		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Updates()))
+	if len(ev.Saves()) != 0 {
+		t.Errorf("No saves should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
 	}
 }
 
@@ -124,8 +124,8 @@ func TestExpiredContext(t *testing.T) {
 	}
 
 	ev := NewHTTPEvents(server.Client(), server.URL, ctxProducer, -1)
-	if len(ev.Updates()) != 0 {
-		t.Errorf("No updates should be emitted if the HTTP call is cancelled. Got %d", len(ev.Updates()))
+	if len(ev.Saves()) != 0 {
+		t.Errorf("No saves should be emitted if the HTTP call is cancelled. Got %d", len(ev.Saves()))
 	}
 }
 
@@ -138,8 +138,8 @@ func TestMalformedResponse(t *testing.T) {
 	defer server.Close()
 
 	ev := NewHTTPEvents(server.Client(), server.URL, nil, -1)
-	if len(ev.Updates()) != 0 {
-		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Updates()))
+	if len(ev.Saves()) != 0 {
+		t.Errorf("No updates should be emitted if the HTTP call fails. Got %d", len(ev.Saves()))
 	}
 }
 
