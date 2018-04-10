@@ -1,10 +1,10 @@
-package stored_requests
+package http
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
+	httpCore "net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ import (
 
 func TestStartupReqsOnly(t *testing.T) {
 	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: http.StatusOK,
+		statusCode: httpCore.StatusOK,
 		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}}}`,
 	})
 	defer server.Close()
@@ -29,7 +29,7 @@ func TestStartupReqsOnly(t *testing.T) {
 
 func TestStartupImpsOnly(t *testing.T) {
 	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: http.StatusOK,
+		statusCode: httpCore.StatusOK,
 		response:   `{"imps":{"imp1":{"value":1}}}`,
 	})
 	defer server.Close()
@@ -45,7 +45,7 @@ func TestStartupImpsOnly(t *testing.T) {
 
 func TestStartupBothTypes(t *testing.T) {
 	server := httptest.NewServer(&mockResponseHandler{
-		statusCode: http.StatusOK,
+		statusCode: httpCore.StatusOK,
 		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":1}}}`,
 	})
 	defer server.Close()
@@ -63,7 +63,7 @@ func TestStartupBothTypes(t *testing.T) {
 
 func TestUpdates(t *testing.T) {
 	handler := &mockResponseHandler{
-		statusCode: http.StatusOK,
+		statusCode: httpCore.StatusOK,
 		response:   `{"requests":{"request1":{"value":1}, "request2":{"value":2}},"imps":{"imp1":{"value":3},"imp2":{"value":4}}}`,
 	}
 	server := httptest.NewServer(handler)
@@ -99,7 +99,7 @@ func TestUpdates(t *testing.T) {
 
 func TestErrorResponse(t *testing.T) {
 	handler := &mockResponseHandler{
-		statusCode: http.StatusInternalServerError,
+		statusCode: httpCore.StatusInternalServerError,
 		response:   "Something horrible happened.",
 	}
 	server := httptest.NewServer(handler)
@@ -113,7 +113,7 @@ func TestErrorResponse(t *testing.T) {
 
 func TestExpiredContext(t *testing.T) {
 	handler := &mockResponseHandler{
-		statusCode: http.StatusInternalServerError,
+		statusCode: httpCore.StatusInternalServerError,
 		response:   "Something horrible happened.",
 	}
 	server := httptest.NewServer(handler)
@@ -131,7 +131,7 @@ func TestExpiredContext(t *testing.T) {
 
 func TestMalformedResponse(t *testing.T) {
 	handler := &mockResponseHandler{
-		statusCode: http.StatusOK,
+		statusCode: httpCore.StatusOK,
 		response:   "This isn't JSON.",
 	}
 	server := httptest.NewServer(handler)
@@ -148,7 +148,7 @@ type mockResponseHandler struct {
 	response   string
 }
 
-func (m *mockResponseHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (m *mockResponseHandler) ServeHTTP(rw httpCore.ResponseWriter, r *httpCore.Request) {
 	rw.WriteHeader(m.statusCode)
 	rw.Write([]byte(m.response))
 }

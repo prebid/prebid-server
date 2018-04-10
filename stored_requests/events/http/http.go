@@ -1,11 +1,11 @@
-package stored_requests
+package http
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
+	httpCore "net/http"
 	"time"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -44,7 +44,7 @@ import (
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
 //
-func NewHTTPEvents(client *http.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *httpEvents {
+func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *httpEvents {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
 		ctxProducer = func() (ctx context.Context, canceller func()) {
@@ -66,7 +66,7 @@ func NewHTTPEvents(client *http.Client, endpoint string, ctxProducer func() (ctx
 }
 
 type httpEvents struct {
-	client        *http.Client
+	client        *httpCore.Client
 	ctxProducer   func() (ctx context.Context, canceller func())
 	endpoint      string
 	invalidations chan Invalidation
@@ -127,7 +127,7 @@ func (e *httpEvents) refresh(ticker <-chan time.Time) {
 
 // proceess unpacks the HTTP response and sends the relevant events to the channels.
 // It returns true if everything was successful, and false if any errors occurred.
-func (e *httpEvents) parse(endpoint string, resp *http.Response, err error) (*responseContract, bool) {
+func (e *httpEvents) parse(endpoint string, resp *httpCore.Response, err error) (*responseContract, bool) {
 	if err != nil {
 		glog.Errorf("Failed call: GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
@@ -140,7 +140,7 @@ func (e *httpEvents) parse(endpoint string, resp *http.Response, err error) (*re
 		return nil, false
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != httpCore.StatusOK {
 		glog.Errorf("Got %d response from GET %s for Stored Requests. Response body was: %s", resp.StatusCode, endpoint, string(respBytes))
 		return nil, false
 	}
