@@ -37,9 +37,9 @@ func (e NotFoundError) Error() string {
 
 // Cache is an intermediate layer which can be used to create more complex Fetchers by composition.
 // Implementations must be safe for concurrent access by multiple goroutines.
-// To add a Cache layer in front of the Fetcher, see WithCache()
+// To add a Cache layer in front of a Fetcher, see WithCache()
 type Cache interface {
-	// GetRequests works much like Fetcher.FetchRequests, with a few exceptions:
+	// Get works much like Fetcher.FetchRequests, with a few exceptions:
 	//
 	// 1. Any (actionable) errors should be logged by the implementation, rather than returned.
 	// 2. The returned maps _may_ be written to.
@@ -49,16 +49,95 @@ type Cache interface {
 	//
 	// Nil slices and empty strings are treated as "no ops". That is, a nil requestID will always produce a nil
 	// "stored request data" in the response.
-	GetRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
+	Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
 
-	// SaveRequests stores some data in the cache. The maps are from ID to the cached value.
-	//
-	// This is a best-effort method. If the cache call fails, implementations should log the error.
-	SaveRequests(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage)
+	// Invalidate will ensure that all values associated with the given IDs
+	// are no longer returned by the cache until new values are saved via Update
+	Invalidate(ctx context.Context, requestIDs []string, impIDs []string)
+
+	// Update will update the given values in the cache if they exist
+	// or ignore them if they don't
+	Update(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
+
+	// Save will add or overwrite the data in the cache at the given keys
+	Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
+}
+
+// ComposedCache creates an interface to treat a slice of caches as a single cache
+type ComposedCache []Cache
+
+// Get will attempt to Get from the caches in the order in which they are in the slice,
+// stopping as soon as a value is found (or when all caches have been exhausted)
+func (c ComposedCache) Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
+	requestData = make(map[string]json.RawMessage, len(requestIDs))
+	impData = make(map[string]json.RawMessage, len(impIDs))
+
+	remainingReqIDs := requestIDs
+	remainingImpIDs := impIDs
+
+	for _, cache := range c {
+		cachedReqData, cachedImpData := cache.Get(ctx, remainingReqIDs, remainingImpIDs)
+
+		requestData, remainingReqIDs = updateFromCache(requestData, remainingReqIDs, cachedReqData)
+		impData, remainingImpIDs = updateFromCache(impData, remainingImpIDs, cachedImpData)
+
+		// return if all ids filled
+		if len(remainingReqIDs) == 0 && len(remainingImpIDs) == 0 {
+			return
+		}
+	}
+
+	return
+}
+
+func updateFromCache(data map[string]json.RawMessage, ids []string, newData map[string]json.RawMessage) (map[string]json.RawMessage, []string) {
+	remainingIDs := ids
+
+	if len(newData) > 0 {
+		remainingIDs = make([]string, 0, len(ids))
+
+		for _, id := range ids {
+			if config, ok := newData[id]; ok {
+				data[id] = config
+			} else {
+				remainingIDs = append(remainingIDs, id)
+			}
+		}
+	}
+
+	return data, remainingIDs
+}
+
+// Invalidate will propagate invalidations to all underlying caches
+func (c ComposedCache) Invalidate(ctx context.Context, requestIDs []string, impIDs []string) {
+	for _, cache := range c {
+		cache.Invalidate(ctx, requestIDs, impIDs)
+	}
+}
+
+// Update will propagate updates to all underlying caches
+func (c ComposedCache) Update(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
+	for _, cache := range c {
+		cache.Update(ctx, requestData, impData)
+	}
+}
+
+// Save will propagate saves to all underlying caches
+func (c ComposedCache) Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
+	for _, cache := range c {
+		cache.Save(ctx, requestData, impData)
+	}
+}
+
+type fetcherWithCache struct {
+	fetcher Fetcher
+	cache   Cache
 }
 
 // WithCache returns a Fetcher which uses the given Cache before delegating to the original.
-// This can be called multiple times to compose Cache layers onto the backing Fetcher.
+// This can be called multiple times to compose Cache layers onto the backing Fetcher, though
+// it is usually more desirable to first compose caches with Compose, ensuring propagation of updates
+// and invalidations through all cache layers.
 func WithCache(fetcher Fetcher, cache Cache) Fetcher {
 	return &fetcherWithCache{
 		cache:   cache,
@@ -66,13 +145,8 @@ func WithCache(fetcher Fetcher, cache Cache) Fetcher {
 	}
 }
 
-type fetcherWithCache struct {
-	cache   Cache
-	fetcher Fetcher
-}
-
 func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	requestData, impData = f.cache.GetRequests(ctx, requestIDs, impIDs)
+	requestData, impData = f.cache.Get(ctx, requestIDs, impIDs)
 
 	// Fixes #311
 	leftoverImps := findLeftovers(impIDs, impData)
@@ -80,7 +154,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 
 	fetcherReqData, fetcherImpData, errs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
 
-	f.cache.SaveRequests(ctx, fetcherReqData, fetcherImpData)
+	f.cache.Save(ctx, fetcherReqData, fetcherImpData)
 
 	requestData = mergeData(requestData, fetcherReqData)
 	impData = mergeData(impData, fetcherImpData)
@@ -106,5 +180,6 @@ func mergeData(cachedData map[string]json.RawMessage, fetchedData map[string]jso
 			mergedData[key] = value
 		}
 	}
+
 	return
 }

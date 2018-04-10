@@ -29,7 +29,7 @@ func (cfg *Configuration) validate() error {
 	if cfg.MaxRequestSize < 0 {
 		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
 	}
-	return nil
+	return cfg.StoredRequests.validate()
 }
 
 type Analytics struct {
