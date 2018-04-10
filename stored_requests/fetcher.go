@@ -78,25 +78,8 @@ func (c ComposedCache) Get(ctx context.Context, requestIDs []string, impIDs []st
 	for _, cache := range c {
 		cachedReqData, cachedImpData := cache.Get(ctx, remainingReqIDs, remainingImpIDs)
 
-		if len(cachedReqData) > 0 {
-			// iterate over remainingIds from end, droppings ids as they are filled
-			for i := len(remainingReqIDs) - 1; i >= 0; i-- {
-				if config, ok := cachedReqData[remainingReqIDs[i]]; ok {
-					requestData[remainingReqIDs[i]] = config
-					remainingReqIDs = append(remainingReqIDs[:i], remainingReqIDs[i+1:]...)
-				}
-			}
-		}
-
-		if len(cachedImpData) > 0 {
-			// iterate over remainingIds from end, droppings ids as they are filled
-			for i := len(remainingImpIDs) - 1; i >= 0; i-- {
-				if config, ok := cachedImpData[remainingImpIDs[i]]; ok {
-					impData[remainingImpIDs[i]] = config
-					remainingImpIDs = append(remainingImpIDs[:i], remainingImpIDs[i+1:]...)
-				}
-			}
-		}
+		requestData, remainingReqIDs = updateFromCache(requestData, remainingReqIDs, cachedReqData)
+		impData, remainingImpIDs = updateFromCache(impData, remainingImpIDs, cachedImpData)
 
 		// return if all ids filled
 		if len(remainingReqIDs) == 0 && len(remainingImpIDs) == 0 {
@@ -105,6 +88,24 @@ func (c ComposedCache) Get(ctx context.Context, requestIDs []string, impIDs []st
 	}
 
 	return
+}
+
+func updateFromCache(data map[string]json.RawMessage, ids []string, newData map[string]json.RawMessage) (map[string]json.RawMessage, []string) {
+	remainingIDs := ids
+
+	if len(newData) > 0 {
+		remainingIDs = make([]string, 0, len(ids))
+
+		for _, id := range ids {
+			if config, ok := newData[id]; ok {
+				data[id] = config
+			} else {
+				remainingIDs = append(remainingIDs, id)
+			}
+		}
+	}
+
+	return data, remainingIDs
 }
 
 // Invalidate will propagate invalidations to all underlying caches

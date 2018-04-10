@@ -61,7 +61,7 @@ func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer
 	for {
 		select {
 		case update := <-events.Updates():
-			cache.Update(context.Background(), update.Requests, update.Requests)
+			cache.Update(context.Background(), update.Requests, update.Imps)
 			if e.onUpdate != nil {
 				e.onUpdate()
 			}
