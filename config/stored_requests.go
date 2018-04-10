@@ -13,25 +13,26 @@ import (
 type StoredRequests struct {
 	// Files should be true if Stored Requests should be loaded from the filesystem.
 	Files bool `mapstructure:"filesystem"`
-	// Postgres should be non-nil if Stored Requests should be loaded from a Postgres database.
+	// Postgres configures an instance of stored_requests/backends/db_fetcher/postgres.go.
+	// If non-nil, Stored Requests will be fetched from a postgres DB.
 	Postgres *PostgresConfig `mapstructure:"postgres"`
-	// HTTP configures an instance of stored_requests/backends/http_fetcher.
-	// If non-nil, Stored Requests will fetch Stored Requests data from the endpoint here.
+	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
+	// If non-nil, Stored Requests will be fetched from the endpoint described there.
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
 	// InMemoryCache configures an instance of stored_requests/caches/in_memory/lru.go.
 	// If non-nil, Stored Requests will be saved in an in-memory LRU cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
-	// CacheEventsAPI should be non-nil if a API endpoints to invalidate/update the caches should be exposed.
+	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
+	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
 	// This is intended to be a useful development tool and not recommended for a production environment.
 	// It should not be exposed to public networks without authentication.
 	CacheEventsAPI bool `mapstructure:"cache_events_api"`
-
 	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
 	// If non-nil, the server will use those endpoints to populate and update the cache.
 	HTTPEvents *HTTPEventsConfig `mapstructure:"http_events"`
 }
 
-// HTTPEventsConfig configures an HTTP fetcher which
+// HTTPEventsConfig configures stored_requests/events/http/http.go
 type HTTPEventsConfig struct {
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
 	Endpoint    string `mapstructure:"endpoint"`
@@ -39,7 +40,7 @@ type HTTPEventsConfig struct {
 	Timeout     int    `mapstructure:"timeout_ms"`
 }
 
-// HTTPFetcherConfig configures an HTTP stored requests fetcher
+// HTTPFetcherConfig configures a stored_requests/backends/http_fetcher/fetcher.go
 type HTTPFetcherConfig struct {
 	Endpoint    string `mapstructure:"endpoint"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
