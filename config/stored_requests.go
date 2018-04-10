@@ -15,14 +15,28 @@ type StoredRequests struct {
 	Files bool `mapstructure:"filesystem"`
 	// Postgres should be non-nil if Stored Requests should be loaded from a Postgres database.
 	Postgres *PostgresConfig `mapstructure:"postgres"`
-	// HTTP should be non-nil if Stored Requests should be loaded from a remote endpoint over HTTP.
+	// HTTP configures an instance of stored_requests/backends/http_fetcher.
+	// If non-nil, Stored Requests will fetch Stored Requests data from the endpoint here.
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
-	// Cache should be non-nil if an in-memory cache should be used to store Stored Requests locally.
+	// InMemoryCache configures an instance of stored_requests/caches/in_memory/lru.go.
+	// If non-nil, Stored Requests will be saved in an in-memory LRU cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
 	// CacheEventsAPI should be non-nil if a API endpoints to invalidate/update the caches should be exposed.
 	// This is intended to be a useful development tool and not recommended for a production environment.
 	// It should not be exposed to public networks without authentication.
 	CacheEventsAPI bool `mapstructure:"cache_events_api"`
+
+	// HTTPEvents configures an instance of stored_requests/events/http/http.go.
+	// If non-nil, the server will use those endpoints to populate and update the cache.
+	HTTPEvents *HTTPEventsConfig `mapstructure:"http_events`
+}
+
+// HTTPEventsConfig configures an HTTP fetcher which
+type HTTPEventsConfig struct {
+	AmpEndpoint string `mapstructure:"amp_endpoint"`
+	Endpoint    string `mapstructure:"endpoint"`
+	RefreshRate int64  `mapstructure:"refresh_rate_seconds"`
+	Timeout     int    `mapstructure:"timeout_ms"`
 }
 
 // HTTPFetcherConfig configures an HTTP stored requests fetcher
@@ -32,8 +46,14 @@ type HTTPFetcherConfig struct {
 }
 
 func (cfg *StoredRequests) validate() error {
-	if cfg.CacheEventsAPI && cfg.InMemoryCache == nil {
-		return errors.New("cache_events_api requires a configured in_memory_cache")
+	if cfg.InMemoryCache == nil {
+		if cfg.CacheEventsAPI {
+			return errors.New("stored_requests.cache_events_api requires a configured in_memory_cache")
+		}
+
+		if cfg.HTTPEvents != nil {
+			return errors.New("stored_requests.http_events requires a configured in_memory_cache")
+		}
 	}
 
 	return nil
