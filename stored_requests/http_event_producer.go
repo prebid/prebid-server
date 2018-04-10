@@ -13,7 +13,7 @@ import (
 )
 
 // NewHTTPEvents makes an EventProducer which creates events by pinging an external HTTP API
-// for updates periodically.
+// for updates periodically. If refreshRate is negative, then the data will never be refreshed.
 //
 // It expects the following endpoint to exist remotely:
 //
@@ -41,7 +41,7 @@ import (
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
 //
-func NewHTTPEvents(client *http.Client, endpoint string, refreshRate time.Duration) {
+func NewHTTPEvents(client *http.Client, endpoint string, refreshRate time.Duration) *httpEvents {
 	e := &httpEvents{
 		client:        client,
 		endpoint:      endpoint,
@@ -52,6 +52,7 @@ func NewHTTPEvents(client *http.Client, endpoint string, refreshRate time.Durati
 	e.fetchAll()
 
 	go e.refresh(time.Tick(refreshRate))
+	return e
 }
 
 type httpEvents struct {
