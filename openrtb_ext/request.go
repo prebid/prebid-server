@@ -126,10 +126,9 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			if gr.Min == 0.0 {
 				// Default min to be the previous max
 				// On the first entry, we will likely overwrite 0.0 with 0.0, which should be ok. Adding a conditional to skip likely won't save any processing time.
-				gr.Min = prevMax
 				gran[i].Min = prevMax
 			}
-			if gr.Min < prevMax {
+			if gran[i].Min < prevMax {
 				return errors.New("Price granularity error: overlapping granularity ranges")
 			}
 			prevMax = gr.Max
