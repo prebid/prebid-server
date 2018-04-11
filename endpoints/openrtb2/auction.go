@@ -72,8 +72,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
+	numImps := 0
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordImps(labels, numImps)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
@@ -118,6 +120,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
+	numImps = len(req.Imp)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
 	ao.Request = req
 	ao.Response = response
@@ -733,16 +736,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		return nil, errs
 	}
 
-	// Fetch all of the Stored Request data
-	var allIds = make([]string, len(impIds), len(impIds)+1)
-	copy(allIds, impIds)
+	// Fetch the Stored Request data
+	var storedReqIds []string
 	if hasStoredBidRequest {
-		allIds = append(allIds, storedBidRequestId)
+		storedReqIds = []string{storedBidRequestId}
 	}
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, allIds)
-	if len(errs) > 0 {
-		return nil, errs
-	}
+	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
@@ -757,7 +756,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	for i := 0; i < len(impIds); i++ {
-		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[idIndices[i]])
+		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
 			return nil, []error{err}
 		}

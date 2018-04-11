@@ -14,6 +14,7 @@ import (
 type Metrics struct {
 	metricsRegistry     metrics.Registry
 	RequestMeter        metrics.Meter
+	ImpMeter            metrics.Meter
 	AppRequestMeter     metrics.Meter
 	NoCookieMeter       metrics.Meter
 	SafariRequestMeter  metrics.Meter
@@ -68,6 +69,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	newMetrics := &Metrics{
 		metricsRegistry:     registry,
 		RequestMeter:        blankMeter(0),
+		ImpMeter:            blankMeter(0),
 		AppRequestMeter:     blankMeter(0),
 		NoCookieMeter:       blankMeter(0),
 		SafariRequestMeter:  blankMeter(0),
@@ -102,6 +104,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
 	newMetrics.RequestMeter = metrics.GetOrRegisterMeter("requests", registry)
+	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.ErrorMeter = metrics.GetOrRegisterMeter("error_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
@@ -222,6 +225,10 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)
+}
+
+func (me *Metrics) RecordImps(labels Labels, numImps int) {
+	me.ImpMeter.Mark(int64(numImps))
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible
