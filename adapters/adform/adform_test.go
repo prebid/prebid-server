@@ -27,6 +27,7 @@ type aTagInfo struct {
 	price   float64
 	content string
 	dealId  string
+	creativeId string
 }
 
 type aBidInfo struct {
@@ -77,6 +78,7 @@ func createAdformServerResponse(testData aBidInfo) ([]byte, error) {
 			Width:        testData.width,
 			Height:       testData.height,
 			DealId:       testData.tags[0].dealId,
+			CreativeId:   testData.tags[0].creativeId,
 		},
 		{},
 		{
@@ -87,6 +89,7 @@ func createAdformServerResponse(testData aBidInfo) ([]byte, error) {
 			Width:        testData.width,
 			Height:       testData.height,
 			DealId:       testData.tags[2].dealId,
+			CreativeId:   testData.tags[2].creativeId,
 		},
 	}
 	adformServerResponse, err := json.Marshal(bids)
@@ -158,7 +161,7 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 		buyerUID:  "user-id",
 		secure:    false,
 	}
-	adformTestData.tags[0] = aTagInfo{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1"}
+	adformTestData.tags[0] = aTagInfo{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"}
 	adformTestData.tags[1] = aTagInfo{mid: 32345, code: "code2"} // no bid for ad unit
 	adformTestData.tags[2] = aTagInfo{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"}
 
@@ -303,7 +306,7 @@ func createTestData() *aBidInfo {
 		tid:       "transaction-id",
 		buyerUID:  "user-id",
 		tags: []aTagInfo{
-			{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1"},
+			{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"},
 			{mid: 32345, code: "code2"}, // no bid for ad unit
 			{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"},
 		},
@@ -399,6 +402,9 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 				}
 				if bid.DealID != tag.dealId {
 					t.Errorf("Incorrect deal id '%s' expected '%s'", bid.DealID, tag.dealId)
+				}
+				if bid.CrID != tag.creativeId {
+					t.Errorf("Incorrect creative id '%s' expected '%s'", bid.CrID, tag.creativeId)
 				}
 			}
 		}

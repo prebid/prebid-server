@@ -50,6 +50,7 @@ type adformBid struct {
 	Width        uint64  `json:"width,omitempty"`
 	Height       uint64  `json:"height,omitempty"`
 	DealId       string  `json:"deal_id,omitempty"`
+	CreativeId   string  `json:"win_crid,omitempty"`
 }
 
 // ADAPTER Interface
@@ -354,6 +355,7 @@ func toOpenRtbBids(adformBids []*adformBid, r *openrtb.BidRequest) []*adapters.T
 			W:      bid.Width,
 			H:      bid.Height,
 			DealID: bid.DealId,
+			CrID:   bid.CreativeId,
 		}
 
 		bids = append(bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
