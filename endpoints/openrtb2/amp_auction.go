@@ -65,6 +65,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordImps(labels, 1)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAmpObject(&ao)
 	}()

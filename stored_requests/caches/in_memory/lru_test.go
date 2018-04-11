@@ -14,7 +14,7 @@ func TestCacheMiss(t *testing.T) {
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
 	})
-	storedReqs, storedImps := cache.GetRequests(context.Background(), []string{"unknown"}, nil)
+	storedReqs, storedImps := cache.Get(context.Background(), []string{"unknown"}, nil)
 	assertMapLength(t, 0, storedReqs)
 	assertMapLength(t, 0, storedImps)
 }
@@ -25,12 +25,12 @@ func TestCacheHit(t *testing.T) {
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
 	})
-	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
+	cache.Save(context.Background(), map[string]json.RawMessage{
 		"known-req": json.RawMessage(`{"req":true}`),
 	}, map[string]json.RawMessage{
 		"known-imp": json.RawMessage(`{"imp":true}`),
 	})
-	reqData, impData := cache.GetRequests(context.Background(), []string{"known-req"}, []string{"known-imp"})
+	reqData, impData := cache.Get(context.Background(), []string{"known-req"}, []string{"known-imp"})
 	if len(reqData) != 1 {
 		t.Errorf("The cache should have returned the data.")
 	}
@@ -47,10 +47,10 @@ func TestCacheMixed(t *testing.T) {
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
 	})
-	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
+	cache.Save(context.Background(), map[string]json.RawMessage{
 		"known-req": json.RawMessage(`{"req":true}`),
 	}, nil)
-	reqData, impData := cache.GetRequests(context.Background(), []string{"known-req", "unknown-req"}, nil)
+	reqData, impData := cache.Get(context.Background(), []string{"known-req", "unknown-req"}, nil)
 	assertMapLength(t, 1, reqData)
 	assertHasValue(t, reqData, "known-req", `{"req":true}`)
 	assertMapLength(t, 0, impData)
@@ -62,16 +62,57 @@ func TestCacheOverlap(t *testing.T) {
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
 	})
-	cache.SaveRequests(context.Background(), map[string]json.RawMessage{
+	cache.Save(context.Background(), map[string]json.RawMessage{
 		"id": json.RawMessage(`{"req":true}`),
 	}, map[string]json.RawMessage{
 		"id": json.RawMessage(`{"imp":true}`),
 	})
-	reqData, impData := cache.GetRequests(context.Background(), []string{"id"}, []string{"id"})
+	reqData, impData := cache.Get(context.Background(), []string{"id"}, []string{"id"})
 	assertMapLength(t, 1, reqData)
 	assertHasValue(t, reqData, "id", `{"req":true}`)
 	assertMapLength(t, 1, impData)
 	assertHasValue(t, impData, "id", `{"imp":true}`)
+}
+
+func TestCacheUpdateSaveInvalidate(t *testing.T) {
+	cache := NewLRUCache(&config.InMemoryCache{
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
+	})
+	cache.Update(context.Background(), map[string]json.RawMessage{
+		"known": json.RawMessage(`{}`),
+	}, map[string]json.RawMessage{
+		"known": json.RawMessage(`{}`),
+	})
+	reqData, impData := cache.Get(context.Background(), []string{"known"}, []string{"known"})
+	assertMapLength(t, 0, reqData)
+	assertMapLength(t, 0, impData)
+
+	cache.Save(context.Background(), map[string]json.RawMessage{
+		"known": json.RawMessage(`{}`),
+	}, map[string]json.RawMessage{
+		"known": json.RawMessage(`{}`),
+	})
+	reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})
+	assertMapLength(t, 1, reqData)
+	assertMapLength(t, 1, impData)
+
+	cache.Update(context.Background(), map[string]json.RawMessage{
+		"known": json.RawMessage(`{"changed": true}`),
+	}, map[string]json.RawMessage{
+		"known": json.RawMessage(`{"changed": true}`),
+	})
+	reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})
+	assertMapLength(t, 1, reqData)
+	assertHasValue(t, reqData, "known", `{"changed": true}`)
+	assertMapLength(t, 1, impData)
+	assertHasValue(t, impData, "known", `{"changed": true}`)
+
+	cache.Invalidate(context.Background(), []string{"known"}, []string{"known"})
+	reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})
+	assertMapLength(t, 0, reqData)
+	assertMapLength(t, 0, impData)
 }
 
 func assertMapLength(t *testing.T, expectedLen int, theMap map[string]json.RawMessage) {

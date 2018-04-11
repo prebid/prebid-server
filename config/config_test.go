@@ -171,15 +171,12 @@ func TestValidConfig(t *testing.T) {
 	}
 }
 
-func TestInvalidStoredRequestsConfig(t *testing.T) {
+func TestNegativeRequestSize(t *testing.T) {
 	cfg := Configuration{
-		StoredRequests: StoredRequests{
-			Files:    true,
-			Postgres: &PostgresConfig{},
-		},
+		MaxRequestSize: -1,
 	}
 
 	if err := cfg.validate(); err == nil {
-		t.Error("OpenRTB Configs should not be allowed from both files and postgres.")
+		t.Error("cfg.max_request_size should prevent negative values, but it doesn't")
 	}
 }

@@ -12,11 +12,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
+	"github.com/yudai/gojsondiff"
+	"github.com/yudai/gojsondiff/formatter"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -135,315 +138,6 @@ func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
 	return openrtb.RawJSON(toReturn)
 }
 
-// TODO: Replace most stuff in this file with "exchangetest" specs, to be executed by exchange_json_test.go.
-// Benefits include:
-//   1. The assertions are much more comprehensive and strict.
-//   2. No assupmtions about Exchange implementation details.
-//   3. The error messages are easier to debug.
-//
-// I'm just leaving these here for now to prove that the bidadjustmentfactors feature doesn't break any existing tests.
-func TestHoldAuction(t *testing.T) {
-	respStatus := 200
-	respBody := "{\"bid\":false}"
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
-	defer cancel()
-
-	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
-
-	// Very simple Bid request. The dummy bidders know what to do.
-	bidRequest := new(openrtb.BidRequest)
-	bidRequest.ID = "This Bid"
-	bidRequest.Imp = make([]openrtb.Imp, 2)
-
-	// Need extensions for all the bidders so we know to hold auctions for them.
-	impExt := make(map[string]map[string]string)
-	impExt["dummy"] = make(map[string]string)
-	impExt["dummy2"] = make(map[string]string)
-	impExt["dummy3"] = make(map[string]string)
-	b, _ := json.Marshal(impExt)
-	bidRequest.Imp[0].Ext = b
-	bidRequest.Imp[1].Ext = b
-
-	bidResponse, err := e.HoldAuction(ctx, bidRequest, &emptyUsersync{}, pbsmetrics.Labels{})
-	if err != nil {
-		t.Errorf("HoldAuction: %s", err.Error())
-	}
-	bidResponseExt := new(openrtb_ext.ExtBidResponse)
-	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
-
-	if len(bidResponseExt.ResponseTimeMillis) != 3 {
-		t.Errorf("HoldAuction: Did not find 3 response times. Found %d instead", len(bidResponseExt.ResponseTimeMillis))
-	}
-	if len(bidResponse.SeatBid) != 3 {
-		t.Errorf("HoldAuction: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
-	}
-	if bidResponse.NBR != nil {
-		t.Errorf("HoldAuction: Found invalid auction flag in response: %d", *bidResponse.NBR)
-	}
-	// Find the indexes of the bidders, as they should be scrambled
-	// Set initial value to -1 so we error out if bidders are not found.
-	var (
-		dummy1 = -1
-		dummy3 = -1
-	)
-	for i, sb := range bidResponse.SeatBid {
-		if sb.Seat == "dummy" {
-			dummy1 = i
-		}
-		if sb.Seat == "dummy3" {
-			dummy3 = i
-		}
-	}
-	if len(bidResponse.SeatBid[dummy1].Bid) != 2 {
-		t.Errorf("HoldAuction: Expected 2 bids from dummy bidder, found %d instead", len(bidResponse.SeatBid[dummy1].Bid))
-	}
-	if len(bidResponse.SeatBid[dummy3].Bid) != 1 {
-		t.Errorf("HoldAuction: Expected 2 bids from dummy bidder, found %d instead", len(bidResponse.SeatBid[dummy1].Bid))
-	}
-
-}
-
-func TestGetAllBids(t *testing.T) {
-	respStatus := 200
-	respBody := "{\"bid\":false}"
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
-	defer cancel()
-
-	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
-
-	cleanRequests := map[openrtb_ext.BidderName]*openrtb.BidRequest{
-		BidderDummy:  nil,
-		BidderDummy2: nil,
-		BidderDummy3: nil,
-	}
-	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	blabels[openrtb_ext.BidderName("dummy")] = &pbsmetrics.AdapterLabels{}
-	blabels[openrtb_ext.BidderName("dummy2")] = &pbsmetrics.AdapterLabels{}
-	blabels[openrtb_ext.BidderName("dummy3")] = &pbsmetrics.AdapterLabels{}
-	adapterBids, adapterExtra := e.getAllBids(ctx, cleanRequests, nil, nil, blabels)
-	if len(adapterBids[BidderDummy].bids) != 2 {
-		t.Errorf("GetAllBids failed to get 2 bids from BidderDummy, found %d instead", len(adapterBids[BidderDummy].bids))
-	}
-	if adapterBids[BidderDummy].bids[0].bid.ID != "1234567890" {
-		t.Errorf("GetAllBids failed to get the first bid of BidderDummy")
-	}
-	if adapterBids[BidderDummy3].bids[0].bid.ID != "MyBid" {
-		t.Errorf("GetAllBids failed to get the bid from BidderDummy3")
-	}
-	if len(adapterExtra) != 3 {
-		t.Errorf("GetAllBids failed to return 3 adapterExtra's, got %d instead", len(adapterExtra))
-	}
-
-	// Now test with an error condition
-	mockAdapterConfigErr1(e.adapterMap[BidderDummy2].(*mockAdapter))
-	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
-		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
-	}
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil, blabels)
-
-	if len(e.adapterMap[BidderDummy2].(*mockAdapter).errs) != 2 {
-		t.Errorf("GetAllBids, Bidder2 adapter error generation failed. Only seeing %d errors", len(e.adapterMap[BidderDummy2].(*mockAdapter).errs))
-	}
-	if len(adapterExtra[BidderDummy2].Errors) != 2 {
-		t.Errorf("GetAllBids failed to report 2 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
-	}
-	if len(adapterExtra[BidderDummy].Errors) != 0 {
-		t.Errorf("GetAllBids found errors on Bidder1, found %d errors", len(adapterExtra[BidderDummy2].Errors))
-	}
-	if len(adapterBids[BidderDummy2].bids) != 0 {
-		t.Errorf("GetAllBids found bids on Bidder2, found %d bids", len(adapterBids[BidderDummy2].bids))
-	}
-
-	// Test with null pointer for bid response
-	mockAdapterConfigErr2(e.adapterMap[BidderDummy2].(*mockAdapter))
-	adapterBids, adapterExtra = e.getAllBids(ctx, cleanRequests, nil, nil, blabels)
-
-	if len(adapterExtra[BidderDummy2].Errors) != 1 {
-		t.Errorf("GetAllBids failed to report 1 errors on Bidder2, found %d errors", len(adapterExtra[BidderDummy2].Errors))
-	}
-	if len(adapterExtra[BidderDummy].Errors) != 0 {
-		t.Errorf("GetAllBids found errors on Bidder1, found %d errors", len(adapterExtra[BidderDummy2].Errors))
-	}
-}
-
-func TestBuildBidResponse(t *testing.T) {
-	//  BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*adapters.pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.BidResponse
-	respStatus := 200
-	respBody := "{\"bid\":false}"
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-
-	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
-
-	// Very simple Bid request. At this point we are just reading these two values
-	// Adding targeting to enable targeting tests
-	bidReqExt := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &openrtb_ext.ExtRequestTargeting{
-				PriceGranularity: openrtb_ext.PriceGranularityMedium,
-			},
-		},
-	}
-	var bidReqExtRaw openrtb.RawJSON
-	bidReqExtRaw, err := json.Marshal(bidReqExt)
-	bidRequest := openrtb.BidRequest{
-		ID:   "This Bid",
-		Test: 0,
-		Ext:  bidReqExtRaw,
-	}
-	var resolvedRequest json.RawMessage
-
-	liveAdapters := make([]openrtb_ext.BidderName, 3)
-	liveAdapters[0] = BidderDummy
-	liveAdapters[1] = BidderDummy2
-	liveAdapters[2] = BidderDummy3
-
-	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
-	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra)
-
-	var errs1, errs2, errs3 []error
-	adapterBids[BidderDummy], errs1 = mockDummyBids1("dummy")
-	adapterBids[BidderDummy2], errs2 = mockDummyBids2("dummy2")
-	adapterBids[BidderDummy3], errs3 = mockDummyBids3("dummy3")
-	adapterExtra[BidderDummy] = &seatResponseExtra{ResponseTimeMillis: 131, Errors: convertErr2Str(errs1)}
-	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
-	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
-
-	errList := make([]error, 0, 1)
-	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
-	if err != nil {
-		t.Errorf("BuildBidResponse: %s", err.Error())
-	}
-	bidResponseExt := new(openrtb_ext.ExtBidResponse)
-	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
-
-	if len(bidResponseExt.ResponseTimeMillis) != 3 {
-		t.Errorf("BuildBidResponse: Did not find 3 response times. Found %d instead", len(bidResponseExt.ResponseTimeMillis))
-	}
-	if len(bidResponse.SeatBid) != 3 {
-		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
-	}
-	if len(bidResponse.SeatBid) != 3 {
-		t.Errorf("BuildBidResponse: Expected 3 SeatBids, found %d instead", len(bidResponse.SeatBid))
-	}
-	// Find the seat index for BidderDummy
-	bidderDummySeat := -1
-	for i, seat := range bidResponse.SeatBid {
-		if seat.Seat == "dummy" {
-			bidderDummySeat = i
-		}
-	}
-	if bidderDummySeat == -1 {
-		t.Error("Could not find the SeatBid for BidderDummy!")
-	} else {
-		bidder1BidExt := make([]openrtb_ext.ExtBid, 2)
-		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[0].Ext, &bidder1BidExt[0])
-		if err != nil {
-			t.Errorf("Unpacking extensions for bid[0]: %s", err.Error())
-		}
-		err = json.Unmarshal(bidResponse.SeatBid[bidderDummySeat].Bid[1].Ext, &bidder1BidExt[1])
-		if err != nil {
-			t.Errorf("Unpacking extensions for bid[1]: %s", err.Error())
-		}
-		// All tests except for winning bid no longer valid as setting pre bid targeting values moved to exchange/bidder.go
-		assertStringValue(t, "bid[0].Targeting[hb_pb_dummy]", "1.30", bidder1BidExt[0].Prebid.Targeting["hb_pb_dummy"])
-		assertStringValue(t, "bid[0]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[0].Prebid.Targeting["hb_bidder_dummy"])
-		assertStringValue(t, "bid[0]Targeting[hb_size_dummy]", "728x90", bidder1BidExt[0].Prebid.Targeting["hb_size_dummy"])
-		assertStringValue(t, "bid[1].Targeting[hb_pb_dummy]", "0.70", bidder1BidExt[1].Prebid.Targeting["hb_pb_dummy"])
-		assertStringValue(t, "bid[1]Targeting[hb_bidder_dummy]", "dummy", bidder1BidExt[1].Prebid.Targeting["hb_bidder_dummy"])
-		assertStringValue(t, "bid[1]Targeting[hb_size_dummy]", "300x250", bidder1BidExt[1].Prebid.Targeting["hb_size_dummy"])
-		_, ok := bidder1BidExt[1].Prebid.Targeting["hb_pb"]
-		if ok {
-			t.Errorf("bid[1].Targeting[hb_pb] exists, but wasn't winning bid. Got \"%s\"", bidder1BidExt[1].Prebid.Targeting["hb_pb"])
-		}
-
-	}
-	// Now test with an error condition
-	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr1()
-	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
-
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
-	if err != nil {
-		t.Errorf("BuildBidResponse: %s", err.Error())
-	}
-	bidResponseExt = new(openrtb_ext.ExtBidResponse)
-	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
-
-	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(bidResponse.SeatBid[0].Bid) != 2 {
-		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
-	}
-	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
-		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
-	}
-
-	// Test with null bid response error
-	adapterBids[BidderDummy2], errs2 = mockDummyBidsErr2()
-	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
-
-	bidResponse, err = e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
-	if err != nil {
-		t.Errorf("BuildBidResponse: %s", err.Error())
-	}
-	bidResponseExt = new(openrtb_ext.ExtBidResponse)
-	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
-
-	// This case we know the order of the adapters, as GetAllBids have not scrambled them
-	if len(bidResponse.SeatBid[0].Bid) != 2 {
-		t.Errorf("BuildBidResponse: Bidder 1 expected 2 bids, found %d", len(bidResponse.SeatBid[0].Bid))
-	}
-	if bidResponse.SeatBid[1].Bid[0].ID != "MyBid" {
-		t.Errorf("BuildBidResponse: Bidder 3 bid ID not correct. Expected \"MyBid\", found \"%s\"", bidResponse.SeatBid[2].Bid[0].ID)
-	}
-}
-
-var baseRequest = openrtb.BidRequest{
-	ID: "foo",
-	Imp: []openrtb.Imp{{
-		Video: &openrtb.Video{
-			MIMEs: []string{"video/mp4"},
-		},
-	}},
-	App: &openrtb.App{},
-}
-
-func TestBuyerIdWithoutUser(t *testing.T) {
-	req := baseRequest
-	runBuyerTest(t, &req, true)
-}
-
-func TestBuyerIdWithUser(t *testing.T) {
-	req := baseRequest
-	req.User = &openrtb.User{
-		ID: "abc",
-	}
-
-	runBuyerTest(t, &req, true)
-}
-
-func TestBuyerIdWithExplicit(t *testing.T) {
-	req := baseRequest
-	req.User = &openrtb.User{
-		ID:       "abc",
-		BuyerUID: "def",
-	}
-
-	runBuyerTest(t, &req, false)
-}
-
 func TestTimeoutComputation(t *testing.T) {
 	cacheTimeMillis := 10
 	ex := exchange{
@@ -461,109 +155,314 @@ func TestTimeoutComputation(t *testing.T) {
 	}
 }
 
-func runBuyerTest(t *testing.T, incoming *openrtb.BidRequest, expectBuyeridOverride bool) {
-	t.Helper()
+// TestExchangeJSON executes tests for all the *.json files in exchangetest.
+func TestExchangeJSON(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./exchangetest/" + specFile.Name()
+			fileDisplayName := "exchange/exchangetest/" + specFile.Name()
+			specData, err := loadFile(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+			}
 
-	initialId := ""
-	if incoming.User != nil {
-		initialId = incoming.User.BuyerUID
-	}
-
-	overrideId := "apnId"
-
-	incoming.Imp[0].Ext = []byte(`{"appnexus": {}}`)
-	syncs := &mockSyncs{
-		uids: map[openrtb_ext.BidderName]string{
-			openrtb_ext.BidderAppnexus: overrideId,
-		},
-	}
-
-	bidder := &mockBidder{}
-
-	ex := &exchange{
-		adapterMap: map[openrtb_ext.BidderName]adaptedBidder{
-			openrtb_ext.BidderAppnexus: bidder,
-		},
-		me: &pbsmetrics.DummyMetricsEngine{},
-	}
-	ex.HoldAuction(context.Background(), incoming, syncs, pbsmetrics.Labels{})
-
-	if bidder.lastRequest == nil {
-		t.Fatalf("The Bidder never received a request.")
-	}
-
-	if bidder.lastRequest.User == nil {
-		t.Fatalf("bidrequest.user was not defined on the Bidder's request.")
-	}
-
-	if (expectBuyeridOverride && bidder.lastRequest.User.BuyerUID != overrideId) || (!expectBuyeridOverride && bidder.lastRequest.User.BuyerUID != initialId) {
-		t.Errorf("Bidder received bad bidrequest.user.buyeruid. Expected %s, got %s", initialId, bidder.lastRequest.User.BuyerUID)
+			runSpec(t, fileDisplayName, specData)
+		}
 	}
 }
 
-type mockBidder struct {
-	lastRequest *openrtb.BidRequest
+// LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
+func loadFile(filename string) (*exchangeSpec, error) {
+	specData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
+	}
+
+	var spec exchangeSpec
+	if err := json.Unmarshal(specData, &spec); err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
+	}
+
+	return &spec, nil
 }
 
-func (b *mockBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
-	b.lastRequest = request
-	return nil, nil
+func runSpec(t *testing.T, filename string, spec *exchangeSpec) {
+	aliases, errs := parseAliases(&spec.IncomingRequest.OrtbRequest)
+	if len(errs) != 0 {
+		t.Fatalf("%s: Failed to parse aliases", filename)
+	}
+	ex := newExchangeForTests(t, filename, spec.OutgoingRequests, aliases)
+	biddersInAuction := findBiddersInAuction(t, filename, &spec.IncomingRequest.OrtbRequest)
+	bid, err := ex.HoldAuction(context.Background(), &spec.IncomingRequest.OrtbRequest, mockIdFetcher(spec.IncomingRequest.Usersyncs), pbsmetrics.Labels{})
+	responseTimes := extractResponseTimes(t, filename, bid)
+	for _, bidderName := range biddersInAuction {
+		if _, ok := responseTimes[bidderName]; !ok {
+			t.Errorf("%s: Response JSON missing expected ext.responsetimemillis.%s", filename, bidderName)
+		}
+	}
+	if spec.Response.Bids != nil {
+		diffOrtbResponses(t, filename, spec.Response.Bids, bid)
+		if err == nil {
+			if spec.Response.Error != "" {
+				t.Errorf("%s: Exchange did not return expected error: %s", filename, spec.Response.Error)
+			}
+		} else {
+			if err.Error() != spec.Response.Error {
+				t.Errorf("%s: Exchange returned different errors. Expected %s, got %s", filename, spec.Response.Error, err.Error())
+			}
+		}
+	}
 }
 
-type mockSyncs struct {
-	uids map[openrtb_ext.BidderName]string
+func findBiddersInAuction(t *testing.T, context string, req *openrtb.BidRequest) []string {
+	if splitImps, err := splitImps(req.Imp); err != nil {
+		t.Errorf("%s: Failed to parse Bidders from request: %v", context, err)
+		return nil
+	} else {
+		bidders := make([]string, 0, len(splitImps))
+		for bidderName, _ := range splitImps {
+			bidders = append(bidders, bidderName)
+		}
+		return bidders
+	}
 }
 
-func (m *mockSyncs) GetId(name openrtb_ext.BidderName) (id string, ok bool) {
-	id, ok = m.uids[name]
+// extractResponseTimes validates the format of bid.ext.responsetimemillis, and then removes it.
+// This is done because the response time will change from run to run, so it's impossible to hardcode a value
+// into the JSON. The best we can do is make sure that the property exists.
+func extractResponseTimes(t *testing.T, context string, bid *openrtb.BidResponse) map[string]int {
+	if data, dataType, _, err := jsonparser.Get(bid.Ext, "responsetimemillis"); err != nil || dataType != jsonparser.Object {
+		t.Errorf("%s: Exchange did not return ext.responsetimemillis object: %v", context, err)
+		return nil
+	} else {
+		responseTimes := make(map[string]int)
+		if err := json.Unmarshal(data, &responseTimes); err != nil {
+			t.Errorf("%s: Failed to unmarshal ext.responsetimemillis into map[string]int: %v", context, err)
+			return nil
+		}
+
+		// Delete the response times so that they don't appear in the JSON, because they can't be tested reliably anyway.
+		// If there's no other ext, just delete it altogether.
+		bid.Ext = jsonparser.Delete(bid.Ext, "responsetimemillis")
+		if diff, err := gojsondiff.New().Compare(bid.Ext, []byte("{}")); err == nil && !diff.Modified() {
+			bid.Ext = nil
+		}
+		return responseTimes
+	}
+}
+
+func newExchangeForTests(t *testing.T, filename string, expectations map[string]*bidderSpec, aliases map[string]string) Exchange {
+	adapters := make(map[openrtb_ext.BidderName]adaptedBidder)
+	for _, bidderName := range openrtb_ext.BidderMap {
+		if spec, ok := expectations[string(bidderName)]; ok {
+			adapters[bidderName] = &validatingBidder{
+				t:             t,
+				fileName:      filename,
+				bidderName:    string(bidderName),
+				expectations:  map[string]*bidderRequest{string(bidderName): spec.ExpectedRequest},
+				mockResponses: map[string]bidderResponse{string(bidderName): spec.MockResponse},
+			}
+		}
+	}
+	for alias, coreBidder := range aliases {
+		if spec, ok := expectations[alias]; ok {
+			if bidder, ok := adapters[openrtb_ext.BidderName(coreBidder)]; ok {
+				bidder.(*validatingBidder).expectations[alias] = spec.ExpectedRequest
+				bidder.(*validatingBidder).mockResponses[alias] = spec.MockResponse
+			} else {
+				adapters[openrtb_ext.BidderName(coreBidder)] = &validatingBidder{
+					t:             t,
+					fileName:      filename,
+					bidderName:    coreBidder,
+					expectations:  map[string]*bidderRequest{coreBidder: spec.ExpectedRequest},
+					mockResponses: map[string]bidderResponse{coreBidder: spec.MockResponse},
+				}
+			}
+		}
+	}
+
+	return &exchange{
+		adapterMap: adapters,
+		me:         pbsmetrics.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
+		cache:      &wellBehavedCache{},
+		cacheTime:  0,
+	}
+}
+
+type exchangeSpec struct {
+	IncomingRequest  exchangeRequest        `json:"incomingRequest"`
+	OutgoingRequests map[string]*bidderSpec `json:"outgoingRequests"`
+	Response         exchangeResponse       `json:"response,omitempty"`
+}
+
+type exchangeRequest struct {
+	OrtbRequest openrtb.BidRequest `json:"ortbRequest"`
+	Usersyncs   map[string]string  `json:"usersyncs"`
+}
+
+type exchangeResponse struct {
+	Bids  *openrtb.BidResponse `json:"bids"`
+	Error string               `json:"error,omitempty"`
+}
+
+type bidderSpec struct {
+	ExpectedRequest *bidderRequest `json:"expectRequest"`
+	MockResponse    bidderResponse `json:"mockResponse"`
+}
+
+type bidderRequest struct {
+	OrtbRequest   openrtb.BidRequest `json:"ortbRequest"`
+	BidAdjustment float64            `json:"bidAdjustment"`
+}
+
+type bidderResponse struct {
+	SeatBid *bidderSeatBid `json:"pbsSeatBid,omitempty"`
+	Errors  []string       `json:"errors,omitempty"`
+}
+
+// bidderSeatBid is basically a subset of pbsOrtbSeatBid from exchange/bidder.go.
+// The only real reason I'm not reusing that type is because I don't want people to think that the
+// JSON property tags on those types are contracts in prod.
+type bidderSeatBid struct {
+	Bids []bidderBid `json:"pbsBids,omitempty"`
+}
+
+// bidderBid is basically a subset of pbsOrtbBid from exchange/bidder.go.
+// See the comment on bidderSeatBid for more info.
+type bidderBid struct {
+	Bid  *openrtb.Bid `json:"ortbBid,omitempty"`
+	Type string       `json:"bidType,omitempty"`
+}
+
+type mockIdFetcher map[string]string
+
+func (f mockIdFetcher) GetId(bidder openrtb_ext.BidderName) (id string, ok bool) {
+	id, ok = f[string(bidder)]
 	return
 }
 
-func assertStringValue(t *testing.T, object string, expect string, value string) {
+type validatingBidder struct {
+	t          *testing.T
+	fileName   string
+	bidderName string
+
+	// These are maps because they may contain aliases. They should _at least_ contain an entry for bidderName.
+	expectations  map[string]*bidderRequest
+	mockResponses map[string]bidderResponse
+}
+
+func (b *validatingBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (seatBid *pbsOrtbSeatBid, errs []error) {
+	if expectedRequest, ok := b.expectations[string(name)]; ok {
+		if expectedRequest != nil {
+			if expectedRequest.BidAdjustment != bidAdjustment {
+				b.t.Errorf("%s: Bidder %s got wrong bid adjustment. Expected %f, got %f", b.fileName, name, expectedRequest.BidAdjustment, bidAdjustment)
+			}
+			diffOrtbRequests(b.t, fmt.Sprintf("Request to %s in %s", string(name), b.fileName), &expectedRequest.OrtbRequest, request)
+		}
+	} else {
+		b.t.Errorf("%s: Bidder %s got unexpected request for alias %s. No input assertions.", b.fileName, b.bidderName, name)
+	}
+
+	if mockResponse, ok := b.mockResponses[string(name)]; ok {
+		if mockResponse.SeatBid != nil {
+			bids := make([]*pbsOrtbBid, len(mockResponse.SeatBid.Bids))
+			for i := 0; i < len(bids); i++ {
+				bids[i] = &pbsOrtbBid{
+					bid:     mockResponse.SeatBid.Bids[i].Bid,
+					bidType: openrtb_ext.BidType(mockResponse.SeatBid.Bids[i].Type),
+				}
+			}
+
+			seatBid = &pbsOrtbSeatBid{
+				bids: bids,
+			}
+		}
+
+		for _, err := range mockResponse.Errors {
+			errs = append(errs, errors.New(err))
+		}
+	} else {
+		b.t.Errorf("%s: Bidder %s got unexpected request for alias %s. No mock responses.", b.fileName, b.bidderName, name)
+	}
+
+	return
+}
+
+func diffOrtbRequests(t *testing.T, description string, expected *openrtb.BidRequest, actual *openrtb.BidRequest) {
 	t.Helper()
-	if expect != value {
-		t.Errorf("Wrong value for %s, expected \"%s\", got \"%s\"", object, expect, value)
-	}
-}
-
-type mockAdapter struct {
-	seatBid *pbsOrtbSeatBid
-	errs    []error
-}
-
-func (a *mockAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
-	return a.seatBid, a.errs
-}
-
-const (
-	BidderDummy  openrtb_ext.BidderName = "dummy"
-	BidderDummy2 openrtb_ext.BidderName = "dummy2"
-	BidderDummy3 openrtb_ext.BidderName = "dummy3"
-)
-
-// Tester is responsible for filling bid results into the adapters
-func NewDummyExchange(client *http.Client) *exchange {
-	e := new(exchange)
-	a := new(mockAdapter)
-	a.errs = make([]error, 0, 5)
-
-	b := new(mockAdapter)
-	b.errs = make([]error, 0, 5)
-
-	c := new(mockAdapter)
-	c.errs = make([]error, 0, 5)
-
-	e.adapterMap = map[openrtb_ext.BidderName]adaptedBidder{
-		BidderDummy:  a,
-		BidderDummy2: b,
-		BidderDummy3: c,
+	actualJSON, err := json.Marshal(actual)
+	if err != nil {
+		t.Fatalf("%s failed to marshal actual BidRequest into JSON. %v", description, err)
 	}
 
-	// adapterList := []openrtb_ext.BidderName{BidderDummy, BidderDummy2, BidderDummy3}
+	expectedJSON, err := json.Marshal(expected)
+	if err != nil {
+		t.Fatalf("%s failed to marshal expected BidRequest into JSON. %v", description, err)
+	}
 
-	e.me = &pbsmetrics.DummyMetricsEngine{}
-	e.cache = &wellBehavedCache{}
-	return e
+	diffJson(t, description, actualJSON, expectedJSON)
+}
+
+func diffOrtbResponses(t *testing.T, description string, expected *openrtb.BidResponse, actual *openrtb.BidResponse) {
+	t.Helper()
+	// The OpenRTB spec is wonky here. Since "bidresponse.seatbid" is an array, order technically matters to any JSON diff or
+	// deep equals method. However, for all intents and purposes it really *doesn't* matter. ...so this nasty logic makes compares
+	// the seatbids in an order-independent way.
+	//
+	// Note that the same thing is technically true of the "seatbid[i].bid" array... but since none of our exchange code relies on
+	// this implementation detail, I'm cutting a corner and ignoring it here.
+	actualSeats := mapifySeatBids(t, description, actual.SeatBid)
+	expectedSeats := mapifySeatBids(t, description, expected.SeatBid)
+	actualJSON, err := json.Marshal(actualSeats)
+	if err != nil {
+		t.Fatalf("%s failed to marshal actual BidResponse into JSON. %v", description, err)
+	}
+
+	expectedJSON, err := json.Marshal(expectedSeats)
+	if err != nil {
+		t.Fatalf("%s failed to marshal expected BidResponse into JSON. %v", description, err)
+	}
+
+	diffJson(t, description, actualJSON, expectedJSON)
+}
+
+func mapifySeatBids(t *testing.T, context string, seatBids []openrtb.SeatBid) map[string]*openrtb.SeatBid {
+	seatMap := make(map[string]*openrtb.SeatBid, len(seatBids))
+	for i := 0; i < len(seatBids); i++ {
+		seatName := seatBids[i].Seat
+		if _, ok := seatMap[seatName]; ok {
+			t.Fatalf("%s: Contains duplicate Seat: %s", context, seatName)
+		} else {
+			seatMap[seatName] = &seatBids[i]
+		}
+	}
+	return seatMap
+}
+
+// diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
+// byte array is not actually JSON.
+func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
+	t.Helper()
+	diff, err := gojsondiff.New().Compare(actual, expected)
+	if err != nil {
+		t.Fatalf("%s json diff failed. %v", description, err)
+	}
+
+	if diff.Modified() {
+		var left interface{}
+		if err := json.Unmarshal(actual, &left); err != nil {
+			t.Fatalf("%s json did not match, but unmarhsalling failed. %v", description, err)
+		}
+		printer := formatter.NewAsciiFormatter(left, formatter.AsciiFormatterConfig{
+			ShowArrayIndex: true,
+		})
+		output, err := printer.Format(diff)
+		if err != nil {
+			t.Errorf("%s did not match, but diff formatting failed. %v", description, err)
+		} else {
+			t.Errorf("%s json did not match expected.\n\n%s", description, output)
+		}
+	}
 }
 
 func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
@@ -577,166 +476,6 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 	})
 }
 
-func mockAdapterConfig1(a *mockAdapter, adapter string) {
-	a.seatBid, a.errs = mockDummyBids1(adapter)
-}
-
-func mockAdapterConfig2(a *mockAdapter, adapter string) {
-	a.seatBid, a.errs = mockDummyBids2(adapter)
-}
-
-func mockAdapterConfig3(a *mockAdapter, adapter string) {
-	a.seatBid, a.errs = mockDummyBids3(adapter)
-}
-
-func mockAdapterConfigErr1(a *mockAdapter) {
-	a.seatBid, a.errs = mockDummyBidsErr1()
-}
-
-func mockAdapterConfigErr2(a *mockAdapter) {
-	a.seatBid, a.errs = mockDummyBidsErr2()
-}
-
-func mockDummyBids1(adapter string) (*pbsOrtbSeatBid, []error) {
-	var err error
-	sb1 := new(pbsOrtbSeatBid)
-	sb1.bids = make([]*pbsOrtbBid, 2)
-	sb1.bids[0] = new(pbsOrtbBid)
-	sb1.bids[1] = new(pbsOrtbBid)
-	sb1.bids[0].bid = new(openrtb.Bid)
-	sb1.bids[1].bid = new(openrtb.Bid)
-	sb1.bids[0].bid.ID = "1234567890"
-	sb1.bids[0].bid.W = 728
-	sb1.bids[0].bid.H = 90
-	sb1.bids[0].bid.Price = 1.34
-	sb1.bids[0].bid.ImpID = "1stImp"
-	sb1.bids[0].bid.CrID = "12"
-	targ := make(map[string]string)
-	targ["hb_pb_"+adapter] = "1.30"
-	targ["hb_bidder_"+adapter] = adapter
-	targ["hb_size_"+adapter] = "728x90"
-	sb1.bids[0].bidTargets = targ
-	fmt.Println(string(sb1.bids[0].bid.Ext))
-	if err != nil {
-		fmt.Println("ERROR: Packing ext[0] in mockDummyBids1: " + err.Error())
-	}
-	sb1.bids[1].bid.ID = "1234567890"
-	sb1.bids[1].bid.W = 300
-	sb1.bids[1].bid.H = 250
-	sb1.bids[1].bid.Price = 0.73
-	sb1.bids[1].bid.ImpID = "2ndImp"
-	sb1.bids[1].bid.CrID = "34"
-	targ = make(map[string]string)
-	targ["hb_pb_"+adapter] = "0.70"
-	targ["hb_bidder_"+adapter] = adapter
-	targ["hb_size_"+adapter] = "300x250"
-	sb1.bids[1].bidTargets = targ
-	fmt.Println(string(sb1.bids[0].bid.Ext))
-	if err != nil {
-		fmt.Println("ERROR: Packing ext[0] in mockDummyBids1: " + err.Error())
-	}
-
-	errs := make([]error, 0, 5)
-
-	return sb1, errs
-}
-
-func mockDummyBids2(adapter string) (*pbsOrtbSeatBid, []error) {
-	var err error
-	sb1 := new(pbsOrtbSeatBid)
-	sb1.bids = make([]*pbsOrtbBid, 2)
-	sb1.bids[0] = new(pbsOrtbBid)
-	sb1.bids[1] = new(pbsOrtbBid)
-	sb1.bids[0].bid = new(openrtb.Bid)
-	sb1.bids[1].bid = new(openrtb.Bid)
-	sb1.bids[0].bid.ID = "ABC"
-	sb1.bids[0].bid.W = 728
-	sb1.bids[0].bid.H = 90
-	sb1.bids[0].bid.Price = 0.94
-	sb1.bids[0].bid.ImpID = "1stImp"
-	sb1.bids[0].bid.CrID = "123"
-	targ := make(map[string]string)
-	targ["hb_pb_"+adapter] = "0.90"
-	targ["hb_bidder_"+adapter] = adapter
-	targ["hb_size_"+adapter] = "728x90"
-	sb1.bids[0].bidTargets = targ
-	fmt.Println(string(sb1.bids[0].bid.Ext))
-	if err != nil {
-		fmt.Println("ERROR: Packing ext[0] in mockDummyBids1: " + err.Error())
-	}
-	sb1.bids[1].bid.ID = "1234"
-	sb1.bids[1].bid.W = 300
-	sb1.bids[1].bid.H = 250
-	sb1.bids[1].bid.Price = 1.89
-	sb1.bids[1].bid.ImpID = "2ndImp"
-	sb1.bids[1].bid.CrID = "456"
-	targ = make(map[string]string)
-	targ["hb_pb_"+adapter] = "1.80"
-	targ["hb_bidder_"+adapter] = adapter
-	targ["hb_size_"+adapter] = "300x250"
-	sb1.bids[1].bidTargets = targ
-	fmt.Println(string(sb1.bids[0].bid.Ext))
-	if err != nil {
-		fmt.Println("ERROR: Packing ext[0] in mockDummyBids1: " + err.Error())
-	}
-
-	errs := make([]error, 0, 5)
-
-	return sb1, errs
-}
-func mockDummyBids3(adapter string) (*pbsOrtbSeatBid, []error) {
-	var err error
-	sb1 := new(pbsOrtbSeatBid)
-	sb1.bids = make([]*pbsOrtbBid, 1)
-	sb1.bids[0] = new(pbsOrtbBid)
-	sb1.bids[0].bid = new(openrtb.Bid)
-	sb1.bids[0].bid.ID = "MyBid"
-	sb1.bids[0].bid.W = 728
-	sb1.bids[0].bid.H = 90
-	sb1.bids[0].bid.Price = 0.34
-	sb1.bids[0].bid.ImpID = "1stImp"
-	sb1.bids[0].bid.CrID = "135"
-	targ := make(map[string]string)
-	targ["hb_pb_"+adapter] = "0.30"
-	targ["hb_bidder_"+adapter] = adapter
-	targ["hb_size_"+adapter] = "728x90"
-	sb1.bids[0].bidTargets = targ
-	fmt.Println(string(sb1.bids[0].bid.Ext))
-	if err != nil {
-		fmt.Println("ERROR: Packing ext[0] in mockDummyBids1: " + err.Error())
-	}
-
-	errs := make([]error, 0, 5)
-
-	return sb1, errs
-}
-func mockDummyBidsErr1() (*pbsOrtbSeatBid, []error) {
-	sb1 := new(pbsOrtbSeatBid)
-	sb1.bids = nil
-
-	errs := make([]error, 0, 5)
-	errs = append(errs, errors.New("This was an error"))
-	errs = append(errs, errors.New("Another error goes here"))
-
-	return sb1, errs
-}
-func mockDummyBidsErr2() (*pbsOrtbSeatBid, []error) {
-	var sb1 *pbsOrtbSeatBid = nil
-
-	errs := make([]error, 0, 5)
-	errs = append(errs, errors.New("This was a FATAL error"))
-
-	return sb1, errs
-}
-
-func convertErr2Str(e []error) []string {
-	s := make([]string, len(e))
-	for i := 0; i < len(e); i++ {
-		s[i] = e[i].Error()
-	}
-	return s
-}
-
 type wellBehavedCache struct{}
 
 func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage) []string {
@@ -745,4 +484,19 @@ func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage
 		ids[i] = strconv.Itoa(i)
 	}
 	return ids
+}
+
+type emptyUsersync struct{}
+
+func (e *emptyUsersync) GetId(bidder openrtb_ext.BidderName) (string, bool) {
+	return "", false
+}
+
+type mockUsersync struct {
+	syncs map[string]string
+}
+
+func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists bool) {
+	id, exists = e.syncs[string(bidder)]
+	return
 }
