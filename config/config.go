@@ -22,10 +22,23 @@ type Configuration struct {
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize  int64              `mapstructure:"max_request_size"`
+	Analytics       Analytics          `mapstructure:"analytics"`
 }
 
 func (cfg *Configuration) validate() error {
-	return cfg.StoredRequests.validate()
+	if cfg.MaxRequestSize < 0 {
+		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
+	}
+	return nil
+}
+
+type Analytics struct {
+	File FileLogs `mapstructure:"file"`
+}
+
+//Corresponding config for FileLogger as a PBS Analytics Module
+type FileLogs struct {
+	Filename string `mapstructure:"filename"`
 }
 
 type HostCookie struct {
@@ -51,6 +64,10 @@ type Adapter struct {
 }
 
 type Metrics struct {
+	Influxdb InfluxMetrics `mapstructure:"influxdb"`
+}
+
+type InfluxMetrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
@@ -87,9 +104,9 @@ type Cookie struct {
 }
 
 // New uses viper to get our server configurations
-func New() (*Configuration, error) {
+func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
-	if err := viper.Unmarshal(&c); err != nil {
+	if err := v.Unmarshal(&c); err != nil {
 		return nil, err
 	}
 	return &c, c.validate()

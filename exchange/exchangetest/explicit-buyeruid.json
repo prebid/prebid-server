@@ -1,0 +1,68 @@
+{
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "user": {
+        "buyeruid": "explicit-buyeruid",
+        "ext": {
+          "prebid": {
+            "buyeruids": {
+              "appnexus": "id-in-ext"
+            }
+          }
+        }
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": ["video/mp4"]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            }
+          }
+        }
+      ]
+    },
+    "usersyncs": {
+      "appnexus": "id-in-cookie"
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "buyeruid": "explicit-buyeruid"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ]
+        },
+        "bidAdjustment": 1.0
+      },
+      "mockResponse": {
+        "errors": ["appnexus-error"]
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+maintainer:
+  email: "sovrnoss@sovrn.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

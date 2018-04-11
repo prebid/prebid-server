@@ -3,8 +3,6 @@ package usersync
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/pbs"
 )
 
 func NewLifestreetSyncer(externalURL string) Usersyncer {
@@ -13,7 +11,7 @@ func NewLifestreetSyncer(externalURL string) Usersyncer {
 
 	return &syncer{
 		familyName: "lifestreet",
-		syncInfo: &pbs.UsersyncInfo{
+		syncInfo: &UsersyncInfo{
 			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
 			Type:        "redirect",
 			SupportCORS: false,

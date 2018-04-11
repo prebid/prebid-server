@@ -12,10 +12,11 @@ type ExtRequest struct {
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
 type ExtRequestPrebid struct {
-	Aliases       map[string]string      `json:"aliases"`
-	Cache         *ExtRequestPrebidCache `json:"cache"`
-	StoredRequest *ExtStoredRequest      `json:"storedrequest"`
-	Targeting     *ExtRequestTargeting   `json:"targeting"`
+	Aliases              map[string]string      `json:"aliases,omitempty"`
+	BidAdjustmentFactors map[string]float64     `json:"bidadjustmentfactors,omitempty"`
+	Cache                *ExtRequestPrebidCache `json:"cache,omitempty"`
+	StoredRequest        *ExtStoredRequest      `json:"storedrequest,omitempty"`
+	Targeting            *ExtRequestTargeting   `json:"targeting,omitempty"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
@@ -23,7 +24,7 @@ type ExtRequestPrebidCache struct {
 	Bids *ExtRequestPrebidCacheBids `json:"bids"`
 }
 
-// UnmarhshalJSON prevents nil bids arguments.
+// UnmarshalJSON prevents nil bids arguments.
 func (ert *ExtRequestPrebidCache) UnmarshalJSON(b []byte) error {
 	type typesAlias ExtRequestPrebidCache // Prevents infinite UnmarshalJSON loops
 	var proxy typesAlias
@@ -45,6 +46,7 @@ type ExtRequestPrebidCacheBids struct{}
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
 	PriceGranularity PriceGranularity `json:"pricegranularity"`
+	IncludeWinners   bool             `json:"includewinners"`
 }
 
 // Make an unmarshaller that will set a default PriceGranularity
@@ -57,6 +59,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 	type extRequestTargetingDefaults ExtRequestTargeting
 	defaults := &extRequestTargetingDefaults{
 		PriceGranularity: PriceGranularityMedium,
+		IncludeWinners:   true,
 	}
 
 	err := json.Unmarshal(b, defaults)

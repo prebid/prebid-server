@@ -1,66 +1,83 @@
 package exchange
 
 import (
+	"context"
+	"strings"
+
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs/buckets"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
-// auction stores the Bids for a single call to Exchange.HoldAuction().
-// Construct these with the newAuction() function.
+func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
+	winningBids := make(map[string]*pbsOrtbBid, numImps)
+	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid, numImps)
+
+	for bidderName, seatBid := range seatBids {
+		if seatBid != nil {
+			for _, bid := range seatBid.bids {
+				cpm := bid.bid.Price
+				wbid, ok := winningBids[bid.bid.ImpID]
+				if !ok || cpm > wbid.bid.Price {
+					winningBids[bid.bid.ImpID] = bid
+				}
+				if bidMap, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
+					bestSoFar, ok := bidMap[bidderName]
+					if !ok || cpm > bestSoFar.bid.Price {
+						bidMap[bidderName] = bid
+					}
+				} else {
+					winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
+					winningBidsByBidder[bid.bid.ImpID][bidderName] = bid
+				}
+			}
+		}
+	}
+
+	return &auction{
+		winningBids:         winningBids,
+		winningBidsByBidder: winningBidsByBidder,
+	}
+}
+
+func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity) {
+	roundedPrices := make(map[*pbsOrtbBid]string, 5*len(a.winningBids))
+	for _, topBidsPerImp := range a.winningBidsByBidder {
+		for _, topBidPerBidder := range topBidsPerImp {
+			roundedPrice, err := buckets.GetPriceBucketString(topBidPerBidder.bid.Price, priceGranularity)
+			if err != nil {
+				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%s".`, priceGranularity)
+			}
+			roundedPrices[topBidPerBidder] = roundedPrice
+		}
+	}
+	a.roundedPrices = roundedPrices
+}
+
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client) {
+	toCache := make([]*openrtb.Bid, 0, len(a.roundedPrices))
+
+	for _, topBidsPerImp := range a.winningBidsByBidder {
+		for _, topBidPerBidder := range topBidsPerImp {
+			// Fixes #199
+			if roundedPrice, ok := a.roundedPrices[topBidPerBidder]; ok && strings.ContainsAny(roundedPrice, "123456789") {
+				toCache = append(toCache, topBidPerBidder.bid)
+			}
+		}
+	}
+
+	a.cacheIds = cacheBids(ctx, cache, toCache)
+}
+
 type auction struct {
 	// winningBids is a map from imp.id to the highest overall CPM bid in that imp.
-	winningBids map[string]*openrtb.Bid
-	// winningBidders is a map from imp.id to the BidderName which made the winning Bid.
-	winningBidders map[string]openrtb_ext.BidderName
-	// winningBidsFromBidder stores the highest bid on each imp by each bidder.
-	winningBidsByBidder map[string]map[openrtb_ext.BidderName]*openrtb.Bid
-	// cachedBids stores the cache ID for each bid, if it exists.
-	// This is set by cacheBids() in cache.go, and is nil beforehand.
-	cachedBids map[*openrtb.Bid]string
-}
-
-func newAuction(numImps int) *auction {
-	return &auction{
-		winningBids:         make(map[string]*openrtb.Bid, numImps),
-		winningBidders:      make(map[string]openrtb_ext.BidderName, numImps),
-		winningBidsByBidder: make(map[string]map[openrtb_ext.BidderName]*openrtb.Bid, numImps),
-	}
-}
-
-// addBid should be called for each bid which is "officially" valid for the auction.
-func (auction *auction) addBid(name openrtb_ext.BidderName, bid *openrtb.Bid) {
-	if auction == nil {
-		return
-	}
-
-	cpm := bid.Price
-	wbid, ok := auction.winningBids[bid.ImpID]
-	if !ok || cpm > wbid.Price {
-		auction.winningBidders[bid.ImpID] = name
-		auction.winningBids[bid.ImpID] = bid
-	}
-	if bidMap, ok := auction.winningBidsByBidder[bid.ImpID]; ok {
-		bestSoFar, ok := bidMap[name]
-		if !ok || cpm > bestSoFar.Price {
-			bidMap[name] = bid
-		}
-	} else {
-		auction.winningBidsByBidder[bid.ImpID] = make(map[openrtb_ext.BidderName]*openrtb.Bid)
-		auction.winningBidsByBidder[bid.ImpID][name] = bid
-	}
-}
-
-func (auction *auction) cacheId(bid *openrtb.Bid) (id string, exists bool) {
-	id, exists = auction.cachedBids[bid]
-	return
-}
-
-// forEachBestBid runs the callback function on every bid which is the highest one for each Bidder on each Imp.
-func (auction *auction) forEachBestBid(callback func(impID string, bidder openrtb_ext.BidderName, bid *openrtb.Bid, winner bool)) {
-	for impId, bidderMap := range auction.winningBidsByBidder {
-		overallWinner, _ := auction.winningBids[impId]
-		for bidderName, bid := range bidderMap {
-			callback(impId, bidderName, bid, bid == overallWinner)
-		}
-	}
+	winningBids map[string]*pbsOrtbBid
+	// winningBidsByBidder stores the highest bid on each imp by each bidder.
+	winningBidsByBidder map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
+	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
+	roundedPrices map[*pbsOrtbBid]string
+	// cacheIds stores the UUIDs from Prebid Cache for each bid.
+	cacheIds map[*openrtb.Bid]string
 }

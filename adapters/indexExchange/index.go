@@ -56,6 +56,11 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 			return nil, errors.New("Missing siteID param")
 		}
 
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(indexReq.Imp) <= i {
+			break
+		}
+
 		indexReq.Imp[i].TagID = unit.Code
 		// Index spec says "adunit path representing ad server inventory" but we don't have this
 		// ext is DFP div ID and KV pairs if avail
