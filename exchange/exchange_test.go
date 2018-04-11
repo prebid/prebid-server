@@ -155,61 +155,6 @@ func TestTimeoutComputation(t *testing.T) {
 	}
 }
 
-<<<<<<< HEAD
-func TestBuildBidResponse(t *testing.T) {
-	//  BuildBidResponse(liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*adapters.pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.BidResponse
-	respStatus := 200
-	respBody := "{\"bid\":false}"
-	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
-	defer server.Close()
-
-	e := NewDummyExchange(server.Client())
-	mockAdapterConfig1(e.adapterMap[BidderDummy].(*mockAdapter), "dummy")
-	mockAdapterConfig2(e.adapterMap[BidderDummy2].(*mockAdapter), "dummy2")
-	mockAdapterConfig3(e.adapterMap[BidderDummy3].(*mockAdapter), "dummy3")
-
-	// Very simple Bid request. At this point we are just reading these two values
-	// Adding targeting to enable targeting tests
-	bidReqExt := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &openrtb_ext.ExtRequestTargeting{
-				PriceGranularity: openrtb_ext.PriceGranularityFromString("medium"),
-			},
-		},
-	}
-	var bidReqExtRaw openrtb.RawJSON
-	bidReqExtRaw, err := json.Marshal(bidReqExt)
-	bidRequest := openrtb.BidRequest{
-		ID:   "This Bid",
-		Test: 0,
-		Ext:  bidReqExtRaw,
-	}
-	var resolvedRequest json.RawMessage
-
-	liveAdapters := make([]openrtb_ext.BidderName, 3)
-	liveAdapters[0] = BidderDummy
-	liveAdapters[1] = BidderDummy2
-	liveAdapters[2] = BidderDummy3
-
-	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
-	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra)
-
-	var errs1, errs2, errs3 []error
-	adapterBids[BidderDummy], errs1 = mockDummyBids1("dummy")
-	adapterBids[BidderDummy2], errs2 = mockDummyBids2("dummy2")
-	adapterBids[BidderDummy3], errs3 = mockDummyBids3("dummy3")
-	adapterExtra[BidderDummy] = &seatResponseExtra{ResponseTimeMillis: 131, Errors: convertErr2Str(errs1)}
-	adapterExtra[BidderDummy2] = &seatResponseExtra{ResponseTimeMillis: 97, Errors: convertErr2Str(errs2)}
-	adapterExtra[BidderDummy3] = &seatResponseExtra{ResponseTimeMillis: 141, Errors: convertErr2Str(errs3)}
-
-	errList := make([]error, 0, 1)
-	bidResponse, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, &bidRequest, resolvedRequest, adapterExtra, errList)
-	if err != nil {
-		t.Errorf("BuildBidResponse: %s", err.Error())
-	}
-	bidResponseExt := new(openrtb_ext.ExtBidResponse)
-	_ = json.Unmarshal(bidResponse.Ext, bidResponseExt)
-=======
 // TestExchangeJSON executes tests for all the *.json files in exchangetest.
 func TestExchangeJSON(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./exchangetest"); err == nil {
@@ -220,7 +165,6 @@ func TestExchangeJSON(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
->>>>>>> 2c6814cfa2f2b5427def0b9c746293d3fafc70f4
 
 			runSpec(t, fileDisplayName, specData)
 		}
