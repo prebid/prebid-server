@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -80,6 +81,7 @@ type UserSyncDeps struct {
 	RecaptchaSecret    string
 	HostCookieSettings *HostCookieSettings
 	MetricsEngine      pbsmetrics.MetricsEngine
+	PBSAnalytics       analytics.PBSAnalyticsModule
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
@@ -319,10 +321,19 @@ func getRawQueryMap(query string) map[string]string {
 }
 
 func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	so := analytics.SetUIDObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
+	defer deps.PBSAnalytics.LogSetUIDObject(&so)
+
 	pc := ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
 	if !pc.AllowSyncs() {
 		w.WriteHeader(http.StatusUnauthorized)
 		deps.MetricsEngine.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})
+		so.Status = http.StatusUnauthorized
 		return
 	}
 
@@ -331,10 +342,14 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 	if bidder == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		deps.MetricsEngine.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionErr})
+		so.Status = http.StatusBadRequest
 		return
 	}
+	so.Bidder = bidder
 
 	uid := query["uid"]
+	so.UID = uid
+
 	var err error = nil
 	if uid == "" {
 		pc.Unsync(bidder)
@@ -348,6 +363,7 @@ func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httpr
 			Bidder: openrtb_ext.BidderName(bidder),
 		}
 		deps.MetricsEngine.RecordUserIDSet(labels)
+		so.Success = true
 	}
 
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)

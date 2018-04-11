@@ -2,20 +2,21 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
+	"github.com/spf13/viper"
 
-	"context"
-	"io/ioutil"
-	"os"
-	"time"
-
-	"fmt"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -23,7 +24,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	usersyncers "github.com/prebid/prebid-server/usersync"
-	"github.com/spf13/viper"
 )
 
 const adapterDirectory = "adapters"
@@ -174,13 +174,14 @@ func TestCookieSyncNoBidders(t *testing.T) {
 }
 
 func testableEndpoint() httprouter.Handle {
+
 	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
 		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
 		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
 		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
-	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}}).CookieSync
+	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analytics.NewPBSAnalytics(&config.Analytics{})}).CookieSync
 }
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -739,9 +740,9 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewFilesFetcher(t *testing.T) {
-	fetcher, _, err := NewFetchers(&config.StoredRequests{
+	fetcher, _, _, err := NewFetchers(&config.StoredRequests{
 		Files: true,
-	}, nil)
+	}, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Error constructing file backends. %v", err)
 	}
@@ -751,18 +752,18 @@ func TestNewFilesFetcher(t *testing.T) {
 }
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, _, err := NewFetchers(&config.StoredRequests{}, nil)
+	fetcher, _, _, err := NewFetchers(&config.StoredRequests{}, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Error constructing backends. %v", err)
 	}
 	if fetcher == nil {
 		t.Errorf("The fetcher should be non-nil, even with an empty config.")
 	}
-	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
-		t.Errorf("The returned accountFetcher should fail on any ID.")
+	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
+		t.Errorf("The returned accountFetcher should fail on any IDs.")
 	}
-	if _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}); len(errs) != 1 {
-		t.Errorf("The returned requestFetcher should fail on any ID.")
+	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
+		t.Errorf("The returned requestFetcher should fail on any IDs.")
 	}
 }
 

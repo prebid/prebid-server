@@ -19,6 +19,7 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -32,12 +33,12 @@ import (
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -46,9 +47,16 @@ type endpointDeps struct {
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
 	metricsEngine    pbsmetrics.MetricsEngine
+	analytics        analytics.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	ao := analytics.AuctionObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -64,9 +72,12 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
+	numImps := 0
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordImps(labels, numImps)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao)
 	}()
 
 	isSafari := checkSafari(r)
@@ -109,12 +120,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
+	numImps = len(req.Imp)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	ao.Request = req
+	ao.Response = response
 	if err != nil {
 		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, err)
 		return
 	}
 
@@ -130,6 +146,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
 }
 
@@ -223,10 +240,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	} else if bidExt != nil {
 		aliases = bidExt.Prebid.Aliases
-	}
 
-	if err := deps.validateAliases(aliases); err != nil {
-		return err
+		if err := deps.validateAliases(aliases); err != nil {
+			return err
+		}
+
+		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+			return err
+		}
 	}
 
 	for index, imp := range req.Imp {
@@ -251,6 +272,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	return nil
+}
+
+func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
+		if adjustmentFactor <= 0 {
+			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
+		}
+		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
+			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
+				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
+			}
+		}
+	}
 	return nil
 }
 
@@ -701,16 +736,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		return nil, errs
 	}
 
-	// Fetch all of the Stored Request data
-	var allIds = make([]string, len(impIds), len(impIds)+1)
-	copy(allIds, impIds)
+	// Fetch the Stored Request data
+	var storedReqIds []string
 	if hasStoredBidRequest {
-		allIds = append(allIds, storedBidRequestId)
+		storedReqIds = []string{storedBidRequestId}
 	}
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, allIds)
-	if len(errs) > 0 {
-		return nil, errs
-	}
+	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
@@ -725,7 +756,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	for i := 0; i < len(impIds); i++ {
-		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[idIndices[i]])
+		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
 			return nil, []error{err}
 		}

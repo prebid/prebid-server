@@ -113,6 +113,20 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 
 Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
 
+#### Bid Adjustments
+
+Bidders [are encouraged](../../developers/add-new-bidder.md) to make Net bids. However, there's no way for Prebid to enforce this.
+If you find that some bidders use Gross bids, publishers can adjust for it with `request.ext.prebid.bidadjustmentfactors`:
+
+```
+{
+  "appnexus: 0.8,
+  "rubicon": 0.7
+}
+```
+
+This may also be useful for publishers who want to account for different discrepancies with different bidders.
+
 #### Targeting
 
 Targeting refers to strings which are sent to the adserver to

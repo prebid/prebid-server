@@ -1,0 +1,49 @@
+package config
+
+import "testing"
+
+const sampleQueryTemplate = "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in %IMP_ID_LIST%"
+
+func TestNormalQueryMaker(t *testing.T) {
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 3)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4)")
+}
+func TestQueryMakerManyImps(t *testing.T) {
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 11)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)")
+}
+
+func TestQueryMakerNoRequests(t *testing.T) {
+	madeQuery := buildQuery(sampleQueryTemplate, 0, 3)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in (NULL) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in ($1, $2, $3)")
+}
+
+func TestQueryMakerNoImps(t *testing.T) {
+	madeQuery := buildQuery(sampleQueryTemplate, 1, 0)
+	assertStringsEqual(t, madeQuery, "SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in ($1) UNION ALL SELECT id, impData, 'imp' as type FROM stored_requests WHERE id in (NULL)")
+}
+
+func TestQueryMakerMultilists(t *testing.T) {
+	madeQuery := buildQuery("SELECT id, config FROM table WHERE id in %IMP_ID_LIST% UNION ALL SELECT id, config FROM other_table WHERE id in %IMP_ID_LIST%", 0, 3)
+	assertStringsEqual(t, madeQuery, "SELECT id, config FROM table WHERE id in ($1, $2, $3) UNION ALL SELECT id, config FROM other_table WHERE id in ($1, $2, $3)")
+}
+
+func TestQueryMakerNegative(t *testing.T) {
+	query := buildQuery(sampleQueryTemplate, -1, -2)
+	expected := buildQuery(sampleQueryTemplate, 0, 0)
+	assertStringsEqual(t, query, expected)
+}
+
+func buildQuery(template string, numReqs int, numImps int) string {
+	cfg := PostgresConfig{
+		QueryTemplate: template,
+	}
+	return cfg.MakeQuery(numReqs, numImps)
+}
+
+func assertStringsEqual(t *testing.T, actual string, expected string) {
+	if actual != expected {
+		t.Errorf("Queries did not match.\n\"%s\" -- expected\n\"%s\" -- actual", expected, actual)
+
+	}
+}

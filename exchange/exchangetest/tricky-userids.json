@@ -1,0 +1,177 @@
+{
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": ["video/mp4"]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            },
+            "districtm": {
+              "placementId": 2
+            },
+            "rubicon": {
+              "accountId": 1,
+              "siteId": 2,
+              "zoneId": 3
+            }
+          }
+        }
+      ],
+      "user": {
+        "ext": {
+          "prebid": {
+            "buyeruids": {
+              "rubicon": "explicit-rubi"
+            }
+          }
+        }
+      },
+      "ext": {
+        "prebid": {
+          "aliases": {
+            "districtm": "appnexus"
+          }
+        }
+      }
+    },
+    "usersyncs": {
+      "appnexus": "implicit-appnexus",
+      "rubicon": "implicit-rubi"
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "buyeruid": "implicit-appnexus"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 1
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "aliases": {
+                "districtm": "appnexus"
+              }
+            }
+          }
+        },
+        "bidAdjustment": 1.0
+      },
+      "mockResponse": {
+        "errors": ["appnexus-error"]
+      }
+    },
+    "rubicon": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "buyeruid": "explicit-rubi"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "accountId": 1,
+                  "siteId": 2,
+                  "zoneId": 3
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "aliases": {
+                "districtm": "appnexus"
+              }
+            }
+          }
+        },
+        "bidAdjustment": 1.0
+      },
+      "mockResponse": {
+        "errors": ["appnexus-error"]
+      }
+    },
+    "districtm": {
+      "expectRequest": {
+        "ortbRequest": {
+          "id": "some-request-id",
+          "site": {
+            "page": "test.somepage.com"
+          },
+          "user": {
+            "buyeruid": "implicit-appnexus"
+          },
+          "imp": [
+            {
+              "id": "my-imp-id",
+              "video": {
+                "mimes": ["video/mp4"]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": 2
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "aliases": {
+                "districtm": "appnexus"
+              }
+            }
+          }
+        },
+        "bidAdjustment": 1.0
+      },
+      "mockResponse": {
+        "errors": ["districtm-error"]
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "ext": {
+        "errors": {
+          "appnexus": ["appnexus-error"],
+          "districtm": ["districtm-error"]
+        }
+      }
+    }
+  }
+}

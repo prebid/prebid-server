@@ -22,10 +22,23 @@ type Configuration struct {
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	Adapters        map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize  int64              `mapstructure:"max_request_size"`
+	Analytics       Analytics          `mapstructure:"analytics"`
 }
 
 func (cfg *Configuration) validate() error {
+	if cfg.MaxRequestSize < 0 {
+		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
+	}
 	return cfg.StoredRequests.validate()
+}
+
+type Analytics struct {
+	File FileLogs `mapstructure:"file"`
+}
+
+//Corresponding config for FileLogger as a PBS Analytics Module
+type FileLogs struct {
+	Filename string `mapstructure:"filename"`
 }
 
 type HostCookie struct {

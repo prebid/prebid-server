@@ -15,91 +15,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Prevents #378
-func TestTargetingWinners(t *testing.T) {
-	doTargetingWinnersTest(t, true)
-}
-
-func TestTargetingWithoutWinners(t *testing.T) {
-	doTargetingWinnersTest(t, false)
-}
-
-func doTargetingWinnersTest(t *testing.T, includeWinners bool) {
-	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
-		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "losing-bid",
-			ImpID: "some-imp",
-			Price: 0.5,
-			CrID:  "1",
-		}, &openrtb.Bid{
-			ID:    "winning-bid",
-			ImpID: "some-imp",
-			Price: 0.7,
-			CrID:  "2",
-		}},
-		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "contending-bid",
-			ImpID: "some-imp",
-			Price: 0.6,
-			CrID:  "3",
-		}},
-	}
-	bids := runTargetingAuction(t, mockBids, false, includeWinners, false)
-
-	// Make sure that the normal keys exist on the bids where they're expected to exist
-	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbpbConstantKey), includeWinners)
-	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
-
-	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbpbConstantKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderRubicon, maxKeyLength), true)
-
-	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbpbConstantKey), false)
-	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
-
-	// Make sure that the unexpected keys *don't* exist
-	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbCacheKey), false)
-	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
-	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbCacheKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderRubicon, maxKeyLength), false)
-	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
-	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
-
-	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbEnvKey), false)
-	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbEnvKey), false)
-	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbEnvKey), false)
-}
-
-func TestEnvKey(t *testing.T) {
-	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
-		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "losing-bid",
-			ImpID: "some-imp",
-			Price: 0.5,
-			CrID:  "1",
-		}, &openrtb.Bid{
-			ID:    "winning-bid",
-			ImpID: "some-imp",
-			Price: 0.7,
-			CrID:  "2",
-		}},
-		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "contending-bid",
-			ImpID: "some-imp",
-			Price: 0.6,
-			CrID:  "3",
-		}},
-	}
-	bids := runTargetingAuction(t, mockBids, false, true, true)
-
-	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbEnvKey), true)
-	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbEnvKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
-	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbEnvKey), false)
-	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbEnvKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
-	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbEnvKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.HbEnvKey.BidderKey(openrtb_ext.BidderRubicon, maxKeyLength), true)
-}
-
-// Prevents #378
+// Prevents #378. This is not a JSON test because the cache ID values aren't reproducible, which makes them a pain to test in that format.
 func TestTargetingCache(t *testing.T) {
 	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
 		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
@@ -131,41 +47,6 @@ func TestTargetingCache(t *testing.T) {
 
 	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
-}
-
-func TestTargetingKeys(t *testing.T) {
-	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
-		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "some-bid",
-			ImpID: "some-imp",
-			Price: 0.5,
-			W:     500,
-			H:     200,
-			CrID:  "1",
-		}},
-	}
-	bids := runTargetingAuction(t, mockBids, true, true, false)
-
-	assertKeyValue(t, bids["some-bid"], string(openrtb_ext.HbpbConstantKey), "0.50")
-	assertKeyValue(t, bids["some-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), "0.50")
-
-	assertKeyValue(t, bids["some-bid"], string(openrtb_ext.HbBidderConstantKey), "appnexus")
-	assertKeyValue(t, bids["some-bid"], openrtb_ext.HbBidderConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), "appnexus")
-
-	assertKeyValue(t, bids["some-bid"], string(openrtb_ext.HbSizeConstantKey), "500x200")
-	assertKeyValue(t, bids["some-bid"], openrtb_ext.HbSizeConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), "500x200")
-}
-
-func assertKeyValue(t *testing.T, bid *openrtb.Bid, key string, expectedValue string) {
-	t.Helper()
-	targets := parseTargets(t, bid)
-	if value, ok := targets[key]; ok {
-		if value != expectedValue {
-			t.Errorf("Bid %s has bad value for key %s. Expected %s, actual %s", bid.ID, key, expectedValue, value)
-		}
-	} else {
-		t.Errorf("Bid %s missing expected key: %s.", bid.ID, key)
-	}
 }
 
 func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) {
