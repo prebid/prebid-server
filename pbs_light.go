@@ -64,6 +64,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
+	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
@@ -859,6 +860,14 @@ func serve(cfg *config.Configuration) error {
 		eventProducers = append(eventProducers, apiEventProducer)
 		ampApiEventProducer, handleAmpStoredRequests = apiEvents.NewEventsAPI()
 		ampEventProducers = append(ampEventProducers, ampApiEventProducer)
+	}
+	if cfg.StoredRequests.HTTPEvents != nil {
+		ctxProducer := func() (ctx context.Context, canceller func()) {
+			return context.WithTimeout(context.Background(), time.Duration(cfg.StoredRequests.HTTPEvents.Timeout)*time.Millisecond)
+		}
+		refreshRate := time.Duration(cfg.StoredRequests.HTTPEvents.RefreshRate) * time.Second
+		eventProducers = append(eventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.Endpoint, ctxProducer, refreshRate))
+		ampEventProducers = append(ampEventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.AmpEndpoint, ctxProducer, refreshRate))
 	}
 	byId, byAmpId, listeners, err := NewFetchers(&(cfg.StoredRequests), db, eventProducers, ampEventProducers)
 	if err != nil {
