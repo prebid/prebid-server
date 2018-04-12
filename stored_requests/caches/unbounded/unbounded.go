@@ -23,6 +23,7 @@ type unboundedCache struct {
 func (c *unboundedCache) Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
 	requestData = doGet(c.requestDataCache, requestIDs)
 	impData = doGet(c.impDataCache, impIDs)
+	return
 }
 
 func doGet(data *sync.Map, ids []string) (loaded map[string]json.RawMessage) {
