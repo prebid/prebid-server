@@ -191,7 +191,7 @@ var rubiSizeMap = map[rubiSize]int{
 }
 
 //MAS algorithm
-func findPrimary(alt []int) int {
+func findPrimary(alt []int) (int, []int) {
 	min, pos, primary := 0, 0, 0
 	for i, size := range alt {
 		if size == 15 {
@@ -212,8 +212,9 @@ func findPrimary(alt []int) int {
 		primary = alt[min]
 		pos = min
 	}
+
 	alt = append(alt[:pos], alt[pos+1:] ...)
-	return primary
+	return primary, alt
 }
 
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
@@ -228,7 +229,7 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 		}
 	}
 	if len(alt)>0{
-		primary = findPrimary(alt)
+		primary, alt = findPrimary(alt)
 	} else {
 		err = errors.New("No primary size found")
 	}
