@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"errors"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"math"
 	"strconv"
@@ -14,23 +13,20 @@ func GetCpmStringValue(cpm float64, config openrtb_ext.PriceGranularity) (string
 	cpmStr := ""
 	bucketMax := 0.0
 	increment := 0.0
-	precision := config[0].Precision
+	precision := config.Precision
 	// calculate max of highest bucket
-	for i := 0; i < len(config); i++ {
-		if config[i].Max > bucketMax {
-			bucketMax = config[i].Max
-		}
-		if config[i].Precision != precision {
-			return "", errors.New("Precision changed within price granularity")
+	for i := 0; i < len(config.Ranges); i++ {
+		if config.Ranges[i].Max > bucketMax {
+			bucketMax = config.Ranges[i].Max
 		}
 	} // calculate which bucket cpm is in
 	if cpm > bucketMax {
 		// If we are over max, just return that
 		return strconv.FormatFloat(bucketMax, 'f', precision, 64), nil
 	}
-	for i := 0; i < len(config); i++ {
-		if cpm >= config[i].Min && cpm <= config[i].Max {
-			increment = config[i].Increment
+	for i := 0; i < len(config.Ranges); i++ {
+		if cpm >= config.Ranges[i].Min && cpm <= config.Ranges[i].Max {
+			increment = config.Ranges[i].Increment
 		}
 	}
 	if increment > 0 {
