@@ -297,6 +297,8 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	if extRequest.Prebid.Targeting == nil {
 		setDefaults = true
 		extRequest.Prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
+			// Fixes #452
+			IncludeWinners:   true,
 			PriceGranularity: openrtb_ext.PriceGranularityMedium,
 		}
 	}
