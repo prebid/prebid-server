@@ -185,7 +185,6 @@ The Stored BidRequest patch will be applied first, and then the Stored Imp patch
 If a Stored BidRequest includes Imps with their own Stored Request IDs,
 then the data for those Stored Imps not be resolved.
 
-
 ## Alternate backends
 
 Stored Requests do not need to be saved to files. [Other backends](../../stored_requests/backends) are supported
@@ -210,3 +209,52 @@ stored_requests:
 ```
 
 If you need support for a backend that you don't see, please [contribute it](contributing.md).
+
+## Caches and Event-based updating
+
+Stored Request data can also be cached or updated while PBS is running.
+Conceptually, Stored Request data is managed by three separate interfaces in the code:
+
+**Fetcher**: These pull data directly from a backend.
+**Cache**: Duplicates data which the Fetcher _could_ find so that it can be accessed more quickly.
+**EventProducer**: Returns some Channels which can be used to signal changes to Stored Request data.
+
+Fetchers, Caches, and EventProducers can also be chosen in the the app config.
+At least one Fetcher is _required_ to make use of Stored Requests.
+
+If more than one Fetcher is defined, they will be ordered and used as fallback data sources.
+This isn't a great idea for Prod in the long-term, but may be useful temporarily if you're trying
+to transition from one backend to another.
+
+If more than one Cache is defined, they will be composed into a single Cache. Saves will propagate to all Cache layers.
+Any concrete Fetcher in the project will be composed with any Cache(s) to create a new Fetcher.
+
+EventProducer events are used to Save or Invalidate values from the Cache(s).
+Saves and invalidates will propagate to all Cache layers.
+
+Here is an example `pbs.yaml` file which looks for Stored Requests first from Postgres, and then from an HTTP endpoint.
+It will use an in-memory LRU cache to store data locally, and poll another HTTP endpoint to listen for updates.
+
+```yaml
+stored_requests:
+  postgres:
+    host: localhost
+    port: 5432
+    user: db-username
+    dbname: database-name
+    query: SELECT id, requestData, 'request' as type FROM stored_requests WHERE id in %REQUEST_ID_LIST% UNION ALL SELECT id, impData, 'imp' as type FROM stored_imps WHERE id in %IMP_ID_LIST%;
+  http:
+    endpoint: http://stored-requests.prebid.com
+    amp_endpoint: http://stored-requests.prebid.com?amp=true
+  in_memory_cache:
+    ttl_seconds: 300 # 5 minutes
+    request_cache_size_bytes: 107374182 # 0.1GB
+    imp_cache_size_bytes: 107374182 # 0.1GB
+  http_events:
+    endpoint: http://stored-requests.prebid.com
+    amp_endpoint: http://stored-requests.prebid.com?amp=true
+    refresh_rate_seconds: 60
+    timeout_ms: 100
+```
+
+Pull Requests for new Fetchers, Caches, or EventProducers are always welcome.
