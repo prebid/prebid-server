@@ -1,6 +1,9 @@
 # Adding a New Bidder
 
-This document describes how to add a new Bidder to Prebid Server.
+This document describes how to add a new Bidder to Prebid Server. Bidders are responsible for reaching out to your Server to fetch Bids.
+
+**NOTE**: To make everyone's lives easier, Bidders are expected to make Net bids (e.g. "If this ad wins, what will the publisher make?), not Gross ones.
+Publishers can correct for Gross bids anyway by setting [Bid Adjustments](../endpoints/openrtb2/auction.md#bid-adjustments) to account for fees.
 
 ## Choose a Bidder Name
 
@@ -46,7 +49,7 @@ This comes with several benefits, which are described in the source code docs.
 If your HTTP requests don't use JSON, you'll need to write your tests in the code.
 We expect to see at least 90% code coverage on each Bidder.
 
-Bidders should also define a `adapters/{bidder}/{bidder}test/params/race/{mediaType}.json` file for any supported
+Bidders should also define an `adapters/{bidder}/{bidder}test/params/race/{mediaType}.json` file for any supported
 Media Types (banner, video, audio, or native). These files should contain a JSON object with all the bidder params
 (required & optional) which are expected in supporting that video type. This will be used in automated tests which
 check for race conditions across Bidders.
