@@ -945,6 +945,7 @@ func serve(cfg *config.Configuration) error {
 
 	go (func() {
 		fmt.Printf("Main server running on: %s\n", server.Addr)
+
 		serverErr := server.ListenAndServe()
 		glog.Errorf("Main server: %v", serverErr)
 		stopSignals <- syscall.SIGTERM
