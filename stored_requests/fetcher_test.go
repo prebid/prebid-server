@@ -233,11 +233,6 @@ func (c *mockCache) Save(ctx context.Context, storedRequests map[string]json.Raw
 	c.gotSaveImps = storedImps
 }
 
-func (c *mockCache) Update(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
-	c.gotUpdateReqs = storedRequests
-	c.gotUpdateImps = storedImps
-}
-
 func (c *mockCache) Invalidate(ctx context.Context, requestIDs []string, impIDs []string) {
 	c.gotInvalidateReqs = requestIDs
 	c.gotInvalidateImps = impIDs

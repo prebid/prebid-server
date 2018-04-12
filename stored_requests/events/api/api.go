@@ -10,7 +10,7 @@ import (
 )
 
 type eventsAPI struct {
-	updates       chan events.Update
+	saves         chan events.Save
 	invalidations chan events.Invalidation
 }
 
@@ -28,7 +28,7 @@ type eventsAPI struct {
 func NewEventsAPI() (events.EventProducer, httprouter.Handle) {
 	api := &eventsAPI{
 		invalidations: make(chan events.Invalidation),
-		updates:       make(chan events.Update),
+		saves:         make(chan events.Save),
 	}
 	return api, httprouter.Handle(api.HandleEvent)
 }
@@ -42,14 +42,14 @@ func (api *eventsAPI) HandleEvent(w http.ResponseWriter, r *http.Request, _ http
 			return
 		}
 
-		var update events.Update
-		if err := json.Unmarshal(body, &update); err != nil {
+		var save events.Save
+		if err := json.Unmarshal(body, &save); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("Invalid update.\n"))
 			return
 		}
 
-		api.updates <- update
+		api.saves <- save
 	} else if r.Method == "DELETE" {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -75,6 +75,6 @@ func (api *eventsAPI) Invalidations() <-chan events.Invalidation {
 	return api.invalidations
 }
 
-func (api *eventsAPI) Updates() <-chan events.Update {
-	return api.updates
+func (api *eventsAPI) Saves() <-chan events.Save {
+	return api.saves
 }
