@@ -195,14 +195,14 @@ func findPrimary(alt []int) (int, []int) {
 	min, pos, primary := 0, 0, 0
 	for i, size := range alt {
 		if size == 15 {
-			primary = 15;
+			primary = 15
 			pos = i
 			break
 		} else if size == 2 {
-			primary = 2;
+			primary = 2
 			pos = i
 		} else if size == 9 && primary != 2 {
-			primary = 9;
+			primary = 9
 			pos = i
 		} else if size < alt[min] {
 			min = i
@@ -213,7 +213,7 @@ func findPrimary(alt []int) (int, []int) {
 		pos = min
 	}
 
-	alt = append(alt[:pos], alt[pos+1:] ...)
+	alt = append(alt[:pos], alt[pos+1:]...)
 	return primary, alt
 }
 
@@ -228,7 +228,7 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 			alt = append(alt, rs)
 		}
 	}
-	if len(alt)>0{
+	if len(alt) > 0 {
 		primary, alt = findPrimary(alt)
 	} else {
 		err = errors.New("No primary size found")
