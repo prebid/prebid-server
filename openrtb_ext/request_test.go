@@ -159,11 +159,9 @@ func TestGranularityUnmarshalBad(t *testing.T) {
 	tests := [][]byte{
 		[]byte(`{}`),
 		[]byte(`[]`),
-		[]byte(`{"precision": -1, "ranges": [{min":0, "max":20, "increment":0.5}]}`),
-		[]byte(`{"ranges":[{"min": 5, "max":1, "increment": 0.1}]}`),
-		[]byte(`{"ranges":[{"min":0, "max":20, "increment": -1}]}`),
-		[]byte(`{"ranges":[{"min":"0", "max":"20", "increment": "0.1"}]}`),
-		[]byte(`{"ranges":[{"min":0, "max":20, "increment":0.1}, {"min":15, "max":30, "increment":1.0}]}`),
+		[]byte(`{"precision": -1, "ranges": [{"max":20, "increment":0.5}]}`),
+		[]byte(`{"ranges":[{"max":20, "increment": -1}]}`),
+		[]byte(`{"ranges":[{"max":"20", "increment": "0.1"}]}`),
 		[]byte(`{"ranges":[{"max":20, "increment":0.1}. {"max":10, "increment":0.02}]}`),
 		[]byte(`{"ranges":[{"max":20, "min":10, "increment": 0.1}, {"max":10, "min":0, "increment":0.05}]}`),
 	}
