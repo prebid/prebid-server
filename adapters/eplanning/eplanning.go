@@ -26,9 +26,6 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		source, err := verifyImp(&request.Imp[i])
 		if err != nil {
 			errors = append(errors, err)
-			// Remove invalid imps
-			// request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			// i--
 			continue
 		}
 
@@ -80,7 +77,6 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		}
 
 		requests = append(requests, &requestData)
-		// requests := []*adapters.RequestData{&requestData}
 	}
 
 	return requests, errors
