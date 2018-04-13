@@ -114,8 +114,8 @@ const (
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
 type MetricsEngine interface {
-	RecordNewConnection()
-	RecordClosedConnection()
+	RecordConnectionAccept(success bool)
+	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
@@ -171,15 +171,15 @@ func (me *MultiMetricsEngine) RecordRequest(labels Labels) {
 	}
 }
 
-func (me *MultiMetricsEngine) RecordNewConnection() {
+func (me *MultiMetricsEngine) RecordConnectionAccept(success bool) {
 	for _, thisME := range *me {
-		thisME.RecordNewConnection()
+		thisME.RecordConnectionAccept(success)
 	}
 }
 
-func (me *MultiMetricsEngine) RecordClosedConnection() {
+func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	for _, thisME := range *me {
-		thisME.RecordClosedConnection()
+		thisME.RecordConnectionClose(success)
 	}
 }
 
@@ -247,11 +247,13 @@ func (me *DummyMetricsEngine) RecordRequest(labels Labels) {
 	return
 }
 
-func (me *DummyMetricsEngine) RecordNewConnection() {
+// RecordConnectionAccept as a noop
+func (me *DummyMetricsEngine) RecordConnectionAccept(success bool) {
 	return
 }
 
-func (me *DummyMetricsEngine) RecordClosedConnection() {
+// RecordConnectionClose as a noop
+func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
 	return
 }
 
