@@ -116,11 +116,8 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 	if len(pgraw.Ranges) > 0 {
 		var prevMax float64 = 0
 		for i, gr := range pgraw.Ranges {
-			if gr.Max < prevMax {
+			if gr.Max <= prevMax {
 				return errors.New("Price granularity error: range list must be ordered with increasing \"max\"")
-			}
-			if gr.Max < gr.Min {
-				return errors.New("Price granularity error: max must be greater than min")
 			}
 			if gr.Increment <= 0.0 {
 				return errors.New("Price granularity error: increment must be a nonzero positive number")
