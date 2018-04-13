@@ -930,7 +930,6 @@ func serve(cfg *config.Configuration) error {
 	noCacheHandler := NoCache{corsRouter}
 
 	server.Listen(cfg, noCacheHandler, metricsEngine)
-
 	return nil
 }
 

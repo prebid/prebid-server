@@ -14,6 +14,7 @@ import (
 type Metrics struct {
 	metricsRegistry     metrics.Registry
 	RequestMeter        metrics.Meter
+	ConnectionCounter   metrics.Counter
 	ImpMeter            metrics.Meter
 	AppRequestMeter     metrics.Meter
 	NoCookieMeter       metrics.Meter
@@ -65,10 +66,16 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
+//
+// This will be useful when removing endpoints, we can just run will the blank metrics function
+// rather than loading legacy metrics that never get filled.
+// This will also eventually let us configure metrics, such as setting a limited set of metrics
+// for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := &Metrics{
 		metricsRegistry:     registry,
 		RequestMeter:        blankMeter(0),
+		ConnectionCounter:   metrics.NilCounter{},
 		ImpMeter:            blankMeter(0),
 		AppRequestMeter:     blankMeter(0),
 		NoCookieMeter:       blankMeter(0),
@@ -104,6 +111,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
 	newMetrics.RequestMeter = metrics.GetOrRegisterMeter("requests", registry)
+	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.ErrorMeter = metrics.GetOrRegisterMeter("error_requests", registry)
@@ -229,6 +237,14 @@ func (me *Metrics) RecordRequest(labels Labels) {
 
 func (me *Metrics) RecordImps(labels Labels, numImps int) {
 	me.ImpMeter.Mark(int64(numImps))
+}
+
+func (me *Metrics) RecordNewConnection() {
+	me.ConnectionCounter.Inc(1)
+}
+
+func (me *Metrics) RecordClosedConnection() {
+	me.ConnectionCounter.Dec(1)
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible

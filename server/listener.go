@@ -18,7 +18,7 @@ type monitorableListener struct {
 }
 
 func (l *monitorableConnection) Close() error {
-	// TODO: Log the connection closed
+	l.metrics.RecordClosedConnection()
 	return l.Conn.Close()
 }
 
@@ -30,7 +30,7 @@ func (ln *monitorableListener) Accept() (c net.Conn, err error) {
 
 	tc.SetKeepAlive(true)
 	tc.SetKeepAlivePeriod(3 * time.Minute)
-	// TODO: Log the connection open
+	ln.metrics.RecordNewConnection()
 	return &monitorableConnection{
 		tc,
 		ln.metrics,
