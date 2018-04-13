@@ -37,6 +37,7 @@ type adformRequest struct {
 
 type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
+    PriceType string `json:"priceType,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -52,6 +53,8 @@ type adformBid struct {
 	DealId       string  `json:"deal_id,omitempty"`
 	CreativeId   string  `json:"win_crid,omitempty"`
 }
+
+var validPriceTypes = map[string]bool { "net":true, "gross":true}
 
 // ADAPTER Interface
 
@@ -188,7 +191,7 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
+		str := fmt.Sprintf("mid=%s%s", adUnit.MasterTagId, getValidPriceTypeParameter(adUnit))
 		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
 	}
 	uri := a.URI
@@ -200,6 +203,15 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 		adid = fmt.Sprintf("&adid=%s", r.advertisingId)
 	}
 	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s&%s", uri, r.tid, r.ip, adid, strings.Join(adUnitsParams, "&"))
+}
+
+func getValidPriceTypeParameter(adUnit *adformAdUnit) string {
+	priceTypeParameter := ""
+	_, valid := validPriceTypes[adUnit.PriceType]
+	if(valid){
+		priceTypeParameter = fmt.Sprintf("&pt=%s", adUnit.PriceType)
+	}
+	return priceTypeParameter
 }
 
 func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
@@ -292,6 +304,12 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 		if !secure && imp.Secure != nil && *imp.Secure == 1 {
 			secure = true
+		}
+
+		_, valid := validPriceTypes[adformAdUnit.PriceType]
+		if !(valid || adformAdUnit.PriceType == "") {
+			errors = append(errors, fmt.Errorf("price type is invalid=%s", adformAdUnit.PriceType))
+			continue
 		}
 
 		adformAdUnit.bidId = imp.ID

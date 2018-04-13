@@ -22,6 +22,7 @@ import (
 
 type aTagInfo struct {
 	mid  uint32
+	priceType string
 	code string
 
 	price   float64
@@ -161,8 +162,8 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 		buyerUID:  "user-id",
 		secure:    false,
 	}
-	adformTestData.tags[0] = aTagInfo{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"}
-	adformTestData.tags[1] = aTagInfo{mid: 32345, code: "code2"} // no bid for ad unit
+	adformTestData.tags[0] = aTagInfo{mid: 32344, priceType: "gross", code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"}
+	adformTestData.tags[1] = aTagInfo{mid: 32345, priceType: "net", code: "code2"} // no bid for ad unit
 	adformTestData.tags[2] = aTagInfo{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"}
 
 	// prepare adapter
@@ -227,7 +228,7 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 				{
 					BidderCode: "adform",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"mid\": %d}", tag.mid)),
+					Params:     json.RawMessage(fmt.Sprintf("{\"mid\": %d%s}", tag.mid, getPriceTypeString(tag.priceType))),
 				},
 			},
 		}
@@ -239,6 +240,14 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 	}
 	fmt.Println("body", body)
 	return body
+}
+
+func getPriceTypeString(priceType string) string {
+	if(priceType!= ""){
+		return fmt.Sprintf(", \"priceType\": \"%s\"", priceType)
+	}
+
+	return ""
 }
 
 // OpenRTB auction tests
@@ -306,8 +315,8 @@ func createTestData() *aBidInfo {
 		tid:       "transaction-id",
 		buyerUID:  "user-id",
 		tags: []aTagInfo{
-			{mid: 32344, code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"},
-			{mid: 32345, code: "code2"}, // no bid for ad unit
+			{mid: 32344, priceType: "gross", code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"},
+			{mid: 32345, priceType: "net", code: "code2"}, // no bid for ad unit
 			{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"},
 		},
 		secure: true,
@@ -322,26 +331,7 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 	}
 	bidRequest := &openrtb.BidRequest{
 		ID: "test-request-id",
-		Imp: []openrtb.Imp{
-			{
-				ID:     testData.tags[0].code,
-				Secure: &secure,
-				Ext:    openrtb.RawJSON(`{"bidder": { "mid": "32344" }}`),
-				Banner: &openrtb.Banner{},
-			},
-			{
-				ID:     testData.tags[1].code,
-				Secure: &secure,
-				Ext:    openrtb.RawJSON(`{"bidder": { "mid": 32345 }}`),
-				Banner: &openrtb.Banner{},
-			},
-			{
-				ID:     testData.tags[2].code,
-				Secure: &secure,
-				Ext:    openrtb.RawJSON(`{"bidder": { "mid": 32346 }}`),
-				Banner: &openrtb.Banner{},
-			},
-		},
+		Imp: make([]openrtb.Imp, len(testData.tags)),
 		Site: &openrtb.Site{
 			Page: testData.referrer,
 		},
@@ -357,6 +347,15 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 			BuyerUID: testData.buyerUID,
 		},
 	}
+	for i, tag := range testData.tags {
+		bidRequest.Imp[i] = openrtb.Imp{
+			ID:     tag.code,
+			Secure: &secure,
+			Ext:    openrtb.RawJSON(fmt.Sprintf("{\"bidder\": { \"mid\": %d%s}}", tag.mid, getPriceTypeString(tag.priceType))),
+			Banner: &openrtb.Banner{},
+		}
+	}
+
 	return bidRequest
 }
 
@@ -457,7 +456,7 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 			return err
 		}
 	}
-	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&ip=111.111.111.111&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&bWlkPTMyMzQ0&bWlkPTMyMzQ1&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
+	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&ip=111.111.111.111&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&bWlkPTMyMzQ0JnB0PWdyb3Nz&bWlkPTMyMzQ1JnB0PW5ldA&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
 		return err
 	}
 	if ok, err := equal("application/json;charset=utf-8", r.Header.Get("Content-Type"), "Content type"); !ok {
