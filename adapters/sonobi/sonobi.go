@@ -76,7 +76,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 		imp.TagID = sonobiExt.TagID
 	}
 
-	adapterReq, errors := makeRequest(&reqCopy)
+	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
 	}
@@ -86,7 +86,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	for _, videoImp := range videoImps {
 		reqCopy.Imp = []openrtb.Imp{videoImp}
 		videoImp.TagID = sonobiExt.TagID
-		adapterReq, errors := makeRequest(&reqCopy)
+		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
@@ -98,7 +98,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 }
 
 // makeRequest helper method to crete the http request data
-func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	reqJSON, err := json.Marshal(request)
@@ -112,7 +112,7 @@ func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	headers.Add("Accept", "application/json")
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     uri,
+		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: headers,
 	}, errs
