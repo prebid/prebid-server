@@ -129,7 +129,7 @@ func (pg *PriceGranularity) UnmarshalJSON(b []byte) error {
 			}
 			prevMax = gr.Max
 		}
-	} else if len(pgraw.Ranges) == 0 {
+	} else {
 		return errors.New("Price granularity error: empty granularity definition supplied")
 	}
 	*pg = PriceGranularity(pgraw)
