@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Sovrn Adapter Params",
-    "description": "A schema which validates params accepted by the Sovrn adapter",
+    "title": "Sonobi Adapter Params",
+    "description": "A schema which validates params accepted by the Sonobi adapter",
   
     "type": "object",
     "properties": {

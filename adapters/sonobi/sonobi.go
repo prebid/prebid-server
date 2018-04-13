@@ -64,7 +64,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	var adapterRequests []*adapters.RequestData
 	// Make a copy as we don't want to change the original request
 	reqCopy := *request
-
+	// @TODO add tag id from params to the imp
 	reqCopy.Imp = bannerImps
 	adapterReq, errors := makeRequest(&reqCopy)
 	if adapterReq != nil {
