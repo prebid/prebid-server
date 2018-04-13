@@ -10,12 +10,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prebid/prebid-server/pbsmetrics"
+
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
-func Listen(cfg *config.Configuration, handler http.Handler) {
+func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.MetricsEngine) {
 
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
 	stopAdmin := make(chan os.Signal)
@@ -23,10 +25,9 @@ func Listen(cfg *config.Configuration, handler http.Handler) {
 	done := make(chan struct{})
 
 	go runAdmin(cfg, stopAdmin, done)
-	go runMain(cfg, handler, stopMain, done)
+	go runMain(cfg, handler, metrics, stopMain, done)
 
 	wait(done, stopMain, stopAdmin)
-
 	return
 }
 
@@ -42,8 +43,9 @@ func runAdmin(cfg *config.Configuration, stopper <-chan os.Signal, done chan<- s
 	return
 }
 
-// runMain runs the "main" server. This should block forever, unless something goes wrong.
-func runMain(cfg *config.Configuration, handler http.Handler, stopper <-chan os.Signal, done chan<- struct{}) {
+// runMain runs the "main" server. This will block until a signal gets sent to stopper.
+// When it's complete,
+func runMain(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.MetricsEngine, stopper <-chan os.Signal, done chan<- struct{}) {
 	server := &http.Server{
 		Addr:         cfg.Host + ":" + strconv.Itoa(cfg.Port),
 		Handler:      handler,
@@ -58,7 +60,7 @@ func runMain(cfg *config.Configuration, handler http.Handler, stopper <-chan os.
 
 	// This cast is in Go's core libs as Server.ListenAndServe(), so it _should_ be safe, but just in case...
 	if casted, ok := listener.(*net.TCPListener); ok {
-		listener = &monitorableListener{casted, func() {}}
+		listener = &monitorableListener{casted, metrics}
 	} else {
 		glog.Errorf("Golang's core lib didn't return a TCPListener as expected. Connection metrics will not be sent.")
 	}
