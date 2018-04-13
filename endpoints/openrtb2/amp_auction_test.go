@@ -132,6 +132,28 @@ func TestAmpDebug(t *testing.T) {
 	}
 }
 
+// Prevents #452
+func TestAmpTargetingDefaults(t *testing.T) {
+	req := &openrtb.BidRequest{}
+	if errs := defaultRequestExt(req); len(errs) != 0 {
+		t.Fatalf("Unexpected error defaulting request.ext for AMP: %v", errs)
+	}
+
+	var extRequest openrtb_ext.ExtRequest
+	if err := json.Unmarshal(req.Ext, &extRequest); err != nil {
+		t.Fatalf("Unexpected error unmarshalling defaulted request.ext for AMP: %v", err)
+	}
+	if extRequest.Prebid.Targeting == nil {
+		t.Fatal("AMP defaults should set request.ext.targeting")
+	}
+	if !extRequest.Prebid.Targeting.IncludeWinners {
+		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
+	}
+	if extRequest.Prebid.Targeting.PriceGranularity != openrtb_ext.PriceGranularityMedium {
+		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
+	}
+}
+
 type mockAmpStoredReqFetcher struct {
 	data map[string]json.RawMessage
 }
