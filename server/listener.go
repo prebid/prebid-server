@@ -4,6 +4,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
@@ -24,6 +25,7 @@ func (l *monitorableConnection) Close() error {
 	if err == nil {
 		l.metrics.RecordConnectionClose(true)
 	} else {
+		glog.Errorf("Error closing connection: %v", err)
 		l.metrics.RecordConnectionClose(false)
 	}
 	return err
@@ -32,6 +34,7 @@ func (l *monitorableConnection) Close() error {
 func (ln *monitorableListener) Accept() (c net.Conn, err error) {
 	tc, err := ln.Listener.Accept()
 	if err != nil {
+		glog.Errorf("Error accepting connection: %v", err)
 		ln.metrics.RecordConnectionAccept(false)
 		return tc, err
 	}
