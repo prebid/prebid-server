@@ -30,31 +30,13 @@ func Listen(cfg *config.Configuration, handler http.Handler) {
 	return
 }
 
-func wait(done <-chan struct{}, outbound ...chan<- os.Signal) {
-	stopSignals := make(chan os.Signal)
-	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
-	sig := <-stopSignals
-
-	for i := 0; i < len(outbound); i++ {
-		go sendSignal(outbound[i], sig)
-	}
-
-	for i := 0; i < len(outbound); i++ {
-		<-done
-	}
-}
-
-func sendSignal(to chan<- os.Signal, sig os.Signal) {
-	to <- sig
-}
-
 // runAdmin runs the admin server. This should block forever.
 // If an error occurs and it needs to return, a SIGTERM will be sent to stopSignals.
 func runAdmin(cfg *config.Configuration, stopper <-chan os.Signal, done chan<- struct{}) {
 	uri := cfg.Host + ":" + strconv.Itoa(cfg.AdminPort)
 	server := &http.Server{Addr: uri}
 	glog.Infof("Admin server starting on: %s", uri)
-	go watchForStops(server, stopper, done)
+	go shutdownAfterSignals(server, stopper, done)
 	err := server.ListenAndServe()
 	glog.Errorf("Admin server quit with error: %v", err)
 	return
@@ -82,21 +64,40 @@ func runMain(cfg *config.Configuration, handler http.Handler, stopper <-chan os.
 	}
 
 	glog.Infof("Main server starting on: %s", server.Addr)
-	go watchForStops(server, stopper, done)
+	go shutdownAfterSignals(server, stopper, done)
 	err = server.Serve(listener)
 	glog.Errorf("Main server quit with error: %v", err)
 	return
 }
 
-func watchForStops(server *http.Server, stopper <-chan os.Signal, done chan<- struct{}) {
+func wait(done <-chan struct{}, outbound ...chan<- os.Signal) {
+	stopSignals := make(chan os.Signal)
+	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
+	sig := <-stopSignals
+
+	for i := 0; i < len(outbound); i++ {
+		go sendSignal(outbound[i], sig)
+	}
+
+	for i := 0; i < len(outbound); i++ {
+		<-done
+	}
+}
+
+func shutdownAfterSignals(server *http.Server, stopper <-chan os.Signal, done chan<- struct{}) {
 	sig := <-stopper
-	var s struct{}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	var s struct{}
 	glog.Infof("Stopping %s because of signal: %s", server.Addr, sig.String())
 	if err := server.Shutdown(ctx); err != nil {
 		glog.Errorf("Failed to shutdown %s: %v", server.Addr, err)
 	}
 	done <- s
+}
+
+func sendSignal(to chan<- os.Signal, sig os.Signal) {
+	to <- sig
 }
