@@ -51,7 +51,7 @@ func dispatch(inbound <-chan os.Signal, outbound ...chan<- struct{}) {
 func runAdmin(cfg *config.Configuration, stopper <-chan struct{}) {
 	uri := cfg.Host + ":" + strconv.Itoa(cfg.AdminPort)
 	server := &http.Server{Addr: uri}
-	glog.Infof("Admin server starting on: ", uri)
+	glog.Infof("Admin server starting on: %s", uri)
 	go watchForStops(server, stopper)
 	err := server.ListenAndServe()
 	glog.Errorf("Admin server quit with error: %v", err)
@@ -67,7 +67,7 @@ func runMain(cfg *config.Configuration, handler http.Handler, stopper <-chan str
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
-	glog.Infof("Main server starting on: ", server.Addr)
+	glog.Infof("Main server starting on: %s", server.Addr)
 	go watchForStops(server, stopper)
 	err := server.ListenAndServe()
 	glog.Errorf("Main server quit with error: %v", err)
