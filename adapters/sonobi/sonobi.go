@@ -33,8 +33,13 @@ func (a *Adapter) SkipNoCookies() bool {
 }
 
 // NewSonobiBidder Initializes the Bidder
-func NewSonobiBidder() *Adapter {
-	return &Adapter{}
+func NewSonobiBidder(client *http.Client, endpoint string) *Adapter {
+	a := &adapters.HTTPAdapter{Client: client}
+
+	return &Adapter{
+		http: a,
+		URI:  endpoint,
+	}
 }
 
 type sonobiParams struct {
@@ -45,7 +50,7 @@ type sonobiParams struct {
 // So lets just pass in the standard openrtb request coming through.
 func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var errs []error
-
+	var sonobiExt openrtb_ext.ExtImpSoonobi
 	var bannerImps []openrtb.Imp
 	var videoImps []openrtb.Imp
 
@@ -64,8 +69,13 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	var adapterRequests []*adapters.RequestData
 	// Make a copy as we don't want to change the original request
 	reqCopy := *request
-	// @TODO add tag id from params to the imp
+
 	reqCopy.Imp = bannerImps
+
+	for _, imp := range reqCopy.Imp {
+		imp.TagID = sonobiExt.TagID
+	}
+
 	adapterReq, errors := makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
@@ -75,6 +85,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	// Sonobi only supports single imp video request
 	for _, videoImp := range videoImps {
 		reqCopy.Imp = []openrtb.Imp{videoImp}
+		videoImp.TagID = sonobiExt.TagID
 		adapterReq, errors := makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
