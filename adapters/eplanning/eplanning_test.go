@@ -1,15 +1,22 @@
 package eplanning
 
 import (
-	"encoding/json"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"testing"
+
 	"net/http"
 
 	"bytes"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"testing"
+
 	"time"
 )
+
+func TestJsonSamples(t *testing.T) {
+	eplanningAdapter := NewEPlanningBidder(new(http.Client), "http://ads.us.e-planning.net/dsp/obr/1")
+	adapterstest.RunJSONBidderTest(t, "eplanningtest", eplanningAdapter)
+}
 
 type aBidInfo struct {
 	deviceIP string
@@ -50,51 +57,6 @@ func TestOpenRTBRequest(t *testing.T) {
 		t.Fatalf("Unexpected request. Got %v", err)
 	}
 	r.Header = httpRequests[0].Headers
-}
-
-func TestOpenRTBStandardResponse(t *testing.T) {
-	testData := createTestData()
-	request := createOpenRtbRequest(testData)
-
-	responseBody, err := createEPlanningServerResponse(*testData)
-	if err != nil {
-		t.Fatalf("Unable to create server response: %v", err)
-		return
-	}
-	httpResponse := &adapters.ResponseData{StatusCode: http.StatusOK, Body: responseBody}
-
-	bidder := new(EPlanningAdapter)
-	bids, errs := bidder.MakeBids(request, nil, httpResponse)
-
-	if len(bids) != 2 {
-		t.Fatalf("Expected 2 bids. Got %d", len(bids))
-	}
-	if len(errs) != 0 {
-		t.Errorf("Expected 0 errors. Got %d", len(errs))
-	}
-
-	for _, typeBid := range bids {
-		bid := typeBid.Bid
-		matched := false
-
-		for _, tag := range testData.tags {
-			if bid.ID == tag.code {
-				matched = true
-				if bid.Price != tag.price {
-					t.Errorf("Incorrect bid price '%.2f' expected '%.2f'", bid.Price, tag.price)
-				}
-				if bid.W != testData.width || bid.H != testData.height {
-					t.Errorf("Incorrect bid size %dx%d, expected %dx%d", bid.W, bid.H, testData.width, testData.height)
-				}
-				if bid.DealID != tag.dealId {
-					t.Errorf("Incorrect deal id '%s' expected '%s'", bid.DealID, tag.dealId)
-				}
-			}
-		}
-		if !matched {
-			t.Errorf("Received bid with unknown id '%s'", bid.ID)
-		}
-	}
 }
 
 func TestOpenRTBSurpriseResponse(t *testing.T) {
@@ -142,19 +104,19 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 				Banner:   &openrtb.Banner{},
 				BidFloor: testData.tags[0].bidfloor,
 				Instl:    testData.tags[0].instl,
-				Ext:      openrtb.RawJSON(`{"bidder": { "ssp_espacio_id": "32344" }}`),
+				Ext:      openrtb.RawJSON(`{"bidder": {}}`),
 			},
 			{
 				ID:     testData.tags[1].code,
 				Banner: &openrtb.Banner{},
-				Ext:    openrtb.RawJSON(`{"bidder": { "ssp_espacio_id": "32345" }}`),
+				Ext:    openrtb.RawJSON(`{"bidder": {}}`),
 			},
 			{
 				ID:       testData.tags[2].code,
 				Banner:   &openrtb.Banner{},
 				BidFloor: testData.tags[2].bidfloor,
 				Instl:    testData.tags[2].instl,
-				Ext:      openrtb.RawJSON(`{"bidder": { "ssp_espacio_id": "32346" }}`),
+				Ext:      openrtb.RawJSON(`{"bidder": {}}`),
 			},
 		},
 		Site: &openrtb.Site{},
@@ -168,26 +130,4 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 		},
 	}
 	return bidRequest
-}
-
-func createEPlanningServerResponse(testData aBidInfo) ([]byte, error) {
-	bids := []EPlanningBid{
-		{
-			Id:     testData.tags[0].code,
-			Price:  testData.tags[0].price,
-			Width:  testData.width,
-			Height: testData.height,
-			DealId: testData.tags[0].dealId,
-		},
-		{},
-		{
-			Id:     testData.tags[2].code,
-			Price:  testData.tags[2].price,
-			Width:  testData.width,
-			Height: testData.height,
-			DealId: testData.tags[2].dealId,
-		},
-	}
-	ePlanningServerResponse, err := json.Marshal(bids)
-	return ePlanningServerResponse, err
 }

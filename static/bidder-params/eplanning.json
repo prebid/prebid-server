@@ -4,10 +4,10 @@
   "description": "A schema which validates params accepted by the EPlanning adapter",
   "type": "object",
   "properties": {
-    "ssp_space_id": {
-      "type": ["integer", "string"],
-      "description": "An ID of the space"
-    }
+  	"exchange_id": {
+  		"type": ["string"],
+  		"description": "Exchange ID to use"
+  	}
   },
   "required": []
 }

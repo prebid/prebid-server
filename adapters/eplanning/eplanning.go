@@ -8,6 +8,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"strconv"
 )
 
 type EPlanningAdapter struct {
@@ -15,79 +17,104 @@ type EPlanningAdapter struct {
 	URI  string
 }
 
-type EPlanningRequest struct {
-	id      string
-	user    *openrtb.User
-	device  *openrtb.Device
-	adUnits []*EPlanningAdUnit
-}
-
-type EPlanningBid struct {
-	Id     string  `json:"id"`
-	Price  float64 `json:"price,omitempty"`
-	Width  uint64  `json:"w,omitempty"`
-	Height uint64  `json:"h,omitempty"`
-	DealId string  `json:"dealid,omitempty"`
-}
-
-type EPlanningAdUnit struct {
-	Id         string
-	Bidfloor   float64
-	Instl      int8
-	SspSpaceId int `json:"ssp_espacio_id,omitempty"`
-	Video      *openrtb.Video
-	Banner     *openrtb.Banner
-}
-
 func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	ePlanningRequest, errors := openRtbToEPlanningRequest(request)
-	if len(ePlanningRequest.adUnits) == 0 {
+	errors := make([]error, 0, len(request.Imp))
+	totalImps := len(request.Imp)
+	sourceMapper := make(map[string][]int)
+
+	for i := 0; i < totalImps; i++ {
+		source, err := verifyImp(&request.Imp[i])
+		if err != nil {
+			errors = append(errors, err)
+			// Remove invalid imps
+			// request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			// i--
+			continue
+		}
+
+		if _, ok := sourceMapper[source]; !ok {
+			sourceMapper[source] = make([]int, 0, totalImps-i)
+		}
+
+		sourceMapper[source] = append(sourceMapper[source], i)
+	}
+
+	totalRequests := len(sourceMapper)
+
+	if totalRequests == 0 {
 		return nil, errors
 	}
 
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
+	requests := make([]*adapters.RequestData, 0, totalRequests)
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json")
+	headers.Add("Accept", "application/json")
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
 
-	requestData := adapters.RequestData{
-		Method: "POST",
-		Uri:    adapter.URI,
-		Body:   reqJSON,
-	}
+	imps := request.Imp
 
-	requests := []*adapters.RequestData{&requestData}
+	for source, impIds := range sourceMapper {
+		request.Imp = request.Imp[:0]
+
+		for i := 0; i < len(impIds); i++ {
+			request.Imp = append(request.Imp, imps[impIds[i]])
+		}
+
+		reqJSON, err := json.Marshal(request)
+		if err != nil {
+			errors = append(errors, err)
+			return nil, errors
+		}
+
+		requestData := adapters.RequestData{
+			Method:  "POST",
+			Uri:     adapter.URI + fmt.Sprintf("/%s", source),
+			Body:    reqJSON,
+			Headers: headers,
+		}
+
+		requests = append(requests, &requestData)
+		// requests := []*adapters.RequestData{&requestData}
+	}
 
 	return requests, errors
 }
 
-func openRtbToEPlanningRequest(request *openrtb.BidRequest) (*EPlanningRequest, []error) {
-
-	adUnits := make([]*EPlanningAdUnit, 0, len(request.Imp))
-	errors := make([]error, 0, len(request.Imp))
-	for _, imp := range request.Imp {
-		var params openrtb_ext.ExtImpEPlanning
-		err := json.Unmarshal(imp.Ext, &params)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		ePlanningAdUnit := EPlanningAdUnit{
-			Id:         imp.ID,
-			Bidfloor:   imp.BidFloor,
-			Instl:      imp.Instl,
-			Video:      imp.Video,
-			Banner:     imp.Banner,
-			SspSpaceId: params.SspSpaceId,
-		}
-		adUnits = append(adUnits, &ePlanningAdUnit)
+func verifyImp(imp *openrtb.Imp) (string, error) {
+	// We currently only support banner impressions
+	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
+		return "", fmt.Errorf("EPlanning doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID)
 	}
-	return &EPlanningRequest{
-		adUnits: adUnits,
-		user:    request.User,
-		device:  request.Device,
-	}, errors
+
+	var bidderExt adapters.ExtImpBidder
+
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", fmt.Errorf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err)
+	}
+
+	impExt := openrtb_ext.ExtImpEPlanning{}
+	err := json.Unmarshal(bidderExt.Bidder, &impExt)
+	if err != nil {
+		return "", fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
+	}
+
+	if impExt.ExchangeID == "" {
+		impExt.ExchangeID = "5a1ad71d2d53a0f5"
+	}
+
+	return impExt.ExchangeID, nil
+}
+
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
+	if len(headerValue) > 0 {
+		headers.Add(headerName, headerValue)
+	}
 }
 
 func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
@@ -96,15 +123,25 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	ePlanningOutput, err := parseEPlanningBids(response.Body)
-	if err != nil {
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	bids := toOpenRtbBids(ePlanningOutput, internalRequest)
+	var bids []*adapters.TypedBid
+
+	for _, sb := range bidResp.SeatBid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
+			bids = append(bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: openrtb_ext.BidTypeBanner,
+			})
+		}
+	}
 
 	return bids, nil
 }
@@ -116,32 +153,4 @@ func NewEPlanningBidder(client *http.Client, endpoint string) *EPlanningAdapter 
 		http: adapter,
 		URI:  endpoint,
 	}
-}
-
-func parseEPlanningBids(response []byte) ([]*EPlanningBid, error) {
-	var bids []*EPlanningBid
-	if err := json.Unmarshal(response, &bids); err != nil {
-		return nil, err
-	}
-
-	return bids, nil
-}
-
-func toOpenRtbBids(ePlanningBids []*EPlanningBid, r *openrtb.BidRequest) []*adapters.TypedBid {
-	bids := make([]*adapters.TypedBid, 0, len(ePlanningBids))
-
-	for i, bid := range ePlanningBids {
-		if bid.Id != "" {
-			openRtbBid := openrtb.Bid{
-				ID:     bid.Id,
-				ImpID:  r.Imp[i].ID,
-				Price:  bid.Price,
-				W:      bid.Width,
-				H:      bid.Height,
-				DealID: bid.DealId,
-			}
-			bids = append(bids, &adapters.TypedBid{Bid: &openRtbBid})
-		}
-	}
-	return bids
 }
