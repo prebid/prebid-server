@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -150,7 +151,7 @@ func TestAmpTargetingDefaults(t *testing.T) {
 	if !extRequest.Prebid.Targeting.IncludeWinners {
 		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
 	}
-	if extRequest.Prebid.Targeting.PriceGranularity != openrtb_ext.PriceGranularityMedium {
+	if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med")) {
 		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
 	}
 }
