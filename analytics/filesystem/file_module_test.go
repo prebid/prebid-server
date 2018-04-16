@@ -1,52 +1,56 @@
-package analytics
+package filesystem
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/usersync"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
+	"github.com/prebid/prebid-server/usersync"
 )
 
+const TEST_DIR string = "testFiles"
+
 func TestAmpObject_ToJson(t *testing.T) {
-	ao := AmpObject{
+	ao := &analytics.AmpObject{
 		Status:             http.StatusOK,
 		Errors:             make([]error, 0),
 		AuctionResponse:    &openrtb.BidResponse{},
 		AmpTargetingValues: map[string]string{},
 	}
-	if aoJson := ao.ToJson(); strings.Contains(aoJson, "Transactional Logs Error") {
+	if aoJson := jsonifyAmpObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
 		t.Fatalf("AmpObject failed to convert to json")
 	}
 }
 
 func TestAuctionObject_ToJson(t *testing.T) {
-	ao := AuctionObject{
+	ao := &analytics.AuctionObject{
 		Status: http.StatusOK,
 	}
-	if aoJson := ao.ToJson(); strings.Contains(aoJson, "Transactional Logs Error") {
+	if aoJson := jsonifyAuctionObject(ao); strings.Contains(aoJson, "Transactional Logs Error") {
 		t.Fatalf("AuctionObject failed to convert to json")
 	}
 }
 
 func TestSetUIDObject_ToJson(t *testing.T) {
-	so := SetUIDObject{
+	so := &analytics.SetUIDObject{
 		Status: http.StatusOK,
 		Bidder: "any-bidder",
 		UID:    "uid string",
 	}
-	if soJson := so.ToJson(); strings.Contains(soJson, "Transactional Logs Error") {
+	if soJson := jsonifySetUIDObject(so); strings.Contains(soJson, "Transactional Logs Error") {
 		t.Fatalf("SetUIDObject failed to convert to json")
 	}
 }
 
 func TestCookieSyncObject_ToJson(t *testing.T) {
-	cso := CookieSyncObject{
+	cso := &analytics.CookieSyncObject{
 		Status:       http.StatusOK,
 		BidderStatus: []*usersync.CookieSyncBidders{},
 	}
-	if csoJson := cso.ToJson(); strings.Contains(csoJson, "Transactional Logs Error") {
+	if csoJson := jsonifyCookieSync(cso); strings.Contains(csoJson, "Transactional Logs Error") {
 		t.Fatalf("CookieSyncObject failed to convert to json")
 	}
 }
@@ -59,10 +63,10 @@ func TestFileLogger_LogObjects(t *testing.T) {
 	}
 	defer os.RemoveAll(TEST_DIR)
 	if fl, err := NewFileLogger(TEST_DIR + "//test"); err == nil {
-		fl.LogAuctionObject(&AuctionObject{})
-		fl.LogAmpObject(&AmpObject{})
-		fl.LogSetUIDObject(&SetUIDObject{})
-		fl.LogCookieSyncObject(&CookieSyncObject{})
+		fl.LogAuctionObject(&analytics.AuctionObject{})
+		fl.LogAmpObject(&analytics.AmpObject{})
+		fl.LogSetUIDObject(&analytics.SetUIDObject{})
+		fl.LogCookieSyncObject(&analytics.CookieSyncObject{})
 	} else {
 		t.Fatalf("Couldn't initialize file logger: %v", err)
 	}

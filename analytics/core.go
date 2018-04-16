@@ -1,8 +1,8 @@
 package analytics
 
 import (
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 /*
@@ -20,46 +20,36 @@ type PBSAnalyticsModule interface {
 	LogAmpObject(*AmpObject)
 }
 
-//Collection of all the correctly configured analytics modules - implements the PBSAnalyticsModule interface
-type enabledAnalytics []PBSAnalyticsModule
-
-//Modules that need to be logged to need to be initialized here
-func NewPBSAnalytics(analytics *config.Analytics) PBSAnalyticsModule {
-	modules := make(enabledAnalytics, 0)
-	if len(analytics.File.Filename) > 0 {
-		if mod, err := NewFileLogger(analytics.File.Filename); err == nil {
-			modules = append(modules, mod)
-		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
-		}
-	}
-	return modules
+//Loggable object of a transaction at /openrtb2/auction endpoint
+type AuctionObject struct {
+	Status   int
+	Errors   []error
+	Request  *openrtb.BidRequest
+	Response *openrtb.BidResponse
 }
 
-/*
-	This could be confusing. `enabledAnalytics` itself implements `PBSAnalyticsModule` as well wherein it iterates through each analytic module and calls it's respective `Log{loggable_object}Object` method.
-*/
-
-func (ea enabledAnalytics) LogAuctionObject(ao *AuctionObject) {
-	for _, module := range ea {
-		module.LogAuctionObject(ao)
-	}
+//Loggable object of a transaction at /openrtb2/amp endpoint
+type AmpObject struct {
+	Status             int
+	Errors             []error
+	Request            *openrtb.BidRequest
+	AuctionResponse    *openrtb.BidResponse
+	AmpTargetingValues map[string]string
+	Origin             string
 }
 
-func (ea enabledAnalytics) LogCookieSyncObject(cso *CookieSyncObject) {
-	for _, module := range ea {
-		module.LogCookieSyncObject(cso)
-	}
+//Loggable object of a transaction at /setuid
+type SetUIDObject struct {
+	Status  int
+	Bidder  string
+	UID     string
+	Errors  []error
+	Success bool
 }
 
-func (ea enabledAnalytics) LogSetUIDObject(so *SetUIDObject) {
-	for _, module := range ea {
-		module.LogSetUIDObject(so)
-	}
-}
-
-func (ea enabledAnalytics) LogAmpObject(ao *AmpObject) {
-	for _, module := range ea {
-		module.LogAmpObject(ao)
-	}
+//Loggable object of a transaction at /cookie_sync
+type CookieSyncObject struct {
+	Status       int
+	Errors       []error
+	BidderStatus []*usersync.CookieSyncBidders
 }
