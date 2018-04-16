@@ -3,19 +3,15 @@ package usersync
 import (
 	"fmt"
 	"net/url"
-	"strings"
 )
 
-const USER_SYNC_URL = "http://apex.go.sonobi.com"
+const USER_SYNC_URL = "http://sync.go.sonobi.com/us.gif?loc=%s"
 
 func NewSonobiSyncer(externalURL string) Usersyncer {
-	externalURL = strings.TrimRight(externalURL, "/")
-	redirectURL := fmt.Sprintf("%s/setuid?bidder=sonobi&uid=${UID}", externalURL)
-
 	return &syncer{
 		familyName: "sonobi",
 		syncInfo: &UsersyncInfo{
-			URL:         fmt.Sprintf(USER_SYNC_URL, url.QueryEscape(redirectURL)),
+			URL:         fmt.Sprintf(USER_SYNC_URL, url.QueryEscape(externalURL)),
 			Type:        "redirect",
 			SupportCORS: false,
 		},
