@@ -45,5 +45,6 @@ This endpoint supports the following query parameters:
 7. `purl` - the page URL
 8. `timeout` - the publisher-specified timeout for the RTC callout
    - A configuration option `amp_timeout_adjustment_ms` may be set to account for estimated latency so that Prebid Server can handle timeouts from adapters and respond to the AMP RTC request before it times out.
+9. `debug` - When set to `1`, will set `"test": 1` on outgoing OpenRTB requests and will return additional debug information in the response `ext`.
 
 For more information see [this pull request adding the query params to the Prebid callout](https://github.com/ampproject/amphtml/pull/14155) and [this issue adding support for network-level RTC macros](https://github.com/ampproject/amphtml/issues/12374).
