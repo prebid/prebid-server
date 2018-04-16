@@ -61,6 +61,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	reqCopy := *request
 
 	reqCopy.Imp = bannerImps
+	reqCopy.Imp = append(reqCopy.Imp, videoImps...)
 
 	for i := range reqCopy.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -87,15 +88,15 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	}
 	errs = append(errs, errors...)
 
-	// Sonobi only supports single imp video request
-	for _, videoImp := range videoImps {
-		reqCopy.Imp = []openrtb.Imp{videoImp}
-		adapterReq, errors := a.makeRequest(&reqCopy)
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
-		}
-		errs = append(errs, errors...)
-	}
+	// // Sonobi only supports single imp video request
+	// for _, videoImp := range videoImps {
+	// 	reqCopy.Imp = []openrtb.Imp{videoImp}
+	// 	adapterReq, errors := a.makeRequest(&reqCopy)
+	// 	if adapterReq != nil {
+	// 		adapterRequests = append(adapterRequests, adapterReq)
+	// 	}
+	// 	errs = append(errs, errors...)
+	// }
 
 	return adapterRequests, errs
 
