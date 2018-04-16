@@ -10,12 +10,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uri = "http://apex.go.sonobi.com/openrtb.json"
-
-// import (
-// 	"github.com/prebid/prebid-server/adapters"
-// )
-
 // Adapter - Sonobi Adapter definition
 type Adapter struct {
 	http *adapters.HTTPAdapter
@@ -24,12 +18,7 @@ type Adapter struct {
 
 // Name returns the name fo cookie stuff
 func (a *Adapter) Name() string {
-	return "sbi"
-}
-
-// SkipNoCookies flag to skip cookies
-func (a *Adapter) SkipNoCookies() bool {
-	return false
+	return "sonobi"
 }
 
 // NewSonobiBidder Initializes the Bidder
@@ -53,6 +42,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	var sonobiExt openrtb_ext.ExtImpSoonobi
 	var bannerImps []openrtb.Imp
 	var videoImps []openrtb.Imp
+	var err error
 
 	for _, imp := range request.Imp {
 		// Sonobi doesn't allow multi-type imp. Banner takes priority over video.
@@ -72,9 +62,24 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 
 	reqCopy.Imp = bannerImps
 
-	for _, imp := range reqCopy.Imp {
-		imp.TagID = sonobiExt.TagID
+	for i := range reqCopy.Imp {
+		var bidderExt adapters.ExtImpBidder
+		if err = json.Unmarshal(reqCopy.Imp[i].Ext, &bidderExt); err != nil {
+			fmt.Println("test")
+			errs = append(errs, err)
+			continue
+		}
+
+		if err = json.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
+
+			errs = append(errs, err)
+			continue
+		}
+		reqCopy.Imp[i].TagID = sonobiExt.TagID
 	}
+
+	reqJSON, err := json.Marshal(reqCopy)
+	fmt.Println(string(reqJSON[:]))
 
 	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
@@ -85,7 +90,6 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 	// Sonobi only supports single imp video request
 	for _, videoImp := range videoImps {
 		reqCopy.Imp = []openrtb.Imp{videoImp}
-		videoImp.TagID = sonobiExt.TagID
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
