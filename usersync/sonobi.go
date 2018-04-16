@@ -8,7 +8,7 @@ import (
 const USER_SYNC_URL = "http://sync.go.sonobi.com/us.gif?loc=%s"
 
 func NewSonobiSyncer(externalURL string) Usersyncer {
-	redirectURI := fmt.Sprintf("%s/setuid?bidder=sonobi&uid=$UID}", externalURL)
+	redirectURI := fmt.Sprintf("%s/setuid?bidder=sonobi&uid=$UID", externalURL)
 	return &syncer{
 		familyName: "sonobi",
 		syncInfo: &UsersyncInfo{
