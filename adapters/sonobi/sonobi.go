@@ -35,8 +35,7 @@ type sonobiParams struct {
 	TagID string `json:"TagID"`
 }
 
-// MakeRequests - Idk what extra params or rules sonobi applies to our openrtb endpoint
-// So lets just pass in the standard openrtb request coming through.
+// MakeRequests
 func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var sonobiExt openrtb_ext.ExtImpSoonobi
