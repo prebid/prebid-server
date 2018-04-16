@@ -63,6 +63,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
+	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
@@ -739,6 +740,8 @@ func init() {
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	viper.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
+	viper.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
@@ -858,6 +861,14 @@ func serve(cfg *config.Configuration) error {
 		eventProducers = append(eventProducers, apiEventProducer)
 		ampApiEventProducer, handleAmpStoredRequests = apiEvents.NewEventsAPI()
 		ampEventProducers = append(ampEventProducers, ampApiEventProducer)
+	}
+	if cfg.StoredRequests.HTTPEvents != nil {
+		ctxProducer := func() (ctx context.Context, canceller func()) {
+			return context.WithTimeout(context.Background(), time.Duration(cfg.StoredRequests.HTTPEvents.Timeout)*time.Millisecond)
+		}
+		refreshRate := time.Duration(cfg.StoredRequests.HTTPEvents.RefreshRate) * time.Second
+		eventProducers = append(eventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.Endpoint, ctxProducer, refreshRate))
+		ampEventProducers = append(ampEventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.AmpEndpoint, ctxProducer, refreshRate))
 	}
 	byId, byAmpId, listeners, err := NewFetchers(&(cfg.StoredRequests), db, eventProducers, ampEventProducers)
 	if err != nil {
