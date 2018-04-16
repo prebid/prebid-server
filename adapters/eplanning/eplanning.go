@@ -57,7 +57,8 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
 
-	imps := request.Imp
+	imps := make([]openrtb.Imp, len(request.Imp))
+	copy(imps, request.Imp)
 
 	for source, impIds := range sourceMapper {
 		request.Imp = request.Imp[:0]
