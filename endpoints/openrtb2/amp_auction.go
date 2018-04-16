@@ -241,11 +241,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
-<<<<<<< HEAD
-	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampId}, nil)
-=======
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampID})
->>>>>>> start supporting AMP query params
+	storedRequests, _, errs := deps.storedReqFetcher.FetchRequests(ctx, []string{ampID}, nil)
 	if len(errs) > 0 {
 		return nil, errs
 	}
@@ -283,41 +279,35 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	// Override query params
-	if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
+	deps.parseOverrideQueryParams(httpRequest, req)
 
+	return
+}
+
+func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+	if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
+		if req.Imp[0].Banner != nil {
+			*req.Imp[0].Banner.W = overrideWidth
+		}
+	} else if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
+		if req.Imp[0].Banner != nil {
 			*req.Imp[0].Banner.W = width
 		}
 	}
 
-	if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
+	if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
+		if req.Imp[0].Banner != nil {
+			*req.Imp[0].Banner.H = overrideHeight
+		}
+	} else if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
 		if req.Imp[0].Banner != nil {
 			*req.Imp[0].Banner.H = height
 		}
 	}
 
-	if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
-		// override w
-		if req.Imp[0].Banner != nil {
-			*req.Imp[0].Banner.W = overrideWidth
-		}
-	}
-
-	if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
-		// override h
-		if req.Imp[0].Banner != nil {
-			*req.Imp[0].Banner.H = overrideHeight
-		}
-	}
-
 	multiSize := httpRequest.FormValue("ms")
 	if multiSize != "" {
-		// override w and h with format
-		req.Imp[0].Banner.H = nil
-		req.Imp[0].Banner.W = nil
 		sizes := strings.Split(multiSize, ",")
-
 		format := make([]openrtb.Format, len(sizes))
 		for _, size := range sizes {
 			wh := strings.Split(size, "x")
@@ -340,38 +330,17 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		req.Imp[0].Banner.Format = format
 	}
 
-	slot := httpRequest.FormValue("slot")
-	if slot != "" {
-		// ad server ad unit ID?
-	}
-
-	targeting := httpRequest.FormValue("targeting")
-	if targeting != "" {
-		// TODO: should parse to a JSON object with KV targeting pairs
-		// Should this go in site.keywords or user.keywords?
-	}
-
+	canonicalURL := httpRequest.FormValue("curl")
 	pageURL := httpRequest.FormValue("purl")
-	if pageURL != "" {
+	if canonicalURL != "" {
+		req.Site.Page = canonicalURL
+	} else if pageURL != "" {
 		req.Site.Page = pageURL
 	}
 
-	canonicalURL := httpRequest.FormValue("curl")
-	if canonicalURL != "" {
-		// override purl
-		req.Site.Page = canonicalURL
-	}
-
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
-		req.TMax = timeout
+		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
-
-	adClientID := httpRequest.FormValue("adcid")
-	if adClientID != "" {
-		// currently unused; ignore
-	}
-
-	return
 }
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
