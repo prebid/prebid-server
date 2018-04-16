@@ -65,6 +65,11 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
+//
+// This will be useful when removing endpoints, we can just run will the blank metrics function
+// rather than loading legacy metrics that never get filled.
+// This will also eventually let us configure metrics, such as setting a limited set of metrics
+// for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
