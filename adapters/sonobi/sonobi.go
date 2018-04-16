@@ -77,8 +77,6 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 		reqCopy.Imp[i].TagID = sonobiExt.TagID
 	}
 
-	reqJSON, err := json.Marshal(reqCopy)
-
 	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
