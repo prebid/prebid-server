@@ -37,7 +37,7 @@ type adformRequest struct {
 
 type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
-    PriceType string `json:"priceType,omitempty"`
+	PriceType   string      `json:"priceType,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -54,7 +54,15 @@ type adformBid struct {
 	CreativeId   string  `json:"win_crid,omitempty"`
 }
 
-var validPriceTypes = map[string]bool { "net":true, "gross":true}
+const priceTypeGross = "gross"
+const priceTypeNet = "net"
+
+func isPriceTypeValid(priceType string) (string, bool) {
+	pt := strings.ToLower(priceType)
+	valid := pt == priceTypeNet || pt == priceTypeGross
+
+	return pt, valid
+}
 
 // ADAPTER Interface
 
@@ -177,6 +185,7 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 			Width:             bid.Width,
 			Height:            bid.Height,
 			DealId:            bid.DealId,
+			Creative_id:       bid.CreativeId,
 			CreativeMediaType: string(openrtb_ext.BidTypeBanner),
 		}
 
@@ -191,7 +200,7 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s%s", adUnit.MasterTagId, getValidPriceTypeParameter(adUnit))
+		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
 		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
 	}
 	uri := a.URI
@@ -202,14 +211,27 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	if r.advertisingId != "" {
 		adid = fmt.Sprintf("&adid=%s", r.advertisingId)
 	}
-	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s&%s", uri, r.tid, r.ip, adid, strings.Join(adUnitsParams, "&"))
+	pt := getValidPriceTypeParameter(r.adUnits)
+	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s%s&%s", uri, r.tid, r.ip, adid, pt, strings.Join(adUnitsParams, "&"))
 }
 
-func getValidPriceTypeParameter(adUnit *adformAdUnit) string {
+func getValidPriceTypeParameter(adUnits []*adformAdUnit) string {
 	priceTypeParameter := ""
-	_, valid := validPriceTypes[adUnit.PriceType]
-	if(valid){
-		priceTypeParameter = fmt.Sprintf("&pt=%s", adUnit.PriceType)
+	priceType := priceTypeNet
+	valid := false
+	for _, adUnit := range adUnits {
+		pt, v := isPriceTypeValid(adUnit.PriceType)
+		if v {
+			valid = v
+			if pt == priceTypeGross {
+				priceType = pt
+				break
+			}
+		}
+	}
+
+	if valid {
+		priceTypeParameter = fmt.Sprintf("&pt=%s", priceType)
 	}
 	return priceTypeParameter
 }
@@ -306,7 +328,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 			secure = true
 		}
 
-		_, valid := validPriceTypes[adformAdUnit.PriceType]
+		_, valid := isPriceTypeValid(adformAdUnit.PriceType)
 		if !(valid || adformAdUnit.PriceType == "") {
 			errors = append(errors, fmt.Errorf("price type is invalid=%s", adformAdUnit.PriceType))
 			continue

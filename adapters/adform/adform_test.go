@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -21,13 +22,13 @@ import (
 )
 
 type aTagInfo struct {
-	mid  uint32
+	mid       uint32
 	priceType string
-	code string
+	code      string
 
-	price   float64
-	content string
-	dealId  string
+	price      float64
+	content    string
+	dealId     string
 	creativeId string
 }
 
@@ -130,6 +131,9 @@ func TestAdformBasicResponse(t *testing.T) {
 				}
 				if bid.DealId != tag.dealId {
 					t.Errorf("Incorrect deal id '%s' expected '%s'", bid.DealId, tag.dealId)
+				}
+				if bid.Creative_id != tag.creativeId {
+					t.Errorf("Incorrect creative id '%s' expected '%s'", bid.Creative_id, tag.creativeId)
 				}
 			}
 		}
@@ -242,14 +246,6 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 	return body
 }
 
-func getPriceTypeString(priceType string) string {
-	if(priceType!= ""){
-		return fmt.Sprintf(", \"priceType\": \"%s\"", priceType)
-	}
-
-	return ""
-}
-
 // OpenRTB auction tests
 
 func TestOpenRTBRequest(t *testing.T) {
@@ -330,7 +326,7 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 		secure = int8(1)
 	}
 	bidRequest := &openrtb.BidRequest{
-		ID: "test-request-id",
+		ID:  "test-request-id",
 		Imp: make([]openrtb.Imp, len(testData.tags)),
 		Site: &openrtb.Site{
 			Page: testData.referrer,
@@ -447,6 +443,14 @@ func TestAdformProperties(t *testing.T) {
 
 // helpers
 
+func getPriceTypeString(priceType string) string {
+	if priceType != "" {
+		return fmt.Sprintf(", \"priceType\": \"%s\"", priceType)
+	}
+
+	return ""
+}
+
 func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 	if ok, err := equal("GET", r.Method, "HTTP method"); !ok {
 		return err
@@ -456,7 +460,7 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 			return err
 		}
 	}
-	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&ip=111.111.111.111&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&bWlkPTMyMzQ0JnB0PWdyb3Nz&bWlkPTMyMzQ1JnB0PW5ldA&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
+	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&ip=111.111.111.111&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&pt=gross&bWlkPTMyMzQ0&bWlkPTMyMzQ1&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
 		return err
 	}
 	if ok, err := equal("application/json;charset=utf-8", r.Header.Get("Content-Type"), "Content type"); !ok {
@@ -483,4 +487,50 @@ func equal(expected string, actual string, message string) (bool, *string) {
 		return false, &message
 	}
 	return true, nil
+}
+
+// Price type parameter tests
+
+func TestPriceTypeValidation(t *testing.T) {
+	// Arrange
+	priceTypeTestCases := map[string]bool{
+		"net":   true,
+		"NET":   true,
+		"nEt":   true,
+		"nt":    false,
+		"gross": true,
+		"GROSS": true,
+		"groSS": true,
+		"gorss": false,
+		"":      false,
+	}
+
+	// Act
+	for priceType, expected := range priceTypeTestCases {
+		_, valid := isPriceTypeValid(priceType)
+
+		// Assert
+		if expected != valid {
+			t.Fatalf("Unexpected result for '%s' price type. Got valid = %s. Expected valid = %s", priceType, strconv.FormatBool(valid), strconv.FormatBool(expected))
+		}
+	}
+}
+
+func TestPriceTypeUrlParameterCreation(t *testing.T) {
+	// Arrange
+	priceTypeParameterTestCases := map[string][]*adformAdUnit{
+		"":          {{MasterTagId: "123"}, {MasterTagId: "456"}},
+		"&pt=net":   {{MasterTagId: "123", PriceType: priceTypeNet}, {MasterTagId: "456"}, {MasterTagId: "789", PriceType: priceTypeNet}},
+		"&pt=gross": {{MasterTagId: "123", PriceType: priceTypeNet}, {MasterTagId: "456", PriceType: priceTypeGross}, {MasterTagId: "789", PriceType: priceTypeNet}},
+	}
+
+	// Act
+	for expected, adUnits := range priceTypeParameterTestCases {
+		parameter := getValidPriceTypeParameter(adUnits)
+
+		// Assert
+		if expected != parameter {
+			t.Fatalf("Unexpected result for price type parameter. Got '%s'. Expected '%s'", parameter, expected)
+		}
+	}
 }
