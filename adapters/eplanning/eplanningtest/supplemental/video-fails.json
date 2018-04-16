@@ -16,6 +16,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "EPlanning doesn't support audio, video, or native Imps. Ignoring Imp ID=unsupported-video-imp"
+    "EPlanning only supports banner Imps. Ignoring Imp ID=unsupported-video-imp"
   ]
 }

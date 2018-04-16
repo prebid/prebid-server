@@ -12,6 +12,8 @@ import (
 	"strconv"
 )
 
+const DEFAULT_EXCHANGE_ID = "5a1ad71d2d53a0f5"
+
 type EPlanningAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
@@ -29,6 +31,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 			continue
 		}
 
+		// Save valid imp
 		if _, ok := sourceMapper[source]; !ok {
 			sourceMapper[source] = make([]int, 0, totalImps-i)
 		}
@@ -84,24 +87,24 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 
 func verifyImp(imp *openrtb.Imp) (string, error) {
 	// We currently only support banner impressions
-	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
-		return "", fmt.Errorf("EPlanning doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID)
+	if imp.Banner == nil {
+		return "", fmt.Errorf("EPlanning only supports banner Imps. Ignoring Imp ID=%s", imp.ID)
 	}
 
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", fmt.Errorf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err)
+		return "", fmt.Errorf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err)
 	}
 
 	impExt := openrtb_ext.ExtImpEPlanning{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return "", fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
+		return "", fmt.Errorf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
 	}
 
 	if impExt.ExchangeID == "" {
-		impExt.ExchangeID = "5a1ad71d2d53a0f5"
+		impExt.ExchangeID = DEFAULT_EXCHANGE_ID
 	}
 
 	return impExt.ExchangeID, nil

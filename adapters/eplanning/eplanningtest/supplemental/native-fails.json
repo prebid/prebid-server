@@ -1,9 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "unsupported-video-request",
+    "id": "unsupported-native-request",
     "imp": [
       {
-        "id": "unsupported-video-imp",
+        "id": "unsupported-native-imp",
         "native": {
           "request": "{\"context\"}",
           "version": "1.1"
@@ -17,6 +17,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "EPlanning doesn't support audio, video, or native Imps. Ignoring Imp ID=unsupported-video-imp"
+    "EPlanning only supports banner Imps. Ignoring Imp ID=unsupported-native-imp"
   ]
 }
