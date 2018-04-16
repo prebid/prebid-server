@@ -9,20 +9,21 @@ import (
 
 // Configuration
 type Configuration struct {
-	ExternalURL     string             `mapstructure:"external_url"`
-	Host            string             `mapstructure:"host"`
-	Port            int                `mapstructure:"port"`
-	AdminPort       int                `mapstructure:"admin_port"`
-	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheURL        Cache              `mapstructure:"cache"`
-	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie         `mapstructure:"host_cookie"`
-	Metrics         Metrics            `mapstructure:"metrics"`
-	DataCache       DataCache          `mapstructure:"datacache"`
-	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
-	Adapters        map[string]Adapter `mapstructure:"adapters"`
-	MaxRequestSize  int64              `mapstructure:"max_request_size"`
-	Analytics       Analytics          `mapstructure:"analytics"`
+	ExternalURL          string             `mapstructure:"external_url"`
+	Host                 string             `mapstructure:"host"`
+	Port                 int                `mapstructure:"port"`
+	AdminPort            int                `mapstructure:"admin_port"`
+	DefaultTimeout       uint64             `mapstructure:"default_timeout_ms"`
+	CacheURL             Cache              `mapstructure:"cache"`
+	RecaptchaSecret      string             `mapstructure:"recaptcha_secret"`
+	HostCookie           HostCookie         `mapstructure:"host_cookie"`
+	Metrics              Metrics            `mapstructure:"metrics"`
+	DataCache            DataCache          `mapstructure:"datacache"`
+	StoredRequests       StoredRequests     `mapstructure:"stored_requests"`
+	Adapters             map[string]Adapter `mapstructure:"adapters"`
+	MaxRequestSize       int64              `mapstructure:"max_request_size"`
+	Analytics            Analytics          `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 }
 
 func (cfg *Configuration) validate() error {
