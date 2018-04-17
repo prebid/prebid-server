@@ -156,6 +156,70 @@ func TestAmpTargetingDefaults(t *testing.T) {
 	}
 }
 
+func TestQueryParamOverrides(t *testing.T) {
+	requests := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, &bidderParamValidator{}, &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+
+	requestID := "1"
+	h := uint64(620)
+	oh := uint64(640)
+	w := uint64(320)
+	ms := "640x480,640x320"
+	curl := "http://example.com"
+	slot := "1234"
+	timeout := int64(500)
+
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1&w=%d&h=%d&oh=%d&ms=%s&curl=%s&slot=%s&timeout=%d", requestID, w, h, oh, ms, curl, slot, timeout), nil)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if recorder.Code != http.StatusOK {
+		t.Errorf("Expected status %d. Got %d. Request config ID was %s", http.StatusOK, recorder.Code, requestID)
+		t.Errorf("Response body was: %s", recorder.Body)
+		t.Errorf("Request was: %s", string(requests[requestID]))
+	}
+
+	var response AmpResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Error unmarshalling response: %s", err.Error())
+	}
+
+	resolvedRequest := response.Debug.ResolvedRequest
+	if resolvedRequest.TMax != timeout {
+		t.Errorf("Expected TMax to equal timeout (%d), got: %d", timeout, resolvedRequest.TMax)
+	}
+
+	resolvedImp := resolvedRequest.Imp[0]
+	if *resolvedImp.Banner.H != oh {
+		t.Errorf("Expected Banner.H to equal oh (%d), got: %d", oh, *resolvedImp.Banner.H)
+	}
+
+	if *resolvedImp.Banner.W != w {
+		t.Errorf("Expected Banner.W to equal w (%d), got: %d", w, *resolvedImp.Banner.W)
+	}
+
+	expectedFormats := []openrtb.Format{
+		openrtb.Format{W: 640, H: 480},
+		openrtb.Format{W: 640, H: 320},
+	}
+	for i, format := range resolvedImp.Banner.Format {
+		if format.H != expectedFormats[i].H || format.W != expectedFormats[i].W {
+			t.Error("Multi-size override invalid")
+		}
+	}
+
+	if resolvedImp.TagID != slot {
+		t.Errorf("Expected Imp.TagId to equal slot (%s), got: %s", slot, resolvedImp.TagID)
+	}
+
+	if resolvedRequest.Site == nil || resolvedRequest.Site.Page != curl {
+		t.Errorf("Expected Site.Page to equal curl (%s), got: %s", curl, resolvedRequest.Site.Page)
+	}
+}
+
 type mockAmpStoredReqFetcher struct {
 	data map[string]json.RawMessage
 }
@@ -181,7 +245,11 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 	}
 
 	if bidRequest.Test == 1 {
-		response.Ext = openrtb.RawJSON(`{"debug": {"httpcalls": {}, "resolvedrequest": {}}}`)
+		resolvedRequest, err := json.Marshal(bidRequest)
+		if err != nil {
+			resolvedRequest = json.RawMessage("{}")
+		}
+		response.Ext = openrtb.RawJSON(fmt.Sprintf(`{"debug": {"httpcalls": {}, "resolvedrequest": %s}}`, resolvedRequest))
 	}
 
 	return response, nil

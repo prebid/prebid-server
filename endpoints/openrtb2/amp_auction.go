@@ -287,28 +287,28 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, req *openrtb.BidRequest) {
 	if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
 		if req.Imp[0].Banner != nil {
-			*req.Imp[0].Banner.W = overrideWidth
+			req.Imp[0].Banner.W = &overrideWidth
 		}
 	} else if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
 		if req.Imp[0].Banner != nil {
-			*req.Imp[0].Banner.W = width
+			req.Imp[0].Banner.W = &width
 		}
 	}
 
 	if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
 		if req.Imp[0].Banner != nil {
-			*req.Imp[0].Banner.H = overrideHeight
+			req.Imp[0].Banner.H = &overrideHeight
 		}
 	} else if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
 		if req.Imp[0].Banner != nil {
-			*req.Imp[0].Banner.H = height
+			req.Imp[0].Banner.H = &height
 		}
 	}
 
 	multiSize := httpRequest.FormValue("ms")
 	if multiSize != "" {
 		sizes := strings.Split(multiSize, ",")
-		format := make([]openrtb.Format, len(sizes))
+		format := make([]openrtb.Format, 0, len(sizes))
 		for _, size := range sizes {
 			wh := strings.Split(size, "x")
 			if len(wh) == 2 {
@@ -331,11 +331,12 @@ func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, re
 	}
 
 	canonicalURL := httpRequest.FormValue("curl")
-	pageURL := httpRequest.FormValue("purl")
 	if canonicalURL != "" {
-		req.Site.Page = canonicalURL
-	} else if pageURL != "" {
-		req.Site.Page = pageURL
+		if req.Site == nil {
+			req.Site = &openrtb.Site{Page: canonicalURL}
+		} else {
+			req.Site.Page = canonicalURL
+		}
 	}
 
 	slot := httpRequest.FormValue("slot")
