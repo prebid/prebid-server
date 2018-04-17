@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prebid/prebid-server/stored_requests/caches/unbounded"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -94,13 +96,25 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client) (fetcher store
 }
 
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {
-	if cfg.InMemoryCache == nil {
-		glog.Info("No Stored Request cache configured. The Fetcher backend will be used for all Stored Requests.")
-		return &nil_cache.NilCache{}
+	caches := make([]stored_requests.Cache, 0, 2)
+	if cfg.UnboundedCache != nil {
+		glog.Infof("Using a permanent, unbounded Stored Request in-memory cache.")
+
+		caches = append(caches, unbounded.NewUnboundedCache())
+	}
+	if cfg.InMemoryCache != nil {
+		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
+		caches = append(caches, lru.NewLRUCache(cfg.InMemoryCache))
 	}
 
-	glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
-	return lru.NewLRUCache(cfg.InMemoryCache)
+	if len(caches) == 0 {
+		glog.Info("No Stored Request cache configured. The Fetcher backend will be used for all Stored Requests.")
+		return &nil_cache.NilCache{}
+	} else if len(caches) == 1 {
+		return caches[0]
+	} else {
+		return stored_requests.ComposedCache(caches)
+	}
 }
 
 func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) {
