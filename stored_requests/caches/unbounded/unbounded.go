@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 )
 
@@ -16,72 +17,66 @@ import (
 
 func NewUnboundedCache(cfg *config.UnboundedCache) *UnboundedCache {
 	return &UnboundedCache{
-		requestDataCache: make(map[string]json.RawMessage, cfg.InitialStoredRequestCapacity),
-		requestDataLock:  &sync.RWMutex{},
-		impDataCache:     make(map[string]json.RawMessage, cfg.InitialStoredImpCapacity),
-		impDataLock:      &sync.RWMutex{},
+		requestDataCache: &sync.Map{},
+		impDataCache:     &sync.Map{},
 	}
 }
 
 type UnboundedCache struct {
-	requestDataCache map[string]json.RawMessage
-	requestDataLock  *sync.RWMutex
-
-	impDataCache map[string]json.RawMessage
-	impDataLock  *sync.RWMutex
+	requestDataCache *sync.Map
+	impDataCache     *sync.Map
 }
 
 func (c *UnboundedCache) Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
-	requestData = doGet(c.requestDataCache, c.requestDataLock, requestIDs)
-	impData = doGet(c.impDataCache, c.impDataLock, impIDs)
+	requestData = doGet(c.requestDataCache, requestIDs)
+	impData = doGet(c.impDataCache, impIDs)
 	return
 }
 
-func doGet(data map[string]json.RawMessage, lock *sync.RWMutex, ids []string) (loaded map[string]json.RawMessage) {
+func doGet(data *sync.Map, ids []string) (loaded map[string]json.RawMessage) {
 	if len(ids) == 0 {
 		return
 	}
 
 	loaded = make(map[string]json.RawMessage, len(ids))
-	lock.RLock()
-	defer lock.RUnlock()
 
 	for _, id := range ids {
-		if val, ok := data[id]; ok {
-			loaded[id] = val
+		data.Load(id)
+		if val, ok := data.Load(id); ok {
+			if casted, ok := val.(json.RawMessage); ok {
+				loaded[id] = casted
+			} else {
+				glog.Errorf("unbounded stored request cache saved something other than json.RawMessage. This shouldn't happen.")
+			}
 		}
 	}
 	return
 }
 
 func (c *UnboundedCache) Save(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
-	doSave(c.requestDataCache, c.requestDataLock, storedRequests)
-	doSave(c.impDataCache, c.impDataLock, storedImps)
+	doSave(c.requestDataCache, storedRequests)
+	doSave(c.impDataCache, storedImps)
 }
 
-func doSave(data map[string]json.RawMessage, lock *sync.RWMutex, newData map[string]json.RawMessage) {
+func doSave(data *sync.Map, newData map[string]json.RawMessage) {
 	if len(newData) == 0 {
 		return
 	}
-	lock.Lock()
-	defer lock.Unlock()
 	for id, val := range newData {
-		data[id] = val
+		data.Store(id, val)
 	}
 }
 
 func (c *UnboundedCache) Invalidate(ctx context.Context, requestIDs []string, impIDs []string) {
-	doDelete(c.requestDataCache, c.requestDataLock, requestIDs)
-	doDelete(c.impDataCache, c.impDataLock, impIDs)
+	doDelete(c.requestDataCache, requestIDs)
+	doDelete(c.impDataCache, impIDs)
 }
 
-func doDelete(data map[string]json.RawMessage, lock *sync.RWMutex, ids []string) {
+func doDelete(data *sync.Map, ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	lock.Lock()
-	defer lock.Unlock()
 	for _, id := range ids {
-		delete(data, id)
+		data.Delete(id)
 	}
 }
