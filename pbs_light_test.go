@@ -740,34 +740,6 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	}
 }
 
-func TestNewFilesFetcher(t *testing.T) {
-	fetcher, _, _, err := NewFetchers(&config.StoredRequests{
-		Files: true,
-	}, nil, nil, nil)
-	if err != nil {
-		t.Errorf("Error constructing file backends. %v", err)
-	}
-	if fetcher == nil {
-		t.Errorf("The file-backed fetcher should be non-nil.")
-	}
-}
-
-func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, _, _, err := NewFetchers(&config.StoredRequests{}, nil, nil, nil)
-	if err != nil {
-		t.Errorf("Error constructing backends. %v", err)
-	}
-	if fetcher == nil {
-		t.Errorf("The fetcher should be non-nil, even with an empty config.")
-	}
-	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
-		t.Errorf("The returned accountFetcher should fail on any IDs.")
-	}
-	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
-		t.Errorf("The returned requestFetcher should fail on any IDs.")
-	}
-}
-
 func TestExchangeMap(t *testing.T) {
 	exchanges := newExchangeMap(&config.Configuration{})
 	for bidderName := range exchanges {
