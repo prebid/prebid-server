@@ -19,7 +19,7 @@ type StoredRequests struct {
 	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
 	// If non-nil, Stored Requests will be fetched from the endpoint described there.
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
-	// InMemoryCache configures an instance of stored_requests/caches/in_memory/lru.go.
+	// InMemoryCache configures an instance of stored_requests/caches/lru/lru.go.
 	// If non-nil, Stored Requests will be saved in an in-memory LRU cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
 	// UnboundedCache configures an instance of stored_requests/caches/unbounded/unbounded.go

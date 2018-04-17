@@ -61,7 +61,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	"github.com/prebid/prebid-server/stored_requests/caches/lru"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
@@ -1022,8 +1022,8 @@ func NewFetchers(cfg *config.StoredRequests, db *sql.DB, eventProducers []events
 
 	if cfg.InMemoryCache != nil {
 		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
-		byIdCache := in_memory.NewLRUCache(cfg.InMemoryCache)
-		byAmpIdCache := in_memory.NewLRUCache(cfg.InMemoryCache)
+		byIdCache := lru.NewLRUCache(cfg.InMemoryCache)
+		byAmpIdCache := lru.NewLRUCache(cfg.InMemoryCache)
 
 		byId = stored_requests.WithCache(byId, byIdCache)
 		byAmpId = stored_requests.WithCache(byAmpId, byAmpIdCache)
