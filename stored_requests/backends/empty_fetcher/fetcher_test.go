@@ -6,7 +6,7 @@ import (
 )
 
 func TestErrorLength(t *testing.T) {
-	fetcher := EmptyFetcher()
+	fetcher := EmptyFetcher{}
 
 	storedReqs, storedImps, errs := fetcher.FetchRequests(context.Background(), []string{"a", "b"}, []string{"c"})
 	if len(storedReqs) != 0 {

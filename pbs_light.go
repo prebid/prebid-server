@@ -22,10 +22,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/xeipuuv/gojsonschema"
 
-	"os"
-	"os/signal"
-	"syscall"
-
 	"crypto/tls"
 	"strings"
 
@@ -55,16 +51,10 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
-	"github.com/prebid/prebid-server/stored_requests/caches/lru"
-	"github.com/prebid/prebid-server/stored_requests/events"
-	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
-	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
+	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
+
 	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
@@ -793,14 +783,18 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 }
 
 func serve(cfg *config.Configuration) error {
-	var db *sql.DB
-	if cfg.StoredRequests.Postgres != nil {
-		if conn, err := db_fetcher.NewPostgresDb(cfg.StoredRequests.Postgres); err != nil {
-			glog.Fatalf("Failed to connect to postgres: %v", err)
-		} else {
-			db = conn
-		}
+	router := httprouter.New()
+	theClient := &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        400,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     60 * time.Second,
+			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+		},
 	}
+	fetcher, ampFetcher, db, shutdown := storedRequestsConf.NewStoredRequests(&cfg.StoredRequests, theClient, router)
+	defer shutdown()
+
 	if err := loadDataCache(cfg, db); err != nil {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
@@ -824,76 +818,26 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
-	stopSignals := make(chan os.Signal)
-	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
-
-	/* Run admin on different port thats not exposed */
-	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
-	adminServer := &http.Server{Addr: adminURI}
-	go (func() {
-		fmt.Println("Admin running on: ", adminURI)
-		err := adminServer.ListenAndServe()
-		glog.Errorf("Admin server: %v", err)
-		stopSignals <- syscall.SIGTERM
-	})()
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
 	exchanges = newExchangeMap(cfg)
-
-	theClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConns:        400,
-			MaxIdleConnsPerHost: 10,
-			IdleConnTimeout:     60 * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
-		},
-	}
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine)
 
-	var handleStoredRequests, handleAmpStoredRequests httprouter.Handle
-	var eventProducers, ampEventProducers []events.EventProducer
-	if cfg.StoredRequests.CacheEventsAPI {
-		var apiEventProducer, ampApiEventProducer events.EventProducer
-		apiEventProducer, handleStoredRequests = apiEvents.NewEventsAPI()
-		eventProducers = append(eventProducers, apiEventProducer)
-		ampApiEventProducer, handleAmpStoredRequests = apiEvents.NewEventsAPI()
-		ampEventProducers = append(ampEventProducers, ampApiEventProducer)
-	}
-	if cfg.StoredRequests.HTTPEvents != nil {
-		ctxProducer := func() (ctx context.Context, canceller func()) {
-			return context.WithTimeout(context.Background(), time.Duration(cfg.StoredRequests.HTTPEvents.Timeout)*time.Millisecond)
-		}
-		refreshRate := time.Duration(cfg.StoredRequests.HTTPEvents.RefreshRate) * time.Second
-		eventProducers = append(eventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.Endpoint, ctxProducer, refreshRate))
-		ampEventProducers = append(ampEventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.AmpEndpoint, ctxProducer, refreshRate))
-	}
-	byId, byAmpId, listeners, err := NewFetchers(&(cfg.StoredRequests), db, eventProducers, ampEventProducers)
-	if err != nil {
-		glog.Fatalf("Failed to initialize config backends. %v", err)
-	}
-	defer func() {
-		for _, l := range listeners {
-			l.Stop()
-		}
-	}()
-
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, byId, cfg, metricsEngine, pbsAnalytics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, metricsEngine, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, byAmpId, cfg, metricsEngine, pbsAnalytics)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, metricsEngine, pbsAnalytics)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 
-	router := httprouter.New()
 	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
@@ -905,13 +849,6 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/status", status)
 	router.GET("/", serveIndex)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
-
-	if cfg.StoredRequests.CacheEventsAPI {
-		router.POST("/storedrequests/openrtb2", handleStoredRequests)
-		router.DELETE("/storedrequests/openrtb2", handleStoredRequests)
-		router.POST("/storedrequests/amp", handleAmpStoredRequests)
-		router.DELETE("/storedrequests/amp", handleAmpStoredRequests)
-	}
 
 	hostCookieSettings = pbs.HostCookieSettings{
 		Domain:       cfg.HostCookie.Domain,
@@ -947,98 +884,6 @@ func serve(cfg *config.Configuration) error {
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
 
-	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Handler:      noCacheHandler,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-	}
-
-	go (func() {
-		fmt.Printf("Main server running on: %s\n", server.Addr)
-
-		serverErr := server.ListenAndServe()
-		glog.Errorf("Main server: %v", serverErr)
-		stopSignals <- syscall.SIGTERM
-	})()
-
-	<-stopSignals
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		glog.Errorf("Main server shutdown: %v", err)
-	}
-	if err := adminServer.Shutdown(ctx); err != nil {
-		glog.Errorf("Admin server shutdown: %v", err)
-	}
-
+	server.Listen(cfg, noCacheHandler, metricsEngine)
 	return nil
-}
-
-const requestConfigPath = "./stored_requests/data/by_id"
-
-// NewFetchers returns an Account-based config fetcher and a Request-based config fetcher, in that order.
-// If it can't generate both of those from the given config, then an error will be returned.
-//
-// This function assumes that the argument config has been validated.
-func NewFetchers(cfg *config.StoredRequests, db *sql.DB, eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) (byId stored_requests.Fetcher, byAmpId stored_requests.Fetcher, listeners []*events.EventListener, err error) {
-	idList := make(stored_requests.MultiFetcher, 0, 3)
-	ampIdList := make(stored_requests.MultiFetcher, 0, 3)
-
-	if cfg.Files {
-		glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
-		byId, err = file_fetcher.NewFileFetcher(requestConfigPath)
-		idList = append(idList, byId)
-		// Currently assuming the file store is "flat", that is IDs are unique across all config types
-		// and that the files for all the types sit next to each other.
-		byAmpId = byId
-		ampIdList = append(ampIdList, byAmpId)
-	}
-	if cfg.Postgres != nil {
-		// Be careful not to log the password here, for security reasons
-		glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
-		byId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
-		idList = append(idList, byId)
-		byAmpId = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
-		ampIdList = append(ampIdList, byAmpId)
-	}
-	if cfg.HTTP != nil {
-		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
-		byId = http_fetcher.NewFetcher(nil, cfg.HTTP.Endpoint)
-		idList = append(idList, byId)
-		byAmpId = http_fetcher.NewFetcher(nil, cfg.HTTP.AmpEndpoint)
-		ampIdList = append(ampIdList, byAmpId)
-	}
-	if len(idList) == 0 {
-		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
-		byId = empty_fetcher.EmptyFetcher()
-		byAmpId = byId
-	} else if len(idList) > 1 {
-		// In the case of len()==1, byId and byAmpId are already set to the correct Fetcher
-		byId = &idList
-		byAmpId = &ampIdList
-	}
-
-	if cfg.InMemoryCache != nil {
-		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
-		byIdCache := lru.NewLRUCache(cfg.InMemoryCache)
-		byAmpIdCache := lru.NewLRUCache(cfg.InMemoryCache)
-
-		byId = stored_requests.WithCache(byId, byIdCache)
-		byAmpId = stored_requests.WithCache(byAmpId, byAmpIdCache)
-
-		for _, ep := range eventProducers {
-			listener := events.SimpleEventListener()
-			go listener.Listen(byIdCache, ep)
-			listeners = append(listeners, listener)
-		}
-
-		for _, ep := range ampEventProducers {
-			listener := events.SimpleEventListener()
-			go listener.Listen(byAmpIdCache, ep)
-			listeners = append(listeners, listener)
-		}
-	}
-	return
 }
