@@ -71,23 +71,3 @@ func doInvalidate(cache *freecache.Cache, ids []string) {
 		cache.Del([]byte(id))
 	}
 }
-
-func (c *cache) Update(ctx context.Context, storedRequests map[string]json.RawMessage, storedImps map[string]json.RawMessage) {
-	c.doUpdate(c.requestDataCache, storedRequests)
-	c.doUpdate(c.impDataCache, storedImps)
-}
-
-func (c *cache) doUpdate(cache *freecache.Cache, values map[string]json.RawMessage) {
-	toSave := make(map[string]json.RawMessage, len(values))
-	for id, data := range values {
-		if _, err := cache.Get([]byte(id)); err == nil {
-			toSave[id] = data
-		} else if err != freecache.ErrNotFound {
-			glog.Errorf("unexpected error from freecache: %v", err)
-		}
-	}
-
-	if len(toSave) > 0 {
-		c.doSave(cache, toSave)
-	}
-}

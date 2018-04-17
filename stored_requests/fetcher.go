@@ -55,10 +55,6 @@ type Cache interface {
 	// are no longer returned by the cache until new values are saved via Update
 	Invalidate(ctx context.Context, requestIDs []string, impIDs []string)
 
-	// Update will update the given values in the cache if they exist
-	// or ignore them if they don't
-	Update(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
-
 	// Save will add or overwrite the data in the cache at the given keys
 	Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
 }
@@ -112,13 +108,6 @@ func updateFromCache(data map[string]json.RawMessage, ids []string, newData map[
 func (c ComposedCache) Invalidate(ctx context.Context, requestIDs []string, impIDs []string) {
 	for _, cache := range c {
 		cache.Invalidate(ctx, requestIDs, impIDs)
-	}
-}
-
-// Update will propagate updates to all underlying caches
-func (c ComposedCache) Update(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
-	for _, cache := range c {
-		cache.Update(ctx, requestData, impData)
 	}
 }
 

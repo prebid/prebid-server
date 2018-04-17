@@ -139,10 +139,17 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 
 ```
 {
-  "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']", // Required property.
+  "pricegraularity": {
+      "precision": 2,
+      "ranges": [{
+        "max":20.0
+        "increment":0.1 }], // The default is the "medium" price granularity, same as providing the deprecated "medium" string granularity.
   "includewinners": false // Optional param defaulting to true
 }
 ```
+The list of price granularity ranges must be given in order of increasing `max` values. If `precision` is omitted, it will default to `2`. The minimum of a range will be 0 or the previous `max`. Any cmp above the largest `max` will go in the `max` pricebucket.
+
+For backwards compatibility the following strings will also be allowed as price granularity definitions. There is no guarantee that these will be honored in the future. "One of ['low', 'med', 'high', 'auto', 'dense']" See [price granularity definitions](http://prebid.org/prebid-mobile/adops-price-granularity.html)
 
 **Response format** (returned in `bid.ext.prebid.targeting`)
 

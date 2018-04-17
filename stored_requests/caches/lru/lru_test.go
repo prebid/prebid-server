@@ -74,40 +74,21 @@ func TestCacheOverlap(t *testing.T) {
 	assertHasValue(t, impData, "id", `{"imp":true}`)
 }
 
-func TestCacheUpdateSaveInvalidate(t *testing.T) {
+func TestCacheSaveInvalidate(t *testing.T) {
 	cache := NewLRUCache(&config.InMemoryCache{
 		RequestCacheSize: 256 * 1024,
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
 	})
-	cache.Update(context.Background(), map[string]json.RawMessage{
-		"known": json.RawMessage(`{}`),
-	}, map[string]json.RawMessage{
-		"known": json.RawMessage(`{}`),
-	})
-	reqData, impData := cache.Get(context.Background(), []string{"known"}, []string{"known"})
-	assertMapLength(t, 0, reqData)
-	assertMapLength(t, 0, impData)
 
 	cache.Save(context.Background(), map[string]json.RawMessage{
 		"known": json.RawMessage(`{}`),
 	}, map[string]json.RawMessage{
 		"known": json.RawMessage(`{}`),
 	})
-	reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})
+	reqData, impData := cache.Get(context.Background(), []string{"known"}, []string{"known"})
 	assertMapLength(t, 1, reqData)
 	assertMapLength(t, 1, impData)
-
-	cache.Update(context.Background(), map[string]json.RawMessage{
-		"known": json.RawMessage(`{"changed": true}`),
-	}, map[string]json.RawMessage{
-		"known": json.RawMessage(`{"changed": true}`),
-	})
-	reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})
-	assertMapLength(t, 1, reqData)
-	assertHasValue(t, reqData, "known", `{"changed": true}`)
-	assertMapLength(t, 1, impData)
-	assertHasValue(t, impData, "known", `{"changed": true}`)
 
 	cache.Invalidate(context.Background(), []string{"known"}, []string{"known"})
 	reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})

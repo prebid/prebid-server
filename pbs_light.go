@@ -42,6 +42,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/analytics"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/cache/filecache"
@@ -52,7 +53,6 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbs/buckets"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
@@ -64,6 +64,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
+	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 	usersyncers "github.com/prebid/prebid-server/usersync"
 )
 
@@ -509,7 +510,7 @@ bidLoop:
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
 // The bids are sorted by cpm to find the highest bid.
 // The ad server targeting keywords are added to all bids, with specific keywords for the highest bid.
-func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting openrtb_ext.PriceGranularity) {
+func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, priceGranularitySetting string) {
 	if priceGranularitySetting == "" {
 		priceGranularitySetting = defaultPriceGranularity
 	}
@@ -535,7 +536,7 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 		// after sorting we need to add the ad targeting keywords
 		for i, bid := range bar {
 			// We should eventually check for the error and do something.
-			roundedCpm, err := buckets.GetPriceBucketString(bid.Price, priceGranularitySetting)
+			roundedCpm, err := exchange.GetCpmStringValue(bid.Price, openrtb_ext.PriceGranularityFromString(priceGranularitySetting))
 			if err != nil {
 				glog.Error(err.Error())
 			}
@@ -740,6 +741,8 @@ func init() {
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	viper.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
+	viper.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
 	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
@@ -802,7 +805,7 @@ func serve(cfg *config.Configuration) error {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
-	pbsAnalytics := analytics.NewPBSAnalytics(&cfg.Analytics)
+	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 
 	// Hack because of how legacy handles districtm
 	bidderList := openrtb_ext.BidderList()
@@ -859,6 +862,14 @@ func serve(cfg *config.Configuration) error {
 		eventProducers = append(eventProducers, apiEventProducer)
 		ampApiEventProducer, handleAmpStoredRequests = apiEvents.NewEventsAPI()
 		ampEventProducers = append(ampEventProducers, ampApiEventProducer)
+	}
+	if cfg.StoredRequests.HTTPEvents != nil {
+		ctxProducer := func() (ctx context.Context, canceller func()) {
+			return context.WithTimeout(context.Background(), time.Duration(cfg.StoredRequests.HTTPEvents.Timeout)*time.Millisecond)
+		}
+		refreshRate := time.Duration(cfg.StoredRequests.HTTPEvents.RefreshRate) * time.Second
+		eventProducers = append(eventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.Endpoint, ctxProducer, refreshRate))
+		ampEventProducers = append(ampEventProducers, httpEvents.NewHTTPEvents(theClient, cfg.StoredRequests.HTTPEvents.AmpEndpoint, ctxProducer, refreshRate))
 	}
 	byId, byAmpId, listeners, err := NewFetchers(&(cfg.StoredRequests), db, eventProducers, ampEventProducers)
 	if err != nil {

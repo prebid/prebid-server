@@ -65,23 +65,29 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
+//
+// This will be useful when removing endpoints, we can just run will the blank metrics function
+// rather than loading legacy metrics that never get filled.
+// This will also eventually let us configure metrics, such as setting a limited set of metrics
+// for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
+	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
 		metricsRegistry:     registry,
-		RequestMeter:        blankMeter(0),
-		ImpMeter:            blankMeter(0),
-		AppRequestMeter:     blankMeter(0),
-		NoCookieMeter:       blankMeter(0),
-		SafariRequestMeter:  blankMeter(0),
-		SafariNoCookieMeter: blankMeter(0),
-		ErrorMeter:          blankMeter(0),
-		RequestTimer:        blankTimer(0),
-		ORTBRequestMeter:    blankMeter(0),
-		AmpRequestMeter:     blankMeter(0),
-		AmpNoCookieMeter:    blankMeter(0),
-		CookieSyncMeter:     blankMeter(0),
-		userSyncOptout:      blankMeter(0),
-		userSyncBadRequest:  blankMeter(0),
+		RequestMeter:        blankMeter,
+		ImpMeter:            blankMeter,
+		AppRequestMeter:     blankMeter,
+		NoCookieMeter:       blankMeter,
+		SafariRequestMeter:  blankMeter,
+		SafariNoCookieMeter: blankMeter,
+		ErrorMeter:          blankMeter,
+		RequestTimer:        &metrics.NilTimer{},
+		ORTBRequestMeter:    blankMeter,
+		AmpRequestMeter:     blankMeter,
+		AmpNoCookieMeter:    blankMeter,
+		CookieSyncMeter:     blankMeter,
+		userSyncOptout:      blankMeter,
+		userSyncBadRequest:  blankMeter,
 		userSyncSet:         make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
@@ -127,15 +133,16 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 
 // Part of setting up blank metrics, the adapter metrics.
 func makeBlankAdapterMetrics(registry metrics.Registry, exchanges openrtb_ext.BidderName) *AdapterMetrics {
+	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
-		NoCookieMeter:     blankMeter(0),
-		ErrorMeter:        blankMeter(0),
-		NoBidMeter:        blankMeter(0),
-		TimeoutMeter:      blankMeter(0),
-		RequestMeter:      blankMeter(0),
-		RequestTimer:      blankTimer(0),
-		PriceHistogram:    blankHistogram(0),
-		BidsReceivedMeter: blankMeter(0),
+		NoCookieMeter:     blankMeter,
+		ErrorMeter:        blankMeter,
+		NoBidMeter:        blankMeter,
+		TimeoutMeter:      blankMeter,
+		RequestMeter:      blankMeter,
+		RequestTimer:      &metrics.NilTimer{},
+		PriceHistogram:    &metrics.NilHistogram{},
+		BidsReceivedMeter: blankMeter,
 	}
 	return newAdapter
 }
@@ -332,234 +339,4 @@ func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
 		}
 
 	}
-}
-
-// Set up blank metrics objects so we can add/subtract active metrics without refactoring a lot of code.
-// This will be useful when removing endpoints, we can just run will the blank metrics function
-// rather than loading legacy metrics that never get filled.
-// This will also eventually let us configure metrics, such as setting a limited set of metrics
-// for a production instance, and then expanding again when we need more debugging.
-
-// A blank metrics Meter type
-type blankMeter int
-
-func (m blankMeter) Count() int64 {
-	return 0
-}
-
-func (m blankMeter) Mark(i int64) {
-	return
-}
-
-func (m blankMeter) Rate1() float64 {
-	return 0.0
-}
-
-func (m blankMeter) Rate5() float64 {
-	return 0.0
-}
-
-func (m blankMeter) Rate15() float64 {
-	return 0.0
-}
-
-func (m blankMeter) RateMean() float64 {
-	return 0.0
-}
-
-func (m blankMeter) Snapshot() metrics.Meter {
-	return m
-}
-
-func (m blankMeter) Stop() {
-	return
-}
-
-// A blank metrics Timer type
-type blankTimer int
-
-func (t blankTimer) Count() int64 {
-	return 0
-}
-
-func (t blankTimer) Max() int64 {
-	return 0
-}
-
-func (t blankTimer) Mean() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Min() int64 {
-	return 0
-}
-
-func (t blankTimer) Percentile(p float64) float64 {
-	return 0.0
-}
-
-func (t blankTimer) Percentiles(p []float64) []float64 {
-	return p
-}
-
-func (t blankTimer) Rate1() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Rate5() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Rate15() float64 {
-	return 0.0
-}
-
-func (t blankTimer) RateMean() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Snapshot() metrics.Timer {
-	return t
-}
-
-func (t blankTimer) StdDev() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Stop() {
-	return
-}
-
-func (t blankTimer) Sum() int64 {
-	return 0
-}
-
-func (t blankTimer) Time(f func()) {
-	return
-}
-
-func (t blankTimer) Update(tt time.Duration) {
-	return
-}
-
-func (t blankTimer) UpdateSince(time.Time) {
-	return
-}
-
-func (t blankTimer) Variance() float64 {
-	return 0.0
-}
-
-// a blank metrics Histogram type
-type blankHistogram int
-
-func (h blankHistogram) Clear() {
-	return
-}
-
-func (h blankHistogram) Count() int64 {
-	return 0
-}
-
-func (h blankHistogram) Max() int64 {
-	return 0
-}
-
-func (h blankHistogram) Mean() float64 {
-	return 0.0
-}
-
-func (h blankHistogram) Min() int64 {
-	return 0
-}
-
-func (h blankHistogram) Percentile(f float64) float64 {
-	return 0.0
-}
-
-func (h blankHistogram) Percentiles(p []float64) []float64 {
-	return p
-}
-
-func (h blankHistogram) Sample() metrics.Sample {
-	return blankSample(0)
-}
-
-func (h blankHistogram) Snapshot() metrics.Histogram {
-	return h
-}
-
-func (h blankHistogram) StdDev() float64 {
-	return 0.0
-}
-
-func (h blankHistogram) Sum() int64 {
-	return 0
-}
-
-func (h blankHistogram) Update(int64) {
-	return
-}
-
-func (h blankHistogram) Variance() float64 {
-	return 0.0
-}
-
-// Need a blank sample for the Histogram
-type blankSample int
-
-func (h blankSample) Clear() {
-	return
-}
-
-func (h blankSample) Count() int64 {
-	return 0
-}
-
-func (h blankSample) Max() int64 {
-	return 0
-}
-
-func (h blankSample) Mean() float64 {
-	return 0.0
-}
-
-func (h blankSample) Min() int64 {
-	return 0
-}
-
-func (h blankSample) Percentile(f float64) float64 {
-	return 0.0
-}
-
-func (h blankSample) Percentiles(p []float64) []float64 {
-	return p
-}
-
-func (h blankSample) Size() int {
-	return 0
-}
-
-func (h blankSample) Snapshot() metrics.Sample {
-	return h
-}
-
-func (h blankSample) StdDev() float64 {
-	return 0.0
-}
-
-func (h blankSample) Sum() int64 {
-	return 0
-}
-
-func (h blankSample) Update(int64) {
-	return
-}
-
-func (h blankSample) Values() []int64 {
-	return []int64{}
-}
-
-func (h blankSample) Variance() float64 {
-	return 0.0
 }

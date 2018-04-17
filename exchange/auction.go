@@ -7,7 +7,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs/buckets"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
@@ -46,9 +45,9 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	roundedPrices := make(map[*pbsOrtbBid]string, 5*len(a.winningBids))
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
-			roundedPrice, err := buckets.GetPriceBucketString(topBidPerBidder.bid.Price, priceGranularity)
+			roundedPrice, err := GetCpmStringValue(topBidPerBidder.bid.Price, priceGranularity)
 			if err != nil {
-				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%s".`, priceGranularity)
+				glog.Errorf(`Error rounding price according to granularity. This shouldn't happen unless /openrtb2 input validation is buggy. Granularity was "%v".`, priceGranularity)
 			}
 			roundedPrices[topBidPerBidder] = roundedPrice
 		}

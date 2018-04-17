@@ -31,3 +31,20 @@ A sample response payload looks like this:
 
 In [the typical AMP setup](http://prebid.org/dev-docs/show-prebid-ads-on-amp-pages.html),
 these targeting params will be sent to DFP.
+
+### Query Parameters
+
+This endpoint supports the following query parameters:
+
+1. `h` - `amp-ad` `height`
+2. `w` - `amp-ad` `width`
+3. `oh` - `amp-ad` `data-override-height`
+4. `ow` - `amp-ad` `data-override-width`
+5. `ms` - `amp-ad` `data-multi-size`
+6. `curl` - the canonical URL of the page
+7. `purl` - the page URL
+8. `timeout` - the publisher-specified timeout for the RTC callout
+   - A configuration option `amp_timeout_adjustment_ms` may be set to account for estimated latency so that Prebid Server can handle timeouts from adapters and respond to the AMP RTC request before it times out.
+9. `debug` - When set to `1`, will set `"test": 1` on outgoing OpenRTB requests and will return additional debug information in the response `ext`.
+
+For more information see [this pull request adding the query params to the Prebid callout](https://github.com/ampproject/amphtml/pull/14155) and [this issue adding support for network-level RTC macros](https://github.com/ampproject/amphtml/issues/12374).
