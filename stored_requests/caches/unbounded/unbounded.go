@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
 )
 
 // An unbounded cache has infinite capacity for Stored Requests. This will offer ideal performance
@@ -15,7 +14,7 @@ import (
 //
 // If you have too many Stored Requests to save in memory, see stored_requests/caches/lru/lru.go instead.
 
-func NewUnboundedCache(cfg *config.UnboundedCache) *UnboundedCache {
+func NewUnboundedCache() *UnboundedCache {
 	return &UnboundedCache{
 		requestDataCache: &sync.Map{},
 		impDataCache:     &sync.Map{},

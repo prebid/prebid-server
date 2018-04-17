@@ -6,19 +6,18 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/caches/cachestest"
 )
 
 func TestUnboundedRobustness(t *testing.T) {
 	cachestest.AssertCacheRobustness(t, func() stored_requests.Cache {
-		return NewUnboundedCache(&config.UnboundedCache{})
+		return NewUnboundedCache()
 	})
 }
 
 func TestRaceConcurrency(t *testing.T) {
-	cache := NewUnboundedCache(&config.UnboundedCache{})
+	cache := NewUnboundedCache()
 
 	go writeLots(cache, 100)
 	go readLots(cache, 100)

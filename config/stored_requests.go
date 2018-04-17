@@ -168,11 +168,4 @@ type InMemoryCache struct {
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }
 
-type UnboundedCache struct {
-	// InitialStoredRequestCapacity is number of Stored Requests we expect to store in the cache.
-	// This is used to size the initial map, so 0 is a safe value.
-	InitialStoredRequestCapacity int `mapstructure:"estimated_num_stored_requests"`
-	// InitialStoredImpCapacity is number of Stored Imps we expect to store in the cache.
-	// This is used to size the initial map, so 0 is a safe value.
-	InitialStoredImpCapacity int `mapstructure:"estimated_num_stored_imps"`
-}
+type UnboundedCache struct{}
