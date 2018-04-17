@@ -22,6 +22,9 @@ type StoredRequests struct {
 	// InMemoryCache configures an instance of stored_requests/caches/in_memory/lru.go.
 	// If non-nil, Stored Requests will be saved in an in-memory LRU cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
+	// UnboundedCache configures an instance of stored_requests/caches/unbounded/unbounded.go
+	// If non-nil, Stored Requests will be saved in an in-memory map with infinite capacity.
+	UnboundedCache *UnboundedCache `mapstructure:"unbounded_cache"`
 	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
 	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
 	// This is intended to be a useful development tool and not recommended for a production environment.
@@ -163,4 +166,13 @@ type InMemoryCache struct {
 	RequestCacheSize int `mapstructure:"request_cache_size_bytes"`
 	// ImpCacheSize is the max number of bytes allowed in the cache for Stored Imps.
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
+}
+
+type UnboundedCache struct {
+	// InitialStoredRequestCapacity is number of Stored Requests we expect to store in the cache.
+	// This is used to size the initial map, so 0 is a safe value.
+	InitialStoredRequestCapacity int `mapstructure:"estimated_num_stored_requests"`
+	// InitialStoredImpCapacity is number of Stored Imps we expect to store in the cache.
+	// This is used to size the initial map, so 0 is a safe value.
+	InitialStoredImpCapacity int `mapstructure:"estimated_num_stored_imps"`
 }
