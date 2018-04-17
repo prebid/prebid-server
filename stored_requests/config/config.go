@@ -30,11 +30,14 @@ import (
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
-func NewStoredRequests(cfg *config.Configuration, theClient *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
-	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, theClient, router)
+//
+// As a side-effect, it will add some endpoints to the router if the config calls for it.
+// In the future we should look for ways to simplify this so that it's not doing two things.
+func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
+	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, client, router)
 	cache := newCache(&cfg.StoredRequests)
 	ampCache := newCache(&cfg.StoredRequests)
-	fetcher, ampFetcher, db = newFetchers(&cfg.StoredRequests)
+	fetcher, ampFetcher, db = newFetchers(&cfg.StoredRequests, client)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
@@ -64,7 +67,7 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetchers(cfg *config.StoredRequests) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB) {
+func newFetchers(cfg *config.StoredRequests, client *http.Client) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
@@ -81,8 +84,8 @@ func newFetchers(cfg *config.StoredRequests) (fetcher stored_requests.Fetcher, a
 	}
 	if cfg.HTTP != nil {
 		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
-		idList = append(idList, http_fetcher.NewFetcher(nil, cfg.HTTP.Endpoint))
-		ampIDList = append(ampIDList, http_fetcher.NewFetcher(nil, cfg.HTTP.AmpEndpoint))
+		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
+		ampIDList = append(ampIDList, http_fetcher.NewFetcher(client, cfg.HTTP.AmpEndpoint))
 	}
 
 	fetcher = consolidate(idList)
@@ -153,8 +156,8 @@ func newPostgres(cfg *config.StoredRequests) (fetcher stored_requests.Fetcher, a
 func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
 	if len(fetchers) == 0 {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
-		return empty_fetcher.EmptyFetcher()
-	} else if len(fetchers) > 1 {
+		return empty_fetcher.EmptyFetcher{}
+	} else if len(fetchers) == 1 {
 		return fetchers[0]
 	} else {
 		return stored_requests.MultiFetcher(fetchers)
