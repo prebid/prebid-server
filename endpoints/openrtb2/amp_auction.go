@@ -338,6 +338,11 @@ func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, re
 		req.Site.Page = pageURL
 	}
 
+	slot := httpRequest.FormValue("slot")
+	if slot != "" {
+		req.Imp[0].TagID = slot
+	}
+
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
 		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
