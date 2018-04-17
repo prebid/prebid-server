@@ -12,15 +12,18 @@ import (
 
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
-	metricsRegistry     metrics.Registry
-	RequestMeter        metrics.Meter
-	ImpMeter            metrics.Meter
-	AppRequestMeter     metrics.Meter
-	NoCookieMeter       metrics.Meter
-	SafariRequestMeter  metrics.Meter
-	SafariNoCookieMeter metrics.Meter
-	ErrorMeter          metrics.Meter
-	RequestTimer        metrics.Timer
+	metricsRegistry            metrics.Registry
+	RequestMeter               metrics.Meter
+	ConnectionCounter          metrics.Counter
+	ConnectionAcceptErrorMeter metrics.Meter
+	ConnectionCloseErrorMeter  metrics.Meter
+	ImpMeter                   metrics.Meter
+	AppRequestMeter            metrics.Meter
+	NoCookieMeter              metrics.Meter
+	SafariRequestMeter         metrics.Meter
+	SafariNoCookieMeter        metrics.Meter
+	ErrorMeter                 metrics.Meter
+	RequestTimer               metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
 	ORTBRequestMeter   metrics.Meter
@@ -73,22 +76,25 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
-		metricsRegistry:     registry,
-		RequestMeter:        blankMeter,
-		ImpMeter:            blankMeter,
-		AppRequestMeter:     blankMeter,
-		NoCookieMeter:       blankMeter,
-		SafariRequestMeter:  blankMeter,
-		SafariNoCookieMeter: blankMeter,
-		ErrorMeter:          blankMeter,
-		RequestTimer:        &metrics.NilTimer{},
-		ORTBRequestMeter:    blankMeter,
-		AmpRequestMeter:     blankMeter,
-		AmpNoCookieMeter:    blankMeter,
-		CookieSyncMeter:     blankMeter,
-		userSyncOptout:      blankMeter,
-		userSyncBadRequest:  blankMeter,
-		userSyncSet:         make(map[openrtb_ext.BidderName]metrics.Meter),
+		metricsRegistry:            registry,
+		RequestMeter:               blankMeter,
+		ConnectionCounter:          metrics.NilCounter{},
+		ConnectionAcceptErrorMeter: blankMeter,
+		ConnectionCloseErrorMeter:  blankMeter,
+		ImpMeter:                   blankMeter,
+		AppRequestMeter:            blankMeter,
+		NoCookieMeter:              blankMeter,
+		SafariRequestMeter:         blankMeter,
+		SafariNoCookieMeter:        blankMeter,
+		ErrorMeter:                 blankMeter,
+		RequestTimer:               &metrics.NilTimer{},
+		ORTBRequestMeter:           blankMeter,
+		AmpRequestMeter:            blankMeter,
+		AmpNoCookieMeter:           blankMeter,
+		CookieSyncMeter:            blankMeter,
+		userSyncOptout:             blankMeter,
+		userSyncBadRequest:         blankMeter,
+		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
@@ -110,6 +116,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
 	newMetrics.RequestMeter = metrics.GetOrRegisterMeter("requests", registry)
+	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
+	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
+	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.ErrorMeter = metrics.GetOrRegisterMeter("error_requests", registry)
@@ -236,6 +245,22 @@ func (me *Metrics) RecordRequest(labels Labels) {
 
 func (me *Metrics) RecordImps(labels Labels, numImps int) {
 	me.ImpMeter.Mark(int64(numImps))
+}
+
+func (me *Metrics) RecordConnectionAccept(success bool) {
+	if success {
+		me.ConnectionCounter.Inc(1)
+	} else {
+		me.ConnectionAcceptErrorMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordConnectionClose(success bool) {
+	if success {
+		me.ConnectionCounter.Dec(1)
+	} else {
+		me.ConnectionCloseErrorMeter.Mark(1)
+	}
 }
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible

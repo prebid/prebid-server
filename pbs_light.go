@@ -22,10 +22,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/xeipuuv/gojsonschema"
 
-	"os"
-	"os/signal"
-	"syscall"
-
 	"crypto/tls"
 	"strings"
 
@@ -55,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/db_fetcher"
@@ -824,19 +821,6 @@ func serve(cfg *config.Configuration) error {
 		}
 	}
 
-	stopSignals := make(chan os.Signal)
-	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
-
-	/* Run admin on different port thats not exposed */
-	adminURI := fmt.Sprintf("%s:%d", cfg.Host, cfg.AdminPort)
-	adminServer := &http.Server{Addr: adminURI}
-	go (func() {
-		fmt.Println("Admin running on: ", adminURI)
-		err := adminServer.ListenAndServe()
-		glog.Errorf("Admin server: %v", err)
-		stopSignals <- syscall.SIGTERM
-	})()
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
@@ -947,31 +931,7 @@ func serve(cfg *config.Configuration) error {
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
 
-	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Handler:      noCacheHandler,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-	}
-
-	go (func() {
-		fmt.Printf("Main server running on: %s\n", server.Addr)
-		serverErr := server.ListenAndServe()
-		glog.Errorf("Main server: %v", serverErr)
-		stopSignals <- syscall.SIGTERM
-	})()
-
-	<-stopSignals
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		glog.Errorf("Main server shutdown: %v", err)
-	}
-	if err := adminServer.Shutdown(ctx); err != nil {
-		glog.Errorf("Admin server shutdown: %v", err)
-	}
-
+	server.Listen(cfg, noCacheHandler, metricsEngine)
 	return nil
 }
 
