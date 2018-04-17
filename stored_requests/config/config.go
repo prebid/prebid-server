@@ -33,11 +33,11 @@ import (
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
-	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, client, router)
-	cache := newCache(&cfg.StoredRequests)
-	ampCache := newCache(&cfg.StoredRequests)
-	fetcher, ampFetcher, db = newFetchers(&cfg.StoredRequests, client)
+func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
+	eventProducers, ampEventProducers := newEventProducers(cfg, client, router)
+	cache := newCache(cfg)
+	ampCache := newCache(cfg)
+	fetcher, ampFetcher, db = newFetchers(cfg, client)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
