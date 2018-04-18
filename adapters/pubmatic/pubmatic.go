@@ -167,12 +167,20 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	debug.StatusCode = pbResp.StatusCode
 
-	if pbResp.StatusCode == 204 {
+	if pbResp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if pbResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status: %d", pbResp.StatusCode)
+	if pbResp.StatusCode == http.StatusBadRequest {
+		return nil, &adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode)
+		}
+	}
+
+	if pbResp.StatusCode != http.StatusOK {
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode)
+		}
 	}
 
 	defer pbResp.Body.Close()
@@ -188,7 +196,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, err
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode)
+		}
 	}
 
 	bids := make(pbs.PBSBidSlice, 0)
