@@ -25,7 +25,11 @@ type pbsSyncMap struct {
 
 func (m *pbsSyncMap) Get(id string) (json.RawMessage, bool) {
 	val, ok := m.Map.Load(id)
-	return val.(json.RawMessage), ok
+	if ok {
+		return val.(json.RawMessage), ok
+	} else {
+		return nil, ok
+	}
 }
 
 func (m *pbsSyncMap) Set(id string, value json.RawMessage) {
