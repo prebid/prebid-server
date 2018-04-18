@@ -190,11 +190,31 @@ var rubiSizeMap = map[rubiSize]int{
 	rubiSize{w: 200, h: 600}:   126,
 }
 
-func lookupSize(s openrtb.Format) (int, error) {
-	if sz, ok := rubiSizeMap[rubiSize{w: uint16(s.W), h: uint16(s.H)}]; ok {
-		return sz, nil
+//MAS algorithm
+func findPrimary(alt []int) (int, []int) {
+	min, pos, primary := 0, 0, 0
+	for i, size := range alt {
+		if size == 15 {
+			primary = 15
+			pos = i
+			break
+		} else if size == 2 {
+			primary = 2
+			pos = i
+		} else if size == 9 && primary != 2 {
+			primary = 9
+			pos = i
+		} else if size < alt[min] {
+			min = i
+		}
 	}
-	return 0, fmt.Errorf("Size %dx%d not found", s.W, s.H)
+	if primary == 0 {
+		primary = alt[min]
+		pos = min
+	}
+
+	alt = append(alt[:pos], alt[pos+1:]...)
+	return primary, alt
 }
 
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
@@ -203,20 +223,15 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 		err = errors.New("rubicon imps must have at least one imp.format element")
 		return
 	}
-	alt = make([]int, 0, len(sizes)-1)
 	for _, size := range sizes {
-		rs, lerr := lookupSize(size)
-		if lerr != nil {
-			continue
-		}
-		if primary == 0 {
-			primary = rs
-		} else {
+		if rs, ok := rubiSizeMap[rubiSize{w: uint16(size.W), h: uint16(size.H)}]; ok {
 			alt = append(alt, rs)
 		}
 	}
-	if primary == 0 {
-		err = fmt.Errorf("No valid sizes")
+	if len(alt) > 0 {
+		primary, alt = findPrimary(alt)
+	} else {
+		err = errors.New("No primary size found")
 	}
 	return
 }
