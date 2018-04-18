@@ -18,6 +18,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -25,19 +27,18 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/rcrowley/go-metrics"
 	"golang.org/x/net/publicsuffix"
 )
 
 const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met *pbsmetrics.Metrics) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -45,10 +46,17 @@ type endpointDeps struct {
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
 	cfg              *config.Configuration
-	metrics          *pbsmetrics.Metrics
+	metricsEngine    pbsmetrics.MetricsEngine
+	analytics        analytics.PBSAnalyticsModule
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	ao := analytics.AuctionObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
 	// Prebid Server interprets request.tmax to be the maximum amount of time that a caller is willing
 	// to wait for bids. However, tmax may be defined in the Stored Request data.
 	//
@@ -56,15 +64,39 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-	deps.metrics.RequestMeter.Mark(1)
-	deps.metrics.ORTBRequestMeter.Mark(1)
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeORTB2,
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	numImps := 0
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordImps(labels, numImps)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao)
+	}()
 
-	isSafari := checkSafari(r, deps.metrics.SafariRequestMeter)
+	isSafari := checkSafari(r)
+	if isSafari {
+		labels.Browser = pbsmetrics.BrowserSafari
+	}
 
 	req, errL := deps.parseRequest(r)
 
-	if writeError(errL, deps.metrics.ErrorMeter, w) {
+	if writeError(errL, w) {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
+	}
+
+	if req.Site != nil && req.Site.Publisher != nil {
+		labels.PubID = req.Site.Publisher.ID
+	}
+	if req.App != nil && req.App.Publisher != nil {
+		labels.PubID = req.App.Publisher.ID
 	}
 
 	ctx := context.Background()
@@ -78,19 +110,27 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
-		deps.metrics.AppRequestMeter.Mark(1)
-	} else if usersyncs.LiveSyncCount() == 0 {
-		deps.metrics.NoCookieMeter.Mark(1)
-		if isSafari {
-			deps.metrics.SafariNoCookieMeter.Mark(1)
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if usersyncs.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
 
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs)
+	numImps = len(req.Imp)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	ao.Request = req
+	ao.Response = response
 	if err != nil {
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, err)
 		return
 	}
 
@@ -106,6 +146,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
 		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
 	}
 }
 
@@ -199,10 +240,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	} else if bidExt != nil {
 		aliases = bidExt.Prebid.Aliases
-	}
 
-	if err := deps.validateAliases(aliases); err != nil {
-		return err
+		if err := deps.validateAliases(aliases); err != nil {
+			return err
+		}
+
+		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
+			return err
+		}
 	}
 
 	for index, imp := range req.Imp {
@@ -223,6 +268,24 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		return err
 	}
 
+	if err := validateRegs(req.Regs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
+	for bidderToAdjust, adjustmentFactor := range adjustmentFactors {
+		if adjustmentFactor <= 0 {
+			return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s must be a positive number. Got %f", bidderToAdjust, adjustmentFactor)
+		}
+		if _, isBidder := openrtb_ext.BidderMap[bidderToAdjust]; !isBidder {
+			if _, isAlias := aliases[bidderToAdjust]; !isAlias {
+				return fmt.Errorf("request.ext.prebid.bidadjustmentfactors.%s is not a known bidder or alias", bidderToAdjust)
+			}
+		}
+	}
 	return nil
 }
 
@@ -255,10 +318,8 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		}
 	}
 
-	if imp.Native != nil {
-		if imp.Native.Request == "" {
-			return fmt.Errorf("request.imp[%d].native.request must be a JSON encoded string conforming to the openrtb 1.2 Native spec", index)
-		}
+	if err := fillAndValidateNative(imp.Native, index); err != nil {
+		return err
 	}
 
 	if err := validatePmp(imp.PMP, index); err != nil {
@@ -296,6 +357,179 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// fillAndValidateNative validates the request, and assigns the Asset IDs as recommended by the Native v1.2 spec.
+func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
+	if n == nil {
+		return nil
+	}
+
+	var nativePayload nativeRequests.Request
+	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
+		return err
+	}
+
+	if err := validateNativeContext(nativePayload.Context, impIndex); err != nil {
+		return err
+	}
+	if err := validateNativePlacementType(nativePayload.PlcmtType, impIndex); err != nil {
+		return err
+	}
+	if err := fillAndValidateNativeAssets(nativePayload.Assets, impIndex); err != nil {
+		return err
+	}
+
+	// TODO #218: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
+
+	serialized, err := json.Marshal(nativePayload)
+	if err != nil {
+		return err
+	}
+	n.Request = string(serialized)
+	return nil
+}
+
+func validateNativeContext(c nativeRequests.ContextType, impIndex int) error {
+	if c < 1 || c > 3 {
+		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, c)
+	}
+	return nil
+}
+
+func validateNativePlacementType(pt nativeRequests.PlacementType, impIndex int) error {
+	if pt < 1 || pt > 4 {
+		return fmt.Errorf("request.imp[%d].native.request.plcmttype must be in the range [1, 4]. Got %d", impIndex, pt)
+	}
+	return nil
+}
+
+func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) error {
+	if len(assets) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object.", impIndex)
+	}
+
+	for i := 0; i < len(assets); i++ {
+		// Per the OpenRTB spec docs, this is a "unique asset ID, assigned by exchange. Typically a counter for the array"
+		// To avoid conflict with the Request, we'll return a 400 if the Request _did_ define this ID,
+		// and then populate it as the spec suggests.
+		if err := validateNativeAsset(assets[i], impIndex, i); err != nil {
+			return err
+		}
+		assets[i].ID = int64(i)
+	}
+	return nil
+}
+
+func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
+	if asset.ID != 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.`, impIndex, assetIndex)
+	}
+
+	foundType := false
+
+	if asset.Title != nil {
+		foundType = true
+		if err := validateNativeAssetTitle(asset.Title, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	if asset.Img != nil {
+		if foundType {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	if asset.Video != nil {
+		if foundType {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	if asset.Data != nil {
+		if foundType {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
+	if title.Len < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
+	}
+	return nil
+}
+
+func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetIndex int) error {
+	// Note that w, wmin, h, and hmin cannot be negative because these variables use unsigned ints.
+	// Those fail during the standard json.Unmarshal() call.
+	if image.W == 0 && image.WMin == 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "w" or "wmin"`, impIndex, assetIndex)
+	}
+	if image.H == 0 && image.HMin == 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "h" or "hmin"`, impIndex, assetIndex)
+	}
+
+	return nil
+}
+
+func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIndex int) error {
+	if len(video.MIMEs) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.mimes must be an array with at least one MIME type.", impIndex, assetIndex)
+	}
+	if video.MinDuration < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.minduration must be a positive integer.", impIndex, assetIndex)
+	}
+	if video.MaxDuration < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.maxduration must be a positive integer.", impIndex, assetIndex)
+	}
+	if err := validateNativeVideoProtocols(video.Protocols, impIndex, assetIndex); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
+	if data.Type < 1 || data.Type > 12 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type must in the range [1, 12]. Got %d.", impIndex, assetIndex, data.Type)
+	}
+
+	return nil
+}
+
+func validateNativeVideoProtocols(protocols []nativeRequests.Protocol, impIndex int, assetIndex int) error {
+	if len(protocols) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
+	}
+	for i := 0; i < len(protocols); i++ {
+		if err := validateNativeVideoProtocol(protocols[i], impIndex, assetIndex, i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateNativeVideoProtocol(protocol nativeRequests.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
+	if protocol < 0 || protocol > 10 {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] must be in the range [1, 10]. Got %d", impIndex, assetIndex, protocolIndex, protocol)
 	}
 	return nil
 }
@@ -397,12 +631,7 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 		// Creating ExtUser object to check if DigiTrust is valid
 		var userExt openrtb_ext.ExtUser
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			if userExt.DigiTrust == nil {
-				// Make sure that user.ext is not empty.
-				if userExt.Prebid == nil {
-					return errors.New("request.user.ext should not be an empty object.")
-				}
-			} else if userExt.DigiTrust.Pref != 0 {
+			if userExt.DigiTrust != nil && userExt.DigiTrust.Pref != 0 {
 				// DigiTrust is not valid. Return error.
 				return errors.New("request.user contains a digitrust object that is not valid.")
 			}
@@ -421,10 +650,23 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 			}
 		} else {
 			// Return error.
-			return errors.New("request.user.ext object is not valid.")
+			return fmt.Errorf("request.user.ext object is not valid: %v", err)
 		}
 	}
 
+	return nil
+}
+
+func validateRegs(regs *openrtb.Regs) error {
+	if regs != nil && len(regs.Ext) > 0 {
+		var regsExt openrtb_ext.ExtRegs
+		if err := json.Unmarshal(regs.Ext, &regsExt); err != nil {
+			return fmt.Errorf("request.regs.ext is invalid: %v", err)
+		}
+		if regsExt.GDPR != nil && (*regsExt.GDPR < 0 || *regsExt.GDPR > 1) {
+			return errors.New("request.regs.ext.gdpr must be either 0 or 1.")
+		}
+	}
 	return nil
 }
 
@@ -442,12 +684,22 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 
 	deps.setUserImplicitly(httpReq, bidReq)
+	setAuctionTypeImplicitly(bidReq)
 }
 
 // setDeviceImplicitly uses implicit info from httpReq to populate bidReq.Device
 func setDeviceImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	setIPImplicitly(httpReq, bidReq) // Fixes #230
 	setUAImplicitly(httpReq, bidReq)
+}
+
+// setAuctionTypeImplicitly sets the auction type to 1 if it wasn't on the request,
+// since header bidding is generally a first-price auction.
+func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
+	if bidReq.AT == 0 {
+		bidReq.AT = 1
+	}
+	return
 }
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
@@ -484,16 +736,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		return nil, errs
 	}
 
-	// Fetch all of the Stored Request data
-	var allIds = make([]string, len(impIds), len(impIds)+1)
-	copy(allIds, impIds)
+	// Fetch the Stored Request data
+	var storedReqIds []string
 	if hasStoredBidRequest {
-		allIds = append(allIds, storedBidRequestId)
+		storedReqIds = []string{storedBidRequestId}
 	}
-	storedRequests, errs := deps.storedReqFetcher.FetchRequests(ctx, allIds)
-	if len(errs) > 0 {
-		return nil, errs
-	}
+	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
@@ -508,7 +756,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	// and Prebid Server defers to the HTTP Request to resolve conflicts, it's safe to
 	// assume that the request.imp data did not change when applying the Stored BidRequest.
 	for i := 0; i < len(impIds); i++ {
-		resolvedImp, err := jsonpatch.MergePatch(storedRequests[impIds[i]], imps[idIndices[i]])
+		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -618,26 +866,24 @@ func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool
 }
 
 // Check if a request comes from a Safari browser
-func checkSafari(r *http.Request, safariRequestsMeter metrics.Meter) (isSafari bool) {
+func checkSafari(r *http.Request) (isSafari bool) {
 	isSafari = false
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
 			isSafari = true
-			safariRequestsMeter.Mark(1)
 		}
 	}
 	return
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, errMeter metrics.Meter, w http.ResponseWriter) bool {
+func writeError(errs []error, w http.ResponseWriter) bool {
 	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errs {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
-		errMeter.Mark(1)
 		return true
 	}
 	return false

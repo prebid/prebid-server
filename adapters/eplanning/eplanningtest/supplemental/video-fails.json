@@ -1,0 +1,21 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-video-request",
+    "imp": [
+      {
+        "id": "unsupported-video-imp",
+        "video": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "EPlanning only supports banner Imps. Ignoring Imp ID=unsupported-video-imp"
+  ]
+}

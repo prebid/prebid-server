@@ -15,6 +15,10 @@ trap finish EXIT ERR INT TERM
 
 #start script logic
 OUTPUT=`./scripts/coverage.sh`
+if [[ "$?" -ne "0" ]]; then
+  echo -e "$OUTPUT"
+  exit 1
+fi
 
 while IFS= read -r LINE; do
   echo -e "$LINE"

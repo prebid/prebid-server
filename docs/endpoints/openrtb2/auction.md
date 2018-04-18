@@ -111,6 +111,22 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
+Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
+
+#### Bid Adjustments
+
+Bidders [are encouraged](../../developers/add-new-bidder.md) to make Net bids. However, there's no way for Prebid to enforce this.
+If you find that some bidders use Gross bids, publishers can adjust for it with `request.ext.prebid.bidadjustmentfactors`:
+
+```
+{
+  "appnexus: 0.8,
+  "rubicon": 0.7
+}
+```
+
+This may also be useful for publishers who want to account for different discrepancies with different bidders.
+
 #### Targeting
 
 Targeting refers to strings which are sent to the adserver to
@@ -123,9 +139,17 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 
 ```
 {
-  "pricegraularity": "One of ['low', 'med', 'high', 'auto', 'dense']", // Required property.
+  "pricegraularity": {
+      "precision": 2,
+      "ranges": [{
+        "max":20.0
+        "increment":0.1 }], // The default is the "medium" price granularity, same as providing the deprecated "medium" string granularity.
+  "includewinners": false // Optional param defaulting to true
 }
 ```
+The list of price granularity ranges must be given in order of increasing `max` values. If `precision` is omitted, it will default to `2`. The minimum of a range will be 0 or the previous `max`. Any cmp above the largest `max` will go in the `max` pricebucket.
+
+For backwards compatibility the following strings will also be allowed as price granularity definitions. There is no guarantee that these will be honored in the future. "One of ['low', 'med', 'high', 'auto', 'dense']" See [price granularity definitions](http://prebid.org/prebid-mobile/adops-price-granularity.html)
 
 **Response format** (returned in `bid.ext.prebid.targeting`)
 
@@ -138,7 +162,7 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 ```
 
 The winning bid for each `request.imp[i]` will also contain `hb_bidder`, `hb_size`, and `hb_pb`
-(with _no_ {bidderName} suffix).
+(with _no_ {bidderName} suffix). To prevent these keys, set `request.ext.prebid.targeting.includeWinners` to false.
 
 **NOTE**: Targeting keys are limited to 20 characters. If {bidderName} is too long, the returned key
 will be truncated to only include the first 20 characters.
@@ -168,6 +192,11 @@ If you're using [Prebid.js](https://github.com/prebid/Prebid.js), this is happen
 
 If you're using another client, you can populate the Cookie of the Prebid Server host with User IDs
 for each Bidder by using the `/cookie_sync` endpoint, and calling the URLs that it returns in the response.
+
+#### Native Request
+
+For each native request, the `assets` objects's `id` field must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.
+
 
 #### Bidder Aliases
 
@@ -241,6 +270,10 @@ However, the publisher can improve performance by only offering impressions whic
 This contains info about every request and response sent by the bidder to its server.
 It is only returned on `test` bids for performance reasons, but may be useful during debugging.
 
+`response.ext.debug.resolvedrequest` will be populated **only if** `request.test` **was set to 1**.
+
+This contains the request after the resolution of stored requests and implicit information (e.g. site domain, device user agent).
+
 #### Stored Requests
 
 `request.imp[i].ext.prebid.storedrequest` incorporates a [Stored Request](../../developers/stored-requests.md) from the server.
@@ -254,6 +287,39 @@ A typical `storedrequest` value looks like this:
 ```
 
 For more information, see the docs for [Stored Requests](../../developers/stored-requests.md).
+
+#### Cache bids
+
+Bids can be temporarily cached on the server by sending the following data as `request.ext.prebid.cache`:
+
+```
+{
+  "bids": {}
+}
+```
+
+This property has no effect unless `request.ext.prebid.targeting` is also set in the request.
+If present, Prebid Server will make a _best effort_ to include these extra `bid.ext.prebid.targeting` keys:
+
+- `hb_cache_id`: On the highest overall Bid in each Imp.
+- `hb_cache_id_{bidderName}`: On the highest Bid from {bidderName} in each Imp.
+
+Clients _should not assume_ that these keys will exist, just because they were requested, though.
+If they exist, the value will be a UUID which can be used to fetch Bid JSON from [Prebid Cache](https://github.com/prebid/prebid-cache).
+They may not exist if the host company's cache is full, having connection problems, or other issues like that.
+
+This is mainly intended for certain limited Prebid Mobile setups, where bids cannot be cached client-side.
+
+#### GDPR
+
+Prebid Server supports the IAB's GDPR recommendations, which can be found [here](https://iabtechlab.com/wp-content/uploads/2018/02/OpenRTB_Advisory_GDPR_2018-02.pdf).
+
+This adds two optional properties:
+
+- `request.user.ext.consent`: Is the consent string required by the IAB standards.
+- `request.regs.ext.gdpr`: Is 0 if the caller believes that the user is *not* under GDPR, 1 if the user *is* under GDPR, and undefined if we're not certain.
+
+These fields will be forwarded to each Bidder, so they can decide how to process them.
 
 ### OpenRTB Differences
 

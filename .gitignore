@@ -25,12 +25,13 @@ _testmain.go
 *.test
 *.prof
 
-# glide directory
+# dep directory
 vendor
 
 # build artifacts
 prebid-server
 build
+debug
 
 # config files
 pbs.*

@@ -3,8 +3,6 @@ package usersync
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/pbs"
 )
 
 func NewAppnexusSyncer(externalURL string) Usersyncer {
@@ -13,7 +11,7 @@ func NewAppnexusSyncer(externalURL string) Usersyncer {
 
 	return &syncer{
 		familyName: "adnxs",
-		syncInfo: &pbs.UsersyncInfo{
+		syncInfo: &UsersyncInfo{
 			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
 			Type:        "redirect",
 			SupportCORS: false,

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "EPlanning Adapter Params",
+  "description": "A schema which validates params accepted by the EPlanning adapter",
+  "type": "object",
+  "properties": {
+    "exchange_id": {
+      "type": ["string"],
+      "description": "Exchange ID to use."
+    }
+  },
+  "required": []
+}

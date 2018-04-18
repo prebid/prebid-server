@@ -136,12 +136,12 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if bix.RP.SizeID != 10 { // 300x600
-			http.Error(w, fmt.Sprintf("Primary size ID isn't 10"), http.StatusInternalServerError)
+		if bix.RP.SizeID != 15 { // 300x250
+			http.Error(w, fmt.Sprintf("Primary size ID isn't 15"), http.StatusInternalServerError)
 			return
 		}
-		if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 15 { // 300x250
-			http.Error(w, fmt.Sprintf("Alt size ID isn't 15"), http.StatusInternalServerError)
+		if len(bix.RP.AltSizeIDs) != 1 || bix.RP.AltSizeIDs[0] != 10 { // 300x600
+			http.Error(w, fmt.Sprintf("Alt size ID isn't 10"), http.StatusInternalServerError)
 			return
 		}
 		if bix.RP.MIME != "text/html" {
@@ -327,40 +327,46 @@ func TestRubiconUserSyncInfo(t *testing.T) {
 	}
 }
 
+func getTestSizes() map[int]openrtb.Format {
+	return map[int]openrtb.Format{
+		15: {W: 300, H: 250},
+		10: {W: 300, H: 600},
+		2:  {W: 728, H: 91},
+		9:  {W: 160, H: 600},
+		8:  {W: 120, H: 600},
+		33: {W: 180, H: 500},
+		43: {W: 320, H: 50},
+	}
+}
+
 func TestParseSizes(t *testing.T) {
+
+	SIZE_ID := getTestSizes()
+
 	sizes := []openrtb.Format{
-		{
-			W: 300,
-			H: 600,
-		},
-		{
-			W: 300,
-			H: 250,
-		},
+		SIZE_ID[10],
+		SIZE_ID[15],
 	}
 	primary, alt, err := parseRubiconSizes(sizes)
 	if err != nil {
 		t.Errorf("Parsing error: %v", err)
 	}
-	if primary != 10 {
-		t.Errorf("Primary %d != 10", primary)
+	if primary != 15 {
+		t.Errorf("Primary %d != 15", primary)
 	}
 	if len(alt) != 1 {
 		t.Fatalf("Alt not len 1")
 	}
-	if alt[0] != 15 {
-		t.Errorf("Alt not 15: %d", alt[0])
+	if alt[0] != 10 {
+		t.Errorf("Alt not 10: %d", alt[0])
 	}
 
 	sizes = []openrtb.Format{
 		{
 			W: 1111,
-			H: 1111,
+			H: 2222,
 		},
-		{
-			W: 300,
-			H: 250,
-		},
+		SIZE_ID[15],
 	}
 	primary, alt, err = parseRubiconSizes(sizes)
 
@@ -375,10 +381,7 @@ func TestParseSizes(t *testing.T) {
 	}
 
 	sizes = []openrtb.Format{
-		{
-			W: 300,
-			H: 250,
-		},
+		SIZE_ID[15],
 	}
 	primary, alt, err = parseRubiconSizes(sizes)
 
@@ -394,8 +397,8 @@ func TestParseSizes(t *testing.T) {
 
 	sizes = []openrtb.Format{
 		{
-			W: 123,
-			H: 456,
+			W: 1111,
+			H: 1222,
 		},
 	}
 	primary, alt, err = parseRubiconSizes(sizes)
@@ -409,6 +412,132 @@ func TestParseSizes(t *testing.T) {
 	if len(alt) != 0 {
 		t.Errorf("Alt len %d != 0", len(alt))
 	}
+}
+
+func TestMASAlgorithm(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	type output struct {
+		primary int
+		alt     []int
+		ok      bool
+	}
+	type testStub struct {
+		input  []openrtb.Format
+		output output
+	}
+
+	testStubs := []testStub{
+		{
+			[]openrtb.Format{
+				SIZE_ID[2],
+				SIZE_ID[9],
+			},
+			output{2, []int{9}, false},
+		},
+		{
+			[]openrtb.Format{
+
+				SIZE_ID[9],
+				SIZE_ID[15],
+			},
+			output{15, []int{9}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[2],
+				SIZE_ID[15],
+			},
+			output{15, []int{2}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[15],
+				SIZE_ID[9],
+				SIZE_ID[2],
+			},
+			output{15, []int{2, 9}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[10],
+				SIZE_ID[9],
+				SIZE_ID[2],
+			},
+			output{2, []int{10, 9}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[33],
+				SIZE_ID[8],
+				SIZE_ID[15],
+			},
+			output{15, []int{33, 8}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[33],
+				SIZE_ID[8],
+				SIZE_ID[9],
+				SIZE_ID[2],
+			},
+			output{2, []int{33, 8, 9}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[33],
+				SIZE_ID[8],
+				SIZE_ID[9],
+			},
+			output{9, []int{33, 8}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[33],
+				SIZE_ID[8],
+				SIZE_ID[2],
+			},
+			output{2, []int{33, 8}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[33],
+				SIZE_ID[2],
+			},
+			output{2, []int{33}, false},
+		},
+		{
+			[]openrtb.Format{
+				SIZE_ID[8],
+			},
+			output{8, []int{}, false},
+		},
+		{
+			[]openrtb.Format{},
+			output{0, []int{}, true},
+		},
+		{
+			[]openrtb.Format{
+				{W: 1111,
+					H: 2345,
+				},
+			},
+			output{0, []int{}, true},
+		},
+	}
+
+	for _, test := range testStubs {
+		prim, alt, err := parseRubiconSizes(test.input)
+		if prim != test.output.primary {
+			t.Fatalf("Error in parsing rubicon sizes: MAS algorithm fail at primary: testcase %v", test.input)
+		}
+		if len(alt) != len(test.output.alt) {
+			t.Fatalf("Error in parsing rubicon sizes: MAS Algorithm fail at alt: testcase %v", test.input)
+		}
+		if (err != nil && !test.output.ok) || (err == nil && test.output.ok) {
+			t.Fatalf("Error in parsing rubicon sizes: MAS Algorithm fail at throwing error: testcase %v", test.input)
+		}
+	}
+
 }
 
 func TestAppendTracker(t *testing.T) {
@@ -643,6 +772,7 @@ func TestZeroPriceBidResponse(t *testing.T) {
 }
 
 func TestDifferentRequest(t *testing.T) {
+	SIZE_ID := getTestSizes()
 	server := httptest.NewServer(http.HandlerFunc(DummyRubiconServer))
 	defer server.Close()
 
@@ -709,14 +839,8 @@ func TestDifferentRequest(t *testing.T) {
 			W: 222,
 			H: 3333,
 		},
-		{
-			W: 300,
-			H: 600,
-		},
-		{
-			W: 300,
-			H: 250,
-		},
+		SIZE_ID[10],
+		SIZE_ID[15],
 	}
 	b, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err != nil || len(b) != 1 {
@@ -725,6 +849,7 @@ func TestDifferentRequest(t *testing.T) {
 }
 
 func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdapter, ctx context.Context, pbReq *pbs.PBSRequest) {
+	SIZE_ID := getTestSizes()
 	rubidata = rubiBidInfo{
 		domain:             "nytimes.com",
 		page:               "https://www.nytimes.com/2017/05/04/movies/guardians-of-the-galaxy-2-review-chris-pratt.html?hpw&rref=movies&action=click&pgtype=Homepage&module=well-region&region=bottom-well&WT.nav=bottom-well&_r=0",
@@ -783,14 +908,8 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 			Code:       tag.code,
 			MediaTypes: []string{tag.mediaType},
 			Sizes: []openrtb.Format{
-				{
-					W: 300,
-					H: 600,
-				},
-				{
-					W: 300,
-					H: 250,
-				},
+				SIZE_ID[10],
+				SIZE_ID[15],
 			},
 			Bids: []pbs.Bids{
 				{
@@ -853,6 +972,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 }
 
 func TestOpenRTBRequest(t *testing.T) {
+	SIZE_ID := getTestSizes()
 	bidder := new(RubiconAdapter)
 
 	rubidata = rubiBidInfo{
@@ -869,13 +989,10 @@ func TestOpenRTBRequest(t *testing.T) {
 		Imp: []openrtb.Imp{{
 			ID: "test-imp-banner-id",
 			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
-					W: 300,
-					H: 250,
-				}, {
-					W: 300,
-					H: 600,
-				}},
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
 			},
 			Ext: openrtb.RawJSON(`{"bidder": {
 				"zoneId": 8394,

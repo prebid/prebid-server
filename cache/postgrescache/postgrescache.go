@@ -7,7 +7,6 @@ import (
 
 	"github.com/coocood/freecache"
 	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type CacheConfig struct {
@@ -77,7 +76,7 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 
 	account.ID = id
 	if priceGranularity.Valid {
-		account.PriceGranularity = openrtb_ext.PriceGranularity(priceGranularity.String)
+		account.PriceGranularity = priceGranularity.String
 	}
 
 	buf := bytes.Buffer{}

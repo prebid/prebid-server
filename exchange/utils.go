@@ -16,7 +16,7 @@ import (
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, met *pbsmetrics.Metrics) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
 		return
@@ -27,11 +27,11 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, met *pb
 		return
 	}
 
-	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, met)
+	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
 	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, met *pbsmetrics.Metrics) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
 	if err != nil {
@@ -40,9 +40,20 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
-		met.AdapterMetrics[coreBidder].RequestMeter.Mark(1)
+		newLabel := pbsmetrics.AdapterLabels{
+			Source:        labels.Source,
+			RType:         labels.RType,
+			Adapter:       coreBidder,
+			PubID:         labels.PubID,
+			Browser:       labels.Browser,
+			CookieFlag:    labels.CookieFlag,
+			AdapterStatus: pbsmetrics.AdapterStatusOK,
+		}
+		blabels[coreBidder] = &newLabel
 		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, usersyncs); !hadSync && req.App == nil {
-			met.AdapterMetrics[coreBidder].NoCookieMeter.Mark(1)
+			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
 		}
 		reqCopy.Imp = imps
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
@@ -71,13 +82,17 @@ func extractBuyerUIDs(user *openrtb.User) (map[string]string, error) {
 	// The API guarantees that user.ext.prebid.buyeruids exists and has at least one ID defined,
 	// as long as user.ext.prebid exists.
 	buyerUIDs := userExt.Prebid.BuyerUIDs
-	userExt.Prebid.BuyerUIDs = nil
-	if newUserExtBytes, err := json.Marshal(userExt); err != nil {
-		return nil, err
+	userExt.Prebid = nil
+	if userExt.Consent != "" || userExt.DigiTrust != nil {
+		if newUserExtBytes, err := json.Marshal(userExt); err != nil {
+			return nil, err
+		} else {
+			user.Ext = newUserExtBytes
+		}
 	} else {
-		user.Ext = newUserExtBytes
-		return buyerUIDs, nil
+		user.Ext = nil
 	}
+	return buyerUIDs, nil
 }
 
 // splitImps takes a list of Imps and returns a map of imps which have been sanitized for each bidder.

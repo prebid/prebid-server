@@ -75,12 +75,6 @@ type BidderDebug struct {
 	StatusCode   int    `json:"status_code,omitempty"`
 }
 
-type UsersyncInfo struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
-}
-
 type PBSResponse struct {
 	TID          string       `json:"tid,omitempty"`
 	Status       string       `json:"status,omitempty"`

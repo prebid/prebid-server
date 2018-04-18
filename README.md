@@ -6,6 +6,9 @@ Prebid Server is an open source implementation of Server-Side Header Bidding.
 It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
 and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
 
+This project does not support the same set of Bidders as Prebid.js, although there is overlap.
+The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](docs/developers/add-new-bidder.md).
+
 For more information, see:
 
 - [What is Prebid?](http://prebid.org/overview/intro.html)
@@ -13,7 +16,7 @@ For more information, see:
 
 ## Installation
 
-First install [Go 1.9.1](https://golang.org/doc/install) and [Glide](https://github.com/Masterminds/glide#install). Note that Glide requires an explicit GOPATH to be set.
+First install [Go 1.9.1](https://golang.org/doc/install) or later and [dep](https://golang.github.io/dep/docs/installation.html). Note that dep requires an explicit GOPATH to be set.
 
 ```bash
 export GOPATH=$(go env GOPATH)
@@ -26,7 +29,7 @@ Then download and prepare Prebid Server:
 cd $GOPATH
 git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server
 cd src/github.com/prebid/prebid-server
-glide install
+dep ensure
 ```
 
 Run the automated tests:

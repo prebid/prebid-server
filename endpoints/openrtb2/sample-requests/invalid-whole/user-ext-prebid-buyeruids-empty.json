@@ -1,0 +1,29 @@
+{
+  "id": "request-without-user-ext-obj",
+  "site": {
+      "page": "test.somepage.com"
+  },
+  "imp": [
+      {
+          "id": "my-imp-id",
+          "banner": {
+              "format": [
+                  {
+                      "w": 300,
+                      "h": 600
+                  }
+              ]
+          },
+          "ext": {
+              "appnexus": "good"
+          }
+      }
+  ],
+  "user": {
+      "ext": {
+        "prebid": {
+          "buyeruids": {}
+        }
+      }
+  }
+}

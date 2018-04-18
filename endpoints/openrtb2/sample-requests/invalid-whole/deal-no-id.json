@@ -1,0 +1,21 @@
+{
+    "id": "req-id",
+    "imp": [
+        {
+            "id": "imp-id",
+            "video": {
+                "mimes": [
+                    "video/mp4"
+                ]
+            },
+            "pmp": {
+                "deals": [
+                    {
+                        "private_auction": 1,
+                        "id": ""
+                    }
+                ]
+            }
+        }
+    ]
+}

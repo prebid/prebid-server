@@ -2,8 +2,8 @@
 
 all:
 	@echo ""
-	@echo "  install: install glide (assumes go is installed)"
-	@echo "  deps: grab dependencies using glide"
+	@echo "  install: install dep (assumes go is installed)"
+	@echo "  deps: grab dependencies using dep"
 	@echo "  test: test prebid-server (via validate.sh)"
 	@echo "  build: build prebid-server"
 	@echo "  image: build docker image"
@@ -11,14 +11,15 @@ all:
 
 .PHONY: install deps test build image
 
-# install glide https://github.com/Masterminds/glide (assumes go is already installed)
+# install dep https://golang.github.io/dep/ (assumes go is already installed)
 install:
-	curl https://glide.sh/get | sh
+	export DEP_RELEASE_TAG=v0.4.1
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
-# deps will clean out the vendor directory and use glide for a fresh install
+# deps will clean out the vendor directory and use dep for a fresh install
 deps:
 	-rm -rf vendor
-	glide install
+	dep ensure
 
 # test will ensure that all of our dependencies are available and run validate.sh
 test: deps

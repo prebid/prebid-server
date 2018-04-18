@@ -61,6 +61,10 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 			return nil, err
 		}
 
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(sovrnReq.Imp) <= i {
+			break
+		}
 		sovrnReq.Imp[i].TagID = params.TagId
 	}
 
@@ -220,7 +224,8 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	bids := make([]*adapters.TypedBid, 0, 5)
 
 	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
 			bids = append(bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
