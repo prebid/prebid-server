@@ -187,16 +187,15 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 	responseBody := string(body)
 
+	if anResp.StatusCode == http.StatusBadRequest {
+		return nil, adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
+		}
+	}
+
 	if anResp.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody)
-		if anResp.StatusCode == 400 {
-			return nil, adapters.BadInputError{
-				Message: msg,
-			}
-		} else {
-			return nil, adapters.BadServerResponseError{
-				Message: msg,
-			}
+		return nil, adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
 		}
 	}
 
