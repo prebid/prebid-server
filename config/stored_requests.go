@@ -172,7 +172,7 @@ func (inMemCache *InMemoryCache) validate() error {
 	}
 
 	if inMemCache.TTL > 0 && (inMemCache.RequestCacheSize <= 0 || inMemCache.ImpCacheSize <= 0) {
-		return fmt.Errorf("Prebid Server doesn't yet support TTLs with no max size. Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
+		return fmt.Errorf("Stored Request In-Memory caches don't yet support TTLs with no max size. PRs for this are welcome. Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
 	}
 	return nil
 }
