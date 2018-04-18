@@ -28,7 +28,6 @@ func newCacheForWithLimits(size int, ttl int) mapLike {
 	if ttl >= 0 && size <= 0 {
 		glog.Fatal("No in-memory caches defined with a finite TTL but unbounded size. Config validation should have caught this. Failing fast because something is buggy.")
 	}
-	// We don't have to cover the
 	if size >= 0 {
 		return &pbsLRUCache{
 			Cache:      freecache.NewCache(size),
