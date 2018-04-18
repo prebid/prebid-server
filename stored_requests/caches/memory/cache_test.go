@@ -1,4 +1,4 @@
-package unbounded
+package memory
 
 import (
 	"context"
@@ -6,18 +6,49 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/caches/cachestest"
 )
 
-func TestUnboundedRobustness(t *testing.T) {
+func TestLRURobustness(t *testing.T) {
 	cachestest.AssertCacheRobustness(t, func() stored_requests.Cache {
-		return NewUnboundedCache()
+		return NewCache(&config.InMemoryCache{
+			RequestCacheSize: 256 * 1024,
+			ImpCacheSize:     256 * 1024,
+			TTL:              -1,
+		})
 	})
 }
 
-func TestRaceConcurrency(t *testing.T) {
-	cache := NewUnboundedCache()
+func TestUnboundedRobustness(t *testing.T) {
+	cachestest.AssertCacheRobustness(t, func() stored_requests.Cache {
+		return NewCache(&config.InMemoryCache{
+			RequestCacheSize: 0,
+			ImpCacheSize:     0,
+			TTL:              -1,
+		})
+	})
+}
+
+func TestRaceLRUConcurrency(t *testing.T) {
+	cache := NewCache(&config.InMemoryCache{
+		RequestCacheSize: 256 * 1024,
+		ImpCacheSize:     256 * 1024,
+		TTL:              -1,
+	})
+
+	go writeLots(cache, 100)
+	go readLots(cache, 100)
+	go invalidateLots(cache, 100)
+}
+
+func TestRaceUnboundedConcurrency(t *testing.T) {
+	cache := NewCache(&config.InMemoryCache{
+		RequestCacheSize: 0,
+		ImpCacheSize:     0,
+		TTL:              -1,
+	})
 
 	go writeLots(cache, 100)
 	go readLots(cache, 100)
