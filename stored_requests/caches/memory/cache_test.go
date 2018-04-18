@@ -38,9 +38,13 @@ func TestRaceLRUConcurrency(t *testing.T) {
 		TTL:              -1,
 	})
 
-	go writeLots(cache, 100)
-	go readLots(cache, 100)
-	go invalidateLots(cache, 100)
+	done := make(chan struct{})
+	go writeLots(cache, done, 100)
+	go readLots(cache, done, 100)
+	go invalidateLots(cache, done, 100)
+	for i := 0; i < 3; i++ {
+		<-done
+	}
 }
 
 func TestRaceUnboundedConcurrency(t *testing.T) {
@@ -50,27 +54,38 @@ func TestRaceUnboundedConcurrency(t *testing.T) {
 		TTL:              -1,
 	})
 
-	go writeLots(cache, 100)
-	go readLots(cache, 100)
-	go invalidateLots(cache, 100)
+	done := make(chan struct{})
+	go writeLots(cache, done, 100)
+	go readLots(cache, done, 100)
+	go invalidateLots(cache, done, 100)
+
+	for i := 0; i < 3; i++ {
+		<-done
+	}
 }
 
-func readLots(cache stored_requests.Cache, numWrites int) {
+func readLots(cache stored_requests.Cache, done chan<- struct{}, numWrites int) {
+	var s struct{}
 	for i := 0; i < numWrites; i++ {
 		cache.Get(context.Background(), sliceForVal(i), sliceForVal(-i))
 	}
+	done <- s
 }
 
-func writeLots(cache stored_requests.Cache, numWrites int) {
+func writeLots(cache stored_requests.Cache, done chan<- struct{}, numWrites int) {
+	var s struct{}
 	for i := 0; i < numWrites; i++ {
 		cache.Save(context.Background(), mapForVal(i), mapForVal(-i))
 	}
+	done <- s
 }
 
-func invalidateLots(cache stored_requests.Cache, numWrites int) {
+func invalidateLots(cache stored_requests.Cache, done chan<- struct{}, numWrites int) {
+	var s struct{}
 	for i := 0; i < numWrites; i++ {
 		cache.Invalidate(context.Background(), sliceForVal(i), sliceForVal(i))
 	}
+	done <- s
 }
 
 func mapForVal(val int) map[string]json.RawMessage {
