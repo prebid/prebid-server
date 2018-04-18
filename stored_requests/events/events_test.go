@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	"github.com/prebid/prebid-server/stored_requests/caches/memory"
 )
 
 func TestListen(t *testing.T) {
@@ -17,7 +17,7 @@ func TestListen(t *testing.T) {
 		invalidations: make(chan Invalidation),
 	}
 
-	cache := in_memory.NewLRUCache(&config.InMemoryCache{
+	cache := memory.NewCache(&config.InMemoryCache{
 		RequestCacheSize: 256 * 1024,
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,

@@ -116,7 +116,7 @@ func (w closeWrapper) Close() error {
 	return nil
 }
 
-func newFetcherBrokenBackend() (fetcher *httpFetcher, closer func()) {
+func newFetcherBrokenBackend() (fetcher *HttpFetcher, closer func()) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -124,13 +124,13 @@ func newFetcherBrokenBackend() (fetcher *httpFetcher, closer func()) {
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *httpFetcher, closer func()) {
+func newEmptyFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *HttpFetcher, closer func()) {
 	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyToNull)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
 }
 
-func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *httpFetcher, closer func()) {
+func newTestFetcher(t *testing.T, expectReqIDs []string, expectImpIDs []string) (fetcher *HttpFetcher, closer func()) {
 	handler := newHandler(t, expectReqIDs, expectImpIDs, jsonifyID)
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	return NewFetcher(server.Client(), server.URL), server.Close
