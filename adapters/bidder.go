@@ -16,6 +16,8 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
+	//
+	// If the error is caused by bad user input, return a BadInputError.
 	MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
@@ -24,6 +26,9 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the server response didn't have the expected format.
+	//
+	// If the error was caused by bad user input, return a BadInputError.
+	// If the error was caused by a bad server response, return a BadServerResponseError
 	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) ([]*TypedBid, []error)
 }
 
