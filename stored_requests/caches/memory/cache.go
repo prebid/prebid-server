@@ -1,8 +1,9 @@
-package in_memory
+package memory
 
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/coocood/freecache"
 	"github.com/golang/glog"
@@ -10,24 +11,36 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-// NewLRUCache returns an in-memory Cache which evicts items if:
+// NewCache returns an in-memory Cache which evicts items if:
 //
 // 1. They haven't been used within the TTL.
 // 2. The cache is too large. This will cause the least recently used items to be evicted.
 //
 // For no TTL, use ttlSeconds <= 0
-func NewLRUCache(cfg *config.InMemoryCache) stored_requests.Cache {
+func NewCache(cfg *config.InMemoryCache) stored_requests.Cache {
 	return &cache{
-		requestDataCache: freecache.NewCache(cfg.RequestCacheSize),
-		impDataCache:     freecache.NewCache(cfg.ImpCacheSize),
-		ttlSeconds:       cfg.TTL,
+		requestDataCache: newCacheForWithLimits(cfg.RequestCacheSize, cfg.TTL),
+		impDataCache:     newCacheForWithLimits(cfg.ImpCacheSize, cfg.TTL),
+	}
+}
+
+func newCacheForWithLimits(size int, ttl int) mapLike {
+	if ttl >= 0 && size <= 0 {
+		glog.Fatal("No in-memory caches defined with a finite TTL but unbounded size. Config validation should have caught this. Failing fast because something is buggy.")
+	}
+	if size > 0 {
+		return &pbsLRUCache{
+			Cache:      freecache.NewCache(size),
+			ttlSeconds: ttl,
+		}
+	} else {
+		return &pbsSyncMap{&sync.Map{}}
 	}
 }
 
 type cache struct {
-	requestDataCache *freecache.Cache
-	impDataCache     *freecache.Cache
-	ttlSeconds       int
+	requestDataCache mapLike
+	impDataCache     mapLike
 }
 
 func (c *cache) Get(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
@@ -36,13 +49,11 @@ func (c *cache) Get(ctx context.Context, requestIDs []string, impIDs []string) (
 	return
 }
 
-func doGet(cache *freecache.Cache, ids []string) (data map[string]json.RawMessage) {
+func doGet(cache mapLike, ids []string) (data map[string]json.RawMessage) {
 	data = make(map[string]json.RawMessage, len(ids))
 	for _, id := range ids {
-		if bytes, err := cache.Get([]byte(id)); err == nil {
-			data[id] = bytes
-		} else if err != freecache.ErrNotFound {
-			glog.Errorf("unexpected error from freecache: %v", err)
+		if val, ok := cache.Get(id); ok {
+			data[id] = val
 		}
 	}
 	return
@@ -53,11 +64,9 @@ func (c *cache) Save(ctx context.Context, storedRequests map[string]json.RawMess
 	c.doSave(c.impDataCache, storedImps)
 }
 
-func (c *cache) doSave(cache *freecache.Cache, values map[string]json.RawMessage) {
+func (c *cache) doSave(cache mapLike, values map[string]json.RawMessage) {
 	for id, data := range values {
-		if err := cache.Set([]byte(id), data, c.ttlSeconds); err != nil {
-			glog.Errorf("error saving value in freecache: %v", err)
-		}
+		cache.Set(id, data)
 	}
 }
 
@@ -66,8 +75,8 @@ func (c *cache) Invalidate(ctx context.Context, requestIDs []string, impIDs []st
 	doInvalidate(c.impDataCache, impIDs)
 }
 
-func doInvalidate(cache *freecache.Cache, ids []string) {
+func doInvalidate(cache mapLike, ids []string) {
 	for _, id := range ids {
-		cache.Del([]byte(id))
+		cache.Delete(id)
 	}
 }

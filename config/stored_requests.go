@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -19,8 +20,8 @@ type StoredRequests struct {
 	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
 	// If non-nil, Stored Requests will be fetched from the endpoint described there.
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
-	// InMemoryCache configures an instance of stored_requests/caches/in_memory/lru.go.
-	// If non-nil, Stored Requests will be saved in an in-memory LRU cache.
+	// InMemoryCache configures an instance of stored_requests/caches/memory/cache.go.
+	// If non-nil, Stored Requests will be saved in an in-memory cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
 	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
 	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
@@ -57,7 +58,7 @@ func (cfg *StoredRequests) validate() error {
 		}
 	}
 
-	return nil
+	return cfg.InMemoryCache.validate()
 }
 
 // PostgresConfig configures the Postgres connection for Stored Requests
@@ -159,8 +160,19 @@ type InMemoryCache struct {
 	// TTL is the maximum number of seconds that an unused value will stay in the cache.
 	// TTL <= 0 can be used for "no ttl". Elements will still be evicted based on the Size.
 	TTL int `mapstructure:"ttl_seconds"`
-	// RequestCacheSize is the max number of bytes allowed in the cache for Stored Requests.
+	// RequestCacheSize is the max number of bytes allowed in the cache for Stored Requests. Values <= 0 will have no limit
 	RequestCacheSize int `mapstructure:"request_cache_size_bytes"`
-	// ImpCacheSize is the max number of bytes allowed in the cache for Stored Imps.
+	// ImpCacheSize is the max number of bytes allowed in the cache for Stored Imps. Values <= 0 will have no limit
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
+}
+
+func (inMemCache *InMemoryCache) validate() error {
+	if inMemCache == nil {
+		return nil
+	}
+
+	if inMemCache.TTL > 0 && (inMemCache.RequestCacheSize <= 0 || inMemCache.ImpCacheSize <= 0) {
+		return fmt.Errorf("Stored Request In-Memory caches don't yet support TTLs with no max size. PRs for this are welcome. Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
+	}
+	return nil
 }

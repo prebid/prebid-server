@@ -10,12 +10,12 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	"github.com/prebid/prebid-server/stored_requests/caches/memory"
 	"github.com/prebid/prebid-server/stored_requests/events"
 )
 
 func TestGoodRequests(t *testing.T) {
-	cache := in_memory.NewLRUCache(&config.InMemoryCache{
+	cache := memory.NewCache(&config.InMemoryCache{
 		RequestCacheSize: 256 * 1024,
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
@@ -72,7 +72,7 @@ func TestGoodRequests(t *testing.T) {
 }
 
 func TestBadRequests(t *testing.T) {
-	cache := in_memory.NewLRUCache(&config.InMemoryCache{
+	cache := memory.NewCache(&config.InMemoryCache{
 		RequestCacheSize: 256 * 1024,
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
