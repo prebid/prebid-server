@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 	"strconv"
 	"testing"
 
@@ -38,13 +39,7 @@ func TestRaceLRUConcurrency(t *testing.T) {
 		TTL:              -1,
 	})
 
-	done := make(chan struct{})
-	go writeLots(cache, done, 100)
-	go readLots(cache, done, 100)
-	go invalidateLots(cache, done, 100)
-	for i := 0; i < 3; i++ {
-		<-done
-	}
+	doRaceTest(t, cache)
 }
 
 func TestRaceUnboundedConcurrency(t *testing.T) {
@@ -54,36 +49,44 @@ func TestRaceUnboundedConcurrency(t *testing.T) {
 		TTL:              -1,
 	})
 
+	doRaceTest(t, cache)
+}
+
+func doRaceTest(t *testing.T, cache stored_requests.Cache) {
 	done := make(chan struct{})
-	go writeLots(cache, done, 100)
-	go readLots(cache, done, 100)
-	go invalidateLots(cache, done, 100)
+	reads := rand.Perm(100)
+	writes := rand.Perm(100)
+	invalidates := rand.Perm(100)
+
+	go writeLots(cache, done, writes)
+	go readLots(cache, done, reads)
+	go invalidateLots(cache, done, invalidates)
 
 	for i := 0; i < 3; i++ {
 		<-done
 	}
 }
 
-func readLots(cache stored_requests.Cache, done chan<- struct{}, numWrites int) {
+func readLots(cache stored_requests.Cache, done chan<- struct{}, reads []int) {
 	var s struct{}
-	for i := 0; i < numWrites; i++ {
+	for _, i := range reads {
 		cache.Get(context.Background(), sliceForVal(i), sliceForVal(-i))
 	}
 	done <- s
 }
 
-func writeLots(cache stored_requests.Cache, done chan<- struct{}, numWrites int) {
+func writeLots(cache stored_requests.Cache, done chan<- struct{}, writes []int) {
 	var s struct{}
-	for i := 0; i < numWrites; i++ {
+	for _, i := range writes {
 		cache.Save(context.Background(), mapForVal(i), mapForVal(-i))
 	}
 	done <- s
 }
 
-func invalidateLots(cache stored_requests.Cache, done chan<- struct{}, numWrites int) {
+func invalidateLots(cache stored_requests.Cache, done chan<- struct{}, invalidates []int) {
 	var s struct{}
-	for i := 0; i < numWrites; i++ {
-		cache.Invalidate(context.Background(), sliceForVal(i), sliceForVal(i))
+	for _, i := range invalidates {
+		cache.Invalidate(context.Background(), sliceForVal(i), sliceForVal(-i))
 	}
 	done <- s
 }
