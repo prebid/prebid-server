@@ -173,13 +173,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	if pbResp.StatusCode == http.StatusBadRequest {
 		return nil, &adapters.BadInputError{
-			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode)
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
 		}
 	}
 
 	if pbResp.StatusCode != http.StatusOK {
 		return nil, &adapters.BadServerResponseError{
-			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode)
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
 		}
 	}
 
@@ -197,7 +197,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
 		return nil, &adapters.BadServerResponseError{
-			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode)
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
 		}
 	}
 
