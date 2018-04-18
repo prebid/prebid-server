@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/golang/glog"
 
 	"github.com/prebid/prebid-server/pbs"
 
@@ -220,7 +221,9 @@ func findPrimary(alt []int) (int, []int) {
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
 	// Fixes #317
 	if len(sizes) < 1 {
-		err = errors.New("rubicon imps must have at least one imp.format element")
+		err = &adapters.BadInputError{
+			Message: "rubicon imps must have at least one imp.format element",
+		}
 		return
 	}
 	for _, size := range sizes {
@@ -231,7 +234,9 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	if len(alt) > 0 {
 		primary, alt = findPrimary(alt)
 	} else {
-		err = errors.New("No primary size found")
+		err = &adapters.BadInputError{
+			Message: "No primary size found",
+		}
 	}
 	return
 }
@@ -259,14 +264,25 @@ func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (res
 		return
 	}
 
-	if rubiResp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP status %d; body: %s", rubiResp.StatusCode, result.ResponseBody)
+	if rubiResp.StatusCode == http.StatusBadRequest {
+		err = &adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", rubiResp.StatusCode, result.ResponseBody),
+		}
+	}
+
+	if rubiResp.StatusCode != http.StatusOK {
+		err = &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", rubiResp.StatusCode, result.ResponseBody),
+		}
 		return
 	}
 
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
+		err = &adapters.BadServerResponseError{
+			Message: err.Error(),
+		}
 		return
 	}
 	if len(bidResp.SeatBid) == 0 {
@@ -335,7 +351,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
 		if err != nil {
-			return nil, err
+			return nil, &adapters.BadInputError{
+				Message: err.Error(),
+			}
 		}
 
 		var mint, mintVersion string
@@ -416,7 +434,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		callOneObjects = append(callOneObjects, callOneObject{reqBuffer, unit.MediaTypes[0]})
 	}
 	if len(callOneObjects) == 0 {
-		return nil, errors.New("Invalid ad unit/imp")
+		return nil, &adapters.BadInputError{
+			Message: "Invalid ad unit/imp",
+		}
 	}
 
 	ch := make(chan adapters.CallOneResult)
@@ -428,7 +448,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				result.Bid.BidderCode = bidder.BidderCode
 				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
 				if result.Bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
+					result.Error = &adapters.BadServerResponseError{
+						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
+					}
 					result.Bid = nil
 				} else {
 					// no need to check whether mediaTypes is nil or length of zero, pbs.ParsePBSRequest will cover
@@ -462,7 +484,9 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 			bidder.Debug = append(bidder.Debug, debug)
 		}
 		if result.Error != nil {
-			fmt.Printf("Error in rubicon adapter: %v", result.Error)
+			if glog.V(2) {
+				glog.Infof("Error from rubicon adapter: %v", result.Error)
+			}
 			err = result.Error
 		}
 	}
@@ -523,13 +547,17 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &adapters.BadInputError{
+				Message: err.Error(),
+			})
 			continue
 		}
 
 		var rubiconExt openrtb_ext.ExtImpRubicon
 		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, &adapters.BadInputError{
+				Message: err.Error(),
+			})
 			continue
 		}
 
@@ -553,7 +581,9 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
 				if err = json.Unmarshal(userCopy.Ext, &userExt); err != nil {
-					errs = append(errs, err)
+					errs = append(errs, &adapters.BadInputError{
+						Message: err.Error(),
+					})
 					continue
 				}
 				if userExt.DigiTrust != nil {
@@ -639,13 +669,23 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		return nil, nil
 	}
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: err.Error(),
+		}}
 	}
 
 	var bidReq openrtb.BidRequest
