@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -37,7 +36,9 @@ type indexParams struct {
 
 func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	if req.App != nil {
-		return nil, fmt.Errorf("Index doesn't support apps")
+		return nil, &adapters.BadInputError{
+			Message: "Index doesn't support apps",
+		}
 	}
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 	indexReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
@@ -50,10 +51,14 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		var params indexParams
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
-			return nil, fmt.Errorf("unmarshal params '%s' failed: %v", unit.Params, err)
+			return nil, &adapters.BadInputError{
+				Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
+			}
 		}
 		if params.SiteID == 0 {
-			return nil, errors.New("Missing siteID param")
+			return nil, &adapters.BadInputError{
+				Message: "Missing siteID param",
+			}
 		}
 
 		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
@@ -94,12 +99,20 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	debug.StatusCode = ixResp.StatusCode
 
-	if ixResp.StatusCode == 204 {
+	if ixResp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if ixResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status: %d", ixResp.StatusCode)
+	if ixResp.StatusCode == http.StatusBadRequest {
+		return nil, &adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status: %d", ixResp.StatusCode),
+		}
+	}
+
+	if ixResp.StatusCode != http.StatusOK {
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status: %d", ixResp.StatusCode),
+		}
 	}
 
 	defer ixResp.Body.Close()
@@ -115,7 +128,9 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing response: %v", err)
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Error parsing response: %v", err),
+		}
 	}
 
 	bids := make(pbs.PBSBidSlice, 0)
@@ -127,7 +142,9 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
+				return nil, &adapters.BadServerResponseError{
+					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+				}
 			}
 
 			pbid := pbs.PBSBid{
