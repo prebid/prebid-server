@@ -131,7 +131,9 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	}
 
 	if len(imps) < 1 {
-		return openrtb.BidRequest{}, errors.New("openRTB bids need at least one Imp")
+		return openrtb.BidRequest{}, &BadInputError{
+			Message: "openRTB bids need at least one Imp",
+		}
 	}
 
 	if req.App != nil {
