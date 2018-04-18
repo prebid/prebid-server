@@ -56,13 +56,16 @@ func doRaceTest(t *testing.T, cache stored_requests.Cache) {
 	done := make(chan struct{})
 	sets := [][]int{rand.Perm(100), rand.Perm(100), rand.Perm(100)}
 
-	for _, randSet := range sets {
-		go writeLots(cache, done, randSet)
-		go readLots(cache, done, randSet)
-		go invalidateLots(cache, done, randSet)
+	readOrder := rand.Perm(3)
+	writeOrder := rand.Perm(3)
+	invalidateOrder := rand.Perm(3)
+	for i := 0; i < 3; i++ {
+		go writeLots(cache, done, sets[writeOrder[i]])
+		go readLots(cache, done, sets[readOrder[i]])
+		go invalidateLots(cache, done, sets[invalidateOrder[i]])
 	}
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 9; i++ {
 		<-done
 	}
 }
