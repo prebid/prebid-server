@@ -54,13 +54,13 @@ func TestRaceUnboundedConcurrency(t *testing.T) {
 
 func doRaceTest(t *testing.T, cache stored_requests.Cache) {
 	done := make(chan struct{})
-	reads := rand.Perm(100)
-	writes := rand.Perm(100)
-	invalidates := rand.Perm(100)
+	sets := [][]int{rand.Perm(100), rand.Perm(100), rand.Perm(100)}
 
-	go writeLots(cache, done, writes)
-	go readLots(cache, done, reads)
-	go invalidateLots(cache, done, invalidates)
+	for _, randSet := range sets {
+		go writeLots(cache, done, randSet)
+		go readLots(cache, done, randSet)
+		go invalidateLots(cache, done, randSet)
+	}
 
 	for i := 0; i < 3; i++ {
 		<-done
