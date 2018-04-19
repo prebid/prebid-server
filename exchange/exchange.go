@@ -143,12 +143,17 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
-		go func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels) {
+		coreBidder := resolveBidder(string(bidderName), aliases)
+		go func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
 			// Passing in aName so a doesn't change out from under the go routine
+			if bidlabels.Adapter == "" {
+				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", aName, coreBidder)
+				bidlabels.Adapter = coreBidder
+			}
 			brw := new(bidResponseWrapper)
 			brw.bidder = aName
 			// Defer basic metrics to insure we capture them at the
-			defer e.me.RecordAdapterRequest(*blabels[coreBidder])
+			defer e.me.RecordAdapterRequest(*bidlabels)
 			start := time.Now()
 
 			adjustmentFactor := 1.0
@@ -169,7 +174,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			// Timing statistics
-			e.me.RecordAdapterTime(*blabels[coreBidder], time.Since(start))
+			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
 			serr := make([]string, len(err))
 			for i := 0; i < len(err); i++ {
 				serr[i] = err[i].Error()
@@ -177,9 +182,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				// in the metrics. Need to remember that in analyzing the data.
 				switch err[i] {
 				case context.DeadlineExceeded:
-					blabels[coreBidder].AdapterStatus = pbsmetrics.AdapterStatusTimeout
+					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
 				default:
-					blabels[coreBidder].AdapterStatus = pbsmetrics.AdapterStatusErr
+					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 				}
 			}
 			// Append any bid validation errors to the error list
@@ -188,16 +193,16 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if len(err) == 0 {
 				if bids == nil || len(bids.bids) == 0 {
 					// Don't want to mark no bids on error topreserve legacy behavior.
-					blabels[coreBidder].AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
 				} else {
 					for _, bid := range bids.bids {
 						var cpm = float64(bid.bid.Price * 1000)
-						e.me.RecordAdapterPrice(*blabels[coreBidder], cpm)
+						e.me.RecordAdapterPrice(*bidlabels, cpm)
 					}
 				}
 			}
 			chBids <- brw
-		}(bidderName, resolveBidder(string(bidderName), aliases), req, blabels)
+		}(bidderName, coreBidder, req, blabels[coreBidder])
 	}
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {

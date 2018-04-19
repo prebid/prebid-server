@@ -299,7 +299,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 
 	ch := make(chan bidResult)
 	sentBids := 0
-	bidderLabels := make(map[string]*pbsmetrics.AdapterLabels)
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
@@ -312,7 +311,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				CookieFlag:    labels.CookieFlag,
 				AdapterStatus: pbsmetrics.AdapterStatusOK,
 			}
-			bidderLabels[bidder.BidderCode] = &blabels
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
@@ -344,12 +342,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				if err != nil {
 					switch err {
 					case context.DeadlineExceeded:
-						bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusTimeout
+						blabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusErr
+						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
 						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 					}
@@ -364,7 +362,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					}
 				} else {
 					bidder.NoBid = true
-					bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					blabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
 				}
 
 				ch <- bidResult{
