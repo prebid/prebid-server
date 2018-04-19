@@ -303,7 +303,7 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
@@ -317,7 +317,7 @@ func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
@@ -331,7 +331,7 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
