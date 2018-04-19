@@ -285,30 +285,30 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 }
 
 func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+	size := openrtb.Format{}
+	overrideSize := openrtb.Format{}
+	var multiSize []openrtb.Format
+
+	if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
+		size.W = width
+	}
+
+	if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
+		size.H = height
+	}
+
 	if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.W = &overrideWidth
-		}
-	} else if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.W = &width
-		}
+		overrideSize.W = overrideWidth
 	}
 
 	if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.H = &overrideHeight
-		}
-	} else if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.H = &height
-		}
+		overrideSize.H = overrideHeight
 	}
 
-	multiSize := httpRequest.FormValue("ms")
-	if multiSize != "" {
-		sizes := strings.Split(multiSize, ",")
-		format := make([]openrtb.Format, 0, len(sizes))
+	multiSizeStr := httpRequest.FormValue("ms")
+	if multiSizeStr != "" {
+		sizes := strings.Split(multiSizeStr, ",")
+		multiSize = make([]openrtb.Format, 0, len(sizes))
 		for _, size := range sizes {
 			wh := strings.Split(size, "x")
 			if len(wh) == 2 {
@@ -324,10 +324,19 @@ func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, re
 					continue
 				}
 
-				format = append(format, f)
+				multiSize = append(multiSize, f)
 			}
 		}
-		req.Imp[0].Banner.Format = format
+	}
+
+	if req.Imp[0].Banner != nil {
+		if overrideSize.H > 0 && overrideSize.W > 0 {
+			req.Imp[0].Banner.Format = []openrtb.Format{overrideSize}
+		} else if len(multiSize) > 0 {
+			req.Imp[0].Banner.Format = multiSize
+		} else if size.H > 0 && size.W > 0 {
+			req.Imp[0].Banner.Format = []openrtb.Format{size}
+		}
 	}
 
 	canonicalURL := httpRequest.FormValue("curl")

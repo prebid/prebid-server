@@ -193,14 +193,6 @@ func TestQueryParamOverrides(t *testing.T) {
 	}
 
 	resolvedImp := resolvedRequest.Imp[0]
-	if *resolvedImp.Banner.H != oh {
-		t.Errorf("Expected Banner.H to equal oh (%d), got: %d", oh, *resolvedImp.Banner.H)
-	}
-
-	if *resolvedImp.Banner.W != w {
-		t.Errorf("Expected Banner.W to equal w (%d), got: %d", w, *resolvedImp.Banner.W)
-	}
-
 	expectedFormats := []openrtb.Format{
 		openrtb.Format{W: 640, H: 480},
 		openrtb.Format{W: 640, H: 320},
