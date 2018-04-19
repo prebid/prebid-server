@@ -311,9 +311,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				CookieFlag:    labels.CookieFlag,
 				AdapterStatus: pbsmetrics.AdapterStatusOK,
 			}
-			if blables.Adapter == "" {
+			if blabels.Adapter == "" {
 				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
-				blables.Adapter = openrtb_ext.BidderName(bidder.BidderCode)
+				blabels.Adapter = openrtb_ext.BidderName(bidder.BidderCode)
 			}
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
