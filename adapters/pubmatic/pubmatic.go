@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -49,14 +48,14 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
 
 	if err != nil {
-		glog.Warningf("[PUBMATIC] Failed to make ortb request for request id [%s] \n", pbReq.ID)
+		logf("[PUBMATIC] Failed to make ortb request for request id [%s] \n", pbReq.ID)
 		return nil, err
 	}
 
 	adSlotFlag := false
 	pubId := ""
 	if len(bidder.AdUnits) > MAX_IMPRESSIONS_PUBMATIC {
-		glog.Warningf("[PUBMATIC] First %d impressions will be considered from request tid %s\n",
+		logf("[PUBMATIC] First %d impressions will be considered from request tid %s\n",
 			MAX_IMPRESSIONS_PUBMATIC, pbReq.ID)
 	}
 
@@ -64,19 +63,19 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		var params pubmaticParams
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
-			glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+			logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 				fmt.Sprintf("Ignored bid: invalid JSON  [%s] err [%s]", unit.Params, err.Error())))
 			continue
 		}
 
 		if params.PublisherId == "" {
-			glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+			logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 				fmt.Sprintf("Ignored bid: Publisher Id missing")))
 			continue
 		}
 		pubId = params.PublisherId
 		if params.AdSlot == "" {
-			glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+			logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 				fmt.Sprintf("Ignored bid: adSlot missing")))
 			continue
 		}
@@ -94,7 +93,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				if len(adSize) == 2 {
 					width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
 					if err != nil {
-						glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+						logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 							fmt.Sprintf("Ignored bid: invalid adSlot width [%s]", adSize[0])))
 						continue
 					}
@@ -102,7 +101,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
 					height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 					if err != nil {
-						glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+						logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 							fmt.Sprintf("Ignored bid: invalid adSlot height [%s]", heightStr[0])))
 						continue
 					}
@@ -112,13 +111,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 					adSlotFlag = true
 				} else {
-					glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+					logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 						fmt.Sprintf("Ignored bid: invalid adSize [%s]", adSize)))
 					continue
 				}
 			}
 		} else {
-			glog.Warningf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
+			logf(PrepareLogMessage(pbReq.ID, params.PublisherId, unit.Code, unit.BidID,
 				fmt.Sprintf("Ignored bid: invalid adSlot [%s]", params.AdSlot)))
 			continue
 		}
@@ -136,7 +135,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if !(adSlotFlag) {
-		return nil, errors.New("Incorrect adSlot / Publisher param")
+		return nil, adapters.BadInputError{
+			Message: "Incorrect adSlot / Publisher param",
+		}
 	}
 
 	reqJSON, err := json.Marshal(pbReq)
@@ -166,12 +167,20 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	debug.StatusCode = pbResp.StatusCode
 
-	if pbResp.StatusCode == 204 {
+	if pbResp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if pbResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status: %d", pbResp.StatusCode)
+	if pbResp.StatusCode == http.StatusBadRequest {
+		return nil, &adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
+		}
+	}
+
+	if pbResp.StatusCode != http.StatusOK {
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
+		}
 	}
 
 	defer pbResp.Body.Close()
@@ -187,7 +196,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, err
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
+		}
 	}
 
 	bids := make(pbs.PBSBidSlice, 0)
@@ -199,7 +210,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, errors.New(fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID))
+				return nil, adapters.BadServerResponseError{
+					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+				}
 			}
 
 			pbid := pbs.PBSBid{
@@ -215,14 +228,18 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			}
 
 			bids = append(bids, &pbid)
-			if glog.V(2) {
-				glog.Infof("[PUBMATIC] Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
-					pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
-			}
+			logf("[PUBMATIC] Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
+				pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
 		}
 	}
 
 	return bids, nil
+}
+
+func logf(msg string, args ...interface{}) {
+	if glog.V(2) {
+		glog.Infof(msg, args)
+	}
 }
 
 func NewPubmaticAdapter(config *adapters.HTTPAdapterConfig, uri string) *PubmaticAdapter {

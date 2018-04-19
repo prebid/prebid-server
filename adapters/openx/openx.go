@@ -37,7 +37,9 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
 		} else {
-			err := fmt.Errorf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID)
+			err := &adapters.BadInputError{
+				Message: fmt.Sprintf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID),
+			}
 			errs = append(errs, err)
 		}
 	}
@@ -114,12 +116,16 @@ func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return err
+		return &adapters.BadInputError{
+			Message: err.Error(),
+		}
 	}
 
 	var openxExt openrtb_ext.ExtImpOpenx
 	if err := json.Unmarshal(bidderExt.Bidder, &openxExt); err != nil {
-		return err
+		return &adapters.BadInputError{
+			Message: err.Error(),
+		}
 	}
 
 	reqExt.DelDomain = openxExt.DelDomain
@@ -134,7 +140,9 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 		}
 		var err error
 		if imp.Ext, err = json.Marshal(impExt); err != nil {
-			return err
+			return &adapters.BadInputError{
+				Message: err.Error(),
+			}
 		}
 	}
 
@@ -146,8 +154,16 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		return nil, nil
 	}
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse

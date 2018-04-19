@@ -71,7 +71,9 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
-			return nil, err
+			return nil, &adapters.BadInputError{
+				Message: err.Error(),
+			}
 		}
 
 		// Fill in additional Site info
@@ -138,7 +140,9 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	// Do a quick check on required parameters
 
 	if cnvrReq.Site.ID == "" {
-		return nil, fmt.Errorf("Missing site id")
+		return nil, &adapters.BadInputError{
+			Message: "Missing site id",
+		}
 	}
 
 	// Start capturing debug info
@@ -185,8 +189,16 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		return nil, err
 	}
 
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status: %d, body: %s", resp.StatusCode, string(body)),
+		}
+	}
+
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status: %d, body: %s", resp.StatusCode, string(body))
+		return nil, adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status: %d, body: %s", resp.StatusCode, string(body)),
+		}
 	}
 
 	if req.IsDebug {
@@ -197,7 +209,9 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, err
+		return nil, adapters.BadServerResponseError{
+			Message: err.Error(),
+		}
 	}
 
 	bids := make(pbs.PBSBidSlice, 0)
@@ -211,12 +225,16 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			imp := impMap[bid.ImpID]
 			if imp == nil {
 				// All returned bids should have a matching impression
-				return nil, fmt.Errorf("Unknown impression id '%s'", bid.ImpID)
+				return nil, &adapters.BadServerResponseError{
+					Message: fmt.Sprintf("Unknown impression id '%s'", bid.ImpID),
+				}
 			}
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
+				return nil, &adapters.BadServerResponseError{
+					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+				}
 			}
 
 			pbsBid := pbs.PBSBid{

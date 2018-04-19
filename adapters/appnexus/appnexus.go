@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -100,7 +99,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 
 		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
-			return nil, errors.New("No placement or member+invcode provided")
+			return nil, adapters.BadInputError{
+				Message: "No placement or member+invcode provided",
+			}
 		}
 
 		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
@@ -186,8 +187,16 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 	responseBody := string(body)
 
-	if anResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status %d; body: %s", anResp.StatusCode, responseBody)
+	if anResp.StatusCode == http.StatusBadRequest {
+		return nil, adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
+		}
+	}
+
+	if anResp.StatusCode != http.StatusOK {
+		return nil, adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
+		}
 	}
 
 	if req.IsDebug {
@@ -206,7 +215,9 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		for _, bid := range sb.Bid {
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
+				return nil, adapters.BadServerResponseError{
+					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+				}
 			}
 
 			pbid := pbs.PBSBid{
@@ -301,7 +312,9 @@ func keys(m map[string]bool) []string {
 func preprocess(imp *openrtb.Imp) (string, error) {
 	// We don't support audio imps yet.
 	if imp.Audio != nil {
-		return "", fmt.Errorf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID)
+		return "", adapters.BadInputError{
+			Message: fmt.Sprintf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
+		}
 	}
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -326,7 +339,9 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
-		return "", errors.New("No placement or member+invcode provided")
+		return "", adapters.BadInputError{
+			Message: "No placement or member+invcode provided",
+		}
 	}
 
 	if appnexusExt.InvCode != "" {
@@ -385,6 +400,12 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
