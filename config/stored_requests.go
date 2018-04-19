@@ -16,13 +16,16 @@ type StoredRequests struct {
 	Files bool `mapstructure:"filesystem"`
 	// Postgres configures an instance of stored_requests/backends/db_fetcher/postgres.go.
 	// If non-nil, Stored Requests will be fetched from a postgres DB.
-	Postgres *PostgresConfig `mapstructure:"postgres"`
+	Postgres *PostgresFetcherConfig `mapstructure:"postgres"`
 	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
 	// If non-nil, Stored Requests will be fetched from the endpoint described there.
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
 	// InMemoryCache configures an instance of stored_requests/caches/memory/cache.go.
 	// If non-nil, Stored Requests will be saved in an in-memory cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
+	// PostgresEvents configures an instance of stored_requests/events/postgres/postgres.go.
+	// If non-nil, Caches will be updated or invalidated based on changes to the Postgres data.
+	PostgresEvents *PostgresEventsConfig `mapstructure:"postgres_events"`
 	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
 	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
 	// This is intended to be a useful development tool and not recommended for a production environment.
@@ -61,14 +64,59 @@ func (cfg *StoredRequests) validate() error {
 	return cfg.InMemoryCache.validate()
 }
 
-// PostgresConfig configures the Postgres connection for Stored Requests
-type PostgresConfig struct {
+type PostgresFetcherConfig struct {
+	ConnectionInfo PostgresConnection `mapstructure:"connection"`
+	Queries        PostgresQueries    `mapstructure:"queries"`
+}
+
+// PostgresConnection has options which put types to the Postgres Connection string. See:
+// https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters
+type PostgresConnection struct {
 	Database string `mapstructure:"dbname"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
+}
 
+func (cfg *PostgresConnection) ConnString() string {
+	buffer := bytes.NewBuffer(nil)
+
+	if cfg.Host != "" {
+		buffer.WriteString("host=")
+		buffer.WriteString(cfg.Host)
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Port > 0 {
+		buffer.WriteString("port=")
+		buffer.WriteString(strconv.Itoa(cfg.Port))
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Username != "" {
+		buffer.WriteString("user=")
+		buffer.WriteString(cfg.Username)
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Password != "" {
+		buffer.WriteString("password=")
+		buffer.WriteString(cfg.Password)
+		buffer.WriteString(" ")
+	}
+
+	if cfg.Database != "" {
+		buffer.WriteString("dbname=")
+		buffer.WriteString(cfg.Database)
+		buffer.WriteString(" ")
+	}
+
+	buffer.WriteString("sslmode=disable")
+	return buffer.String()
+}
+
+type PostgresQueries struct {
 	// QueryTemplate is the Postgres Query which can be used to fetch configs from the database.
 	// It is a Template, rather than a full Query, because a single HTTP request may reference multiple Stored Requests.
 	//
@@ -91,20 +139,27 @@ type PostgresConfig struct {
 	//     WHERE id in ($2, $3, $4, ...)
 	//
 	// ... where the number of "$x" args depends on how many IDs are nested within the HTTP request.
-	QueryTemplate string `mapstructure:"query"`
+	QueryTemplate string `mapstructure:"openrtb2"`
 
 	// AmpQueryTemplate is the same as QueryTemplate, but used in the `/openrtb2/amp` endpoint.
-	AmpQueryTemplate string `mapstructure:"amp_query"`
+	AmpQueryTemplate string `mapstructure:"amp"`
+}
+
+type PostgresEventsConfig struct {
+	ConnectionInfo       PostgresConnection `mapstructure:"connection"`
+	MinReconnectInterval int                `mapstructure:"min_reconnect_interval_ms"`
+	MaxReconnectInterval int                `mapstructure:"max_reconnect_interval_ms"`
+	Channel              string             `mapstructure:"channel"`
 }
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.
 // See the docs on PostgresConfig.QueryTemplate for a description of how it works.
-func (cfg *PostgresConfig) MakeQuery(numReqs int, numImps int) (query string) {
+func (cfg *PostgresQueries) MakeQuery(numReqs int, numImps int) (query string) {
 	return resolve(cfg.QueryTemplate, numReqs, numImps)
 }
 
 // MakeAmpQuery is the equivalent of MakeQuery() for AMP.
-func (cfg *PostgresConfig) MakeAmpQuery(numReqs int, numImps int) string {
+func (cfg *PostgresQueries) MakeAmpQuery(numReqs int, numImps int) string {
 	return resolve(cfg.AmpQueryTemplate, numReqs, numImps)
 }
 

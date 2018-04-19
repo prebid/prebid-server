@@ -145,10 +145,10 @@ func newPostgres(cfg *config.StoredRequests) (fetcher stored_requests.Fetcher, a
 	} else {
 		db = conn
 	}
-	glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s, query=%s", cfg.Postgres.Database, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.QueryTemplate)
+	glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s\nQuery=%s\nAmpQuery=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username, cfg.Postgres.Queries.QueryTemplate, cfg.Postgres.Queries.AmpQueryTemplate)
 
-	fetcher = db_fetcher.NewFetcher(db, cfg.Postgres.MakeQuery)
-	ampFetcher = db_fetcher.NewFetcher(db, cfg.Postgres.MakeAmpQuery)
+	fetcher = db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeQuery)
+	ampFetcher = db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeAmpQuery)
 	return
 }
 
