@@ -134,7 +134,7 @@ For example, assume the following `stored_requests/data/by_id/stored_requests/st
     "ext": {
       "prebid": {
         "targeting": {
-          "pricegraularity": "low",
+          "pricegranularity": "low",
         }
       }
     }
@@ -171,7 +171,7 @@ will produce the same auction as if the HTTP request had been:
   "ext": {
     "prebid": {
       "targeting": {
-        "pricegraularity": "low",
+        "pricegranularity": "low",
       }
     }
   }
