@@ -14,6 +14,55 @@ The only caveat is that AMP BidRequests must contain an `imp` array with one, an
 
 All AMP content must be secure, so this endpoint will enforce that request.imp[0].secure = 1. Saves on publishers forgetting to set this.
 
+### Request
+
+Valid Stored Requests for AMP pages must contain an `imp` array with exactly one element.  It is not necessary to include a `tmax` field in the Stored Request, as Prebid Server will always use the smaller of the AMP default timeout (1000ms) and the value passed via the `timeoutMillis` field of the `amp-ad.rtc-config`.
+
+An example Stored Request is given below:
+
+```
+{
+    "id": "some-request-id",
+    "site": {
+        "page": "prebid.org"
+    },
+    "ext": {
+        "prebid": {
+            "targeting": {
+                "pricegranularity": {  // This is equivalent to the deprecated "pricegranularity": "medium"
+                    "precision": 2,
+                    "ranges": [{
+                        "max": 20.00,
+                        "increment": 0.10
+                    }]
+                }
+            }
+        }
+    },
+    "imp": [
+        {
+            "id": "some-impression-id",
+            "banner": {
+                "format": [
+                    {
+                        "w": 300,
+                        "h": 250
+                    }
+                ]
+            },
+            "ext": {
+                "appnexus": {
+                    // Insert parameters here
+                },
+                "rubicon": {
+                    // Insert parameters here
+                }
+            }
+        }
+    ]
+}
+```
+
 ### Response
 
 A sample response payload looks like this:
