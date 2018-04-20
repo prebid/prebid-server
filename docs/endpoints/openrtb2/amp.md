@@ -69,12 +69,17 @@ A sample response payload looks like this:
 
 ```
 {
-	"targeting": {
-		"hb_pb": 1.30
-		"hb_bidder": "appnexus"
-		"hb_cache_host": "prebid-cache.adnexus.com"
-		"hb_uuid": "6768-FB78-9890-7878"
-	}
+    "targeting": {
+        "hb_bidder": "appnexus",
+        "hb_bidder_appnexus": "appnexus",
+        "hb_cache_id": "420d7329-30e8-4c4e-8eaa-fe937172e4e0",
+        "hb_cache_id_appnexus": "420d7329-30e8-4c4e-8eaa-fe937172e4e0",
+        "hb_creative_loadtype": "html",
+        "hb_pb": "0.50",
+        "hb_pb_appnexus": "0.50",
+        "hb_size": "300x250",
+        "hb_size_appnexus": "300x250"
+    }
 }
 ```
 
