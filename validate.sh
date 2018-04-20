@@ -20,7 +20,7 @@ done
 die() { echo -e "$@" 1>&2 ; exit 1;  }
 
 # Build a list of all the top-level directories in the project.
-GOGLOB="*.go"
+# GOGLOB="*.go" -- need to do pbs_light.go and pbs_light_test.go in one command line for go 1.10
 for DIRECTORY in */ ; do
   GOGLOB="$GOGLOB ${DIRECTORY%/}"
 done
@@ -58,6 +58,10 @@ if [ "$RACE" -ne "0" ]; then
 fi
 
 if $VET; then
+  # Fix for the go 1.10 vet bug
+  COMMAND="go tool vet -source *.go"
+  echo "Running: $COMMAND"
+  `$COMMAND`
   for SOURCE in $GOGLOB ; do
     # default call for wildcards and directories
     COMMAND="go tool vet -source $SOURCE"
