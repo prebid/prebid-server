@@ -93,7 +93,10 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		if _, isValid := BidderMap[bidderName]; !isValid {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
-		toOpen, _ := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
+		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
+		}
 		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + toOpen)
 		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
 		if err != nil {
