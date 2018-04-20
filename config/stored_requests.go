@@ -59,6 +59,14 @@ func (cfg *StoredRequests) validate() error {
 		if cfg.HTTPEvents != nil {
 			return errors.New("stored_requests.http_events requires a configured in_memory_cache")
 		}
+
+		if cfg.PostgresEvents != nil {
+			return errors.New("stored_requests.postgres_events requires a configured in_memory_cache")
+		}
+	}
+
+	if err := cfg.PostgresEvents.validate(); err != nil {
+		return err
 	}
 
 	return cfg.InMemoryCache.validate()
@@ -149,7 +157,41 @@ type PostgresEventsConfig struct {
 	ConnectionInfo       PostgresConnection `mapstructure:"connection"`
 	MinReconnectInterval int                `mapstructure:"min_reconnect_interval_ms"`
 	MaxReconnectInterval int                `mapstructure:"max_reconnect_interval_ms"`
-	Channel              string             `mapstructure:"channel"`
+	ORTBChannel          string             `mapstructure:"openrtb2_channel"`
+	AMPChannel           string             `mapstructure:"amp_channel"`
+}
+
+func (cfg *PostgresEventsConfig) validate() error {
+	if cfg == nil {
+		return nil
+	}
+
+	if cfg.MinReconnectInterval <= 0 {
+		return fmt.Errorf("stored_requests.postgres_events.min_reconnect_interval_ms must be positive. Got %d", cfg.MinReconnectInterval)
+	}
+
+	if cfg.MaxReconnectInterval <= 0 {
+		return fmt.Errorf("stored_requests.postgres_events.max_reconnect_interval_ms must be positive. Got %d", cfg.MaxReconnectInterval)
+	}
+
+	if cfg.MaxReconnectInterval < cfg.MinReconnectInterval {
+		return fmt.Errorf("stored_requests.postgres_events.max_reconnect_interval_ms must be greater than min_reconnect_interval_ms, but %d > %d", cfg.MinReconnectInterval, cfg.MaxReconnectInterval)
+	}
+
+	// Per the docs, a channel can be "any identifier". An identifier is:
+	//
+	// - must begin with a letter (a-z, but also letters with diacritical marks and non-Latin letters) or an underscore (_).
+	// - can contain letters, underscores, digits (0-9), or dollar signs ($).
+	//
+	if cfg.ORTBChannel == "" {
+		return errors.New("stored_requests.postgres_events.openrtb2_channel must not be an empty string.")
+	}
+
+	if cfg.AMPChannel == "" {
+		return errors.New("stored_requests.postgres_events.amp_channel must not be an empty string.")
+	}
+
+	return nil
 }
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.

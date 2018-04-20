@@ -9,11 +9,10 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/events"
 )
 
-func NewPostgresEvents(cfg *config.PostgresEventsConfig) (e events.EventProducer, shutdown func() error) {
+func NewEvents(cfg *config.PostgresEventsConfig) (eventProducer events.EventProducer, ampEventProducer events.EventProducer, shutdown func() error) {
 	listener := pq.NewListener(cfg.ConnectionInfo.ConnString(), time.Duration(cfg.MinReconnectInterval)*time.Millisecond, time.Duration(cfg.MaxReconnectInterval)*time.Millisecond, nil)
-	if err := listener.Listen(cfg.Channel); err != nil {
-		glog.Fatalf("Postgres notifier falied to listen on channel %s: %v", cfg.Channel, err)
-	}
+	doListen(listener, cfg.ORTBChannel, "Stored Request")
+	doListen(listener, cfg.AMPChannel, "AMP Stored Request")
 
 	saves := make(chan events.Save, 10)
 	invalidations := make(chan events.Invalidation, 10)
@@ -21,9 +20,19 @@ func NewPostgresEvents(cfg *config.PostgresEventsConfig) (e events.EventProducer
 	go forwardNotifications(listener.NotificationChannel(), saves, invalidations)
 
 	return &postgresEvents{
-		saves:         saves,
-		invalidations: invalidations,
-	}, listener.Close
+			saves:         saves,
+			invalidations: invalidations,
+		}, &postgresEvents{
+			saves:         saves,
+			invalidations: invalidations,
+		}, listener.Close
+}
+
+func doListen(listener *pq.Listener, channel string, updateType string) {
+	glog.Infof("Listening for %s updates in Postgres on channel %s", updateType, channel)
+	if err := listener.Listen(channel); err != nil {
+		glog.Fatalf("Postgres notifier falied to listen on channel %s: %v", channel, err)
+	}
 }
 
 type postgresEvents struct {
@@ -40,5 +49,9 @@ func (e *postgresEvents) Invalidations() <-chan events.Invalidation {
 }
 
 func forwardNotifications(incoming <-chan *pq.Notification, saves chan<- events.Save, invalidations chan<- events.Invalidation) {
-	// TODO: Implement this
+	for {
+		notification := <-incoming
+		glog.Infof("Got notification: %s", notification.Extra)
+		// TODO: Implement this for real
+	}
 }

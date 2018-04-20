@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
+	postgresEvents "github.com/prebid/prebid-server/stored_requests/events/postgres"
 )
 
 // NewStoredRequests returns four things:
@@ -98,8 +99,12 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 		glog.Info("No Stored Request cache configured. The Fetcher backend will be used for all Stored Requests.")
 		return &nil_cache.NilCache{}
 	}
+	if cfg.InMemoryCache.RequestCacheSize <= 0 && cfg.InMemoryCache.ImpCacheSize <= 0 && cfg.InMemoryCache.TTL <= 0 {
+		glog.Info("Using an unbounded Stored Request in-memory cache.")
+	} else {
+		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
+	}
 
-	glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
 	return memory.NewCache(cfg.InMemoryCache)
 }
 
@@ -111,6 +116,12 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *
 	if cfg.HTTPEvents != nil {
 		eventProducers = append(eventProducers, newHttpEvents(cfg.HTTPEvents, client))
 		ampEventProducers = append(ampEventProducers, newHttpEvents(cfg.HTTPEvents, client))
+	}
+	if cfg.PostgresEvents != nil {
+		// TODO: Handle shutdown function
+		postgresEvents, ampPostgresEvents, _ := postgresEvents.NewEvents(cfg.PostgresEvents)
+		eventProducers = append(eventProducers, postgresEvents)
+		ampEventProducers = append(ampEventProducers, ampPostgresEvents)
 	}
 	return
 }
