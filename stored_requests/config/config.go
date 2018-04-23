@@ -35,7 +35,9 @@ import (
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
 func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
-	eventProducers, ampEventProducers := newEventProducers(cfg, client, router)
+	shutdowns := make([]func(), 3)
+	eventProducers, ampEventProducers, shutdownEvents := newEventProducers(cfg, client, router)
+	shutdowns = append(shutdowns, shutdownEvents)
 	cache := newCache(cfg)
 	ampCache := newCache(cfg)
 	fetcher, ampFetcher, db = newFetchers(cfg, client)
@@ -43,13 +45,18 @@ func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
 
-	shutdown1 := addListeners(cache, eventProducers)
-	shutdown2 := addListeners(ampCache, ampEventProducers)
-	shutdown = func() {
-		shutdown1()
-		shutdown2()
-	}
+	shutdowns = append(shutdowns, addListeners(cache, eventProducers))
+	shutdowns = append(shutdowns, addListeners(ampCache, ampEventProducers))
+	shutdown = compose(shutdowns)
 	return
+}
+
+func compose(pieces []func()) func() {
+	return func() {
+		for _, piece := range pieces {
+			piece()
+		}
+	}
 }
 
 func addListeners(cache stored_requests.Cache, eventProducers []events.EventProducer) (shutdown func()) {
@@ -108,7 +115,8 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 	return memory.NewCache(cfg.InMemoryCache)
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (eventProducers []events.EventProducer, ampEventProducers []events.EventProducer, shutdown func()) {
+	shutdown = func() {}
 	if cfg.CacheEventsAPI {
 		eventProducers = append(eventProducers, newEventsAPI(router, "/storedrequests/openrtb2"))
 		ampEventProducers = append(ampEventProducers, newEventsAPI(router, "/storedrequests/amp"))
@@ -118,8 +126,8 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *
 		ampEventProducers = append(ampEventProducers, newHttpEvents(cfg.HTTPEvents, client))
 	}
 	if cfg.PostgresEvents != nil {
-		// TODO: Handle shutdown function
-		postgresEvents, ampPostgresEvents, _ := postgresEvents.NewEvents(cfg.PostgresEvents)
+		postgresEvents, ampPostgresEvents, shutdownPostgres := postgresEvents.NewEvents(cfg.PostgresEvents)
+		shutdown = shutdownPostgres
 		eventProducers = append(eventProducers, postgresEvents)
 		ampEventProducers = append(ampEventProducers, ampPostgresEvents)
 	}

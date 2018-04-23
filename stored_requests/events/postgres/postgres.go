@@ -32,7 +32,7 @@ import (
 //   - https://www.postgresql.org/docs/current/static/sql-listen.html
 //   - https://www.postgresql.org/docs/current/static/sql-notify.html
 //   - https://www.postgresql.org/docs/current/static/plpgsql-trigger.html
-func NewEvents(cfg *config.PostgresEventsConfig) (eventProducer events.EventProducer, ampEventProducer events.EventProducer, shutdown func() error) {
+func NewEvents(cfg *config.PostgresEventsConfig) (eventProducer events.EventProducer, ampEventProducer events.EventProducer, shutdown func()) {
 	listener := pq.NewListener(cfg.ConnectionInfo.ConnString(), time.Duration(cfg.MinReconnectInterval)*time.Millisecond, time.Duration(cfg.MaxReconnectInterval)*time.Millisecond, nil)
 	doListen(listener, cfg.Channels.OpenRTBRequestUpdates, "OpenRTB Stored Request Updates")
 	doListen(listener, cfg.Channels.OpenRTBRequestDeletes, "OpenRTB Stored Request Deletes")
@@ -55,7 +55,11 @@ func NewEvents(cfg *config.PostgresEventsConfig) (eventProducer events.EventProd
 
 	go forwardNotifications(&cfg.Channels, listener.NotificationChannel(), openrtbEvents, ampEvents)
 
-	return openrtbEvents, ampEvents, listener.Close
+	return openrtbEvents, ampEvents, func() {
+		if err := listener.Close(); err != nil {
+			glog.Errorf("Error closing Postgres EventProducers: %v", err)
+		}
+	}
 }
 
 func doListen(listener *pq.Listener, channel string, updateType string) {
