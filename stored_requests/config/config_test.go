@@ -89,3 +89,16 @@ func TestNewEventsAPI(t *testing.T) {
 		t.Error("The newEventsAPI method didn't add a DELETE /test-endpoint route")
 	}
 }
+
+func TestCompose(t *testing.T) {
+	numCalls := 0
+	doIncrement := func() {
+		numCalls = numCalls + 1
+	}
+
+	composed := compose([]func(){doIncrement, doIncrement, doIncrement})
+	composed()
+	if numCalls != 3 {
+		t.Errorf("Expected %d calls. Got %d", 3, numCalls)
+	}
+}
