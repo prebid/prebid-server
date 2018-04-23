@@ -154,11 +154,10 @@ type PostgresQueries struct {
 }
 
 type PostgresEventsConfig struct {
-	ConnectionInfo       PostgresConnection `mapstructure:"connection"`
-	MinReconnectInterval int                `mapstructure:"min_reconnect_interval_ms"`
-	MaxReconnectInterval int                `mapstructure:"max_reconnect_interval_ms"`
-	ORTBChannel          string             `mapstructure:"openrtb2_channel"`
-	AMPChannel           string             `mapstructure:"amp_channel"`
+	ConnectionInfo       PostgresConnection     `mapstructure:"connection"`
+	MinReconnectInterval int                    `mapstructure:"min_reconnect_interval_ms"`
+	MaxReconnectInterval int                    `mapstructure:"max_reconnect_interval_ms"`
+	Channels             PostgresEventsChannels `mapstructure:"channels"`
 }
 
 func (cfg *PostgresEventsConfig) validate() error {
@@ -178,19 +177,55 @@ func (cfg *PostgresEventsConfig) validate() error {
 		return fmt.Errorf("stored_requests.postgres_events.max_reconnect_interval_ms must be greater than min_reconnect_interval_ms, but %d > %d", cfg.MinReconnectInterval, cfg.MaxReconnectInterval)
 	}
 
+	if err := cfg.Channels.validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type PostgresEventsChannels struct {
+	OpenRTBRequestUpdates string `mapstructure:"openrtb2_request_updates"`
+	OpenRTBRequestDeletes string `mapstructure:"openrtb2_request_deletes"`
+
+	OpenRTBImpUpdates string `mapstructure:"openrtb2_imp_updates"`
+	OpenRTBImpDeletes string `mapstructure:"openrtb2_imp_deletes"`
+
+	AMPRequestUpdates string `mapstructure:"amp_request_updates"`
+	AMPRequestDeletes string `mapstructure:"amp_request_deletes"`
+}
+
+func (cfg *PostgresEventsChannels) validate() error {
 	// Per the docs, a channel can be "any identifier". An identifier is:
 	//
 	// - must begin with a letter (a-z, but also letters with diacritical marks and non-Latin letters) or an underscore (_).
 	// - can contain letters, underscores, digits (0-9), or dollar signs ($).
 	//
-	if cfg.ORTBChannel == "" {
-		return errors.New("stored_requests.postgres_events.openrtb2_channel must not be an empty string.")
+	assertNonEmpty := func(prop string, name string) error {
+		if prop == "" {
+			return fmt.Errorf("stored_requests.postgres_events.channels.%s must not be an empty string.", name)
+		}
+		return nil
 	}
 
-	if cfg.AMPChannel == "" {
-		return errors.New("stored_requests.postgres_events.amp_channel must not be an empty string.")
+	if err := assertNonEmpty(cfg.OpenRTBRequestUpdates, "openrtb2_request_updates"); err != nil {
+		return err
 	}
-
+	if err := assertNonEmpty(cfg.OpenRTBRequestDeletes, "openrtb2_request_deletes"); err != nil {
+		return err
+	}
+	if err := assertNonEmpty(cfg.OpenRTBImpUpdates, "openrtb2_imp_updates"); err != nil {
+		return err
+	}
+	if err := assertNonEmpty(cfg.OpenRTBImpDeletes, "openrtb2_imp_deletes"); err != nil {
+		return err
+	}
+	if err := assertNonEmpty(cfg.AMPRequestUpdates, "amp_request_updates"); err != nil {
+		return err
+	}
+	if err := assertNonEmpty(cfg.AMPRequestDeletes, "amp_request_deletes"); err != nil {
+		return err
+	}
 	return nil
 }
 
