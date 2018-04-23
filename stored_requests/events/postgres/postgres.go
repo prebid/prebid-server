@@ -33,7 +33,7 @@ import (
 //   - https://www.postgresql.org/docs/current/static/sql-notify.html
 //   - https://www.postgresql.org/docs/current/static/plpgsql-trigger.html
 func NewEvents(cfg *config.PostgresEventsConfig) (eventProducer events.EventProducer, ampEventProducer events.EventProducer, shutdown func()) {
-	listener := pq.NewListener(cfg.ConnectionInfo.ConnString(), time.Duration(cfg.MinReconnectInterval)*time.Millisecond, time.Duration(cfg.MaxReconnectInterval)*time.Millisecond, nil)
+	listener := pq.NewListener(cfg.ConnectionInfo.ConnString(), time.Duration(cfg.MinReconnectInterval)*time.Millisecond, time.Duration(cfg.MaxReconnectInterval)*time.Millisecond, logConnectionErrors)
 	doListen(listener, cfg.Channels.OpenRTBRequestUpdates, "OpenRTB Stored Request Updates")
 	doListen(listener, cfg.Channels.OpenRTBRequestDeletes, "OpenRTB Stored Request Deletes")
 
@@ -62,6 +62,17 @@ func NewEvents(cfg *config.PostgresEventsConfig) (eventProducer events.EventProd
 	}
 }
 
+func logConnectionErrors(event pq.ListenerEventType, err error) {
+	switch event {
+	case pq.ListenerEventDisconnected:
+		glog.Errorf("Postgres EventProducer connection lost: %v", err)
+	case pq.ListenerEventConnectionAttemptFailed:
+		glog.Errorf("Postgres EventProducer failed to connect: %v", err)
+	case pq.ListenerEventReconnected:
+		glog.Infof("Postgres EventProducer reconnected successfully.")
+	}
+}
+
 func doListen(listener *pq.Listener, channel string, updateType string) {
 	glog.Infof("Listening for %s in Postgres on channel %s", updateType, channel)
 	if err := listener.Listen(channel); err != nil {
@@ -72,33 +83,36 @@ func doListen(listener *pq.Listener, channel string, updateType string) {
 func forwardNotifications(channels *config.PostgresEventsChannels, incoming <-chan *pq.Notification, openrtbEvents *postgresEvents, ampEvents *postgresEvents) {
 	for {
 		notification := <-incoming
-		switch notification.Channel {
-		case channels.OpenRTBRequestUpdates:
-			openrtbEvents.saves <- events.Save{
-				Requests: parseUpdateData(notification.Extra, channels.OpenRTBRequestUpdates),
+		// If the connection falters, a nil pointer is sent on this channel to signal a reconnection
+		if notification != nil {
+			switch notification.Channel {
+			case channels.OpenRTBRequestUpdates:
+				openrtbEvents.saves <- events.Save{
+					Requests: parseUpdateData(notification.Extra, channels.OpenRTBRequestUpdates),
+				}
+			case channels.OpenRTBRequestDeletes:
+				openrtbEvents.invalidations <- events.Invalidation{
+					Requests: parseDeleteData(notification.Extra, channels.OpenRTBRequestDeletes),
+				}
+			case channels.OpenRTBImpUpdates:
+				openrtbEvents.saves <- events.Save{
+					Imps: parseUpdateData(notification.Extra, channels.OpenRTBImpUpdates),
+				}
+			case channels.OpenRTBImpDeletes:
+				openrtbEvents.invalidations <- events.Invalidation{
+					Imps: parseDeleteData(notification.Extra, channels.OpenRTBImpDeletes),
+				}
+			case channels.AMPRequestUpdates:
+				ampEvents.saves <- events.Save{
+					Requests: parseUpdateData(notification.Extra, channels.AMPRequestUpdates),
+				}
+			case channels.AMPRequestDeletes:
+				ampEvents.invalidations <- events.Invalidation{
+					Requests: parseDeleteData(notification.Extra, channels.AMPRequestDeletes),
+				}
+			default:
+				glog.Errorf("Postgres EventProducer received message on unknown channel: %s. Ignoring message", notification.Channel)
 			}
-		case channels.OpenRTBRequestDeletes:
-			openrtbEvents.invalidations <- events.Invalidation{
-				Requests: parseDeleteData(notification.Extra, channels.OpenRTBRequestDeletes),
-			}
-		case channels.OpenRTBImpUpdates:
-			openrtbEvents.saves <- events.Save{
-				Imps: parseUpdateData(notification.Extra, channels.OpenRTBImpUpdates),
-			}
-		case channels.OpenRTBImpDeletes:
-			openrtbEvents.invalidations <- events.Invalidation{
-				Imps: parseDeleteData(notification.Extra, channels.OpenRTBImpDeletes),
-			}
-		case channels.AMPRequestUpdates:
-			ampEvents.saves <- events.Save{
-				Requests: parseUpdateData(notification.Extra, channels.AMPRequestUpdates),
-			}
-		case channels.AMPRequestDeletes:
-			ampEvents.invalidations <- events.Invalidation{
-				Requests: parseDeleteData(notification.Extra, channels.AMPRequestDeletes),
-			}
-		default:
-			glog.Errorf("Postgres EventProducer received message on unknown channel: %s. Ignoring message", notification.Channel)
 		}
 	}
 }
