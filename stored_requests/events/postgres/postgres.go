@@ -65,19 +65,6 @@ func doListen(listener *pq.Listener, channel string, updateType string) {
 	}
 }
 
-type postgresEvents struct {
-	saves         chan events.Save
-	invalidations chan events.Invalidation
-}
-
-func (e *postgresEvents) Saves() <-chan events.Save {
-	return e.saves
-}
-
-func (e *postgresEvents) Invalidations() <-chan events.Invalidation {
-	return e.invalidations
-}
-
 func forwardNotifications(channels *config.PostgresEventsChannels, incoming <-chan *pq.Notification, openrtbEvents *postgresEvents, ampEvents *postgresEvents) {
 	for {
 		notification := <-incoming
@@ -124,4 +111,17 @@ func parseDeleteData(msg string, channel string) (parsed []string) {
 		glog.Errorf("Bad message on channel %s. Message was %s. Error was %v", channel, msg, err)
 	}
 	return
+}
+
+type postgresEvents struct {
+	saves         chan events.Save
+	invalidations chan events.Invalidation
+}
+
+func (e *postgresEvents) Saves() <-chan events.Save {
+	return e.saves
+}
+
+func (e *postgresEvents) Invalidations() <-chan events.Invalidation {
+	return e.invalidations
 }
