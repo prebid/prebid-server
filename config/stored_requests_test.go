@@ -75,6 +75,49 @@ func TestPostgressConnString(t *testing.T) {
 	assertHasValue(t, params, "sslmode", "disable")
 }
 
+func TestEventChannels(t *testing.T) {
+	validConfig := PostgresEventsChannels{
+		OpenRTBRequestUpdates: "request-updates",
+		OpenRTBRequestDeletes: "request-deletes",
+		OpenRTBImpUpdates:     "imp-updates",
+		OpenRTBImpDeletes:     "imp-deletes",
+		AMPRequestUpdates:     "amp-request-updates",
+		AMPRequestDeletes:     "amp-imp-deletes",
+	}
+
+	assertError(t, validConfig, func(cfg PostgresEventsChannels) *PostgresEventsChannels {
+		cfg.OpenRTBRequestUpdates = ""
+		return &cfg
+	})
+	assertError(t, validConfig, func(cfg PostgresEventsChannels) *PostgresEventsChannels {
+		cfg.OpenRTBRequestDeletes = ""
+		return &cfg
+	})
+	assertError(t, validConfig, func(cfg PostgresEventsChannels) *PostgresEventsChannels {
+		cfg.OpenRTBImpUpdates = ""
+		return &cfg
+	})
+	assertError(t, validConfig, func(cfg PostgresEventsChannels) *PostgresEventsChannels {
+		cfg.OpenRTBImpDeletes = ""
+		return &cfg
+	})
+	assertError(t, validConfig, func(cfg PostgresEventsChannels) *PostgresEventsChannels {
+		cfg.AMPRequestUpdates = ""
+		return &cfg
+	})
+	assertError(t, validConfig, func(cfg PostgresEventsChannels) *PostgresEventsChannels {
+		cfg.AMPRequestDeletes = ""
+		return &cfg
+	})
+}
+
+func assertError(t *testing.T, cfg PostgresEventsChannels, transform func(PostgresEventsChannels) *PostgresEventsChannels) {
+	t.Helper()
+	if err := transform(cfg).validate(); err == nil {
+		t.Errorf("config should not be valid: %v", cfg)
+	}
+}
+
 func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
 	t.Helper()
 	realVal, ok := m[key]

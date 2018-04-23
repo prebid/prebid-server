@@ -196,11 +196,6 @@ type PostgresEventsChannels struct {
 }
 
 func (cfg *PostgresEventsChannels) validate() error {
-	// Per the docs, a channel can be "any identifier". An identifier is:
-	//
-	// - must begin with a letter (a-z, but also letters with diacritical marks and non-Latin letters) or an underscore (_).
-	// - can contain letters, underscores, digits (0-9), or dollar signs ($).
-	//
 	assertNonEmpty := func(prop string, name string) error {
 		if prop == "" {
 			return fmt.Errorf("stored_requests.postgres_events.channels.%s must not be an empty string.", name)
