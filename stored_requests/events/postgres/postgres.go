@@ -81,7 +81,6 @@ func (e *postgresEvents) Invalidations() <-chan events.Invalidation {
 func forwardNotifications(channels *config.PostgresEventsChannels, incoming <-chan *pq.Notification, openrtbEvents *postgresEvents, ampEvents *postgresEvents) {
 	for {
 		notification := <-incoming
-		glog.Infof("Channel %s got message  %s", notification.Channel, notification.Extra)
 		switch notification.Channel {
 		case channels.OpenRTBRequestUpdates:
 			openrtbEvents.saves <- events.Save{
