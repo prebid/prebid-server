@@ -135,7 +135,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if !(adSlotFlag) {
-		return nil, adapters.BadInputError{
+		return nil, &adapters.BadInputError{
 			Message: "Incorrect adSlot / Publisher param",
 		}
 	}

@@ -190,7 +190,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
-		return nil, adapters.BadInputError{
+		return nil, &adapters.BadInputError{
 			Message: fmt.Sprintf("HTTP status: %d, body: %s", resp.StatusCode, string(body)),
 		}
 	}
