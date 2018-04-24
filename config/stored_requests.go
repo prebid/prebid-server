@@ -14,7 +14,8 @@ import (
 type StoredRequests struct {
 	// Files should be true if Stored Requests should be loaded from the filesystem.
 	Files bool `mapstructure:"filesystem"`
-	// Postgres configures an instance of stored_requests/backends/db_fetcher/postgres.go.
+	// Postgres configures an instance of stored_requests/backends/db_fetcher/postgres.go
+	// and optionally stored_requests/events/postgres/polling.go.
 	// If non-nil, Stored Requests will be fetched from a postgres DB.
 	Postgres *PostgresFetcherConfig `mapstructure:"postgres"`
 	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
@@ -23,9 +24,6 @@ type StoredRequests struct {
 	// InMemoryCache configures an instance of stored_requests/caches/memory/cache.go.
 	// If non-nil, Stored Requests will be saved in an in-memory cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
-	// PostgresPolling configures an instance of stored_requests/events/postgres/polling.go.
-	// If non-nil, Caches will be updated or invalidated based on changes to the Postgres data.
-	PostgresPolling *PostgresPollingConfig `mapstructure:"postgres_polling"`
 	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
 	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
 	// This is intended to be a useful development tool and not recommended for a production environment.
@@ -60,23 +58,52 @@ func (cfg *StoredRequests) validate() error {
 			return errors.New("stored_requests.http_events requires a configured in_memory_cache")
 		}
 
-		if cfg.PostgresPolling != nil {
-			return errors.New("stored_requests.postgres_polling requires a configured in_memory_cache")
+		if cfg.Postgres != nil && cfg.Postgres.PollUpdates != nil {
+			return errors.New("stored_requests.update_polling requires a configured in_memory_cache")
 		}
 	}
 
-	if cfg.PostgresPolling != nil {
-		if cfg.Postgres == nil {
-			return errors.New("stored_requests.postgres_polling requires stored_requests.postgres as a Fetcher")
-		}
+	if err := cfg.InMemoryCache.validate(); err != nil {
+		return err
 	}
 
-	return cfg.InMemoryCache.validate()
+	return cfg.Postgres.validate()
 }
 
 type PostgresFetcherConfig struct {
 	ConnectionInfo PostgresConnection     `mapstructure:"connection"`
 	Queries        PostgresFetcherQueries `mapstructure:"queries"`
+	PollUpdates    *PostgresEvents        `mapstructure:"update_polling"`
+}
+
+func (cfg *PostgresFetcherConfig) validate() error {
+	if cfg == nil {
+		return nil
+	}
+
+	return cfg.PollUpdates.validate()
+}
+
+func (cfg *PostgresEvents) validate() error {
+	if cfg == nil {
+		return nil
+	}
+
+	if strings.Contains(cfg.StartupQuery, "$") {
+		return errors.New("stored_requests.postgres.update_polling.openrtb2_init_query should not contain any wildcards.")
+	}
+	if strings.Contains(cfg.AMPStartupQuery, "$") {
+		return errors.New("stored_requests.postgres.update_polling.amp_init_query cannot contain any wildcards.")
+	}
+
+	if !strings.Contains(cfg.UpdateQuery, "$1") || strings.Contains(cfg.UpdateQuery, "$2") {
+		return errors.New("stored_requests.postgres.update_polling.openrtb2_update_query must contain exactly one wildcard.")
+	}
+	if !strings.Contains(cfg.AMPUpdateQuery, "$1") || strings.Contains(cfg.AMPUpdateQuery, "$2") {
+		return errors.New("stored_requests.postgres.update_polling.amp_update_query must contain exactly one wildcard.")
+	}
+
+	return nil
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
@@ -155,7 +182,7 @@ type PostgresFetcherQueries struct {
 	AmpQueryTemplate string `mapstructure:"amp"`
 }
 
-type PostgresPollingConfig struct {
+type PostgresEvents struct {
 	// RefreshRate determines how frequently the UpdateQuery and AMPUpdateQuery are run.
 	RefreshRate int `mapstructure:"refresh_rate_seconds"`
 

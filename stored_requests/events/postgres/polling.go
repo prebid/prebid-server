@@ -54,7 +54,7 @@ func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db
 		glog.Warningf("Failed to fetch Stored Requests from Postgres on startup. Things might be a bit slow to start: %v", err)
 	}
 
-	glog.Infof("Stored Requests will be refreshed from Postgres every %f seconds with: %s", refreshRate.Seconds(), loadAllQuery)
+	glog.Infof("Stored Requests will be refreshed from Postgres every %f seconds with: %s", refreshRate.Seconds(), updateQuery)
 
 	go e.refresh(time.Tick(refreshRate))
 	return e

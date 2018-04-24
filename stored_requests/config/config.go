@@ -124,14 +124,14 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 		eventProducers = append(eventProducers, newHttpEvents(cfg.HTTPEvents, client))
 		ampEventProducers = append(ampEventProducers, newHttpEvents(cfg.HTTPEvents, client))
 	}
-	if cfg.PostgresPolling != nil {
-		eventProducers = append(eventProducers, newPostgresPolling(cfg.PostgresPolling, db, false))
-		ampEventProducers = append(ampEventProducers, newPostgresPolling(cfg.PostgresPolling, db, true))
+	if cfg.Postgres != nil && cfg.Postgres.PollUpdates != nil {
+		eventProducers = append(eventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, false))
+		ampEventProducers = append(ampEventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, true))
 	}
 	return
 }
 
-func newPostgresPolling(cfg *config.PostgresPollingConfig, db *sql.DB, forAmp bool) events.EventProducer {
+func newPostgresPolling(cfg *config.PostgresEvents, db *sql.DB, forAmp bool) events.EventProducer {
 	timeout := time.Duration(cfg.Timeout) * time.Millisecond
 	ctxProducer := func() (ctx context.Context, canceller func()) {
 		return context.WithTimeout(context.Background(), timeout)
