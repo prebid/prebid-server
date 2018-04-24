@@ -23,9 +23,9 @@ type StoredRequests struct {
 	// InMemoryCache configures an instance of stored_requests/caches/memory/cache.go.
 	// If non-nil, Stored Requests will be saved in an in-memory cache.
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
-	// PostgresEvents configures an instance of stored_requests/events/postgres/postgres.go.
+	// PostgresPolling configures an instance of stored_requests/events/postgres/polling.go.
 	// If non-nil, Caches will be updated or invalidated based on changes to the Postgres data.
-	PostgresEvents *PostgresEventsConfig `mapstructure:"postgres_events"`
+	PostgresPolling *PostgresPollingConfig `mapstructure:"postgres_events_polling"`
 	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
 	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
 	// This is intended to be a useful development tool and not recommended for a production environment.
@@ -150,6 +150,15 @@ type PostgresEventsConfig struct {
 	MinReconnectInterval int                `mapstructure:"min_reconnect_interval_ms"`
 	MaxReconnectInterval int                `mapstructure:"max_reconnect_interval_ms"`
 	Channel              string             `mapstructure:"channel"`
+}
+
+type PostgresPollingConfig struct {
+	ConnectionInfo  PostgresConnection `mapstructure:"connection"`
+	PollingInterval int                `mapstructure:"refresh_rate_seconds"`
+	StartupQuery    string             `mapstructure:"openrtb2_init_query"`
+	AMPStartupQuery string             `mapstructure:"amp_init_query"`
+	UpdateQuery     string             `mapstructure:"openrtb2_update_query"`
+	AMPUpdateQuery  string             `mapstructure:"amp_update_query"`
 }
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.
