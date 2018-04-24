@@ -25,7 +25,7 @@ type StoredRequests struct {
 	InMemoryCache *InMemoryCache `mapstructure:"in_memory_cache"`
 	// PostgresPolling configures an instance of stored_requests/events/postgres/polling.go.
 	// If non-nil, Caches will be updated or invalidated based on changes to the Postgres data.
-	PostgresPolling *PostgresPollingConfig `mapstructure:"postgres_events_polling"`
+	PostgresPolling *PostgresPollingConfig `mapstructure:"postgres_polling"`
 	// CacheEventsAPI configures an instance of stored_requests/events/api/api.go.
 	// If non-nil, Stored Request Caches can be updated or invalidated through API endpoints.
 	// This is intended to be a useful development tool and not recommended for a production environment.
@@ -58,6 +58,16 @@ func (cfg *StoredRequests) validate() error {
 
 		if cfg.HTTPEvents != nil {
 			return errors.New("stored_requests.http_events requires a configured in_memory_cache")
+		}
+
+		if cfg.PostgresPolling != nil {
+			return errors.New("stored_requests.postgres_polling requires a configured in_memory_cache")
+		}
+	}
+
+	if cfg.PostgresPolling != nil {
+		if cfg.Postgres == nil {
+			return errors.New("stored_requests.postgres_polling requires stored_requests.postgres as a Fetcher")
 		}
 	}
 
