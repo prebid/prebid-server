@@ -124,7 +124,6 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 		var id string
 		var data []byte
 		var dataType string
-
 		// Beware #338... we don't want to save corrupt data
 		if err := rows.Scan(&id, &data, &dataType); err != nil {
 			return err
@@ -134,7 +133,7 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 		if len(data) > 0 {
 			switch dataType {
 			case "request":
-				if shouldDelete, err := isDeletion(id, "Request", data); err != nil {
+				if shouldDelete, err := isDeletion(id, "Request", data); err == nil {
 					if shouldDelete {
 						requestInvalidations = append(requestInvalidations, id)
 					} else {
@@ -142,7 +141,7 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 					}
 				}
 			case "imp":
-				if shouldDelete, err := isDeletion(id, "Imp", data); err != nil {
+				if shouldDelete, err := isDeletion(id, "Imp", data); err == nil {
 					if shouldDelete {
 						impInvalidations = append(impInvalidations, id)
 					} else {
@@ -194,6 +193,7 @@ func isDeletion(id string, dataType string, data json.RawMessage) (bool, error) 
 		}
 	} else if err != jsonparser.KeyPathNotFoundError {
 		glog.Errorf("Postgres Stored %s %s has bad data %s.", dataType, id, string(data))
+		return false, err
 	}
 	return false, nil
 }
