@@ -67,6 +67,7 @@ type rubiconUserExtRP struct {
 type rubiconUserExt struct {
 	RP        rubiconUserExtRP              `json:"rp"`
 	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
+	Consent   string                        `json:"consent,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -589,6 +590,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				if userExt.DigiTrust != nil {
 					userExtRP.DigiTrust = userExt.DigiTrust
 				}
+				userExtRP.Consent = userExt.Consent
 			}
 
 			userCopy.Ext, err = json.Marshal(&userExtRP)
