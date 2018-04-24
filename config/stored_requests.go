@@ -65,8 +65,8 @@ func (cfg *StoredRequests) validate() error {
 }
 
 type PostgresFetcherConfig struct {
-	ConnectionInfo PostgresConnection `mapstructure:"connection"`
-	Queries        PostgresQueries    `mapstructure:"queries"`
+	ConnectionInfo PostgresConnection     `mapstructure:"connection"`
+	Queries        PostgresFetcherQueries `mapstructure:"queries"`
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
@@ -116,7 +116,7 @@ func (cfg *PostgresConnection) ConnString() string {
 	return buffer.String()
 }
 
-type PostgresQueries struct {
+type PostgresFetcherQueries struct {
 	// QueryTemplate is the Postgres Query which can be used to fetch configs from the database.
 	// It is a Template, rather than a full Query, because a single HTTP request may reference multiple Stored Requests.
 	//
@@ -154,12 +154,12 @@ type PostgresEventsConfig struct {
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.
 // See the docs on PostgresConfig.QueryTemplate for a description of how it works.
-func (cfg *PostgresQueries) MakeQuery(numReqs int, numImps int) (query string) {
+func (cfg *PostgresFetcherQueries) MakeQuery(numReqs int, numImps int) (query string) {
 	return resolve(cfg.QueryTemplate, numReqs, numImps)
 }
 
 // MakeAmpQuery is the equivalent of MakeQuery() for AMP.
-func (cfg *PostgresQueries) MakeAmpQuery(numReqs int, numImps int) string {
+func (cfg *PostgresFetcherQueries) MakeAmpQuery(numReqs int, numImps int) string {
 	return resolve(cfg.AmpQueryTemplate, numReqs, numImps)
 }
 
