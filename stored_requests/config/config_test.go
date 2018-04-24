@@ -14,12 +14,9 @@ import (
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, ampFetcher, db := newFetchers(&config.StoredRequests{}, nil)
+	fetcher, ampFetcher := newFetchers(&config.StoredRequests{}, nil, nil)
 	if fetcher == nil || ampFetcher == nil {
 		t.Errorf("The fetchers should be non-nil, even with an empty config.")
-	}
-	if db != nil {
-		t.Errorf("The database should be nil, since none was used.")
 	}
 	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
 		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
@@ -30,15 +27,12 @@ func TestNewEmptyFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcher(t *testing.T) {
-	fetcher, ampFetcher, db := newFetchers(&config.StoredRequests{
+	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
 		HTTP: &config.HTTPFetcherConfig{
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "stored-requests.prebid.com?type=amp",
 		},
-	}, nil)
-	if db != nil {
-		t.Errorf("No database connection should have been started")
-	}
+	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)

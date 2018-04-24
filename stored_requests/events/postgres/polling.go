@@ -28,7 +28,7 @@ import (
 //
 // If data is null, then the ID will be invalidated (e.g. a deletion).
 // If present, it should be the Stored Request or Stored Imp data associated with the given ID.
-func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db *sql.DB, loadAllQuery string, updateQueryMaker func(timestamp time.Time) (query string), refreshRate time.Duration) (eventProducer events.EventProducer) {
+func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db *sql.DB, loadAllQuery string, updateQuery string, refreshRate time.Duration) (eventProducer events.EventProducer) {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
 		ctxProducer = func() (ctx context.Context, canceller func()) {
@@ -43,16 +43,18 @@ func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db
 		db:            db,
 		ctxProducer:   ctxProducer,
 		loadAllQuery:  loadAllQuery,
-		queryMaker:    updateQueryMaker,
+		updateQuery:   updateQuery,
 		lastUpdate:    time.Now().UTC(),
 		invalidations: make(chan events.Invalidation, 1),
 		saves:         make(chan events.Save, 1),
 	}
-	glog.Infof("Loading Stored Requests from Postgres using %s", loadAllQuery)
+	glog.Infof("Stored Requests will be loaded from Postgres initially with: %s", loadAllQuery)
 
 	if err := e.fetchAll(); err != nil {
 		glog.Warningf("Failed to fetch Stored Requests from Postgres on startup. Things might be a bit slow to start: %v", err)
 	}
+
+	glog.Infof("Stored Requests will be refreshed from Postgres every %f seconds with: %s", refreshRate.Seconds(), loadAllQuery)
 
 	go e.refresh(time.Tick(refreshRate))
 	return e
@@ -62,7 +64,7 @@ type dbPoller struct {
 	db            *sql.DB
 	ctxProducer   func() (ctx context.Context, canceller func())
 	loadAllQuery  string
-	queryMaker    func(timestamp time.Time) (query string)
+	updateQuery   string
 	lastUpdate    time.Time
 	invalidations chan events.Invalidation
 	saves         chan events.Save
@@ -90,9 +92,8 @@ func (e *dbPoller) refresh(ticker <-chan time.Time) {
 		select {
 		case thisTime := <-ticker:
 			thisTimeInUTC := thisTime.UTC()
-			thisQuery := e.queryMaker(e.lastUpdate)
 			ctx, cancel := e.ctxProducer()
-			rows, err := e.db.QueryContext(ctx, thisQuery)
+			rows, err := e.db.QueryContext(ctx, e.updateQuery, e.lastUpdate)
 			if err != nil {
 				glog.Errorf("Failed to update Stored Request data from Postgres: %v", err)
 				cancel()

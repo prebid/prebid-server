@@ -146,12 +146,39 @@ type PostgresFetcherQueries struct {
 }
 
 type PostgresPollingConfig struct {
-	ConnectionInfo  PostgresConnection `mapstructure:"connection"`
-	PollingInterval int                `mapstructure:"refresh_rate_seconds"`
-	StartupQuery    string             `mapstructure:"openrtb2_init_query"`
-	AMPStartupQuery string             `mapstructure:"amp_init_query"`
-	UpdateQuery     string             `mapstructure:"openrtb2_update_query"`
-	AMPUpdateQuery  string             `mapstructure:"amp_update_query"`
+	// RefreshRate determines how frequently the UpdateQuery and AMPUpdateQuery are run.
+	RefreshRate int `mapstructure:"refresh_rate_seconds"`
+
+	// Timeout is the amount of time before a call to the database is aborted.
+	Timeout int `mapstructure:"timeout_ms"`
+
+	// StartupQuery should be something like:
+	//
+	// SELECT id, requestData, 'request' AS type FROM stored_requests
+	// UNION ALL
+	// SELECT id, impData, 'imp' AS type FROM stored_imps
+	//
+	// This query will be run once on startup to fetch _all_ known Stored Request data from the database.
+	//
+	// For more details on the expected format of requestData and impData, see stored_requests/events/postgres/polling.go
+	StartupQuery    string `mapstructure:"openrtb2_init_query"`
+	AMPStartupQuery string `mapstructure:"amp_init_query"`
+
+	// An example UpdateQuery is:
+	//
+	// SELECT id, requestData, 'request' AS type
+	//   FROM stored_requests
+	//   WHERE last_updated > $1
+	// UNION ALL
+	// SELECT id, requestData, 'imp' AS type
+	//   FROM stored_imps
+	//   WHERE last_updated > $1
+	//
+	// The code will be run periodically to fetch updates from the database.
+	UpdateQuery string `mapstructure:"openrtb2_update_query"`
+
+	// AMPUpdateQuery is the same as UpdateQuery, but used for the `/openrtb2/amp` endpoint.
+	AMPUpdateQuery string `mapstructure:"amp_update_query"`
 }
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.

@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/stored_requests/events"
 	apiEvents "github.com/prebid/prebid-server/stored_requests/events/api"
 	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
+	postgresEvents "github.com/prebid/prebid-server/stored_requests/events/postgres"
 )
 
 // NewStoredRequests returns four things:
@@ -34,10 +35,14 @@ import (
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
 func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
-	eventProducers, ampEventProducers := newEventProducers(cfg, client, router)
+	if cfg.Postgres != nil {
+		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username)
+		db = newPostgresDB(cfg.Postgres.ConnectionInfo)
+	}
+	eventProducers, ampEventProducers := newEventProducers(cfg, client, db, router)
 	cache := newCache(cfg)
 	ampCache := newCache(cfg)
-	fetcher, ampFetcher, db = newFetchers(cfg, client)
+	fetcher, ampFetcher = newFetchers(cfg, client, db)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
@@ -47,6 +52,9 @@ func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *
 	shutdown = func() {
 		shutdown1()
 		shutdown2()
+		if err := db.Close(); err != nil {
+			glog.Errorf("Error closing DB connection: %v", err)
+		}
 	}
 	return
 }
@@ -67,7 +75,7 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetchers(cfg *config.StoredRequests, client *http.Client) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB) {
+func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
@@ -77,10 +85,9 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client) (fetcher store
 		ampIDList = append(ampIDList, fFetcher)
 	}
 	if cfg.Postgres != nil {
-		pFetcher, pAmpFetcher, pDb := newPostgres(cfg)
-		idList = append(idList, pFetcher)
-		ampIDList = append(ampIDList, pAmpFetcher)
-		db = pDb
+		glog.Infof("Loading Stored Requests via Postgres.\nQuery: %s\nAMP Query: %s", cfg.Postgres.Queries.QueryTemplate, cfg.Postgres.Queries.AmpQueryTemplate)
+		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeQuery))
+		ampIDList = append(ampIDList, db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeAmpQuery))
 	}
 	if cfg.HTTP != nil {
 		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
@@ -99,11 +106,16 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 		return &nil_cache.NilCache{}
 	}
 
-	glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
+	if cfg.InMemoryCache.RequestCacheSize <= 0 && cfg.InMemoryCache.ImpCacheSize <= 0 && cfg.InMemoryCache.TTL <= 0 {
+		glog.Info("Using an unbounded Stored Request in-memory cache.")
+	} else {
+		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
+	}
+
 	return memory.NewCache(cfg.InMemoryCache)
 }
 
-func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) {
+func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, router *httprouter.Router) (eventProducers []events.EventProducer, ampEventProducers []events.EventProducer) {
 	if cfg.CacheEventsAPI {
 		eventProducers = append(eventProducers, newEventsAPI(router, "/storedrequests/openrtb2"))
 		ampEventProducers = append(ampEventProducers, newEventsAPI(router, "/storedrequests/amp"))
@@ -112,7 +124,23 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, router *
 		eventProducers = append(eventProducers, newHttpEvents(cfg.HTTPEvents, client))
 		ampEventProducers = append(ampEventProducers, newHttpEvents(cfg.HTTPEvents, client))
 	}
+	if cfg.PostgresPolling != nil {
+		eventProducers = append(eventProducers, newPostgresPolling(cfg.PostgresPolling, db, false))
+		ampEventProducers = append(ampEventProducers, newPostgresPolling(cfg.PostgresPolling, db, true))
+	}
 	return
+}
+
+func newPostgresPolling(cfg *config.PostgresPollingConfig, db *sql.DB, forAmp bool) events.EventProducer {
+	timeout := time.Duration(cfg.Timeout) * time.Millisecond
+	ctxProducer := func() (ctx context.Context, canceller func()) {
+		return context.WithTimeout(context.Background(), timeout)
+	}
+
+	if forAmp {
+		return postgresEvents.PollDatabase(ctxProducer, db, cfg.AMPStartupQuery, cfg.AMPUpdateQuery, time.Duration(cfg.RefreshRate)*time.Second)
+	}
+	return postgresEvents.PollDatabase(ctxProducer, db, cfg.StartupQuery, cfg.UpdateQuery, time.Duration(cfg.RefreshRate)*time.Second)
 }
 
 func newEventsAPI(router *httprouter.Router, endpoint string) events.EventProducer {
@@ -139,17 +167,17 @@ func newFilesystem() stored_requests.Fetcher {
 	return fetcher
 }
 
-func newPostgres(cfg *config.StoredRequests) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB) {
-	if conn, err := db_fetcher.NewPostgresDb(cfg.Postgres); err != nil {
-		glog.Fatalf("Failed to connect to postgres: %v", err)
-	} else {
-		db = conn
+func newPostgresDB(cfg config.PostgresConnection) *sql.DB {
+	db, err := sql.Open("postgres", cfg.ConnString())
+	if err != nil {
+		glog.Fatalf("Failed to open postgres connection: %v", err)
 	}
-	glog.Infof("Loading Stored Requests from Postgres. DB=%s, host=%s, port=%d, user=%s\nQuery=%s\nAmpQuery=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username, cfg.Postgres.Queries.QueryTemplate, cfg.Postgres.Queries.AmpQueryTemplate)
 
-	fetcher = db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeQuery)
-	ampFetcher = db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeAmpQuery)
-	return
+	if err := db.Ping(); err != nil {
+		glog.Fatalf("Failed to ping postgres: %v", err)
+	}
+
+	return db
 }
 
 // consolidate returns a single Fetcher from an array of fetchers of any size.
