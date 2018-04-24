@@ -28,7 +28,7 @@ import (
 //
 // If data is null, then the ID will be invalidated (e.g. a deletion).
 // If present, it should be the Stored Request or Stored Imp data associated with the given ID.
-func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db *sql.DB, initQuery string, updateQueryMaker func(timestamp time.Time) (query string)) (eventProducer events.EventProducer) {
+func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db *sql.DB, loadAllQuery string, updateQueryMaker func(timestamp time.Time) (query string), refreshRate time.Duration) (eventProducer events.EventProducer) {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
 		ctxProducer = func() (ctx context.Context, canceller func()) {
@@ -42,13 +42,13 @@ func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db
 	e := &dbPoller{
 		db:            db,
 		ctxProducer:   ctxProducer,
-		initQuery:     initQuery,
+		loadAllQuery:  loadAllQuery,
 		queryMaker:    updateQueryMaker,
 		lastUpdate:    time.Now().UTC(),
 		invalidations: make(chan events.Invalidation, 1),
 		saves:         make(chan events.Save, 1),
 	}
-	glog.Infof("Loading Stored Requests from Postgres using %s", initQuery)
+	glog.Infof("Loading Stored Requests from Postgres using %s", loadAllQuery)
 
 	if err := e.fetchAll(); err != nil {
 		glog.Warningf("Failed to fetch Stored Requests from Postgres on startup. Things might be a bit slow to start: %v", err)
@@ -61,7 +61,7 @@ func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db
 type dbPoller struct {
 	db            *sql.DB
 	ctxProducer   func() (ctx context.Context, canceller func())
-	initQuery     string
+	loadAllQuery  string
 	queryMaker    func(timestamp time.Time) (query string)
 	lastUpdate    time.Time
 	invalidations chan events.Invalidation
@@ -72,8 +72,7 @@ func (e *dbPoller) fetchAll() error {
 	ctx, cancel := e.ctxProducer()
 	defer cancel()
 
-	query := e.queryMaker("")
-	rows, err := e.db.QueryContext(ctx, query)
+	rows, err := e.db.QueryContext(ctx, e.loadAllQuery)
 	if err != nil {
 		return err
 	}
@@ -144,7 +143,7 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 			case "imp":
 				if shouldDelete, err := isDeletion(id, "Imp", data); err != nil {
 					if shouldDelete {
-						impInvalidations = append(requestInvalidations, id)
+						impInvalidations = append(impInvalidations, id)
 					} else {
 						storedImpData[id] = data
 					}
@@ -160,10 +159,20 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 		return rows.Err()
 	}
 
-	e.saves <- events.Save{
-		Requests: storedRequestData,
-		Imps:     storedImpData,
+	if len(storedRequestData) > 0 || len(storedImpData) > 0 {
+		e.saves <- events.Save{
+			Requests: storedRequestData,
+			Imps:     storedImpData,
+		}
 	}
+
+	if len(requestInvalidations) > 0 || len(impInvalidations) > 0 {
+		e.invalidations <- events.Invalidation{
+			Requests: requestInvalidations,
+			Imps:     impInvalidations,
+		}
+	}
+
 	return nil
 }
 

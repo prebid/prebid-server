@@ -145,13 +145,6 @@ type PostgresFetcherQueries struct {
 	AmpQueryTemplate string `mapstructure:"amp"`
 }
 
-type PostgresEventsConfig struct {
-	ConnectionInfo       PostgresConnection `mapstructure:"connection"`
-	MinReconnectInterval int                `mapstructure:"min_reconnect_interval_ms"`
-	MaxReconnectInterval int                `mapstructure:"max_reconnect_interval_ms"`
-	Channel              string             `mapstructure:"channel"`
-}
-
 type PostgresPollingConfig struct {
 	ConnectionInfo  PostgresConnection `mapstructure:"connection"`
 	PollingInterval int                `mapstructure:"refresh_rate_seconds"`
