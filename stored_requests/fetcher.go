@@ -141,12 +141,16 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	leftoverImps := findLeftovers(impIDs, impData)
 	leftoverReqs := findLeftovers(requestIDs, requestData)
 
-	fetcherReqData, fetcherImpData, errs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
+	if len(leftoverReqs) > 0 || len(leftoverImps) > 0 {
+		fetcherReqData, fetcherImpData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
+		errs = fetcherErrs
 
-	f.cache.Save(ctx, fetcherReqData, fetcherImpData)
+		f.cache.Save(ctx, fetcherReqData, fetcherImpData)
 
-	requestData = mergeData(requestData, fetcherReqData)
-	impData = mergeData(impData, fetcherImpData)
+		requestData = mergeData(requestData, fetcherReqData)
+		impData = mergeData(impData, fetcherImpData)
+	}
+
 	return
 }
 
