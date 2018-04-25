@@ -106,12 +106,6 @@ func newCache(cfg *config.StoredRequests) stored_requests.Cache {
 		return &nil_cache.NilCache{}
 	}
 
-	if cfg.InMemoryCache.RequestCacheSize <= 0 && cfg.InMemoryCache.ImpCacheSize <= 0 && cfg.InMemoryCache.TTL <= 0 {
-		glog.Info("Using an unbounded Stored Request in-memory cache.")
-	} else {
-		glog.Infof("Using a Stored Request in-memory cache. Max size for StoredRequests: %d bytes. Max size for Stored Imps: %d bytes. TTL: %d seconds.", cfg.InMemoryCache.RequestCacheSize, cfg.InMemoryCache.ImpCacheSize, cfg.InMemoryCache.TTL)
-	}
-
 	return memory.NewCache(cfg.InMemoryCache)
 }
 
