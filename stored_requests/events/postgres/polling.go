@@ -80,7 +80,7 @@ func (e *dbPoller) fetchAll() error {
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			glog.Errorf("error closing DB connection: %v", err)
+			glog.Warningf("Failed to close DB connection: %v", err)
 		}
 	}()
 
@@ -95,17 +95,17 @@ func (e *dbPoller) refresh(ticker <-chan time.Time) {
 			ctx, cancel := e.ctxProducer()
 			rows, err := e.db.QueryContext(ctx, e.updateQuery, e.lastUpdate)
 			if err != nil {
-				glog.Errorf("Failed to update Stored Request data from Postgres: %v", err)
+				glog.Warningf("Failed to update Stored Request data: %v", err)
 				cancel()
 				continue
 			}
 			if err := e.sendEvents(rows); err != nil {
-				glog.Errorf("Failed to update Stored Request data from Postgres: %v", err)
+				glog.Warningf("Failed to update Stored Request data: %v", err)
 			} else {
 				e.lastUpdate = thisTimeInUTC
 			}
 			if err := rows.Close(); err != nil {
-				glog.Errorf("error closing DB connection: %v", err)
+				glog.Warningf("Failed to close DB connection: %v", err)
 			}
 			cancel()
 		}
@@ -149,7 +149,7 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 					}
 				}
 			default:
-				glog.Errorf("Postgres result set with id=%s has invalid type: %s. This will be ignored.", id, dataType)
+				glog.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func isDeletion(id string, dataType string, data json.RawMessage) (bool, error) 
 			return false, nil
 		}
 	} else if err != jsonparser.KeyPathNotFoundError {
-		glog.Errorf("Postgres Stored %s %s has bad data %s.", dataType, id, string(data))
+		glog.Warningf("Postgres Stored %s with ID=%s has bad data %s. This will be ignored.", dataType, id, string(data))
 		return false, err
 	}
 	return false, nil
