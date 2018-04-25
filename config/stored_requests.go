@@ -95,11 +95,19 @@ func (cfg *PostgresUpdatePolling) validate() error {
 		return nil
 	}
 
+	if cfg.RefreshRate <= 0 {
+		return errors.New("stored_requests.postgres.poll_for_updates.refresh_rate_seconds must be positive.")
+	}
+
+	if cfg.Timeout <= 0 {
+		return errors.New("stored_requests.postgres.poll_for_updates.timeout_ms must be positive.")
+	}
+
 	if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
-		return errors.New("stored_requests.postgres.poll_for_updates.openrtb2_update_query must contain exactly one wildcard.")
+		return errors.New("stored_requests.postgres.poll_for_updates.query must contain exactly one wildcard.")
 	}
 	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
-		return errors.New("stored_requests.postgres.poll_for_updates.amp_update_query must contain exactly one wildcard.")
+		return errors.New("stored_requests.postgres.poll_for_updates.amp_query must contain exactly one wildcard.")
 	}
 
 	return nil
@@ -200,6 +208,9 @@ type PostgresCacheInitializer struct {
 func (cfg *PostgresCacheInitializer) validate() error {
 	if cfg == nil {
 		return nil
+	}
+	if cfg.Timeout <= 0 {
+		return errors.New("stored_requests.postgres.initialize_caches.timeout_ms must be positive.")
 	}
 	if strings.Contains(cfg.Query, "$") {
 		return errors.New("stored_requests.postgres.initialize_caches.query should not contain any wildcards.")

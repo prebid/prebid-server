@@ -29,6 +29,7 @@ func TestSuccessfulFetch(t *testing.T) {
 	assertMapLength(t, 2, save.Imps)
 	assertMapValue(t, save.Imps, "stored-imp-1", `{"id":1}`)
 	assertMapValue(t, save.Imps, "stored-imp-2", `{"id":2}`)
+	assertExpectationsMet(t, mock)
 }
 
 // Make sure that an empty save still gets sent on the channel if the SQL query fails.
@@ -40,6 +41,7 @@ func TestQueryError(t *testing.T) {
 	save := <-evs.Saves()
 	assertMapLength(t, 0, save.Requests)
 	assertMapLength(t, 0, save.Imps)
+	assertExpectationsMet(t, mock)
 }
 
 func TestRowError(t *testing.T) {
@@ -54,6 +56,7 @@ func TestRowError(t *testing.T) {
 	save := <-evs.Saves()
 	assertMapLength(t, 0, save.Requests)
 	assertMapLength(t, 0, save.Imps)
+	assertExpectationsMet(t, mock)
 }
 
 func TestRowCloseError(t *testing.T) {
@@ -68,6 +71,7 @@ func TestRowCloseError(t *testing.T) {
 	save := <-evs.Saves()
 	assertMapLength(t, 1, save.Requests)
 	assertMapLength(t, 1, save.Imps)
+	assertExpectationsMet(t, mock)
 }
 
 func newMock(t *testing.T) (db *sql.DB, mock sqlmock.Sqlmock) {
@@ -105,5 +109,11 @@ func assertMapValue(t *testing.T, m map[string]json.RawMessage, key string, val 
 		}
 	} else {
 		t.Errorf("map missing expected key: %s", key)
+	}
+}
+
+func assertExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("sqlmock expectations were not met: %v", err)
 	}
 }

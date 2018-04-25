@@ -3,10 +3,15 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
 	"testing"
 
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/events"
 
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
@@ -73,6 +78,35 @@ func TestNewInMemoryCache(t *testing.T) {
 	}
 }
 
+func TestNewPostgresEventProducers(t *testing.T) {
+	cfg := &config.StoredRequests{
+		Postgres: &config.PostgresConfig{
+			CacheInitialization: &config.PostgresCacheInitializer{
+				Timeout:  50,
+				Query:    "SELECT id, requestData, type FROM stored_data",
+				AmpQuery: "SELECT id, requestData, type FROM stored_amp_data",
+			},
+			PollUpdates: &config.PostgresUpdatePolling{
+				RefreshRate: 20,
+				Timeout:     50,
+				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",
+				AmpQuery:    "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",
+			},
+		},
+	}
+	client := &http.Client{}
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock: %v", err)
+	}
+	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
+	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.AmpQuery) + "$").WillReturnError(errors.New("Query failed"))
+
+	evProducers, ampEvProducers := newEventProducers(cfg, client, db, nil)
+	assertExpectationsMet(t, mock)
+	assertProducerLength(t, evProducers, 2)
+	assertProducerLength(t, ampEvProducers, 2)
+}
 func TestNewEventsAPI(t *testing.T) {
 	router := httprouter.New()
 	newEventsAPI(router, "/test-endpoint")
@@ -81,5 +115,18 @@ func TestNewEventsAPI(t *testing.T) {
 	}
 	if handle, _, _ := router.Lookup("DELETE", "/test-endpoint"); handle == nil {
 		t.Error("The newEventsAPI method didn't add a DELETE /test-endpoint route")
+	}
+}
+
+func assertProducerLength(t *testing.T, producers []events.EventProducer, expectedLength int) {
+	t.Helper()
+	if len(producers) != expectedLength {
+		t.Errorf("Expected %d producers, but got %d", expectedLength, len(producers))
+	}
+}
+
+func assertExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("sqlmock expectations were not met: %v", err)
 	}
 }
