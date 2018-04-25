@@ -79,7 +79,7 @@ func (cfg *StoredRequests) validate() error {
 // and may optionally include some EventProducers to populate and refresh the caches.
 type PostgresConfig struct {
 	ConnectionInfo      PostgresConnection        `mapstructure:"connection"`
-	FetcherQueries      PostgresFetcherQueries    `mapstructure:"fetcher_queries"`
+	FetcherQueries      PostgresFetcherQueries    `mapstructure:"fetcher"`
 	CacheInitialization *PostgresCacheInitializer `mapstructure:"initialize_caches"`
 	PollUpdates         *PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
