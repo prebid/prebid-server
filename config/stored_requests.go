@@ -14,9 +14,9 @@ import (
 type StoredRequests struct {
 	// Files should be true if Stored Requests should be loaded from the filesystem.
 	Files bool `mapstructure:"filesystem"`
-	// Postgres configures an instance of stored_requests/backends/db_fetcher/postgres.go
-	// and optionally stored_requests/events/postgres/polling.go.
-	// If non-nil, Stored Requests will be fetched from a postgres DB.
+	// Postgres configures Fetchers and EventProducers which read from a Postgres DB.
+	// Fetchers are in stored_requests/backends/db_fetcher/postgres.go
+	// EventProducers are in stored_requests/events/postgres
 	Postgres *PostgresConfig `mapstructure:"postgres"`
 	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
 	// If non-nil, Stored Requests will be fetched from the endpoint described there.
