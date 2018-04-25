@@ -85,9 +85,9 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (f
 		ampIDList = append(ampIDList, fFetcher)
 	}
 	if cfg.Postgres != nil {
-		glog.Infof("Loading Stored Requests via Postgres.\nQuery: %s\nAMP Query: %s", cfg.Postgres.Queries.QueryTemplate, cfg.Postgres.Queries.AmpQueryTemplate)
-		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeQuery))
-		ampIDList = append(ampIDList, db_fetcher.NewFetcher(db, cfg.Postgres.Queries.MakeAmpQuery))
+		glog.Infof("Loading Stored Requests via Postgres.\nQuery: %s\nAMP Query: %s", cfg.Postgres.FetcherQueries.QueryTemplate, cfg.Postgres.FetcherQueries.AmpQueryTemplate)
+		idList = append(idList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeQuery))
+		ampIDList = append(ampIDList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeAmpQuery))
 	}
 	if cfg.HTTP != nil {
 		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
@@ -124,23 +124,37 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 		eventProducers = append(eventProducers, newHttpEvents(cfg.HTTPEvents, client))
 		ampEventProducers = append(ampEventProducers, newHttpEvents(cfg.HTTPEvents, client))
 	}
-	if cfg.Postgres != nil && cfg.Postgres.PollUpdates != nil {
-		eventProducers = append(eventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, false))
-		ampEventProducers = append(ampEventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, true))
+	if cfg.Postgres != nil {
+		// Make sure we don't miss any updates in between the initial fetch and the "update" polling.
+		updateStartTime := time.Now()
+		if cfg.Postgres.CacheInitialization != nil {
+			timeout := time.Duration(cfg.Postgres.CacheInitialization.Timeout) * time.Millisecond
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			eventProducers = append(eventProducers, postgresEvents.LoadAll(ctx, db, cfg.Postgres.CacheInitialization.Query))
+			cancel()
+
+			ctx, cancel = context.WithTimeout(context.Background(), timeout)
+			ampEventProducers = append(ampEventProducers, postgresEvents.LoadAll(ctx, db, cfg.Postgres.CacheInitialization.AmpQuery))
+			cancel()
+		}
+		if cfg.Postgres.PollUpdates != nil {
+			eventProducers = append(eventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, updateStartTime, false))
+			ampEventProducers = append(ampEventProducers, newPostgresPolling(cfg.Postgres.PollUpdates, db, updateStartTime, true))
+		}
 	}
 	return
 }
 
-func newPostgresPolling(cfg *config.PostgresEvents, db *sql.DB, forAmp bool) events.EventProducer {
+func newPostgresPolling(cfg *config.PostgresUpdatePolling, db *sql.DB, startTime time.Time, forAmp bool) events.EventProducer {
 	timeout := time.Duration(cfg.Timeout) * time.Millisecond
 	ctxProducer := func() (ctx context.Context, canceller func()) {
 		return context.WithTimeout(context.Background(), timeout)
 	}
 
 	if forAmp {
-		return postgresEvents.PollDatabase(ctxProducer, db, cfg.AMPStartupQuery, cfg.AMPUpdateQuery, time.Duration(cfg.RefreshRate)*time.Second)
+		return postgresEvents.PollForUpdates(ctxProducer, db, cfg.AmpQuery, startTime, time.Duration(cfg.RefreshRate)*time.Second)
 	}
-	return postgresEvents.PollDatabase(ctxProducer, db, cfg.StartupQuery, cfg.UpdateQuery, time.Duration(cfg.RefreshRate)*time.Second)
+	return postgresEvents.PollForUpdates(ctxProducer, db, cfg.Query, startTime, time.Duration(cfg.RefreshRate)*time.Second)
 }
 
 func newEventsAPI(router *httprouter.Router, endpoint string) events.EventProducer {

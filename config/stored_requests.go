@@ -17,7 +17,7 @@ type StoredRequests struct {
 	// Postgres configures an instance of stored_requests/backends/db_fetcher/postgres.go
 	// and optionally stored_requests/events/postgres/polling.go.
 	// If non-nil, Stored Requests will be fetched from a postgres DB.
-	Postgres *PostgresFetcherConfig `mapstructure:"postgres"`
+	Postgres *PostgresConfig `mapstructure:"postgres"`
 	// HTTP configures an instance of stored_requests/backends/http/http_fetcher.go.
 	// If non-nil, Stored Requests will be fetched from the endpoint described there.
 	HTTP *HTTPFetcherConfig `mapstructure:"http"`
@@ -58,8 +58,13 @@ func (cfg *StoredRequests) validate() error {
 			return errors.New("stored_requests.http_events requires a configured in_memory_cache")
 		}
 
-		if cfg.Postgres != nil && cfg.Postgres.PollUpdates != nil {
-			return errors.New("stored_requests.update_polling requires a configured in_memory_cache")
+		if cfg.Postgres != nil {
+			if cfg.Postgres.PollUpdates != nil {
+				return errors.New("stored_requests.poll_for_updates requires a configured in_memory_cache")
+			}
+			if cfg.Postgres.CacheInitialization != nil {
+				return errors.New("stored_requests.initialize_caches requires a configured in_memory_cache")
+			}
 		}
 	}
 
@@ -70,13 +75,14 @@ func (cfg *StoredRequests) validate() error {
 	return cfg.Postgres.validate()
 }
 
-type PostgresFetcherConfig struct {
-	ConnectionInfo PostgresConnection     `mapstructure:"connection"`
-	Queries        PostgresFetcherQueries `mapstructure:"queries"`
-	PollUpdates    *PostgresEvents        `mapstructure:"update_polling"`
+type PostgresConfig struct {
+	ConnectionInfo      PostgresConnection        `mapstructure:"connection"`
+	FetcherQueries      PostgresFetcherQueries    `mapstructure:"fetcher_queries"`
+	CacheInitialization *PostgresCacheInitializer `mapstructure:"initialize_caches"`
+	PollUpdates         *PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
 
-func (cfg *PostgresFetcherConfig) validate() error {
+func (cfg *PostgresConfig) validate() error {
 	if cfg == nil {
 		return nil
 	}
@@ -84,23 +90,16 @@ func (cfg *PostgresFetcherConfig) validate() error {
 	return cfg.PollUpdates.validate()
 }
 
-func (cfg *PostgresEvents) validate() error {
+func (cfg *PostgresUpdatePolling) validate() error {
 	if cfg == nil {
 		return nil
 	}
 
-	if strings.Contains(cfg.StartupQuery, "$") {
-		return errors.New("stored_requests.postgres.update_polling.openrtb2_init_query should not contain any wildcards.")
+	if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
+		return errors.New("stored_requests.postgres.poll_for_updates.openrtb2_update_query must contain exactly one wildcard.")
 	}
-	if strings.Contains(cfg.AMPStartupQuery, "$") {
-		return errors.New("stored_requests.postgres.update_polling.amp_init_query cannot contain any wildcards.")
-	}
-
-	if !strings.Contains(cfg.UpdateQuery, "$1") || strings.Contains(cfg.UpdateQuery, "$2") {
-		return errors.New("stored_requests.postgres.update_polling.openrtb2_update_query must contain exactly one wildcard.")
-	}
-	if !strings.Contains(cfg.AMPUpdateQuery, "$1") || strings.Contains(cfg.AMPUpdateQuery, "$2") {
-		return errors.New("stored_requests.postgres.update_polling.amp_update_query must contain exactly one wildcard.")
+	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
+		return errors.New("stored_requests.postgres.poll_for_updates.amp_update_query must contain exactly one wildcard.")
 	}
 
 	return nil
@@ -182,14 +181,9 @@ type PostgresFetcherQueries struct {
 	AmpQueryTemplate string `mapstructure:"amp"`
 }
 
-type PostgresEvents struct {
-	// RefreshRate determines how frequently the UpdateQuery and AMPUpdateQuery are run.
-	RefreshRate int `mapstructure:"refresh_rate_seconds"`
-
-	// Timeout is the amount of time before a call to the database is aborted.
+type PostgresCacheInitializer struct {
 	Timeout int `mapstructure:"timeout_ms"`
-
-	// StartupQuery should be something like:
+	// Query should be something like:
 	//
 	// SELECT id, requestData, 'request' AS type FROM stored_requests
 	// UNION ALL
@@ -198,8 +192,30 @@ type PostgresEvents struct {
 	// This query will be run once on startup to fetch _all_ known Stored Request data from the database.
 	//
 	// For more details on the expected format of requestData and impData, see stored_requests/events/postgres/polling.go
-	StartupQuery    string `mapstructure:"openrtb2_init_query"`
-	AMPStartupQuery string `mapstructure:"amp_init_query"`
+	Query string `mapstructure:"query"`
+	// AmpQuery is just like Query, but for AMP Stored Requests
+	AmpQuery string `mapstructure:"amp_query"`
+}
+
+func (cfg *PostgresCacheInitializer) validate() error {
+	if cfg == nil {
+		return nil
+	}
+	if strings.Contains(cfg.Query, "$") {
+		return errors.New("stored_requests.postgres.initialize_caches.query should not contain any wildcards.")
+	}
+	if strings.Contains(cfg.AmpQuery, "$") {
+		return errors.New("stored_requests.postgres.initialize_caches.amp_query cannot contain any wildcards.")
+	}
+	return nil
+}
+
+type PostgresUpdatePolling struct {
+	// RefreshRate determines how frequently the Query and AmpQuery are run.
+	RefreshRate int `mapstructure:"refresh_rate_seconds"`
+
+	// Timeout is the amount of time before a call to the database is aborted.
+	Timeout int `mapstructure:"timeout_ms"`
 
 	// An example UpdateQuery is:
 	//
@@ -212,10 +228,10 @@ type PostgresEvents struct {
 	//   WHERE last_updated > $1
 	//
 	// The code will be run periodically to fetch updates from the database.
-	UpdateQuery string `mapstructure:"openrtb2_update_query"`
+	Query string `mapstructure:"query"`
 
-	// AMPUpdateQuery is the same as UpdateQuery, but used for the `/openrtb2/amp` endpoint.
-	AMPUpdateQuery string `mapstructure:"amp_update_query"`
+	// AmpQuery is the same as Query, but used for the `/openrtb2/amp` endpoint.
+	AmpQuery string `mapstructure:"amp_query"`
 }
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.

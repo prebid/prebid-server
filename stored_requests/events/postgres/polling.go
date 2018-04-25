@@ -7,18 +7,14 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/buger/jsonparser"
-
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests/events"
 )
 
-// This EventProducer queries the database on startup to get all the data, and then polls it periodically.
+// PollForUpdates returns an EventProducer which checks the database for updates every refreshRate.
 //
-// This may be preferred to notifications.go if you use read slaves to help distribute the load,
-// since Triggers require everything to use the master database.
-//
-// Like the Fetchers, the SQL query used to fetch data and updates can be set in the app config.
+// This object will prioritize thoroughness over efficiency. In rare cases it may produce two "update" events for
+// the same DB save, but it should never "miss" a database update either.
 //
 // The Queries should return a ResultSet with the following columns and types:
 //
@@ -26,9 +22,9 @@ import (
 //   2. data: JSON
 //   3. type: string ("request" or "imp")
 //
-// If data is null, then the ID will be invalidated (e.g. a deletion).
-// If present, it should be the Stored Request or Stored Imp data associated with the given ID.
-func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db *sql.DB, loadAllQuery string, updateQuery string, refreshRate time.Duration) (eventProducer events.EventProducer) {
+// If data is empty or the JSON "null", then the ID will be invalidated (e.g. a deletion).
+// If data is not empty, it should be the Stored Request or Stored Imp data associated with the given ID.
+func PollForUpdates(ctxProducer func() (ctx context.Context, canceller func()), db *sql.DB, query string, startUpdatesFrom time.Time, refreshRate time.Duration) (eventProducer *PostgresPoller) {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
 		ctxProducer = func() (ctx context.Context, canceller func()) {
@@ -39,58 +35,41 @@ func PollDatabase(ctxProducer func() (ctx context.Context, canceller func()), db
 		glog.Fatal("The Stored Request Postgres Poller needs a database connection to work.")
 	}
 
-	e := &dbPoller{
+	e := &PostgresPoller{
 		db:            db,
 		ctxProducer:   ctxProducer,
-		loadAllQuery:  loadAllQuery,
-		updateQuery:   updateQuery,
-		lastUpdate:    time.Now().UTC(),
+		updateQuery:   query,
+		lastUpdate:    startUpdatesFrom,
 		invalidations: make(chan events.Invalidation, 1),
 		saves:         make(chan events.Save, 1),
 	}
-	glog.Infof("Stored Requests will be loaded from Postgres initially with: %s", loadAllQuery)
 
-	if err := e.fetchAll(); err != nil {
-		glog.Warningf("Failed to fetch Stored Requests from Postgres on startup. Things might be a bit slow to start: %v", err)
+	glog.Infof("Stored Requests will be refreshed from Postgres every %f seconds with: %s", refreshRate.Seconds(), query)
+
+	if refreshRate > 0 {
+		go e.refresh(time.Tick(refreshRate))
+	} else {
+		glog.Warningf("Postgres Stored Event polling refreshRate was %d. This must be positive. No updates will occur.")
 	}
-
-	glog.Infof("Stored Requests will be refreshed from Postgres every %f seconds with: %s", refreshRate.Seconds(), updateQuery)
-
-	go e.refresh(time.Tick(refreshRate))
 	return e
 }
 
-type dbPoller struct {
+type PostgresPoller struct {
 	db            *sql.DB
 	ctxProducer   func() (ctx context.Context, canceller func())
-	loadAllQuery  string
 	updateQuery   string
 	lastUpdate    time.Time
 	invalidations chan events.Invalidation
 	saves         chan events.Save
 }
 
-func (e *dbPoller) fetchAll() error {
-	ctx, cancel := e.ctxProducer()
-	defer cancel()
-
-	rows, err := e.db.QueryContext(ctx, e.loadAllQuery)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			glog.Warningf("Failed to close DB connection: %v", err)
-		}
-	}()
-
-	return e.sendEvents(rows)
-}
-
-func (e *dbPoller) refresh(ticker <-chan time.Time) {
+func (e *PostgresPoller) refresh(ticker <-chan time.Time) {
 	for {
 		select {
 		case thisTime := <-ticker:
+			// Make sure to log the time now, *before* running the query,
+			// so that next tick's query won't miss any new updates which were made at the same time.
+			// This may duplicate some updates, but safety > efficiency.
 			thisTimeInUTC := thisTime.UTC()
 			ctx, cancel := e.ctxProducer()
 			rows, err := e.db.QueryContext(ctx, e.updateQuery, e.lastUpdate)
@@ -99,7 +78,7 @@ func (e *dbPoller) refresh(ticker <-chan time.Time) {
 				cancel()
 				continue
 			}
-			if err := e.sendEvents(rows); err != nil {
+			if err := sendEvents(rows, e.saves, e.invalidations); err != nil {
 				glog.Warningf("Failed to update Stored Request data: %v", err)
 			} else {
 				e.lastUpdate = thisTimeInUTC
@@ -112,8 +91,9 @@ func (e *dbPoller) refresh(ticker <-chan time.Time) {
 	}
 }
 
-// sendEvents reads the rows and sends notifications into the channel for any updates
-func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
+// sendEvents reads the rows and sends notifications into the channel for any updates.
+// If it returns an error, then callers can be certain that no events were sent to the channels.
+func sendEvents(rows *sql.Rows, saves chan<- events.Save, invalidations chan<- events.Invalidation) (err error) {
 	storedRequestData := make(map[string]json.RawMessage)
 	storedImpData := make(map[string]json.RawMessage)
 
@@ -124,50 +104,45 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 		var id string
 		var data []byte
 		var dataType string
-		// Beware #338... we don't want to save corrupt data
+		// Beware #338... we really don't want to save corrupt data
 		if err := rows.Scan(&id, &data, &dataType); err != nil {
 			return err
 		}
 
-		// We shouldn't get any "nulls" on this startup query, but... just in case, make sure not to save them.
-		if len(data) > 0 {
-			switch dataType {
-			case "request":
-				if shouldDelete, err := isDeletion(id, "Request", data); err == nil {
-					if shouldDelete {
-						requestInvalidations = append(requestInvalidations, id)
-					} else {
-						storedRequestData[id] = data
-					}
-				}
-			case "imp":
-				if shouldDelete, err := isDeletion(id, "Imp", data); err == nil {
-					if shouldDelete {
-						impInvalidations = append(impInvalidations, id)
-					} else {
-						storedImpData[id] = data
-					}
-				}
-			default:
-				glog.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)
+		switch dataType {
+		case "request":
+			if len(data) == 0 || bytes.Equal(data, []byte("null")) {
+				requestInvalidations = append(requestInvalidations, id)
+			} else {
+				storedRequestData[id] = data
 			}
+		case "imp":
+			if len(data) == 0 || bytes.Equal(data, []byte("null")) {
+				impInvalidations = append(impInvalidations, id)
+			} else {
+				storedImpData[id] = data
+			}
+		default:
+			glog.Warningf("Stored Data with id=%s has invalid type: %s. This will be ignored.", id, dataType)
 		}
 	}
 
-	// Beware #338... we don't want to save corrupt data
+	// Beware #338... we really don't want to save corrupt data
 	if rows.Err() != nil {
 		return rows.Err()
 	}
 
-	if len(storedRequestData) > 0 || len(storedImpData) > 0 {
-		e.saves <- events.Save{
+	if len(storedRequestData) > 0 || len(storedImpData) > 0 && saves != nil {
+		saves <- events.Save{
 			Requests: storedRequestData,
 			Imps:     storedImpData,
 		}
 	}
 
-	if len(requestInvalidations) > 0 || len(impInvalidations) > 0 {
-		e.invalidations <- events.Invalidation{
+	// There shouldn't be any invalidations with a nil channel (a "startup" query),
+	// but... if there are, we certainly don't want to block forever.
+	if len(requestInvalidations) > 0 || len(impInvalidations) > 0 && invalidations != nil {
+		invalidations <- events.Invalidation{
 			Requests: requestInvalidations,
 			Imps:     impInvalidations,
 		}
@@ -176,24 +151,10 @@ func (e *dbPoller) sendEvents(rows *sql.Rows) (err error) {
 	return nil
 }
 
-func (e *dbPoller) Saves() <-chan events.Save {
+func (e *PostgresPoller) Saves() <-chan events.Save {
 	return e.saves
 }
 
-func (e *dbPoller) Invalidations() <-chan events.Invalidation {
+func (e *PostgresPoller) Invalidations() <-chan events.Invalidation {
 	return e.invalidations
-}
-
-func isDeletion(id string, dataType string, data json.RawMessage) (bool, error) {
-	if value, _, _, err := jsonparser.Get(data, "deleted"); err == nil {
-		if bytes.Equal(value, []byte("true")) {
-			return true, nil
-		} else {
-			return false, nil
-		}
-	} else if err != jsonparser.KeyPathNotFoundError {
-		glog.Warningf("Postgres Stored %s with ID=%s has bad data %s. This will be ignored.", dataType, id, string(data))
-		return false, err
-	}
-	return false, nil
 }

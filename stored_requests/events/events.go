@@ -75,3 +75,12 @@ func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer
 		}
 	}
 }
+
+type NilProducer struct{}
+
+func (n NilProducer) Saves() <-chan Save {
+	return nil
+}
+func (n NilProducer) Invalidations() <-chan Invalidation {
+	return nil
+}
