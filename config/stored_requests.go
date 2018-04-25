@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 )
@@ -39,6 +40,14 @@ type HTTPEventsConfig struct {
 	Endpoint    string `mapstructure:"endpoint"`
 	RefreshRate int64  `mapstructure:"refresh_rate_seconds"`
 	Timeout     int    `mapstructure:"timeout_ms"`
+}
+
+func (cfg HTTPEventsConfig) TimeoutDuration() time.Duration {
+	return time.Duration(cfg.Timeout) * time.Millisecond
+}
+
+func (cfg HTTPEventsConfig) RefreshRateDuration() time.Duration {
+	return time.Duration(cfg.RefreshRate) * time.Second
 }
 
 // HTTPFetcherConfig configures a stored_requests/backends/http_fetcher/fetcher.go
