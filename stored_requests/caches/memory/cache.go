@@ -35,7 +35,7 @@ func newCacheForWithLimits(size int, ttl int, dataType string) mapLike {
 			ttlSeconds: ttl,
 		}
 	} else {
-		glog.Info("Using an unbounded Stored %s in-memory cache.", dataType)
+		glog.Infof("Using an unbounded Stored %s in-memory cache.", dataType)
 		return &pbsSyncMap{&sync.Map{}}
 	}
 }
