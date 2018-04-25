@@ -75,6 +75,8 @@ func (cfg *StoredRequests) validate() error {
 	return cfg.Postgres.validate()
 }
 
+// PostgresConfig configures the Stored Request ecosystem to use Postgres. This must include a Fetcher,
+// and may optionally include some EventProducers to populate and refresh the caches.
 type PostgresConfig struct {
 	ConnectionInfo      PostgresConnection        `mapstructure:"connection"`
 	FetcherQueries      PostgresFetcherQueries    `mapstructure:"fetcher_queries"`
@@ -183,10 +185,10 @@ type PostgresFetcherQueries struct {
 	//     WHERE id in ($2, $3, $4, ...)
 	//
 	// ... where the number of "$x" args depends on how many IDs are nested within the HTTP request.
-	QueryTemplate string `mapstructure:"openrtb2"`
+	QueryTemplate string `mapstructure:"query"`
 
 	// AmpQueryTemplate is the same as QueryTemplate, but used in the `/openrtb2/amp` endpoint.
-	AmpQueryTemplate string `mapstructure:"amp"`
+	AmpQueryTemplate string `mapstructure:"amp_query"`
 }
 
 type PostgresCacheInitializer struct {
