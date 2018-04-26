@@ -23,6 +23,7 @@ const (
 	BidderAdtelligent BidderName = "adtelligent"
 	BidderAdform      BidderName = "adform"
 	BidderAppnexus    BidderName = "appnexus"
+	BidderBeachfront  BidderName = "beachfront"
 	BidderConversant  BidderName = "conversant"
 	BidderFacebook    BidderName = "audienceNetwork"
 	BidderIndex       BidderName = "indexExchange"
@@ -40,6 +41,7 @@ var BidderMap = map[string]BidderName{
 	"adtelligent":     BidderAdtelligent,
 	"adform":          BidderAdform,
 	"appnexus":        BidderAppnexus,
+	"beachfront":      BidderBeachfront,
 	"audienceNetwork": BidderFacebook,
 	"conversant":      BidderConversant,
 	"indexExchange":   BidderIndex,
