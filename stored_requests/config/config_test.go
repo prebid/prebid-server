@@ -79,17 +79,8 @@ func TestNewHTTPEvents(t *testing.T) {
 	evProducers, ampProducers := newEventProducers(cfg, server1.Client(), nil)
 	assertSliceLength(t, evProducers, 1)
 	assertSliceLength(t, ampProducers, 1)
-	if casted, ok := evProducers[0].(*httpEvents.HTTPEvents); ok {
-		assertStringsEqual(t, casted.Endpoint, server1.URL)
-	} else {
-		t.Errorf("The EventProducer should have been an HTTPEvents")
-	}
-
-	if casted, ok := ampProducers[0].(*httpEvents.HTTPEvents); ok {
-		assertStringsEqual(t, casted.Endpoint, server2.URL)
-	} else {
-		t.Errorf("The EventProducer should have been an HTTPEvents")
-	}
+	assertHttpWithURL(t, evProducers[0], server1.URL)
+	assertHttpWithURL(t, ampProducers[0], server2.URL)
 }
 
 func TestNewEmptyCache(t *testing.T) {
@@ -124,6 +115,14 @@ func TestNewEventsAPI(t *testing.T) {
 	}
 	if handle, _, _ := router.Lookup("DELETE", "/test-endpoint"); handle == nil {
 		t.Error("The newEventsAPI method didn't add a DELETE /test-endpoint route")
+	}
+}
+
+func assertHttpWithURL(t *testing.T, ev events.EventProducer, url string) {
+	if casted, ok := ev.(*httpEvents.HTTPEvents); ok {
+		assertStringsEqual(t, casted.Endpoint, url)
+	} else {
+		t.Errorf("The EventProducer was not a *HTTPEvents")
 	}
 }
 
