@@ -3,12 +3,18 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/prebid/prebid-server/stored_requests/events"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+
+	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 
 	"github.com/prebid/prebid-server/config"
 )
@@ -55,6 +61,37 @@ func TestNewHTTPFetcher(t *testing.T) {
 	}
 }
 
+func TestNewHTTPEvents(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	server1 := httptest.NewServer(http.HandlerFunc(handler))
+	server2 := httptest.NewServer(http.HandlerFunc(handler))
+
+	cfg := &config.StoredRequests{
+		HTTPEvents: &config.HTTPEventsConfig{
+			Endpoint:    server1.URL,
+			AmpEndpoint: server2.URL,
+			RefreshRate: 100,
+			Timeout:     1000,
+		},
+	}
+	evProducers, ampProducers := newEventProducers(cfg, server1.Client(), nil)
+	assertSliceLength(t, evProducers, 1)
+	assertSliceLength(t, ampProducers, 1)
+	if casted, ok := evProducers[0].(*httpEvents.HTTPEvents); ok {
+		assertStringsEqual(t, casted.Endpoint, server1.URL)
+	} else {
+		t.Errorf("The EventProducer should have been an HTTPEvents")
+	}
+
+	if casted, ok := ampProducers[0].(*httpEvents.HTTPEvents); ok {
+		assertStringsEqual(t, casted.Endpoint, server2.URL)
+	} else {
+		t.Errorf("The EventProducer should have been an HTTPEvents")
+	}
+}
+
 func TestNewEmptyCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{})
 	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
@@ -87,5 +124,21 @@ func TestNewEventsAPI(t *testing.T) {
 	}
 	if handle, _, _ := router.Lookup("DELETE", "/test-endpoint"); handle == nil {
 		t.Error("The newEventsAPI method didn't add a DELETE /test-endpoint route")
+	}
+}
+
+func assertSliceLength(t *testing.T, producers []events.EventProducer, expected int) {
+	t.Helper()
+
+	if len(producers) != expected {
+		t.Fatalf("Expected %d EventProducers. Got: %v", expected, producers)
+	}
+}
+
+func assertStringsEqual(t *testing.T, actual string, expected string) {
+	t.Helper()
+
+	if actual != expected {
+		t.Fatalf("String %s did not match expected %s", actual, expected)
 	}
 }

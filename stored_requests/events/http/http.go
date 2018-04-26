@@ -45,17 +45,17 @@ import (
 // To signal deletions, the endpoint may return { "deleted": true }
 // in place of the Stored Data if the "last-modified" param existed.
 //
-func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *httpEvents {
+func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() (ctx context.Context, canceller func()), refreshRate time.Duration) *HTTPEvents {
 	// If we're not given a function to produce Contexts, use the Background one.
 	if ctxProducer == nil {
 		ctxProducer = func() (ctx context.Context, canceller func()) {
 			return context.Background(), func() {}
 		}
 	}
-	e := &httpEvents{
+	e := &HTTPEvents{
 		client:        client,
 		ctxProducer:   ctxProducer,
-		endpoint:      endpoint,
+		Endpoint:      endpoint,
 		lastUpdate:    time.Now().UTC(),
 		saves:         make(chan events.Save, 1),
 		invalidations: make(chan events.Invalidation, 1),
@@ -67,20 +67,20 @@ func NewHTTPEvents(client *httpCore.Client, endpoint string, ctxProducer func() 
 	return e
 }
 
-type httpEvents struct {
+type HTTPEvents struct {
 	client        *httpCore.Client
 	ctxProducer   func() (ctx context.Context, canceller func())
-	endpoint      string
+	Endpoint      string
 	invalidations chan events.Invalidation
 	lastUpdate    time.Time
 	saves         chan events.Save
 }
 
-func (e *httpEvents) fetchAll() {
+func (e *HTTPEvents) fetchAll() {
 	ctx, cancel := e.ctxProducer()
 	defer cancel()
-	resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
-	if respObj, ok := e.parse(e.endpoint, resp, err); ok {
+	resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
+	if respObj, ok := e.parse(e.Endpoint, resp, err); ok {
 		if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
 			e.saves <- events.Save{
 				Requests: respObj.StoredRequests,
@@ -90,14 +90,14 @@ func (e *httpEvents) fetchAll() {
 	}
 }
 
-func (e *httpEvents) refresh(ticker <-chan time.Time) {
+func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 	for {
 		select {
 		case thisTime := <-ticker:
 			thisTimeInUTC := thisTime.UTC()
-			thisEndpoint := e.endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
+			thisEndpoint := e.Endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
 			ctx, cancel := e.ctxProducer()
-			resp, err := ctxhttp.Get(ctx, e.client, e.endpoint)
+			resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
 			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
 				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
@@ -121,7 +121,7 @@ func (e *httpEvents) refresh(ticker <-chan time.Time) {
 
 // proceess unpacks the HTTP response and sends the relevant events to the channels.
 // It returns true if everything was successful, and false if any errors occurred.
-func (e *httpEvents) parse(endpoint string, resp *httpCore.Response, err error) (*responseContract, bool) {
+func (e *HTTPEvents) parse(endpoint string, resp *httpCore.Response, err error) (*responseContract, bool) {
 	if err != nil {
 		glog.Errorf("Failed call: GET %s for Stored Requests: %v", endpoint, err)
 		return nil, false
@@ -159,11 +159,11 @@ func extractInvalidations(changes map[string]json.RawMessage) []string {
 	return deletedIDs
 }
 
-func (e *httpEvents) Saves() <-chan events.Save {
+func (e *HTTPEvents) Saves() <-chan events.Save {
 	return e.saves
 }
 
-func (e *httpEvents) Invalidations() <-chan events.Invalidation {
+func (e *HTTPEvents) Invalidations() <-chan events.Invalidation {
 	return e.invalidations
 }
 
