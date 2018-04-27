@@ -416,13 +416,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
 
-	out , _ := json.Marshal(internalRequest)
-	glog.Info("\nInternal : \n", out)
-	out , _ = json.Marshal(externalRequest)
-	glog.Info("\nExternal : \n", out)
-	out , _ = json.Marshal(response)
-	glog.Info("\nResponse : \n", out)
-
 	if internalRequest.Imp[0].Video != nil {
 		isVideo = true
 		bidtype = openrtb_ext.BidTypeVideo
@@ -473,6 +466,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
 			return openrtbResp, err
 		}
+		glog.Info(openrtbResp)
 		return postprocessVideo(openrtbResp, externalRequest)
 	} else {
 		if id != TestID {
