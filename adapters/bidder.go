@@ -40,7 +40,7 @@ type BadInputError struct {
 	Message string
 }
 
-func (err BadInputError) Error() string {
+func (err *BadInputError) Error() string {
 	return err.Message
 }
 
