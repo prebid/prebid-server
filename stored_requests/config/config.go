@@ -115,8 +115,8 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 		ampEventProducers = append(ampEventProducers, newEventsAPI(router, "/storedrequests/amp"))
 	}
 	if cfg.HTTPEvents != nil {
-		eventProducers = append(eventProducers, newHttpEvents(cfg.HTTPEvents, client))
-		ampEventProducers = append(ampEventProducers, newHttpEvents(cfg.HTTPEvents, client))
+		eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
+		ampEventProducers = append(ampEventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.AmpEndpoint))
 	}
 	if cfg.Postgres != nil {
 		// Make sure we don't miss any updates in between the initial fetch and the "update" polling.
@@ -158,12 +158,11 @@ func newEventsAPI(router *httprouter.Router, endpoint string) events.EventProduc
 	return producer
 }
 
-func newHttpEvents(cfg *config.HTTPEventsConfig, client *http.Client) events.EventProducer {
+func newHttpEvents(client *http.Client, timeout time.Duration, refreshRate time.Duration, endpoint string) events.EventProducer {
 	ctxProducer := func() (ctx context.Context, canceller func()) {
-		return context.WithTimeout(context.Background(), time.Duration(cfg.Timeout)*time.Millisecond)
+		return context.WithTimeout(context.Background(), timeout)
 	}
-	refreshRate := time.Duration(cfg.RefreshRate) * time.Second
-	return httpEvents.NewHTTPEvents(client, cfg.Endpoint, ctxProducer, refreshRate)
+	return httpEvents.NewHTTPEvents(client, endpoint, ctxProducer, refreshRate)
 }
 
 func newFilesystem() stored_requests.Fetcher {

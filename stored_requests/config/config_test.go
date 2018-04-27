@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
 	"github.com/prebid/prebid-server/stored_requests/events"
-
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-
-	"github.com/prebid/prebid-server/config"
+	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
@@ -52,6 +52,28 @@ func TestNewHTTPFetcher(t *testing.T) {
 	} else {
 		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
 	}
+}
+
+func TestNewHTTPEvents(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	server1 := httptest.NewServer(http.HandlerFunc(handler))
+	server2 := httptest.NewServer(http.HandlerFunc(handler))
+
+	cfg := &config.StoredRequests{
+		HTTPEvents: &config.HTTPEventsConfig{
+			Endpoint:    server1.URL,
+			AmpEndpoint: server2.URL,
+			RefreshRate: 100,
+			Timeout:     1000,
+		},
+	}
+	evProducers, ampProducers := newEventProducers(cfg, server1.Client(), nil, nil)
+	assertSliceLength(t, evProducers, 1)
+	assertSliceLength(t, ampProducers, 1)
+	assertHttpWithURL(t, evProducers[0], server1.URL)
+	assertHttpWithURL(t, ampProducers[0], server2.URL)
 }
 
 func TestNewEmptyCache(t *testing.T) {
@@ -128,5 +150,29 @@ func assertProducerLength(t *testing.T, producers []events.EventProducer, expect
 func assertExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("sqlmock expectations were not met: %v", err)
+	}
+}
+
+func assertHttpWithURL(t *testing.T, ev events.EventProducer, url string) {
+	if casted, ok := ev.(*httpEvents.HTTPEvents); ok {
+		assertStringsEqual(t, casted.Endpoint, url)
+	} else {
+		t.Errorf("The EventProducer was not a *HTTPEvents")
+	}
+}
+
+func assertSliceLength(t *testing.T, producers []events.EventProducer, expected int) {
+	t.Helper()
+
+	if len(producers) != expected {
+		t.Fatalf("Expected %d EventProducers. Got: %v", expected, producers)
+	}
+}
+
+func assertStringsEqual(t *testing.T, actual string, expected string) {
+	t.Helper()
+
+	if actual != expected {
+		t.Fatalf("String %s did not match expected %s", actual, expected)
 	}
 }

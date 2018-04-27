@@ -88,6 +88,10 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 		return
 	}
 
+	if anResp.StatusCode == http.StatusNoContent {
+		return
+	}
+
 	if anResp.StatusCode != http.StatusOK {
 		err = &adapters.BadServerResponseError{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.ResponseBody),

@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"encoding/gob"
 
+	"github.com/prebid/prebid-server/stored_requests"
+
 	"github.com/coocood/freecache"
+	"github.com/lib/pq"
 	"github.com/prebid/prebid-server/cache"
 )
 
@@ -115,9 +118,20 @@ func (s *configService) Get(key string) (string, error) {
 	if b, err := s.shared.lru.Get([]byte(key)); err == nil {
 		return string(b), nil
 	}
+
 	var config string
 	if err := s.shared.db.QueryRow("SELECT config FROM s2sconfig_config where uuid = $1 LIMIT 1", key).Scan(&config); err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
+		if pqErr, ok := err.(*pq.Error); ok {
+			// If the user didn't give us a UUID, the query fails with this error. Wrap it so that we don't
+			// pollute the app logs with bad user input.
+			if string(pqErr.Code) == "22P02" {
+				err = &stored_requests.NotFoundError{
+					ID:       key,
+					DataType: "Legacy Config",
+				}
+			}
+		}
 		return "", err
 	}
 	s.shared.lru.Set([]byte(key), []byte(config), s.shared.ttlSeconds)
