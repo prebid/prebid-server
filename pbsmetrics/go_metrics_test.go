@@ -7,14 +7,6 @@ import (
 	"github.com/rcrowley/go-metrics"
 )
 
-func TestRecordBidType(t *testing.T) {
-	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
-
-	m.RecordAdapterBidAdm(AdapterLabels{}, openrtb_ext.BidTypeBanner, true)
-	// TODO: Finish this
-}
-
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon})
@@ -31,6 +23,23 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
 	ensureContainsAdapterMetrics(t, registry, "adapter.rubicon", m.AdapterMetrics["rubicon"])
+}
+
+func TestRecordBidType(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
+
+	m.RecordAdapterBidAdm(AdapterLabels{
+		Adapter: openrtb_ext.BidderAppnexus,
+	}, openrtb_ext.BidTypeBanner, true)
+	VerifyMetrics(t, "Appnexus Banner Adm Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeBanner].AdmMeter.Count(), 1)
+	VerifyMetrics(t, "Appnexus Banner Nurl Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeBanner].NurlMeter.Count(), 0)
+
+	m.RecordAdapterBidAdm(AdapterLabels{
+		Adapter: openrtb_ext.BidderAppnexus,
+	}, openrtb_ext.BidTypeVideo, false)
+	VerifyMetrics(t, "Appnexus Video Adm Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeVideo].AdmMeter.Count(), 0)
+	VerifyMetrics(t, "Appnexus Video Nurl Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeVideo].NurlMeter.Count(), 1)
 }
 
 func ensureContains(t *testing.T, registry metrics.Registry, name string, metric interface{}) {
