@@ -356,10 +356,15 @@ func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext
 		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
-	if hasAdm {
-		am.MarkupMetrics[bidType].AdmMeter.Mark(1)
+
+	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
+		if hasAdm {
+			metricsForType.AdmMeter.Mark(1)
+		} else {
+			metricsForType.NurlMeter.Mark(1)
+		}
 	} else {
-		am.MarkupMetrics[bidType].NurlMeter.Mark(1)
+		glog.Errorf("bid/adm metrics map entry does not exist for type %s. This is a bug, and should be reported.", bidType)
 	}
 	return
 }
