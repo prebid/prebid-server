@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"github.com/lib/pq"
+
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -22,7 +24,7 @@ type dbFetcher struct {
 	queryMaker func(numReqs int, numImps int) (query string)
 }
 
-func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
 	if len(requestIDs) < 1 && len(impIDs) < 1 {
 		return nil, nil, nil
 	}
@@ -38,12 +40,11 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 
 	rows, err := fetcher.db.QueryContext(ctx, query, idInterfaces...)
 	if err != nil {
-		ctxErr := ctx.Err()
-		// This query might fail if the user chose an extremely short timeout.
-		// We don't care about these... but there may also be legit connection issues.
-		// Log any other errors so we have some idea what's going on.
-		if ctxErr == nil || ctxErr != context.DeadlineExceeded {
+		if err != context.DeadlineExceeded && !isBadInput(err) {
 			glog.Errorf("Error reading from Stored Request DB: %s", err.Error())
+			errs := appendErrors("Request", requestIDs, nil, nil)
+			errs = appendErrors("Imp", impIDs, nil, errs)
+			return nil, nil, errs
 		}
 		return nil, nil, []error{err}
 	}
@@ -80,7 +81,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 		return nil, nil, []error{rows.Err()}
 	}
 
-	errs = appendErrors("Request", requestIDs, storedRequestData, nil)
+	errs := appendErrors("Request", requestIDs, storedRequestData, nil)
 	errs = appendErrors("Imp", impIDs, storedImpData, errs)
 
 	return storedRequestData, storedImpData, errs
@@ -96,4 +97,23 @@ func appendErrors(dataType string, ids []string, data map[string]json.RawMessage
 		}
 	}
 	return errs
+}
+
+// Returns true if the Postgres error signifies some sort of bad user input, and false otherwise.
+//
+// These errors are documented here: https://www.postgresql.org/docs/9.3/static/errcodes-appendix.html
+func isBadInput(err error) bool {
+	if pqErr, ok := err.(*pq.Error); ok {
+		// Unfortunately, Postgres queries will fail if a non-UUID is passedd into a query for a UUID column. For example:
+		//
+		//    SELECT uuid, data, dataType FROM stored_requests WHERE uuid IN ('abc');
+		//
+		// Since users can send us strings which are _not_ UUIDs, and we don't want the code to assume anything about
+		// the database schema, we can just convert these into standard NotFoundErrors.
+		if string(pqErr.Code) == "22P02" {
+			return true
+		}
+	}
+
+	return false
 }

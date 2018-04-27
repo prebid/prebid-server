@@ -23,8 +23,8 @@ type Fetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
-// NotFoundError is an error type to flag that an ID was not found, but there was otherwise no issue
-// with the query. This was added to support Multifetcher and any other case where we might expect
+// NotFoundError is an error type to flag that an ID was not found by the Fetcher.
+// This was added to support Multifetcher and any other case where we might expect
 // that all IDs would not be found, and want to disentangle those errors from the others.
 type NotFoundError struct {
 	ID       string
