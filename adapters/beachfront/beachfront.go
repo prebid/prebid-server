@@ -201,6 +201,7 @@ func (a *BeachfrontAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	glog.Info(request)
 	errs := make([]error, 0, len(request.Imp))
 
 	if len(request.Imp) == 0 {
@@ -232,8 +233,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	// glog.Info("\nUser.ID : ", request.User.ID)
-	// glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
+	glog.Info("\nUser.ID : ", request.User.ID)
+	glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -414,6 +415,10 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var err error
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
+
+	glog.Info("\nInternal : \n", internalRequest)
+	glog.Info("\nExternal : \n", externalRequest)
+	glog.Info("\nresponse : \n", response)
 
 	if internalRequest.Imp[0].Video != nil {
 		isVideo = true
