@@ -235,6 +235,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	glog.Info("\nUser.ID : ", request.User.ID)
 	glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
+	glog.Info("\nRequest URL : ", uri)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
