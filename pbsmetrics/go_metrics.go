@@ -53,6 +53,12 @@ type AdapterMetrics struct {
 	RequestTimer      metrics.Timer
 	PriceHistogram    metrics.Histogram
 	BidsReceivedMeter metrics.Meter
+	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+}
+
+type MarkupDeliveryMetrics struct {
+	AdmMeter  metrics.Meter
+	NurlMeter metrics.Meter
 }
 
 type accountMetrics struct {
@@ -102,7 +108,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		exchanges: exchanges,
 	}
 	for _, a := range exchanges {
-		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(registry, a)
+		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
 
 	return newMetrics
@@ -141,7 +147,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 }
 
 // Part of setting up blank metrics, the adapter metrics.
-func makeBlankAdapterMetrics(registry metrics.Registry, exchanges openrtb_ext.BidderName) *AdapterMetrics {
+func makeBlankAdapterMetrics() *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
 		NoCookieMeter:     blankMeter,
@@ -152,8 +158,25 @@ func makeBlankAdapterMetrics(registry metrics.Registry, exchanges openrtb_ext.Bi
 		RequestTimer:      &metrics.NilTimer{},
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
+		MarkupMetrics:     makeBlankBidMarkupMetrics(),
 	}
 	return newAdapter
+}
+
+func makeBlankBidMarkupMetrics() map[openrtb_ext.BidType]*MarkupDeliveryMetrics {
+	return map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
+		openrtb_ext.BidTypeAudio:  makeBlankMarkupDeliveryMetrics(),
+		openrtb_ext.BidTypeBanner: makeBlankMarkupDeliveryMetrics(),
+		openrtb_ext.BidTypeNative: makeBlankMarkupDeliveryMetrics(),
+		openrtb_ext.BidTypeVideo:  makeBlankMarkupDeliveryMetrics(),
+	}
+}
+
+func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
+	return &MarkupDeliveryMetrics{
+		AdmMeter:  &metrics.NilMeter{},
+		NurlMeter: &metrics.NilMeter{},
+	}
 }
 
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
@@ -164,10 +187,22 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
+		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
+		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
+		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
+		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
+	}
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
+}
 
+func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
+	return &MarkupDeliveryMetrics{
+		AdmMeter:  metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".adm_bids_received", registry),
+		NurlMeter: metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".nurl_bids_received", registry),
+	}
 }
 
 // getAccountMetrics gets or registers the account metrics for account "id".
@@ -199,7 +234,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	for _, a := range me.exchanges {
-		am.adapterMetrics[a] = makeBlankAdapterMetrics(me.metricsRegistry, a)
+		am.adapterMetrics[a] = makeBlankAdapterMetrics()
 		registerAdapterMetrics(me.metricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 	}
 
@@ -311,6 +346,27 @@ func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
 	aam.BidsReceivedMeter.Mark(bids)
+}
+
+// RecordAdapterBidAdm implements a part of the MetricsEngine interface.
+// This tracks how many bids from each Bidder use `adm` vs. `nurl.
+func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+
+	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
+		if hasAdm {
+			metricsForType.AdmMeter.Mark(1)
+		} else {
+			metricsForType.NurlMeter.Mark(1)
+		}
+	} else {
+		glog.Errorf("bid/adm metrics map entry does not exist for type %s. This is a bug, and should be reported.", bidType)
+	}
+	return
 }
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
