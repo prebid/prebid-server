@@ -26,7 +26,7 @@ This endpoint will respond with either:
 - An OpenRTB 2.5 BidResponse, or
 - An HTTP 400 status code if the request is malformed
 
-See below for a "hello world" response.
+A "hello world" response using the prebid sample ad is shown below.
 
 ```
 {
@@ -39,7 +39,7 @@ See below for a "hello world" response.
           "id": "4625436751433509010",
           "impid": "some-impression-id",
           "price": 0.5,
-          "adm": "<script type=\"application/javascript\">...</script>",
+          "adm": "<script type=\"application/javascript\">... the creative javascript is in here ... </script>",
           "adid": "29681110",
           "adomain": [
             "appnexus.com"
