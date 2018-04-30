@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -134,7 +135,8 @@ func TestImplicitUserId(t *testing.T) {
 
 // TestGoodRequests makes sure we return 200s on good requests.
 func TestGoodRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/valid-whole", nil, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole/exemplary", unpackExamplary, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole/supplementary", nil, http.StatusOK)
 }
 
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
@@ -227,6 +229,17 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 	buf.Write(serialized)
 	buf.WriteString(`},"ext":{"appnexus":{"placementId":10433394}}}]}`)
 	return buf.Bytes()
+}
+
+func unpackExamplary(t *testing.T, example []byte) []byte {
+	if value, dataType, _, err := jsonparser.Get(example, "requestPayload"); err != nil {
+		t.Fatalf("Error parsing root.requestPayload from exemplary request: %v.", err)
+	} else if dataType != jsonparser.Object {
+		t.Fatalf("root.requestPayload must be a JSON object. Got %s", dataType.String())
+	} else {
+		return value
+	}
+	return nil
 }
 
 // TestNilExchange makes sure we fail when given nil for the Exchange.
@@ -472,7 +485,7 @@ func TestContentType(t *testing.T) {
 }
 
 func validRequest(t *testing.T, filename string) string {
-	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/" + filename)
+	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {
 		t.Fatalf("Failed to fetch a valid request: %v", err)
 	}
