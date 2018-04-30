@@ -22,7 +22,9 @@
                 ]
             },
             "ext": {
-                "appnexus": "good"
+                "appnexus": {
+                    "placementId": 10433394
+                }
             }
         }
     ],

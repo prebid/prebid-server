@@ -1,6 +1,6 @@
 {
     "id": "some-request-id",
-    "app": { },
+    "app": {},
     "imp": [
         {
             "id": "my-imp-id",
@@ -20,7 +20,9 @@
                 ]
             },
             "ext": {
-                "appnexus": "good"
+                "appnexus": {
+                    "placementId": 10433394
+                }
             }
         }
     ]

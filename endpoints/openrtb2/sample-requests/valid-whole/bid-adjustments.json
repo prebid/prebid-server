@@ -7,10 +7,14 @@
         {
             "id": "my-imp-id",
             "video": {
-                "mimes":["video/mp4"]
+                "mimes": [
+                    "video/mp4"
+                ]
             },
             "ext": {
-                "unknown": "good"
+                "unknown": {
+                    "placementId": 10433394
+                }
             }
         }
     ],
