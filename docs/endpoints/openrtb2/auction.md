@@ -25,7 +25,7 @@ This endpoint will respond with either:
 - An OpenRTB 2.5 BidResponse, or
 - An HTTP 400 status code if the request is malformed
 
-A "hello world" response using the prebid sample ad is shown below.
+A "hello world" response from the prebid sample ad request is shown below.
 
 ```
 {
