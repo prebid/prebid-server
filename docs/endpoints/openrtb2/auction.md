@@ -14,40 +14,10 @@ This endpoint runs an auction with the given OpenRTB 2.5 bid request.
 
 ### Sample request
 
-The following is a "hello world" request which fetches the [Prebid sample ad](http://prebid.org/examples/pbjs_demo.html).
+The [Prebid sample ad](http://prebid.org/examples/pbjs_demo.html) can be loaded with the request sample here
+[here](../../../endpoints/openrtb2/sample-requests/valid-whole/exemplary/prebid-test-ad.json).
 
-```
-{
-  "id": "some-request-id",
-  "site": {
-    "page": "prebid.org"
-  },
-  "imp": [
-    {
-      "id": "some-impression-id",
-      "banner": {
-        "format": [
-          {
-            "w": 300,
-            "h": 250
-          },
-          {
-            "w": 300,
-            "h": 600
-          }
-        ]
-      },
-      "ext": {
-        "appnexus": {
-          "placementId": 10433394
-        }
-      }
-    }
-  ],
-  "test": 1,
-  "tmax": 500
-}
-```
+Other examples can be found in the [OpenRTB2 Examples](../../../endpoints/openrtb2/sample-requests/valid-whole/exemplary) directory.
 
 ### Sample Response
 
