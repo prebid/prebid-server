@@ -58,7 +58,11 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	defer server.Close()
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics), &bidderParamValidator{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
+	if err != nil {
+		return
+	}
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics), paramValidator, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
