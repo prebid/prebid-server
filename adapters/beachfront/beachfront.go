@@ -201,7 +201,9 @@ func (a *BeachfrontAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	glog.Info(request)
+	out, _ := json.Marshal(request)
+	glog.Info(out)
+
 	errs := make([]error, 0, len(request.Imp))
 
 	if len(request.Imp) == 0 {
