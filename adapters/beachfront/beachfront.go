@@ -187,9 +187,11 @@ func (a *BeachfrontAdapter) Name() string {
 }
 
 // Corresponds to the bidder name in cookies and requests
+/*
 func (a *BeachfrontAdapter) FamilyName() string {
 	return "beachfront"
 }
+*/
 
 func (a *BeachfrontAdapter) SkipNoCookies() bool {
 	return false

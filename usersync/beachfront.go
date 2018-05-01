@@ -11,14 +11,13 @@ func NewBeachfrontSyncer(external string) Usersyncer {
 	// usersyncURL := "http://10.0.0.181/fakesync.html?nothing="
 
 	url := fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri))
-	url = "http://yourmomshouse.com"
 
 	return &syncer{
 		familyName: "beachfront",
 		syncInfo: &UsersyncInfo{
 			URL:         url,
 			Type:        "redirect",
-			SupportCORS: false,
+			SupportCORS: true,
 		},
 	}
 }
