@@ -23,9 +23,9 @@ const TestID = "test_id"
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
 
-// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 // const VideoEndpoint = "http://10.0.0.181/dump.php?exchange_id="
-const VideoEndpoint = "http://qa.bfmio.com/bid.json?exchange_id="
+// const VideoEndpoint = "http://qa.bfmio.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
@@ -56,7 +56,8 @@ const beachfrontVideoRequestTemplate = `{
 	    	"cur": ["USD"]
   	}`
 
-const beachfrontBannerRequestTemplate = `{
+const beachfrontBannerRequestTemplate = `{:w
+
 	"slots":[
 		{
 			"slot":"",
