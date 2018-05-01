@@ -18,7 +18,7 @@ func NewBeachfrontSyncer(external string) Usersyncer {
 		syncInfo: &UsersyncInfo{
 			URL:         url,
 			Type:        "redirect",
-			SupportCORS: true,
+			SupportCORS: false,
 		},
 	}
 }
