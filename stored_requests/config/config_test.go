@@ -3,29 +3,25 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
-	"github.com/prebid/prebid-server/stored_requests/events"
-
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
-
-	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-
-	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
-
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/backends/http_fetcher"
+	"github.com/prebid/prebid-server/stored_requests/events"
+	httpEvents "github.com/prebid/prebid-server/stored_requests/events/http"
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, ampFetcher, db := newFetchers(&config.StoredRequests{}, nil)
+	fetcher, ampFetcher := newFetchers(&config.StoredRequests{}, nil, nil)
 	if fetcher == nil || ampFetcher == nil {
 		t.Errorf("The fetchers should be non-nil, even with an empty config.")
-	}
-	if db != nil {
-		t.Errorf("The database should be nil, since none was used.")
 	}
 	if _, ok := fetcher.(empty_fetcher.EmptyFetcher); !ok {
 		t.Errorf("If the config is empty, and EmptyFetcher should be returned")
@@ -36,15 +32,12 @@ func TestNewEmptyFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcher(t *testing.T) {
-	fetcher, ampFetcher, db := newFetchers(&config.StoredRequests{
+	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
 		HTTP: &config.HTTPFetcherConfig{
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "stored-requests.prebid.com?type=amp",
 		},
-	}, nil)
-	if db != nil {
-		t.Errorf("No database connection should have been started")
-	}
+	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
@@ -76,7 +69,7 @@ func TestNewHTTPEvents(t *testing.T) {
 			Timeout:     1000,
 		},
 	}
-	evProducers, ampProducers := newEventProducers(cfg, server1.Client(), nil)
+	evProducers, ampProducers := newEventProducers(cfg, server1.Client(), nil, nil)
 	assertSliceLength(t, evProducers, 1)
 	assertSliceLength(t, ampProducers, 1)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
@@ -107,6 +100,35 @@ func TestNewInMemoryCache(t *testing.T) {
 	}
 }
 
+func TestNewPostgresEventProducers(t *testing.T) {
+	cfg := &config.StoredRequests{
+		Postgres: &config.PostgresConfig{
+			CacheInitialization: &config.PostgresCacheInitializer{
+				Timeout:  50,
+				Query:    "SELECT id, requestData, type FROM stored_data",
+				AmpQuery: "SELECT id, requestData, type FROM stored_amp_data",
+			},
+			PollUpdates: &config.PostgresUpdatePolling{
+				RefreshRate: 20,
+				Timeout:     50,
+				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",
+				AmpQuery:    "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",
+			},
+		},
+	}
+	client := &http.Client{}
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock: %v", err)
+	}
+	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
+	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.AmpQuery) + "$").WillReturnError(errors.New("Query failed"))
+
+	evProducers, ampEvProducers := newEventProducers(cfg, client, db, nil)
+	assertExpectationsMet(t, mock)
+	assertProducerLength(t, evProducers, 2)
+	assertProducerLength(t, ampEvProducers, 2)
+}
 func TestNewEventsAPI(t *testing.T) {
 	router := httprouter.New()
 	newEventsAPI(router, "/test-endpoint")
@@ -115,6 +137,19 @@ func TestNewEventsAPI(t *testing.T) {
 	}
 	if handle, _, _ := router.Lookup("DELETE", "/test-endpoint"); handle == nil {
 		t.Error("The newEventsAPI method didn't add a DELETE /test-endpoint route")
+	}
+}
+
+func assertProducerLength(t *testing.T, producers []events.EventProducer, expectedLength int) {
+	t.Helper()
+	if len(producers) != expectedLength {
+		t.Errorf("Expected %d producers, but got %d", expectedLength, len(producers))
+	}
+}
+
+func assertExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("sqlmock expectations were not met: %v", err)
 	}
 }
 

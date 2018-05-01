@@ -19,21 +19,23 @@ import (
 // For no TTL, use ttlSeconds <= 0
 func NewCache(cfg *config.InMemoryCache) stored_requests.Cache {
 	return &cache{
-		requestDataCache: newCacheForWithLimits(cfg.RequestCacheSize, cfg.TTL),
-		impDataCache:     newCacheForWithLimits(cfg.ImpCacheSize, cfg.TTL),
+		requestDataCache: newCacheForWithLimits(cfg.RequestCacheSize, cfg.TTL, "Request"),
+		impDataCache:     newCacheForWithLimits(cfg.ImpCacheSize, cfg.TTL, "Imp"),
 	}
 }
 
-func newCacheForWithLimits(size int, ttl int) mapLike {
-	if ttl >= 0 && size <= 0 {
+func newCacheForWithLimits(size int, ttl int, dataType string) mapLike {
+	if ttl > 0 && size <= 0 {
 		glog.Fatal("No in-memory caches defined with a finite TTL but unbounded size. Config validation should have caught this. Failing fast because something is buggy.")
 	}
 	if size > 0 {
+		glog.Infof("Using a Stored %s in-memory cache. Max size: %d bytes. TTL: %d seconds.", dataType, size, ttl)
 		return &pbsLRUCache{
 			Cache:      freecache.NewCache(size),
 			ttlSeconds: ttl,
 		}
 	} else {
+		glog.Infof("Using an unbounded Stored %s in-memory cache.", dataType)
 		return &pbsSyncMap{&sync.Map{}}
 	}
 }

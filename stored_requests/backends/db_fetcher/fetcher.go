@@ -12,6 +12,12 @@ import (
 )
 
 func NewFetcher(db *sql.DB, queryMaker func(int, int) string) stored_requests.Fetcher {
+	if db == nil {
+		glog.Fatalf("The Postgres Stored Request Fetcher requires a database connection. Please report this as a bug.")
+	}
+	if queryMaker == nil {
+		glog.Fatalf("The Postgres Stored Request Fetcher requires a queryMaker function. Please report this as a bug.")
+	}
 	return &dbFetcher{
 		db:         db,
 		queryMaker: queryMaker,
