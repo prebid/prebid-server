@@ -428,6 +428,8 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	// I have the __io_cid cookie when I get here in video. Should I set the user id to this?
 	glog.Info("\nreceived	:", response.Headers.Get("Set-Cookie"))
+	glog.Info(internalRequest)
+	glog.Info(externalRequest)
 
 	// Cookie debugging
 
