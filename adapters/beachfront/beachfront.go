@@ -192,7 +192,7 @@ func (a *BeachfrontAdapter) FamilyName() string {
 }
 
 func (a *BeachfrontAdapter) SkipNoCookies() bool {
-	return true
+	return false
 }
 
 func (a *BeachfrontAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
