@@ -14,7 +14,9 @@
     {
       "id": "/19968336/header-bid-tag-0",
       "ext": {
-        "appnexus": "good"
+        "appnexus": {
+          "placementId": 10433394
+        }
       },
       "banner": {
         "format": [
@@ -36,8 +38,6 @@
     }
   },
   "user": {
-    "ext": {
-      "consent": "some-consent-string"
-    }
+    "ext": {}
   }
 }

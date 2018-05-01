@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prebid/prebid-server/stored_requests"
+
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
@@ -309,8 +311,10 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 		if unit.ConfigID != "" {
 			bidders, err = ConfigGet(cache, unit.ConfigID)
 			if err != nil {
+				if _, notFound := err.(*stored_requests.NotFoundError); !notFound {
+					glog.Warningf("Failed to load config '%s' from cache: %v", unit.ConfigID, err)
+				}
 				// proceed with other ad units
-				glog.Warningf("Failed to load config '%s' from cache: %v", unit.ConfigID, err)
 				continue
 			}
 		}

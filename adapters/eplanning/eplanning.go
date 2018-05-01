@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"fmt"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -89,19 +90,25 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 func verifyImp(imp *openrtb.Imp) (string, error) {
 	// We currently only support banner impressions
 	if imp.Banner == nil {
-		return "", fmt.Errorf("EPlanning only supports banner Imps. Ignoring Imp ID=%s", imp.ID)
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("EPlanning only supports banner Imps. Ignoring Imp ID=%s", imp.ID),
+		}
 	}
 
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", fmt.Errorf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err)
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
 	}
 
 	impExt := openrtb_ext.ExtImpEPlanning{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return "", fmt.Errorf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
+		}
 	}
 
 	if impExt.ExchangeID == "" {
@@ -122,13 +129,23 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 		return nil, nil
 	}
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: err.Error(),
+		}}
 	}
 
 	var bids []*adapters.TypedBid

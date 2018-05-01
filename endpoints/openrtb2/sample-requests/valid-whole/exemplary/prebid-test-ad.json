@@ -1,0 +1,33 @@
+{
+  "description": "This uses Appnexus to fetch the prebid sample ad, as seen on prebid.org.",
+
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ],
+    "tmax": 500
+  }
+}

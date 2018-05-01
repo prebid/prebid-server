@@ -14,40 +14,9 @@ This endpoint runs an auction with the given OpenRTB 2.5 bid request.
 
 ### Sample request
 
-The following is a "hello world" request which fetches the [Prebid sample ad](http://prebid.org/examples/pbjs_demo.html).
+The [Prebid sample ad](http://prebid.org/examples/pbjs_demo.html) can be loaded with the request sample [here](../../../endpoints/openrtb2/sample-requests/valid-whole/exemplary/prebid-test-ad.json).
 
-```
-{
-  "id": "some-request-id",
-  "site": {
-    "page": "prebid.org"
-  },
-  "imp": [
-    {
-      "id": "some-impression-id",
-      "banner": {
-        "format": [
-          {
-            "w": 300,
-            "h": 250
-          },
-          {
-            "w": 300,
-            "h": 600
-          }
-        ]
-      },
-      "ext": {
-        "appnexus": {
-          "placementId": 10433394
-        }
-      }
-    }
-  ],
-  "test": 1,
-  "tmax": 500
-}
-```
+Other examples can be found in [endpoints/openrtb2/sample-requests/valid-whole/exemplary](../../../endpoints/openrtb2/sample-requests/valid-whole/exemplary).
 
 ### Sample Response
 
@@ -56,7 +25,7 @@ This endpoint will respond with either:
 - An OpenRTB 2.5 BidResponse, or
 - An HTTP 400 status code if the request is malformed
 
-See below for a "hello world" response.
+A "hello world" response from the prebid sample ad request is shown below.
 
 ```
 {
@@ -69,7 +38,7 @@ See below for a "hello world" response.
           "id": "4625436751433509010",
           "impid": "some-impression-id",
           "price": 0.5,
-          "adm": "<script type=\"application/javascript\">...</script>",
+          "adm": "<script type=\"application/javascript\">... the creative javascript is in here ... </script>",
           "adid": "29681110",
           "adomain": [
             "appnexus.com"
@@ -139,12 +108,16 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
 
 ```
 {
-  "pricegraularity": {
-      "precision": 2,
-      "ranges": [{
-        "max":20.0
-        "increment":0.1 }], // The default is the "medium" price granularity, same as providing the deprecated "medium" string granularity.
-  "includewinners": false // Optional param defaulting to true
+    "pricegranularity": {
+        "precision": 2,
+        "ranges": [
+            {
+                "max":20.00,
+                "increment":0.10 // This is equivalent to the deprecated "pricegranularity": "medium"
+            }
+        ]
+    },
+    "includewinners": false // Optional param defaulting to true
 }
 ```
 The list of price granularity ranges must be given in order of increasing `max` values. If `precision` is omitted, it will default to `2`. The minimum of a range will be 0 or the previous `max`. Any cmp above the largest `max` will go in the `max` pricebucket.

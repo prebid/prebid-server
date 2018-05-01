@@ -93,7 +93,9 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(httpRes.Body, &bidResp); err != nil {
-		return nil, []error{fmt.Errorf("error while decoding response, err: %s", err)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("error while decoding response, err: %s", err),
+		}}
 	}
 
 	var bids []*adapters.TypedBid
@@ -121,7 +123,9 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 			}
 
 			if !impOK {
-				errors = append(errors, fmt.Errorf("ignoring bid id=%s, request doesn't contain any impression with id=%s", bid.ID, bid.ImpID))
+				errors = append(errors, &adapters.BadServerResponseError{
+					Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", bid.ID, bid.ImpID),
+				})
 				continue
 			}
 
@@ -138,23 +142,31 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 func validateImpression(imp *openrtb.Imp) (int, error) {
 
 	if imp.Banner == nil && imp.Video == nil {
-		return 0, fmt.Errorf("ignoring imp id=%s, Adtelligent supports only Video and Banner", imp.ID)
+		return 0, &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, Adtelligent supports only Video and Banner", imp.ID),
+		}
 	}
 
 	if 0 == len(imp.Ext) {
-		return 0, fmt.Errorf("ignoring imp id=%s, extImpBidder is empty", imp.ID)
+		return 0, &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
+		}
 	}
 
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return 0, fmt.Errorf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err)
+		return 0, &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
 	}
 
 	impExt := openrtb_ext.ExtImpAdtelligent{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return 0, fmt.Errorf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err)
+		return 0, &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
+		}
 	}
 
 	// common extension for all impressions

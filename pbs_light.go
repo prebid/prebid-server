@@ -299,7 +299,6 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 
 	ch := make(chan bidResult)
 	sentBids := 0
-	bidderLabels := make(map[string]*pbsmetrics.AdapterLabels)
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
@@ -312,7 +311,10 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				CookieFlag:    labels.CookieFlag,
 				AdapterStatus: pbsmetrics.AdapterStatusOK,
 			}
-			bidderLabels[bidder.BidderCode] = &blabels
+			if blabels.Adapter == "" {
+				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
+				blabels.Adapter = openrtb_ext.BidderName(bidder.BidderCode)
+			}
 			if pbs_req.App == nil {
 				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
@@ -344,14 +346,18 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				if err != nil {
 					switch err {
 					case context.DeadlineExceeded:
-						bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusTimeout
+						blabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusErr
+						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
-						glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
+						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
+							if _, isBadServer := err.(adapters.BadServerResponseError); !isBadServer {
+								glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
+							}
+						}
 					}
 				} else if bid_list != nil {
 					bid_list = checkForValidBidSize(bid_list, bidder)
@@ -360,11 +366,17 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					for _, bid := range bid_list {
 						var cpm = float64(bid.Price * 1000)
 						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
+						switch bid.CreativeMediaType {
+						case "banner":
+							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+						case "video":
+							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
-					bidderLabels[bidder.BidderCode].AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					blabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
 				}
 
 				ch <- bidResult{
