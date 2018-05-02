@@ -51,6 +51,8 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		ID:   sReq.ID,
 		Imp:  sReq.Imp,
 		Site: sReq.Site,
+		User: sReq.User,
+		Regs: sReq.Regs,
 	}
 
 	// add tag ids to impressions
