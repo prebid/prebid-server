@@ -99,7 +99,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 
 		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
-			return nil, adapters.BadInputError{
+			return nil, &adapters.BadInputError{
 				Message: "No placement or member+invcode provided",
 			}
 		}
@@ -188,7 +188,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	responseBody := string(body)
 
 	if anResp.StatusCode == http.StatusBadRequest {
-		return nil, adapters.BadInputError{
+		return nil, &adapters.BadInputError{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
 		}
 	}
@@ -312,7 +312,7 @@ func keys(m map[string]bool) []string {
 func preprocess(imp *openrtb.Imp) (string, error) {
 	// We don't support audio imps yet.
 	if imp.Audio != nil {
-		return "", adapters.BadInputError{
+		return "", &adapters.BadInputError{
 			Message: fmt.Sprintf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
 		}
 	}
@@ -339,7 +339,7 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
-		return "", adapters.BadInputError{
+		return "", &adapters.BadInputError{
 			Message: "No placement or member+invcode provided",
 		}
 	}
@@ -403,7 +403,7 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{adapters.BadInputError{
+		return nil, []error{&adapters.BadInputError{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}

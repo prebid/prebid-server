@@ -106,7 +106,7 @@ func (a *AdformAdapter) Call(ctx context.Context, request *pbs.PBSRequest, bidde
 	responseBody := string(body)
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, adapters.BadInputError{
+		return nil, &adapters.BadInputError{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
 		}
 	}

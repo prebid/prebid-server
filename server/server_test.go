@@ -63,6 +63,7 @@ func TestWait(t *testing.T) {
 		inbound <- os.Interrupt
 	}(inbound)
 
+	wait(inbound, done, chan1, chan2, chan3)
 	// If this doesn't hang, then wait() is sending and receiving messages as expected.
 }
 

@@ -353,7 +353,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					default:
 						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
-						if _, isBadInput := err.(adapters.BadInputError); !isBadInput {
+						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
 							if _, isBadServer := err.(adapters.BadServerResponseError); !isBadServer {
 								glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 							}
@@ -366,6 +366,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					for _, bid := range bid_list {
 						var cpm = float64(bid.Price * 1000)
 						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
+						switch bid.CreativeMediaType {
+						case "banner":
+							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+						case "video":
+							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
