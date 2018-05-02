@@ -11,7 +11,7 @@ func NewAppnexusSyncer(externalURL string) Usersyncer {
 
 	glog.Info("\nredirect_uri    	: ", redirect_uri)
 	glog.Info("\nusersyncURL    	: ", usersyncURL)
-	glog.Info("\xurl    		: ", externalURL)
+	glog.Info("\nxurl    		: ", externalURL)
 
 	return &syncer{
 		familyName: "adnxs",
