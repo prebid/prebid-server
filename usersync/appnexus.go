@@ -17,7 +17,8 @@ func NewAppnexusSyncer(externalURL string) Usersyncer {
 	return &syncer{
 		familyName: "adnxs",
 		syncInfo: &UsersyncInfo{
-			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+			// URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
+			URL: 	     "http://yourmomshouse.com",
 			Type:        "redirect",
 			SupportCORS: false,
 		},
