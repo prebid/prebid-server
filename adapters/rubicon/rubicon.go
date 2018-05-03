@@ -666,7 +666,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 	return requestData, errs
 }
 
-func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -695,7 +695,8 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		return nil, []error{err}
 	}
 
-	bids := make([]*adapters.TypedBid, 0, 5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
 	bidType := openrtb_ext.BidTypeBanner
 
 	if bidReq.Imp[0].Video != nil {
@@ -706,7 +707,7 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			if bid.Price != 0 {
-				bids = append(bids, &adapters.TypedBid{
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
 				})
@@ -714,5 +715,5 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		}
 	}
 
-	return bids, nil
+	return bidResponse, nil
 }

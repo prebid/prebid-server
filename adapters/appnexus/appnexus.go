@@ -397,7 +397,7 @@ func makeKeywordStr(keywords []*openrtb_ext.ExtImpAppnexusKeyVal) string {
 	return strings.Join(kvs, ",")
 }
 
-func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -417,14 +417,14 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 		return nil, []error{err}
 	}
 
-	bids := make([]*adapters.TypedBid, 0, 5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			if bidType, err := getMediaTypeForBid(&bid); err == nil {
-				bids = append(bids, &adapters.TypedBid{
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
 				})
@@ -433,7 +433,7 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			}
 		}
 	}
-	return bids, errs
+	return bidResponse, errs
 }
 
 // getMediaTypeForBid determines which type of bid.

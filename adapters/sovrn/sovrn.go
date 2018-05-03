@@ -221,7 +221,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 		headers.Add(headerName, headerValue)
 	}
 }
-func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -245,19 +245,19 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		}}
 	}
 
-	bids := make([]*adapters.TypedBid, 0, 5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			bids = append(bids, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
 
-	return bids, nil
+	return bidResponse, nil
 }
 
 func preprocess(imp *openrtb.Imp) (string, error) {
