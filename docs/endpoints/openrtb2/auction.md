@@ -118,11 +118,14 @@ to set these params on the response at `response.seatbid[i].bid[j].ext.prebid.ta
         ]
     },
     "includewinners": false // Optional param defaulting to true
+    "includebidderkeys": false // Optional param defaulting to true
 }
 ```
 The list of price granularity ranges must be given in order of increasing `max` values. If `precision` is omitted, it will default to `2`. The minimum of a range will be 0 or the previous `max`. Any cmp above the largest `max` will go in the `max` pricebucket.
 
 For backwards compatibility the following strings will also be allowed as price granularity definitions. There is no guarantee that these will be honored in the future. "One of ['low', 'med', 'high', 'auto', 'dense']" See [price granularity definitions](http://prebid.org/prebid-mobile/adops-price-granularity.html)
+
+One of "includewinners" or "includebidderkeys" must be true (both default to true if unset). If both were false, then no targeting keys would be set, which is better configured by omitting targeting altogether.
 
 **Response format** (returned in `bid.ext.prebid.targeting`)
 
