@@ -21,10 +21,11 @@ const Seat = "beachfront"
 const VideoFlag = "video"
 const TestID = "test_id"
 
-const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+// const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+const BannerEndpoint = "http://10.0.0.181/dump.php?exchange_id="
 
-const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
-// const VideoEndpoint = "http://10.0.0.181/dump.php?exchange_id="
+// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "http://10.0.0.181/dump.php?exchange_id="
 // const VideoEndpoint = "http://qa.bfmio.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
