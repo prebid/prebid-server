@@ -202,8 +202,8 @@ func (a *BeachfrontAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	out, _ := json.Marshal(request)
-	fmt.Printf("request /n%s/n", request)
-	fmt.Printf("out /n%s/n", out)
+	fmt.Printf("request \n%s\n", request)
+	fmt.Printf("out \n%s\n", out)
 	// glog.Info(out)
 
 	errs := make([]error, 0, len(request.Imp))
@@ -428,7 +428,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	// I have the __io_cid cookie when I get here in video. Should I set the user id to this?
 	glog.Info("\nreceived	:", response.Headers.Get("Set-Cookie"))
-	glog.Info(internalRequest)
 	glog.Info(externalRequest)
 
 	// Cookie debugging
