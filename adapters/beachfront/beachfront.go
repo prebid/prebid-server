@@ -1,14 +1,12 @@
 package beachfront
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	"io"
 	"log"
 	"net/http"
@@ -189,11 +187,6 @@ func (a *BeachfrontAdapter) Name() string {
 
 func (a *BeachfrontAdapter) SkipNoCookies() bool {
 	return false
-}
-
-func (a *BeachfrontAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	bids := make(pbs.PBSBidSlice, 0)
-	return bids, nil
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
