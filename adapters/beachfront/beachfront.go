@@ -19,8 +19,8 @@ const Seat = "beachfront"
 const VideoFlag = "video"
 const TestID = "test_id"
 
-// const BannerEndpoint = "https://display.bfmio.com/prebid_display"
-const BannerEndpoint = "http://10.0.0.181/dump.php"
+const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+// const BannerEndpoint = "http://10.0.0.181/dump.php"
 
 // const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 const VideoEndpoint = "http://10.0.0.181/dump.php?exchange_id="
@@ -230,7 +230,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
 	glog.Info("\nRequest URL : ", uri)
 
-	headers.Add("Cookie", "userID=" + request.User.ID + "; BuyerUID=" + request.User.BuyerUID)
+	headers.Add("Cookie", "UserID=" + request.User.ID + "; BuyerUID=" + request.User.BuyerUID)
 
 	glog.Info("\nHeaders :\n", headers)
 
