@@ -7,7 +7,8 @@ import (
 )
 
 func NewBeachfrontSyncer(external string) Usersyncer {
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=beachfront&uid=$UID", external)
+	// redirect_uri := fmt.Sprintf("%s/setuid?bidder=beachfront&uid=$UID", external)
+	redirect_uri := "http://10.0.0.181:8000/setuid?bidder=beachfront&uid=$UID"
 	// usersyncURL := "//sync.bfmio.com?url="
 	usersyncURL := "http://10.0.0.181/fakesync.html?nothing="
 
