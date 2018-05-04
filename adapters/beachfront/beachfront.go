@@ -245,6 +245,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Set-Cookie", "userID=" + request.User.ID + "; Max-Age=3600; Version=1")
 	headers.Add("Set-Cookie", "BuyerID=" + request.User.BuyerUID + "; Max-Age=3600; Version=1")
 
+	glog.Info("\nHeaders :\n", headers)
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     uri,
