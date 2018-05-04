@@ -29,18 +29,20 @@ func TestSingleBidder(t *testing.T) {
 	bidAdjustment := 2.0
 	firstInitialPrice := 3.0
 	secondInitialPrice := 4.0
-	mockBids := []*adapters.TypedBid{
-		{
-			Bid: &openrtb.Bid{
-				Price: firstInitialPrice,
+	mockBidderResponse := &adapters.BidderResponse{
+		Bids: []*adapters.TypedBid{
+			{
+				Bid: &openrtb.Bid{
+					Price: firstInitialPrice,
+				},
+				BidType: openrtb_ext.BidTypeBanner,
 			},
-			BidType: openrtb_ext.BidTypeBanner,
-		},
-		{
-			Bid: &openrtb.Bid{
-				Price: secondInitialPrice,
+			{
+				Bid: &openrtb.Bid{
+					Price: secondInitialPrice,
+				},
+				BidType: openrtb_ext.BidTypeVideo,
 			},
-			BidType: openrtb_ext.BidTypeVideo,
 		},
 	}
 
@@ -51,7 +53,7 @@ func TestSingleBidder(t *testing.T) {
 			Body:    []byte("{\"key\":\"val\"}"),
 			Headers: http.Header{},
 		},
-		bids: mockBids,
+		bidResponse: mockBidderResponse,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment)
@@ -71,10 +73,10 @@ func TestSingleBidder(t *testing.T) {
 	if len(errs) != 0 {
 		t.Errorf("bidder.Bid returned %d errors. Expected 0", len(errs))
 	}
-	if len(seatBid.bids) != len(mockBids) {
-		t.Fatalf("Expected %d bids. Got %d", len(mockBids), len(seatBid.bids))
+	if len(seatBid.bids) != len(mockBidderResponse.Bids) {
+		t.Fatalf("Expected %d bids. Got %d", len(mockBidderResponse.Bids), len(seatBid.bids))
 	}
-	for index, typedBid := range mockBids {
+	for index, typedBid := range mockBidderResponse.Bids {
 		if typedBid.Bid != seatBid.bids[index].bid {
 			t.Errorf("Bid %d did not point to the same bid returned by the Bidder.", index)
 		}
@@ -82,11 +84,11 @@ func TestSingleBidder(t *testing.T) {
 			t.Errorf("Bid %d did not have the right type. Expected %s, got %s", index, typedBid.BidType, seatBid.bids[index].bidType)
 		}
 	}
-	if mockBids[0].Bid.Price != bidAdjustment*firstInitialPrice {
-		t.Errorf("Bid[0].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*firstInitialPrice, mockBids[0].Bid.Price)
+	if mockBidderResponse.Bids[0].Bid.Price != bidAdjustment*firstInitialPrice {
+		t.Errorf("Bid[0].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*firstInitialPrice, mockBidderResponse.Bids[0].Bid.Price)
 	}
-	if mockBids[1].Bid.Price != bidAdjustment*secondInitialPrice {
-		t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBids[1].Bid.Price)
+	if mockBidderResponse.Bids[1].Bid.Price != bidAdjustment*secondInitialPrice {
+		t.Errorf("Bid[1].Price was not adjusted properly. Expected %f, got %f", bidAdjustment*secondInitialPrice, mockBidderResponse.Bids[1].Bid.Price)
 	}
 	if len(seatBid.httpCalls) != 0 {
 		t.Errorf("The bidder shouldn't log HttpCalls when request.test == 0. Found %d", len(seatBid.httpCalls))
@@ -109,14 +111,16 @@ func TestMultiBidder(t *testing.T) {
 	requestHeaders := http.Header{}
 	requestHeaders.Add("Content-Type", "application/json")
 
-	mockBids := []*adapters.TypedBid{
-		{
-			Bid:     &openrtb.Bid{},
-			BidType: openrtb_ext.BidTypeBanner,
-		},
-		{
-			Bid:     &openrtb.Bid{},
-			BidType: openrtb_ext.BidTypeVideo,
+	mockBidderResponse := &adapters.BidderResponse{
+		Bids: []*adapters.TypedBid{
+			{
+				Bid:     &openrtb.Bid{},
+				BidType: openrtb_ext.BidTypeBanner,
+			},
+			{
+				Bid:     &openrtb.Bid{},
+				BidType: openrtb_ext.BidTypeVideo,
+			},
 		},
 	}
 
@@ -133,7 +137,7 @@ func TestMultiBidder(t *testing.T) {
 				Body:    []byte("{\"key\":\"val2\"}"),
 				Headers: http.Header{},
 			}},
-		bids: mockBids,
+		bidResponse: mockBidderResponse,
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0)
@@ -145,8 +149,8 @@ func TestMultiBidder(t *testing.T) {
 	if len(errs) != 1+len(bidderImpl.httpRequests) {
 		t.Errorf("Expected %d errors. Got %d", 1+len(bidderImpl.httpRequests), len(errs))
 	}
-	if len(seatBid.bids) != len(bidderImpl.httpResponses)*len(mockBids) {
-		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBids), len(seatBid.bids))
+	if len(seatBid.bids) != len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids) {
+		t.Errorf("Expected %d bids. Got %d", len(bidderImpl.httpResponses)*len(mockBidderResponse.Bids), len(seatBid.bids))
 	}
 
 }
@@ -355,7 +359,7 @@ type goodSingleBidder struct {
 	bidRequest   *openrtb.BidRequest
 	httpRequest  *adapters.RequestData
 	httpResponse *adapters.ResponseData
-	bids         []*adapters.TypedBid
+	bidResponse  *adapters.BidderResponse
 }
 
 func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -363,16 +367,16 @@ func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*ad
 	return []*adapters.RequestData{bidder.httpRequest}, nil
 }
 
-func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
-	return bidder.bids, nil
+	return bidder.bidResponse, nil
 }
 
 type mixedMultiBidder struct {
 	bidRequest    *openrtb.BidRequest
 	httpRequests  []*adapters.RequestData
 	httpResponses []*adapters.ResponseData
-	bids          []*adapters.TypedBid
+	bidResponse   *adapters.BidderResponse
 }
 
 func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -380,9 +384,9 @@ func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest) ([]*ad
 	return bidder.httpRequests, []error{errors.New("The requests weren't ideal.")}
 }
 
-func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (bidder *mixedMultiBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponses = append(bidder.httpResponses, response)
-	return bidder.bids, []error{errors.New("The bids weren't ideal.")}
+	return bidder.bidResponse, []error{errors.New("The bidResponse weren't ideal.")}
 }
 
 type bidRejector struct {
@@ -394,7 +398,7 @@ func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest) ([]*adapter
 	return nil, []error{errors.New("Invalid params on BidRequest.")}
 }
 
-func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (bidder *bidRejector) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return nil, []error{errors.New("Can't make a response.")}
 }

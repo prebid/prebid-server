@@ -191,46 +191,61 @@
     }
   ],
 
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "banner-bid-1",
-        "impid": "banner-imp-1",
-        "price": 0.1
-      },
-      "type": "banner"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "banner-bid-1",
+            "impid": "banner-imp-1",
+            "price": 0.1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "banner-bid-2",
+            "impid": "banner-imp-2",
+            "price": 0.2
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "multi-type-bid",
+            "impid": "multi-type-imp",
+            "price": 0
+          },
+          "type": "banner"
+        }
+      ]
     },
     {
-      "bid": {
-        "id": "banner-bid-2",
-        "impid": "banner-imp-2",
-        "price": 0.2
-      },
-      "type": "banner"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-1",
+            "impid": "video-imp-1",
+            "price": 0.1
+          },
+          "type": "video"
+        }
+      ]
     },
     {
-      "bid": {
-        "id": "multi-type-bid",
-        "impid": "multi-type-imp",
-        "price": 0
-      },
-      "type": "banner"
-    },
-    {
-      "bid": {
-        "id": "video-bid-1",
-        "impid": "video-imp-1",
-        "price": 0.1
-      },
-      "type": "video"
-    },
-    {
-      "bid": {
-        "id": "video-bid-2",
-        "impid": "video-imp-2",
-        "price": 0.2
-      },
-      "type": "video"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-2",
+            "impid": "video-imp-2",
+            "price": 0.2
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

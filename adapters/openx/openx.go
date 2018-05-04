@@ -149,7 +149,7 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	return nil
 }
 
-func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -171,17 +171,17 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		return nil, []error{err}
 	}
 
-	bids := make([]*adapters.TypedBid, 0, 5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bids = append(bids, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
 			})
 		}
 	}
-	return bids, nil
+	return bidResponse, nil
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.

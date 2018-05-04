@@ -369,18 +369,18 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	httpResponse := &adapters.ResponseData{StatusCode: http.StatusOK, Body: responseBody}
 
 	bidder := new(AdformAdapter)
-	bids, errs := bidder.MakeBids(request, nil, httpResponse)
+	bidResponse, errs := bidder.MakeBids(request, nil, httpResponse)
 
-	if len(bids) != 2 {
-		t.Fatalf("Expected 2 bids. Got %d", len(bids))
+	if len(bidResponse.Bids) != 2 {
+		t.Fatalf("Expected 2 bids. Got %d", len(bidResponse.Bids))
 	}
 	if len(errs) != 0 {
 		t.Errorf("Expected 0 errors. Got %d", len(errs))
 	}
 
-	for _, typeBid := range bids {
+	for _, typeBid := range bidResponse.Bids {
 		if typeBid.BidType != openrtb_ext.BidTypeBanner {
-			t.Errorf("Expected a banner bid. Got: %s", bids[0].BidType)
+			t.Errorf("Expected a banner bid. Got: %s", bidResponse.Bids[0].BidType)
 		}
 		bid := typeBid.Bid
 		matched := false
@@ -411,22 +411,22 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 func TestOpenRTBSurpriseResponse(t *testing.T) {
 	bidder := new(AdformAdapter)
 
-	bids, errs := bidder.MakeBids(nil, nil,
+	bidResponse, errs := bidder.MakeBids(nil, nil,
 		&adapters.ResponseData{StatusCode: http.StatusNoContent, Body: []byte("")})
-	if bids != nil && errs != nil {
-		t.Fatalf("Expected no bids and no errors. Got %d bids and %d", len(bids), len(errs))
+	if bidResponse != nil && errs != nil {
+		t.Fatalf("Expected no bids and no errors. Got %d bids and %d", len(bidResponse.Bids), len(errs))
 	}
 
-	bids, errs = bidder.MakeBids(nil, nil,
+	bidResponse, errs = bidder.MakeBids(nil, nil,
 		&adapters.ResponseData{StatusCode: http.StatusServiceUnavailable, Body: []byte("")})
-	if bids != nil || len(errs) != 1 {
-		t.Fatalf("Expected one error and no bids. Got %d bids and %d", len(bids), len(errs))
+	if bidResponse != nil || len(errs) != 1 {
+		t.Fatalf("Expected one error and no bids. Got %d bids and %d", len(bidResponse.Bids), len(errs))
 	}
 
-	bids, errs = bidder.MakeBids(nil, nil,
+	bidResponse, errs = bidder.MakeBids(nil, nil,
 		&adapters.ResponseData{StatusCode: http.StatusOK, Body: []byte("{:'not-valid-json'}")})
-	if bids != nil || len(errs) != 1 {
-		t.Fatalf("Expected one error and no bids. Got %d bids and %d", len(bids), len(errs))
+	if bidResponse != nil || len(errs) != 1 {
+		t.Fatalf("Expected one error and no bids. Got %d bids and %d", len(bidResponse.Bids), len(errs))
 	}
 }
 

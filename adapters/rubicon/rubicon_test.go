@@ -1126,9 +1126,9 @@ func TestOpenRTBEmptyResponse(t *testing.T) {
 		StatusCode: http.StatusNoContent,
 	}
 	bidder := new(RubiconAdapter)
-	bids, errs := bidder.MakeBids(nil, nil, httpResp)
-	if len(bids) != 0 {
-		t.Errorf("Expected 0 bids. Got %d", len(bids))
+	bidResponse, errs := bidder.MakeBids(nil, nil, httpResp)
+	if bidResponse != nil && len(bidResponse.Bids) != 0 {
+		t.Errorf("Expected 0 bids. Got %d", len(bidResponse.Bids))
 	}
 	if len(errs) != 0 {
 		t.Errorf("Expected 0 errors. Got %d", len(errs))
@@ -1140,9 +1140,9 @@ func TestOpenRTBSurpriseResponse(t *testing.T) {
 		StatusCode: http.StatusAccepted,
 	}
 	bidder := new(RubiconAdapter)
-	bids, errs := bidder.MakeBids(nil, nil, httpResp)
-	if len(bids) != 0 {
-		t.Errorf("Expected 0 bids. Got %d", len(bids))
+	bidResponse, errs := bidder.MakeBids(nil, nil, httpResp)
+	if bidResponse != nil && len(bidResponse.Bids) != 0 {
+		t.Errorf("Expected 0 bids. Got %d", len(bidResponse.Bids))
 	}
 	if len(errs) != 1 {
 		t.Errorf("Expected 1 error. Got %d", len(errs))
@@ -1182,18 +1182,18 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	}
 
 	bidder := new(RubiconAdapter)
-	bids, errs := bidder.MakeBids(request, reqData, httpResp)
+	bidResponse, errs := bidder.MakeBids(request, reqData, httpResp)
 
-	if len(bids) != 1 {
-		t.Fatalf("Expected 1 bid. Got %d", len(bids))
+	if bidResponse != nil && len(bidResponse.Bids) != 1 {
+		t.Fatalf("Expected 1 bid. Got %d", len(bidResponse.Bids))
 	}
 	if len(errs) != 0 {
 		t.Errorf("Expected 0 errors. Got %d", len(errs))
 	}
-	if bids[0].BidType != openrtb_ext.BidTypeBanner {
-		t.Errorf("Expected a banner bid. Got: %s", bids[0].BidType)
+	if bidResponse.Bids[0].BidType != openrtb_ext.BidTypeBanner {
+		t.Errorf("Expected a banner bid. Got: %s", bidResponse.Bids[0].BidType)
 	}
-	theBid := bids[0].Bid
+	theBid := bidResponse.Bids[0].Bid
 	if theBid.ID != "1234567890" {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
 	}
