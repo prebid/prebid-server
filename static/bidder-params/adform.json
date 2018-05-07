@@ -10,6 +10,7 @@
     },
     "priceType": {
       "type": "string",
+      "enum": ["gross", "net"],
       "description": "An expected price type (net or gross) of bids."
     }
   },
