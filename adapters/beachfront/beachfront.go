@@ -451,8 +451,10 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
+
+			bid := sb.Bid[i]
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     sb.Bid[i],
+				Bid:     &bid,
 				BidType: bidtype,
 			})
 		}
