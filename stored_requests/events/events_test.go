@@ -8,26 +8,26 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests/caches/in_memory"
+	"github.com/prebid/prebid-server/stored_requests/caches/memory"
 )
 
 func TestListen(t *testing.T) {
 	ep := &dummyProducer{
-		updates:       make(chan Update),
+		saves:         make(chan Save),
 		invalidations: make(chan Invalidation),
 	}
 
-	cache := in_memory.NewLRUCache(&config.InMemoryCache{
+	cache := memory.NewCache(&config.InMemoryCache{
 		RequestCacheSize: 256 * 1024,
 		ImpCacheSize:     256 * 1024,
 		TTL:              -1,
 	})
 
 	// create channels to syncronize
-	updateOccurred := make(chan struct{})
+	saveOccurred := make(chan struct{})
 	invalidateOccurred := make(chan struct{})
 	listener := NewEventListener(
-		func() { updateOccurred <- struct{}{} },
+		func() { saveOccurred <- struct{}{} },
 		func() { invalidateOccurred <- struct{}{} },
 	)
 
@@ -38,21 +38,21 @@ func TestListen(t *testing.T) {
 	idSlice := []string{id}
 	config := fmt.Sprintf(`{"id": "%s"}`, id)
 	data := map[string]json.RawMessage{id: json.RawMessage(config)}
-	update := Update{
+	save := Save{
 		Requests: data,
 		Imps:     data,
 	}
-	cache.Save(context.Background(), update.Requests, update.Imps)
+	cache.Save(context.Background(), save.Requests, save.Imps)
 
 	config = fmt.Sprintf(`{"id": "%s", "updated": true}`, id)
 	data = map[string]json.RawMessage{id: json.RawMessage(config)}
-	update = Update{
+	save = Save{
 		Requests: data,
 		Imps:     data,
 	}
 
-	ep.updates <- update
-	<-updateOccurred
+	ep.saves <- save
+	<-saveOccurred
 
 	requestData, impData := cache.Get(context.Background(), idSlice, idSlice)
 	if !reflect.DeepEqual(requestData, data) || !reflect.DeepEqual(impData, data) {
@@ -74,12 +74,12 @@ func TestListen(t *testing.T) {
 }
 
 type dummyProducer struct {
-	updates       chan Update
+	saves         chan Save
 	invalidations chan Invalidation
 }
 
-func (p *dummyProducer) Updates() <-chan Update {
-	return p.updates
+func (p *dummyProducer) Saves() <-chan Save {
+	return p.saves
 }
 
 func (p *dummyProducer) Invalidations() <-chan Invalidation {

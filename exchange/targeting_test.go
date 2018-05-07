@@ -195,15 +195,17 @@ func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest) ([]*adap
 	}}, nil
 }
 
-func (m *mockTargetingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
-	typedBids := make([]*adapters.TypedBid, len(m.bids))
+func (m *mockTargetingBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	bidResponse := &adapters.BidderResponse{
+		Bids: make([]*adapters.TypedBid, len(m.bids)),
+	}
 	for i := 0; i < len(m.bids); i++ {
-		typedBids[i] = &adapters.TypedBid{
+		bidResponse.Bids[i] = &adapters.TypedBid{
 			Bid:     m.bids[i],
 			BidType: openrtb_ext.BidTypeBanner,
 		}
 	}
-	return typedBids, nil
+	return bidResponse, nil
 }
 
 type mockFetcher struct{}

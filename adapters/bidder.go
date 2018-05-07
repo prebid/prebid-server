@@ -16,6 +16,8 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
+	//
+	// If the error is caused by bad user input, return a BadInputError.
 	MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
@@ -24,7 +26,70 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the server response didn't have the expected format.
-	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) ([]*TypedBid, []error)
+	//
+	// If the error was caused by bad user input, return a BadInputError.
+	// If the error was caused by a bad server response, return a BadServerResponseError
+	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
+}
+
+// BadInputError should be used when returning errors which are caused by bad input.
+// It should _not_ be used if the error is a server-side issue (e.g. failed to send the external request).
+//
+// BadInputErrors will not be written to the app log, since it's not an actionable item for the Prebid Server hosts.
+type BadInputError struct {
+	Message string
+}
+
+func (err *BadInputError) Error() string {
+	return err.Message
+}
+
+// BadServerResponseError should be used when returning errors which are caused by bad/unexpected behavior on the remote server.
+//
+// For example:
+//
+//   - The external server responded with a 500
+//   - The external server gave a malformed or unexpected response.
+//
+// These should not be used to log _connection_ errors (e.g. "couldn't find host"),
+// which may indicate config issues for the PBS host company
+type BadServerResponseError struct {
+	Message string
+}
+
+func (err BadServerResponseError) Error() string {
+	return err.Message
+}
+
+// BidderResponse wraps the server's response with the list of bids and the currency used by the bidder.
+//
+// Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
+// From the bid response, the bidder accepts a list of valid currencies for the bid.
+// The currency is the same accross all bids.
+type BidderResponse struct {
+	Currency string
+	Bids     []*TypedBid
+}
+
+// NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
+// to "USD".
+//
+// bidsCapacity allows to set initial Bids array capacity.
+// By default, currency is USD but this behavior might be subject to change.
+func NewBidderResponseWithBidsCapacity(bidsCapacity int) *BidderResponse {
+	return &BidderResponse{
+		Currency: "USD",
+		Bids:     make([]*TypedBid, 0, bidsCapacity),
+	}
+}
+
+// NewBidderResponse create a new BidderResponse initialising the bids array and the default currency value
+// to "USD".
+//
+// By default, Bids capacity will be set to 0.
+// By default, currency is USD but this behavior might be subject to change.
+func NewBidderResponse() *BidderResponse {
+	return NewBidderResponseWithBidsCapacity(0)
 }
 
 // TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an

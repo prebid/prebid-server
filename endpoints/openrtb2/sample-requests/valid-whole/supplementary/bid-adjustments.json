@@ -1,0 +1,32 @@
+{
+  "id": "some-request-id",
+  "site": {
+    "page": "test.somepage.com"
+  },
+  "imp": [
+    {
+      "id": "my-imp-id",
+      "video": {
+        "mimes": [
+          "video/mp4"
+        ]
+      },
+      "ext": {
+        "unknown": {
+          "placementId": 10433394
+        }
+      }
+    }
+  ],
+  "ext": {
+    "prebid": {
+      "bidadjustmentfactors": {
+        "appnexus": 2.0,
+        "unknown": 1.5
+      },
+      "aliases": {
+        "unknown": "appnexus"
+      }
+    }
+  }
+}

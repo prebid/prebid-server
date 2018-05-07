@@ -51,6 +51,8 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		ID:   sReq.ID,
 		Imp:  sReq.Imp,
 		Site: sReq.Site,
+		User: sReq.User,
+		Regs: sReq.Regs,
 	}
 
 	// add tag ids to impressions
@@ -99,7 +101,7 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	debug.StatusCode = sResp.StatusCode
 
-	if sResp.StatusCode == 204 {
+	if sResp.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
@@ -109,8 +111,16 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 	responseBody := string(body)
 
-	if sResp.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status %d; body: %s", sResp.StatusCode, responseBody)
+	if sResp.StatusCode == http.StatusBadRequest {
+		return nil, &adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", sResp.StatusCode, responseBody),
+		}
+	}
+
+	if sResp.StatusCode != http.StatusOK {
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", sResp.StatusCode, responseBody),
+		}
 	}
 
 	if req.IsDebug {
@@ -122,7 +132,9 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, err
+		return nil, &adapters.BadServerResponseError{
+			Message: err.Error(),
+		}
 	}
 
 	bids := make(pbs.PBSBidSlice, 0)
@@ -131,7 +143,9 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		for _, bid := range sb.Bid {
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, fmt.Errorf("Unknown ad unit code '%s'", bid.ImpID)
+				return nil, &adapters.BadServerResponseError{
+					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+				}
 			}
 
 			adm, _ := url.QueryUnescape(bid.AdM)
@@ -207,49 +221,65 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 		headers.Add(headerName, headerValue)
 	}
 }
-func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: err.Error(),
+		}}
 	}
 
-	bids := make([]*adapters.TypedBid, 0, 5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			bids = append(bids, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
 
-	return bids, nil
+	return bidResponse, nil
 }
 
 func preprocess(imp *openrtb.Imp) (string, error) {
 	// We currently only support banner impressions
 	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
-		return "", fmt.Errorf("Sovrn doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID)
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("Sovrn doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID),
+		}
 	}
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", err
+		return "", &adapters.BadInputError{
+			Message: err.Error(),
+		}
 	}
 
 	var sovrnExt openrtb_ext.ExtImpSovrn
 	if err := json.Unmarshal(bidderExt.Bidder, &sovrnExt); err != nil {
-		return "", err
+		return "", &adapters.BadInputError{
+			Message: err.Error(),
+		}
 	}
 
 	imp.TagID = sovrnExt.TagId

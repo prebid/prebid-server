@@ -1,0 +1,34 @@
+{
+  "id": "request-without-user-ext-obj",
+  "site": {
+    "page": "test.somepage.com"
+  },
+  "imp": [
+    {
+      "id": "my-imp-id",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 600
+          }
+        ]
+      },
+      "pmp": {
+        "deals": [
+          {
+            "id": "some-deal-id"
+          }
+        ]
+      },
+      "ext": {
+        "appnexus": {
+          "placementId": 10433394
+        }
+      }
+    }
+  ],
+  "user": {
+    "yob": 1989
+  }
+}

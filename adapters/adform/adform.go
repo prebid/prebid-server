@@ -117,8 +117,16 @@ func (a *AdformAdapter) Call(ctx context.Context, request *pbs.PBSRequest, bidde
 	}
 	responseBody := string(body)
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, &adapters.BadInputError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
+		}
+	}
+
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP status %d; body: %s", response.StatusCode, responseBody)
+		return nil, adapters.BadServerResponseError{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
+		}
 	}
 
 	if request.IsDebug {
@@ -144,10 +152,14 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		}
 		mid, err := adformAdUnit.MasterTagId.Int64()
 		if err != nil {
-			return nil, err
+			return nil, &adapters.BadInputError{
+				Message: err.Error(),
+			}
 		}
 		if mid <= 0 {
-			return nil, fmt.Errorf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId)
+			return nil, &adapters.BadInputError{
+				Message: fmt.Sprintf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId),
+			}
 		}
 		adformAdUnit.bidId = adUnit.BidID
 		adformAdUnit.adUnitCode = adUnit.Code
@@ -257,7 +269,9 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 func parseAdformBids(response []byte) ([]*adformBid, error) {
 	var bids []*adformBid
 	if err := json.Unmarshal(response, &bids); err != nil {
-		return nil, err
+		return nil, &adapters.BadServerResponseError{
+			Message: err.Error(),
+		}
 	}
 
 	return bids, nil
@@ -299,28 +313,38 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	secure := false
 	for _, imp := range request.Imp {
 		if imp.Banner == nil {
-			errors = append(errors, fmt.Errorf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID))
+			errors = append(errors, &adapters.BadInputError{
+				Message: fmt.Sprintf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID),
+			})
 			continue
 		}
 
 		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, &adapters.BadInputError{
+				Message: err.Error(),
+			})
 			continue
 		}
 		var adformAdUnit adformAdUnit
 		if err := json.Unmarshal(params, &adformAdUnit); err != nil {
-			errors = append(errors, err)
+			errors = append(errors, &adapters.BadInputError{
+				Message: err.Error(),
+			})
 			continue
 		}
 
 		mid, err := adformAdUnit.MasterTagId.Int64()
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, &adapters.BadInputError{
+				Message: err.Error(),
+			})
 			continue
 		}
 		if mid <= 0 {
-			errors = append(errors, fmt.Errorf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId))
+			errors = append(errors, &adapters.BadInputError{
+				Message: fmt.Sprintf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId),
+			})
 			continue
 		}
 
@@ -361,13 +385,21 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	}, errors
 }
 
-func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	adformOutput, err := parseAdformBids(response.Body)
@@ -375,13 +407,13 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		return nil, []error{err}
 	}
 
-	bids := toOpenRtbBids(adformOutput, internalRequest)
+	bidResponse := toOpenRtbBidResponse(adformOutput, internalRequest)
 
-	return bids, nil
+	return bidResponse, nil
 }
 
-func toOpenRtbBids(adformBids []*adformBid, r *openrtb.BidRequest) []*adapters.TypedBid {
-	bids := make([]*adapters.TypedBid, 0, len(adformBids))
+func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
 
 	for i, bid := range adformBids {
 		if bid.Banner == "" || bid.ResponseType != "banner" {
@@ -398,8 +430,8 @@ func toOpenRtbBids(adformBids []*adformBid, r *openrtb.BidRequest) []*adapters.T
 			CrID:   bid.CreativeId,
 		}
 
-		bids = append(bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
 	}
 
-	return bids
+	return bidResponse
 }
