@@ -444,6 +444,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, []error{fmt.Errorf("Failed to process the beachfront response\n%s", err)}
 	}
 
+	/*
 	bids := make([]*adapters.TypedBid, 0, 5)
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
@@ -453,8 +454,10 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 			})
 		}
 	}
+	*/
 
-	return bids, nil
+	// bids := make(*adapters.BidderResponse, 0, 5)
+	return bidResp, nil
 }
 
 func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, isVideo bool) (openrtb.BidResponse, error) {
