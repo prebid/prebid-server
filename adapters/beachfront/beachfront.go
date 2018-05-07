@@ -412,7 +412,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 // func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 // func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
 	var bidResp openrtb.BidResponse
-	var bidderResponse = *adapters.BidderResponse{}
 	var err error
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
@@ -445,6 +444,23 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, []error{fmt.Errorf("Failed to process the beachfront response\n%s", err)}
 	}
 
+
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	var errs []error
+	for _, sb := range bidResp.SeatBid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     sb.Bid[i],
+				BidType: bidtype,
+			})
+		}
+	}
+
+
+
+	/*
 	bids := make([]*adapters.TypedBid, 0, 5)
 
 	for _, sb := range bidResp.SeatBid {
@@ -458,8 +474,9 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	bidderResponse.Currency = "USD"
 	bidderResponse.Bids = bids
+	*/
 
-	return bidderResponse, nil
+	return bidResponse, errs
 }
 
 func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, isVideo bool) (openrtb.BidResponse, error) {
