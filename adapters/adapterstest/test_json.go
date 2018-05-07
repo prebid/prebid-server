@@ -101,24 +101,28 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 	diffErrorLists(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
 	diffHttpRequestLists(t, filename, actualReqs, spec.HttpCalls)
 
-	var bids = make([]*adapters.TypedBid, 0, len(spec.Bids))
+	bidResponses := make([]*adapters.BidderResponse, 0)
+
 	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
 	for i := 0; i < len(actualReqs); i++ {
-		theseBids, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
-		bids = append(bids, theseBids...)
+		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
 		bidsErrs = append(bidsErrs, theseErrs...)
+		bidResponses = append(bidResponses, thisBidResponse)
 	}
 
 	diffErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
-	diffBidLists(t, filename, bids, spec.Bids)
+
+	for i := 0; i < len(spec.BidResponses); i++ {
+		diffBidLists(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
+	}
 }
 
 type testSpec struct {
-	BidRequest        openrtb.BidRequest `json:"mockBidRequest"`
-	HttpCalls         []httpCall         `json:"httpCalls"`
-	Bids              []expectedBid      `json:"expectedBids"`
-	MakeRequestErrors []string           `json:"expectedMakeRequestsErrors"`
-	MakeBidsErrors    []string           `json:"expectedMakeBidsErrors"`
+	BidRequest        openrtb.BidRequest    `json:"mockBidRequest"`
+	HttpCalls         []httpCall            `json:"httpCalls"`
+	BidResponses      []expectedBidResponse `json:"expectedBidResponses"`
+	MakeRequestErrors []string              `json:"expectedMakeRequestsErrors"`
+	MakeBidsErrors    []string              `json:"expectedMakeBidsErrors"`
 }
 
 func (spec *testSpec) expectsErrors() bool {
@@ -154,6 +158,11 @@ func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData {
 		StatusCode: resp.Status,
 		Body:       resp.Body,
 	}
+}
+
+type expectedBidResponse struct {
+	Bids     []expectedBid `json:"bids"`
+	Currency string        `json:"currency"`
 }
 
 type expectedBid struct {

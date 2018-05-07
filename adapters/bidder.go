@@ -29,7 +29,7 @@ type Bidder interface {
 	//
 	// If the error was caused by bad user input, return a BadInputError.
 	// If the error was caused by a bad server response, return a BadServerResponseError
-	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) ([]*TypedBid, []error)
+	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
 // BadInputError should be used when returning errors which are caused by bad input.
@@ -59,6 +59,37 @@ type BadServerResponseError struct {
 
 func (err BadServerResponseError) Error() string {
 	return err.Message
+}
+
+// BidderResponse wraps the server's response with the list of bids and the currency used by the bidder.
+//
+// Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
+// From the bid response, the bidder accepts a list of valid currencies for the bid.
+// The currency is the same accross all bids.
+type BidderResponse struct {
+	Currency string
+	Bids     []*TypedBid
+}
+
+// NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
+// to "USD".
+//
+// bidsCapacity allows to set initial Bids array capacity.
+// By default, currency is USD but this behavior might be subject to change.
+func NewBidderResponseWithBidsCapacity(bidsCapacity int) *BidderResponse {
+	return &BidderResponse{
+		Currency: "USD",
+		Bids:     make([]*TypedBid, 0, bidsCapacity),
+	}
+}
+
+// NewBidderResponse create a new BidderResponse initialising the bids array and the default currency value
+// to "USD".
+//
+// By default, Bids capacity will be set to 0.
+// By default, currency is USD but this behavior might be subject to change.
+func NewBidderResponse() *BidderResponse {
+	return NewBidderResponseWithBidsCapacity(0)
 }
 
 // TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an

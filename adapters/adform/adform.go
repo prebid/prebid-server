@@ -344,7 +344,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	}, errors
 }
 
-func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -366,13 +366,13 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 		return nil, []error{err}
 	}
 
-	bids := toOpenRtbBids(adformOutput, internalRequest)
+	bidResponse := toOpenRtbBidResponse(adformOutput, internalRequest)
 
-	return bids, nil
+	return bidResponse, nil
 }
 
-func toOpenRtbBids(adformBids []*adformBid, r *openrtb.BidRequest) []*adapters.TypedBid {
-	bids := make([]*adapters.TypedBid, 0, len(adformBids))
+func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
 
 	for i, bid := range adformBids {
 		if bid.Banner == "" || bid.ResponseType != "banner" {
@@ -388,8 +388,8 @@ func toOpenRtbBids(adformBids []*adformBid, r *openrtb.BidRequest) []*adapters.T
 			DealID: bid.DealId,
 		}
 
-		bids = append(bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
 	}
 
-	return bids
+	return bidResponse
 }

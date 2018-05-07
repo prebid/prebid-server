@@ -124,7 +124,7 @@ func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue str
 	}
 }
 
-func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -148,19 +148,19 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 		}}
 	}
 
-	var bids []*adapters.TypedBid
+	bidResponse := adapters.NewBidderResponse()
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			bids = append(bids, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
 
-	return bids, nil
+	return bidResponse, nil
 }
 
 func NewEPlanningBidder(client *http.Client, endpoint string) *EPlanningAdapter {

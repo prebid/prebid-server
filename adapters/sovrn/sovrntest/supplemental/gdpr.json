@@ -23,13 +23,26 @@
         }
       }
     ],
-    "device": { },
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
     "site": {
       "domain": "www.publisher.com",
       "page": "http://www.publisher.com/awesome/site"
     },
     "user": {
-      "buyeruid": "test_reader_id"
+      "buyeruid": "test_reader_id",
+      "ext": {
+        "consent": "consent-string"
+      }
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
     }
   },
 
@@ -38,6 +51,10 @@
       "expectedRequest": {
         "headers": {
           "Content-Type": ["application/json"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["123.123.123.123"],
+          "Accept-Language": ["en"],
+          "Dnt": ["0"],
           "Cookie": ["ljt_reader=test_reader_id"]
         },
         "uri": "http://sovrn.com/test/endpoint",
@@ -71,9 +88,21 @@
             "page": "http://www.publisher.com/awesome/site"
           },
           "user": {
-            "buyeruid": "test_reader_id"
+            "buyeruid": "test_reader_id",
+            "ext": {
+              "consent": "consent-string"
+            }
           },
-          "device": { }
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en"
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 1
+            }
+          }
         }
       },
       "mockResponse": {

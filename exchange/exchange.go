@@ -342,6 +342,9 @@ func (brw *bidResponseWrapper) validateBids() (err []error) {
 	if brw.adapterBids == nil || len(brw.adapterBids.bids) == 0 {
 		return
 	}
+	// TODO #280: Exit if there is a currency mismatch between currencies passed in bid request
+	// and the currency received in the bid.
+	// Check also if the currency received exists.
 	err = make([]error, 0, len(brw.adapterBids.bids))
 	validBids := make([]*pbsOrtbBid, 0, len(brw.adapterBids.bids))
 	for _, bid := range brw.adapterBids.bids {
