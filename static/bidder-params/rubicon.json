@@ -23,14 +23,14 @@
       "type": "object",
       "description": "An object defining arbitrary targeting key/value pairs related to the page",
       "additionalProperties": {
-        "type": "string"
+        "type": "array"
       }
     },
     "visitor": {
       "type": "object",
       "description": "An object defining arbitrary targeting key/value pairs related to the visitor",
       "additionalProperties": {
-        "type": "string"
+        "type": "array"
       }
     },
     "video": {
