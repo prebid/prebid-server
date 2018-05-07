@@ -7,8 +7,8 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-// Update represents a bulk update
-type Update struct {
+// Save represents a bulk save
+type Save struct {
 	Requests map[string]json.RawMessage `json:"requests"`
 	Imps     map[string]json.RawMessage `json:"imps"`
 }
@@ -21,7 +21,7 @@ type Invalidation struct {
 
 // EventProducer will produce cache update and invalidation events on its channels
 type EventProducer interface {
-	Updates() <-chan Update
+	Saves() <-chan Save
 	Invalidations() <-chan Invalidation
 }
 
@@ -29,7 +29,7 @@ type EventProducer interface {
 // and a mechanism to stop the listener goroutine
 type EventListener struct {
 	stop         chan struct{}
-	onUpdate     func()
+	onSave       func()
 	onInvalidate func()
 }
 
@@ -37,16 +37,16 @@ type EventListener struct {
 func SimpleEventListener() *EventListener {
 	return &EventListener{
 		stop:         make(chan struct{}),
-		onUpdate:     nil,
+		onSave:       nil,
 		onInvalidate: nil,
 	}
 }
 
-// NewEventListener creates a new EventListener that may perform additional work after propagating cache updates and invalidations
-func NewEventListener(onUpdate func(), onInvalidate func()) *EventListener {
+// NewEventListener creates a new EventListener that may perform additional work after propagating cache saves and invalidations
+func NewEventListener(onSave func(), onInvalidate func()) *EventListener {
 	return &EventListener{
 		stop:         make(chan struct{}),
-		onUpdate:     onUpdate,
+		onSave:       onSave,
 		onInvalidate: onInvalidate,
 	}
 }
@@ -60,10 +60,10 @@ func (e *EventListener) Stop() {
 func (e *EventListener) Listen(cache stored_requests.Cache, events EventProducer) {
 	for {
 		select {
-		case update := <-events.Updates():
-			cache.Update(context.Background(), update.Requests, update.Imps)
-			if e.onUpdate != nil {
-				e.onUpdate()
+		case save := <-events.Saves():
+			cache.Save(context.Background(), save.Requests, save.Imps)
+			if e.onSave != nil {
+				e.onSave()
 			}
 		case invalidation := <-events.Invalidations():
 			cache.Invalidate(context.Background(), invalidation.Requests, invalidation.Imps)

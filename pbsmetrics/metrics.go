@@ -114,11 +114,16 @@ const (
 // two groups should be consistent within themselves, but comparing numbers between groups
 // is generally not useful.
 type MetricsEngine interface {
+	RecordConnectionAccept(success bool)
+	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterBidsReceived(labels AdapterLabels, bids int64)
+	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
+	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
+	RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	RecordCookieSync(labels Labels)        // May ignore all labels
@@ -169,6 +174,18 @@ func (me *MultiMetricsEngine) RecordRequest(labels Labels) {
 	}
 }
 
+func (me *MultiMetricsEngine) RecordConnectionAccept(success bool) {
+	for _, thisME := range *me {
+		thisME.RecordConnectionAccept(success)
+	}
+}
+
+func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
+	for _, thisME := range *me {
+		thisME.RecordConnectionClose(success)
+	}
+}
+
 // RecordImps across all engines
 func (me *MultiMetricsEngine) RecordImps(labels Labels, numImps int) {
 	for _, thisME := range *me {
@@ -194,6 +211,13 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 func (me *MultiMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterBidsReceived(labels, bids)
+	}
+}
+
+// RecordAdapterBidAdm across all engines
+func (me *MultiMetricsEngine) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterBidAdm(labels, bidType, hasAdm)
 	}
 }
 
@@ -233,6 +257,16 @@ func (me *DummyMetricsEngine) RecordRequest(labels Labels) {
 	return
 }
 
+// RecordConnectionAccept as a noop
+func (me *DummyMetricsEngine) RecordConnectionAccept(success bool) {
+	return
+}
+
+// RecordConnectionClose as a noop
+func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
+	return
+}
+
 // RecordImps as a noop
 func (me *DummyMetricsEngine) RecordImps(labels Labels, numImps int) {
 	return
@@ -250,6 +284,11 @@ func (me *DummyMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 
 // RecordAdapterBidsReceived as a noop
 func (me *DummyMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
+	return
+}
+
+// RecordAdapterBidAdm as a noop
+func (me *DummyMetricsEngine) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	return
 }
 

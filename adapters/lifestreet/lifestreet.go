@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -101,7 +100,9 @@ func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *p
 
 		return lsReq, nil
 	} else {
-		return lsReq, errors.New("No supported impressions")
+		return lsReq, &adapters.BadInputError{
+			Message: "No supported impressions",
+		}
 	}
 }
 
@@ -115,11 +116,15 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			return nil, err
 		}
 		if params.SlotTag == "" {
-			return nil, errors.New("Missing slot_tag param")
+			return nil, &adapters.BadInputError{
+				Message: "Missing slot_tag param",
+			}
 		}
 		s := strings.Split(params.SlotTag, ".")
 		if len(s) != 2 {
-			return nil, fmt.Errorf("Invalid slot_tag param '%s'", params.SlotTag)
+			return nil, &adapters.BadInputError{
+				Message: fmt.Sprintf("Invalid slot_tag param '%s'", params.SlotTag),
+			}
 		}
 
 		// BANNER
@@ -152,7 +157,9 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				result.Bid.BidderCode = bidder.BidderCode
 				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
 				if result.Bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
+					result.Error = &adapters.BadServerResponseError{
+						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
+					}
 					result.Bid = nil
 				}
 			}

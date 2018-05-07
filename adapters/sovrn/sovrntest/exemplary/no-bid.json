@@ -110,5 +110,5 @@
     }
   ],
 
-  "expectedBids": [ ]
+  "expectedBidResponses": [{}]
 }

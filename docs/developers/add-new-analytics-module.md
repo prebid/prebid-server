@@ -2,24 +2,32 @@
 
 This document describes how to add a new Analytics module to Prebid Server.
 
-### 1. Config: 
+### 1. Define config params
 
-The parameters needed to setup the analytics module are sent through `configuration.analytics.{module}` 
- 
-### 2. Create a struct
+Analytics modules are enabled through the [Configuration](./configuration.md).
+You'll need to define any properties in [config/config.go](../../config/config.go)
+which are required for your module.
 
-The new analytics module belongs in the `analytics` package in _analytics/{module}.go_ file and needs to implement the `PBSAnalyticsModule` interface from `analytics/core.go`. The body of each of the `Log{loggableObject}({loggableObject})` method extracts required information from the `{loggableObject}` and is responsible for completing the logging. 
+### 2. Implement your module
 
-### 3. Initializing method
+Your new module belongs in the `analytics/{moduleName}` package. It should implement the `PBSAnalyticsModule` interface from
+[analytics/core.go](../../analytics/core.go)
 
-This belongs in `analytics` package in `/analytics/{module}.go`. It should be able to use it's configuration from the `configuration.analytics.{module}`  and initialize the struct.  
+### 3. Connect your Config to the Implementation
 
-### 4. Call the initializing method while setting up PBSAnalytics
+The `NewPBSAnalytics` function inside [analytics/config/config.go](../../analytics/config/config.go) instantiates Analytics modules
+using the app config. You'll need to update this to recognize your new module.
 
-In order to log to this module, it needs to initialized inside `NewPBSAnalytics(analytics *config.Analytics) ` method.
+### Example
 
-An example of such an analytics module is the `FileLogger` in `/analytics/file_module.go`
+The [filesystem](../../analytics/filesystem) module is provided as an example. This module will log dummy messages to a file.
 
+It can be configured with:
 
+```yaml
+analytics:
+  file:
+    filename: "path/to/file.log
+```
 
- 
+Prebid Server will then write sample log messages to the file you provided.

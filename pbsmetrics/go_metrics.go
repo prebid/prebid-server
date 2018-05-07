@@ -12,15 +12,18 @@ import (
 
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
-	metricsRegistry     metrics.Registry
-	RequestMeter        metrics.Meter
-	ImpMeter            metrics.Meter
-	AppRequestMeter     metrics.Meter
-	NoCookieMeter       metrics.Meter
-	SafariRequestMeter  metrics.Meter
-	SafariNoCookieMeter metrics.Meter
-	ErrorMeter          metrics.Meter
-	RequestTimer        metrics.Timer
+	metricsRegistry            metrics.Registry
+	RequestMeter               metrics.Meter
+	ConnectionCounter          metrics.Counter
+	ConnectionAcceptErrorMeter metrics.Meter
+	ConnectionCloseErrorMeter  metrics.Meter
+	ImpMeter                   metrics.Meter
+	AppRequestMeter            metrics.Meter
+	NoCookieMeter              metrics.Meter
+	SafariRequestMeter         metrics.Meter
+	SafariNoCookieMeter        metrics.Meter
+	ErrorMeter                 metrics.Meter
+	RequestTimer               metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
 	ORTBRequestMeter   metrics.Meter
@@ -50,6 +53,12 @@ type AdapterMetrics struct {
 	RequestTimer      metrics.Timer
 	PriceHistogram    metrics.Histogram
 	BidsReceivedMeter metrics.Meter
+	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
+}
+
+type MarkupDeliveryMetrics struct {
+	AdmMeter  metrics.Meter
+	NurlMeter metrics.Meter
 }
 
 type accountMetrics struct {
@@ -65,24 +74,33 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 
 // NewBlankMetrics creates a new Metrics object with all blank metrics object. This may also be useful for
 // testing routines to ensure that no metrics are written anywhere.
+//
+// This will be useful when removing endpoints, we can just run will the blank metrics function
+// rather than loading legacy metrics that never get filled.
+// This will also eventually let us configure metrics, such as setting a limited set of metrics
+// for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
+	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
-		metricsRegistry:     registry,
-		RequestMeter:        blankMeter(0),
-		ImpMeter:            blankMeter(0),
-		AppRequestMeter:     blankMeter(0),
-		NoCookieMeter:       blankMeter(0),
-		SafariRequestMeter:  blankMeter(0),
-		SafariNoCookieMeter: blankMeter(0),
-		ErrorMeter:          blankMeter(0),
-		RequestTimer:        blankTimer(0),
-		ORTBRequestMeter:    blankMeter(0),
-		AmpRequestMeter:     blankMeter(0),
-		AmpNoCookieMeter:    blankMeter(0),
-		CookieSyncMeter:     blankMeter(0),
-		userSyncOptout:      blankMeter(0),
-		userSyncBadRequest:  blankMeter(0),
-		userSyncSet:         make(map[openrtb_ext.BidderName]metrics.Meter),
+		metricsRegistry:            registry,
+		RequestMeter:               blankMeter,
+		ConnectionCounter:          metrics.NilCounter{},
+		ConnectionAcceptErrorMeter: blankMeter,
+		ConnectionCloseErrorMeter:  blankMeter,
+		ImpMeter:                   blankMeter,
+		AppRequestMeter:            blankMeter,
+		NoCookieMeter:              blankMeter,
+		SafariRequestMeter:         blankMeter,
+		SafariNoCookieMeter:        blankMeter,
+		ErrorMeter:                 blankMeter,
+		RequestTimer:               &metrics.NilTimer{},
+		ORTBRequestMeter:           blankMeter,
+		AmpRequestMeter:            blankMeter,
+		AmpNoCookieMeter:           blankMeter,
+		CookieSyncMeter:            blankMeter,
+		userSyncOptout:             blankMeter,
+		userSyncBadRequest:         blankMeter,
+		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
@@ -90,7 +108,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		exchanges: exchanges,
 	}
 	for _, a := range exchanges {
-		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics(registry, a)
+		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
 
 	return newMetrics
@@ -104,6 +122,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
 	newMetrics.RequestMeter = metrics.GetOrRegisterMeter("requests", registry)
+	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
+	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
+	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.ErrorMeter = metrics.GetOrRegisterMeter("error_requests", registry)
@@ -126,18 +147,36 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 }
 
 // Part of setting up blank metrics, the adapter metrics.
-func makeBlankAdapterMetrics(registry metrics.Registry, exchanges openrtb_ext.BidderName) *AdapterMetrics {
+func makeBlankAdapterMetrics() *AdapterMetrics {
+	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
-		NoCookieMeter:     blankMeter(0),
-		ErrorMeter:        blankMeter(0),
-		NoBidMeter:        blankMeter(0),
-		TimeoutMeter:      blankMeter(0),
-		RequestMeter:      blankMeter(0),
-		RequestTimer:      blankTimer(0),
-		PriceHistogram:    blankHistogram(0),
-		BidsReceivedMeter: blankMeter(0),
+		NoCookieMeter:     blankMeter,
+		ErrorMeter:        blankMeter,
+		NoBidMeter:        blankMeter,
+		TimeoutMeter:      blankMeter,
+		RequestMeter:      blankMeter,
+		RequestTimer:      &metrics.NilTimer{},
+		PriceHistogram:    &metrics.NilHistogram{},
+		BidsReceivedMeter: blankMeter,
+		MarkupMetrics:     makeBlankBidMarkupMetrics(),
 	}
 	return newAdapter
+}
+
+func makeBlankBidMarkupMetrics() map[openrtb_ext.BidType]*MarkupDeliveryMetrics {
+	return map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
+		openrtb_ext.BidTypeAudio:  makeBlankMarkupDeliveryMetrics(),
+		openrtb_ext.BidTypeBanner: makeBlankMarkupDeliveryMetrics(),
+		openrtb_ext.BidTypeNative: makeBlankMarkupDeliveryMetrics(),
+		openrtb_ext.BidTypeVideo:  makeBlankMarkupDeliveryMetrics(),
+	}
+}
+
+func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
+	return &MarkupDeliveryMetrics{
+		AdmMeter:  &metrics.NilMeter{},
+		NurlMeter: &metrics.NilMeter{},
+	}
 }
 
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
@@ -148,10 +187,22 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
+		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
+		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
+		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
+		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
+	}
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
+}
 
+func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
+	return &MarkupDeliveryMetrics{
+		AdmMeter:  metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".adm_bids_received", registry),
+		NurlMeter: metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".nurl_bids_received", registry),
+	}
 }
 
 // getAccountMetrics gets or registers the account metrics for account "id".
@@ -183,7 +234,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	for _, a := range me.exchanges {
-		am.adapterMetrics[a] = makeBlankAdapterMetrics(me.metricsRegistry, a)
+		am.adapterMetrics[a] = makeBlankAdapterMetrics()
 		registerAdapterMetrics(me.metricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 	}
 
@@ -231,6 +282,22 @@ func (me *Metrics) RecordImps(labels Labels, numImps int) {
 	me.ImpMeter.Mark(int64(numImps))
 }
 
+func (me *Metrics) RecordConnectionAccept(success bool) {
+	if success {
+		me.ConnectionCounter.Inc(1)
+	} else {
+		me.ConnectionAcceptErrorMeter.Mark(1)
+	}
+}
+
+func (me *Metrics) RecordConnectionClose(success bool) {
+	if success {
+		me.ConnectionCounter.Dec(1)
+	} else {
+		me.ConnectionCloseErrorMeter.Mark(1)
+	}
+}
+
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible
 // for determining the call duration.
 func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
@@ -271,7 +338,7 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
@@ -281,11 +348,32 @@ func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 	aam.BidsReceivedMeter.Mark(bids)
 }
 
+// RecordAdapterBidAdm implements a part of the MetricsEngine interface.
+// This tracks how many bids from each Bidder use `adm` vs. `nurl.
+func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+
+	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
+		if hasAdm {
+			metricsForType.AdmMeter.Mark(1)
+		} else {
+			metricsForType.NurlMeter.Mark(1)
+		}
+	} else {
+		glog.Errorf("bid/adm metrics map entry does not exist for type %s. This is a bug, and should be reported.", bidType)
+	}
+	return
+}
+
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
 func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
@@ -299,7 +387,7 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
-		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 	// Adapter metrics
@@ -332,234 +420,4 @@ func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
 		}
 
 	}
-}
-
-// Set up blank metrics objects so we can add/subtract active metrics without refactoring a lot of code.
-// This will be useful when removing endpoints, we can just run will the blank metrics function
-// rather than loading legacy metrics that never get filled.
-// This will also eventually let us configure metrics, such as setting a limited set of metrics
-// for a production instance, and then expanding again when we need more debugging.
-
-// A blank metrics Meter type
-type blankMeter int
-
-func (m blankMeter) Count() int64 {
-	return 0
-}
-
-func (m blankMeter) Mark(i int64) {
-	return
-}
-
-func (m blankMeter) Rate1() float64 {
-	return 0.0
-}
-
-func (m blankMeter) Rate5() float64 {
-	return 0.0
-}
-
-func (m blankMeter) Rate15() float64 {
-	return 0.0
-}
-
-func (m blankMeter) RateMean() float64 {
-	return 0.0
-}
-
-func (m blankMeter) Snapshot() metrics.Meter {
-	return m
-}
-
-func (m blankMeter) Stop() {
-	return
-}
-
-// A blank metrics Timer type
-type blankTimer int
-
-func (t blankTimer) Count() int64 {
-	return 0
-}
-
-func (t blankTimer) Max() int64 {
-	return 0
-}
-
-func (t blankTimer) Mean() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Min() int64 {
-	return 0
-}
-
-func (t blankTimer) Percentile(p float64) float64 {
-	return 0.0
-}
-
-func (t blankTimer) Percentiles(p []float64) []float64 {
-	return p
-}
-
-func (t blankTimer) Rate1() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Rate5() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Rate15() float64 {
-	return 0.0
-}
-
-func (t blankTimer) RateMean() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Snapshot() metrics.Timer {
-	return t
-}
-
-func (t blankTimer) StdDev() float64 {
-	return 0.0
-}
-
-func (t blankTimer) Stop() {
-	return
-}
-
-func (t blankTimer) Sum() int64 {
-	return 0
-}
-
-func (t blankTimer) Time(f func()) {
-	return
-}
-
-func (t blankTimer) Update(tt time.Duration) {
-	return
-}
-
-func (t blankTimer) UpdateSince(time.Time) {
-	return
-}
-
-func (t blankTimer) Variance() float64 {
-	return 0.0
-}
-
-// a blank metrics Histogram type
-type blankHistogram int
-
-func (h blankHistogram) Clear() {
-	return
-}
-
-func (h blankHistogram) Count() int64 {
-	return 0
-}
-
-func (h blankHistogram) Max() int64 {
-	return 0
-}
-
-func (h blankHistogram) Mean() float64 {
-	return 0.0
-}
-
-func (h blankHistogram) Min() int64 {
-	return 0
-}
-
-func (h blankHistogram) Percentile(f float64) float64 {
-	return 0.0
-}
-
-func (h blankHistogram) Percentiles(p []float64) []float64 {
-	return p
-}
-
-func (h blankHistogram) Sample() metrics.Sample {
-	return blankSample(0)
-}
-
-func (h blankHistogram) Snapshot() metrics.Histogram {
-	return h
-}
-
-func (h blankHistogram) StdDev() float64 {
-	return 0.0
-}
-
-func (h blankHistogram) Sum() int64 {
-	return 0
-}
-
-func (h blankHistogram) Update(int64) {
-	return
-}
-
-func (h blankHistogram) Variance() float64 {
-	return 0.0
-}
-
-// Need a blank sample for the Histogram
-type blankSample int
-
-func (h blankSample) Clear() {
-	return
-}
-
-func (h blankSample) Count() int64 {
-	return 0
-}
-
-func (h blankSample) Max() int64 {
-	return 0
-}
-
-func (h blankSample) Mean() float64 {
-	return 0.0
-}
-
-func (h blankSample) Min() int64 {
-	return 0
-}
-
-func (h blankSample) Percentile(f float64) float64 {
-	return 0.0
-}
-
-func (h blankSample) Percentiles(p []float64) []float64 {
-	return p
-}
-
-func (h blankSample) Size() int {
-	return 0
-}
-
-func (h blankSample) Snapshot() metrics.Sample {
-	return h
-}
-
-func (h blankSample) StdDev() float64 {
-	return 0.0
-}
-
-func (h blankSample) Sum() int64 {
-	return 0
-}
-
-func (h blankSample) Update(int64) {
-	return
-}
-
-func (h blankSample) Values() []int64 {
-	return []int64{}
-}
-
-func (h blankSample) Variance() float64 {
-	return 0.0
 }

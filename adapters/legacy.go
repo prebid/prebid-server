@@ -27,6 +27,10 @@ type Adapter interface {
 	//
 	// In practice, implementations almost always make one call to an external server here.
 	// However, that is not a requirement for satisfying this interface.
+	//
+	// An error here will cause all bids to be ignored. If the error was caused by bad user input,
+	// this should return a BadInputError. If it was caused by bad server behavior
+	// (e.g. 500, unexpected response format, etc), this should return a BadServerResponseError.
 	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
 }
 

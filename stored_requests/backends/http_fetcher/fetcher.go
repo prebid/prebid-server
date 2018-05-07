@@ -36,7 +36,7 @@ import (
 // }
 //
 //
-func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
+func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 	// Do some work up-front to figure out if the (configurable) endpoint has a query string or not.
 	// When we build requests, we'll either want to add `?request-ids=...&imp-ids=...` _or_
 	// `&request-ids=...&imp-ids=...`, depending.
@@ -49,24 +49,24 @@ func NewFetcher(client *http.Client, endpoint string) *httpFetcher {
 
 	glog.Info("Making http_fetcher which calls GET " + urlPrefix + "request-ids=%REQUEST_ID_LIST%&imp-ids=%IMP_ID_LIST%")
 
-	return &httpFetcher{
+	return &HttpFetcher{
 		client:   client,
-		endpoint: urlPrefix,
+		Endpoint: urlPrefix,
 	}
 }
 
-type httpFetcher struct {
+type HttpFetcher struct {
 	client   *http.Client
-	endpoint string
+	Endpoint string
 	hasQuery bool
 }
 
-func (fetcher *httpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	if len(requestIDs) == 0 && len(impIDs) == 0 {
 		return nil, nil, nil
 	}
 
-	httpReq, err := buildRequest(fetcher.endpoint, requestIDs, impIDs)
+	httpReq, err := buildRequest(fetcher.Endpoint, requestIDs, impIDs)
 	if err != nil {
 		return nil, nil, []error{err}
 	}

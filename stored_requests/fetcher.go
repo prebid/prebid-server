@@ -23,8 +23,8 @@ type Fetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
-// NotFoundError is an error type to flag that an ID was not found, but there was otherwise no issue
-// with the query. This was added to support Multifetcher and any other case where we might expect
+// NotFoundError is an error type to flag that an ID was not found by the Fetcher.
+// This was added to support Multifetcher and any other case where we might expect
 // that all IDs would not be found, and want to disentangle those errors from the others.
 type NotFoundError struct {
 	ID       string
@@ -54,10 +54,6 @@ type Cache interface {
 	// Invalidate will ensure that all values associated with the given IDs
 	// are no longer returned by the cache until new values are saved via Update
 	Invalidate(ctx context.Context, requestIDs []string, impIDs []string)
-
-	// Update will update the given values in the cache if they exist
-	// or ignore them if they don't
-	Update(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
 
 	// Save will add or overwrite the data in the cache at the given keys
 	Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage)
@@ -115,13 +111,6 @@ func (c ComposedCache) Invalidate(ctx context.Context, requestIDs []string, impI
 	}
 }
 
-// Update will propagate updates to all underlying caches
-func (c ComposedCache) Update(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
-	for _, cache := range c {
-		cache.Update(ctx, requestData, impData)
-	}
-}
-
 // Save will propagate saves to all underlying caches
 func (c ComposedCache) Save(ctx context.Context, requestData map[string]json.RawMessage, impData map[string]json.RawMessage) {
 	for _, cache := range c {
@@ -152,12 +141,16 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	leftoverImps := findLeftovers(impIDs, impData)
 	leftoverReqs := findLeftovers(requestIDs, requestData)
 
-	fetcherReqData, fetcherImpData, errs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
+	if len(leftoverReqs) > 0 || len(leftoverImps) > 0 {
+		fetcherReqData, fetcherImpData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
+		errs = fetcherErrs
 
-	f.cache.Save(ctx, fetcherReqData, fetcherImpData)
+		f.cache.Save(ctx, fetcherReqData, fetcherImpData)
 
-	requestData = mergeData(requestData, fetcherReqData)
-	impData = mergeData(impData, fetcherImpData)
+		requestData = mergeData(requestData, fetcherReqData)
+		impData = mergeData(impData, fetcherImpData)
+	}
+
 	return
 }
 

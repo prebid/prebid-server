@@ -16,7 +16,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/spf13/viper"
 
-	"github.com/prebid/prebid-server/analytics"
+	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -181,7 +182,7 @@ func testableEndpoint() httprouter.Handle {
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
 		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
-	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analytics.NewPBSAnalytics(&config.Analytics{})}).CookieSync
+	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{})}).CookieSync
 }
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
@@ -736,34 +737,6 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 	t.Helper()
 	if _, ok := data[key]; !ok {
 		t.Errorf("Expected map to produce a schema for adapter: %s", key)
-	}
-}
-
-func TestNewFilesFetcher(t *testing.T) {
-	fetcher, _, _, err := NewFetchers(&config.StoredRequests{
-		Files: true,
-	}, nil, nil, nil)
-	if err != nil {
-		t.Errorf("Error constructing file backends. %v", err)
-	}
-	if fetcher == nil {
-		t.Errorf("The file-backed fetcher should be non-nil.")
-	}
-}
-
-func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, _, _, err := NewFetchers(&config.StoredRequests{}, nil, nil, nil)
-	if err != nil {
-		t.Errorf("Error constructing backends. %v", err)
-	}
-	if fetcher == nil {
-		t.Errorf("The fetcher should be non-nil, even with an empty config.")
-	}
-	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
-		t.Errorf("The returned accountFetcher should fail on any IDs.")
-	}
-	if _, _, errs := fetcher.FetchRequests(context.Background(), []string{"some-id"}, []string{"other-id"}); len(errs) != 2 {
-		t.Errorf("The returned requestFetcher should fail on any IDs.")
 	}
 }
 

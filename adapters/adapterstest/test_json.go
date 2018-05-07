@@ -14,7 +14,7 @@ import (
 	"net/http"
 )
 
-// RunJSONBidderTest is a helper method intended for Bidders which use OpenRTB to communicate with their servers.
+// RunJSONBidderTest is a helper method intended to unit test Bidders' adapters.
 // It requires that:
 //
 //   1. Bidders communicate with external servers over HTTP.
@@ -74,13 +74,13 @@ func runTests(t *testing.T, directory string, bidder adapters.Bidder, allowError
 }
 
 // LoadFile reads and parses a file as a test case. If something goes wrong, it returns an error.
-func loadFile(filename string) (*ortbSpec, error) {
+func loadFile(filename string) (*testSpec, error) {
 	specData, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read file %s: %v", filename, err)
 	}
 
-	var spec ortbSpec
+	var spec testSpec
 	if err := json.Unmarshal(specData, &spec); err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal JSON from file: %v", err)
 	}
@@ -96,32 +96,36 @@ func loadFile(filename string) (*ortbSpec, error) {
 //   - That the Bidder's errors match the spec's expectations
 //
 // More assertions will almost certainly be added in the future, as bugs come up.
-func runSpec(t *testing.T, filename string, spec *ortbSpec, bidder adapters.Bidder) {
+func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidder) {
 	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest)
 	diffErrorLists(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
 	diffHttpRequestLists(t, filename, actualReqs, spec.HttpCalls)
 
-	var bids = make([]*adapters.TypedBid, 0, len(spec.Bids))
+	bidResponses := make([]*adapters.BidderResponse, 0)
+
 	var bidsErrs = make([]error, 0, len(spec.MakeBidsErrors))
 	for i := 0; i < len(actualReqs); i++ {
-		theseBids, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
-		bids = append(bids, theseBids...)
+		thisBidResponse, theseErrs := bidder.MakeBids(&spec.BidRequest, spec.HttpCalls[i].Request.ToRequestData(t), spec.HttpCalls[i].Response.ToResponseData(t))
 		bidsErrs = append(bidsErrs, theseErrs...)
+		bidResponses = append(bidResponses, thisBidResponse)
 	}
 
 	diffErrorLists(t, fmt.Sprintf("%s: MakeBids", filename), bidsErrs, spec.MakeBidsErrors)
-	diffBidLists(t, filename, bids, spec.Bids)
+
+	for i := 0; i < len(spec.BidResponses); i++ {
+		diffBidLists(t, filename, bidResponses[i].Bids, spec.BidResponses[i].Bids)
+	}
 }
 
-type ortbSpec struct {
-	BidRequest        openrtb.BidRequest `json:"mockBidRequest"`
-	HttpCalls         []httpCall         `json:"httpCalls"`
-	Bids              []expectedBid      `json:"expectedBids"`
-	MakeRequestErrors []string           `json:"expectedMakeRequestsErrors"`
-	MakeBidsErrors    []string           `json:"expectedMakeBidsErrors"`
+type testSpec struct {
+	BidRequest        openrtb.BidRequest    `json:"mockBidRequest"`
+	HttpCalls         []httpCall            `json:"httpCalls"`
+	BidResponses      []expectedBidResponse `json:"expectedBidResponses"`
+	MakeRequestErrors []string              `json:"expectedMakeRequestsErrors"`
+	MakeBidsErrors    []string              `json:"expectedMakeBidsErrors"`
 }
 
-func (spec *ortbSpec) expectsErrors() bool {
+func (spec *testSpec) expectsErrors() bool {
 	return len(spec.MakeRequestErrors) > 0 || len(spec.MakeBidsErrors) > 0
 }
 
@@ -145,21 +149,20 @@ type httpRequest struct {
 }
 
 type httpResponse struct {
-	Status int                 `json:"status"`
-	Body   openrtb.BidResponse `json:"body"`
+	Status int             `json:"status"`
+	Body   json.RawMessage `json:"body"`
 }
 
 func (resp *httpResponse) ToResponseData(t *testing.T) *adapters.ResponseData {
-	t.Helper()
-
-	bodyBytes, err := json.Marshal(resp.Body)
-	if err != nil {
-		t.Fatalf("Failed to marshal httpResponse.Body")
-	}
 	return &adapters.ResponseData{
 		StatusCode: resp.Status,
-		Body:       bodyBytes,
+		Body:       resp.Body,
 	}
+}
+
+type expectedBidResponse struct {
+	Bids     []expectedBid `json:"bids"`
+	Currency string        `json:"currency"`
 }
 
 type expectedBid struct {

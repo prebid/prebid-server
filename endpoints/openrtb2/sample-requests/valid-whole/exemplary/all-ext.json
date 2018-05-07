@@ -1,0 +1,83 @@
+{
+  "description": "This demonstrates all of the OpenRTB extensions supported by Prebid Server. Very few requests will need all of these at once.",
+
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "user": {
+      "ext": {
+        "consent": "gdpr-consent-string",
+        "prebid": {
+          "buyeruids": {
+            "appnexus": "override-appnexus-id-in-cookie"
+          }
+        }
+      }
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          },
+          "districtm": {
+            "placementId": 105
+          },
+          "rubicon": {
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510
+          }
+        }
+      }
+    ],
+    "tmax": 500,
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "districtm": "appnexus"
+        },
+        "bidadjustmentfactors": {
+          "appnexus": 1.01,
+          "districtm": 0.98,
+          "rubicon": 0.99
+        },
+        "cache": {
+          "bids": {}
+        },
+        "targeting": {
+          "includewinners": false,
+          "pricegranularity": {
+            "precision": 2,
+            "ranges": [
+              {
+                "max": 20,
+                "increment": 0.10
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
