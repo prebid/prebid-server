@@ -408,7 +408,9 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 	return beachfrontVideoReq, uri, nil
 }
 
-func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+// func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+// func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
 	var bidResp openrtb.BidResponse
 	var err error
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
