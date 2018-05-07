@@ -412,7 +412,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 // func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 // func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
 	var bidResp openrtb.BidResponse
-	var bidderResponse = adapters.BidderResponse{}
+	var bidderResponse = *adapters.BidderResponse{}
 	var err error
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
