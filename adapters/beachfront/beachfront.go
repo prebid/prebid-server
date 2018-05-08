@@ -21,6 +21,7 @@ const TestID = "test_id"
 const BidCapacity = 5
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+
 // const BannerEndpoint = "http://10.0.0.181/dump.php"
 
 // const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
@@ -224,7 +225,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Cookie", "UserID=" + request.User.ID + "; BuyerUID=" + request.User.BuyerUID)
+	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID)
 
 	// glog.Info("\nUser.ID : ", request.User.ID)
 	// glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
@@ -419,10 +420,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	// I have the __io_cid cookie when I get here in video. Should I set the user id to this?
 	glog.Info("\nreceived Set-Cookie header	:", response.Headers.Get("Set-Cookie"))
 	// glog.Info(response)
-
-	if response != nil {
-		return nil, []error{fmt.Errorf("Received an empty beachfront response.", nil)}
-	}
 	// Cookie debugging
 
 	/*
@@ -441,8 +438,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	if err != nil {
 		return nil, []error{fmt.Errorf("Failed to process the beachfront response\n%s", err)}
 	}
-
-
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 
