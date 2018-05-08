@@ -18,13 +18,14 @@ const ForceQA = true
 const Seat = "beachfront"
 const VideoFlag = "video"
 const TestID = "test_id"
+const BidCapacity = 5
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
 // const BannerEndpoint = "http://10.0.0.181/dump.php"
 
-const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 // const VideoEndpoint = "http://10.0.0.181/dump.php?exchange_id="
-// const VideoEndpoint = "http://qa.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "http://qa.bfmio.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
@@ -191,9 +192,7 @@ func (a *BeachfrontAdapter) SkipNoCookies() bool {
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	out, _ := json.Marshal(request)
-	fmt.Printf("request \n%s\n", request)
 	fmt.Printf("out \n%s\n", out)
-	// glog.Info(out)
 
 	errs := make([]error, 0, len(request.Imp))
 
@@ -225,13 +224,11 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-
-	glog.Info("\nUser.ID : ", request.User.ID)
-	glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
-	glog.Info("\nRequest URL : ", uri)
-
 	headers.Add("Cookie", "UserID=" + request.User.ID + "; BuyerUID=" + request.User.BuyerUID)
 
+	// glog.Info("\nUser.ID : ", request.User.ID)
+	// glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
+	glog.Info("\nRequest URL : ", uri)
 	glog.Info("\nHeaders :\n", headers)
 
 	return []*adapters.RequestData{{
@@ -409,8 +406,6 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-// func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
-// func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
 	var bidResp openrtb.BidResponse
 	var err error
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
@@ -423,8 +418,11 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	// I have the __io_cid cookie when I get here in video. Should I set the user id to this?
 	glog.Info("\nreceived	:", response.Headers.Get("Set-Cookie"))
-	glog.Info(externalRequest)
+	glog.Info(response)
 
+	if response != nil {
+		return nil, []error{fmt.Errorf("Received an empty beachfront response\n%s", err)}
+	}
 	// Cookie debugging
 
 	/*
@@ -446,7 +444,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
@@ -459,24 +457,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 			})
 		}
 	}
-
-
-
-	/*
-	bids := make([]*adapters.TypedBid, 0, 5)
-
-	for _, sb := range bidResp.SeatBid {
-		for _, bid := range sb.Bid {
-			bids = append(bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidtype,
-			})
-		}
-	}
-
-	bidderResponse.Currency = "USD"
-	bidderResponse.Bids = bids
-	*/
 
 	return bidResponse, errs
 }
@@ -491,7 +471,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
 			return openrtbResp, err
 		}
-		glog.Info(openrtbResp)
+		// glog.Info(openrtbResp)
 		return postprocessVideo(openrtbResp, externalRequest)
 	} else {
 		if id != TestID {
