@@ -37,6 +37,7 @@ type adformRequest struct {
 
 type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
+	PriceType   string      `json:"priceType,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -50,6 +51,17 @@ type adformBid struct {
 	Width        uint64  `json:"width,omitempty"`
 	Height       uint64  `json:"height,omitempty"`
 	DealId       string  `json:"deal_id,omitempty"`
+	CreativeId   string  `json:"win_crid,omitempty"`
+}
+
+const priceTypeGross = "gross"
+const priceTypeNet = "net"
+
+func isPriceTypeValid(priceType string) (string, bool) {
+	pt := strings.ToLower(priceType)
+	valid := pt == priceTypeNet || pt == priceTypeGross
+
+	return pt, valid
 }
 
 // ADAPTER Interface
@@ -185,6 +197,7 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 			Width:             bid.Width,
 			Height:            bid.Height,
 			DealId:            bid.DealId,
+			Creative_id:       bid.CreativeId,
 			CreativeMediaType: string(openrtb_ext.BidTypeBanner),
 		}
 
@@ -210,7 +223,29 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	if r.advertisingId != "" {
 		adid = fmt.Sprintf("&adid=%s", r.advertisingId)
 	}
-	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s&%s", uri, r.tid, r.ip, adid, strings.Join(adUnitsParams, "&"))
+	pt := getValidPriceTypeParameter(r.adUnits)
+	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s%s&%s", uri, r.tid, r.ip, adid, pt, strings.Join(adUnitsParams, "&"))
+}
+
+func getValidPriceTypeParameter(adUnits []*adformAdUnit) string {
+	priceTypeParameter := ""
+	priceType := priceTypeNet
+	valid := false
+	for _, adUnit := range adUnits {
+		pt, v := isPriceTypeValid(adUnit.PriceType)
+		if v {
+			valid = v
+			if pt == priceTypeGross {
+				priceType = pt
+				break
+			}
+		}
+	}
+
+	if valid {
+		priceTypeParameter = fmt.Sprintf("&pt=%s", priceType)
+	}
+	return priceTypeParameter
 }
 
 func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
@@ -386,6 +421,7 @@ func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapt
 			W:      bid.Width,
 			H:      bid.Height,
 			DealID: bid.DealId,
+			CrID:   bid.CreativeId,
 		}
 
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
