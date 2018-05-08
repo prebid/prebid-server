@@ -81,3 +81,14 @@ Update the [NewSyncerMap function](../../usersync/usersync.go) to make your Bidd
 ## Contribute
 
 Finally, [Contribute](contributing.md) your Bidder to the project.
+
+## Server requirements
+
+**Note**: In order to be part of the auction, all bids must include:
+
+- An ID
+- An ImpID which matches one of the `Imp[i].ID`s from the incoming `BidRequest`
+- A positive `Bid.Price`
+- A `Bid.CrID` which uniquely identifies the Creative in the bid.
+
+Bids which don't satisfy these standards will be filtered out before Prebid Server responds.
