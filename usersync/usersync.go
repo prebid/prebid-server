@@ -17,10 +17,12 @@ type Usersyncer interface {
 	FamilyName() string
 
 	// GDPRVendorID returns the ID in the IAB Global Vendor List which refers to this Bidder.
+	//
 	// The Global Vendor list can be found here: https://vendorlist.consensu.org/vendorlist.json
 	// Bidders can register for the list here: https://register.consensu.org/
 	//
-	// If you're not on the list, this should return 0.
+	// If you're not on the list, this should return 0. If Prebid Server is run by a GDPR-conscious host
+	// company (as defined in the application config), it will _not_ sync user IDs with you.
 	GDPRVendorID() uint16
 }
 
