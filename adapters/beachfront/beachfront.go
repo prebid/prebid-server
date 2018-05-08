@@ -421,7 +421,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	// glog.Info(response)
 
 	if response != nil {
-		return nil, []error{fmt.Errorf("Received an empty beachfront response\n%s", err)}
+		return nil, []error{fmt.Errorf("Received an empty beachfront response.", nil)}
 	}
 	// Cookie debugging
 
