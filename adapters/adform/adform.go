@@ -352,12 +352,6 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 			secure = true
 		}
 
-		_, valid := isPriceTypeValid(adformAdUnit.PriceType)
-		if !(valid || adformAdUnit.PriceType == "") {
-			errors = append(errors, fmt.Errorf("price type is invalid=%s", adformAdUnit.PriceType))
-			continue
-		}
-
 		adformAdUnit.bidId = imp.ID
 		adformAdUnit.adUnitCode = imp.ID
 		adUnits = append(adUnits, &adformAdUnit)
