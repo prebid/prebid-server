@@ -768,6 +768,7 @@ func main() {
 		glog.Fatalf("Viper was unable to read configurations: %v", err)
 	}
 
+	glog.Info(cfg)
 	if err := serve(cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
