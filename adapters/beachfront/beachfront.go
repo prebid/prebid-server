@@ -547,7 +547,8 @@ func NewBeachfrontAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *
 }
 
 func NewBeachfrontBidder(client *http.Client, endpoint string) *BeachfrontAdapter {
-	// endpoint is included for compatability but is not used
+	// endpoint is included for compatibility with Configuration.Adapters[] but is not used
+	// as beachfront uses different display vs video endpoints
 	a := &adapters.HTTPAdapter{Client: client}
 	return &BeachfrontAdapter{
 		http: a,
