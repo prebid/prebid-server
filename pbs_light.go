@@ -768,9 +768,6 @@ func main() {
 		glog.Fatalf("Viper was unable to read configurations: %v", err)
 	}
 
-	// glog.Info(cfg)
-	out, _ := json.Marshal(cfg)
-	fmt.Printf("cfg : \n%s\n", out)
 	if err := serve(cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
@@ -847,6 +844,10 @@ func serve(cfg *config.Configuration) error {
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
+
+	// glog.Info(cfg)
+	out, _ := json.Marshal(cfg)
+	fmt.Printf("cfg : \n%s\n", out)
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 
