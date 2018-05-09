@@ -1,0 +1,42 @@
+host_cookie:
+  cookie_name: userid
+  family: prebid
+  domain: cookies.prebid.org
+  opt_out_url: http://prebid.org/optout
+  opt_in_url: http://prebid.org/optin
+external_url: http://prebid-server.prebid.org/
+host: prebid-server.prebid.org
+port: 1234
+admin_port: 5678
+default_timeout_ms: 123
+cache:
+  scheme: http
+  host: prebidcache.net
+  query: uuid=%PBS_CACHE_UUID%
+recaptcha_secret: asdfasdfasdfasdf
+metrics:
+  influxdb:
+    host: upstream:8232
+    database: metricsdb
+    username: admin
+    password: admin1324
+datacache:
+  type: postgres
+  filename: /usr/db/db.db
+  cache_size: 10000000
+  ttl_seconds: 3600
+adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
+  indexExchange:
+    endpoint: http://ixtest.com/api
+  rubicon:
+    endpoint: http://rubitest.com/api
+    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
+    xapi:
+      username: rubiuser
+      password: rubipw23
+  facebook:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
