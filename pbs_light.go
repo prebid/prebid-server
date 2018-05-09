@@ -769,7 +769,8 @@ func main() {
 	}
 
 	// glog.Info(cfg)
-	fmt.Printf("cfg : \n%s\n", cfg)
+	out, _ := json.Marshal(cfg)
+	fmt.Printf("cfg : \n%s\n", out)
 	if err := serve(cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
