@@ -89,6 +89,7 @@ const beachfrontBannerRequestTemplate = `{
 
 type BeachfrontAdapter struct {
 	http *adapters.HTTPAdapter
+	URI string
 }
 
 type BeachfrontRequests struct {
@@ -541,13 +542,15 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 	return openrtbResp, nil
 }
 
-func NewBeachfrontAdapter(config *adapters.HTTPAdapterConfig) *BeachfrontAdapter {
-	return NewBeachfrontBidder(adapters.NewHTTPAdapter(config).Client)
+func NewBeachfrontAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *BeachfrontAdapter {
+	return NewBeachfrontBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
 }
 
-func NewBeachfrontBidder(client *http.Client) *BeachfrontAdapter {
+func NewBeachfrontBidder(client *http.Client, endpoint string) *BeachfrontAdapter {
+	// endpoint is included for compatability but is not used
 	a := &adapters.HTTPAdapter{Client: client}
 	return &BeachfrontAdapter{
 		http: a,
+		URI: endpoint,
 	}
 }
