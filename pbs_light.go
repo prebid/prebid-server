@@ -736,7 +736,7 @@ func init() {
 
 	// This Appnexus endpoint works for most purposes. Docs can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	viper.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2")
-	viper.SetDefault("adapters.beachfront.endpoint", "http://10.0.0.181:8000")
+	viper.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
 	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
