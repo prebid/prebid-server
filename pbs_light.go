@@ -57,6 +57,7 @@ import (
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 
 	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/adapters/beachfront"
 )
 
 var hostCookieSettings pbs.HostCookieSettings
