@@ -369,14 +369,42 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 	return &adformRequest{
 		adUnits:       adUnits,
-		ip:            request.Device.IP,
-		advertisingId: request.Device.IFA,
-		userAgent:     request.Device.UA,
+		ip:            getIPSafely(request.Device),
+		advertisingId: getIFASafely(request.Device),
+		userAgent:     getUASafely(request.Device),
 		isSecure:      secure,
 		referer:       referer,
-		userId:        request.User.BuyerUID,
+		userId:        getBuyerUIDSafely(request.User),
 		tid:           tid,
 	}, errors
+}
+
+func getIPSafely(device *openrtb.Device) string {
+	if device == nil {
+		return ""
+	}
+	return device.IP
+}
+
+func getIFASafely(device *openrtb.Device) string {
+	if device == nil {
+		return ""
+	}
+	return device.IFA
+}
+
+func getUASafely(device *openrtb.Device) string {
+	if device == nil {
+		return ""
+	}
+	return device.UA
+}
+
+func getBuyerUIDSafely(user *openrtb.User) string {
+	if user == nil {
+		return ""
+	}
+	return user.BuyerUID
 }
 
 func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
