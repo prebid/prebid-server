@@ -192,3 +192,27 @@ func TestNegativeRequestSize(t *testing.T) {
 		t.Error("cfg.max_request_size should prevent negative values, but it doesn't")
 	}
 }
+
+func TestNegativeVendorID(t *testing.T) {
+	cfg := Configuration{
+		GDPR: GDPR{
+			HostVendorID: -1,
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("cfg.gdpr.host_vendor_id should prevent negative values, but it doesn't")
+	}
+}
+
+func TestOverflowedVendorID(t *testing.T) {
+	cfg := Configuration{
+		GDPR: GDPR{
+			HostVendorID: (0xffff) + 1,
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("cfg.gdpr.host_vendor_id should prevent values over %d, but it doesn't", 0xffff)
+	}
+}
