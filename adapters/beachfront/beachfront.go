@@ -188,7 +188,7 @@ func (a *BeachfrontAdapter) Name() string {
 }
 
 func (a *BeachfrontAdapter) SkipNoCookies() bool {
-	return true
+	return false
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
