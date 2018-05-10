@@ -12,6 +12,8 @@ func NewBeachfrontSyncer(external string) Usersyncer {
 	// usersyncURL := "//sync.bfmio.com?url="
 	usersyncURL := "http://10.0.0.181/fakesync.php?nothing="
 
+	// http://sync.bfmio.com/syncb?pid=142
+
 	url := fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri))
 
 	glog.Info("\nexternal    	: ", external)
