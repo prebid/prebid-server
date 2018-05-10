@@ -1,7 +1,6 @@
 package usersync
 
 import (
-	"github.com/golang/glog"
 )
 
 func NewBeachfrontSyncer(external string) Usersyncer {
