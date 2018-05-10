@@ -262,7 +262,7 @@ func diffJson(t *testing.T, description string, actual []byte, expected []byte) 
 	if len(actual) == 0 && len(expected) == 0 {
 		return
 	}
-	if len(actual) != 0 || len(expected) != 0 {
+	if len(actual) == 0 || len(expected) == 0 {
 		t.Fatalf("%s json diff failed. Expected %d bytes in body, but got %d.", description, len(expected), len(actual))
 	}
 	diff, err := gojsondiff.New().Compare(actual, expected)
