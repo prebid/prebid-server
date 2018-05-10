@@ -112,6 +112,8 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 
 type cookieSyncRequest struct {
 	Bidders []string `json:"bidders"`
+	GDPR    int      `json:"gdpr"`
+	Consent string   `json:"gdpr_consent"`
 }
 
 type cookieSyncResponse struct {
@@ -127,7 +129,6 @@ type cookieSyncDeps struct {
 }
 
 func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
 		Status:       http.StatusOK,
