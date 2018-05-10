@@ -225,7 +225,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+	// headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
 
 	// glog.Info("\nUser.ID : ", request.User.ID)
 	// glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
