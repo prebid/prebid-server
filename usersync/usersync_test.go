@@ -18,7 +18,10 @@ func TestSyncers(t *testing.T) {
 	}
 }
 
-func TestSyncerVendorIDs(t *testing.T) {
+// Bidders may have an ID on the IAB-maintained global vendor list.
+// This makes sure that we don't have conflicting IDs among Bidders in our project,
+// since that's almost certainly a bug.
+func TestVendorIDUniqueness(t *testing.T) {
 	cfg := &config.Configuration{}
 	syncers := NewSyncerMap(cfg)
 
