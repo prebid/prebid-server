@@ -193,7 +193,7 @@ func (a *BeachfrontAdapter) SkipNoCookies() bool {
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	out, _ := json.Marshal(request)
-	fmt.Printf("out \n%s\n", out)
+	fmt.Printf("Received request : \n%s\n", out)
 
 	errs := make([]error, 0, len(request.Imp))
 
@@ -225,10 +225,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	// headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
 
-	// glog.Info("\nUser.ID : ", request.User.ID)
-	// glog.Info("\nUser.BuyerUID : ", request.User.BuyerUID)
 	glog.Info("\nRequest URL : ", uri)
 	glog.Info("\nPublisher Id : ", request.Site.Publisher.ID)
 	glog.Info("\nHeaders :\n", headers)
