@@ -3,8 +3,6 @@ package usersync
 import (
 )
 import (
-	"fmt"
-	"net/url"
 )
 
 func NewBeachfrontSyncer(external string) Usersyncer {
