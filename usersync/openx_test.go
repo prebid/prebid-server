@@ -16,4 +16,7 @@ func TestOpenxSyncer(t *testing.T) {
 	if syncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
+	if openx.GDPRVendorID() != 69 {
+		t.Errorf("Wrong OpenX GDPR VendorID. Got %d", openx.GDPRVendorID())
+	}
 }
