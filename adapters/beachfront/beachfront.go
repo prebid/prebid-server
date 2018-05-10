@@ -228,8 +228,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
 
 	glog.Info("\nRequest URL : ", uri)
-	glog.Info("\nPublisher Id : ", request.Site.Publisher.ID)
 	glog.Info("\nHeaders :\n", headers)
+	glog.Info("\nBNody :\n", reqJSON)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
