@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
@@ -359,7 +360,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	req.Header.Add("User-Agent", andata.deviceUA)
 	req.Header.Add("X-Real-IP", andata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pc.TrySync("adnxs", andata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)

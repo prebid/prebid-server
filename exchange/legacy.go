@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 // AdaptLegacyAdapter turns a bidder.Adapter into an adaptedBidder.
@@ -98,7 +99,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		domain = req.Site.Domain
 	}
 
-	cookie := pbs.NewPBSCookie()
+	cookie := usersync.NewPBSCookie()
 	if req.User != nil {
 		if req.User.BuyerUID != "" {
 			cookie.TrySync(bidder.adapter.Name(), req.User.BuyerUID)

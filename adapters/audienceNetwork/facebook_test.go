@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
@@ -205,7 +206,7 @@ func GenerateBidRequestForTestData(fbdata bidInfo, url string) (*pbs.PBSRequest,
 	req.Header.Add("User-Agent", fbdata.deviceUA)
 	req.Header.Add("X-Real-IP", fbdata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pc.TrySync("audienceNetwork", fbdata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)

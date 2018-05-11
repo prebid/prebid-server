@@ -83,7 +83,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
 
-	pcs := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pcs := usersync.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pcs.TrySync("adnxs", "1234")
 	pcs.TrySync("audienceNetwork", "2345")
 	req.AddCookie(pcs.ToHTTPCookie(90 * 24 * time.Hour))

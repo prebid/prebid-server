@@ -1,11 +1,10 @@
-package usersync
+package usersyncers
 
 import (
 	"testing"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestSyncers(t *testing.T) {

@@ -54,9 +54,10 @@ import (
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
+	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 
-	usersyncers "github.com/prebid/prebid-server/usersync"
+	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
 
 var hostCookieSettings pbs.HostCookieSettings
@@ -115,12 +116,12 @@ type cookieSyncRequest struct {
 }
 
 type cookieSyncResponse struct {
-	Status       string                           `json:"status"`
-	BidderStatus []*usersyncers.CookieSyncBidders `json:"bidder_status"`
+	Status       string                        `json:"status"`
+	BidderStatus []*usersync.CookieSyncBidders `json:"bidder_status"`
 }
 
 type cookieSyncDeps struct {
-	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	syncers      map[openrtb_ext.BidderName]usersync.Usersyncer
 	optOutCookie *config.Cookie
 	metric       pbsmetrics.MetricsEngine
 	pbsAnalytics analytics.PBSAnalyticsModule
@@ -132,13 +133,13 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	co := analytics.CookieSyncObject{
 		Status:       http.StatusOK,
 		Errors:       make([]error, 0),
-		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),
+		BidderStatus: make([]*usersync.CookieSyncBidders, 0),
 	}
 
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
 	deps.metric.RecordCookieSync(pbsmetrics.Labels{})
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
+	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		co.Status = http.StatusUnauthorized
@@ -176,7 +177,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	}
 
 	csResp := cookieSyncResponse{
-		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0, len(csReq.Bidders)),
+		BidderStatus: make([]*usersync.CookieSyncBidders, 0, len(csReq.Bidders)),
 	}
 
 	if userSyncCookie.LiveSyncCount() == 0 {
@@ -196,7 +197,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 	for _, bidder := range csReq.Bidders {
 		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
 			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
-				b := usersyncers.CookieSyncBidders{
+				b := usersync.CookieSyncBidders{
 					BidderCode:   bidder,
 					NoCookie:     true,
 					UsersyncInfo: syncer.GetUsersyncInfo(),
@@ -218,7 +219,7 @@ func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _
 
 type auctionDeps struct {
 	cfg           *config.Configuration
-	syncers       map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
 	metricsEngine pbsmetrics.MetricsEngine
 }
 

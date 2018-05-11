@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
@@ -945,7 +946,7 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(req, &config.Cookie{})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
