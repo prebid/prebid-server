@@ -8,12 +8,15 @@ func TestAppNexusSyncer(t *testing.T) {
 	an := NewAppnexusSyncer("localhost")
 	syncInfo := an.GetUsersyncInfo()
 	if syncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
-		t.Fatalf("should have matched")
+		t.Errorf("should have matched")
 	}
 	if syncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
+		t.Errorf("should be redirect")
 	}
 	if syncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
+		t.Errorf("should have been false")
+	}
+	if an.GDPRVendorID() != 32 {
+		t.Errorf("Wrong Appnexus GDPR VendorID. Got %d", an.GDPRVendorID())
 	}
 }

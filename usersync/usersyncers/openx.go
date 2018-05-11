@@ -13,7 +13,8 @@ func NewOpenxSyncer(externalURL string) *syncer {
 	redirectURL := fmt.Sprintf("%s/setuid?bidder=openx&uid=${UID}", externalURL)
 
 	return &syncer{
-		familyName: "openx",
+		familyName:   "openx",
+		gdprVendorID: 69,
 		syncInfo: &usersync.UsersyncInfo{
 			URL:         fmt.Sprintf("https://rtb.openx.net/sync/prebid?r=%s", url.QueryEscape(redirectURL)),
 			Type:        "redirect",

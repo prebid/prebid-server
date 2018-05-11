@@ -27,8 +27,9 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 }
 
 type syncer struct {
-	familyName string
-	syncInfo   *usersync.UsersyncInfo
+	familyName   string
+	gdprVendorID uint16
+	syncInfo     *usersync.UsersyncInfo
 }
 
 func (s *syncer) GetUsersyncInfo() *usersync.UsersyncInfo {
@@ -37,4 +38,8 @@ func (s *syncer) GetUsersyncInfo() *usersync.UsersyncInfo {
 
 func (s *syncer) FamilyName() string {
 	return s.familyName
+}
+
+func (s *syncer) GDPRVendorID() uint16 {
+	return s.gdprVendorID
 }

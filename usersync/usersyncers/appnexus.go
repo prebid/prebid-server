@@ -12,7 +12,8 @@ func NewAppnexusSyncer(externalURL string) *syncer {
 	usersyncURL := "//ib.adnxs.com/getuid?"
 
 	return &syncer{
-		familyName: "adnxs",
+		familyName:   "adnxs",
+		gdprVendorID: 32,
 		syncInfo: &usersync.UsersyncInfo{
 			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
 			Type:        "redirect",

@@ -10,6 +10,16 @@ type Usersyncer interface {
 	// For example, if this Usersyncer syncs with adnxs.com, then this
 	// should return "adnxs".
 	FamilyName() string
+
+	// GDPRVendorID returns the ID in the IAB Global Vendor List which refers to this Bidder.
+	//
+	// The Global Vendor list can be found here: https://vendorlist.consensu.org/vendorlist.json
+	// Bidders can register for the list here: https://register.consensu.org/
+	//
+	// If you're not on the list, this should return 0. If cookie sync requests have GDPR consent info,
+	// or the Prebid Server host company configures its deploy to be "cautious" when no GDPR info exists
+	// in the request, it will _not_ sync user IDs with you.
+	GDPRVendorID() uint16
 }
 
 type UsersyncInfo struct {

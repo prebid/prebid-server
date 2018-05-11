@@ -22,4 +22,7 @@ func TestRubiconSyncer(t *testing.T) {
 	if syncer.FamilyName() != "rubicon" {
 		t.Errorf("FamilyName '%s' != 'rubicon'", syncer.FamilyName())
 	}
+	if syncer.GDPRVendorID() != 52 {
+		t.Errorf("Wrong Rubicon GDPR VendorID. Got %d", syncer.GDPRVendorID())
+	}
 }

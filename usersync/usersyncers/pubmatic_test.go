@@ -5,7 +5,8 @@ import (
 )
 
 func TestPubmaticSyncer(t *testing.T) {
-	info := NewPubmaticSyncer("localhost").GetUsersyncInfo()
+	pubmatic := NewPubmaticSyncer("localhost")
+	info := pubmatic.GetUsersyncInfo()
 	if info.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
 		t.Fatalf("should have matched")
 	}
@@ -14,5 +15,8 @@ func TestPubmaticSyncer(t *testing.T) {
 	}
 	if info.SupportCORS != false {
 		t.Fatalf("should have been false")
+	}
+	if pubmatic.GDPRVendorID() != 76 {
+		t.Errorf("Wrong Appnexus GDPR VendorID. Got %d", pubmatic.GDPRVendorID())
 	}
 }

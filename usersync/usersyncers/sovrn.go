@@ -11,7 +11,8 @@ func NewSovrnSyncer(externalURL string, usersyncURL string) *syncer {
 	redirectURI := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=$UID", externalURL)
 
 	return &syncer{
-		familyName: "sovrn",
+		familyName:   "sovrn",
+		gdprVendorID: 13,
 		syncInfo: &usersync.UsersyncInfo{
 			URL:         fmt.Sprintf("%sredir=%s", usersyncURL, url.QueryEscape(redirectURI)),
 			Type:        "redirect",
