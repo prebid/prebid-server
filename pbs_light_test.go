@@ -24,7 +24,8 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 )
 
 const adapterDirectory = "adapters"
@@ -176,7 +177,7 @@ func TestCookieSyncNoBidders(t *testing.T) {
 
 func testableEndpoint() httprouter.Handle {
 
-	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
+	knownSyncers := map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
 		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
