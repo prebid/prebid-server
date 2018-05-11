@@ -20,4 +20,7 @@ func TestConversantSyncer(t *testing.T) {
 	if info.SupportCORS != false {
 		t.Fatalf("user sync should not support CORS")
 	}
+	if syncer.GDPRVendorID() != 24 {
+		t.Errorf("Wrong Conversant GDPR VendorID. Got %d", syncer.GDPRVendorID())
+	}
 }

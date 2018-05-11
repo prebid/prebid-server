@@ -15,7 +15,8 @@ func NewAdformSyncer(usersyncURL string, externalURL string) Usersyncer {
 	}
 
 	return &syncer{
-		familyName: "adform",
-		syncInfo:   info,
+		familyName:   "adform",
+		gdprVendorID: 50,
+		syncInfo:     info,
 	}
 }
