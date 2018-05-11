@@ -213,6 +213,6 @@ func TestOverflowedVendorID(t *testing.T) {
 	}
 
 	if err := cfg.validate(); err == nil {
-		t.Error("cfg.gdpr.host_vendor_id should prevent values over %d, but it doesn't", 0xffff)
+		t.Errorf("cfg.gdpr.host_vendor_id should prevent values over %d, but it doesn't", 0xffff)
 	}
 }
