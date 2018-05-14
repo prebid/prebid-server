@@ -72,20 +72,6 @@ func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ http
 	return
 }
 
-func getRawQueryMap(query string) map[string]string {
-	m := make(map[string]string)
-	for _, kv := range strings.SplitN(query, "&", -1) {
-		if len(kv) == 0 {
-			continue
-		}
-		pair := strings.SplitN(kv, "=", 2)
-		if len(pair) == 2 {
-			m[pair[0]] = pair[1]
-		}
-	}
-	return m
-}
-
 // Struct for parsing json in google's response
 type googleResponse struct {
 	Success    bool
