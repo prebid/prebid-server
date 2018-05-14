@@ -53,6 +53,10 @@ const beachfrontVideoRequestTemplate = `{
 	      		"devicetype": 0,
 	      		"geo": {}
 	    	},
+	    	"user": {
+		        "buyeruid" : "",
+		        "id" : ""
+		        },
 	    	"cur": ["USD"]
   	}`
 
@@ -80,7 +84,10 @@ const beachfrontBannerRequestTemplate = `{
 	"isMobile":0,
 	"ua":"Go-http-client/1.1",
 	"dnt":0,
-	"user": "",
+	"user": {
+		"buyeruid" : "",
+		"id" : ""
+		},
 	"adapterName": "` + beachfrontAdapterName + `",
 	"adapterVersion":"` + beachfrontAdapterVersion + `",
 	"ip":""
@@ -109,6 +116,7 @@ type BeachfrontVideoRequest struct {
 	Imp      []BeachfrontVideoImp  `json:"imp"`
 	Site     BeachfrontSite        `json:"site"`
 	Device   BeachfrontVideoDevice `json:"device"`
+	User     openrtb.User		`json:"user"`
 	Cur      []string              `json:"cur"`
 }
 
@@ -152,6 +160,7 @@ type BeachfrontBannerRequest struct {
 	IsMobile       int8             `json:"isMobile"`
 	Ua             string           `json:"ua"`
 	Dnt            int8             `json:"dnt"`
+	User     	string		`json:"user"`
 	AdapterName    string           `json:"adapterName"`
 	AdapterVersion string           `json:"adapterVersion"`
 	Ip             string           `json:"ip"`
@@ -225,10 +234,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+	// headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
 
-	glog.Info("\nRequest URL : ", uri)
-	glog.Info("\nHeaders :\n", headers)
+	// glog.Info("\nRequest URL : ", uri)
+	// glog.Info("\nHeaders :\n", headers)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -324,11 +333,13 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, string,
 				}
 			}
 
+
 			beachfrontReq.Slots[k].Slot = req.Imp[k].ID
 
 			beachfrontReq.Slots[k].Id = beachfrontExt.AppId
 		}
 	}
+	beachfrontReq.User = req.Site.Publisher.ID
 
 	beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontReq.Page = req.Site.Page
@@ -396,6 +407,8 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 		}
 		i++
 	}
+	beachfrontVideoReq.User.ID = req.User.ID
+	beachfrontVideoReq.User.BuyerUID = req.Site.Publisher.ID
 
 	beachfrontVideoReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontVideoReq.Site.Page = req.Site.Page
