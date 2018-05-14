@@ -282,8 +282,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, string,
 	var beachfrontReq BeachfrontBannerRequest
 	var uri string = BannerEndpoint
 
+	glog.Info(req.Imp[0].Video)
 	if req.Imp[0].Video != nil {
-		glog.Info(req.Imp[0].Video)
 		return beachfrontReq, VideoFlag, nil
 	}
 
