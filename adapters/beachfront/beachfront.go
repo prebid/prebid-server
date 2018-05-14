@@ -339,7 +339,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, string,
 			beachfrontReq.Slots[k].Id = beachfrontExt.AppId
 		}
 	}
-	beachfrontReq.User = req.Site.Publisher.ID
+	// beachfrontReq.User = req.Site.Publisher.ID
 
 	beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontReq.Page = req.Site.Page
