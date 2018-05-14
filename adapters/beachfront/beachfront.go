@@ -84,10 +84,7 @@ const beachfrontBannerRequestTemplate = `{
 	"isMobile":0,
 	"ua":"Go-http-client/1.1",
 	"dnt":0,
-	"user": {
-		"buyeruid" : "",
-		"id" : ""
-		},
+	"user": "",
 	"adapterName": "` + beachfrontAdapterName + `",
 	"adapterVersion":"` + beachfrontAdapterVersion + `",
 	"ip":""
@@ -282,7 +279,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, string,
 	var beachfrontReq BeachfrontBannerRequest
 	var uri string = BannerEndpoint
 
-	glog.Info(req.Imp[0].Video)
 	if req.Imp[0].Video != nil {
 		return beachfrontReq, VideoFlag, nil
 	}
