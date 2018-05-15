@@ -13,7 +13,7 @@ func NewBeachfrontSyncer(usersyncURL string, external string) Usersyncer {
 
 	// usersyncURL := "http://sync.bfmio.com/syncb?pid=142&"
 
-	url := fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri))
+	url := fmt.Sprintf("%s&%s", usersyncURL, url.QueryEscape(redirect_uri))
 
 	// https://mysite.comsetuid?bidder=beachfront&uid=$UID"
 	// https://usersync.bfmio.com?url=https%3A%2F%2Fmysite.comsetuid%3Fbidder%3Dbeachfront%26uid%3D%24UID%22
