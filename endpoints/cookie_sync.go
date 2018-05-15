@@ -10,7 +10,6 @@ import (
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -27,7 +26,7 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 		defer pbsAnalytics.LogCookieSyncObject(&co)
 
 		metrics.RecordCookieSync(pbsmetrics.Labels{})
-		userSyncCookie := pbs.ParsePBSCookieFromRequest(r, optOutCookie)
+		userSyncCookie := usersync.ParsePBSCookieFromRequest(r, optOutCookie)
 		if !userSyncCookie.AllowSyncs() {
 			http.Error(w, "User has opted out", http.StatusUnauthorized)
 			co.Status = http.StatusUnauthorized

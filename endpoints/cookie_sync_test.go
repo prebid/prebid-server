@@ -13,9 +13,9 @@ import (
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {
@@ -65,7 +65,7 @@ func doPost(body string, existingSyncs map[string]string) *httptest.ResponseReco
 	router.POST("/cookie_sync", endpoint)
 	req, _ := http.NewRequest("POST", "/cookie_sync", strings.NewReader(body))
 	if len(existingSyncs) > 0 {
-		pcs := pbs.NewPBSCookie()
+		pcs := usersync.NewPBSCookie()
 		for bidder, uid := range existingSyncs {
 			pcs.TrySync(bidder, uid)
 		}
@@ -79,10 +79,10 @@ func doPost(body string, existingSyncs map[string]string) *httptest.ResponseReco
 
 func testableEndpoint() httprouter.Handle {
 	knownSyncers := map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAppnexus:   usersync.NewAppnexusSyncer("someurl.com"),
-		openrtb_ext.BidderFacebook:   usersync.NewFacebookSyncer("facebookurl.com"),
-		openrtb_ext.BidderLifestreet: usersync.NewLifestreetSyncer("anotherurl.com"),
-		openrtb_ext.BidderPubmatic:   usersync.NewPubmaticSyncer("thaturl.com"),
+		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
+		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
+		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
+		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
 	return NewCookieSyncEndpoint(knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 }
