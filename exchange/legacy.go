@@ -131,6 +131,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		Url:    url,
 		Domain: domain,
 		// Start is excluded because no legacy adapters read from it
+		Regs: req.Regs,
 	}, nil
 }
 
