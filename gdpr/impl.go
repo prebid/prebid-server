@@ -89,10 +89,10 @@ func hasPermissions(consent vendorconsent.VendorConsents, vendorList vendorlist.
 	return false
 }
 
-func newVendorListFetcher(initContext context.Context, client *http.Client) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func newVendorListFetcher(initContext context.Context, client *http.Client, urlMaker func(uint16) string) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	// These save and load functions can be used to store & retrieve lists from our cache.
 	save, load := newVendorListCache()
-	populateCache(initContext, client, save)
+	populateCache(initContext, client, urlMaker, save)
 
 	saveOneSometimes := newOccasionalSaver()
 
@@ -101,7 +101,7 @@ func newVendorListFetcher(initContext context.Context, client *http.Client) func
 		if list != nil {
 			return list, nil
 		}
-		saveOneSometimes(ctx, client, vendorListURLMaker(int(id)), save)
+		saveOneSometimes(ctx, client, urlMaker(id), save)
 		list = load(id)
 		if list != nil {
 			return list, nil
@@ -111,19 +111,21 @@ func newVendorListFetcher(initContext context.Context, client *http.Client) func
 }
 
 // populateCache saves all the known versions of the vendor list for future use.
-func populateCache(ctx context.Context, client *http.Client, saver func(id uint16, list vendorlist.VendorList)) {
-	latestVersion := saveOne(ctx, client, vendorListURLMaker(0), saver)
+func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16) string, saver func(id uint16, list vendorlist.VendorList)) {
+	latestVersion := saveOne(ctx, client, urlMaker(0), saver)
 
-	for i := 1; i < latestVersion; i++ {
-		saveOne(ctx, client, vendorListURLMaker(i), saver)
+	for i := uint16(1); i < latestVersion; i++ {
+		saveOne(ctx, client, urlMaker(i), saver)
 	}
 }
 
-func vendorListURLMaker(version int) string {
+// Make a URL which can be used to fetch a given version of the Global Vendor List. If the version is 0,
+// this will fetch the latest version.
+func vendorListURLMaker(version uint16) string {
 	if version == 0 {
 		return "https://vendorlist.consensu.org/vendorlist.json"
 	}
-	return "https://vendorlist.consensu.org/v-" + strconv.Itoa(version) + "/vendorlist.json"
+	return "https://vendorlist.consensu.org/v-" + strconv.Itoa(int(version)) + "/vendorlist.json"
 }
 
 // newOccasionalSaver returns a wrapped version of saveOne() which only activates every few minutes.
@@ -144,7 +146,7 @@ func newOccasionalSaver() func(ctx context.Context, client *http.Client, url str
 	}
 }
 
-func saveOne(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) int {
+func saveOne(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) uint16 {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		glog.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)
@@ -175,7 +177,7 @@ func saveOne(ctx context.Context, client *http.Client, url string, saver func(id
 	}
 
 	saver(newList.Version(), newList)
-	return int(newList.Version())
+	return newList.Version()
 }
 
 func newVendorListCache() (save func(id uint16, list vendorlist.VendorList), load func(id uint16) vendorlist.VendorList) {
