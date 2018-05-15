@@ -19,6 +19,9 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+// This file implements GDPR permissions for the app.
+// For more info, see https://github.com/prebid/prebid-server/issues/501
+
 type permissionsImpl struct {
 	cfg             config.GDPR
 	vendorIDs       map[openrtb_ext.BidderName]uint16
@@ -45,6 +48,30 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string
 	return hasPermissions(parsedConsent, vendorList, uint16(p.cfg.HostVendorID), consentconstants.InfoStorageAccess), nil
 }
 
+func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	// If we're not given a consent string, respect the preferences in the app config.
+	if consent == "" {
+		return p.cfg.UsersyncIfAmbiguous, nil
+	}
+
+	id, ok := p.vendorIDs[bidder]
+	if !ok {
+		return false, nil
+	}
+
+	parsedConsent, err := vendorconsent.Parse([]byte(consent))
+	if err != nil {
+		return false, err
+	}
+
+	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	if err != nil {
+		return false, err
+	}
+
+	return hasPermissions(parsedConsent, vendorList, id, consentconstants.AdSelectionDeliveryReporting), nil
+}
+
 func hasPermissions(consent vendorconsent.VendorConsents, vendorList vendorlist.VendorList, vendorID uint16, purpose consentconstants.Purpose) bool {
 	vendor := vendorList.Vendor(vendorID)
 	if vendor == nil {
@@ -62,31 +89,6 @@ func hasPermissions(consent vendorconsent.VendorConsents, vendorList vendorlist.
 	return false
 }
 
-func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
-	// If we're not given a consent string, respect the preferences in the app config.
-	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, nil
-	}
-
-	// If the bidder isn't part of the GDPR global vendor list yet, defer to the publisher's preferences.
-	id, ok := p.vendorIDs[bidder]
-	if !ok {
-		return p.cfg.UsersyncIfAmbiguous, nil
-	}
-
-	parsedConsent, err := vendorconsent.Parse([]byte(consent))
-	if err != nil {
-		return false, err
-	}
-
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
-	if err != nil {
-		return false, err
-	}
-
-	return hasPermissions(parsedConsent, vendorList, id, consentconstants.AdSelectionDeliveryReporting), nil
-}
-
 func newVendorListFetcher(initContext context.Context, client *http.Client) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	// These save and load functions can be used to store & retrieve lists from our cache.
 	save, load := newVendorListCache()
@@ -99,7 +101,7 @@ func newVendorListFetcher(initContext context.Context, client *http.Client) func
 		if list != nil {
 			return list, nil
 		}
-		saveOneSometimes(ctx, client, "https://vendorlist.consensu.org/v-"+strconv.Itoa(int(id))+"/vendorlist.json", save)
+		saveOneSometimes(ctx, client, vendorListURLMaker(int(id)), save)
 		list = load(id)
 		if list != nil {
 			return list, nil
@@ -110,11 +112,18 @@ func newVendorListFetcher(initContext context.Context, client *http.Client) func
 
 // populateCache saves all the known versions of the vendor list for future use.
 func populateCache(ctx context.Context, client *http.Client, saver func(id uint16, list vendorlist.VendorList)) {
-	latestVersion := saveOne(ctx, client, "https://vendorlist.consensu.org/vendorlist.json", saver)
+	latestVersion := saveOne(ctx, client, vendorListURLMaker(0), saver)
 
 	for i := 1; i < latestVersion; i++ {
-		saveOne(ctx, client, "https://vendorlist.consensu.org/v-"+strconv.Itoa(i)+"/vendorlist.json", saver)
+		saveOne(ctx, client, vendorListURLMaker(i), saver)
 	}
+}
+
+func vendorListURLMaker(version int) string {
+	if version == 0 {
+		return "https://vendorlist.consensu.org/vendorlist.json"
+	}
+	return "https://vendorlist.consensu.org/v-" + strconv.Itoa(version) + "/vendorlist.json"
 }
 
 // newOccasionalSaver returns a wrapped version of saveOne() which only activates every few minutes.
