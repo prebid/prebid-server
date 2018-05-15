@@ -37,7 +37,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
-	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -108,112 +107,6 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	} else {
 		w.Write(b)
 	}
-}
-
-type cookieSyncRequest struct {
-	Bidders []string `json:"bidders"`
-}
-
-type cookieSyncResponse struct {
-	Status       string                           `json:"status"`
-	BidderStatus []*usersyncers.CookieSyncBidders `json:"bidder_status"`
-}
-
-type cookieSyncDeps struct {
-	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
-	optOutCookie *config.Cookie
-	metric       pbsmetrics.MetricsEngine
-	pbsAnalytics analytics.PBSAnalyticsModule
-}
-
-func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
-	co := analytics.CookieSyncObject{
-		Status:       http.StatusOK,
-		Errors:       make([]error, 0),
-		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),
-	}
-
-	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
-
-	deps.metric.RecordCookieSync(pbsmetrics.Labels{})
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
-	if !userSyncCookie.AllowSyncs() {
-		http.Error(w, "User has opted out", http.StatusUnauthorized)
-		co.Status = http.StatusUnauthorized
-		co.Errors = append(co.Errors, fmt.Errorf("user has opted out"))
-		return
-	}
-
-	defer r.Body.Close()
-
-	csReq := &cookieSyncRequest{}
-	csReqRaw := map[string]json.RawMessage{}
-	err := json.NewDecoder(r.Body).Decode(&csReqRaw)
-	if err != nil {
-		if glog.V(2) {
-			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
-		}
-		co.Status = http.StatusBadRequest
-		co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed"))
-		http.Error(w, "JSON parse failed", http.StatusBadRequest)
-		return
-	}
-	biddersOmitted := true
-	if biddersRaw, ok := csReqRaw["bidders"]; ok {
-		biddersOmitted = false
-		err := json.Unmarshal(biddersRaw, &csReq.Bidders)
-		if err != nil {
-			if glog.V(2) {
-				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
-			}
-			co.Status = http.StatusBadRequest
-			co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed (bidders"))
-			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
-			return
-		}
-	}
-
-	csResp := cookieSyncResponse{
-		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0, len(csReq.Bidders)),
-	}
-
-	if userSyncCookie.LiveSyncCount() == 0 {
-		csResp.Status = "no_cookie"
-	} else {
-		csResp.Status = "ok"
-	}
-
-	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
-	// and "bidders" is not found in the JSON, sync all bidders
-	if len(csReq.Bidders) == 0 && biddersOmitted {
-		for bidder := range deps.syncers {
-			csReq.Bidders = append(csReq.Bidders, string(bidder))
-		}
-	}
-
-	for _, bidder := range csReq.Bidders {
-		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
-			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
-				b := usersyncers.CookieSyncBidders{
-					BidderCode:   bidder,
-					NoCookie:     true,
-					UsersyncInfo: syncer.GetUsersyncInfo(),
-				}
-				csResp.BidderStatus = append(csResp.BidderStatus, &b)
-			}
-		}
-	}
-
-	if len(csResp.BidderStatus) > 0 {
-		co.BidderStatus = append(co.BidderStatus, csResp.BidderStatus...)
-	}
-
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	//enc.SetIndent("", "  ")
-	enc.Encode(csResp)
 }
 
 type auctionDeps struct {
@@ -853,7 +746,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), metricsEngine, pbsAnalytics}).CookieSync)
+	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), metricsEngine, pbsAnalytics))
 	router.POST("/validate", validate)
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)
