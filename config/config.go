@@ -27,13 +27,32 @@ type Configuration struct {
 	MaxRequestSize       int64              `mapstructure:"max_request_size"`
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR               `mapstructure:"gdpr"`
 }
 
 func (cfg *Configuration) validate() error {
 	if cfg.MaxRequestSize < 0 {
 		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
 	}
-	return cfg.StoredRequests.validate()
+
+	if err := cfg.StoredRequests.validate(); err != nil {
+		return err
+	}
+
+	return cfg.GDPR.validate()
+}
+
+type GDPR struct {
+	HostVendorID        int  `mapstructure:"host_vendor_id"`
+	UsersyncIfAmbiguous bool `mapstructure:"usersync_if_ambiguous"`
+}
+
+func (cfg *GDPR) validate() error {
+	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
+		return fmt.Errorf("host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID)
+	}
+
+	return nil
 }
 
 type Analytics struct {

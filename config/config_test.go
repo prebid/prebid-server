@@ -37,6 +37,9 @@ func TestDefaults(t *testing.T) {
 }
 
 var fullConfig = []byte(`
+gdpr:
+  host_vendor_id: 15
+  usersync_if_ambiguous: true
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -95,6 +98,13 @@ func cmpInts(t *testing.T, key string, a int, b int) {
 	}
 }
 
+func cmpBools(t *testing.T, key string, a bool, b bool) {
+	t.Helper()
+	if a != b {
+		t.Errorf("%s: %t != %t", key, a, b)
+	}
+}
+
 func TestFullConfig(t *testing.T) {
 	v := newViperWithDefaults()
 	v.SetConfigType("yaml")
@@ -118,6 +128,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
+	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
 	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
 	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
@@ -178,5 +190,29 @@ func TestNegativeRequestSize(t *testing.T) {
 
 	if err := cfg.validate(); err == nil {
 		t.Error("cfg.max_request_size should prevent negative values, but it doesn't")
+	}
+}
+
+func TestNegativeVendorID(t *testing.T) {
+	cfg := Configuration{
+		GDPR: GDPR{
+			HostVendorID: -1,
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("cfg.gdpr.host_vendor_id should prevent negative values, but it doesn't")
+	}
+}
+
+func TestOverflowedVendorID(t *testing.T) {
+	cfg := Configuration{
+		GDPR: GDPR{
+			HostVendorID: (0xffff) + 1,
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Errorf("cfg.gdpr.host_vendor_id should prevent values over %d, but it doesn't", 0xffff)
 	}
 }
