@@ -1,10 +1,12 @@
-package usersync
+package usersyncers
 
-func NewIndexSyncer(userSyncURL string) Usersyncer {
+import "github.com/prebid/prebid-server/usersync"
+
+func NewIndexSyncer(userSyncURL string) *syncer {
 	return &syncer{
 		familyName:   "indexExchange",
 		gdprVendorID: 10,
-		syncInfo: &UsersyncInfo{
+		syncInfo: &usersync.UsersyncInfo{
 			URL:         userSyncURL,
 			Type:        "redirect",
 			SupportCORS: false,

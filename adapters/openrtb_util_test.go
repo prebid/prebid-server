@@ -1,11 +1,14 @@
 package adapters
 
 import (
+	"testing"
+
 	"encoding/json"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCommonMediaTypes(t *testing.T) {
@@ -374,7 +377,7 @@ func TestOpenRTBEmptyUser(t *testing.T) {
 }
 
 func TestOpenRTBUserWithCookie(t *testing.T) {
-	pbsCookie := pbs.NewPBSCookie()
+	pbsCookie := usersync.NewPBSCookie()
 	pbsCookie.TrySync("test", "abcde")
 	pbReq := pbs.PBSRequest{
 		User: &openrtb.User{},

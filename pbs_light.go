@@ -53,9 +53,10 @@ import (
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
+	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 
-	usersyncers "github.com/prebid/prebid-server/usersync"
+	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
 
 var hostCookieSettings pbs.HostCookieSettings
@@ -111,7 +112,7 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 
 type auctionDeps struct {
 	cfg           *config.Configuration
-	syncers       map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
 	metricsEngine pbsmetrics.MetricsEngine
 }
 

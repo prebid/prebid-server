@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 // Constants
@@ -606,7 +607,7 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	// Need to pass the conversant user id thru uid cookie
 
 	httpReq := httptest.NewRequest("POST", "/foo", body)
-	cookie := pbs.NewPBSCookie()
+	cookie := usersync.NewPBSCookie()
 	cookie.TrySync("conversant", ExpectedBuyerUID)
 	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")

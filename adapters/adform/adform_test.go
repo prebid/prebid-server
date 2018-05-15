@@ -13,6 +13,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
@@ -193,7 +194,7 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	prebidHttpRequest.Header.Add("Referer", adformTestData.referrer)
 	prebidHttpRequest.Header.Add("X-Real-IP", adformTestData.deviceIP)
 
-	pbsCookie := pbs.ParsePBSCookieFromRequest(prebidHttpRequest, &config.Cookie{})
+	pbsCookie := usersync.ParsePBSCookieFromRequest(prebidHttpRequest, &config.Cookie{})
 	pbsCookie.TrySync("adform", adformTestData.buyerUID)
 	fakeWriter := httptest.NewRecorder()
 	pbsCookie.SetCookieOnResponse(fakeWriter, "", time.Minute)

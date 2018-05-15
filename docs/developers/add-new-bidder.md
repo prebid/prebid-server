@@ -26,8 +26,8 @@ Bidder implementations are scattered throughout several files.
 
 - `adapters/{bidder}/{bidder}.go`: contains an implementation of [the Bidder interface](../../adapters/bidder.go).
 - `openrtb_ext/imp_{bidder}.go`: contract classes for your Bidder's params.
-- `usersync/{bidder}.go`: A [Usersyncer](../../usersync/usersync.go) which returns cookie sync info for your bidder.
-- `usersync/{bidder}_test.go`: Unit tests for your Usersyncer
+- `usersync/usersyncers/{bidder}.go`: A [Usersyncer](../../usersync/usersync.go) which returns cookie sync info for your bidder.
+- `usersync/usersyncers/{bidder}_test.go`: Unit tests for your Usersyncer
 - `static/bidder-params/{bidder}.json`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
 - `static/bidder-info/{bidder}.yaml`: contains metadata (e.g. contact email, platform & media type support) about the adapter
 
