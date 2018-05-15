@@ -34,7 +34,7 @@ type CookieSyncBidders struct {
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]Usersyncer {
 	return map[openrtb_ext.BidderName]Usersyncer{
 		openrtb_ext.BidderAppnexus:    NewAppnexusSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderBeachfront:  NewBeachfrontSyncer(cfg.ExternalURL),
+		openrtb_ext.BidderBeachfront:  NewBeachfrontSyncer(cfg.Adapters["beachfront"].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderFacebook:    NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
 		openrtb_ext.BidderConversant:  NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderIndex:       NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
