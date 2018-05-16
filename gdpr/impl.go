@@ -21,6 +21,8 @@ import (
 
 // This file implements GDPR permissions for the app.
 // For more info, see https://github.com/prebid/prebid-server/issues/501
+//
+// Nothing in this file is exported. Public APIs can be found in gdpr.go
 
 type permissionsImpl struct {
 	cfg             config.GDPR
