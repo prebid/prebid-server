@@ -336,7 +336,10 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, string,
 			beachfrontReq.Slots[k].Id = beachfrontExt.AppId
 		}
 	}
-	beachfrontReq.User = req.Site.Publisher.ID
+
+	if(req.Site.Publisher.ID != nil) {
+		beachfrontReq.User = req.Site.Publisher.ID
+	}
 
 	beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontReq.Page = req.Site.Page
@@ -404,8 +407,14 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 		}
 		i++
 	}
-	beachfrontVideoReq.User.ID = req.User.ID
-	beachfrontVideoReq.User.BuyerUID = req.Site.Publisher.ID
+
+	if(req.User.ID != nil) {
+		beachfrontVideoReq.User.ID = req.User.ID
+	}
+
+	if(req.Site.Publisher.ID != nil) {
+		beachfrontVideoReq.User.BuyerUID = req.Site.Publisher.ID
+	}
 
 	beachfrontVideoReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontVideoReq.Site.Page = req.Site.Page
