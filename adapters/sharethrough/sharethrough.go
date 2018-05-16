@@ -2,9 +2,9 @@ package sharethrough
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -12,6 +12,15 @@ import (
 )
 
 const hbEndpoint = "https://dumb-waiter.sharethrough.com/header-bid/v1"
+
+func NewSharethroughBidder(client *http.Client, endpoint string) *SharethroughAdapter {
+	adapter := &adapters.HTTPAdapter{Client: client}
+
+	return &SharethroughAdapter{
+		http: adapter,
+		URI:  endpoint,
+	}
+}
 
 // SharethroughAdapter converts the Sharethrough Adserver response into a
 // prebid server compatible format
@@ -25,7 +34,7 @@ func (s SharethroughAdapter) Name() string {
 	return "sharethrough"
 }
 
-type sharethroughParams struct {
+type params struct {
 	BidID        string `json:"bidId"`
 	PlacementKey string `json:"placement_key"`
 	HBVersion    string `json:"hbVersion"`
@@ -33,15 +42,19 @@ type sharethroughParams struct {
 	HBSource     string `json:"hbSource"`
 }
 
-func (s *SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	pKeys := make([]string, 0, len(request.Imp))
-	potentialRequests := make([]*adapters.RequestData)
 	errs := make([]error, 0, len(request.Imp))
+	headers := http.Header{}
+	var potentialRequests []*adapters.RequestData
+
+	headers.Add("Content-Type", "text/plain;charset=utf-8")
+	headers.Add("Accept", "application/json")
 
 	for i := 0; i < len(request.Imp); i++ {
 		pKey, err := preprocess(&request.Imp[i])
 		if pKey != "" {
-			pKeys = append(pKeys, pkey)
+			pKeys = append(pKeys, pKey)
 		}
 
 		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
@@ -49,61 +62,71 @@ func (s *SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adap
 			errs = append(errs, err)
 			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
 			i--
+			continue
 		}
+
+		hbURI := generateHBUri(pKey, "testBidID-"+string(i))
+		potentialRequests = append(potentialRequests, &adapters.RequestData{
+			Method:  "GET",
+			Uri:     hbURI,
+			Body:    nil,
+			Headers: headers,
+		})
 	}
 
-	hbURI := generateHBUri(pKey, "testBidID")
-
-	// If all the requests were malformed, don't bother making a server call with no impressions.
-	if len(request.Imp) == 0 {
-		return nil, errs
-	}
-
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-
-	headers := http.Header{}
-	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("Accept", "application/json")
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     thisURI,
-		Body:    reqJSON,
-		Headers: headers,
-	}}, errs
+	return potentialRequests, errs
 }
 
-func preprocess(imp *openrtb.Imp) (pKey, error) {
+func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponse()
+
+	var errs []error
+	for _, sb := range bidResp.SeatBid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
+			if bidType, err := getMediaTypeForBid(&bid); err == nil {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				})
+			} else {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return bidResponse, errs
+}
+func preprocess(imp *openrtb.Imp) (pKey string, err error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", err
 	}
 
 	var sharethroughExt openrtb_ext.ExtImpSharethrough
-	if err := json.Unmarshal(bidderExt, &sharethroughExt); err != nil {
+	if err := json.Unmarshal(bidderExt.Bidder, &sharethroughExt); err != nil {
 		return "", err
 	}
 
 	return sharethroughExt.PlacementKey, nil
-}
-
-func appendPkey(uri string, pKey string) string {
-	if strings.Contains(uri, "?") {
-		return uri + "&placement_key=" + pKey
-	}
-
-	return uri + "?placement_key=" + pKey
-}
-
-func keys(m map[string]bool) []string {
-	keys := make([]string, 0, len(m))
-	for key, _ := range m {
-		keys = append(keys, key)
-	}
-	return keys
 }
 
 func generateHBUri(pKey string, bidID string) string {

@@ -1,0 +1,12 @@
+maintainer:
+  email: "cnguyen@sharethrough.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native

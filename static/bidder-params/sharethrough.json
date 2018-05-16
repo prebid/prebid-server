@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "EPlanning Adapter Params",
+  "description": "A schema which validates params accepted by the Sharethrough adapter",
+  "type": "object",
+  "properties": {
+    "placement_key": {
+      "type": ["string"],
+      "description": "placement_key to use."
+    }
+  },
+  "required": ["placement_key"]
+}
