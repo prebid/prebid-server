@@ -21,6 +21,7 @@ const TestID = "test_id"
 const BidCapacity = 5
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+
 // const BannerEndpoint = "http://10.0.0.181/dump.php"
 
 // const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
@@ -92,7 +93,7 @@ const beachfrontBannerRequestTemplate = `{
 
 type BeachfrontAdapter struct {
 	http *adapters.HTTPAdapter
-	URI string
+	URI  string
 }
 
 type BeachfrontRequests struct {
@@ -113,7 +114,7 @@ type BeachfrontVideoRequest struct {
 	Imp      []BeachfrontVideoImp  `json:"imp"`
 	Site     BeachfrontSite        `json:"site"`
 	Device   BeachfrontVideoDevice `json:"device"`
-	User     openrtb.User		`json:"user"`
+	User     openrtb.User          `json:"user"`
 	Cur      []string              `json:"cur"`
 }
 
@@ -157,7 +158,7 @@ type BeachfrontBannerRequest struct {
 	IsMobile       int8             `json:"isMobile"`
 	Ua             string           `json:"ua"`
 	Dnt            int8             `json:"dnt"`
-	User     	string		`json:"user"`
+	User           string           `json:"user"`
 	AdapterName    string           `json:"adapterName"`
 	AdapterVersion string           `json:"adapterVersion"`
 	Ip             string           `json:"ip"`
@@ -330,14 +331,13 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, string,
 				}
 			}
 
-
 			beachfrontReq.Slots[k].Slot = req.Imp[k].ID
 
 			beachfrontReq.Slots[k].Id = beachfrontExt.AppId
 		}
 	}
 
-	if(req.Site.Publisher.ID != nil) {
+	if req.Site.Publisher.ID != "" {
 		beachfrontReq.User = req.Site.Publisher.ID
 	}
 
@@ -408,11 +408,11 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 		i++
 	}
 
-	if(req.User.ID != nil) {
+	if req.User.ID != "" {
 		beachfrontVideoReq.User.ID = req.User.ID
 	}
 
-	if(req.Site.Publisher.ID != nil) {
+	if req.Site.Publisher.ID != "" {
 		beachfrontVideoReq.User.BuyerUID = req.Site.Publisher.ID
 	}
 
@@ -568,6 +568,6 @@ func NewBeachfrontBidder(client *http.Client, endpoint string) *BeachfrontAdapte
 	a := &adapters.HTTPAdapter{Client: client}
 	return &BeachfrontAdapter{
 		http: a,
-		URI: endpoint,
+		URI:  endpoint,
 	}
 }
