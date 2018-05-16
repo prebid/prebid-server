@@ -1,14 +1,15 @@
-package pbs
+package usersync
 
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestOptOutCookie(t *testing.T) {
@@ -318,6 +319,13 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 	}
 }
 
+func newTempId(uid string) uidWithExpiry {
+	return uidWithExpiry{
+		UID:     uid,
+		Expires: time.Now().Add(10 * time.Minute),
+	}
+}
+
 func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	w := httptest.NewRecorder()
 	cookie.SetCookieOnResponse(w, "mock-domain", 90*24*time.Hour)
@@ -327,11 +335,4 @@ func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
 	return ParsePBSCookieFromRequest(&request, &config.Cookie{})
-}
-
-func newTempId(uid string) uidWithExpiry {
-	return uidWithExpiry{
-		UID:     uid,
-		Expires: time.Now().Add(10 * time.Minute),
-	}
 }
