@@ -20,9 +20,7 @@ import (
 
 func TestCookieSyncNoCookies(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
+	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
@@ -32,9 +30,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		"adnxs":           "1234",
 		"audienceNetwork": "2345",
 	})
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d", rr.Code)
-	}
+	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes())
 	assertStatus(t, rr.Body.Bytes(), "ok")
 }
@@ -42,9 +38,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 // Make sure that an empty bidders array returns no syncs
 func TestCookieSyncEmptyBidders(t *testing.T) {
 	rr := doPost(`{"bidders": []}`, nil)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
+	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes())
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
@@ -52,9 +46,7 @@ func TestCookieSyncEmptyBidders(t *testing.T) {
 // Make sure that all syncs are returned if "bidders" isn't a key
 func TestCookieSyncNoBidders(t *testing.T) {
 	rr := doPost("{}", nil)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
+	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork", "lifestreet", "pubmatic")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
