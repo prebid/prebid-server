@@ -772,7 +772,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)
-	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, pbsAnalytics, metricsEngine))
+	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, nil, pbsAnalytics, metricsEngine)) // TODO: Don't let this be nil in the merge
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
