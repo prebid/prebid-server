@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const ForceQA = true
+const ForceQA = false
 const Seat = "beachfront"
 const VideoFlag = "video"
 const TestID = "test_id"
