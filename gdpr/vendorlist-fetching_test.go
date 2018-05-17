@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/config"
 )
 
 func TestVendorFetch(t *testing.T) {
@@ -29,7 +31,7 @@ func TestVendorFetch(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	list, err := fetcher(context.Background(), 1)
 	assertNilErr(t, err)
 	vendor := list.Vendor(32)
@@ -63,7 +65,7 @@ func TestLazyFetch(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	list, err := fetcher(context.Background(), 2)
 	assertNilErr(t, err)
 
@@ -88,7 +90,7 @@ func TestInitialTimeout(t *testing.T) {
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Time{})
 	defer cancel()
-	fetcher := newVendorListFetcher(ctx, server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(ctx, testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1) // This should do a lazy fetch, even though the initial call failed
 	assertNilErr(t, err)
 }
@@ -113,7 +115,7 @@ func TestFetchThrottling(t *testing.T) {
 	})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 2)
 	assertNilErr(t, err)
 	_, err = fetcher(context.Background(), 3)
@@ -124,7 +126,7 @@ func TestMalformedVendorlistFetch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{1: "{}"})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
 	assertErr(t, err)
 }
@@ -133,7 +135,7 @@ func TestMissingVendorlistFetch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{1: "{}"})))
 	defer server.Close()
 
-	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
+	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 2)
 	assertErr(t, err)
 }
@@ -208,6 +210,15 @@ func testURLMaker(server *httptest.Server) func(uint16) string {
 	url := server.URL
 	return func(version uint16) string {
 		return url + "?version=" + strconv.Itoa(int(version))
+	}
+}
+
+func testConfig() config.GDPR {
+	return config.GDPR{
+		Timeouts: config.GDPRTimeouts{
+			InitVendorlistFetch:   60 * 1000,
+			ActiveVendorlistFetch: 1000 * 5,
+		},
 	}
 }
 
