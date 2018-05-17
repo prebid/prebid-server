@@ -29,9 +29,8 @@ func TestCookieSyncNoCookies(t *testing.T) {
 
 func TestGDPRPreventsCookie(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "pubmatic"]}`, nil, false, syncersForTest())
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+
 	assertSyncsExist(t, rr.Body.Bytes())
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
@@ -40,10 +39,16 @@ func TestGDPRPreventsBidders(t *testing.T) {
 	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"]}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("someurl.com"),
 	})
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
+	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes(), "lifestreet")
+	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
+func TestGDPRIgnoredIfZero(t *testing.T) {
+	rr := doPost(`{"gdpr":0,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+
+	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "pubmatic")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
 
