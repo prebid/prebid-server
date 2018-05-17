@@ -13,7 +13,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/ssl"
 	"github.com/prebid/prebid-server/usersync"
@@ -71,69 +70,6 @@ func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ http
 	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
 	json.NewEncoder(w).Encode(pc)
 	return
-}
-
-func getRawQueryMap(query string) map[string]string {
-	m := make(map[string]string)
-	for _, kv := range strings.SplitN(query, "&", -1) {
-		if len(kv) == 0 {
-			continue
-		}
-		pair := strings.SplitN(kv, "=", 2)
-		if len(pair) == 2 {
-			m[pair[0]] = pair[1]
-		}
-	}
-	return m
-}
-
-func (deps *UserSyncDeps) SetUID(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	so := analytics.SetUIDObject{
-		Status: http.StatusOK,
-		Errors: make([]error, 0),
-	}
-
-	defer deps.PBSAnalytics.LogSetUIDObject(&so)
-
-	pc := usersync.ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
-	if !pc.AllowSyncs() {
-		w.WriteHeader(http.StatusUnauthorized)
-		deps.MetricsEngine.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})
-		so.Status = http.StatusUnauthorized
-		return
-	}
-
-	query := getRawQueryMap(r.URL.RawQuery)
-	bidder := query["bidder"]
-	if bidder == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		deps.MetricsEngine.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionErr})
-		so.Status = http.StatusBadRequest
-		return
-	}
-	so.Bidder = bidder
-
-	uid := query["uid"]
-	so.UID = uid
-
-	var err error = nil
-	if uid == "" {
-		pc.Unsync(bidder)
-	} else {
-		err = pc.TrySync(bidder, uid)
-	}
-
-	if err == nil {
-		labels := pbsmetrics.UserLabels{
-			Action: pbsmetrics.RequestActionSet,
-			Bidder: openrtb_ext.BidderName(bidder),
-		}
-		deps.MetricsEngine.RecordUserIDSet(labels)
-		so.Success = true
-	}
-
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
 }
 
 // Struct for parsing json in google's response
