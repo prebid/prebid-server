@@ -26,7 +26,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	}
 }
 
-func ParseIdsGDPR(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) map[openrtb_ext.BidderName]uint16 {
+func GDPRAwareSyncerIDs(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) map[openrtb_ext.BidderName]uint16 {
 	gdprAwareSyncers := make(map[openrtb_ext.BidderName]uint16, len(syncers))
 	for bidderName, syncer := range syncers {
 		if syncer.GDPRVendorID() != 0 {

@@ -70,6 +70,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		co.Status = http.StatusBadRequest
 		co.Errors = append(co.Errors, errors.New("Failed to check request.bidders in request body. Was your JSON well-formed?"))
 		http.Error(w, "Failed to check request.bidders in request body. Was your JSON well-formed?", http.StatusBadRequest)
+		return
 	}
 
 	parsedReq := &cookieSyncRequest{}

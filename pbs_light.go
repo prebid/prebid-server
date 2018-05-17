@@ -741,7 +741,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.ParseIdsGDPR(syncers), theClient)
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
