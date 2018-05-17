@@ -140,6 +140,12 @@ func TestMissingVendorlistFetch(t *testing.T) {
 	assertErr(t, err)
 }
 
+func TestVendorListMaker(t *testing.T) {
+	assertStringsEqual(t, "https://vendorlist.consensu.org/vendorlist.json", vendorListURLMaker(0))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v-2/vendorlist.json", vendorListURLMaker(2))
+	assertStringsEqual(t, "https://vendorlist.consensu.org/v-12/vendorlist.json", vendorListURLMaker(12))
+}
+
 // mockServer returns a handler which returns the given response for each global vendor list version.
 // The latestVersion param can be used to mock "updates" which occur after PBS has been turned on.
 // For example, if latestVersion is 3, but the responses map has data at "4", the server will return
