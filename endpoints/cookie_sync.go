@@ -146,17 +146,19 @@ func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderNa
 }
 
 func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
-	if req.GDPR == nil || *req.GDPR == 1 {
-		if allowSync, err := permissions.HostCookiesAllowed(context.Background(), req.Consent); err != nil || !allowSync {
-			req.Bidders = nil
-			return
-		}
+	if req.GDPR != nil && *req.GDPR == 0 {
+		return
+	}
 
-		for i := 0; i < len(req.Bidders); i++ {
-			if allowSync, err := permissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(req.Bidders[i]), req.Consent); err != nil || !allowSync {
-				req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
-				i--
-			}
+	if allowSync, err := permissions.HostCookiesAllowed(context.Background(), req.Consent); err != nil || !allowSync {
+		req.Bidders = nil
+		return
+	}
+
+	for i := 0; i < len(req.Bidders); i++ {
+		if allowSync, err := permissions.BidderSyncAllowed(context.Background(), openrtb_ext.BidderName(req.Bidders[i]), req.Consent); err != nil || !allowSync {
+			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
+			i--
 		}
 	}
 }
