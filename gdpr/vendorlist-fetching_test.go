@@ -117,7 +117,7 @@ func TestFetchThrottling(t *testing.T) {
 	_, err := fetcher(context.Background(), 2)
 	assertNilErr(t, err)
 	_, err = fetcher(context.Background(), 3)
-	assertErr(t, err)
+	assertErr(t, err, false)
 }
 
 func TestMalformedVendorlistFetch(t *testing.T) {
@@ -126,7 +126,7 @@ func TestMalformedVendorlistFetch(t *testing.T) {
 
 	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
-	assertErr(t, err)
+	assertErr(t, err, false)
 }
 
 func TestMissingVendorlistFetch(t *testing.T) {
@@ -135,7 +135,7 @@ func TestMissingVendorlistFetch(t *testing.T) {
 
 	fetcher := newVendorListFetcher(context.Background(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 2)
-	assertErr(t, err)
+	assertErr(t, err, false)
 }
 
 // mockServer returns a handler which returns the given response for each global vendor list version.

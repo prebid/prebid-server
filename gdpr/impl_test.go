@@ -139,6 +139,19 @@ func TestProhibitedVendors(t *testing.T) {
 	assertBoolsEqual(t, false, allowSync)
 }
 
+func TestMalformedConsent(t *testing.T) {
+	perms := permissionsImpl{
+		cfg: config.GDPR{
+			HostVendorID: 2,
+		},
+		fetchVendorList: listFetcher(nil),
+	}
+
+	sync, err := perms.HostCookiesAllowed(context.Background(), "BON")
+	assertErr(t, err, true)
+	assertBoolsEqual(t, false, sync)
+}
+
 func parseVendorListData(t *testing.T, data string) vendorlist.VendorList {
 	t.Helper()
 	parsed, err := vendorlist.ParseEagerly([]byte(data))
@@ -170,11 +183,14 @@ func assertNilErr(t *testing.T, err error) {
 	}
 }
 
-func assertErr(t *testing.T, err error) {
+func assertErr(t *testing.T, err error, badConsent bool) {
 	t.Helper()
 	if err == nil {
 		t.Errorf("Expected error did not occur.")
+		return
 	}
+	_, isBadConsent := err.(*ErrorMalformedConsent)
+	assertBoolsEqual(t, badConsent, isBadConsent)
 }
 
 func assertBoolsEqual(t *testing.T, expected bool, actual bool) {
