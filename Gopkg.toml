@@ -81,6 +81,10 @@
   name = "github.com/chasex/log"
   branch = "analytics"
 
+[[constraint]]
+  name = "github.com/prebid/go-gdpr"
+  version = "0.3.0"
+
 [prune]
   go-tests = true
   unused-packages = true

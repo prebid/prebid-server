@@ -14,9 +14,10 @@
   version = "v3.5.1"
 
 [[projects]]
+  branch = "master"
   name = "github.com/buger/jsonparser"
   packages = ["."]
-  revision = "5096fddd2cca678b0801ece8513a06e580981fd2"
+  revision = "2cac668e8456b4284edb0715e17e2af02d3ec993"
 
 [[projects]]
   branch = "master"
@@ -140,6 +141,16 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/prebid/go-gdpr"
+  packages = [
+    "consentconstants",
+    "vendorconsent",
+    "vendorlist"
+  ]
+  revision = "720d28ad53f481a2bf82e96835b3f37df3117033"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/rcrowley/go-metrics"
@@ -272,6 +283,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b9c694fc64651643a2d5f053100a99ebe7c178c87da625aa334fbfc22cb4d1d3"
+  inputs-digest = "72acafecebb9c2332cd655f10fdaa4fa22b61b45311c8db5a3c8df0644e77a03"
   solver-name = "gps-cdcl"
   solver-version = 1
