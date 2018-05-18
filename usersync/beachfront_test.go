@@ -3,7 +3,7 @@ package usersync
 import "testing"
 
 func TestBeachfrontSyncer(t *testing.T) {
-	an := NewBeachfrontSyncer("localhost")
+	an := NewBeachfrontSyncer("localhost", "localhost")
 	syncInfo := an.GetUsersyncInfo()
 
 	if syncInfo.Type != "redirect" {

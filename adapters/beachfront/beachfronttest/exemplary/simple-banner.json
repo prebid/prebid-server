@@ -24,7 +24,12 @@
           }
         }
       }
-    ]
+    ],
+    "site": {
+      "publisher": {
+        "id": "some-tester"
+      }
+    }
   },
 
   "httpCalls": [
@@ -57,7 +62,8 @@
           "dnt": 0,
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.1.1",
-          "ip": ""
+          "ip": "",
+          "user": "some-tester"
         }
       },
       "mockResponse": {
