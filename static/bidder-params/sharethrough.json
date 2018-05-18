@@ -4,10 +4,10 @@
   "description": "A schema which validates params accepted by the Sharethrough adapter",
   "type": "object",
   "properties": {
-    "placement_key": {
+    "pkey": {
       "type": ["string"],
-      "description": "placement_key to use."
+      "description": "placement key to use."
     }
   },
-  "required": ["placement_key"]
+  "required": ["pkey"]
 }

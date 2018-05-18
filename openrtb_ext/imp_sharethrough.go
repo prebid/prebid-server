@@ -3,7 +3,7 @@ package openrtb_ext
 import "encoding/json"
 
 type ExtImpSharethrough struct {
-	PlacementKey string `json:"placement_key"`
+	PlacementKey string `json:"pkey"`
 }
 
 // ExtImpSharethrough defines the contract for bidrequest.imp[i].ext.sharethrough
@@ -59,7 +59,7 @@ type ExtImpSharethroughCreativeBeacons struct {
 type ExtImpSharethroughPlacement struct {
 	AllowInstantPlay      bool                                  `json:"allow_instant_play"`
 	ArticlesBeforeFirstAd int                                   `json:"articles_before_first_ad"`
-	ArticlesBetweenAds    int                                   `json:"articles_between_ads`
+	ArticlesBetweenAds    int                                   `json:"articles_between_ads"`
 	Layout                string                                `json:"layout"`
 	Metadata              json.RawMessage                       `json:"metadata"`
 	PlacementAttributes   ExtImpSharethroughPlacementAttributes `json:"placement_attributes"`
