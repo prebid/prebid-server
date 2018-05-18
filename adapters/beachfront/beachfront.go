@@ -222,6 +222,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	if a.URI == VideoEndpoint {
 		reqJSON, err = json.Marshal(beachfrontRequests.Video)
+		a.URI = a.URI + beachfrontRequests.Video.AppId + VideoEndpointSuffix
 	} else {
 		reqJSON, err = json.Marshal(beachfrontRequests.Banner)
 	}
@@ -257,7 +258,7 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 			return beachfrontReqs, err
 		}
 	} else if uri == VideoEndpoint {
-		beachfrontReqs.Video, uri, err = getVideoRequest(req)
+		beachfrontReqs.Video, err = getVideoRequest(req)
 		if err != nil {
 			return beachfrontReqs, err
 		}
@@ -343,9 +344,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 /*
 Prepare the request that has been received from Prebid.js, translating it to the beachfront format
 */
-func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, error) {
+func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	var beachfrontVideoReq BeachfrontVideoRequest
-	var uri string = VideoEndpoint
 	var i int = 1
 
 	dec := json.NewDecoder(strings.NewReader(beachfrontVideoRequestTemplate))
@@ -374,12 +374,12 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-				return beachfrontVideoReq, uri, err
+				return beachfrontVideoReq, err
 			}
 
 			var beachfrontVideoExt openrtb_ext.ExtImpBeachfront
 			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontVideoExt); err != nil {
-				return beachfrontVideoReq, uri, err
+				return beachfrontVideoReq, err
 			}
 
 			beachfrontVideoReq.Imp[k].Bidfloor = beachfrontVideoExt.BidFloor
@@ -408,9 +408,8 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, string, e
 
 	beachfrontVideoReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontVideoReq.Site.Page = req.Site.Page
-	uri = uri + beachfrontVideoReq.AppId + VideoEndpointSuffix
 
-	return beachfrontVideoReq, uri, nil
+	return beachfrontVideoReq,  nil
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
