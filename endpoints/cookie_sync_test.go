@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/usersync"
@@ -19,9 +21,34 @@ import (
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {
-	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil)
+	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil, true, syncersForTest())
 	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork")
+	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
+func TestGDPRPreventsCookie(t *testing.T) {
+	rr := doPost(`{"bidders":["appnexus", "pubmatic"]}`, nil, false, syncersForTest())
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+
+	assertSyncsExist(t, rr.Body.Bytes())
+	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
+func TestGDPRPreventsBidders(t *testing.T) {
+	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"]}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
+		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("someurl.com"),
+	})
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+	assertSyncsExist(t, rr.Body.Bytes(), "lifestreet")
+	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
+func TestGDPRIgnoredIfZero(t *testing.T) {
+	rr := doPost(`{"gdpr":0,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+
+	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "pubmatic")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
 
@@ -29,7 +56,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, map[string]string{
 		"adnxs":           "1234",
 		"audienceNetwork": "2345",
-	})
+	}, true, syncersForTest())
 	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes())
 	assertStatus(t, rr.Body.Bytes(), "ok")
@@ -37,7 +64,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 // Make sure that an empty bidders array returns no syncs
 func TestCookieSyncEmptyBidders(t *testing.T) {
-	rr := doPost(`{"bidders": []}`, nil)
+	rr := doPost(`{"bidders": []}`, nil, true, syncersForTest())
 	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes())
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
@@ -45,14 +72,14 @@ func TestCookieSyncEmptyBidders(t *testing.T) {
 
 // Make sure that all syncs are returned if "bidders" isn't a key
 func TestCookieSyncNoBidders(t *testing.T) {
-	rr := doPost("{}", nil)
+	rr := doPost("{}", nil, true, syncersForTest())
 	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork", "lifestreet", "pubmatic")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
 
-func doPost(body string, existingSyncs map[string]string) *httptest.ResponseRecorder {
-	endpoint := testableEndpoint()
+func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
+	endpoint := testableEndpoint(mockPermissions(gdprHostConsent, gdprBidders))
 	router := httprouter.New()
 	router.POST("/cookie_sync", endpoint)
 	req, _ := http.NewRequest("POST", "/cookie_sync", strings.NewReader(body))
@@ -69,14 +96,17 @@ func doPost(body string, existingSyncs map[string]string) *httptest.ResponseReco
 	return rr
 }
 
-func testableEndpoint() httprouter.Handle {
-	knownSyncers := map[openrtb_ext.BidderName]usersync.Usersyncer{
+func testableEndpoint(perms gdpr.Permissions) httprouter.Handle {
+	return NewCookieSyncEndpoint(syncersForTest(), &config.Cookie{}, perms, &pbsmetrics.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+}
+
+func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
+	return map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
 		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
 		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
 	}
-	return NewCookieSyncEndpoint(knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 }
 
 func assertSyncsExist(t *testing.T, responseBody []byte, expectedBidders ...string) {
@@ -130,4 +160,25 @@ func assertSameElements(t *testing.T, expected []string, actual []string) {
 			t.Errorf("Expected sync from %s, but it wasn't in the response.", expectedVal)
 		}
 	}
+}
+
+func mockPermissions(allowHost bool, allowedBidders map[openrtb_ext.BidderName]usersync.Usersyncer) gdpr.Permissions {
+	return &gdprPerms{
+		allowHost:      allowHost,
+		allowedBidders: allowedBidders,
+	}
+}
+
+type gdprPerms struct {
+	allowHost      bool
+	allowedBidders map[openrtb_ext.BidderName]usersync.Usersyncer
+}
+
+func (g *gdprPerms) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return g.allowHost, nil
+}
+
+func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	_, ok := g.allowedBidders[bidder]
+	return ok, nil
 }

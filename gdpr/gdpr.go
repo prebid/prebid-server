@@ -30,7 +30,7 @@ func NewPermissions(ctx context.Context, cfg config.GDPR, vendorIDs map[openrtb_
 	return &permissionsImpl{
 		cfg:             cfg,
 		vendorIDs:       vendorIDs,
-		fetchVendorList: newVendorListFetcher(ctx, client, vendorListURLMaker),
+		fetchVendorList: newVendorListFetcher(ctx, cfg, client, vendorListURLMaker),
 	}
 }
 

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -43,8 +44,22 @@ func (cfg *Configuration) validate() error {
 }
 
 type GDPR struct {
-	HostVendorID        int  `mapstructure:"host_vendor_id"`
-	UsersyncIfAmbiguous bool `mapstructure:"usersync_if_ambiguous"`
+	HostVendorID        int          `mapstructure:"host_vendor_id"`
+	UsersyncIfAmbiguous bool         `mapstructure:"usersync_if_ambiguous"`
+	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
+}
+
+type GDPRTimeouts struct {
+	InitVendorlistFetch   int `mapstructure:"init_vendorlist_fetches"`
+	ActiveVendorlistFetch int `mapstructure:"active_vendorlist_fetch"`
+}
+
+func (t *GDPRTimeouts) InitTimeout() time.Duration {
+	return time.Duration(t.InitVendorlistFetch) * time.Millisecond
+}
+
+func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
+	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
 }
 
 func (cfg *GDPR) validate() error {
