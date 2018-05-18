@@ -50,7 +50,11 @@
           "cur": "USD",
           "seatbid": [
             {
+<<<<<<< HEAD
               "seat": "somoaudience",
+=======
+              "seat": "openx",
+>>>>>>> c201853... Initial recode of somoaudience adapter
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
                 "impid": "test-imp-id",
