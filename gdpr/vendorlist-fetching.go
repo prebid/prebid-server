@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/vendorlist"
+	"github.com/prebid/prebid-server/config"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -21,12 +22,15 @@ import (
 //
 // Nothing in this file is exported. Public APIs can be found in gdpr.go
 
-func newVendorListFetcher(initContext context.Context, client *http.Client, urlMaker func(uint16) string) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
+func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http.Client, urlMaker func(uint16) string) func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 	// These save and load functions can be used to store & retrieve lists from our cache.
 	save, load := newVendorListCache()
-	populateCache(initContext, client, urlMaker, save)
 
-	saveOneSometimes := newOccasionalSaver()
+	withTimeout, cancel := context.WithTimeout(initCtx, cfg.Timeouts.InitTimeout())
+	defer cancel()
+	populateCache(withTimeout, client, urlMaker, save)
+
+	saveOneSometimes := newOccasionalSaver(cfg.Timeouts.ActiveTimeout())
 
 	return func(ctx context.Context, id uint16) (vendorlist.VendorList, error) {
 		list := load(id)
@@ -65,14 +69,16 @@ func vendorListURLMaker(version uint16) string {
 // The goal here is to update quickly when new versions of the VendorList are released, but not wreck
 // server performance if a bad CMP starts sending us malformed consent strings that advertize a version
 // that doesn't exist yet.
-func newOccasionalSaver() func(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) {
+func newOccasionalSaver(timeout time.Duration) func(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) {
 	lastSaved := &atomic.Value{}
 	lastSaved.Store(time.Time{})
 
 	return func(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) {
 		now := time.Now()
 		if now.Sub(lastSaved.Load().(time.Time)).Minutes() > 10 {
-			saveOne(ctx, client, url, saver)
+			withTimeout, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+			saveOne(withTimeout, client, url, saver)
 			lastSaved.Store(now)
 		}
 	}

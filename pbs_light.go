@@ -47,6 +47,7 @@ import (
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -740,6 +741,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
@@ -747,7 +749,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), metricsEngine, pbsAnalytics))
+	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), gdprPerms, metricsEngine, pbsAnalytics))
 	router.POST("/validate", validate)
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)

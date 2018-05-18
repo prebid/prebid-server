@@ -183,3 +183,10 @@ func assertBoolsEqual(t *testing.T, expected bool, actual bool) {
 		t.Errorf("Expected %t, got %t", expected, actual)
 	}
 }
+
+func assertStringsEqual(t *testing.T, expected string, actual string) {
+	t.Helper()
+	if expected != actual {
+		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}
