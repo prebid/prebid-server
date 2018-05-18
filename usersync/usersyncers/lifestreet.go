@@ -3,8 +3,6 @@ package usersyncers
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewLifestreetSyncer(externalURL string) *syncer {
@@ -12,12 +10,9 @@ func NewLifestreetSyncer(externalURL string) *syncer {
 	usersyncURL := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl="
 
 	return &syncer{
-		familyName:   "lifestreet",
-		gdprVendorID: 67,
-		syncInfo: &usersync.UsersyncInfo{
-			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-			Type:        "redirect",
-			SupportCORS: false,
-		},
+		familyName:          "lifestreet",
+		gdprVendorID:        67,
+		syncEndpointBuilder: constEndpoint(fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri))),
+		syncType:            SyncTypeRedirect,
 	}
 }

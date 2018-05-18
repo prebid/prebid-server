@@ -3,8 +3,6 @@ package usersyncers
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewPubmaticSyncer(externalURL string) *syncer {
@@ -12,12 +10,9 @@ func NewPubmaticSyncer(externalURL string) *syncer {
 	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
 
 	return &syncer{
-		familyName:   "pubmatic",
-		gdprVendorID: 76,
-		syncInfo: &usersync.UsersyncInfo{
-			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectUri)),
-			Type:        "iframe",
-			SupportCORS: false,
-		},
+		familyName:          "pubmatic",
+		gdprVendorID:        76,
+		syncEndpointBuilder: constEndpoint(fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectUri))),
+		syncType:            SyncTypeIframe,
 	}
 }

@@ -37,13 +37,25 @@ func GDPRAwareSyncerIDs(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) 
 }
 
 type syncer struct {
-	familyName   string
-	gdprVendorID uint16
-	syncInfo     *usersync.UsersyncInfo
+	familyName          string
+	gdprVendorID        uint16
+	syncEndpointBuilder func(gdpr string, consent string) string
+	syncType            SyncType
 }
 
+type SyncType string
+
+const (
+	SyncTypeRedirect SyncType = "redirect"
+	SyncTypeIframe   SyncType = "iframe"
+)
+
 func (s *syncer) GetUsersyncInfo(gdpr string, consent string) *usersync.UsersyncInfo {
-	return s.syncInfo
+	return &usersync.UsersyncInfo{
+		URL:         s.syncEndpointBuilder(gdpr, consent),
+		Type:        string(s.syncType),
+		SupportCORS: false,
+	}
 }
 
 func (s *syncer) FamilyName() string {
@@ -52,4 +64,10 @@ func (s *syncer) FamilyName() string {
 
 func (s *syncer) GDPRVendorID() uint16 {
 	return s.gdprVendorID
+}
+
+func constEndpoint(endpoint string) func(gdpr string, consent string) string {
+	return func(gdpr string, consent string) string {
+		return endpoint
+	}
 }
