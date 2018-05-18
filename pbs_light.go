@@ -845,10 +845,6 @@ func serve(cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	// glog.Info(cfg)
-	out, _ := json.Marshal(cfg)
-	fmt.Printf("cfg : \n%s\n", out)
-
 	syncers := usersyncers.NewSyncerMap(cfg)
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)

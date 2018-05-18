@@ -212,7 +212,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return BannerEndpoint
 	}()
 
-	glog.Info(a.URI)
+	// glog.Info(a.URI)
 
 	beachfrontRequests, err := preprocess(request, a.URI)
 	if err != nil {
