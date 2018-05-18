@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/buger/jsonparser"
 
@@ -100,7 +101,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		csResp.BidderStatus[i] = &usersync.CookieSyncBidders{
 			BidderCode:   bidder,
 			NoCookie:     true,
-			UsersyncInfo: deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(),
+			UsersyncInfo: deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent),
 		}
 	}
 
@@ -111,6 +112,13 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(csResp)
+}
+
+func gdprToString(gdpr *int) string {
+	if gdpr == nil {
+		return ""
+	}
+	return strconv.Itoa(*gdpr)
 }
 
 func parseBidders(request []byte) ([]byte, error) {

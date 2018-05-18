@@ -7,7 +7,7 @@ import (
 
 func TestConversantSyncer(t *testing.T) {
 	syncer := NewConversantSyncer("usersync?rurl=", "localhost")
-	info := syncer.GetUsersyncInfo()
+	info := syncer.GetUsersyncInfo("", "")
 
 	if !strings.HasSuffix(info.URL, "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D") {
 		t.Fatalf("bad url suffix. Expected %s got %s", "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D", info.URL)

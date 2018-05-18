@@ -6,7 +6,7 @@ import (
 
 func TestAppNexusSyncer(t *testing.T) {
 	an := NewAppnexusSyncer("localhost")
-	syncInfo := an.GetUsersyncInfo()
+	syncInfo := an.GetUsersyncInfo("", "")
 	if syncInfo.URL != "//ib.adnxs.com/getuid?localhost%2Fsetuid%3Fbidder%3Dadnxs%26uid%3D%24UID" {
 		t.Errorf("should have matched")
 	}

@@ -8,7 +8,7 @@ func TestRubiconSyncer(t *testing.T) {
 	url := "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid"
 
 	syncer := NewRubiconSyncer(url)
-	info := syncer.GetUsersyncInfo()
+	info := syncer.GetUsersyncInfo("", "")
 	if info.URL != url {
 		t.Fatalf("should have matched")
 	}

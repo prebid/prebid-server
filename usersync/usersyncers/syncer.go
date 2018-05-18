@@ -42,7 +42,7 @@ type syncer struct {
 	syncInfo     *usersync.UsersyncInfo
 }
 
-func (s *syncer) GetUsersyncInfo() *usersync.UsersyncInfo {
+func (s *syncer) GetUsersyncInfo(gdpr string, consent string) *usersync.UsersyncInfo {
 	return s.syncInfo
 }
 

@@ -6,7 +6,7 @@ import (
 
 func TestIndexSyncer(t *testing.T) {
 	syncer := NewIndexSyncer("//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
-	info := syncer.GetUsersyncInfo()
+	info := syncer.GetUsersyncInfo("", "")
 	if info.URL != "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=localhost%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D" {
 		t.Fatalf("should have matched")
 	}

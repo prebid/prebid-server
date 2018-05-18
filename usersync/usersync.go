@@ -4,8 +4,11 @@ type Usersyncer interface {
 	// GetUsersyncInfo returns basic info the browser needs in order to run a user sync.
 	// The returned UsersyncInfo object must not be mutated by callers.
 	//
+	// gdpr should be 1 if GDPR is active, 0 if not, and an empty string if we're not sure.
+	// consent should be an empty string or a raw base64 url-encoded IAB Vendor Consent String.
+	//
 	// For more information about user syncs, see http://clearcode.cc/2015/12/cookie-syncing/
-	GetUsersyncInfo() *UsersyncInfo
+	GetUsersyncInfo(gdpr string, consent string) *UsersyncInfo
 	// FamilyName identifies the space of cookies for this usersyncer.
 	// For example, if this Usersyncer syncs with adnxs.com, then this
 	// should return "adnxs".

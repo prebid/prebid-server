@@ -6,7 +6,7 @@ import (
 
 func TestPubmaticSyncer(t *testing.T) {
 	pubmatic := NewPubmaticSyncer("localhost")
-	info := pubmatic.GetUsersyncInfo()
+	info := pubmatic.GetUsersyncInfo("", "")
 	if info.URL != "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect=localhost%2Fsetuid%3Fbidder%3Dpubmatic%26uid%3D" {
 		t.Fatalf("should have matched")
 	}

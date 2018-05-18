@@ -5,7 +5,7 @@ import "testing"
 func TestSovrnSyncer(t *testing.T) {
 
 	syncer := NewSovrnSyncer("external.com", "sovrn-sync.com")
-	info := syncer.GetUsersyncInfo()
+	info := syncer.GetUsersyncInfo("", "")
 	if info.Type != "redirect" {
 		t.Fatalf("should be redirect")
 	}

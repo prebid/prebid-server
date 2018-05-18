@@ -7,7 +7,7 @@ import (
 
 func TestAdtelligentSyncer(t *testing.T) {
 	an := NewAdtelligentSyncer("localhost")
-	syncInfo := an.GetUsersyncInfo()
+	syncInfo := an.GetUsersyncInfo("", "")
 
 	csyncPath := "csync?t=p&ep=0&redir=localhost%2Fsetuid%3Fbidder%3Dadtelligent%26uid%3D%7Buid%7D"
 	if !strings.Contains(syncInfo.URL, csyncPath) {
