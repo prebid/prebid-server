@@ -94,7 +94,6 @@ func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permiss
 				// rather quickly, meaning that most of these will be malformed strings.
 				return true, http.StatusBadRequest, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon."
 			}
-			return true, http.StatusOK, "Unable to interpret consent string. No cookies will be saved"
 		} else if !allowed {
 			return true, http.StatusOK, "The gdpr_consent string prevents cookies from being saved"
 		} else {
