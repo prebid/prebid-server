@@ -82,11 +82,11 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
 	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids="+strings.Join(requestIDs, ",")+"&imp-ids="+strings.Join(impIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]&imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
 	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids="+strings.Join(requestIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]", nil)
 	} else {
-		return http.NewRequest("GET", endpoint+"imp-ids="+strings.Join(impIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
 	}
 }
 
