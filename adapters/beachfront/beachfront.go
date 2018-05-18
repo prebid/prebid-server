@@ -2,6 +2,7 @@ package beachfront
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -11,7 +12,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"errors"
 )
 
 const Seat = "beachfront"
@@ -19,7 +19,8 @@ const TestID = "test_id"
 const BidCapacity = 5
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
-const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "http://mnm0n.beachrtb.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
@@ -90,8 +91,8 @@ type BeachfrontAdapter struct {
 }
 
 type BeachfrontRequests struct {
-	Banner    BeachfrontBannerRequest
-	Video     BeachfrontVideoRequest
+	Banner BeachfrontBannerRequest
+	Video  BeachfrontVideoRequest
 }
 
 // ---------------------------------------------------
@@ -408,7 +409,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	beachfrontVideoReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontVideoReq.Site.Page = req.Site.Page
 
-	return beachfrontVideoReq,  nil
+	return beachfrontVideoReq, nil
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
