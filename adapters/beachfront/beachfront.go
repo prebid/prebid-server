@@ -19,8 +19,7 @@ const TestID = "test_id"
 const BidCapacity = 5
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
-// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
-const VideoEndpoint = "http://mnm0n.beachrtb.com/bid.json?exchange_id="
+const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
