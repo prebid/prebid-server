@@ -47,6 +47,7 @@ import (
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -740,6 +741,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, nil, theClient) // TODO: replace `nil` here on mege conflict
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
@@ -772,7 +774,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)
-	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, nil, pbsAnalytics, metricsEngine)) // TODO: Don't let this be nil in the merge
+	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 
