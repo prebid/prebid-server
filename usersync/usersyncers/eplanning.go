@@ -1,16 +1,15 @@
 package usersyncers
 
 import (
-	"fmt"
 	"net/url"
 )
 
 func NewEPlanningSyncer(usersyncURL string, externalURL string) *syncer {
-	redirectUri := fmt.Sprintf("%s/setuid?bidder=eplanning&uid=$UID", externalURL)
+	redirectURI := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Deplanning%26uid%3D%24UID"
 
 	return &syncer{
 		familyName:          "eplanning",
-		syncEndpointBuilder: constEndpoint(fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectUri))),
+		syncEndpointBuilder: constEndpoint(usersyncURL + redirectURI),
 		syncType:            SyncTypeRedirect,
 	}
 }

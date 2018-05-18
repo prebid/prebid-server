@@ -1,17 +1,16 @@
 package usersyncers
 
 import (
-	"fmt"
 	"net/url"
 )
 
 func NewSovrnSyncer(externalURL string, usersyncURL string) *syncer {
-	redirectURI := fmt.Sprintf("%s/setuid?bidder=sovrn&uid=$UID", externalURL)
+	redirectURI := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dsovrn%26uid%3D%24UID"
 
 	return &syncer{
 		familyName:          "sovrn",
 		gdprVendorID:        13,
-		syncEndpointBuilder: constEndpoint(fmt.Sprintf("%sredir=%s", usersyncURL, url.QueryEscape(redirectURI))),
+		syncEndpointBuilder: constEndpoint(usersyncURL + "redir=" + redirectURI),
 		syncType:            SyncTypeRedirect,
 	}
 }
