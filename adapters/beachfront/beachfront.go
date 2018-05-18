@@ -203,14 +203,14 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	a.URI = ""
 
-	a.URI = func(u string) string {
+	a.URI = func() string {
 		for i := range request.Imp {
 			if request.Imp[i].Video != nil {
 				return VideoEndpoint
 			}
 		}
 		return BannerEndpoint
-	}(a.URI)
+	}()
 
 	glog.Info(a.URI)
 
