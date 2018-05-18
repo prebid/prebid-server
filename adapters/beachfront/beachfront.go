@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"errors"
-	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
