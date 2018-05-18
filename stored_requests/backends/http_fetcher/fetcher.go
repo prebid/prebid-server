@@ -19,7 +19,7 @@ import (
 //
 // This file expects the endpoint to satisfy the following API:
 //
-// GET {endpoint}?request-ids=req1,req2&imp-ids=imp1,imp2,imp3
+// GET {endpoint}?request-ids=["req1","req2"]&imp-ids=["imp1","imp2","imp3"]
 //
 // This endpoint should return a payload like:
 //
