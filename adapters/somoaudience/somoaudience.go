@@ -1,203 +1,180 @@
 package somoaudience
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const uri = "http://publisher-east.mobileadtrading.com/rtb/bid"
+
 type SomoaudienceAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
 }
 
-/* Name - export adapter name */
-func (a *SomoaudienceAdapter) Name() string {
-	return "Somoaudience"
-}
+func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 
-// used for cookies and such
-func (a *SomoaudienceAdapter) FamilyName() string {
-	return "somoaudience"
-}
+	totalImps := len(request.Imp)
+	errors := make([]error, 0, totalImps)
+	imp2placement := make(map[string][]int)
 
-func (a *SomoaudienceAdapter) SkipNoCookies() bool {
-	return false
-}
+	for i := 0; i < totalImps; i++ {
 
-// parameters for Somoaudience adapter.
-type somoaudienceParams struct {
-	PlacementHash string `json:"placement_hash"`
-}
+		placementHash, err := validateImpression(&request.Imp[i])
 
-func (a *SomoaudienceAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer, placementhash string) (result adapters.CallOneResult, err error) {
-	httpReq, err := http.NewRequest("POST", a.URI+placementhash, &reqJSON)
-	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
-	httpReq.Header.Add("Accept", "application/json")
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
 
-	lsmResp, e := ctxhttp.Do(ctx, a.http.Client, httpReq)
-	if e != nil {
-		err = e
-		return
+		if _, ok := imp2placement[placementHash]; !ok {
+			imp2placement[placementHash] = make([]int, 0, totalImps-i)
+		}
+
+		imp2placement[placementHash] = append(imp2placement[placementHash], i)
+
 	}
 
-	defer lsmResp.Body.Close()
-	body, _ := ioutil.ReadAll(lsmResp.Body)
-	result.ResponseBody = string(body)
-
-	result.StatusCode = lsmResp.StatusCode
-
-	if lsmResp.StatusCode == 204 {
-		return
+	totalReqs := len(imp2placement)
+	if 0 == totalReqs {
+		return nil, errors
 	}
 
-	if lsmResp.StatusCode != 200 {
-		err = fmt.Errorf("HTTP status %d; body: %s", lsmResp.StatusCode, result.ResponseBody)
-		return
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	reqs := make([]*adapters.RequestData, 0, totalReqs)
+
+	imps := request.Imp
+	request.Imp = make([]openrtb.Imp, 0, len(imps))
+
+	for placementHash, impIds := range imp2placement {
+		request.Imp = request.Imp[:0]
+
+		for i := 0; i < len(impIds); i++ {
+			request.Imp = append(request.Imp, imps[impIds[i]])
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error while encoding bidRequest, err: %s", err))
+			return nil, errors
+		}
+
+		reqs = append(reqs, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     uri + fmt.Sprintf("?s=%s", placementHash),
+			Body:    body,
+			Headers: headers,
+		})
+	}
+
+	if 0 == len(reqs) {
+		return nil, errors
+	}
+
+	return reqs, errors
+
+}
+
+func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&adapters.BadInputError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &sb.Bid[i],
+				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, bidReq.Imp),
+			})
+		}
+	}
+
+	return bidResponse, nil
+}
+
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impId {
+			if imp.Banner != nil {
+				mediaType = openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+			} else if imp.Audio != nil {
+				mediaType = openrtb_ext.BidTypeAudio
+			} else {
+				mediaType = openrtb_ext.BidTypeBanner
+			}
+			if imp.Banner != nil && imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeBanner
+			}
+			return mediaType
+		}
+	}
+	return mediaType
+}
+
+func validateImpression(imp *openrtb.Imp) (string, error) {
+
+	if imp.Audio != nil {
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, Somoaudience doesn't support Audio", imp.ID),
+		}
+	}
+
+	if 0 == len(imp.Ext) {
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
+		}
+	}
+
+	var bidderExt adapters.ExtImpBidder
+
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
+	}
+
+	impExt := openrtb_ext.ExtImpSomoaudience{}
+	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return
+		return "", &adapters.BadInputError{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
+		}
 	}
-	if len(bidResp.SeatBid) == 0 || len(bidResp.SeatBid[0].Bid) == 0 {
-		return
-	}
-	bid := bidResp.SeatBid[0].Bid[0]
 
-	result.Bid = &pbs.PBSBid{
-		AdUnitCode:  bid.ImpID,
-		Price:       bid.Price,
-		Adm:         bid.AdM,
-		Creative_id: bid.CrID,
-		Width:       bid.W,
-		Height:      bid.H,
-		DealId:      bid.DealID,
-		NURL:        bid.NURL,
-	}
-	return
+	return impExt.PlacementHash, nil
 }
 
-func (a *SomoaudienceAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, mtype pbs.MediaType, unitInd int) (openrtb.BidRequest, error) {
-	lsReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
-
-	if err != nil {
-		return openrtb.BidRequest{}, err
-	}
-
-	if lsReq.Imp != nil && len(lsReq.Imp) > 0 {
-		lsReq.Imp = lsReq.Imp[unitInd : unitInd+1]
-
-		if lsReq.Imp[0].Banner != nil {
-			lsReq.Imp[0].Banner.Format = nil
-		}
-
-		return lsReq, nil
-	} else {
-		return lsReq, errors.New("No supported impressions")
-	}
-}
-
-func (a *SomoaudienceAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	requests := make([]bytes.Buffer, len(bidder.AdUnits)*2)
-	reqIndex := 0
-	for i, unit := range bidder.AdUnits {
-		var params somoaudienceParams
-		err := json.Unmarshal(unit.Params, &params)
-		if err != nil {
-			return nil, err
-		}
-
-		// BANNER
-		lsReqB, err := a.MakeOpenRtbBidRequest(req, bidder, pbs.MEDIA_TYPE_BANNER, i)
-		if err == nil {
-			err = json.NewEncoder(&requests[reqIndex]).Encode(lsReqB)
-			reqIndex = reqIndex + 1
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// VIDEO
-		lsReqV, err := a.MakeOpenRtbBidRequest(req, bidder, pbs.MEDIA_TYPE_VIDEO, i)
-		if err == nil {
-			err = json.NewEncoder(&requests[reqIndex]).Encode(lsReqV)
-			reqIndex = reqIndex + 1
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	ch := make(chan adapters.CallOneResult)
-	for i, _ := range bidder.AdUnits {
-		var params somoaudienceParams
-
-		if params.PlacementHash == "" {
-			return nil, errors.New("Missing placement hash param")
-		}
-
-		if len(params.PlacementHash) != 32 {
-			return nil, fmt.Errorf("Invalid placement hash param '%s'", params.PlacementHash)
-		}
-
-		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
-			result, err := a.callOne(ctx, req, reqJSON, params.PlacementHash)
-			result.Error = err
-			if result.Bid != nil {
-				result.Bid.BidderCode = bidder.BidderCode
-				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
-				if result.Bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
-					result.Bid = nil
-				}
-			}
-			ch <- result
-		}(bidder, requests[i])
-	}
-
-	var err error
-
-	bids := make(pbs.PBSBidSlice, 0)
-	for i := 0; i < len(bidder.AdUnits); i++ {
-		result := <-ch
-		if result.Bid != nil {
-			bids = append(bids, result.Bid)
-		}
-		if req.IsDebug {
-			debug := &pbs.BidderDebug{
-				RequestURI:   a.URI,
-				RequestBody:  requests[i].String(),
-				StatusCode:   result.StatusCode,
-				ResponseBody: result.ResponseBody,
-			}
-			bidder.Debug = append(bidder.Debug, debug)
-		}
-		if result.Error != nil {
-			err = result.Error
-		}
-	}
-
-	if len(bids) == 0 {
-		return nil, err
-	}
-	return bids, nil
-}
-
-func NewSomoaudienceAdapter(config *adapters.HTTPAdapterConfig) *SomoaudienceAdapter {
-	a := adapters.NewHTTPAdapter(config)
-	return &SomoaudienceAdapter{
-		http: a,
-		URI:  "https://publisher-east.somoaudience.com/rtb/bid?s=",
-	}
+func NewSomoaudienceBidder() *SomoaudienceAdapter {
+	return &SomoaudienceAdapter{}
 }
