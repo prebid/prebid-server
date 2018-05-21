@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-native-request",
+    "imp": [
+      {
+        "id": "unsupported-native-imp",
+        "native": {
+          "ver": "1.1"
+        },
+        "ext": {
+          "oath": {
+            "publisherId" : "1234",
+            "publisherName": "cafemom",
+            "headerbidding": true
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "Oath only supports banner and video imps. Ignoring imp id=unsupported-native-imp",
+    "No valid impression in the bid request"
+  ]
+}

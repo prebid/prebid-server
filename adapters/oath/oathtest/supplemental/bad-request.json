@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banners": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "oath": {
+            "publisherId" : "1234",
+            "publisherName": "cafemom",
+            "headerbidding": true
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    "Oath only supports banner and video imps. Ignoring imp id=test-imp-id",
+    "No valid impression in the bid request"
+  ]
+}

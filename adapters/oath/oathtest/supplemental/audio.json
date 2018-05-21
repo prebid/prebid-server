@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "oath": {
+            "publisherId" : "1234",
+            "publisherName": "cafemom",
+            "headerbidding": true
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "Oath only supports banner and video imps. Ignoring imp id=unsupported-audio-imp",
+    "No valid impression in the bid request"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Oath Adapter Params",
+  "description": "A schema which validates params accepted by the Oath adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher ID to use."
+    },
+      "publisherName": {
+        "type": "string",
+        "description": "Publisher Name to use."
+    },
+      "headerbidding" :{
+        "type" :"boolean",
+        "description" : "Supporting header bidding or not."
+    }
+  },
+  "required": ["publisherName"]
+}
