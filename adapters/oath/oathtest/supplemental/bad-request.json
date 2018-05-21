@@ -4,7 +4,7 @@
     "imp": [
       {
         "id": "test-imp-id",
-        "Invalidbanner": {
+        "invalidbanner": {
           "format": [
             {
               "w": 300,

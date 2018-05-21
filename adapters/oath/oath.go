@@ -3,15 +3,14 @@ package oath
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
-
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
 	"strconv"
 )
 
+//bid URL
 const uri = "http://east-bid.ybp.yahoo.com/bid/appnexuspbs"
 
 type OathAdapter struct {
@@ -34,7 +33,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	var videoImps []openrtb.Imp
 
 	for _, imp := range request.Imp {
-
+		//Oath supports only banner and video impressions as of now
 		if imp.Banner != nil {
 			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
@@ -112,12 +111,6 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	}}, errors
 }
 
-func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
-	if len(headerValue) > 0 {
-		headers.Add(headerName, headerValue)
-	}
-}
-
 func (a *OathAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
@@ -151,6 +144,13 @@ func (a *OathAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 		}
 	}
 	return bidResponse, nil
+}
+
+//Adding header fields to request header
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
+	if len(headerValue) > 0 {
+		headers.Add(headerName, headerValue)
+	}
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
