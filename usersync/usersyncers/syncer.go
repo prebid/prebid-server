@@ -86,9 +86,3 @@ func resolveMacros(template string) func(gdpr string, consent string) string {
 		return replacer.Replace(template)
 	}
 }
-
-func constEndpoint(endpoint string) func(gdpr string, consent string) string {
-	return func(gdpr string, consent string) string {
-		return endpoint
-	}
-}
