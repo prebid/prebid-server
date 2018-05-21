@@ -11,6 +11,7 @@ import (
 )
 
 //bid URL
+
 const uri = "http://east-bid.ybp.yahoo.com/bid/appnexuspbs"
 
 type OathAdapter struct {
@@ -55,7 +56,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	}
 
 	reqJSON, err := json.Marshal(request)
-	if err != nil {
+	if err != nil  {
 		errs = append(errs, err)
 		return nil, errs
 	}

@@ -4,7 +4,6 @@
   "description": "A schema which validates params accepted by the Oath adapter",
   "type": "object",
   "properties": {
-
       "publisherName": {
         "type": "string",
         "description": "Publisher Name to use."

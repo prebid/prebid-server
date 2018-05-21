@@ -36,7 +36,13 @@
               },
               "ext": {
                 "bidder": {
+<<<<<<< HEAD
                   "publisherName": "cafemom"
+=======
+                  "publisherId" : "1234",
+                  "publisherName": "cafemom",
+                  "headerbidding": true
+>>>>>>> [Issue-518]Oath's Prebid Server adapter
                 }
               }
             }
