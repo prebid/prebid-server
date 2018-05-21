@@ -528,7 +528,7 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 	var xtrnal BeachfrontVideoRequest
 	var err error
 
-	if err = json.Unmarshal(externalRequest, &xtrnal); err != nil {
+	if err = json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
 		return openrtbResp, err
 	}
 
