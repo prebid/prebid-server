@@ -81,9 +81,6 @@ func hasPermissions(consent vendorconsent.VendorConsents, vendorList vendorlist.
 	if vendor == nil {
 		return false
 	}
-	if vendor.LegitimateInterest(purpose) {
-		return true
-	}
 
 	// If the host declared writing cookies to be a "normal" purpose, only do the sync if the user consented to it.
 	if vendor.Purpose(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID) {
