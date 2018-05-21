@@ -4,7 +4,7 @@ func NewIndexSyncer(userSyncURL string) *syncer {
 	return &syncer{
 		familyName:          "indexExchange",
 		gdprVendorID:        10,
-		syncEndpointBuilder: constEndpoint(userSyncURL),
+		syncEndpointBuilder: resolveMacros(userSyncURL),
 		syncType:            SyncTypeRedirect,
 	}
 }
