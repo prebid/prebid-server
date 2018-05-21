@@ -3,8 +3,8 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
-        "Invalidbanner": {
+        "id": "test-missing-req-param-id",
+        "banner": {
           "format": [
             {
               "w": 300,
@@ -18,14 +18,14 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisherName":""
           }
         }
+
       }
     ]
   },
   "expectedMakeRequestsErrors": [
-    "Oath only supports banner and video imps. Ignoring imp id=test-imp-id",
-    "No valid impression in the bid request"
+    "publisherName is empty"
   ]
 }

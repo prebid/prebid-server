@@ -39,23 +39,16 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"publisherId": "123", "publisherName": "foo.bar"}`,
-	`{"publisherName": "abc", "headerbidding": false}`,
-	`{"publisherId": "xxx", "publisherName": "xyz123", "headerbidding": true}`,
-	`{"publisherId": "abc123", "publisherName": "testname", "headerbidding": false}`,
 	`{"publisherName": "testpublisher"}`,
+	`{"publisherName": "123"}`,
+	`{"publisherName": "cafemedia"}`,
+	`{"publisherName": "test", "headerbidding": false}`,
 }
 
 var invalidParams = []string{
-	`{"publisherId": "123"}`,
 	`{"publisherName": 100}`,
-	`{"publisherId": "123", "headerbidding": false}`,
-	`{"publisherId": "123", "publisherName": true}`,
-	`{"publisherId": 111, "publisherName": "foo.bar"}`,
-	`{"publisherName": 123, "headerbidding": true}`,
-	`{"publisherName": "test", "headerbidding": "false"}`,
-	`{"publisherName": "test", "publisherId": false}`,
-	`{"publisherId": "123", "publisherName": 1, "headerbidding": true}`,
-	`{"publisherId": 123, "publisherName": "foo.bar", "headerbidding": false}`,
-	`{"publisherId": "123", "publisherName": "foo.bar", "headerbidding": "true"}`,
+	`{"headerbidding": false}`,
+	`{"publisherName": true}`,
+	`{"publisherId": 123, "headerbidding": true}`,
+	`{"publisherID": "1"}`,
 }

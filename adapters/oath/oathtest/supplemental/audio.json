@@ -8,10 +8,8 @@
           "mimes": ["video/mp4"]
         },
         "ext": {
-          "oath": {
-            "publisherId" : "1234",
-            "publisherName": "cafemom",
-            "headerbidding": true
+          "bidder": {
+            "publisherName": "cafemom"
           }
         }
       }

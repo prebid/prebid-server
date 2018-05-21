@@ -18,9 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "2323",
-            "publisherName": "cafemom",
-            "headerbidding": true
+            "publisherName": "cafemom"
           }
         }
       },
@@ -32,9 +30,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherId" : "2323",
-            "publisherName": "cafemom",
-            "headerbidding": true
+            "publisherName": "cafemom"
           }
         }
       },
@@ -48,9 +44,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherId": "2323",
-            "publisherName": "cafemom",
-            "headerbidding": true
+            "publisherName": "cafemom"
           }
         }
       }
@@ -79,9 +73,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherId" : "2323",
-                  "publisherName": "cafemom",
-                  "headerbidding": true
+                  "publisherName": "cafemom"
                 }
               }
             },
@@ -93,9 +85,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherId" : "2323",
-                  "publisherName": "cafemom",
-                  "headerbidding": true
+                  "publisherName": "cafemom"
                 }
               }
             },
@@ -109,9 +99,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherId": "2323",
-                  "publisherName": "cafemom",
-                  "headerbidding": true
+                  "publisherName": "cafemom"
                 }
               }
             }

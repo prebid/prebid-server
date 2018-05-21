@@ -23,6 +23,10 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	errs := make([]error, 0, len(request.Imp))
 
 	if len(request.Imp) == 0 {
+		err := &adapters.BadInputError{
+			Message: fmt.Sprintf("No impression in the bid request"),
+		}
+		errs = append(errs, err)
 		return nil, errs
 	}
 
@@ -43,20 +47,16 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		}
 	}
 
-	var validImpExists bool
-	validImpExists = false
 	if len(bannerImps) <= 0 && len(videoImps) <= 0 {
 		err := &adapters.BadInputError{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
 		}
 		errs = append(errs, err)
 		return nil, errs
-	} else {
-		validImpExists = true
 	}
 
 	reqJSON, err := json.Marshal(request)
-	if err != nil && !validImpExists {
+	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
@@ -66,6 +66,9 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	err = json.Unmarshal(request.Imp[0].Ext, &bidderExt)
 
 	if err != nil {
+		err = &adapters.BadInputError{
+			Message: fmt.Sprintf("ext.bidder not provided"),
+		}
 		errors = append(errors, err)
 		return nil, errors
 	}
@@ -73,13 +76,22 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	var oathExt openrtb_ext.ExtImpOath
 	err = json.Unmarshal(bidderExt.Bidder, &oathExt)
 	if err != nil {
+		err = &adapters.BadInputError{
+			Message: fmt.Sprintf("ext.bidder.publisherName not provided"),
+		}
 		errors = append(errors, err)
 		return nil, errors
 	}
 
-	pubName := oathExt.PublisherName
+	if oathExt.PublisherName == "" {
+		err = &adapters.BadInputError{
+			Message: "publisherName is empty",
+		}
+		errors = append(errors, err)
+		return nil, errors
+	}
 	thisURI := uri
-	thisURI = thisURI + "?publisher=" + pubName
+	thisURI = thisURI + "?publisher=" + oathExt.PublisherName
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -114,12 +126,12 @@ func (a *OathAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 
 	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{&adapters.BadInputError{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. ", response.StatusCode)}
 	}
 
 	var bidResp openrtb.BidResponse
@@ -156,10 +168,6 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	}
 	return mediaType
 }
-
-//func NewOathAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *OathAdapter {
-//	return NewOathBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
-//}
 
 func NewOathBidder(client *http.Client, endpoint string) *OathAdapter {
 	a := &adapters.HTTPAdapter{Client: client}

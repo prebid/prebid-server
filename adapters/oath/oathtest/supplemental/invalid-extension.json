@@ -3,8 +3,8 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-id",
-        "Invalidbanner": {
+        "id": "test-invalid-ext-id",
+        "banner": {
           "format": [
             {
               "w": 300,
@@ -17,15 +17,12 @@
           ]
         },
         "ext": {
-          "bidder": {
-            "publisherName": "cafemom"
-          }
         }
+
       }
     ]
   },
   "expectedMakeRequestsErrors": [
-    "Oath only supports banner and video imps. Ignoring imp id=test-imp-id",
-    "No valid impression in the bid request"
+       "ext.bidder.publisherName not provided"
   ]
 }
