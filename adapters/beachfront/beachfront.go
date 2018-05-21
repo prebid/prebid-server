@@ -13,7 +13,6 @@ import (
 	"regexp"
 	"strings"
 	"github.com/golang/glog"
-	"golang.org/x/tools/go/gcimporter15/testdata"
 )
 
 const Seat = "beachfront"
