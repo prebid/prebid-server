@@ -12,7 +12,7 @@ func NewSomoaudienceSyncer(externalURL string) *syncer {
 	externalURL = strings.TrimRight(externalURL, "/")
 	redirectURL := fmt.Sprintf("%s/setuid?bidder=somoaudience&uid=${UID}", externalURL)
 
-	usersyncURL := "//publisher-east.mobileadtrading.com/usersync?ru="
+	usersyncURL := "//publisher-east.mobileadtrading.com/usersync?gdprg=1&ru="
 
 	return &syncer{
 		familyName: "somoaudience",
