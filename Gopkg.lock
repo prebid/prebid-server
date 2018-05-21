@@ -149,8 +149,8 @@
     "vendorconsent",
     "vendorlist"
   ]
-  revision = "720d28ad53f481a2bf82e96835b3f37df3117033"
-  version = "v0.3.0"
+  revision = "f151e207809d9fd971abe48f3e3b9290ecae3962"
+  version = "v0.3.1"
 
 [[projects]]
   name = "github.com/rcrowley/go-metrics"
