@@ -59,22 +59,6 @@ func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) 
 	}
 }
 
-// Verify we do not set winning bid keys if includewinners is set false
-func TestExcludeWinners(t *testing.T) {
-	bids := runTargetingAuction(t, mockBids, false, false, true, false)
-
-	// Make sure that the cache keys exist on the bids where they're expected to
-	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbpbConstantKey), false)
-	assertKeyExists(t, bids["winning-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), true)
-
-	assertKeyExists(t, bids["contending-bid"], string(openrtb_ext.HbpbConstantKey), false)
-	assertKeyExists(t, bids["contending-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderRubicon, maxKeyLength), true)
-
-	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbpbConstantKey), false)
-	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbpbConstantKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
-
-}
-
 // runAuction takes a bunch of mock bids by Bidder and runs an auction. It returns a map of Bids indexed by their ImpID.
 // If includeCache is true, the auction will be run with cacheing as well, so the cache targeting keys should exist.
 func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool, includeWinners bool, includeBidderKeys bool, isApp bool) map[string]*openrtb.Bid {
