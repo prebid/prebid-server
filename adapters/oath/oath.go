@@ -11,7 +11,6 @@ import (
 )
 
 //bid URL
-
 const uri = "http://east-bid.ybp.yahoo.com/bid/appnexuspbs"
 
 type OathAdapter struct {
