@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"github.com/golang/glog"
+	"golang.org/x/tools/go/gcimporter15/testdata"
 )
 
 const Seat = "beachfront"
@@ -232,10 +233,12 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
-	glog.Info("Headers received by the prebid-server with the beachfront request :\n", a.http.Client.Jar.Cookies())
+	glog.Info("Headers received by the prebid-server with the beachfront request :\n", )
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
