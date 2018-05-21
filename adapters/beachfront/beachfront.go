@@ -232,6 +232,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
+	glog.Info("Headers received by the prebid-server with the beachfront request :\n", a.http.Client.Jar.Cookies())
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
