@@ -12,10 +12,7 @@ func TestConversantSyncer(t *testing.T) {
 	if !strings.HasSuffix(info.URL, "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D") {
 		t.Fatalf("bad url suffix. Expected %s got %s", "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D", info.URL)
 	}
-
-	if info.Type != "redirect" {
-		t.Fatalf("user sync type should be redirect: %s", info.Type)
-	}
+	assertStringsMatch(t, "redirect", info.Type)
 
 	if info.SupportCORS != false {
 		t.Fatalf("user sync should not support CORS")

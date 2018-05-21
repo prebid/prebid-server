@@ -9,19 +9,13 @@ func TestRubiconSyncer(t *testing.T) {
 
 	syncer := NewRubiconSyncer(url)
 	info := syncer.GetUsersyncInfo("", "")
-	if info.URL != url {
-		t.Fatalf("should have matched")
-	}
-	if info.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
+
+	assertStringsMatch(t, url, info.URL)
+	assertStringsMatch(t, "redirect", info.Type)
 	if info.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
-
-	if syncer.FamilyName() != "rubicon" {
-		t.Errorf("FamilyName '%s' != 'rubicon'", syncer.FamilyName())
-	}
+	assertStringsMatch(t, "rubicon", syncer.FamilyName())
 	if syncer.GDPRVendorID() != 52 {
 		t.Errorf("Wrong Rubicon GDPR VendorID. Got %d", syncer.GDPRVendorID())
 	}

@@ -6,9 +6,7 @@ func TestSovrnSyncer(t *testing.T) {
 
 	syncer := NewSovrnSyncer("external.com", "sovrn-sync.com")
 	info := syncer.GetUsersyncInfo("", "")
-	if info.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
+	assertStringsMatch(t, "redirect", info.Type)
 	if info.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}

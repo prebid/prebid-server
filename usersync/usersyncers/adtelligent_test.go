@@ -13,9 +13,7 @@ func TestAdtelligentSyncer(t *testing.T) {
 	if !strings.Contains(syncInfo.URL, csyncPath) {
 		t.Fatalf("bad url suffix. Expected %s got %s", csyncPath, syncInfo.URL)
 	}
-	if syncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
+	assertStringsMatch(t, "redirect", syncInfo.Type)
 	if syncInfo.SupportCORS != false {
 		t.Fatalf("should have been false")
 	}
