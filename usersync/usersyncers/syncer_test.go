@@ -37,3 +37,10 @@ func TestVendorIDUniqueness(t *testing.T) {
 		idMap[id] = name
 	}
 }
+
+func assertStringsMatch(t *testing.T, expected string, actual string) {
+	t.Helper()
+	if expected != actual {
+		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}

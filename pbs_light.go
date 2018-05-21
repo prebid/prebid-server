@@ -225,7 +225,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = syncer.GetUsersyncInfo()
+					bidder.UsersyncInfo = syncer.GetUsersyncInfo(pbs_req.ParseGDPR(), pbs_req.ParseConsent())
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
 						continue
@@ -638,7 +638,7 @@ func init() {
 	viper.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
 	viper.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
 	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	viper.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")

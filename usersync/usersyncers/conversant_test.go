@@ -1,21 +1,16 @@
 package usersyncers
 
 import (
-	"strings"
 	"testing"
 )
 
 func TestConversantSyncer(t *testing.T) {
 	syncer := NewConversantSyncer("usersync?rurl=", "localhost")
-	info := syncer.GetUsersyncInfo()
+	info := syncer.GetUsersyncInfo("0", "")
 
-	if !strings.HasSuffix(info.URL, "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D") {
-		t.Fatalf("bad url suffix. Expected %s got %s", "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D", info.URL)
-	}
-
-	if info.Type != "redirect" {
-		t.Fatalf("user sync type should be redirect: %s", info.Type)
-	}
+	uri := "usersync?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D0%26gdpr_consent%3D%26uid%3D"
+	assertStringsMatch(t, uri, info.URL)
+	assertStringsMatch(t, "redirect", info.Type)
 
 	if info.SupportCORS != false {
 		t.Fatalf("user sync should not support CORS")

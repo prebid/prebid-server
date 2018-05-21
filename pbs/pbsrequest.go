@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
+
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
@@ -371,4 +373,31 @@ func (req PBSRequest) Elapsed() int {
 func (p PBSRequest) String() string {
 	b, _ := json.MarshalIndent(p, "", "    ")
 	return string(b)
+}
+
+// parses the "Regs.ext.gdpr" from the request, if it exists. Otherwise returns an empty string.
+func (req *PBSRequest) ParseGDPR() string {
+	if req == nil || req.Regs == nil {
+		return ""
+	}
+	return parseString(req.Regs.Ext, "gdpr")
+}
+
+// parses the "User.ext.consent" from the request, if it exists. Otherwise returns an empty string.
+func (req *PBSRequest) ParseConsent() string {
+	if req == nil || req.User == nil {
+		return ""
+	}
+	return parseString(req.User.Ext, "consent")
+}
+
+func parseString(data []byte, key string) string {
+	if len(data) == 0 {
+		return ""
+	}
+	val, err := jsonparser.GetString(data, key)
+	if err != nil {
+		return ""
+	}
+	return val
 }

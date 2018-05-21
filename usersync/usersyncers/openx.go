@@ -1,24 +1,18 @@
 package usersyncers
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
-
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewOpenxSyncer(externalURL string) *syncer {
 	externalURL = strings.TrimRight(externalURL, "/")
-	redirectURL := fmt.Sprintf("%s/setuid?bidder=openx&uid=${UID}", externalURL)
+	redirectURL := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dopenx%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24%7BUID%7D"
 
 	return &syncer{
-		familyName:   "openx",
-		gdprVendorID: 69,
-		syncInfo: &usersync.UsersyncInfo{
-			URL:         fmt.Sprintf("https://rtb.openx.net/sync/prebid?r=%s", url.QueryEscape(redirectURL)),
-			Type:        "redirect",
-			SupportCORS: false,
-		},
+		familyName:          "openx",
+		gdprVendorID:        69,
+		syncEndpointBuilder: resolveMacros("https://rtb.openx.net/sync/prebid?r=" + redirectURL),
+		syncType:            SyncTypeRedirect,
 	}
 }

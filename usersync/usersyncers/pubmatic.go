@@ -1,23 +1,17 @@
 package usersyncers
 
 import (
-	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewPubmaticSyncer(externalURL string) *syncer {
-	redirectUri := fmt.Sprintf("%s/setuid?bidder=pubmatic&uid=", externalURL)
+	redirectURI := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dpubmatic%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D"
 	usersyncURL := "//ads.pubmatic.com/AdServer/js/user_sync.html?predirect="
 
 	return &syncer{
-		familyName:   "pubmatic",
-		gdprVendorID: 76,
-		syncInfo: &usersync.UsersyncInfo{
-			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectUri)),
-			Type:        "iframe",
-			SupportCORS: false,
-		},
+		familyName:          "pubmatic",
+		gdprVendorID:        76,
+		syncEndpointBuilder: resolveMacros(usersyncURL + redirectURI),
+		syncType:            SyncTypeIframe,
 	}
 }

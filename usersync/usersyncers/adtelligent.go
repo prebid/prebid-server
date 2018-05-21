@@ -1,23 +1,16 @@
 package usersyncers
 
 import (
-	"fmt"
 	"net/url"
-
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewAdtelligentSyncer(externalURL string) *syncer {
-
-	redirectURI := fmt.Sprintf("%s/setuid?bidder=adtelligent&uid={uid}", externalURL)
+	redirectURI := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%7Buid%7D"
 	usersyncURL := "//sync.adtelligent.com/csync?t=p&ep=0&redir="
 
 	return &syncer{
-		familyName: "adtelligent",
-		syncInfo: &usersync.UsersyncInfo{
-			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectURI)),
-			Type:        "redirect",
-			SupportCORS: false,
-		},
+		familyName:          "adtelligent",
+		syncEndpointBuilder: resolveMacros(usersyncURL + redirectURI),
+		syncType:            SyncTypeRedirect,
 	}
 }
