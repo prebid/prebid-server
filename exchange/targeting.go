@@ -17,9 +17,10 @@ const maxKeyLength = 20
 // All functions on this struct are all nil-safe.
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
-	priceGranularity openrtb_ext.PriceGranularity
-	includeWinners   bool
-	includeCache     bool
+	priceGranularity  openrtb_ext.PriceGranularity
+	includeWinners    bool
+	includeBidderKeys bool
+	includeCache      bool
 }
 
 // setTargeting writes all the targeting params into the bids.
@@ -65,7 +66,9 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool) {
 }
 
 func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool) {
-	keys[key.BidderKey(bidderName, maxKeyLength)] = value
+	if targData.includeBidderKeys {
+		keys[key.BidderKey(bidderName, maxKeyLength)] = value
+	}
 	if targData.includeWinners && overallWinner {
 		keys[string(key)] = value
 	}
