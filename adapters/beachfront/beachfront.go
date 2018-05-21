@@ -471,6 +471,8 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 	var openrtbResp openrtb.BidResponse
 	var err error
 
+	glog.Info("headers sent with request to beachfront : \n", externalRequest.Headers)
+
 	if isVideo {
 		// Regular video ad. Beachfront returns video ads in openRTB format.
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
@@ -526,14 +528,14 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 	var xtrnal BeachfrontVideoRequest
 	var err error
 
-	if err = json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+	if err = json.Unmarshal(externalRequest, &xtrnal); err != nil {
 		return openrtbResp, err
 	}
 
 	for i := range openrtbResp.SeatBid {
 		for j := range openrtbResp.SeatBid[i].Bid {
 			openrtbResp.SeatBid[i].Bid[j].ImpID = xtrnal.Imp[i].ImpId
-			openrtbResp.SeatBid[i].Bid[j].CrID = xtrnal.Imp[i].ImpId // find a better value or random
+			openrtbResp.SeatBid[i].Bid[j].CrID = xtrnal.Imp[i].ImpId
 			openrtbResp.SeatBid[i].Bid[j].H = xtrnal.Imp[i].Video.H
 			openrtbResp.SeatBid[i].Bid[j].W = xtrnal.Imp[i].Video.W
 		}
