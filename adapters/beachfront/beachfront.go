@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -332,6 +333,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 	// this should be coming from the users cookie
 	if req.User.BuyerUID != "" {
 		beachfrontReq.User = req.User.BuyerUID
+		glog.Info("hit : ", beachfrontReq.User)
+	} else {
+		glog.Info("no hit")
 	}
 
 	beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
