@@ -259,6 +259,12 @@ func diffStrings(t *testing.T, description string, actual string, expected strin
 // diffJson compares two JSON byte arrays for structural equality. It will produce an error if either
 // byte array is not actually JSON.
 func diffJson(t *testing.T, description string, actual []byte, expected []byte) {
+	if len(actual) == 0 && len(expected) == 0 {
+		return
+	}
+	if len(actual) == 0 || len(expected) == 0 {
+		t.Fatalf("%s json diff failed. Expected %d bytes in body, but got %d.", description, len(expected), len(actual))
+	}
 	diff, err := gojsondiff.New().Compare(actual, expected)
 	if err != nil {
 		t.Fatalf("%s json diff failed. %v", description, err)

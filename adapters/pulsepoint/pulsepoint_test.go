@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 /**
@@ -220,7 +221,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	// setup a http request
 	httpReq := httptest.NewRequest("POST", CreateService(adapterstest.BidOnTags("")).Server.URL, body)
 	httpReq.Header.Add("Referer", "http://news.pub/topnews")
-	pc := pbs.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
 	pc.TrySync("pulsepoint", "pulsepointUser123")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)

@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 func CompareStringValue(val1 string, val2 string, t *testing.T) {
@@ -625,7 +626,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 
 	httpReq := httptest.NewRequest("POST", server.URL, body)
 	httpReq.Header.Add("Referer", "http://test.com/sports")
-	pc := pbs.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)

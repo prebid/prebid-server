@@ -37,7 +37,6 @@ import (
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sovrn"
-	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/cache/dummycache"
@@ -48,15 +47,17 @@ import (
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
 	"github.com/prebid/prebid-server/exchange"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
-	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
+	"github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 
-	usersyncers "github.com/prebid/prebid-server/usersync"
+	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
 
 var hostCookieSettings pbs.HostCookieSettings
@@ -110,115 +111,9 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	}
 }
 
-type cookieSyncRequest struct {
-	Bidders []string `json:"bidders"`
-}
-
-type cookieSyncResponse struct {
-	Status       string                           `json:"status"`
-	BidderStatus []*usersyncers.CookieSyncBidders `json:"bidder_status"`
-}
-
-type cookieSyncDeps struct {
-	syncers      map[openrtb_ext.BidderName]usersyncers.Usersyncer
-	optOutCookie *config.Cookie
-	metric       pbsmetrics.MetricsEngine
-	pbsAnalytics analytics.PBSAnalyticsModule
-}
-
-func (deps *cookieSyncDeps) CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
-	co := analytics.CookieSyncObject{
-		Status:       http.StatusOK,
-		Errors:       make([]error, 0),
-		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0),
-	}
-
-	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
-
-	deps.metric.RecordCookieSync(pbsmetrics.Labels{})
-	userSyncCookie := pbs.ParsePBSCookieFromRequest(r, deps.optOutCookie)
-	if !userSyncCookie.AllowSyncs() {
-		http.Error(w, "User has opted out", http.StatusUnauthorized)
-		co.Status = http.StatusUnauthorized
-		co.Errors = append(co.Errors, fmt.Errorf("user has opted out"))
-		return
-	}
-
-	defer r.Body.Close()
-
-	csReq := &cookieSyncRequest{}
-	csReqRaw := map[string]json.RawMessage{}
-	err := json.NewDecoder(r.Body).Decode(&csReqRaw)
-	if err != nil {
-		if glog.V(2) {
-			glog.Infof("Failed to parse /cookie_sync request body: %v", err)
-		}
-		co.Status = http.StatusBadRequest
-		co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed"))
-		http.Error(w, "JSON parse failed", http.StatusBadRequest)
-		return
-	}
-	biddersOmitted := true
-	if biddersRaw, ok := csReqRaw["bidders"]; ok {
-		biddersOmitted = false
-		err := json.Unmarshal(biddersRaw, &csReq.Bidders)
-		if err != nil {
-			if glog.V(2) {
-				glog.Infof("Failed to parse /cookie_sync request body (bidders list): %v", err)
-			}
-			co.Status = http.StatusBadRequest
-			co.Errors = append(co.Errors, fmt.Errorf("JSON parse failed (bidders"))
-			http.Error(w, "JSON parse failed (bidders)", http.StatusBadRequest)
-			return
-		}
-	}
-
-	csResp := cookieSyncResponse{
-		BidderStatus: make([]*usersyncers.CookieSyncBidders, 0, len(csReq.Bidders)),
-	}
-
-	if userSyncCookie.LiveSyncCount() == 0 {
-		csResp.Status = "no_cookie"
-	} else {
-		csResp.Status = "ok"
-	}
-
-	// If at the end (After possibly reading stored bidder lists) there still are no bidders,
-	// and "bidders" is not found in the JSON, sync all bidders
-	if len(csReq.Bidders) == 0 && biddersOmitted {
-		for bidder := range deps.syncers {
-			csReq.Bidders = append(csReq.Bidders, string(bidder))
-		}
-	}
-
-	for _, bidder := range csReq.Bidders {
-		if syncer, ok := deps.syncers[openrtb_ext.BidderName(bidder)]; ok {
-			if !userSyncCookie.HasLiveSync(syncer.FamilyName()) {
-				b := usersyncers.CookieSyncBidders{
-					BidderCode:   bidder,
-					NoCookie:     true,
-					UsersyncInfo: syncer.GetUsersyncInfo(),
-				}
-				csResp.BidderStatus = append(csResp.BidderStatus, &b)
-			}
-		}
-	}
-
-	if len(csResp.BidderStatus) > 0 {
-		co.BidderStatus = append(co.BidderStatus, csResp.BidderStatus...)
-	}
-
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	//enc.SetIndent("", "  ")
-	enc.Encode(csResp)
-}
-
 type auctionDeps struct {
 	cfg           *config.Configuration
-	syncers       map[openrtb_ext.BidderName]usersyncers.Usersyncer
+	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
 	metricsEngine pbsmetrics.MetricsEngine
 }
 
@@ -330,7 +225,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = syncer.GetUsersyncInfo()
+					bidder.UsersyncInfo = syncer.GetUsersyncInfo(pbs_req.ParseGDPR(), pbs_req.ParseConsent())
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
 						continue
@@ -739,17 +634,17 @@ func init() {
 	viper.SetDefault("adapters.beachfront.usersync_url", "//sync.bfmio.com/syncb?pid=")
 	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}")
 	viper.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
 	viper.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
 	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26uid%3D")
+	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
 	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	viper.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	viper.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	viper.SetDefault("max_request_size", 1024*256)
-	viper.SetDefault("adapters.conversant.endpoint", "http://media.msg.dotomi.com/s2s/header/24")
+	viper.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.SetDefault("host_cookie.ttl_days", 90)
 
@@ -846,6 +741,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	syncers := usersyncers.NewSyncerMap(cfg)
+	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
@@ -853,7 +749,7 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", (&cookieSyncDeps{syncers, &(hostCookieSettings.OptOutCookie), metricsEngine, pbsAnalytics}).CookieSync)
+	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), gdprPerms, metricsEngine, pbsAnalytics))
 	router.POST("/validate", validate)
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)
@@ -878,7 +774,7 @@ func serve(cfg *config.Configuration) error {
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)
-	router.GET("/setuid", userSyncDeps.SetUID)
+	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
 

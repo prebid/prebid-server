@@ -70,7 +70,6 @@
             "USD"
           ],
           "user": {
-            "buyeruid": "publisher1",
             "id": "some-user"
           }
         }

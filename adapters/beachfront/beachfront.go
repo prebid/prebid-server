@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -12,7 +13,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -228,8 +228,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	if(a.URI == BannerEndpoint) {
-		headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+	if a.URI == BannerEndpoint {
+		if request.User != nil {
+			headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+		}
 	}
 
 	return []*adapters.RequestData{{
@@ -326,7 +328,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 	}
 
 	// this should be coming from the users cookie
-	if req.User.BuyerUID != "" {
+	if req.User != nil && req.User.BuyerUID != "" {
 		//   Buyer-specific ID for the user as mapped by the exchange for
 		//   the buyer. At least one of buyeruid or id is recommended.
 		beachfrontReq.User = req.User.BuyerUID
