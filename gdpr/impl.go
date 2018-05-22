@@ -28,12 +28,7 @@ func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string
 		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	data, err := base64.RawURLEncoding.DecodeString(consent)
-	if err != nil {
-		return false, err
-	}
-
-	parsedConsent, err := vendorconsent.Parse([]byte(data))
+	parsedConsent, err := parseConsent(consent)
 	if err != nil {
 		return false, err
 	}
@@ -58,12 +53,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 		return false, nil
 	}
 
-	data, err := base64.RawURLEncoding.DecodeString(consent)
-	if err != nil {
-		return false, err
-	}
-
-	parsedConsent, err := vendorconsent.Parse([]byte(data))
+	parsedConsent, err := parseConsent(consent)
 	if err != nil {
 		return false, err
 	}
@@ -74,6 +64,25 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	}
 
 	return hasPermissions(parsedConsent, vendorList, id, consentconstants.AdSelectionDeliveryReporting), nil
+}
+
+func parseConsent(consent string) (vendorconsent.VendorConsents, error) {
+	data, err := base64.RawURLEncoding.DecodeString(consent)
+	if err != nil {
+		return nil, &ErrorMalformedConsent{
+			consent: consent,
+			cause:   err,
+		}
+	}
+
+	parsedConsent, err := vendorconsent.Parse([]byte(data))
+	if err != nil {
+		return nil, &ErrorMalformedConsent{
+			consent: consent,
+			cause:   err,
+		}
+	}
+	return parsedConsent, nil
 }
 
 func hasPermissions(consent vendorconsent.VendorConsents, vendorList vendorlist.VendorList, vendorID uint16, purpose consentconstants.Purpose) bool {

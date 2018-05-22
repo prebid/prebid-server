@@ -26,13 +26,14 @@ type Metrics struct {
 	RequestTimer               metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	ORTBRequestMeter   metrics.Meter
-	AmpRequestMeter    metrics.Meter
-	AmpNoCookieMeter   metrics.Meter
-	CookieSyncMeter    metrics.Meter
-	userSyncOptout     metrics.Meter
-	userSyncBadRequest metrics.Meter
-	userSyncSet        map[openrtb_ext.BidderName]metrics.Meter
+	ORTBRequestMeter    metrics.Meter
+	AmpRequestMeter     metrics.Meter
+	AmpNoCookieMeter    metrics.Meter
+	CookieSyncMeter     metrics.Meter
+	userSyncOptout      metrics.Meter
+	userSyncBadRequest  metrics.Meter
+	userSyncSet         map[openrtb_ext.BidderName]metrics.Meter
+	userSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -101,6 +102,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		userSyncOptout:             blankMeter,
 		userSyncBadRequest:         blankMeter,
 		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
+		userSyncGDPRPrevent:        make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
@@ -140,9 +142,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
 	for _, a := range exchanges {
 		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
+		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
+	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
 	return newMetrics
 }
 
@@ -407,17 +411,20 @@ func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
 	switch userLabels.Action {
 	case RequestActionOptOut:
 		me.userSyncOptout.Mark(1)
-		return
 	case RequestActionErr:
 		me.userSyncBadRequest.Mark(1)
-		return
 	case RequestActionSet:
-		met, ok := me.userSyncSet[userLabels.Bidder]
-		if ok {
-			met.Mark(1)
-		} else {
-			me.userSyncSet[unknownBidder].Mark(1)
-		}
+		doMark(userLabels.Bidder, me.userSyncSet)
+	case RequestActionGDPR:
+		doMark(userLabels.Bidder, me.userSyncGDPRPrevent)
+	}
+}
 
+func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
+	met, ok := meters[bidder]
+	if ok {
+		met.Mark(1)
+	} else {
+		meters[unknownBidder].Mark(1)
 	}
 }

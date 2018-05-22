@@ -119,7 +119,7 @@ func TestFetchThrottling(t *testing.T) {
 	_, err := fetcher(context.Background(), 2)
 	assertNilErr(t, err)
 	_, err = fetcher(context.Background(), 3)
-	assertErr(t, err)
+	assertErr(t, err, false)
 }
 
 func TestMalformedVendorlistFetch(t *testing.T) {
@@ -128,7 +128,7 @@ func TestMalformedVendorlistFetch(t *testing.T) {
 
 	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 1)
-	assertErr(t, err)
+	assertErr(t, err, false)
 }
 
 func TestMissingVendorlistFetch(t *testing.T) {
@@ -137,7 +137,7 @@ func TestMissingVendorlistFetch(t *testing.T) {
 
 	fetcher := newVendorListFetcher(context.Background(), testConfig(), server.Client(), testURLMaker(server))
 	_, err := fetcher(context.Background(), 2)
-	assertErr(t, err)
+	assertErr(t, err, false)
 }
 
 func TestVendorListMaker(t *testing.T) {
