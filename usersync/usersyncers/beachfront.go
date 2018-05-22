@@ -5,9 +5,8 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewBeachfrontSyncer(usersyncURL string, pId string) usersync.Usersyncer {
-	// redirect_uri := fmt.Sprintf("%s/setuid?bidder=beachfront&uid=$UID", external)
-	url := fmt.Sprintf("%s%s", usersyncURL, pId)
+func NewBeachfrontSyncer(usersyncURL string, platformId string) usersync.Usersyncer {
+	url := fmt.Sprintf("%s%s", usersyncURL, platformId)
 
 	return &syncer{
 		familyName:          "beachfront",
