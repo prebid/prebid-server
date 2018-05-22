@@ -104,6 +104,7 @@ type RequestAction string
 const (
 	RequestActionSet    RequestAction = "set"
 	RequestActionOptOut RequestAction = "opt_out"
+	RequestActionGDPR   RequestAction = "gdpr"
 	RequestActionErr    RequestAction = "err"
 )
 

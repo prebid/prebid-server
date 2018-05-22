@@ -47,12 +47,18 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 
 	data, err := base64.RawURLEncoding.DecodeString(consent)
 	if err != nil {
-		return false, err
+		return false, &ErrorMalformedConsent{
+			consent: consent,
+			cause:   err,
+		}
 	}
 
 	parsedConsent, err := vendorconsent.Parse([]byte(data))
 	if err != nil {
-		return false, err
+		return false, &ErrorMalformedConsent{
+			consent: consent,
+			cause:   err,
+		}
 	}
 
 	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())

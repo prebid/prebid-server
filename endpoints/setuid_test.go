@@ -1,6 +1,8 @@
 package endpoints
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -18,38 +20,66 @@ import (
 )
 
 func TestNormalSet(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil))
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil), true, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
-
-	cookie := parseCookieString(t, response)
-	assertIntsMatch(t, 1, cookie.LiveSyncCount())
-	assertBoolsMatch(t, true, cookie.HasLiveSync("pubmatic"))
-	assertSyncValue(t, cookie, "pubmatic", "123")
+	assertHasSyncs(t, response, map[string]string{
+		"pubmatic": "123",
+	})
 }
 
 func TestUnset(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic", map[string]string{"pubmatic": "1234"}))
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic", map[string]string{"pubmatic": "1234"}), true, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
-
-	cookie := parseCookieString(t, response)
-	assertIntsMatch(t, 0, cookie.LiveSyncCount())
+	assertHasSyncs(t, response, nil)
 }
 
 func TestMergeSet(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", map[string]string{"rubicon": "def"}))
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", map[string]string{"rubicon": "def"}), true, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
-
-	cookie := parseCookieString(t, response)
-	assertIntsMatch(t, 2, cookie.LiveSyncCount())
-	assertBoolsMatch(t, true, cookie.HasLiveSync("pubmatic"))
-	assertBoolsMatch(t, true, cookie.HasLiveSync("rubicon"))
-	assertSyncValue(t, cookie, "pubmatic", "123")
-	assertSyncValue(t, cookie, "rubicon", "def")
+	assertHasSyncs(t, response, map[string]string{
+		"pubmatic": "123",
+		"rubicon":  "def",
+	})
 }
 
-func TestNoBidder(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?uid=123", nil))
+func TestGDPRPrevention(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil), false, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	assertStringsMatch(t, "The gdpr_consent string prevents cookies from being saved", response.Body.String())
+	assertNoCookie(t, response)
+}
+
+func TestGDPRConsentError(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil), false, true)
 	assertIntsMatch(t, http.StatusBadRequest, response.Code)
+	assertStringsMatch(t, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon.", response.Body.String())
+	assertNoCookie(t, response)
+}
+
+func TestInapplicableGDPR(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=0", nil), false, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	assertHasSyncs(t, response, map[string]string{
+		"pubmatic": "123",
+	})
+}
+
+func TestExplicitGDPRPrevention(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil), false, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	assertStringsMatch(t, "The gdpr_consent string prevents cookies from being saved", response.Body.String())
+	assertNoCookie(t, response)
+}
+
+func assertNoCookie(t *testing.T, resp *httptest.ResponseRecorder) {
+	t.Helper()
+	assertStringsMatch(t, "", resp.Header().Get("Set-Cookie"))
+}
+
+func TestBadRequests(t *testing.T) {
+	assertBadRequest(t, "/setuid?uid=123", `"bidder" query param is required`)
+	assertBadRequest(t, "/setuid?bidder=appnexus&uid=123&gdpr=2", "the gdpr query param must be either 0 or 1. You gave 2")
+	assertBadRequest(t, "/setuid?bidder=appnexus&uid=123&gdpr=1", "gdpr_consent is required when gdpr=1")
 }
 
 func TestOptedOut(t *testing.T) {
@@ -57,9 +87,26 @@ func TestOptedOut(t *testing.T) {
 	cookie := usersync.NewPBSCookie()
 	cookie.SetPreference(false)
 	addCookie(request, cookie)
-	response := doRequest(request)
+	response := doRequest(request, true, false)
 
 	assertIntsMatch(t, http.StatusUnauthorized, response.Code)
+}
+
+func assertHasSyncs(t *testing.T, resp *httptest.ResponseRecorder, syncs map[string]string) {
+	t.Helper()
+	cookie := parseCookieString(t, resp)
+	assertIntsMatch(t, len(syncs), cookie.LiveSyncCount())
+	for bidder, value := range syncs {
+		assertBoolsMatch(t, true, cookie.HasLiveSync(bidder))
+		assertSyncValue(t, cookie, bidder, value)
+	}
+}
+
+func assertBadRequest(t *testing.T, uri string, errMsg string) {
+	t.Helper()
+	response := doRequest(makeRequest(uri, nil), true, false)
+	assertIntsMatch(t, http.StatusBadRequest, response.Code)
+	assertStringsMatch(t, errMsg, response.Body.String())
 }
 
 func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
@@ -74,9 +121,13 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
+	perms := &mockPermsSetUID{
+		allowHost: gdprAllowsHostCookies,
+		errorHost: gdprReturnsError,
+	}
 	cfg := config.Configuration{}
-	endpoint := NewSetUIDEndpoint(cfg.HostCookie, analyticsConf.NewPBSAnalytics(&cfg.Analytics), pbsmetrics.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
+	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), pbsmetrics.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response
@@ -122,4 +173,21 @@ func assertStringsMatch(t *testing.T, expected string, actual string) {
 func assertSyncValue(t *testing.T, cookie *usersync.PBSCookie, family string, expectedValue string) {
 	got, _, _ := cookie.GetUID(family)
 	assertStringsMatch(t, expectedValue, got)
+}
+
+type mockPermsSetUID struct {
+	allowHost bool
+	errorHost bool
+}
+
+func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	var err error
+	if g.errorHost {
+		err = errors.New("something went wrong")
+	}
+	return g.allowHost, err
+}
+
+func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return false, nil
 }
