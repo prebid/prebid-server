@@ -31,17 +31,18 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	if ok {
 		return p.allowSync(ctx, id, consent)
 	}
-	return p.allowSync(ctx, 0, consent)
+
+	if consent == "" {
+		return p.cfg.UsersyncIfAmbiguous, nil
+	}
+
+	return false, nil
 }
 
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
 	// If we're not given a consent string, respect the preferences in the app config.
 	if consent == "" {
 		return p.cfg.UsersyncIfAmbiguous, nil
-	}
-
-	if vendorID == 0 {
-		return false, nil
 	}
 
 	data, err := base64.RawURLEncoding.DecodeString(consent)
