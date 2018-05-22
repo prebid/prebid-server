@@ -2,12 +2,11 @@ package usersync
 
 import (
 	"fmt"
-	"net/url"
 )
 
-func NewBeachfrontSyncer(usersyncURL string, external string) Usersyncer {
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=beachfront&uid=$UID", external)
-	url := fmt.Sprintf("%s?redirect=%s", usersyncURL, url.QueryEscape(redirect_uri))
+func NewBeachfrontSyncer(usersyncURL string, pId string) Usersyncer {
+	// redirect_uri := fmt.Sprintf("%s/setuid?bidder=beachfront&uid=$UID", external)
+	url := fmt.Sprintf("%s%s", usersyncURL, pId )
 
 	return &syncer{
 		familyName: "beachfront",
