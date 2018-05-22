@@ -168,8 +168,6 @@ type BeachfrontSize struct {
 	H uint64 `json:"h"`
 }
 
-// -----------------------------------------------------------------------
-
 type BeachfrontResponseSlot struct {
 	CrID  string  `json:"crid"`
 	Price float64 `json:"price"`
@@ -179,9 +177,6 @@ type BeachfrontResponseSlot struct {
 	Adm   string  `json:"adm"`
 }
 
-// -----------------------------------------------------------------------
-
-// Name - export adapter name
 func (a *BeachfrontAdapter) Name() string {
 	return "beachfront"
 }
@@ -199,8 +194,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	var beachfrontRequests BeachfrontRequests
 	var reqJSON []byte
-
-	a.URI = ""
 
 	a.URI = func() string {
 		for i := range request.Imp {
@@ -231,19 +224,13 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
-	/*
-	Sometimes prebid.js seems to send the __gads cookie:
-	UserID=ID=8042c6e05c83d440:T=1526918396:S=ALNI_MZlfRGtqS1EeQWLjhGjonn_wHMQ9g
-	And sometimes the _pubcid cookier
-	UserID=8042c6e05c83d440
-	 */
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	// the display endpoint needs these
-	headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
-
+	if(a.URI == BannerEndpoint) {
+		headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -276,7 +263,6 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 	}
 
 	return beachfrontReqs, err
-
 }
 
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
@@ -353,7 +339,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 	beachfrontReq.Page = req.Site.Page
 
 	return beachfrontReq, nil
-
 }
 
 /*
@@ -507,7 +492,6 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 
 		return postprocessBanner(openrtbResp, beachfrontResp)
 	}
-
 }
 
 func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []BeachfrontResponseSlot) (openrtb.BidResponse, error) {
@@ -555,8 +539,6 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 }
 
 func NewBeachfrontBidder(client *http.Client) *BeachfrontAdapter {
-	// endpoint is included for compatibility with Configuration.Adapters[] but is not used
-	// as beachfront uses different display vs video endpoints.
 	a := &adapters.HTTPAdapter{Client: client}
 	return &BeachfrontAdapter{
 		http: a,
