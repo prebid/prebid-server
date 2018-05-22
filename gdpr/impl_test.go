@@ -49,10 +49,10 @@ func TestNoConsentAndRejectByDefault(t *testing.T) {
 func TestAllowedSyncs(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
 		2: &purposes{
-			purposes: []uint8{1}, // cookie reads/writes
+			purposes: []uint8{1},
 		},
 		3: &purposes{
-			purposes: []uint8{3}, // ad personalization
+			purposes: []uint8{1},
 		},
 	})
 	perms := permissionsImpl{
