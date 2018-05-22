@@ -79,7 +79,6 @@ const beachfrontBannerRequestTemplate = `{
 	"isMobile":0,
 	"ua":"Go-http-client/1.1",
 	"dnt":0,
-	"user": "",
 	"adapterName": "` + beachfrontAdapterName + `",
 	"adapterVersion":"` + beachfrontAdapterVersion + `",
 	"ip":""
@@ -241,7 +240,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Cookie", "UserID="+request.User.ID+"; BuyerUID="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
+
+	// the display endpoint needs these
+	headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID+"; PublisherID="+request.Site.Publisher.ID)
 
 
 	return []*adapters.RequestData{{
