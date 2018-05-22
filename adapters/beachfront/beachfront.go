@@ -188,7 +188,7 @@ func (a *BeachfrontAdapter) Name() string {
 }
 
 func (a *BeachfrontAdapter) SkipNoCookies() bool {
-	return false
+	return true
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -232,7 +232,12 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
-	glog.Info("Headers received by the prebid-server with the beachfront request :\n", )
+	/*
+	Sometimes prebid.js seems to send the __gads cookie:
+	UserID=ID=8042c6e05c83d440:T=1526918396:S=ALNI_MZlfRGtqS1EeQWLjhGjonn_wHMQ9g
+	And sometimes the _pubcid cookier
+	UserID=8042c6e05c83d440
+	 */
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
