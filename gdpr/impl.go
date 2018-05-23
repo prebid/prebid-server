@@ -2,7 +2,6 @@ package gdpr
 
 import (
 	"context"
-	"encoding/base64"
 
 	"github.com/prebid/go-gdpr/consentconstants"
 	"github.com/prebid/go-gdpr/vendorconsent"
@@ -45,15 +44,7 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	data, err := base64.RawURLEncoding.DecodeString(consent)
-	if err != nil {
-		return false, &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
-		}
-	}
-
-	parsedConsent, err := vendorconsent.Parse([]byte(data))
+	parsedConsent, err := vendorconsent.ParseString(consent)
 	if err != nil {
 		return false, &ErrorMalformedConsent{
 			consent: consent,
