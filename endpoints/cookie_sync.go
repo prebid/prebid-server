@@ -82,6 +82,13 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		return
 	}
 
+	if parsedReq.GDPR != nil && *parsedReq.GDPR == 1 && parsedReq.Consent == "" {
+		co.Status = http.StatusBadRequest
+		co.Errors = append(co.Errors, errors.New("gdpr_consent is required if gdpr is 1"))
+		http.Error(w, "gdpr_consent is required if gdpr=1", http.StatusBadRequest)
+		return
+	}
+
 	if len(biddersJSON) == 0 {
 		parsedReq.Bidders = make([]string, 0, len(deps.syncers))
 		for bidder := range deps.syncers {

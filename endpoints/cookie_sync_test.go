@@ -36,7 +36,7 @@ func TestGDPRPreventsCookie(t *testing.T) {
 }
 
 func TestGDPRPreventsBidders(t *testing.T) {
-	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"]}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
+	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("someurl.com"),
 	})
 	assertIntsMatch(t, http.StatusOK, rr.Code)
@@ -50,6 +50,12 @@ func TestGDPRIgnoredIfZero(t *testing.T) {
 
 	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "pubmatic")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
+func TestGDPRConsentRequired(t *testing.T) {
+	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
+	assertIntsMatch(t, http.StatusBadRequest, rr.Code)
+	assertStringsMatch(t, "gdpr_consent is required if gdpr=1\n", rr.Body.String())
 }
 
 func TestCookieSyncHasCookies(t *testing.T) {
