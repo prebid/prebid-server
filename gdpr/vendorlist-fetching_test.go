@@ -15,14 +15,12 @@ import (
 func TestVendorFetch(t *testing.T) {
 	vendorListOne := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: &purposes{
-			purposes:            []uint8{1, 2},
-			legitimateInterests: []uint8{3},
+			purposes: []uint8{1, 2},
 		},
 	})
 	vendorListTwo := mockVendorListData(t, 2, map[uint16]*purposes{
 		32: &purposes{
-			purposes:            []uint8{1, 2, 3},
-			legitimateInterests: nil,
+			purposes: []uint8{1, 2, 3},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(2, map[int]string{
@@ -49,14 +47,12 @@ func TestVendorFetch(t *testing.T) {
 func TestLazyFetch(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: &purposes{
-			purposes:            []uint8{1, 2},
-			legitimateInterests: []uint8{3},
+			purposes: []uint8{1, 2},
 		},
 	})
 	secondVendorList := mockVendorListData(t, 2, map[uint16]*purposes{
 		3: &purposes{
-			purposes:            []uint8{1},
-			legitimateInterests: []uint8{2},
+			purposes: []uint8{1},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
@@ -72,15 +68,12 @@ func TestLazyFetch(t *testing.T) {
 	vendor := list.Vendor(3)
 	assertBoolsEqual(t, true, vendor.Purpose(1))
 	assertBoolsEqual(t, false, vendor.Purpose(2))
-	assertBoolsEqual(t, false, vendor.LegitimateInterest(1))
-	assertBoolsEqual(t, true, vendor.LegitimateInterest(2))
 }
 
 func TestInitialTimeout(t *testing.T) {
 	list := mockVendorListData(t, 1, map[uint16]*purposes{
 		32: &purposes{
-			purposes:            []uint8{1, 2},
-			legitimateInterests: []uint8{3},
+			purposes: []uint8{1, 2},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
@@ -98,14 +91,12 @@ func TestInitialTimeout(t *testing.T) {
 func TestFetchThrottling(t *testing.T) {
 	vendorListTwo := mockVendorListData(t, 2, map[uint16]*purposes{
 		32: &purposes{
-			purposes:            []uint8{1, 2},
-			legitimateInterests: []uint8{3},
+			purposes: []uint8{1, 2},
 		},
 	})
 	vendorListThree := mockVendorListData(t, 3, map[uint16]*purposes{
 		32: &purposes{
-			purposes:            []uint8{1, 2},
-			legitimateInterests: []uint8{3},
+			purposes: []uint8{1, 2},
 		},
 	})
 	server := httptest.NewServer(http.HandlerFunc(mockServer(1, map[int]string{
@@ -181,9 +172,8 @@ func mockServer(latestVersion int, responses map[int]string) func(http.ResponseW
 
 func mockVendorListData(t *testing.T, version uint16, vendors map[uint16]*purposes) string {
 	type vendorContract struct {
-		ID                  uint16  `json:"id"`
-		Purposes            []uint8 `json:"purposeIds"`
-		LegitimateInterests []uint8 `json:"legIntPurposeIds"`
+		ID       uint16  `json:"id"`
+		Purposes []uint8 `json:"purposeIds"`
 	}
 
 	type vendorListContract struct {
@@ -195,9 +185,8 @@ func mockVendorListData(t *testing.T, version uint16, vendors map[uint16]*purpos
 		vendors := make([]vendorContract, 0, len(input))
 		for id, purpose := range input {
 			vendors = append(vendors, vendorContract{
-				ID:                  id,
-				Purposes:            purpose.purposes,
-				LegitimateInterests: purpose.legitimateInterests,
+				ID:       id,
+				Purposes: purpose.purposes,
 			})
 		}
 		return vendors
@@ -229,6 +218,5 @@ func testConfig() config.GDPR {
 }
 
 type purposes struct {
-	purposes            []uint8
-	legitimateInterests []uint8
+	purposes []uint8
 }

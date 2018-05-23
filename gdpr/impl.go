@@ -23,53 +23,31 @@ type permissionsImpl struct {
 }
 
 func (p *permissionsImpl) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
-	// If we're not given a consent string, respect the preferences in the app config.
-	if consent == "" {
-		return p.cfg.UsersyncIfAmbiguous, nil
-	}
-
-	parsedConsent, err := parseConsent(consent)
-	if err != nil {
-		return false, err
-	}
-
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
-	if err != nil {
-		return false, err
-	}
-
-	// Config validation makes uint16 conversion safe here
-	return hasPermissions(parsedConsent, vendorList, uint16(p.cfg.HostVendorID), consentconstants.InfoStorageAccess), nil
+	return p.allowSync(ctx, uint16(p.cfg.HostVendorID), consent)
 }
 
 func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	id, ok := p.vendorIDs[bidder]
+	if ok {
+		return p.allowSync(ctx, id, consent)
+	}
+
+	if consent == "" {
+		return p.cfg.UsersyncIfAmbiguous, nil
+	}
+
+	return false, nil
+}
+
+func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
 	// If we're not given a consent string, respect the preferences in the app config.
 	if consent == "" {
 		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	id, ok := p.vendorIDs[bidder]
-	if !ok {
-		return false, nil
-	}
-
-	parsedConsent, err := parseConsent(consent)
-	if err != nil {
-		return false, err
-	}
-
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
-	if err != nil {
-		return false, err
-	}
-
-	return hasPermissions(parsedConsent, vendorList, id, consentconstants.AdSelectionDeliveryReporting), nil
-}
-
-func parseConsent(consent string) (vendorconsent.VendorConsents, error) {
 	data, err := base64.RawURLEncoding.DecodeString(consent)
 	if err != nil {
-		return nil, &ErrorMalformedConsent{
+		return false, &ErrorMalformedConsent{
 			consent: consent,
 			cause:   err,
 		}
@@ -77,29 +55,27 @@ func parseConsent(consent string) (vendorconsent.VendorConsents, error) {
 
 	parsedConsent, err := vendorconsent.Parse([]byte(data))
 	if err != nil {
-		return nil, &ErrorMalformedConsent{
+		return false, &ErrorMalformedConsent{
 			consent: consent,
 			cause:   err,
 		}
 	}
-	return parsedConsent, nil
-}
 
-func hasPermissions(consent vendorconsent.VendorConsents, vendorList vendorlist.VendorList, vendorID uint16, purpose consentconstants.Purpose) bool {
+	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	if err != nil {
+		return false, err
+	}
+
 	vendor := vendorList.Vendor(vendorID)
 	if vendor == nil {
-		return false
-	}
-	if vendor.LegitimateInterest(purpose) {
-		return true
+		return false, nil
 	}
 
-	// If the host declared writing cookies to be a "normal" purpose, only do the sync if the user consented to it.
-	if vendor.Purpose(purpose) && consent.PurposeAllowed(purpose) && consent.VendorConsent(vendorID) {
-		return true
+	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && parsedConsent.VendorConsent(vendorID) {
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
 type alwaysAllow struct{}
