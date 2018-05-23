@@ -166,7 +166,7 @@ func assertBoolsMatch(t *testing.T, expected bool, actual bool) {
 func assertStringsMatch(t *testing.T, expected string, actual string) {
 	t.Helper()
 	if expected != actual {
-		t.Errorf("Expected %s, got %s", expected, actual)
+		t.Errorf(`Expected "%s", got "%s"`, expected, actual)
 	}
 }
 
