@@ -1,10 +1,5 @@
 package usersync
 
-import (
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
-)
-
 type Usersyncer interface {
 	// GetUsersyncInfo returns basic info the browser needs in order to run a user sync.
 	// The returned UsersyncInfo object must not be mutated by callers.
@@ -40,14 +35,6 @@ type CookieSyncBidders struct {
 	BidderCode   string        `json:"bidder"`
 	NoCookie     bool          `json:"no_cookie,omitempty"`
 	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
-}
-
-// NewSyncerMap returns a map of all the usersyncer objects.
-// The same keys should exist in this map as in the exchanges map.
-func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]Usersyncer {
-	return map[openrtb_ext.BidderName]Usersyncer{
-		//openrtb_ext.BidderOath: usersyncers.NewOathSyncer(cfg.Adapters["oath"].UserSyncURL, cfg.ExternalURL),
-	}
 }
 
 type syncer struct {
