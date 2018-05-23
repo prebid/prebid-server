@@ -19,3 +19,12 @@ it results in fewer syncs called on the page, and their sync endpoints will almo
 
 The [`/setuid`](../endpoints/setuid.md) endpoint accepts `gdpr` and `gdpr_consent` query params. This endpoint
 will no-op if the Prebid Server host company does not have consent to read/write cookies.
+
+## Handling the params
+
+For all endpoints, `gdpr` should be `1` if GDPR is in effect, `0` if not, and omitted if the caller isn't sure.
+`gdpr_consent` should be an [unpadded base64-URL](https://tools.ietf.org/html/rfc4648#page-7) encoded [Vendor Consent String](https://github.com/InteractiveAdvertisingBureau/GDPR-Transparency-and-Consent-Framework/blob/master/Consent%20string%20and%20vendor%20list%20formats%20v1.1%20Final.md#vendor-consent-string-format-).
+
+`gdpr_consent` is required if `gdpr` is 1 and ignored if `gdpr` is `0`. If `gdpr` is omitted, the Prebid Server
+host company can decide whether it behaves like a `1` or `0` through the [app configuration](./configuration.md).
+Callers are encouraged to send the `gdpr_consent` param if `gdpr` is omitted.
