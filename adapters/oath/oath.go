@@ -55,7 +55,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	}
 
 	reqJSON, err := json.Marshal(request)
-	if err != nil  {
+	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
