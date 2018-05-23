@@ -17,7 +17,7 @@ type Configuration struct {
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse       string             `mapstructure:"status_response"`
-	DefaultTimeout       uint64             `mapstructure:"default_timeout_ms"`
+	MaxAuctionTimeout    uint64             `mapstructure:"max_auction_ms"`
 	CacheURL             Cache              `mapstructure:"cache"`
 	RecaptchaSecret      string             `mapstructure:"recaptcha_secret"`
 	HostCookie           HostCookie         `mapstructure:"host_cookie"`
@@ -29,6 +29,18 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+}
+
+// LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
+// Both values treat "0" as "infinite".
+func (cfg *Configuration) LimitAuctionTimeout(requested time.Duration) time.Duration {
+	if cfg.MaxAuctionTimeout > 0 {
+		maxTimeout := time.Duration(cfg.MaxAuctionTimeout) * time.Millisecond
+		if requested == 0 || requested > maxTimeout {
+			return maxTimeout
+		}
+	}
+	return requested
 }
 
 func (cfg *Configuration) validate() error {

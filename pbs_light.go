@@ -621,7 +621,7 @@ func init() {
 	viper.SetDefault("external_url", "http://localhost:8000")
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
-	viper.SetDefault("default_timeout_ms", 250)
+	viper.SetDefault("max_timeout_ms", 5000)
 	viper.SetDefault("cache.expected_millis", 10)
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})

@@ -30,7 +30,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
@@ -101,10 +100,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	ctx := context.Background()
 	cancel := func() {}
-	if req.TMax > 0 {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
-	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
+	timeout := deps.cfg.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
+	if timeout > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 	}
 	defer cancel()
 
