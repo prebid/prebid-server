@@ -201,7 +201,10 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	prebidHttpRequest.Header.Add("Cookie", fakeWriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	r, err := pbs.ParsePBSRequest(prebidHttpRequest, cacheClient, &pbs.HostCookieSettings{})
+	r, err := pbs.ParsePBSRequest(prebidHttpRequest, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cacheClient, &pbs.HostCookieSettings{})
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}

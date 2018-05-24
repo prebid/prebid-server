@@ -73,7 +73,10 @@ func TestParseSimpleRequest(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -155,7 +158,10 @@ func TestHeaderParsing(t *testing.T) {
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed")
 	}
@@ -237,7 +243,10 @@ func TestParseConfig(t *testing.T) {
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -318,7 +327,10 @@ func TestParseMobileRequestFirstVersion(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -414,7 +426,10 @@ func TestParseMobileRequest(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -514,7 +529,10 @@ func TestParseMalformedMobileRequest(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -618,7 +636,10 @@ func TestParseRequestWithInstl(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := HostCookieSettings{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -670,7 +691,10 @@ func TestParsePBSRequestUsesHostCookie(t *testing.T) {
 		},
 	}
 
-	pbs_req, err2 := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err2 := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err2 != nil {
 		t.Fatalf("Parse simple request failed %v", err2)
 	}

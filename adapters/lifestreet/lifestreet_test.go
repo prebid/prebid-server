@@ -232,7 +232,10 @@ func TestLifestreetBasicResponse(t *testing.T) {
 
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	pbReq, err := pbs.ParsePBSRequest(req, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}

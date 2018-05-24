@@ -17,6 +17,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -614,7 +615,10 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	cache, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cache, &hcs)
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cache, &hcs)
 
 	return parsedReq, err
 }
