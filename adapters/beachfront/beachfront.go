@@ -289,7 +289,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			// Set the beachfront "size" values to match the prebid "format" values
 			for j := range imp.Banner.Format {
 				// The template has 1 Size struct, so use that one first, then add them as needed.
-				if len(beachfrontReq.Slots[k].Sizes < j) {
+				if len(beachfrontReq.Slots[k].Sizes) < j {
 					glog.Info("tap")
 					beachfrontReq.Slots[k].Sizes = append(beachfrontReq.Slots[k].Sizes, BeachfrontSize{})
 				}
