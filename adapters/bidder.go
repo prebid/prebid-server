@@ -57,7 +57,7 @@ type BadServerResponseError struct {
 	Message string
 }
 
-func (err BadServerResponseError) Error() string {
+func (err *BadServerResponseError) Error() string {
 	return err.Message
 }
 

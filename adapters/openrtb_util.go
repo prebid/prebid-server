@@ -3,8 +3,6 @@ package adapters
 import (
 	"github.com/prebid/prebid-server/pbs"
 
-	"errors"
-
 	"github.com/mxmCherry/openrtb"
 )
 
@@ -100,7 +98,9 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				case pbs.MEDIA_TYPE_VIDEO:
 					video := makeVideo(unit)
 					if video == nil {
-						return openrtb.BidRequest{}, errors.New("Invalid AdUnit: VIDEO media type with no video data")
+						return openrtb.BidRequest{}, &BadInputError{
+							Message: "Invalid AdUnit: VIDEO media type with no video data",
+						}
 					}
 					newImp.Video = video
 				default:
