@@ -305,7 +305,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 				// 0011 // 1011
 
 
-				beachfrontReq.Slots[k].Sizes[j].H = imp.Banner.Format[j].H
+				beachfrontReq.Slots[k].Sizes[j].H = 250
 				beachfrontReq.Slots[k].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
