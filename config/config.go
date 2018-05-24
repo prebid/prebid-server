@@ -17,7 +17,7 @@ type Configuration struct {
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse       string             `mapstructure:"status_response"`
-	MaxAuctionTimeout    uint64             `mapstructure:"max_auction_ms"`
+	AuctionTimeouts      AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
 	CacheURL             Cache              `mapstructure:"cache"`
 	RecaptchaSecret      string             `mapstructure:"recaptcha_secret"`
 	HostCookie           HostCookie         `mapstructure:"host_cookie"`
@@ -31,21 +31,13 @@ type Configuration struct {
 	GDPR                 GDPR               `mapstructure:"gdpr"`
 }
 
-// LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
-// Both values treat "0" as "infinite".
-func (cfg *Configuration) LimitAuctionTimeout(requested time.Duration) time.Duration {
-	if cfg.MaxAuctionTimeout > 0 {
-		maxTimeout := time.Duration(cfg.MaxAuctionTimeout) * time.Millisecond
-		if requested == 0 || requested > maxTimeout {
-			return maxTimeout
-		}
-	}
-	return requested
-}
-
 func (cfg *Configuration) validate() error {
 	if cfg.MaxRequestSize < 0 {
 		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
+	}
+
+	if err := cfg.AuctionTimeouts.validate(); err != nil {
+		return err
 	}
 
 	if err := cfg.StoredRequests.validate(); err != nil {
@@ -53,6 +45,35 @@ func (cfg *Configuration) validate() error {
 	}
 
 	return cfg.GDPR.validate()
+}
+
+type AuctionTimeouts struct {
+	// The default timeout is used if the user's request didn't define one. Use 0 if there's no default.
+	Default uint64 `mapstructure:"default"`
+	// The max timeout is used as an absolute cap, to prevent excessively long ones. Use 0 for no cap
+	Max uint64 `mapstructure:"max"`
+}
+
+func (cfg *AuctionTimeouts) validate() error {
+	if cfg.Max < cfg.Default {
+		return fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default)
+	}
+	return nil
+}
+
+// LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
+// Both values treat "0" as "infinite".
+func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Duration {
+	if requested == 0 && cfg.Default != 0 {
+		return time.Duration(cfg.Default) * time.Millisecond
+	}
+	if cfg.Max > 0 {
+		maxTimeout := time.Duration(cfg.Max) * time.Millisecond
+		if requested == 0 || requested > maxTimeout {
+			return maxTimeout
+		}
+	}
+	return requested
 }
 
 type GDPR struct {

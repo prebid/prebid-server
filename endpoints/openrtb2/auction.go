@@ -100,7 +100,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	ctx := context.Background()
 	cancel := func() {}
-	timeout := deps.cfg.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 	}
