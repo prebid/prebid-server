@@ -290,6 +290,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			for j := range imp.Banner.Format {
 				// The template has 1 Size struct, so use that one first, then add them as needed.
 				if j > 0 {
+					glog.Info("tap")
 					beachfrontReq.Slots[k].Sizes = append(beachfrontReq.Slots[k].Sizes, BeachfrontSize{})
 				}
 
