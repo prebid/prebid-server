@@ -65,13 +65,6 @@ type pbsCookieJson struct {
 	Birthday   *time.Time               `json:"bday,omitempty"`
 }
 
-func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := usersync.ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
-	json.NewEncoder(w).Encode(pc)
-	return
-}
-
 // Struct for parsing json in google's response
 type googleResponse struct {
 	Success    bool
