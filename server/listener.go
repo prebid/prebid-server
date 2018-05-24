@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -25,7 +26,13 @@ func (l *monitorableConnection) Close() error {
 	if err == nil {
 		l.metrics.RecordConnectionClose(true)
 	} else {
-		glog.Errorf("Error closing connection: %v", err)
+		// If the connection was closed by the client, it's not a real/actionable error.
+		// Although there are no official APIs to detect this, this ridiculous workaround appears
+		// in the core Go libs: https://github.com/golang/go/issues/4373#issuecomment-347680321
+		errString := err.Error()
+		if !strings.Contains(errString, "use of closed network connection") {
+			glog.Errorf("Error closing connection: %s", errString)
+		}
 		l.metrics.RecordConnectionClose(false)
 	}
 	return err
