@@ -210,7 +210,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, adapters.BadServerResponseError{
+				return nil, &adapters.BadServerResponseError{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}
 			}

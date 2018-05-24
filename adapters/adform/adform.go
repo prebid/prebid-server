@@ -124,7 +124,7 @@ func (a *AdformAdapter) Call(ctx context.Context, request *pbs.PBSRequest, bidde
 	}
 
 	if response.StatusCode != 200 {
-		return nil, adapters.BadServerResponseError{
+		return nil, &adapters.BadServerResponseError{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
 		}
 	}

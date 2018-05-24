@@ -249,7 +249,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
 						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
-							if _, isBadServer := err.(adapters.BadServerResponseError); !isBadServer {
+							if _, isBadServer := err.(*adapters.BadServerResponseError); !isBadServer {
 								glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 							}
 						}
