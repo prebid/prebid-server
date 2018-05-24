@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -291,6 +292,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 				if j > 0 {
 					beachfrontReq.Slots[k].Sizes = append(beachfrontReq.Slots[k].Sizes, BeachfrontSize{})
 				}
+
+				glog.Info(j)
+				glog.Info(k)
 
 				beachfrontReq.Slots[k].Sizes[j].H = imp.Banner.Format[j].H
 				beachfrontReq.Slots[k].Sizes[j].W = imp.Banner.Format[j].W

@@ -7,8 +7,12 @@
     "appId" : {
       "type": "string",
       "description": "The id of an inventory target"
-    }
+    },
+      "bidfloor": {
+        "type": "float",
+        "description": "The price floor for the bid"
+      }
   },
 
-  "required": ["appId"]
+  "required": ["appId", "bidfloor"]
 }
