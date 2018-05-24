@@ -298,6 +298,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 
 				glog.Info(j)
 				glog.Info(k)
+				glog.Info(len(beachfrontReq.Slots))
+				glog.Info(len(beachfrontReq.Slots[k].Sizes))
 
 				beachfrontReq.Slots[k].Sizes[j].H = imp.Banner.Format[j].H
 				beachfrontReq.Slots[k].Sizes[j].W = imp.Banner.Format[j].W
