@@ -9,7 +9,7 @@
       "description": "The id of an inventory target"
     },
       "bidfloor": {
-        "type": "float",
+        "type": "number",
         "description": "The price floor for the bid"
       }
   },
