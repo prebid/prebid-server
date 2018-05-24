@@ -2,8 +2,10 @@ package pbs
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/magiconair/properties/assert"
@@ -653,6 +655,50 @@ func TestParseRequestWithInstl(t *testing.T) {
 		t.Errorf("Parse instl failed.")
 	}
 
+}
+
+func TestTimeouts(t *testing.T) {
+	doTimeoutTest(t, 10, 15, 10, 0)
+	doTimeoutTest(t, 10, 0, 10, 0)
+	doTimeoutTest(t, 5, 5, 10, 0)
+	doTimeoutTest(t, 15, 15, 0, 0)
+	doTimeoutTest(t, 15, 0, 20, 15)
+}
+
+func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def uint64) {
+	t.Helper()
+	cfg := &config.AuctionTimeouts{
+		Default: def,
+		Max:     max,
+	}
+	body := fmt.Sprintf(`{
+		"tid": "abcd",
+		"timeout_millis": %d,
+		"app":{
+			"bundle":"AppNexus.PrebidMobileDemo",
+			"ver":"0.0.2"
+		},
+		"ad_units": [
+				{
+						"code": "first",
+						"sizes": [{"w": 300, "h": 250}],
+						"bids": [
+								{
+										"bidder": "indexExchange"
+								}
+						]
+				}
+		]
+}`, requested)
+	r := httptest.NewRequest("POST", "/auction", strings.NewReader(body))
+	d, _ := dummycache.New()
+	parsed, err := ParsePBSRequest(r, cfg, d, &HostCookieSettings{})
+	if err != nil {
+		t.Fatalf("Unexpected err: %v", err)
+	}
+	if parsed.TimeoutMillis != int64(expected) {
+		t.Errorf("Expected %dms timeout, got %dms", expected, parsed.TimeoutMillis)
+	}
 }
 
 func TestParsePBSRequestUsesHostCookie(t *testing.T) {
