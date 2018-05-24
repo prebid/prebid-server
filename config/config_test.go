@@ -9,32 +9,17 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
-
 	cfg, err := New(newViperWithDefaults())
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	if cfg.Port != 8000 {
-		t.Error("Expected Port 8000")
-	}
-
-	if cfg.AdminPort != 6060 {
-		t.Error("Expected Admin Port 6060")
-	}
-
-	if cfg.MaxAuctionTimeout != 250 {
-		t.Error("Expected MaxAuctionTimeout of 250ms")
-	}
-
-	if cfg.DataCache.Type != "dummy" {
-		t.Error("Expected DataCache Type of 'dummy'")
-	}
-
-	if cfg.Adapters["pubmatic"].Endpoint != "http://openbid-useast.pubmatic.com/translator?" {
-		t.Errorf("Expected Pubmatic Endpoint of http://openbid-useast.pubmatic.com/translator?")
-	}
-
+	cmpInts(t, "port", cfg.Port, 8000)
+	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 250)
+	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 100)
+	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://openbid-useast.pubmatic.com/translator?")
 }
 
 var fullConfig = []byte(`
@@ -51,7 +36,9 @@ external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
-max_auction_ms: 123
+auction_timeouts_ms:
+  max: 123
+  default: 50
 cache:
   scheme: http
   host: prebidcache.net
@@ -123,7 +110,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
-	cmpInts(t, "max_auction_ms", int(cfg.MaxAuctionTimeout), 123)
+	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
@@ -160,7 +148,8 @@ func newViperWithDefaults() *viper.Viper {
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("port", 8000)
 	v.SetDefault("admin_port", 6060)
-	v.SetDefault("max_auction_ms", 250)
+	v.SetDefault("auction_timeouts_ms.max", 250)
+	v.SetDefault("auction_timeouts_ms.default", 100)
 	v.SetDefault("datacache.type", "dummy")
 
 	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
@@ -217,16 +206,19 @@ func TestOverflowedVendorID(t *testing.T) {
 }
 
 func TestLimitTimeout(t *testing.T) {
-	doTimeoutTest(t, 10, 15, 10)
-	doTimeoutTest(t, 10, 0, 10)
-	doTimeoutTest(t, 5, 5, 10)
-	doTimeoutTest(t, 15, 15, 0)
+	doTimeoutTest(t, 10, 15, 10, 0)
+	doTimeoutTest(t, 10, 0, 10, 0)
+	doTimeoutTest(t, 5, 5, 10, 0)
+	doTimeoutTest(t, 15, 15, 0, 0)
+	doTimeoutTest(t, 15, 0, 20, 15)
+
 }
 
-func doTimeoutTest(t *testing.T, expected int, requested int, max uint64) {
+func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def uint64) {
 	t.Helper()
-	cfg := Configuration{
-		MaxAuctionTimeout: max,
+	cfg := AuctionTimeouts{
+		Default: def,
+		Max:     max,
 	}
 	expectedDuration := time.Duration(expected) * time.Millisecond
 	limited := cfg.LimitAuctionTimeout(time.Duration(requested) * time.Millisecond)
