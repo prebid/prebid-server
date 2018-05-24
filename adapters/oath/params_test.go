@@ -51,4 +51,11 @@ var invalidParams = []string{
 	`{"publisherName": true}`,
 	`{"publisherId": 123, "headerbidding": true}`,
 	`{"publisherID": "1"}`,
+	``,
+	`null`,
+	`true`,
+	`9`,
+	`1.2`,
+	`[]`,
+	`{}`,
 }
