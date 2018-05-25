@@ -740,6 +740,9 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		storedReqIds = []string{storedBidRequestId}
 	}
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
+	if len(errs) != 0 {
+		return nil, errs
+	}
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
@@ -880,7 +883,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
 		return true
 	}
