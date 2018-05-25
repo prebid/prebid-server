@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -341,6 +340,7 @@ Prepare the request that has been received from Prebid.js, translating it to the
 */
 func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	var beachfrontReq BeachfrontVideoRequest
+	var videoImps int8 = 0
 	dec := json.NewDecoder(strings.NewReader(beachfrontVideoRequestTemplate))
 
 	for {
@@ -351,13 +351,17 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 		}
 	}
 
-	// step through the prebid request "imp" and inject into the beachfrontVideo request
+	/*
+	step through the prebid request "imp" and inject into the beachfrontVideo request
+
+	The beach front video endpoint is only capable of returning a single nurl and price, wrapped in
+	an openrtb format, so even though I'm building a request here that will include multiple video
+	impressions, only a single URL will be returned. Hopefully the beachfront endpoint can be modified
+	in the future to return multiple video ads
+
+	 */
 	for i, imp := range req.Imp {
 		if imp.Video != nil {
-
-			glog.Info(imp)
-
-			//   Unique ID of the bid request, provided by the exchange.
 			beachfrontReq.Id = req.ID
 
 			// The template has 1 Imp struct, so use that one first, then add them as needed.
@@ -366,8 +370,8 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 			}
 
 			// change to imp[i]
-			beachfrontReq.Imp[i].Video.H = req.Imp[i].Video.H
-			beachfrontReq.Imp[i].Video.W = req.Imp[i].Video.W
+			beachfrontReq.Imp[videoImps].Video.H = req.Imp[i].Video.H
+			beachfrontReq.Imp[videoImps].Video.W = req.Imp[i].Video.W
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -379,11 +383,11 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 				return beachfrontReq, err
 			}
 
-			beachfrontReq.Imp[i].Bidfloor = beachfrontVideoExt.BidFloor
+			beachfrontReq.Imp[videoImps].Bidfloor = beachfrontVideoExt.BidFloor
 			//   A unique identifier for this impression within the context of
 			//   the bid request (typically, starts with 1 and increments).
-			beachfrontReq.Imp[i].Id = i
-			beachfrontReq.Imp[i].ImpId = req.Imp[i].ID
+			beachfrontReq.Imp[videoImps].Id = i
+			beachfrontReq.Imp[videoImps].ImpId = req.Imp[i].ID
 
 			if req.Device != nil {
 				beachfrontReq.Device.Geo.Ip = req.Device.IP
@@ -391,6 +395,8 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 			}
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
+
+			videoImps++
 		}
 	}
 
@@ -422,9 +428,12 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
 
-	if internalRequest.Imp[0].Video != nil {
-		isVideo = true
-		bidtype = openrtb_ext.BidTypeVideo
+	for i := range internalRequest.Imp {
+		if internalRequest.Imp[i].Video != nil {
+			isVideo = true
+			bidtype = openrtb_ext.BidTypeVideo
+			break
+		}
 	}
 
 	bidResp, err = postprocess(response, externalRequest, internalRequest.ID, isVideo)
@@ -454,7 +463,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 	var err error
 
 	if isVideo {
-		// Regular video ad. Beachfront returns video ads in openRTB format.
+		// Regular video ad. Beachfront returns video ads in openRTB format (or close enough).
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
 			return openrtbResp, err
 		}
@@ -513,6 +522,9 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 		return openrtbResp, err
 	}
 
+	/* there will only be one seatBid because beachfront only returns a single video ad
+	but if that were to change this should work on all of them:
+	 */
 	for i := range openrtbResp.SeatBid {
 		for j := range openrtbResp.SeatBid[i].Bid {
 			openrtbResp.SeatBid[i].Bid[j].ImpID = xtrnal.Imp[i].ImpId
