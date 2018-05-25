@@ -11,10 +11,10 @@ import (
 
 	"github.com/buger/jsonparser"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
-	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/blang/semver"
@@ -217,7 +217,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -231,9 +231,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 		return nil, fmt.Errorf("No ad units specified")
 	}
 
-	if pbsReq.TimeoutMillis == 0 || pbsReq.TimeoutMillis > 2000 {
-		pbsReq.TimeoutMillis = int64(viper.GetInt("default_timeout_ms"))
-	}
+	pbsReq.TimeoutMillis = int64(cfg.LimitAuctionTimeout(time.Duration(pbsReq.TimeoutMillis)*time.Millisecond) / time.Millisecond)
 
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
