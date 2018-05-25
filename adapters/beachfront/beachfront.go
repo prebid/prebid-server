@@ -467,7 +467,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
 			return openrtbResp, err
 		}
-		return postprocessVideo(openrtbResp, externalRequest)
+		return postprocessVideo(openrtbResp, externalRequest, id)
 	} else {
 		if id != TestID {
 			/* Beachfront currently returns banner ads in a sparse format which is just the openRTB seatbid
@@ -487,11 +487,11 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 			}
 		}
 
-		return postprocessBanner(openrtbResp, beachfrontResp)
+		return postprocessBanner(openrtbResp, beachfrontResp, id)
 	}
 }
 
-func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []BeachfrontResponseSlot) (openrtb.BidResponse, error) {
+func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []BeachfrontResponseSlot, id string) (openrtb.BidResponse, error) {
 	if beachfrontResp == nil {
 		return openrtbResp, nil
 	}
@@ -499,10 +499,10 @@ func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []Beachfr
 	r, _ := regexp.Compile("\\\"([0-9]+)")
 	for k, _ := range openrtbResp.SeatBid {
 		openrtbResp.SeatBid[k].Bid = append(openrtbResp.SeatBid[k].Bid, openrtb.Bid{
-			ID:    fmt.Sprintf("%s", r.FindStringSubmatch(beachfrontResp[k].Adm)[1]),
+			CrID:    fmt.Sprintf("%s", r.FindStringSubmatch(beachfrontResp[k].Adm)[1]),
 			ImpID: beachfrontResp[k].Slot,
 			Price: beachfrontResp[k].Price,
-			CrID:  beachfrontResp[k].CrID,
+			ID:  	id,
 			AdM:   beachfrontResp[k].Adm,
 			H:     beachfrontResp[k].H,
 			W:     beachfrontResp[k].W,
@@ -514,7 +514,7 @@ func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []Beachfr
 	return openrtbResp, nil
 }
 
-func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters.RequestData) (openrtb.BidResponse, error) {
+func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters.RequestData, id string) (openrtb.BidResponse, error) {
 	var xtrnal BeachfrontVideoRequest
 	var err error
 
@@ -531,6 +531,7 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 			openrtbResp.SeatBid[i].Bid[j].CrID = xtrnal.Imp[i].ImpId
 			openrtbResp.SeatBid[i].Bid[j].H = xtrnal.Imp[i].Video.H
 			openrtbResp.SeatBid[i].Bid[j].W = xtrnal.Imp[i].Video.W
+			openrtbResp.SeatBid[i].Bid[j].ID = id
 		}
 		openrtbResp.SeatBid[i].Seat = Seat
 	}
