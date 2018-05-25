@@ -282,35 +282,23 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 	}
 
 	// step through the prebid request "imp" and inject into the beachfront request.
-	for k, imp := range req.Imp {
+	for i, imp := range req.Imp {
 		if imp.Video != nil {
 			return beachfrontReq, nil
 		} else if imp.Banner != nil {
-			// Set the beachfront "size" values to match the prebid "format" values
+			if i > 0 {
+				beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
+				beachfrontReq.Slots[i].Sizes = append(beachfrontReq.Slots[i].Sizes, BeachfrontSize{})
+			}
 			for j := range imp.Banner.Format {
-				// The template has 1 Size struct, so use that one first, then add them as needed.
-				if len(beachfrontReq.Slots[k].Sizes) < j {
-					glog.Info("tap")
-					beachfrontReq.Slots[k].Sizes = append(beachfrontReq.Slots[k].Sizes, BeachfrontSize{})
+				if j > 0 {
+					beachfrontReq.Slots[i].Sizes = append(beachfrontReq.Slots[i].Sizes, BeachfrontSize{})
 				}
-
-				glog.Info(beachfrontReq.Slots)
-				glog.Info(imp.Banner)
-				glog.Info(j)
-				glog.Info(k)
-				glog.Info(len(beachfrontReq.Slots))
-				glog.Info(len(beachfrontReq.Slots[k].Sizes))
-
-				// 0011 // 1012 // 0120
-				// 0011 // 1012 // 011?
-				// 0011 // 1011
-
-
-				beachfrontReq.Slots[k].Sizes[j].H = 250
-				beachfrontReq.Slots[k].Sizes[j].W = imp.Banner.Format[j].W
+				beachfrontReq.Slots[i].Sizes[j].H = imp.Banner.Format[j].H
+				beachfrontReq.Slots[i].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
-			beachfrontReq.Slots[k].Bidfloor = imp.BidFloor
+			beachfrontReq.Slots[i].Bidfloor = imp.BidFloor
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -332,17 +320,14 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 				}
 			}
 
-			beachfrontReq.Slots[k].Slot = req.Imp[k].ID
+			beachfrontReq.Slots[i].Slot = req.Imp[i].ID
 
-			beachfrontReq.Slots[k].Id = beachfrontExt.AppId
+			beachfrontReq.Slots[i].Id = beachfrontExt.AppId
 		}
 	}
 
 	if req.User != nil {
-		//   Buyer-specific ID for the user as mapped by the exchange for
-		//   the buyer. At least one of buyeruid or id is recommended.
 		beachfrontReq.User = req.User.BuyerUID
-	} else {
 	}
 
 	beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
@@ -356,8 +341,6 @@ Prepare the request that has been received from Prebid.js, translating it to the
 */
 func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	var beachfrontReq BeachfrontVideoRequest
-	var i int = 1
-
 	dec := json.NewDecoder(strings.NewReader(beachfrontVideoRequestTemplate))
 
 	for {
@@ -369,18 +352,22 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	}
 
 	// step through the prebid request "imp" and inject into the beachfrontVideo request
-	for k, imp := range req.Imp {
+	for i, imp := range req.Imp {
 		if imp.Video != nil {
+
+			glog.Info(imp)
+
 			//   Unique ID of the bid request, provided by the exchange.
 			beachfrontReq.Id = req.ID
 
 			// The template has 1 Imp struct, so use that one first, then add them as needed.
-			if k > 0 {
+			if i > 0 {
 				beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
 			}
 
-			beachfrontReq.Imp[k].Video.H = req.Imp[k].Video.H
-			beachfrontReq.Imp[k].Video.W = req.Imp[k].Video.W
+			// change to imp[i]
+			beachfrontReq.Imp[i].Video.H = req.Imp[i].Video.H
+			beachfrontReq.Imp[i].Video.W = req.Imp[i].Video.W
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -392,11 +379,11 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 				return beachfrontReq, err
 			}
 
-			beachfrontReq.Imp[k].Bidfloor = beachfrontVideoExt.BidFloor
+			beachfrontReq.Imp[i].Bidfloor = beachfrontVideoExt.BidFloor
 			//   A unique identifier for this impression within the context of
 			//   the bid request (typically, starts with 1 and increments).
-			beachfrontReq.Imp[k].Id = i
-			beachfrontReq.Imp[k].ImpId = req.Imp[k].ID
+			beachfrontReq.Imp[i].Id = i
+			beachfrontReq.Imp[i].ImpId = req.Imp[i].ID
 
 			if req.Device != nil {
 				beachfrontReq.Device.Geo.Ip = req.Device.IP
@@ -405,22 +392,23 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
 		}
-		i++
 	}
 
-	if req.User.ID != "" {
-		//   Exchange-specific ID for the user. At least one of id or
-		//   buyeruid is recommended.
-		beachfrontReq.User.ID = req.User.ID
-	} else {
+	if req.User != nil {
+		if req.User.ID != "" {
+			//   Exchange-specific ID for the user. At least one of id or
+			//   buyeruid is recommended.
+			beachfrontReq.User.ID = req.User.ID
+		}
+
+		if req.User.BuyerUID != "" {
+			//   Buyer-specific ID for the user as mapped by the exchange for
+			//   the buyer. At least one of buyeruid or id is recommended.
+			beachfrontReq.User.BuyerUID = req.User.BuyerUID
+		}
+
 	}
 
-	if req.User.BuyerUID != "" {
-		//   Buyer-specific ID for the user as mapped by the exchange for
-		//   the buyer. At least one of buyeruid or id is recommended.
-		beachfrontReq.User.BuyerUID = req.User.BuyerUID
-	} else {
-	}
 
 	beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
 	beachfrontReq.Site.Page = req.Site.Page
@@ -481,7 +469,9 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 			}
 
 			openrtbResp.ID = id
-			openrtbResp.SeatBid = append(openrtbResp.SeatBid, openrtb.SeatBid{})
+			for range beachfrontResp {
+				openrtbResp.SeatBid = append(openrtbResp.SeatBid, openrtb.SeatBid{})
+			}
 		} else {
 			if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
 				return openrtbResp, err
