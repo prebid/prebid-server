@@ -73,7 +73,10 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := pbs.ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}

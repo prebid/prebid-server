@@ -194,7 +194,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if anResp.StatusCode != http.StatusOK {
-		return nil, adapters.BadServerResponseError{
+		return nil, &adapters.BadServerResponseError{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
 		}
 	}
@@ -215,7 +215,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		for _, bid := range sb.Bid {
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, adapters.BadServerResponseError{
+				return nil, &adapters.BadServerResponseError{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}
 			}

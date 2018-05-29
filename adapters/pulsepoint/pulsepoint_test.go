@@ -230,7 +230,10 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient, &hcs)
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

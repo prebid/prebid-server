@@ -136,7 +136,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, dataCache, &hostCookieSettings)
+	pbs_req, err := pbs.ParsePBSRequest(r, &deps.cfg.AuctionTimeouts, dataCache, &hostCookieSettings)
 	// Defer here because we need pbs_req defined.
 	defer func() {
 		if pbs_req == nil {
@@ -249,7 +249,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
 						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
-							if _, isBadServer := err.(adapters.BadServerResponseError); !isBadServer {
+							if _, isBadServer := err.(*adapters.BadServerResponseError); !isBadServer {
 								glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
 							}
 						}
@@ -621,7 +621,7 @@ func init() {
 	viper.SetDefault("external_url", "http://localhost:8000")
 	viper.SetDefault("port", 8000)
 	viper.SetDefault("admin_port", 6060)
-	viper.SetDefault("default_timeout_ms", 250)
+	viper.SetDefault("max_timeout_ms", 5000)
 	viper.SetDefault("cache.expected_millis", 10)
 	viper.SetDefault("datacache.type", "dummy")
 	// no metrics configured by default (metrics{host|database|username|password})
