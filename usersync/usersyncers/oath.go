@@ -12,7 +12,7 @@ func NewOathSyncer(userSyncURL string, externalURL string) *syncer {
 	return &syncer{
 		familyName:          "oath",
 		gdprVendorID:        25,
-		syncEndpointBuilder: resolveMacros("http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=" + redirectURL),
+		syncEndpointBuilder: resolveMacros(url.QueryEscape(userSyncURL) + redirectURL),
 		syncType:            SyncTypeRedirect,
 	}
 }
