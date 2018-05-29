@@ -27,7 +27,7 @@ Then download and prepare Prebid Server:
 
 ```bash
 cd $GOPATH
-git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server
+git clone https://github.com/freestarcapital/prebid-server src/github.com/prebid/prebid-server
 cd src/github.com/prebid/prebid-server
 dep ensure
 ```
