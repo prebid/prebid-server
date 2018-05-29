@@ -10,34 +10,29 @@ import (
 	"strconv"
 )
 
-//bid URL
-const uri = "http://east-bid.ybp.yahoo.com/bid/appnexuspbs"
-
 type OathAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
 func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
 
+	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &adapters.BadInputError{
-			Message: fmt.Sprintf("No impression in the bid request"),
+			Message: "No impression in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs
 	}
 
-	var bannerImps []openrtb.Imp
-	var videoImps []openrtb.Imp
+	validImpExists := false
 
 	for _, imp := range request.Imp {
 		//Oath supports only banner and video impressions as of now
 		if imp.Banner != nil {
-			bannerImps = append(bannerImps, imp)
+			validImpExists = true
 		} else if imp.Video != nil {
-			videoImps = append(videoImps, imp)
+			validImpExists = true
 		} else {
 			err := &adapters.BadInputError{
 				Message: fmt.Sprintf("Oath only supports banner and video imps. Ignoring imp id=%s", imp.ID),
@@ -46,7 +41,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		}
 	}
 
-	if len(bannerImps) <= 0 && len(videoImps) <= 0 {
+	if !validImpExists {
 		err := &adapters.BadInputError{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
 		}
@@ -66,17 +61,16 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 
 	if err != nil {
 		err = &adapters.BadInputError{
-			Message: fmt.Sprintf("ext.bidder not provided"),
+			Message: "ext.bidder not provided",
 		}
 		errors = append(errors, err)
 		return nil, errors
 	}
-
 	var oathExt openrtb_ext.ExtImpOath
 	err = json.Unmarshal(bidderExt.Bidder, &oathExt)
 	if err != nil {
 		err = &adapters.BadInputError{
-			Message: fmt.Sprintf("ext.bidder.publisherName not provided"),
+			Message: "ext.bidder.publisherName not provided",
 		}
 		errors = append(errors, err)
 		return nil, errors
@@ -89,7 +83,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		errors = append(errors, err)
 		return nil, errors
 	}
-	thisURI := uri
+	thisURI := a.URI
 	thisURI = thisURI + "?publisher=" + oathExt.PublisherName
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -102,7 +96,6 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
 		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
-
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
@@ -124,24 +117,26 @@ func (a *OathAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequ
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. ", response.StatusCode)}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{err}
+		return nil, []error{&adapters.BadServerResponseError{
+			Message: fmt.Sprintf("bad server response: %d. ", err),
+		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-			bid := sb.Bid[i]
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
-			})
-		}
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+	sb := bidResp.SeatBid[0]
+	for i := 0; i < len(sb.Bid); i++ {
+		bid := sb.Bid[i]
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bid,
+			BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+		})
 	}
 	return bidResponse, nil
 }
@@ -160,8 +155,6 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 		if imp.ID == impId {
 			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
 			}
 			return mediaType
 		}
@@ -169,10 +162,8 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewOathBidder(client *http.Client, endpoint string) *OathAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
+func NewOathBidder(endpoint string) *OathAdapter {
 	return &OathAdapter{
-		http: a,
-		URI:  endpoint,
+		URI: endpoint,
 	}
 }

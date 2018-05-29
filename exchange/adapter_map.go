@@ -47,6 +47,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderAdform:      adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
 		openrtb_ext.BidderSovrn:       adaptBidder(sovrn.NewSovrnBidder(client, cfg.Adapters["sovrn"].Endpoint), client),
 		openrtb_ext.BidderEPlanning:   adaptBidder(eplanning.NewEPlanningBidder(client, cfg.Adapters["eplanning"].Endpoint), client),
-		openrtb_ext.BidderOath:        adaptBidder(oath.NewOathBidder(client, cfg.Adapters["oath"].Endpoint), client),
+		openrtb_ext.BidderOath:        adaptBidder(oath.NewOathBidder(cfg.Adapters["oath"].Endpoint), client),
 	}
 }

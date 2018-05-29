@@ -36,20 +36,3 @@ type CookieSyncBidders struct {
 	NoCookie     bool          `json:"no_cookie,omitempty"`
 	UsersyncInfo *UsersyncInfo `json:"usersync,omitempty"`
 }
-
-type syncer struct {
-	familyName string
-	syncInfo   *UsersyncInfo
-}
-
-func (s *syncer) GetUsersyncInfo() *UsersyncInfo {
-	return s.syncInfo
-}
-
-func (s *syncer) FamilyName() string {
-	return s.familyName
-}
-
-func (s *syncer) GDPRVendorID() uint16 {
-	return s.GDPRVendorID()
-}
