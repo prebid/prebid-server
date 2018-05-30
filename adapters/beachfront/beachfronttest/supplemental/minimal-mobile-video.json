@@ -1,12 +1,11 @@
 {
-  "mockBidRequest":
-  {
-    "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
-    "tmax":1000,
-    "source":{
-      "tid":"61b87329-8790-47b7-90dd-c53ae7ce1723"
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "app": {
+      "domain": "yourmomshouse.com",
+      "id": "some-mobile-app"
     },
-    "imp":[
+    "imp": [
       {
         "id":"video1",
         "ext":{
@@ -24,21 +23,7 @@
           "h":250
         }
       }
-    ],
-    "site":{
-      "publisher":{
-        "id":"publisher1"
-      },
-      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
-    },
-    "user": {
-      "id": "some-user",
-      "buyeruid": "some-buyer"
-    },
-    "device": {
-      "ip": "127.0.0.1",
-      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
-    }
+    ]
   },
 
   "httpCalls": [
@@ -46,40 +31,38 @@
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
-          "isPrebid": true,
           "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
-          "domain": "test.opposingviews.com",
-          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
-          "imp": [
-            {
-              "video": {
-                "w": 300,
-                "h": 250
-              },
-              "bidfloor": 0.01,
-              "id": 0,
-              "impid": "video1"
-            }
-          ],
-          "site": {
-            "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
-          },
-          "device": {
-            "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "deviceType": 0,
-            "geo": {
-              "ip": "127.0.0.1"
-            }
-          },
           "cur": [
             "USD"
           ],
+          "device": {
+            "deviceType": 0,
+            "geo": {
+              "ip": ""
+            },
+            "ua": ""
+          },
+          "domain": "yourmomshouse.com",
+          "id": "some_test_ad",
+          "imp": [
+            {
+              "bidfloor": 0.01,
+              "id": 0,
+              "impid": "video1",
+              "video": {
+                "h": 250,
+                "w": 300
+              }
+            }
+          ],
+          "isPrebid": true,
+          "site": {
+            "page": "some-mobile-app"
+          },
           "user": {
-            "id": "some-user",
-            "buyeruid": "some-buyer"
           }
         }
-        },
+      },
       "mockResponse": {
         "body": {
           "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",

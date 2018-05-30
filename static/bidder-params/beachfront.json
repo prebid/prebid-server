@@ -8,10 +8,10 @@
       "type": "string",
       "description": "The id of an inventory target"
     },
-      "bidfloor": {
-        "type": "number",
-        "description": "The price floor for the bid"
-      }
+    "bidfloor": {
+      "type": "number",
+      "description": "The price floor for the bid"
+    }
   },
 
   "required": ["appId", "bidfloor"]

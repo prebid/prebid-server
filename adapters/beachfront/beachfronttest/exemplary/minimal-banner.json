@@ -1,13 +1,11 @@
 {
   "mockBidRequest": {
-    "id": "test_id",
-    "tmax": 800,
+    "id": "some_test_ad",
     "site": {
       "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
     },
     "imp": [
       {
-        "id": "test_slot",
         "bidfloor": 0.02,
         "banner": {
           "format": [
@@ -34,7 +32,7 @@
         "body": {
           "slots": [
             {
-              "slot": "test_slot",
+              "slot": "",
               "id": "3b16770b-17af-4d22-daff-9606bdf2c9c3",
               "bidfloor": 0.02,
               "sizes": [
@@ -50,38 +48,29 @@
           "referrer": "",
           "search": "",
           "secure": 1,
-          "deviceOs": "",
-          "deviceModel": "",
           "isMobile": 0,
-          "ua":"Go-http-client/1.1",
+          "ip": "",
+          "deviceModel": "",
+          "deviceOs": "",
           "dnt": 0,
+          "ua": "",
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.1.1",
-          "ip": "",
           "user": ""
         }
       },
       "mockResponse": {
         "status": 200,
-        "body": {
-          "id": "test_id",
-          "seatbid": [
-            {
-              "bid": [
-                {
-                  "id": "12345678",
-                  "impid": "test-slot",
-                  "crid": "crid_1",
-                  "price": 2,
-                  "adm": "<div id=\"12345678\" style=\"width:300;height:250;background-color:black;color:white;\">300x250<\\div>",
-                  "w": 300,
-                  "h": 250
-                }
-              ],
-              "type": "banner"
-            }
-          ]
-        }
+        "body": [
+          {
+            "crid":"crid_1",
+            "price":2.942808,
+            "w":300,
+            "h":250,
+            "slot":"div-gpt-ad-1460505748561-0",
+            "adm":"<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          }
+        ]
       }
     }
   ],
