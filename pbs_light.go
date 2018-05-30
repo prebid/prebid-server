@@ -652,7 +652,7 @@ func init() {
 	// (US east coast),setting this as default, commenting out remaining colo based urls below
 	viper.SetDefault("adapters.oath.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	viper.SetDefault("adapters.oath.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-/*	//(US East Coast)
+/*	//(US West Coast)
 	viper.SetDefault("adapters.oath.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
 	viper.SetDefault("adapters.oath.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
 	//(APAC)
