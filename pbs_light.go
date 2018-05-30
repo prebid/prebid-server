@@ -648,9 +648,20 @@ func init() {
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.SetDefault("host_cookie.ttl_days", 90)
 
+	//Oath urls
+	// (US east coast),setting this as default, commenting out remaining colo based urls below
 	viper.SetDefault("adapters.oath.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	viper.SetDefault("adapters.oath.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-
+/*	//(US East Coast)
+	viper.SetDefault("adapters.oath.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
+	viper.SetDefault("adapters.oath.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	//(APAC)
+	viper.SetDefault("adapters.oath.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs") 
+	viper.SetDefault("adapters.oath.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	//(EMEA)
+	viper.SetDefault("adapters.oath.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
+	viper.SetDefault("adapters.oath.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+*/
 	// Set environment variable support:
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("PBS")
