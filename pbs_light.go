@@ -648,6 +648,9 @@ func init() {
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.SetDefault("host_cookie.ttl_days", 90)
 
+	viper.SetDefault("adapters.oath.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	viper.SetDefault("adapters.oath.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+
 	// Set environment variable support:
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("PBS")
