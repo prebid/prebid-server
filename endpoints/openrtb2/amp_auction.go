@@ -279,55 +279,25 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	deps.parseOverrideQueryParams(httpRequest, req)
+	deps.overrideWithParams(httpRequest, req)
 
 	return
 }
 
-func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, req *openrtb.BidRequest) {
-	if overrideWidth, err := strconv.ParseUint(httpRequest.FormValue("ow"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.W = &overrideWidth
+func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+	// Override the stored request sizes with AMP ones, if they exist.
+	if req.Imp[0].Banner != nil {
+		width := parseFormInt(httpRequest, "w", 0)
+		height := parseFormInt(httpRequest, "h", 0)
+		overrideWidth := parseFormInt(httpRequest, "ow", 0)
+		overrideHeight := parseFormInt(httpRequest, "oh", 0)
+		if format := makeFormatReplacement(overrideWidth, overrideHeight, width, height, httpRequest.FormValue("ms")); len(format) != 0 {
+			req.Imp[0].Banner.Format = format
+		} else if width != 0 {
+			setWidths(req.Imp[0].Banner.Format, width)
+		} else if height != 0 {
+			setHeights(req.Imp[0].Banner.Format, height)
 		}
-	} else if width, err := strconv.ParseUint(httpRequest.FormValue("w"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.W = &width
-		}
-	}
-
-	if overrideHeight, err := strconv.ParseUint(httpRequest.FormValue("oh"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.H = &overrideHeight
-		}
-	} else if height, err := strconv.ParseUint(httpRequest.FormValue("h"), 10, 64); err == nil {
-		if req.Imp[0].Banner != nil {
-			req.Imp[0].Banner.H = &height
-		}
-	}
-
-	multiSize := httpRequest.FormValue("ms")
-	if multiSize != "" {
-		sizes := strings.Split(multiSize, ",")
-		format := make([]openrtb.Format, 0, len(sizes))
-		for _, size := range sizes {
-			wh := strings.Split(size, "x")
-			if len(wh) == 2 {
-				f := openrtb.Format{}
-				if width, err := strconv.ParseUint(wh[0], 10, 64); err == nil {
-					f.W = width
-				} else {
-					continue
-				}
-				if height, err := strconv.ParseUint(wh[1], 10, 64); err == nil {
-					f.H = height
-				} else {
-					continue
-				}
-
-				format = append(format, f)
-			}
-		}
-		req.Imp[0].Banner.Format = format
 	}
 
 	canonicalURL := httpRequest.FormValue("curl")
@@ -347,6 +317,82 @@ func (deps *endpointDeps) parseOverrideQueryParams(httpRequest *http.Request, re
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
 		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
+}
+
+func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
+	if overrideWidth != 0 && overrideHeight != 0 {
+		return []openrtb.Format{{
+			W: overrideWidth,
+			H: overrideHeight,
+		}}
+	} else if overrideWidth != 0 && height != 0 {
+		return []openrtb.Format{{
+			W: overrideWidth,
+			H: height,
+		}}
+	} else if width != 0 && overrideHeight != 0 {
+		return []openrtb.Format{{
+			W: width,
+			H: overrideHeight,
+		}}
+	} else if parsedSizes := parseMultisize(multisize); len(parsedSizes) != 0 {
+		return parsedSizes
+	} else if width != 0 && height != 0 {
+		return []openrtb.Format{{
+			W: width,
+			H: height,
+		}}
+	}
+
+	return nil
+}
+
+func setWidths(formats []openrtb.Format, width uint64) {
+	for i := 0; i < len(formats); i++ {
+		formats[i].W = width
+	}
+}
+
+func setHeights(formats []openrtb.Format, height uint64) {
+	for i := 0; i < len(formats); i++ {
+		formats[i].H = height
+	}
+}
+
+func parseMultisize(multisize string) []openrtb.Format {
+	if multisize == "" {
+		return nil
+	}
+
+	sizeStrings := strings.Split(multisize, ",")
+	sizes := make([]openrtb.Format, 0, len(sizeStrings))
+	for _, sizeString := range sizeStrings {
+		wh := strings.Split(sizeString, "x")
+		if len(wh) != 2 {
+			return nil
+		}
+		f := openrtb.Format{
+			W: parseIntErrorless(wh[0], 0),
+			H: parseIntErrorless(wh[1], 0),
+		}
+		if f.W == 0 && f.H == 0 {
+			return nil
+		}
+
+		sizes = append(sizes, f)
+	}
+	return sizes
+}
+
+func parseFormInt(req *http.Request, value string, defaultTo uint64) uint64 {
+	return parseIntErrorless(req.FormValue(value), defaultTo)
+}
+
+func parseIntErrorless(value string, defaultTo uint64) uint64 {
+	if parsed, err := strconv.ParseUint(value, 10, 64); err == nil {
+		return parsed
+	}
+	return defaultTo
 }
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.

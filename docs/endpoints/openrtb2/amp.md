@@ -8,11 +8,11 @@ For a User's Guide, see the [AMP feature docs](http://prebid.org/dev-docs/show-p
 The `tag_id` ID must reference a [Stored BidRequest](../../developers/stored-requests.md#stored-bidrequests).
 For a thorough description of BidRequest JSON, see the [/openrtb2/auction](./auction.md) docs.
 
-Optionally, a param `debug=1` may be set, setting `"test": 1` on the request and resulting in [additional debug output](auction.md#debugging).
+To be compatible with AMP, this endpoint behaves slightly different from normal `/openrtb2/auction` requests.
 
-The only caveat is that AMP BidRequests must contain an `imp` array with one, and only one, impression object.
-
-All AMP content must be secure, so this endpoint will enforce that request.imp[0].secure = 1. Saves on publishers forgetting to set this.
+1. The Stored `request.imp` data must have exactly one element.
+2. `request.imp[0].secure` will be always be set to `1`, because AMP requires all content to be `https`.
+3. AMP query params will overwrite parts of your Stored Request. For details, see the Query Params section.
 
 ### Request
 
@@ -42,14 +42,7 @@ An example Stored Request is given below:
     "imp": [
         {
             "id": "some-impression-id",
-            "banner": {
-                "format": [
-                    {
-                        "w": 300,
-                        "h": 250
-                    }
-                ]
-            },
+            "banner": {}, // The sizes are defined is set by your AMP tag query params
             "ext": {
                 "appnexus": {
                     // Insert parameters here
@@ -96,9 +89,30 @@ This endpoint supports the following query parameters:
 4. `ow` - `amp-ad` `data-override-width`
 5. `ms` - `amp-ad` `data-multi-size`
 6. `curl` - the canonical URL of the page
-7. `purl` - the page URL
-8. `timeout` - the publisher-specified timeout for the RTC callout
+7. `timeout` - the publisher-specified timeout for the RTC callout
    - A configuration option `amp_timeout_adjustment_ms` may be set to account for estimated latency so that Prebid Server can handle timeouts from adapters and respond to the AMP RTC request before it times out.
-9. `debug` - When set to `1`, will set `"test": 1` on outgoing OpenRTB requests and will return additional debug information in the response `ext`.
+8. `debug` - When set to `1`, the respones will contain extra info for debugging.
 
-For more information see [this pull request adding the query params to the Prebid callout](https://github.com/ampproject/amphtml/pull/14155) and [this issue adding support for network-level RTC macros](https://github.com/ampproject/amphtml/issues/12374).
+For information on how these get from AMP into this endpoint, see [this pull request adding the query params to the Prebid callout](https://github.com/ampproject/amphtml/pull/14155) and [this issue adding support for network-level RTC macros](https://github.com/ampproject/amphtml/issues/12374).
+
+If present, these will override parts of your Stored Request.
+
+1. `ow`, `oh`, `w`, `h`, and/or `ms` will be used to set `request.imp[0].banner.format` if `request.imp[0].banner` is present.
+2. `curl` will be used to set `request.site.page`
+3. `timeout` will generally be used to set `request.tmax`. However, the Prebid Server host can [configure](../../developers/configuration.md) their deploy to reduce this timeout for technical reasons.
+4. `debug` will be used to set `request.test`, causing the `response.debug` to have extra debugging info in it.
+
+### Resolving Sizes
+
+We strive to return ads with sizes which are valid for the `amp-ad` on your page. This logic intends to
+track the logic used by `doubleclick` when resolving sizes used to fetch ads from their ad server.
+
+Specifically:
+
+1. If `ow` and `oh` exist, `request.imp[0].banner.format` will be a single element with `w: ow` and `h: oh`
+2. If `ow` and `h` exist, `request.imp[0].banner.format` will be a single element with `w: ow` and `h: h`
+3. If `oh` and `w` exist, `request.imp[0].banner.format` will be a single element with `w: w` and `h: oh`
+4. If `ms` exists, `request.imp[0].banner.format` will contain an element for every size it uses.
+5. If `w` and `h` exist, `request.imp[0].banner.format` will be a single element with `w: w` and `h: h`
+6. If `w` _or_ `h` exist, it will be used to override _one_ of the dimensions inside each element of `request.imp[0].banner.format`
+7. If none of these exist then the Stored Request values for `request.imp[0].banner.format` will be used without modification.
