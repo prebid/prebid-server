@@ -27,7 +27,7 @@
         var t = e,
             n = null,
             r = new XMLHttpRequest;
-        return r.open("GET", "https://prebid-cache.pub.network:8888/cache?uuid=" + t, !1), r.withCredentials = "true", u.logTimestamp("Adm is requested"), r.send(null), 200 === r.status ? n = r.responseText : u.logError("Error request adm cache id"), n
+        return r.open("GET", "https://prebid-cache.pub.network/cache?uuid=" + t, !1), r.withCredentials = "true", u.logTimestamp("Adm is requested"), r.send(null), 200 === r.status ? n = r.responseText : u.logError("Error request adm cache id"), n
     }
 
     function i(e, t, n) {
