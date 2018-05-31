@@ -96,7 +96,6 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
 		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
-	fmt.Println("**** URI ::: " + thisURI)
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
