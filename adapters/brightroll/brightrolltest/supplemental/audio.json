@@ -1,11 +1,11 @@
 {
   "mockBidRequest": {
-    "id": "unsupported-native-request",
+    "id": "unsupported-audio-request",
     "imp": [
       {
-        "id": "unsupported-native-imp",
-        "native": {
-          "ver": "1.1"
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
         },
         "ext": {
           "bidder": {
@@ -17,7 +17,7 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Oath only supports banner and video imps. Ignoring imp id=unsupported-native-imp",
+    "Brightroll only supports banner and video imps. Ignoring imp id=unsupported-audio-imp",
     "No valid impression in the bid request"
   ]
 }

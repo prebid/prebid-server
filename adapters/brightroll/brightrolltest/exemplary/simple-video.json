@@ -3,34 +3,22 @@
     "id": "test-request-id",
     "imp": [
       {
-        "id": "test-imp-video-id",
+        "id": "test-imp-id",
         "video": {
           "mimes": ["video/mp4"],
           "protocols": [2, 5],
           "w": 1024,
           "h": 576
         },
-        "ext": {
-          "bidder": {
-            "publisherName": "cafemom"
-          }
-        }
-      },
-      {
-        "id": "unsupported-audio-imp",
-        "audio": {
-          "mimes": [
-            "video/mp4"
-          ]
-        },
-        "ext": {
-          "bidder": {
+        "ext":{
+          "bidder":{
             "publisherName": "cafemom"
           }
         }
       }
     ]
   },
+
   "httpCalls": [
     {
       "expectedRequest": {
@@ -39,25 +27,12 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id": "test-imp-video-id",
+              "id": "test-imp-id",
               "video": {
                 "mimes": ["video/mp4"],
                 "protocols": [2, 5],
                 "w": 1024,
                 "h": 576
-              },
-              "ext": {
-                "bidder": {
-                  "publisherName": "cafemom"
-                }
-              }
-            },
-            {
-              "id": "unsupported-audio-imp",
-              "audio": {
-                "mimes": [
-                  "video/mp4"
-                ]
               },
               "ext": {
                 "bidder": {
@@ -75,10 +50,10 @@
           "cur": "USD",
           "seatbid": [
             {
-              "seat": "oath",
+              "seat": "Brightroll",
               "bid": [{
                 "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-video-id",
+                "impid": "test-imp-id",
                 "price": 0.500000,
                 "adm": "some-test-ad",
                 "crid": "crid_10",
@@ -96,7 +71,7 @@
     {
       "bid": {
         "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-        "impid": "test-imp-video-id",
+        "impid": "test-imp-id",
         "price": 0.5,
         "adm": "some-test-ad",
         "crid": "crid_10",

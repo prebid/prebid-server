@@ -1,4 +1,4 @@
-package oath
+package brightroll
 
 import (
 	"encoding/json"
@@ -10,11 +10,11 @@ import (
 	"strconv"
 )
 
-type OathAdapter struct {
+type BrightrollAdapter struct {
 	URI string
 }
 
-func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
@@ -28,14 +28,14 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	validImpExists := false
 
 	for _, imp := range request.Imp {
-		//Oath supports only banner and video impressions as of now
+		//Brightroll supports only banner and video impressions as of now
 		if imp.Banner != nil {
 			validImpExists = true
 		} else if imp.Video != nil {
 			validImpExists = true
 		} else {
 			err := &adapters.BadInputError{
-				Message: fmt.Sprintf("Oath only supports banner and video imps. Ignoring imp id=%s", imp.ID),
+				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", imp.ID),
 			}
 			errs = append(errs, err)
 		}
@@ -66,8 +66,8 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		errors = append(errors, err)
 		return nil, errors
 	}
-	var oathExt openrtb_ext.ExtImpOath
-	err = json.Unmarshal(bidderExt.Bidder, &oathExt)
+	var brightrollExt openrtb_ext.ExtImpBrightroll
+	err = json.Unmarshal(bidderExt.Bidder, &brightrollExt)
 	if err != nil {
 		err = &adapters.BadInputError{
 			Message: "ext.bidder.publisherName not provided",
@@ -76,7 +76,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		return nil, errors
 	}
 
-	if oathExt.PublisherName == "" {
+	if brightrollExt.PublisherName == "" {
 		err = &adapters.BadInputError{
 			Message: "publisherName is empty",
 		}
@@ -84,7 +84,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		return nil, errors
 	}
 	thisURI := a.URI
-	thisURI = thisURI + "?publisher=" + oathExt.PublisherName
+	thisURI = thisURI + "?publisher=" + brightrollExt.PublisherName
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -96,6 +96,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
 		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
+	fmt.Println("**** URI ::: " + thisURI)
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
@@ -104,7 +105,7 @@ func (a *OathAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Req
 	}}, errors
 }
 
-func (a *OathAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -162,8 +163,8 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewOathBidder(endpoint string) *OathAdapter {
-	return &OathAdapter{
+func NewBrightrollBidder(endpoint string) *BrightrollAdapter {
+	return &BrightrollAdapter{
 		URI: endpoint,
 	}
 }

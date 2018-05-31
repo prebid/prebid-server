@@ -25,7 +25,7 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "Oath only supports banner and video imps. Ignoring imp id=test-imp-id",
+    "Brightroll only supports banner and video imps. Ignoring imp id=test-imp-id",
     "No valid impression in the bid request"
   ]
 }

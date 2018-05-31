@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Oath Adapter Params",
-  "description": "A schema which validates params accepted by the Oath adapter",
+  "title": "Brightroll Adapter Params",
+  "description": "A schema which validates params accepted by the Brightroll adapter",
   "type": "object",
   "properties": {
       "publisherName": {
