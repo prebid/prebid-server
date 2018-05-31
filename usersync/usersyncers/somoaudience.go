@@ -1,25 +1,19 @@
 package usersyncers
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
-
-	"github.com/prebid/prebid-server/usersync"
 )
 
 func NewSomoaudienceSyncer(externalURL string) *syncer {
 	externalURL = strings.TrimRight(externalURL, "/")
-	redirectURL := fmt.Sprintf("%s/setuid?bidder=somoaudience&uid=${UID}", externalURL)
+	redirectURL := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dsomoaudience%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24UID"
 
-	usersyncURL := "//publisher-east.mobileadtrading.com/usersync?gdprg=1&ru="
+	usersyncURL := "//publisher-east.mobileadtrading.com/usersync?ru="
 
 	return &syncer{
-		familyName: "somoaudience",
-		syncInfo: &usersync.UsersyncInfo{
-			URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirectURL)),
-			Type:        "redirect",
-			SupportCORS: false,
-		},
+		familyName:          "somoaudience",
+		syncEndpointBuilder: resolveMacros(usersyncURL + redirectURL),
+		syncType:            SyncTypeRedirect,
 	}
 }
