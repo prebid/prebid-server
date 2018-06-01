@@ -315,6 +315,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 			beachfrontReq.Id = req.ID
 
 			beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
+			videoImps = len(beachfrontReq.Imp) - 1
 
 			beachfrontReq.Imp[videoImps].Video.H = imp.Video.H
 			beachfrontReq.Imp[videoImps].Video.W = imp.Video.W
