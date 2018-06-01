@@ -166,6 +166,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		reqJSON, err = json.Marshal(beachfrontRequests.Video)
 		uri = uri + beachfrontRequests.Video.AppId + VideoEndpointSuffix
 	} else {
+		/*
+		We will get here if request contains no Video imps, though it might have
+		Audio or Native imps as well as banner.
+		*/
 		reqJSON, err = json.Marshal(beachfrontRequests.Banner)
 	}
 
@@ -206,6 +210,7 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 			return beachfrontReqs, err
 		}
 	} else {
+		// If there were any Video imps in the request, we have skipped to here.
 		beachfrontReqs.Video, err = getVideoRequest(req)
 		if err != nil {
 			return beachfrontReqs, err
@@ -218,13 +223,18 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
 	var bannerImps int = 0
 	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
-	// step through the prebid request "imp" and inject into the beachfront request.
-	for _, imp := range req.Imp {
-		if imp.Video != nil {
-			return beachfrontReq, nil
+	/*
+	 step through the prebid request "imp" and inject into the beachfront request. If we got to here,
+	 then we have already stepped through the requested imps and verified that none are Video, so no
+	 reason to check that here, but there could be Audio or Native (or maybe they are filtered out before
+	 I get here based on the capabilities in bidder-info/beachfront.yaml?) .
+	  */
 
-		} else if imp.Audio != nil {
+	for _, imp := range req.Imp {
+		if imp.Audio != nil {
+			// Place holder
 		} else if imp.Native != nil {
+			// Place holder
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 			beachfrontReq.Slots[bannerImps].Sizes = append(beachfrontReq.Slots[bannerImps].Sizes, BeachfrontSize{})
@@ -291,12 +301,13 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	var beachfrontReq BeachfrontVideoRequest = NewBeachfrontVideoRequest()
 
 	/*
-		step through the prebid request "imp" and inject into the beachfrontVideo request
+	The req could contain banner,audio,native and video imps when It arrives here. I am only
+	interested in video
 
-		The beach front video endpoint is only capable of returning a single nurl and price, wrapped in
-		an openrtb format, so even though I'm building a request here that will include multiple video
-		impressions, only a single URL will be returned. Hopefully the beachfront endpoint can be modified
-		in the future to return multiple video ads
+	The beach front video endpoint is only capable of returning a single nurl and price, wrapped in
+	an openrtb format, so even though I'm building a request here that will include multiple video
+	impressions, only a single URL will be returned. Hopefully the beachfront endpoint can be modified
+	in the future to return multiple video ads
 
 	*/
 	for _, imp := range req.Imp {
