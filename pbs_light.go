@@ -20,7 +20,6 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
-	"github.com/xeipuuv/gojsonschema"
 
 	"crypto/tls"
 	"strings"
@@ -64,7 +63,6 @@ var hostCookieSettings pbs.HostCookieSettings
 
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
-var reqSchema *gojsonschema.Schema
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -548,39 +546,6 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.handler.ServeHTTP(w, r)
 }
 
-func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	w.Header().Add("Content-Type", "text/plain")
-	defer r.Body.Close()
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Fprintf(w, "Unable to read body\n")
-		return
-	}
-
-	if reqSchema == nil {
-		fmt.Fprintf(w, "Validation schema not loaded\n")
-		return
-	}
-
-	js := gojsonschema.NewStringLoader(string(b))
-	result, err := reqSchema.Validate(js)
-	if err != nil {
-		fmt.Fprintf(w, "Error parsing json: %v\n", err)
-		return
-	}
-
-	if result.Valid() {
-		fmt.Fprintf(w, "Validation successful\n")
-		return
-	}
-
-	for _, err := range result.Errors() {
-		fmt.Fprintf(w, "Error: %s %v\n", err.Context().String(), err)
-	}
-
-	return
-}
-
 func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 	switch cfg.DataCache.Type {
 	case "dummy":
@@ -652,16 +617,16 @@ func init() {
 	// (US east coast),setting this as default, commenting out remaining colo based urls below
 	viper.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	viper.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-/*	//(US West Coast)
-	viper.SetDefault("adapters.brightroll.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-	//(APAC)
-	viper.SetDefault("adapters.brightroll.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs") 
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-	//(EMEA)
-	viper.SetDefault("adapters.brightroll.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-*/
+	/*	//(US West Coast)
+		viper.SetDefault("adapters.brightroll.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
+		viper.SetDefault("adapters.brightroll.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+		//(APAC)
+		viper.SetDefault("adapters.brightroll.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs")
+		viper.SetDefault("adapters.brightroll.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+		//(EMEA)
+		viper.SetDefault("adapters.brightroll.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
+		viper.SetDefault("adapters.brightroll.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	*/
 	// Set environment variable support:
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("PBS")
@@ -725,17 +690,6 @@ func serve(cfg *config.Configuration) error {
 
 	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, bidderList)
 
-	b, err := ioutil.ReadFile("static/pbs_request.json")
-	if err != nil {
-		glog.Errorf("Unable to open pbs_request.json: %v", err)
-	} else {
-		sl := gojsonschema.NewStringLoader(string(b))
-		reqSchema, err = gojsonschema.NewSchema(sl)
-		if err != nil {
-			glog.Errorf("Unable to load request schema: %v", err)
-		}
-	}
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
@@ -764,7 +718,6 @@ func serve(cfg *config.Configuration) error {
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), gdprPerms, metricsEngine, pbsAnalytics))
-	router.POST("/validate", validate)
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
