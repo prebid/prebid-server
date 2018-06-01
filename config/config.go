@@ -200,7 +200,7 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func ConfigViper(v *viper.Viper) {
+func SetupViper(v *viper.Viper) {
 	v.SetConfigName("pbs")
 	v.AddConfigPath(".")
 	v.AddConfigPath("/etc/config")
@@ -250,9 +250,9 @@ func ConfigViper(v *viper.Viper) {
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
-	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 10)
-	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 20)
-	v.SetDefault("stored_requests.in_memory_cache.imp_cache_size_bytes", 30)
+	v.SetDefault("stored_requests.in_memory_cache.ttl_seconds", 0)
+	v.SetDefault("stored_requests.in_memory_cache.request_cache_size_bytes", 0)
+	v.SetDefault("stored_requests.in_memory_cache.imp_cache_size_bytes", 0)
 	v.SetDefault("stored_requests.cache_events_api", false)
 	v.SetDefault("stored_requests.http_events.endpoint", "")
 	v.SetDefault("stored_requests.http_events.amp_endpoint", "")

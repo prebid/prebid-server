@@ -10,10 +10,7 @@ import (
 
 func TestDefaults(t *testing.T) {
 	v := viper.New()
-	ConfigViper(v)
-	v.SetDefault("auction_timeouts_ms.max", 250)
-	v.SetDefault("auction_timeouts_ms.default", 100)
-	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	SetupViper(v)
 	cfg, err := New(v)
 	if err != nil {
 		t.Error(err.Error())
@@ -21,10 +18,11 @@ func TestDefaults(t *testing.T) {
 
 	cmpInts(t, "port", cfg.Port, 8000)
 	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
-	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 250)
-	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 100)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
+	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
+	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
-	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://openbid-useast.pubmatic.com/translator?")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 }
 
 var fullConfig = []byte(`
@@ -100,7 +98,7 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 
 func TestFullConfig(t *testing.T) {
 	v := viper.New()
-	ConfigViper(v)
+	SetupViper(v)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)
