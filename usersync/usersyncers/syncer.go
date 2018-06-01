@@ -25,6 +25,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderSovrn:       NewSovrnSyncer(cfg.ExternalURL, cfg.Adapters["sovrn"].UserSyncURL),
 		openrtb_ext.BidderAdtelligent: NewAdtelligentSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderEPlanning:   NewEPlanningSyncer(cfg.Adapters["eplanning"].UserSyncURL, cfg.ExternalURL),
+		openrtb_ext.BidderBrightroll:  NewBrightrollSyncer(cfg.Adapters["brightroll"].UserSyncURL, cfg.ExternalURL),
 	}
 }
 

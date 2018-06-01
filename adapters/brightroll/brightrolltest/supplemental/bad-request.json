@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "invalidbanner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherName": "cafemom"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    "Brightroll only supports banner and video imps. Ignoring imp id=test-imp-id",
+    "No valid impression in the bid request"
+  ]
+}
