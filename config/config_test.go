@@ -9,7 +9,12 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
-	cfg, err := New(newViperWithDefaults())
+	v := viper.New()
+	ConfigViper(v)
+	v.SetDefault("auction_timeouts_ms.max", 250)
+	v.SetDefault("auction_timeouts_ms.default", 100)
+	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	cfg, err := New(v)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -94,7 +99,8 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 }
 
 func TestFullConfig(t *testing.T) {
-	v := newViperWithDefaults()
+	v := viper.New()
+	ConfigViper(v)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)
@@ -163,6 +169,9 @@ func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
 			Files: true,
+			InMemoryCache: InMemoryCache{
+				Type: "none",
+			},
 		},
 	}
 

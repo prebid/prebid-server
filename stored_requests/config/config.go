@@ -101,7 +101,7 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (f
 }
 
 func newCache(cfg *config.StoredRequests) stored_requests.Cache {
-	if cfg.InMemoryCache.RequestCacheSize == 0 {
+	if cfg.InMemoryCache.Type == "none" {
 		glog.Info("No Stored Request cache configured. The Fetcher backend will be used for all Stored Requests.")
 		return &nil_cache.NilCache{}
 	}

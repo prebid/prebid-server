@@ -314,6 +314,8 @@ func makeIdList(numSoFar int, numArgs int) string {
 }
 
 type InMemoryCache struct {
+	// Identify the type of memory cache. "none", "unbounded", "lru"
+	Type string `mapstructure:"type"`
 	// TTL is the maximum number of seconds that an unused value will stay in the cache.
 	// TTL <= 0 can be used for "no ttl". Elements will still be evicted based on the Size.
 	TTL int `mapstructure:"ttl_seconds"`
@@ -324,12 +326,20 @@ type InMemoryCache struct {
 }
 
 func (inMemCache *InMemoryCache) validate() error {
-	if inMemCache == nil {
+	switch inMemCache.Type {
+	case "none":
+		return nil
+	case "unbounded":
+		if inMemCache.TTL <= 0 {
+			return errors.New("Stored requests In-Memory caches need a TTL when unbounded")
+		}
+		return nil
+	case "lru":
+		if inMemCache.RequestCacheSize <= 0 || inMemCache.ImpCacheSize <= 0 {
+			return fmt.Errorf("Stored requests In-Memory caches need finite sizes when set to lru. Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
+		}
 		return nil
 	}
 
-	if inMemCache.TTL > 0 && (inMemCache.RequestCacheSize <= 0 || inMemCache.ImpCacheSize <= 0) {
-		return fmt.Errorf("Stored Request In-Memory caches don't yet support TTLs with no max size. PRs for this are welcome. Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
-	}
-	return nil
+	return fmt.Errorf("Stored requests In-Memory cache set to unknown type \"%s\". Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.Type, inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
 }

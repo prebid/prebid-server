@@ -77,7 +77,7 @@ func TestNewHTTPEvents(t *testing.T) {
 }
 
 func TestNewEmptyCache(t *testing.T) {
-	cache := newCache(&config.StoredRequests{})
+	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
 	reqs, _ := cache.Get(context.Background(), []string{"foo"}, nil)
 	if len(reqs) != 0 {
