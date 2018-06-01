@@ -217,13 +217,14 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 }
 
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
+	var bannerImps int8 = 0
 	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
 	// step through the prebid request "imp" and inject into the beachfront request.
 	for i, imp := range req.Imp {
 		if imp.Video != nil {
 			return beachfrontReq, nil
 		} else if imp.Banner != nil {
-			if i > 0 {
+			if bannerImps > 0 {
 				beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 				beachfrontReq.Slots[i].Sizes = append(beachfrontReq.Slots[i].Sizes, BeachfrontSize{})
 			}
@@ -261,8 +262,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			}
 
 			beachfrontReq.Slots[i].Slot = req.Imp[i].ID
-
 			beachfrontReq.Slots[i].Id = beachfrontExt.AppId
+			bannerImps++
 		}
 	}
 
