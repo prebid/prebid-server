@@ -42,3 +42,5 @@ inventory_url.yaml
 # static/version.txt
 
 .idea/
+
+analytics/

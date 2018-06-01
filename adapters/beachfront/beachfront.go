@@ -321,7 +321,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 		beachfrontReq.User = req.User.BuyerUID
 	}
 
-	if(req.App != nil) {
+	if req.App != nil {
 		beachfrontReq.Domain = req.App.Domain
 		beachfrontReq.Page = req.App.ID
 	} else {
@@ -350,12 +350,12 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	}
 
 	/*
-	step through the prebid request "imp" and inject into the beachfrontVideo request
+		step through the prebid request "imp" and inject into the beachfrontVideo request
 
-	The beach front video endpoint is only capable of returning a single nurl and price, wrapped in
-	an openrtb format, so even though I'm building a request here that will include multiple video
-	impressions, only a single URL will be returned. Hopefully the beachfront endpoint can be modified
-	in the future to return multiple video ads
+		The beach front video endpoint is only capable of returning a single nurl and price, wrapped in
+		an openrtb format, so even though I'm building a request here that will include multiple video
+		impressions, only a single URL will be returned. Hopefully the beachfront endpoint can be modified
+		in the future to return multiple video ads
 
 	*/
 	for i, imp := range req.Imp {
@@ -414,7 +414,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 
 	}
 
-	if(req.App != nil) {
+	if req.App != nil {
 		beachfrontReq.Domain = req.App.Domain
 		beachfrontReq.Site.Page = req.App.ID
 	} else {
