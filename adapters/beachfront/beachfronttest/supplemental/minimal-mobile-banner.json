@@ -48,7 +48,7 @@
           "page": "some-mobile-app",
           "referrer": "",
           "search": "",
-          "secure": 1,
+          "secure": 0,
           "isMobile": 0,
           "ip": "",
           "deviceModel": "",
