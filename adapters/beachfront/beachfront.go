@@ -138,7 +138,6 @@ func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
 	return r
 }
 
-
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -224,8 +223,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 		if imp.Video != nil {
 			return beachfrontReq, nil
 
-		} else if imp.Audio !=nil {
-		} else if imp.Native !=nil {
+		} else if imp.Audio != nil {
+		} else if imp.Native != nil {
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 			beachfrontReq.Slots[i].Sizes = append(beachfrontReq.Slots[i].Sizes, BeachfrontSize{})
