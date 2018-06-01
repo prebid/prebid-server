@@ -6,7 +6,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -21,64 +20,6 @@ const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.1.1"
-
-const beachfrontVideoRequestTemplate = `{
-    		"isPrebid": true,
-    		"appId": "",
-    		"domain": "",
-    		"id": "",
-	    	"imp": [{
-	    		"id": 0,
-	    		"impid" : "",
-	      		"video": {
-				"w": 0,
-				"h": 0
-	      		},
-	      		"bidfloor": 0.00
-	    	}],
-	    	"site": {
-	      		"page": ""
-	    	},
-	    	"device": {
-			"ua":"",
-	      		"devicetype": 0,
-	      		"geo": {}
-	    	},
-	    	"user": {
-		        "buyeruid" : "",
-		        "id" : ""
-		        },
-	    	"cur": ["USD"]
-  	}`
-
-const beachfrontBannerRequestTemplate = `{
-	"slots":[
-		{
-			"slot":"",
-			"id":"",
-			"bidfloor": 0.00,
-			"sizes":[
-				{
-					"w":0,
-					"h":0
-				}
-			]
-		}
-	],
-	"domain":"",
-	"page":"",
-	"referrer":"",
-	"search":"",
-	"secure":1,
-	"deviceOs":"",
-	"deviceModel":"",
-	"isMobile":0,
-	"ua":"",
-	"dnt":0,
-	"adapterName": "` + beachfrontAdapterName + `",
-	"adapterVersion":"` + beachfrontAdapterVersion + `",
-	"ip":""
-	}`
 
 type BeachfrontAdapter struct {
 	http *adapters.HTTPAdapter
@@ -181,13 +122,31 @@ func (a *BeachfrontAdapter) SkipNoCookies() bool {
 	return true
 }
 
+func NewBeachfrontBannerRequest() BeachfrontBannerRequest {
+	r := BeachfrontBannerRequest{}
+	r.AdapterName = beachfrontAdapterName
+	r.AdapterVersion = beachfrontAdapterVersion
+
+	return r
+}
+
+func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
+	r := BeachfrontVideoRequest{}
+	r.Cur = append(r.Cur, "USB")
+	r.IsPrebid = true
+
+	return r
+}
+
+
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var beachfrontRequests BeachfrontRequests
 	var reqJSON []byte
+	var uri string
 
-	a.URI = func() string {
+	uri = func() string {
 		for i := range request.Imp {
 			if request.Imp[i].Video != nil {
 				// If there are any video imps, we will be running a video auction
@@ -198,15 +157,15 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return BannerEndpoint
 	}()
 
-	beachfrontRequests, err := preprocess(request, a.URI)
+	beachfrontRequests, err := preprocess(request, uri)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
 
-	if a.URI == VideoEndpoint {
+	if uri == VideoEndpoint {
 		reqJSON, err = json.Marshal(beachfrontRequests.Video)
-		a.URI = a.URI + beachfrontRequests.Video.AppId + VideoEndpointSuffix
+		uri = uri + beachfrontRequests.Video.AppId + VideoEndpointSuffix
 	} else {
 		reqJSON, err = json.Marshal(beachfrontRequests.Banner)
 	}
@@ -220,7 +179,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	if a.URI == BannerEndpoint {
+	if uri == BannerEndpoint {
 		if request.User != nil {
 			headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID)
 		}
@@ -228,7 +187,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     a.URI,
+		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -258,17 +217,7 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 }
 
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
-	var beachfrontReq BeachfrontBannerRequest
-	dec := json.NewDecoder(strings.NewReader(beachfrontBannerRequestTemplate))
-	for {
-		if err := dec.Decode(&beachfrontReq); err == io.EOF {
-			break
-		} else if err != nil {
-			// possible banner error 1 - decoding error
-			return beachfrontReq, err
-		}
-	}
-
+	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
 	// step through the prebid request "imp" and inject into the beachfront request.
 	for i, imp := range req.Imp {
 		if imp.Video != nil {
@@ -336,18 +285,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 Prepare the request that has been received from Prebid.js, translating it to the beachfront format
 */
 func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
-	var beachfrontReq BeachfrontVideoRequest
 	var videoImps int8 = 0
-	dec := json.NewDecoder(strings.NewReader(beachfrontVideoRequestTemplate))
-
-	for {
-		if err := dec.Decode(&beachfrontReq); err == io.EOF {
-			break
-		} else if err != nil {
-			// possible video error
-			return beachfrontReq, err
-		}
-	}
+	var beachfrontReq BeachfrontVideoRequest = NewBeachfrontVideoRequest()
 
 	/*
 		step through the prebid request "imp" and inject into the beachfrontVideo request
