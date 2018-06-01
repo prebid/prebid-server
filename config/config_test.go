@@ -70,6 +70,9 @@ adapters:
     endpoint: http://facebook.com/pbs
     usersync_url: http://facebook.com/ortb/prebid-s2s
     platform_id: abcdefgh1234
+  brightroll:
+    usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s
+    endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
@@ -137,6 +140,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters["brightroll"].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
 }
 
 func newViperWithDefaults() *viper.Viper {
@@ -156,6 +161,8 @@ func newViperWithDefaults() *viper.Viper {
 	v.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
 	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
 	return v
 }
 

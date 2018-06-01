@@ -237,6 +237,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			// Place holder
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
+			bannerImps = len(beachfrontReq.Slots) - 1
+
 			beachfrontReq.Slots[bannerImps].Sizes = append(beachfrontReq.Slots[bannerImps].Sizes, BeachfrontSize{})
 			for j := range imp.Banner.Format {
 				if j > 0 {
@@ -273,8 +275,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 
 			beachfrontReq.Slots[bannerImps].Slot = req.Imp[bannerImps].ID
 			beachfrontReq.Slots[bannerImps].Id = beachfrontExt.AppId
-			bannerImps++
-
 		}
 	}
 
@@ -321,19 +321,15 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-				// possible video error - supplemental/unmarshal-error-banner.json
 				return beachfrontReq, err
 			}
 
 			var beachfrontVideoExt openrtb_ext.ExtImpBeachfront
 			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontVideoExt); err != nil {
-				// possible video error - supplemental/unmarshal-error-banner.json
 				return beachfrontReq, err
 			}
 
 			beachfrontReq.Imp[videoImps].Bidfloor = beachfrontVideoExt.BidFloor
-			//   A unique identifier for this impression within the context of
-			//   the bid request (typically, starts with 1 and increments).
 			beachfrontReq.Imp[videoImps].Id = videoImps
 			beachfrontReq.Imp[videoImps].ImpId = imp.ID
 
@@ -344,7 +340,6 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
 
-			videoImps++
 		}
 	}
 
