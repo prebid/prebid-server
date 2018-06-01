@@ -223,11 +223,12 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 	for i, imp := range req.Imp {
 		if imp.Video != nil {
 			return beachfrontReq, nil
+
+		} else if imp.Audio !=nil {
+		} else if imp.Native !=nil {
 		} else if imp.Banner != nil {
-			if bannerImps > 0 {
-				beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
-				beachfrontReq.Slots[i].Sizes = append(beachfrontReq.Slots[i].Sizes, BeachfrontSize{})
-			}
+			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
+			beachfrontReq.Slots[i].Sizes = append(beachfrontReq.Slots[i].Sizes, BeachfrontSize{})
 			for j := range imp.Banner.Format {
 				if j > 0 {
 					// multi-banner.json test
@@ -264,6 +265,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			beachfrontReq.Slots[i].Slot = req.Imp[i].ID
 			beachfrontReq.Slots[i].Id = beachfrontExt.AppId
 			bannerImps++
+
 		}
 	}
 
@@ -302,13 +304,10 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 		if imp.Video != nil {
 			beachfrontReq.Id = req.ID
 
-			// The template has 1 Imp struct, so use that one first, then add them as needed.
-			if videoImps > 0 {
-				beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
-			}
+			beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
 
-			beachfrontReq.Imp[videoImps].Video.H = imp.Video.H
-			beachfrontReq.Imp[videoImps].Video.W = imp.Video.W
+			beachfrontReq.Imp[i].Video.H = req.Imp[i].Video.H
+			beachfrontReq.Imp[i].Video.W = imp.Video.W
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -322,11 +321,11 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 				return beachfrontReq, err
 			}
 
-			beachfrontReq.Imp[videoImps].Bidfloor = beachfrontVideoExt.BidFloor
+			beachfrontReq.Imp[i].Bidfloor = beachfrontVideoExt.BidFloor
 			//   A unique identifier for this impression within the context of
 			//   the bid request (typically, starts with 1 and increments).
-			beachfrontReq.Imp[videoImps].Id = i
-			beachfrontReq.Imp[videoImps].ImpId = imp.ID
+			beachfrontReq.Imp[i].Id = i
+			beachfrontReq.Imp[i].ImpId = imp.ID
 
 			if req.Device != nil {
 				beachfrontReq.Device.Geo.Ip = req.Device.IP
