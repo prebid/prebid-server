@@ -143,26 +143,6 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
 }
 
-func newViperWithDefaults() *viper.Viper {
-	v := viper.New()
-	v.SetConfigName("pbs")
-	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/config")
-
-	v.SetDefault("external_url", "http://localhost:8000")
-	v.SetDefault("port", 8000)
-	v.SetDefault("admin_port", 6060)
-	v.SetDefault("auction_timeouts_ms.max", 250)
-	v.SetDefault("auction_timeouts_ms.default", 100)
-	v.SetDefault("datacache.type", "dummy")
-
-	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
-	v.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
-	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	return v
-}
-
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
