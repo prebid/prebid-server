@@ -13,6 +13,7 @@ func NewSomoaudienceSyncer(externalURL string) *syncer {
 
 	return &syncer{
 		familyName:          "somoaudience",
+		gdprVendorID:        341,
 		syncEndpointBuilder: resolveMacros(usersyncURL + redirectURL),
 		syncType:            SyncTypeRedirect,
 	}
