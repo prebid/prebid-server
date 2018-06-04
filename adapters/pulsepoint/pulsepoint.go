@@ -12,6 +12,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -176,14 +177,15 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			}
 
 			pbid := pbs.PBSBid{
-				BidID:       bidID,
-				AdUnitCode:  bid.ImpID,
-				BidderCode:  bidder.BidderCode,
-				Price:       bid.Price,
-				Adm:         bid.AdM,
-				Creative_id: bid.CrID,
-				Width:       bid.W,
-				Height:      bid.H,
+				BidID:             bidID,
+				AdUnitCode:        bid.ImpID,
+				BidderCode:        bidder.BidderCode,
+				Price:             bid.Price,
+				Adm:               bid.AdM,
+				Creative_id:       bid.CrID,
+				Width:             bid.W,
+				Height:            bid.H,
+				CreativeMediaType: string(openrtb_ext.BidTypeBanner),
 			}
 			bids = append(bids, &pbid)
 		}
