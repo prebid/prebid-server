@@ -20,20 +20,21 @@ type BidderName string
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
-	BidderAdtelligent BidderName = "adtelligent"
-	BidderAdform      BidderName = "adform"
-	BidderAppnexus    BidderName = "appnexus"
-	BidderConversant  BidderName = "conversant"
-	BidderFacebook    BidderName = "audienceNetwork"
-	BidderIndex       BidderName = "indexExchange"
-	BidderLifestreet  BidderName = "lifestreet"
-	BidderOpenx       BidderName = "openx"
-	BidderPubmatic    BidderName = "pubmatic"
-	BidderPulsepoint  BidderName = "pulsepoint"
-	BidderRubicon     BidderName = "rubicon"
-	BidderSovrn       BidderName = "sovrn"
-	BidderEPlanning   BidderName = "eplanning"
-	BidderBrightroll  BidderName = "brightroll"
+	BidderAdtelligent  BidderName = "adtelligent"
+	BidderAdform       BidderName = "adform"
+	BidderAppnexus     BidderName = "appnexus"
+	BidderConversant   BidderName = "conversant"
+	BidderFacebook     BidderName = "audienceNetwork"
+	BidderIndex        BidderName = "indexExchange"
+	BidderLifestreet   BidderName = "lifestreet"
+	BidderOpenx        BidderName = "openx"
+	BidderPubmatic     BidderName = "pubmatic"
+	BidderPulsepoint   BidderName = "pulsepoint"
+	BidderRubicon      BidderName = "rubicon"
+	BidderSomoaudience BidderName = "somoaudience"
+	BidderSovrn        BidderName = "sovrn"
+	BidderEPlanning    BidderName = "eplanning"
+	BidderBrightroll   BidderName = "brightroll"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -49,6 +50,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
+	"somoaudience":    BidderSomoaudience,
 	"sovrn":           BidderSovrn,
 	"eplanning":       BidderEPlanning,
 	"brightroll":      BidderBrightroll,
