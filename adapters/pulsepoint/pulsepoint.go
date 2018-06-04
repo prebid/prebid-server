@@ -39,7 +39,7 @@ type PulsepointParams struct {
 }
 
 func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
 	ppReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
 
 	if err != nil {
