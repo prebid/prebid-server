@@ -375,6 +375,43 @@ func TestCacheVideoOnly(t *testing.T) {
 	}
 }
 
+func TestShouldUsersync(t *testing.T) {
+	doTest := func(gdprApplies string, consent string, allowBidderSync bool, allowHostCookies bool, expectAllow bool) {
+		t.Helper()
+		deps := auctionDeps{
+			cfg:     nil,
+			syncers: nil,
+			gdprPerms: &mockPermissions{
+				allowBidderSync:  allowBidderSync,
+				allowHostCookies: allowHostCookies,
+			},
+			metricsEngine: nil,
+		}
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprApplies, consent)
+		if allowSyncs != expectAllow {
+			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
+		}
+	}
+	doTest("0", "", false, false, true)
+	doTest("1", "", true, true, false)
+	doTest("1", "a", true, false, false)
+	doTest("1", "a", false, true, false)
+	doTest("1", "a", true, true, true)
+}
+
+type mockPermissions struct {
+	allowBidderSync  bool
+	allowHostCookies bool
+}
+
+func (m *mockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return m.allowHostCookies, nil
+}
+
+func (m *mockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return m.allowBidderSync, nil
+}
+
 func TestBidSizeValidate(t *testing.T) {
 
 	bids := make(pbs.PBSBidSlice, 0)
