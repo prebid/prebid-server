@@ -12,7 +12,6 @@ import (
 // The same keys should exist in this map as in the exchanges map.
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-
 		openrtb_ext.BidderAppnexus:     NewAppnexusSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderBeachfront:  NewBeachfrontSyncer(cfg.Adapters["beachfront"].UserSyncURL, cfg.Adapters["beachfront"].PlatformID),
 		openrtb_ext.BidderFacebook:     NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
