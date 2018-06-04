@@ -22,8 +22,7 @@ var customBidderTTLs = map[string]time.Duration{}
 // bidderToFamilyNames maps the BidderName to Adapter.Name() for the early adapters.
 // If a mapping isn't listed here, then we assume that the two are the same.
 var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
-	openrtb_ext.BidderAppnexus:     "adnxs",
-	openrtb_ext.BidderSomoaudience: "mobileadtrading",
+	openrtb_ext.BidderAppnexus: "adnxs",
 }
 
 // PBSCookie is the cookie used in Prebid Server.
