@@ -12,7 +12,7 @@ func NewSomoaudienceSyncer(externalURL string) *syncer {
 	usersyncURL := "//publisher-east.mobileadtrading.com/usersync?ru="
 
 	return &syncer{
-		familyName:          "mobileadtrading",
+		familyName:          "somoaudience",
 		syncEndpointBuilder: resolveMacros(usersyncURL + redirectURL),
 		syncType:            SyncTypeRedirect,
 	}
