@@ -114,6 +114,7 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 type auctionDeps struct {
 	cfg           *config.Configuration
 	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
+	gdprPerms     gdpr.Permissions
 	metricsEngine pbsmetrics.MetricsEngine
 }
 
@@ -225,7 +226,11 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = syncer.GetUsersyncInfo(pbs_req.ParseGDPR(), pbs_req.ParseConsent())
+					gdprApplies := pbs_req.ParseGDPR()
+					consent := pbs_req.ParseConsent()
+					if deps.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
+						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
+					}
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
 						continue
@@ -343,6 +348,24 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
+}
+
+func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
+	switch gdprApplies {
+	case "0":
+		return true
+	case "1":
+		if consent == "" {
+			return false
+		}
+		fallthrough
+	default:
+		if canSync, err := deps.gdprPerms.HostCookiesAllowed(ctx, consent); !canSync || err != nil {
+			return false
+		}
+		canSync, err := deps.gdprPerms.BidderSyncAllowed(ctx, bidder, consent)
+		return canSync && err == nil
+	}
 }
 
 // cache video bids only for Web
@@ -652,16 +675,16 @@ func init() {
 	// (US east coast),setting this as default, commenting out remaining colo based urls below
 	viper.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	viper.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-/*	//(US West Coast)
-	viper.SetDefault("adapters.brightroll.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-	//(APAC)
-	viper.SetDefault("adapters.brightroll.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs") 
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-	//(EMEA)
-	viper.SetDefault("adapters.brightroll.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-*/
+	/*	//(US West Coast)
+		viper.SetDefault("adapters.brightroll.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
+		viper.SetDefault("adapters.brightroll.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+		//(APAC)
+		viper.SetDefault("adapters.brightroll.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs")
+		viper.SetDefault("adapters.brightroll.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+		//(EMEA)
+		viper.SetDefault("adapters.brightroll.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
+		viper.SetDefault("adapters.brightroll.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	*/
 	// Set environment variable support:
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("PBS")
@@ -757,7 +780,7 @@ func serve(cfg *config.Configuration) error {
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
-	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
+	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
