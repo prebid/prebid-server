@@ -648,6 +648,20 @@ func init() {
 	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
 	viper.SetDefault("host_cookie.ttl_days", 90)
 
+	//brightroll urls
+	// (US east coast),setting this as default, commenting out remaining colo based urls below
+	viper.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	viper.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+/*	//(US West Coast)
+	viper.SetDefault("adapters.brightroll.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
+	viper.SetDefault("adapters.brightroll.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	//(APAC)
+	viper.SetDefault("adapters.brightroll.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs") 
+	viper.SetDefault("adapters.brightroll.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	//(EMEA)
+	viper.SetDefault("adapters.brightroll.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
+	viper.SetDefault("adapters.brightroll.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+*/
 	// Set environment variable support:
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("PBS")
