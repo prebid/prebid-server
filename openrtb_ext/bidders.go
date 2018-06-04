@@ -23,7 +23,7 @@ const (
 	BidderAdtelligent  BidderName = "adtelligent"
 	BidderAdform       BidderName = "adform"
 	BidderAppnexus     BidderName = "appnexus"
-	BidderBeachfront  BidderName = "beachfront"
+	BidderBeachfront   BidderName = "beachfront"
 	BidderConversant   BidderName = "conversant"
 	BidderFacebook     BidderName = "audienceNetwork"
 	BidderIndex        BidderName = "indexExchange"
