@@ -221,13 +221,14 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 }
 
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
-	var bannerImps int = 0
+	var bannerImpsIndex int = 0
 	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
 	/*
 	 step through the prebid request "imp" and inject into the beachfront request. If we got to here,
 	 then we have already stepped through the requested imps and verified that none are Video, so no
 	 reason to check that here, but there could be Audio or Native (or maybe they are filtered out before
-	 I get here based on the capabilities in bidder-info/beachfront.yaml?) .
+	 I get here based on the capabilities in bidder-info/beachfront.yaml? Regardless, I'll leave
+	 place holders here) .
 	*/
 
 	for _, imp := range req.Imp {
@@ -237,19 +238,18 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			// Place holder
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
-			bannerImps = len(beachfrontReq.Slots) - 1
+			bannerImpsIndex = len(beachfrontReq.Slots) - 1
 
-			beachfrontReq.Slots[bannerImps].Sizes = append(beachfrontReq.Slots[bannerImps].Sizes, BeachfrontSize{})
+			beachfrontReq.Slots[bannerImpsIndex].Sizes = append(beachfrontReq.Slots[bannerImpsIndex].Sizes, BeachfrontSize{})
 			for j := range imp.Banner.Format {
 				if j > 0 {
-					// multi-banner.json test
-					beachfrontReq.Slots[bannerImps].Sizes = append(beachfrontReq.Slots[bannerImps].Sizes, BeachfrontSize{})
+					beachfrontReq.Slots[bannerImpsIndex].Sizes = append(beachfrontReq.Slots[bannerImpsIndex].Sizes, BeachfrontSize{})
 				}
-				beachfrontReq.Slots[bannerImps].Sizes[j].H = imp.Banner.Format[j].H
-				beachfrontReq.Slots[bannerImps].Sizes[j].W = imp.Banner.Format[j].W
+				beachfrontReq.Slots[bannerImpsIndex].Sizes[j].H = imp.Banner.Format[j].H
+				beachfrontReq.Slots[bannerImpsIndex].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
-			beachfrontReq.Slots[bannerImps].Bidfloor = imp.BidFloor
+			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = imp.BidFloor
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -273,8 +273,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 				}
 			}
 
-			beachfrontReq.Slots[bannerImps].Slot = req.Imp[bannerImps].ID
-			beachfrontReq.Slots[bannerImps].Id = beachfrontExt.AppId
+			beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
+			beachfrontReq.Slots[bannerImpsIndex].Id = beachfrontExt.AppId
 		}
 	}
 
@@ -297,7 +297,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 Prepare the request that has been received from Prebid.js, translating it to the beachfront format
 */
 func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
-	var videoImps int = 0
+	var videoImpsIndex int = 0
 	var beachfrontReq BeachfrontVideoRequest = NewBeachfrontVideoRequest()
 
 	/*
@@ -315,10 +315,10 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 			beachfrontReq.Id = req.ID
 
 			beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
-			videoImps = len(beachfrontReq.Imp) - 1
+			videoImpsIndex = len(beachfrontReq.Imp) - 1
 
-			beachfrontReq.Imp[videoImps].Video.H = imp.Video.H
-			beachfrontReq.Imp[videoImps].Video.W = imp.Video.W
+			beachfrontReq.Imp[videoImpsIndex].Video.H = imp.Video.H
+			beachfrontReq.Imp[videoImpsIndex].Video.W = imp.Video.W
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -330,9 +330,9 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 				return beachfrontReq, err
 			}
 
-			beachfrontReq.Imp[videoImps].Bidfloor = beachfrontVideoExt.BidFloor
-			beachfrontReq.Imp[videoImps].Id = videoImps
-			beachfrontReq.Imp[videoImps].ImpId = imp.ID
+			beachfrontReq.Imp[videoImpsIndex].Bidfloor = beachfrontVideoExt.BidFloor
+			beachfrontReq.Imp[videoImpsIndex].Id = videoImpsIndex
+			beachfrontReq.Imp[videoImpsIndex].ImpId = imp.ID
 
 			if req.Device != nil {
 				beachfrontReq.Device.Geo.Ip = req.Device.IP
