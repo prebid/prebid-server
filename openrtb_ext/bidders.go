@@ -51,6 +51,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rubicon":         BidderRubicon,
+	"somoaudience":    BidderSomoaudience,
 	"sovrn":           BidderSovrn,
 	"eplanning":       BidderEPlanning,
 	"brightroll":      BidderBrightroll,
