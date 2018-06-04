@@ -31,8 +31,8 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderAdform:      adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
 		openrtb_ext.BidderAdtelligent: adaptBidder(adtelligent.NewAdtelligentBidder(client), client),
 		openrtb_ext.BidderAppnexus:    adaptBidder(appnexus.NewAppNexusBidder(client, cfg.Adapters["appnexus"].Endpoint), client),
+		openrtb_ext.BidderBrightroll:  adaptBidder(brightroll.NewBrightrollBidder(cfg.Adapters["brightroll"].Endpoint), client),
 		// TODO #267: Upgrade the Conversant adapter
-		openrtb_ext.BidderBrightroll: adaptBidder(brightroll.NewBrightrollBidder(cfg.Adapters["brightroll"].Endpoint), client),
 		openrtb_ext.BidderConversant: adaptLegacyAdapter(conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint)),
 		openrtb_ext.BidderEPlanning:  adaptBidder(eplanning.NewEPlanningBidder(client, cfg.Adapters["eplanning"].Endpoint), client),
 		// TODO #211: Upgrade the Facebook adapter
