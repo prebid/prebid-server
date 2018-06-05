@@ -20,7 +20,6 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderBrightroll:   NewBrightrollSyncer(cfg.Adapters["brightroll"].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderConversant:   NewConversantSyncer(cfg.Adapters["conversant"].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderEPlanning:    NewEPlanningSyncer(cfg.Adapters["eplanning"].UserSyncURL, cfg.ExternalURL),
-		openrtb_ext.BidderFacebook:     NewFacebookSyncer(cfg.Adapters["facebook"].UserSyncURL),
 		openrtb_ext.BidderIndex:        NewIndexSyncer(cfg.Adapters["indexexchange"].UserSyncURL),
 		openrtb_ext.BidderLifestreet:   NewLifestreetSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderOpenx:        NewOpenxSyncer(cfg.ExternalURL),
