@@ -33,19 +33,25 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		}
 
 		query := r.URL.Query()
+		bidder := query.Get("bidder")
 		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionGDPR})
+			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
+				Action: pbsmetrics.RequestActionGDPR,
+				Bidder: openrtb_ext.BidderName(bidder),
+			})
 			so.Status = status
 			return
 		}
 
-		bidder := query.Get("bidder")
 		if bidder == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`"bidder" query param is required`))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionErr})
+			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
+				Action: pbsmetrics.RequestActionErr,
+				Bidder: openrtb_ext.BidderName(bidder),
+			})
 			so.Status = http.StatusBadRequest
 			return
 		}

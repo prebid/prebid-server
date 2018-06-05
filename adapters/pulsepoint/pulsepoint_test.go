@@ -16,6 +16,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -101,6 +102,7 @@ func TestPulsePointBiddingBehavior(t *testing.T) {
 	adapterstest.VerifyIntValue(int(bids[0].Width), 728, t)
 	adapterstest.VerifyIntValue(int(bids[0].Height), 90, t)
 	adapterstest.VerifyIntValue(int(bids[0].Price*100), 210, t)
+	adapterstest.VerifyStringValue(bids[0].CreativeMediaType, string(openrtb_ext.BidTypeBanner), t)
 }
 
 /**
