@@ -1,5 +1,6 @@
 # Beachfront bidder
 
-To use the beachfront bidder all you need is an 
-account at [https://platform.beachfront.io](platform.beachfront.io) and an appId through
-an active exchange
+To use the beachfront bidder you will need an appId from an exchange 
+account on [https://platform.beachfront.io](platform.beachfront.io).
+For further information, please contact adops@beachfront.com.
+
