@@ -11,21 +11,27 @@ func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon})
 
-	ensureContains(t, registry, "requests", m.RequestMeter)
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
 	ensureContains(t, registry, "safari_requests", m.SafariRequestMeter)
 	ensureContains(t, registry, "safari_no_cookie_requests", m.SafariNoCookieMeter)
-	ensureContains(t, registry, "error_requests", m.ErrorMeter)
 	ensureContains(t, registry, "request_time", m.RequestTimer)
-	ensureContains(t, registry, "ortb_requests", m.ORTBRequestMeter)
-	ensureContains(t, registry, "amp_requests", m.AmpRequestMeter)
 	ensureContains(t, registry, "amp_no_cookie_requests", m.AmpNoCookieMeter)
 	ensureContainsAdapterMetrics(t, registry, "adapter.appnexus", m.AdapterMetrics["appnexus"])
 	ensureContainsAdapterMetrics(t, registry, "adapter.rubicon", m.AdapterMetrics["rubicon"])
 	ensureContains(t, registry, "usersync.appnexus.gdpr_prevent", m.userSyncGDPRPrevent["appnexus"])
 	ensureContains(t, registry, "usersync.rubicon.gdpr_prevent", m.userSyncGDPRPrevent["rubicon"])
 	ensureContains(t, registry, "usersync.unknown.gdpr_prevent", m.userSyncGDPRPrevent["unknown"])
+
+	ensureContains(t, registry, "requests.ok.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusErr])
+	ensureContains(t, registry, "requests.ok.openrtb2", m.RequestStatuses[ReqTypeORTB2][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.openrtb2", m.RequestStatuses[ReqTypeORTB2][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.openrtb2", m.RequestStatuses[ReqTypeORTB2][RequestStatusErr])
+	ensureContains(t, registry, "requests.ok.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusErr])
 }
 
 func TestRecordBidType(t *testing.T) {
