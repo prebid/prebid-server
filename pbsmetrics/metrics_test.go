@@ -51,13 +51,13 @@ func TestMultiMetricsEngine(t *testing.T) {
 		RequestStatus: RequestStatusOK,
 	}
 	blabels := AdapterLabels{
-		Source:        DemandWeb,
-		RType:         ReqTypeORTB2,
-		Adapter:       openrtb_ext.BidderPubmatic,
-		PubID:         "test1",
-		Browser:       BrowserSafari,
-		CookieFlag:    CookieFlagYes,
-		AdapterStatus: AdapterStatusOK,
+		Source:      DemandWeb,
+		RType:       ReqTypeORTB2,
+		Adapter:     openrtb_ext.BidderPubmatic,
+		PubID:       "test1",
+		Browser:     BrowserSafari,
+		CookieFlag:  CookieFlagYes,
+		AdapterBids: AdapterBidPresent,
 	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
@@ -79,7 +79,9 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)
 	VerifyMetrics(t, "SafariNoCookieMeter", goEngine.SafariNoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "AdapterMetrics.Pubmatic.RequestMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].RequestMeter.Count(), 5)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.ErrorMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].ErrorMeter.Count(), 0)
+	for _, err := range AdapterErrors() {
+		VerifyMetrics(t, "AdapterMetrics.Pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].ErrorMeters[err].Count(), 0)
+	}
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.RequestMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].RequestMeter.Count(), 0)
 	VerifyMetrics(t, "AccountMetrics.test1.RequestMeter", goEngine.accountMetrics["test1"].requestMeter.Count(), 5)
 }

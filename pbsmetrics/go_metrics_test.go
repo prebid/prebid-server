@@ -73,10 +73,13 @@ func ensureContains(t *testing.T, registry metrics.Registry, name string, metric
 func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name string, adapterMetrics *AdapterMetrics) {
 	t.Helper()
 	ensureContains(t, registry, name+".no_cookie_requests", adapterMetrics.NoCookieMeter)
-	ensureContains(t, registry, name+".error_requests", adapterMetrics.ErrorMeter)
-	ensureContains(t, registry, name+".requests", adapterMetrics.RequestMeter)
+	ensureContains(t, registry, name+".requests.ok", adapterMetrics.RequestMeter)
+	ensureContains(t, registry, name+".requests.badinput", adapterMetrics.ErrorMeters[AdapterErrorBadInput])
+	ensureContains(t, registry, name+".requests.badserverresponse", adapterMetrics.ErrorMeters[AdapterErrorBadServerResponse])
+	ensureContains(t, registry, name+".requests.timeout", adapterMetrics.ErrorMeters[AdapterErrorTimeout])
+	ensureContains(t, registry, name+".requests.unknown", adapterMetrics.ErrorMeters[AdapterErrorUnknown])
+
 	ensureContains(t, registry, name+".no_bid_requests", adapterMetrics.NoBidMeter)
-	ensureContains(t, registry, name+".timeout_requests", adapterMetrics.TimeoutMeter)
 	ensureContains(t, registry, name+".request_time", adapterMetrics.RequestTimer)
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)

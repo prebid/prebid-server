@@ -27,7 +27,8 @@ type AdapterLabels struct {
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
-	AdapterStatus AdapterStatus
+	AdapterBids   AdapterBid
+	AdapterErrors map[AdapterError]struct{}
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -47,8 +48,11 @@ type CookieFlag string
 // RequestStatus : The request return status
 type RequestStatus string
 
-// AdapterStatus : The radapter execution status
-type AdapterStatus string
+// AdapterBid : Whether or not the adapter returned bids
+type AdapterBid string
+
+// AdapterError : Errors which may have occurred during the adapter's execution
+type AdapterError string
 
 // The demand sources
 const (
@@ -100,13 +104,28 @@ func requestStatuses() []RequestStatus {
 	}
 }
 
+// Adapter bid repsonse status.
+const (
+	AdapterBidPresent AdapterBid = "bid"
+	AdapterBidNone    AdapterBid = "nobid"
+)
+
 // Adapter execution status
 const (
-	AdapterStatusOK      AdapterStatus = "ok"
-	AdapterStatusErr     AdapterStatus = "err"
-	AdapterStatusNoBid   AdapterStatus = "nobid"
-	AdapterStatusTimeout AdapterStatus = "timeout"
+	AdapterErrorBadInput          AdapterError = "badinput"
+	AdapterErrorBadServerResponse AdapterError = "badserverresponse"
+	AdapterErrorTimeout           AdapterError = "timeout"
+	AdapterErrorUnknown           AdapterError = "unknown"
 )
+
+func AdapterErrors() []AdapterError {
+	return []AdapterError{
+		AdapterErrorBadInput,
+		AdapterErrorBadServerResponse,
+		AdapterErrorTimeout,
+		AdapterErrorUnknown,
+	}
+}
 
 // UserLabels : Labels for /setuid endpoint
 type UserLabels struct {
