@@ -13,7 +13,6 @@ import (
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
 	metricsRegistry            metrics.Registry
-	RequestMeter               metrics.Meter
 	ConnectionCounter          metrics.Counter
 	ConnectionAcceptErrorMeter metrics.Meter
 	ConnectionCloseErrorMeter  metrics.Meter
@@ -22,12 +21,10 @@ type Metrics struct {
 	NoCookieMeter              metrics.Meter
 	SafariRequestMeter         metrics.Meter
 	SafariNoCookieMeter        metrics.Meter
-	ErrorMeter                 metrics.Meter
 	RequestTimer               metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	ORTBRequestMeter    metrics.Meter
-	AmpRequestMeter     metrics.Meter
+	RequestStatuses     map[RequestType]map[RequestStatus]metrics.Meter
 	AmpNoCookieMeter    metrics.Meter
 	CookieSyncMeter     metrics.Meter
 	userSyncOptout      metrics.Meter
@@ -84,7 +81,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
 		metricsRegistry:            registry,
-		RequestMeter:               blankMeter,
+		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
 		ConnectionCounter:          metrics.NilCounter{},
 		ConnectionAcceptErrorMeter: blankMeter,
 		ConnectionCloseErrorMeter:  blankMeter,
@@ -93,10 +90,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		NoCookieMeter:              blankMeter,
 		SafariRequestMeter:         blankMeter,
 		SafariNoCookieMeter:        blankMeter,
-		ErrorMeter:                 blankMeter,
 		RequestTimer:               &metrics.NilTimer{},
-		ORTBRequestMeter:           blankMeter,
-		AmpRequestMeter:            blankMeter,
 		AmpNoCookieMeter:           blankMeter,
 		CookieSyncMeter:            blankMeter,
 		userSyncOptout:             blankMeter,
@@ -113,6 +107,13 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
 
+	for _, t := range requestTypes() {
+		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
+		for _, s := range requestStatuses() {
+			newMetrics.RequestStatuses[t][s] = blankMeter
+		}
+	}
+
 	return newMetrics
 }
 
@@ -123,19 +124,15 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // using a blank meter/timer.
 func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
-	newMetrics.RequestMeter = metrics.GetOrRegisterMeter("requests", registry)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
-	newMetrics.ErrorMeter = metrics.GetOrRegisterMeter("error_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
-	newMetrics.ORTBRequestMeter = metrics.GetOrRegisterMeter("ortb_requests", registry)
-	newMetrics.AmpRequestMeter = metrics.GetOrRegisterMeter("amp_requests", registry)
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
 	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
@@ -144,6 +141,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
 		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
+	}
+	for typ, statusMap := range newMetrics.RequestStatuses {
+		for stat := range statusMap {
+			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
+		}
 	}
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
@@ -251,7 +253,7 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 
 // RecordRequest implements a part of the MetricsEngine interface
 func (me *Metrics) RecordRequest(labels Labels) {
-	me.RequestMeter.Mark(1)
+	me.RequestStatuses[labels.RType][labels.RequestStatus].Mark(1)
 	if labels.Source == DemandApp {
 		me.AppRequestMeter.Mark(1)
 	} else {
@@ -268,15 +270,7 @@ func (me *Metrics) RecordRequest(labels Labels) {
 			me.NoCookieMeter.Mark(1)
 		}
 	}
-	switch labels.RType {
-	case ReqTypeORTB2:
-		me.ORTBRequestMeter.Mark(1)
-	case ReqTypeAMP:
-		me.AmpRequestMeter.Mark(1)
-	}
-	if labels.RequestStatus == RequestStatusErr {
-		me.ErrorMeter.Mark(1)
-	}
+
 	// Handle the account metrics now.
 	am := me.getAccountMetrics(labels.PubID)
 	am.requestMeter.Mark(1)

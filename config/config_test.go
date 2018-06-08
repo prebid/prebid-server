@@ -9,17 +9,20 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
-	cfg, err := New(newViperWithDefaults())
+	v := viper.New()
+	SetupViper(v)
+	cfg, err := New(v)
 	if err != nil {
 		t.Error(err.Error())
 	}
 
 	cmpInts(t, "port", cfg.Port, 8000)
 	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
-	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 250)
-	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 100)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
+	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
+	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
-	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://openbid-useast.pubmatic.com/translator?")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 }
 
 var fullConfig = []byte(`
@@ -97,7 +100,8 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 }
 
 func TestFullConfig(t *testing.T) {
-	v := newViperWithDefaults()
+	v := viper.New()
+	SetupViper(v)
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)
@@ -144,32 +148,13 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
 }
 
-func newViperWithDefaults() *viper.Viper {
-	v := viper.New()
-	v.SetConfigName("pbs")
-	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/config")
-
-	v.SetDefault("external_url", "http://localhost:8000")
-	v.SetDefault("port", 8000)
-	v.SetDefault("admin_port", 6060)
-	v.SetDefault("auction_timeouts_ms.max", 250)
-	v.SetDefault("auction_timeouts_ms.default", 100)
-	v.SetDefault("datacache.type", "dummy")
-
-	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
-	v.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
-	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
-	return v
-}
-
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
 			Files: true,
+			InMemoryCache: InMemoryCache{
+				Type: "none",
+			},
 		},
 	}
 
