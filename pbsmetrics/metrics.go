@@ -63,15 +63,17 @@ const (
 
 // The request types (endpoints)
 const (
-	ReqTypeLegacy RequestType = "legacy"
-	ReqTypeORTB2  RequestType = "openrtb2"
-	ReqTypeAMP    RequestType = "amp"
+	ReqTypeLegacy   RequestType = "legacy"
+	ReqTypeORTB2Web RequestType = "openrtb2-web"
+	ReqTypeORTB2App RequestType = "openrtb2-app"
+	ReqTypeAMP      RequestType = "amp"
 )
 
 func requestTypes() []RequestType {
 	return []RequestType{
 		ReqTypeLegacy,
-		ReqTypeORTB2,
+		ReqTypeORTB2Web,
+		ReqTypeORTB2App,
 		ReqTypeAMP,
 	}
 }
