@@ -348,7 +348,9 @@ func TestCacheVideoOnly(t *testing.T) {
 
 	ctx := context.TODO()
 	w := httptest.NewRecorder()
-	cfg, err := config.New(viper.New())
+	v := viper.New()
+	config.SetupViper(v)
+	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -651,11 +653,15 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 
 // Test the viper setup
 func TestViperInit(t *testing.T) {
-	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
-	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
+	v := viper.New()
+	config.SetupViper(v)
+	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
+	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", v.Get("adapters.pulsepoint.endpoint").(string))
 }
 
 func TestViperEnv(t *testing.T) {
+	v := viper.New()
+	config.SetupViper(v)
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 
@@ -666,11 +672,11 @@ func TestViperEnv(t *testing.T) {
 	defer ttl()
 
 	// Basic config set
-	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
+	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", v.Get("port").(string))
 	// Nested config set
-	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
+	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", v.Get("adapters.pubmatic.endpoint").(string))
 	// Config set with underscores
-	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
+	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {
