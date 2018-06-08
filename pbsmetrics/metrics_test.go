@@ -50,7 +50,16 @@ func TestMultiMetricsEngine(t *testing.T) {
 		CookieFlag:    CookieFlagYes,
 		RequestStatus: RequestStatusOK,
 	}
-	blabels := AdapterLabels{
+	apnLabels := AdapterLabels{
+		Source:      DemandWeb,
+		RType:       ReqTypeORTB2,
+		Adapter:     openrtb_ext.BidderAppnexus,
+		PubID:       "test1",
+		Browser:     BrowserSafari,
+		CookieFlag:  CookieFlagYes,
+		AdapterBids: AdapterBidNone,
+	}
+	pubLabels := AdapterLabels{
 		Source:      DemandWeb,
 		RType:       ReqTypeORTB2,
 		Adapter:     openrtb_ext.BidderPubmatic,
@@ -63,10 +72,11 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
-		metricsEngine.RecordAdapterRequest(blabels)
-		metricsEngine.RecordAdapterPrice(blabels, 1.34)
-		metricsEngine.RecordAdapterBidsReceived(blabels, 2)
-		metricsEngine.RecordAdapterTime(blabels, time.Millisecond*20)
+		metricsEngine.RecordAdapterRequest(pubLabels)
+		metricsEngine.RecordAdapterRequest(apnLabels)
+		metricsEngine.RecordAdapterPrice(pubLabels, 1.34)
+		metricsEngine.RecordAdapterBidsReceived(pubLabels, 2)
+		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 	}
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[ReqTypeORTB2][RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[ReqTypeLegacy][RequestStatusOK].Count(), 0)
@@ -78,11 +88,13 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)
 	VerifyMetrics(t, "SafariNoCookieMeter", goEngine.SafariNoCookieMeter.Count(), 0)
-	VerifyMetrics(t, "AdapterMetrics.Pubmatic.RequestMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].RequestMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.Pubmatic.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].GotBidsMeter.Count(), 5)
+	VerifyMetrics(t, "AdapterMetrics.Pubmatic.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].NoBidMeter.Count(), 0)
 	for _, err := range AdapterErrors() {
 		VerifyMetrics(t, "AdapterMetrics.Pubmatic.Request.ErrorMeter."+string(err), goEngine.AdapterMetrics[openrtb_ext.BidderPubmatic].ErrorMeters[err].Count(), 0)
 	}
-	VerifyMetrics(t, "AdapterMetrics.AppNexus.RequestMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].RequestMeter.Count(), 0)
+	VerifyMetrics(t, "AdapterMetrics.AppNexus.GotBidsMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].GotBidsMeter.Count(), 0)
+	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
 	VerifyMetrics(t, "AccountMetrics.test1.RequestMeter", goEngine.accountMetrics["test1"].requestMeter.Count(), 5)
 }
 
