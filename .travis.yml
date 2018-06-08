@@ -1,7 +1,8 @@
 language: go
+
 go:
-    - "1.9"
-    - "1.10"
+    - '1.9'
+    - '1.10'
 
 env:
     - DEP_VERSION="0.4.1"
@@ -9,9 +10,25 @@ env:
 before_install:
     - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
     - chmod +x $GOPATH/bin/dep
+    - go get github.com/mitchellh/gox
 
 install:
-    - dep ensure
+    - $GOPATH/bin/dep ensure
 
 script:
-    - ./validate.sh --nofmt --cov --race 10
+    - "./validate.sh --nofmt --cov --race 10"
+    - gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: dntpbyF93gk5ZU89GDkFVYiOUbC+zeIzyUjwC3FO9/VtHu8RMPtck4eoNgmxh3QwWzdNwjfy2+3pbJN4Z6bWbq59fk7AqkFXI2UAg8/ELCBf4hjrS3JHExmCQumvOhMovO9uNy7rOttkULnve+4SZ3Um7lqXhl0h2G1YGbuPPQbe19UI6yVpKDSLcDrHwnEny1/UIxELaOdJiHkZFcSyD6vU2eei1U5P7aPyDCXhEkHrBpVbiNjSlfgN3DGBaFK6xX76NzWigyK6Ko5dAwlmEyLhO3yGYGp2g28pYzuM6tHCBGg6w9ON13e/iXDrrdmeWDUpsmvCRPlqD4mT9cWYIVFOdPmGdH3vL0FRC4fmgAMbGwExZqRcNtQR9M07YP/EKV5wSEvUYdl2XZCjpvkfl0MDyUGcFYKpnjjUCoaZkYOsUscJ4FUCk9O7P0bNKBZrajqJsEk8udByHgOYujLbEtmgkJsuMVtkaThWoedIF0jTAtN5S9UfTKk9bWbIioAhMIpt6BJSKKTydwYTKJkAU1sASkr/2vB7J6OL6LuntmF2mFTRK4ou8+3hNMFkUG0t5DfGd4VwIMyaSb1kDU1IKzWC/cLMw4zjQfyxjFQkUEEoWD+qIkMbp+oD2dSzNUjFsYFjNwWOAAFhwniy3m+YduNJY+rbZHMNQ2F8MKk1r1g=
+  file:
+    - prebid-server_linux_386
+  on:
+    repo: criteo-forks/prebid-server
+    tags: true
+    branch:
+        - master
+        - criteo
