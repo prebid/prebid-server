@@ -58,7 +58,7 @@ type HTTPFetcherConfig struct {
 }
 
 func (cfg *StoredRequests) validate() error {
-	if cfg.InMemoryCache.RequestCacheSize == 0 {
+	if cfg.InMemoryCache.Type == "none" {
 		if cfg.CacheEventsAPI {
 			return errors.New("stored_requests.cache_events_api requires a configured in_memory_cache")
 		}
