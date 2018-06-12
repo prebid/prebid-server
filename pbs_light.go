@@ -267,9 +267,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							deps.metricsEngine.RecordAdapterBidsReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							deps.metricsEngine.RecordAdapterBidsReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
