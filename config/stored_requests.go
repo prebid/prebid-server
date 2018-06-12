@@ -330,8 +330,14 @@ func (inMemCache *InMemoryCache) validate() error {
 	case "none":
 		return nil
 	case "unbounded":
-		if inMemCache.TTL <= 0 {
-			return errors.New("Stored requests In-Memory caches need a TTL when unbounded")
+		if inMemCache.TTL != 0 {
+			return fmt.Errorf("stored_requests.in_memory_cache must be 0 for unbounded caches. Got %d", inMemCache.TTL)
+		}
+		if inMemCache.RequestCacheSize != 0 {
+			return fmt.Errorf("stored_requests.request_cache_size_bytes must be 0 for unbounded caches. Got %d", inMemCache.RequestCacheSize)
+		}
+		if inMemCache.ImpCacheSize != 0 {
+			return fmt.Errorf("stored_requests.imp_cache_size_bytes must be 0 for unbounded caches. Got %d", inMemCache.ImpCacheSize)
 		}
 		return nil
 	case "lru":
