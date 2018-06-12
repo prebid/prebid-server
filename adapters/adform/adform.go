@@ -15,6 +15,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+	"net/url"
+	"strconv"
 )
 
 type AdformAdapter struct {
@@ -33,6 +35,20 @@ type adformRequest struct {
 	referer       string
 	userId        string
 	adUnits       []*adformAdUnit
+	gdprApplies   string
+	consent       string
+	digitrust     *adformDigitrust
+}
+
+type adformDigitrust struct {
+	Id      string                 `json:"id"`
+	Version int                    `json:"version"`
+	Keyv    int                    `json:"keyv"`
+	Privacy adformDigitrustPrivacy `json:"privacy"`
+}
+
+type adformDigitrustPrivacy struct {
+	Optout bool `json:"optout"`
 }
 
 type adformAdUnit struct {
@@ -168,6 +184,30 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 
 	userId, _, _ := request.Cookie.GetUID(a.Name())
 
+	gdprApplies := request.ParseGDPR()
+	if gdprApplies != "0" && gdprApplies != "1" {
+		gdprApplies = ""
+	}
+	consent := request.ParseConsent()
+	var digitrustData *openrtb_ext.ExtUserDigiTrust
+	if request.User != nil {
+		var extUser *openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			digitrustData = extUser.DigiTrust
+		}
+	}
+
+	var digitrust *adformDigitrust = nil
+	if digitrustData != nil {
+		digitrust = new(adformDigitrust)
+		digitrust.Id = digitrustData.ID
+		digitrust.Keyv = digitrustData.KeyV
+		digitrust.Version = 1
+		digitrust.Privacy = adformDigitrustPrivacy{
+			Optout: digitrustData.Pref != 0,
+		}
+	}
+
 	return &adformRequest{
 		adUnits:       adUnits,
 		ip:            request.Device.IP,
@@ -178,6 +218,9 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		referer:       request.Url,
 		userId:        userId,
 		tid:           request.Tid,
+		gdprApplies:   gdprApplies,
+		consent:       consent,
+		digitrust:     digitrust,
 	}, nil
 }
 
@@ -219,12 +262,33 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	if r.isSecure {
 		uri = strings.Replace(uri, "http://", "https://", 1)
 	}
-	adid := ""
-	if r.advertisingId != "" {
-		adid = fmt.Sprintf("&adid=%s", r.advertisingId)
+	var Url *url.URL
+	Url, err := url.Parse(uri)
+	if err != nil {
+		panic(fmt.Sprintf("Incorrect adfortm request url %s", uri))
 	}
-	pt := getValidPriceTypeParameter(r.adUnits)
-	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s%s&%s", uri, r.tid, r.ip, adid, pt, strings.Join(adUnitsParams, "&"))
+	parameters := url.Values{}
+
+	if r.advertisingId != "" {
+		parameters.Add("adid", r.advertisingId)
+	}
+	parameters.Add("CC", "1")
+	parameters.Add("rp", "4")
+	parameters.Add("fd", "1")
+	parameters.Add("stid", r.tid)
+	parameters.Add("ip", r.ip)
+
+	priceType := getValidPriceTypeParameter(r.adUnits)
+	if priceType != "" {
+		parameters.Add("pt", priceType)
+	}
+
+	parameters.Add("gdpr", r.gdprApplies)
+	parameters.Add("gdpr_consent", r.consent)
+
+	Url.RawQuery = parameters.Encode()
+	uri = Url.String()
+	return fmt.Sprintf("%s&%s", uri, strings.Join(adUnitsParams, "&"))
 }
 
 func getValidPriceTypeParameter(adUnits []*adformAdUnit) string {
@@ -243,7 +307,7 @@ func getValidPriceTypeParameter(adUnits []*adformAdUnit) string {
 	}
 
 	if valid {
-		priceTypeParameter = fmt.Sprintf("&pt=%s", priceType)
+		priceTypeParameter = priceType
 	}
 	return priceTypeParameter
 }
@@ -259,9 +323,19 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 	if r.referer != "" {
 		header.Set("Referer", r.referer)
 	}
+
+	cookie := make([]string, 0, 2)
 	if r.userId != "" {
-		header.Set("Cookie", fmt.Sprintf("uid=%s", r.userId))
+		cookie = append(cookie, fmt.Sprintf("uid=%s", r.userId))
 	}
+	if r.digitrust != nil {
+		if digitrustBytes, err := json.Marshal(r.digitrust); err == nil {
+			digitrust := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digitrustBytes)
+			// Cookie name and structure are described here: https://github.com/digi-trust/dt-cdn/wiki/Cookies-for-Platforms
+			cookie = append(cookie, fmt.Sprintf("DigiTrust.v1.identity=%s", digitrust))
+		}
+	}
+	header.Set("Cookie", strings.Join(cookie, ";"))
 
 	return header
 }
@@ -285,7 +359,7 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	return &AdformAdapter{
 		http:    a,
 		URI:     endpointURL,
-		version: "0.1.1",
+		version: "0.1.2",
 	}
 }
 
@@ -367,6 +441,40 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		tid = request.Source.TID
 	}
 
+	gdprApplies := ""
+	var extRegs openrtb_ext.ExtRegs
+	if request.Regs != nil {
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+			errors = append(errors, &adapters.BadInputError{
+				Message: err.Error(),
+			})
+		}
+		if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
+			gdprApplies = strconv.Itoa(int(*extRegs.GDPR))
+		}
+	}
+
+	consent := ""
+	var digitrustData *openrtb_ext.ExtUserDigiTrust
+	if request.User != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			consent = extUser.Consent
+			digitrustData = extUser.DigiTrust
+		}
+	}
+
+	var digitrust *adformDigitrust = nil
+	if digitrustData != nil {
+		digitrust = new(adformDigitrust)
+		digitrust.Id = digitrustData.ID
+		digitrust.Keyv = digitrustData.KeyV
+		digitrust.Version = 1
+		digitrust.Privacy = adformDigitrustPrivacy{
+			Optout: digitrustData.Pref != 0,
+		}
+	}
+
 	return &adformRequest{
 		adUnits:       adUnits,
 		ip:            getIPSafely(request.Device),
@@ -376,6 +484,9 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		referer:       referer,
 		userId:        getBuyerUIDSafely(request.User),
 		tid:           tid,
+		gdprApplies:   gdprApplies,
+		consent:       consent,
+		digitrust:     digitrust,
 	}, errors
 }
 

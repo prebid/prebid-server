@@ -214,6 +214,17 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	if r.Bidders[0].BidderCode != "adform" {
 		t.Fatalf("ParsePBSRequest returned invalid bidder")
 	}
+
+	// can't be set in preparePrebidRequestBody as will be lost during json serialization and deserialization
+	// for the adapters which don't support OpenRTB requests the old PBSRequest is created from OpenRTB request
+	// so User and Regs are copied from OpenRTB request, see legacy.go -> toLegacyRequest
+	regs := getRegs()
+	r.Regs = &regs
+	user := openrtb.User{
+		Ext: getUserExt(),
+	}
+	r.User = &user
+
 	return r
 }
 
@@ -246,6 +257,7 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 			},
 		}
 	}
+
 	body := new(bytes.Buffer)
 	err := json.NewEncoder(body).Encode(prebidRequest)
 	if err != nil {
@@ -334,6 +346,7 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 	if testData.secure {
 		secure = int8(1)
 	}
+
 	bidRequest := &openrtb.BidRequest{
 		ID:  "test-request-id",
 		Imp: make([]openrtb.Imp, len(testData.tags)),
@@ -360,6 +373,10 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 			Banner: &openrtb.Banner{},
 		}
 	}
+
+	regs := getRegs()
+	bidRequest.Regs = &regs
+	bidRequest.User.Ext = getUserExt()
 
 	return bidRequest
 }
@@ -452,6 +469,37 @@ func TestAdformProperties(t *testing.T) {
 
 // helpers
 
+func getRegs() openrtb.Regs {
+	var gdpr int8 = 1
+	regsExt := openrtb_ext.ExtRegs{
+		GDPR: &gdpr,
+	}
+	regs := openrtb.Regs{}
+	regsExtData, err := json.Marshal(regsExt)
+	if err == nil {
+		regs.Ext = regsExtData
+	}
+	return regs
+}
+
+func getUserExt() []byte {
+	digitrust := openrtb_ext.ExtUserDigiTrust{
+		ID:   "digitrustId",
+		KeyV: 1,
+		Pref: 0,
+	}
+	userExt := openrtb_ext.ExtUser{
+		Consent:   "abc",
+		DigiTrust: &digitrust,
+	}
+	userExtData, err := json.Marshal(userExt)
+	if err == nil {
+		return userExtData
+	}
+
+	return nil
+}
+
 func getPriceTypeString(priceType string) string {
 	if priceType != "" {
 		return fmt.Sprintf(", \"priceType\": \"%s\"", priceType)
@@ -469,7 +517,7 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 			return err
 		}
 	}
-	if ok, err := equal("CC=1&rp=4&fd=1&stid=transaction-id&ip=111.111.111.111&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&pt=gross&bWlkPTMyMzQ0&bWlkPTMyMzQ1&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
+	if ok, err := equal("CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&bWlkPTMyMzQ0&bWlkPTMyMzQ1&bWlkPTMyMzQ2", r.URL.RawQuery, "Query string"); !ok {
 		return err
 	}
 	if ok, err := equal("application/json;charset=utf-8", r.Header.Get("Content-Type"), "Content type"); !ok {
@@ -484,7 +532,7 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 	if ok, err := equal(testData.referrer, r.Header.Get("Referer"), "Referer"); !ok {
 		return err
 	}
-	if ok, err := equal(fmt.Sprintf("uid=%s", testData.buyerUID), r.Header.Get("Cookie"), "Buyer ID"); !ok {
+	if ok, err := equal(fmt.Sprintf("uid=%s;DigiTrust.v1.identity=eyJpZCI6ImRpZ2l0cnVzdElkIiwidmVyc2lvbiI6MSwia2V5diI6MSwicHJpdmFjeSI6eyJvcHRvdXQiOmZhbHNlfX0", testData.buyerUID), r.Header.Get("Cookie"), "Buyer ID"); !ok {
 		return err
 	}
 	return nil
@@ -528,9 +576,9 @@ func TestPriceTypeValidation(t *testing.T) {
 func TestPriceTypeUrlParameterCreation(t *testing.T) {
 	// Arrange
 	priceTypeParameterTestCases := map[string][]*adformAdUnit{
-		"":          {{MasterTagId: "123"}, {MasterTagId: "456"}},
-		"&pt=net":   {{MasterTagId: "123", PriceType: priceTypeNet}, {MasterTagId: "456"}, {MasterTagId: "789", PriceType: priceTypeNet}},
-		"&pt=gross": {{MasterTagId: "123", PriceType: priceTypeNet}, {MasterTagId: "456", PriceType: priceTypeGross}, {MasterTagId: "789", PriceType: priceTypeNet}},
+		"":      {{MasterTagId: "123"}, {MasterTagId: "456"}},
+		"net":   {{MasterTagId: "123", PriceType: priceTypeNet}, {MasterTagId: "456"}, {MasterTagId: "789", PriceType: priceTypeNet}},
+		"gross": {{MasterTagId: "123", PriceType: priceTypeNet}, {MasterTagId: "456", PriceType: priceTypeGross}, {MasterTagId: "789", PriceType: priceTypeNet}},
 	}
 
 	// Act

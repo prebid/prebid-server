@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/usersync"
+	"strconv"
 )
 
 const MAX_BIDDERS = 8
@@ -378,7 +379,16 @@ func (req *PBSRequest) ParseGDPR() string {
 	if req == nil || req.Regs == nil {
 		return ""
 	}
-	return parseString(req.Regs.Ext, "gdpr")
+	if len(req.Regs.Ext) == 0 {
+		return ""
+	}
+	val, err := jsonparser.GetInt(req.Regs.Ext, "gdpr")
+	if err != nil {
+		return ""
+	}
+	gdpr := strconv.Itoa(int(val))
+
+	return gdpr
 }
 
 // parses the "User.ext.consent" from the request, if it exists. Otherwise returns an empty string.
