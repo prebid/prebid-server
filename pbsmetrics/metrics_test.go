@@ -65,7 +65,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(blabels)
 		metricsEngine.RecordAdapterPrice(blabels, 1.34)
-		metricsEngine.RecordAdapterBidsReceived(blabels, 2)
 		metricsEngine.RecordAdapterTime(blabels, time.Millisecond*20)
 	}
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[ReqTypeORTB2][RequestStatusOK].Count(), 5)

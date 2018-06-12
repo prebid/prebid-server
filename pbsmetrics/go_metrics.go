@@ -331,21 +331,6 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	}
 }
 
-// RecordAdapterBidsReceived implements a part of the MetricsEngine interface. This tracks the number of bids received
-// from a bidder.
-func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
-	if !ok {
-		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
-		return
-	}
-	// Adapter metrics
-	am.BidsReceivedMeter.Mark(bids)
-	// Account-Adapter metrics
-	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
-	aam.BidsReceivedMeter.Mark(bids)
-}
-
 // RecordAdapterBidAdm implements a part of the MetricsEngine interface.
 // This tracks how many bids from each Bidder use `adm` vs. `nurl.
 func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
@@ -354,6 +339,12 @@ func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext
 		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
+
+	// Adapter metrics
+	am.BidsReceivedMeter.Mark(1)
+	// Account-Adapter metrics
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	aam.BidsReceivedMeter.Mark(1)
 
 	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
 		if hasAdm {

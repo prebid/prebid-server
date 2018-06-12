@@ -138,7 +138,6 @@ type MetricsEngine interface {
 	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
-	RecordAdapterBidsReceived(labels AdapterLabels, bids int64)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
 	RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
@@ -222,13 +221,6 @@ func (me *MultiMetricsEngine) RecordRequestTime(labels Labels, length time.Durat
 func (me *MultiMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 	for _, thisME := range *me {
 		thisME.RecordAdapterRequest(labels)
-	}
-}
-
-// RecordAdapterBidsReceived across all engines
-func (me *MultiMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
-	for _, thisME := range *me {
-		thisME.RecordAdapterBidsReceived(labels, bids)
 	}
 }
 
