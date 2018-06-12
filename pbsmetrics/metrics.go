@@ -64,6 +64,14 @@ const (
 	ReqTypeAMP    RequestType = "amp"
 )
 
+func requestTypes() []RequestType {
+	return []RequestType{
+		ReqTypeLegacy,
+		ReqTypeORTB2,
+		ReqTypeAMP,
+	}
+}
+
 // Browser flag; at this point we only care about identifying Safari
 const (
 	BrowserSafari Browser = "safari"
@@ -79,9 +87,18 @@ const (
 
 // Request/return status
 const (
-	RequestStatusOK  RequestStatus = "ok"
-	RequestStatusErr RequestStatus = "err"
+	RequestStatusOK       RequestStatus = "ok"
+	RequestStatusBadInput RequestStatus = "badinput"
+	RequestStatusErr      RequestStatus = "err"
 )
+
+func requestStatuses() []RequestStatus {
+	return []RequestStatus{
+		RequestStatusOK,
+		RequestStatusBadInput,
+		RequestStatusErr,
+	}
+}
 
 // Adapter execution status
 const (
@@ -104,6 +121,7 @@ type RequestAction string
 const (
 	RequestActionSet    RequestAction = "set"
 	RequestActionOptOut RequestAction = "opt_out"
+	RequestActionGDPR   RequestAction = "gdpr"
 	RequestActionErr    RequestAction = "err"
 )
 

@@ -15,28 +15,30 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+// Using this set of bids in more than one test
+var mockBids = map[openrtb_ext.BidderName][]*openrtb.Bid{
+	openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
+		ID:    "losing-bid",
+		ImpID: "some-imp",
+		Price: 0.5,
+		CrID:  "1",
+	}, &openrtb.Bid{
+		ID:    "winning-bid",
+		ImpID: "some-imp",
+		Price: 0.7,
+		CrID:  "2",
+	}},
+	openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
+		ID:    "contending-bid",
+		ImpID: "some-imp",
+		Price: 0.6,
+		CrID:  "3",
+	}},
+}
+
 // Prevents #378. This is not a JSON test because the cache ID values aren't reproducible, which makes them a pain to test in that format.
 func TestTargetingCache(t *testing.T) {
-	mockBids := map[openrtb_ext.BidderName][]*openrtb.Bid{
-		openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "losing-bid",
-			ImpID: "some-imp",
-			Price: 0.5,
-			CrID:  "1",
-		}, &openrtb.Bid{
-			ID:    "winning-bid",
-			ImpID: "some-imp",
-			Price: 0.7,
-			CrID:  "2",
-		}},
-		openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
-			ID:    "contending-bid",
-			ImpID: "some-imp",
-			Price: 0.6,
-			CrID:  "3",
-		}},
-	}
-	bids := runTargetingAuction(t, mockBids, true, true, false)
+	bids := runTargetingAuction(t, mockBids, true, true, true, false)
 
 	// Make sure that the cache keys exist on the bids where they're expected to
 	assertKeyExists(t, bids["winning-bid"], string(openrtb_ext.HbCacheKey), true)
@@ -59,7 +61,7 @@ func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) 
 
 // runAuction takes a bunch of mock bids by Bidder and runs an auction. It returns a map of Bids indexed by their ImpID.
 // If includeCache is true, the auction will be run with cacheing as well, so the cache targeting keys should exist.
-func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool, includeWinners bool, isApp bool) map[string]*openrtb.Bid {
+func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid, includeCache bool, includeWinners bool, includeBidderKeys bool, isApp bool) map[string]*openrtb.Bid {
 	server := httptest.NewServer(http.HandlerFunc(mockServer))
 	defer server.Close()
 
@@ -74,7 +76,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 
 	req := &openrtb.BidRequest{
 		Imp: imps,
-		Ext: buildTargetingExt(includeCache, includeWinners),
+		Ext: buildTargetingExt(includeCache, includeWinners, includeBidderKeys),
 	}
 	if isApp {
 		req.App = &openrtb.App{}
@@ -113,12 +115,16 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 	return adapterMap
 }
 
-func buildTargetingExt(includeCache bool, includeWinners bool) openrtb.RawJSON {
+func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys bool) openrtb.RawJSON {
 	var targeting string
-	if includeWinners {
+	if includeWinners && includeBidderKeys {
 		targeting = "{}"
+	} else if !includeWinners && includeBidderKeys {
+		targeting = `{"includewinners": false}`
+	} else if includeWinners && !includeBidderKeys {
+		targeting = `{"includebidderkeys": false}`
 	} else {
-		targeting = `{"includeWinners": false}`
+		targeting = `{"includewinners": false, "includebidderkeys": false}`
 	}
 
 	if includeCache {

@@ -7,6 +7,11 @@
     "mid": {
       "type": ["integer", "string"],
       "description": "An ID which identifies the placement selling the impression"
+    },
+    "priceType": {
+      "type": "string",
+      "enum": ["gross", "net"],
+      "description": "An expected price type (net or gross) of bids."
     }
   },
   "required": ["mid"]

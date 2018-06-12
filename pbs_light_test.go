@@ -10,180 +10,21 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
 	"github.com/spf13/viper"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	usersyncers "github.com/prebid/prebid-server/usersync"
+	"github.com/prebid/prebid-server/usersync/usersyncers"
 )
 
 const adapterDirectory = "adapters"
-
-func TestCookieSyncNoCookies(t *testing.T) {
-	endpoint := testableEndpoint()
-
-	router := httprouter.New()
-	router.POST("/cookie_sync", endpoint)
-
-	csreq := cookieSyncRequest{
-		Bidders: []string{"appnexus", "audienceNetwork", "random"},
-	}
-	csbuf := new(bytes.Buffer)
-	err := json.NewEncoder(csbuf).Encode(&csreq)
-	if err != nil {
-		t.Fatalf("Encode csr failed: %v", err)
-	}
-
-	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
-
-	csresp := cookieSyncResponse{}
-	err = json.Unmarshal(rr.Body.Bytes(), &csresp)
-	if err != nil {
-		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.Status != "no_cookie" {
-		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
-	}
-
-	if len(csresp.BidderStatus) != 2 {
-		t.Errorf("Expected 2 bidder status rows; got %d", len(csresp.BidderStatus))
-	}
-}
-
-func TestCookieSyncHasCookies(t *testing.T) {
-	endpoint := testableEndpoint()
-
-	router := httprouter.New()
-	router.POST("/cookie_sync", endpoint)
-
-	csreq := cookieSyncRequest{
-		Bidders: []string{"appnexus", "audienceNetwork", "random"},
-	}
-	csbuf := new(bytes.Buffer)
-	err := json.NewEncoder(csbuf).Encode(&csreq)
-	if err != nil {
-		t.Fatalf("Encode csr failed: %v", err)
-	}
-
-	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
-
-	pcs := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
-	pcs.TrySync("adnxs", "1234")
-	pcs.TrySync("audienceNetwork", "2345")
-	req.AddCookie(pcs.ToHTTPCookie(90 * 24 * time.Hour))
-
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d", rr.Code)
-	}
-
-	csresp := cookieSyncResponse{}
-	err = json.Unmarshal(rr.Body.Bytes(), &csresp)
-	if err != nil {
-		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.Status != "ok" {
-		t.Errorf("Expected status = ok; got %s", csresp.Status)
-	}
-
-	if len(csresp.BidderStatus) != 0 {
-		t.Errorf("Expected 0 bidder status rows; got %d", len(csresp.BidderStatus))
-	}
-}
-
-func TestCookieSyncEmptyBidders(t *testing.T) {
-	endpoint := testableEndpoint()
-
-	router := httprouter.New()
-	router.POST("/cookie_sync", endpoint)
-
-	// First test a declared empty bidders returns no syncs
-	csreq := []byte("{\"bidders\": []}")
-	csbuf := bytes.NewBuffer(csreq)
-
-	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
-
-	csresp := cookieSyncResponse{}
-	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
-	if err != nil {
-		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.Status != "no_cookie" {
-		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
-	}
-
-	if len(csresp.BidderStatus) != 0 {
-		t.Errorf("Expected 0 bidder status rows; got %d", len(csresp.BidderStatus))
-	}
-}
-
-func TestCookieSyncNoBidders(t *testing.T) {
-	endpoint := testableEndpoint()
-
-	router := httprouter.New()
-	router.POST("/cookie_sync", endpoint)
-
-	// Now test a missing bidders returns all syncs
-	csreq := []byte("{}")
-	csbuf := bytes.NewBuffer(csreq)
-
-	req, _ := http.NewRequest("POST", "/cookie_sync", csbuf)
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Fatalf("Wrong status: %d (%s)", rr.Code, rr.Body)
-	}
-
-	csresp := cookieSyncResponse{}
-	err := json.Unmarshal(rr.Body.Bytes(), &csresp)
-	if err != nil {
-		t.Fatalf("Unmarshal response failed: %v", err)
-	}
-
-	if csresp.Status != "no_cookie" {
-		t.Errorf("Expected status = no_cookie; got %s", csresp.Status)
-	}
-
-	if len(csresp.BidderStatus) != 4 {
-		t.Errorf("Expected %d bidder status rows; got %d", 4, len(csresp.BidderStatus))
-	}
-
-}
-
-func testableEndpoint() httprouter.Handle {
-
-	knownSyncers := map[openrtb_ext.BidderName]usersyncers.Usersyncer{
-		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
-		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
-		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
-		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
-	}
-	return (&cookieSyncDeps{knownSyncers, &config.Cookie{}, &pbsmetrics.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{})}).CookieSync
-}
 
 func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	body := []byte(`{
@@ -233,7 +74,10 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 	d, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := pbs.ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcs)
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}
@@ -504,13 +348,18 @@ func TestCacheVideoOnly(t *testing.T) {
 
 	ctx := context.TODO()
 	w := httptest.NewRecorder()
-	cfg, err := config.New(viper.New())
+	v := viper.New()
+	config.SetupViper(v)
+	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	syncers := usersyncers.NewSyncerMap(cfg)
+	gdprPerms := gdpr.NewPermissions(nil, config.GDPR{
+		HostVendorID: 0,
+	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, &pbsmetrics.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
+	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, gdprPerms, &pbsmetrics.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}
@@ -526,6 +375,43 @@ func TestCacheVideoOnly(t *testing.T) {
 	if bids[4].CacheID != "UUID-3" {
 		t.Errorf("Second object UUID was '%s', should have been 'UUID-3'", bids[4].CacheID)
 	}
+}
+
+func TestShouldUsersync(t *testing.T) {
+	doTest := func(gdprApplies string, consent string, allowBidderSync bool, allowHostCookies bool, expectAllow bool) {
+		t.Helper()
+		deps := auctionDeps{
+			cfg:     nil,
+			syncers: nil,
+			gdprPerms: &mockPermissions{
+				allowBidderSync:  allowBidderSync,
+				allowHostCookies: allowHostCookies,
+			},
+			metricsEngine: nil,
+		}
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprApplies, consent)
+		if allowSyncs != expectAllow {
+			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
+		}
+	}
+	doTest("0", "", false, false, true)
+	doTest("1", "", true, true, false)
+	doTest("1", "a", true, false, false)
+	doTest("1", "a", false, true, false)
+	doTest("1", "a", true, true, true)
+}
+
+type mockPermissions struct {
+	allowBidderSync  bool
+	allowHostCookies bool
+}
+
+func (m *mockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return m.allowHostCookies, nil
+}
+
+func (m *mockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return m.allowBidderSync, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {
@@ -767,11 +653,15 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 
 // Test the viper setup
 func TestViperInit(t *testing.T) {
-	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
-	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
+	v := viper.New()
+	config.SetupViper(v)
+	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
+	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", v.Get("adapters.pulsepoint.endpoint").(string))
 }
 
 func TestViperEnv(t *testing.T) {
+	v := viper.New()
+	config.SetupViper(v)
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 
@@ -782,11 +672,11 @@ func TestViperEnv(t *testing.T) {
 	defer ttl()
 
 	// Basic config set
-	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
+	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", v.Get("port").(string))
 	// Nested config set
-	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
+	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", v.Get("adapters.pubmatic.endpoint").(string))
 	// Config set with underscores
-	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
+	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {
