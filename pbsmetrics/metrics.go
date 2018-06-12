@@ -140,7 +140,7 @@ type MetricsEngine interface {
 	RecordAdapterRequest(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
-	RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
+	RecordAdapterBidsReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	RecordCookieSync(labels Labels)        // May ignore all labels
@@ -224,10 +224,10 @@ func (me *MultiMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 	}
 }
 
-// RecordAdapterBidAdm across all engines
-func (me *MultiMetricsEngine) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+// RecordAdapterBidsReceived across all engines
+func (me *MultiMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	for _, thisME := range *me {
-		thisME.RecordAdapterBidAdm(labels, bidType, hasAdm)
+		thisME.RecordAdapterBidsReceived(labels, bidType, hasAdm)
 	}
 }
 
@@ -293,12 +293,7 @@ func (me *DummyMetricsEngine) RecordAdapterRequest(labels AdapterLabels) {
 }
 
 // RecordAdapterBidsReceived as a noop
-func (me *DummyMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
-	return
-}
-
-// RecordAdapterBidAdm as a noop
-func (me *DummyMetricsEngine) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+func (me *DummyMetricsEngine) RecordAdapterBidsReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	return
 }
 
