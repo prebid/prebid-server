@@ -63,7 +63,9 @@ func (cfg *Configuration) logValues() {
 	cfg.Metrics.logValues()
 	cfg.DataCache.logValues()
 	cfg.StoredRequests.logValues()
-	// TODO: Log Adapter info
+	for name, adapter := range cfg.Adapters {
+		adapter.logValues(name)
+	}
 	glog.Infof("max_request_size=%d", cfg.MaxRequestSize)
 	cfg.Analytics.logValues()
 	glog.Infof("amp_timeout_adjustment_ms=%d", cfg.AMPTimeoutAdjustment)
@@ -199,6 +201,15 @@ type Adapter struct {
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
+}
+
+func (cfg *Adapter) logValues(name string) {
+	glog.Infof("adapters.%s.endpoint=%s", name, cfg.Endpoint)
+	glog.Infof("adapters.%s.usersync_url=%s", name, cfg.UserSyncURL)
+	glog.Infof("adapters.%s.platform_id=%s", name, cfg.PlatformID)
+	glog.Infof("adapters.%s.xapi.username=%s", name, cfg.XAPI.Username)
+	// Don't log passwords for security reasons
+	glog.Infof("adapters.%s.xapi.tracker=%s", name, cfg.XAPI.Tracker)
 }
 
 type Metrics struct {
