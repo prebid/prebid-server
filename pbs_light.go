@@ -646,7 +646,7 @@ func main() {
 	config.SetupViper(v)
 	cfg, err := config.New(v)
 	if err != nil {
-		glog.Fatalf("Viper was unable to read configurations: %v", err)
+		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
 	if err := serve(cfg); err != nil {
