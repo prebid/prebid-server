@@ -4,10 +4,13 @@ FROM golang:latest
 ## GO BUILD STUFF
 WORKDIR /go/src/github.com/prebid/prebid-server
 COPY . .
-
+RUN mv pbs.yaml.production pbs.yaml 
 RUN sh build.sh
 RUN dep ensure
-#RUN ./validate.sh
+
+## THIS WAS BREAKING SO I TURNED IT OF - JCJ
+## RUN ./validate.sh
+
 RUN go build . 
 
 
