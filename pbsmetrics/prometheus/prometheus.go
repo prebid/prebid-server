@@ -5,7 +5,7 @@ import (
 
 	_ "github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
-	_ "github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 	_ "github.com/prometheus/client_golang/prometheus/promhttp"
@@ -49,6 +49,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	standardLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status"}
 
 	adapterLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status", "adapter"}
+	bidLabelNames := append([]string{"bidtype", "hasadm"}, adapterLabelNames...)
 
 	metrics := Metrics{}
 	metrics.connCounter = newConnCounter(cfg)
@@ -90,7 +91,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	prometheus.MustRegister(metrics.adaptBids)
 	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
 		"Value of the highest bids from each bidder.",
-		adapterLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
+		bidLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
 	)
 	prometheus.MustRegister(metrics.adaptPrices)
 	metrics.cookieSync = newCookieSync(cfg)
@@ -180,16 +181,29 @@ func (me *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 }
 
 func (me *Metrics) RecordAdapterBidsReceived(labels pbsmetrics.AdapterLabels, bids int64) {
-	me.adaptBids.With(resolveAdapterLabels(labels)).Add(bids)
+	me.adaptBids.With(resolveAdapterLabels(labels)).Add(float64(bids))
 }
 
 func (me *Metrics) RecordAdapterBidAdm(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-
+	me.adaptBids.With(resolveBidLabels(labels, bidType, hasAdm)).Inc()
 }
-func (me *Metrics) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64)
-func (me *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration)
-func (me *Metrics) RecordCookieSync(labels pbsmetrics.Labels)        // May ignore all labels
-func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) // Function should verify bidder values
+
+func (me *Metrics) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64) {
+	me.adaptPrices.With(resolveAdapterLabels(labels)).Observe(cpm)
+}
+
+func (me *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
+	time := float64(length) / float64(time.Second)
+	me.adaptTimer.With(resolveAdapterLabels(labels)).Observe(time)
+}
+
+func (me *Metrics) RecordCookieSync(labels pbsmetrics.Labels) {
+	me.cookieSync.Inc()
+}
+
+func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
+	me.userID.With(resolveUserSyncLabels(userLabels)).Inc()
+}
 
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
 	return prometheus.Labels{
@@ -211,5 +225,29 @@ func resolveAdapterLabels(labels pbsmetrics.AdapterLabels) prometheus.Labels {
 		"cookie":  string(labels.CookieFlag),
 		"status":  string(labels.AdapterStatus),
 		"adapter": string(labels.Adapter),
+	}
+}
+
+func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) prometheus.Labels {
+	bidLabels := prometheus.Labels{
+		"source":  string(labels.Source),
+		"type":    string(labels.RType),
+		"pubid":   labels.PubID,
+		"browser": string(labels.Browser),
+		"cookie":  string(labels.CookieFlag),
+		"status":  string(labels.AdapterStatus),
+		"adapter": string(labels.Adapter),
+		"bidtype": string(bidType),
+	}
+	if hasAdm {
+		bidLabels["hasadm"] = "true"
+	}
+	return bidLabels
+}
+
+func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
+	return prometheus.Labels{
+		"action": string(userLabels.Action),
+		"bidder": string(userLabels.Bidder),
 	}
 }
