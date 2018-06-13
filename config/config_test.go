@@ -74,7 +74,7 @@ adapters:
     usersync_url: http://facebook.com/ortb/prebid-s2s
     platform_id: abcdefgh1234
   brightroll:
-    usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s
+    usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s
     endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
 `)
 
@@ -145,7 +145,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters["brightroll"].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
 }
 
 func TestValidConfig(t *testing.T) {
