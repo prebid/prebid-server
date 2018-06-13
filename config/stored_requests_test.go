@@ -124,7 +124,7 @@ func assertErrsExist(t *testing.T, err configErrors) {
 func assertNoErrs(t *testing.T, err configErrors) {
 	t.Helper()
 	if len(err) > 0 {
-		t.Errorf("Got unexpected error: %v", err)
+		t.Errorf("Got unexpected error(s): %v", err)
 	}
 }
 
