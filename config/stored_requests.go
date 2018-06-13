@@ -405,8 +405,8 @@ func (cfg *InMemoryCache) validate(errs configErrors) configErrors {
 }
 
 func (cfg *InMemoryCache) logValues() {
-	glog.Info("stored_requests.in_memory_cache.type=%s", cfg.Type)
-	glog.Info("stored_requests.in_memory_cache.ttl=%d", cfg.TTL)
-	glog.Info("stored_requests.in_memory_cache.request_cache_size_bytes=%d", cfg.RequestCacheSize)
-	glog.Info("stored_requests.in_memory_cache.imp_cache_size_bytes=%d", cfg.ImpCacheSize)
+	glog.Infof("stored_requests.in_memory_cache.type=%s", cfg.Type)
+	glog.Infof("stored_requests.in_memory_cache.ttl=%d", cfg.TTL)
+	glog.Infof("stored_requests.in_memory_cache.request_cache_size_bytes=%d", cfg.RequestCacheSize)
+	glog.Infof("stored_requests.in_memory_cache.imp_cache_size_bytes=%d", cfg.ImpCacheSize)
 }
