@@ -1,10 +1,12 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
@@ -31,20 +33,54 @@ type Configuration struct {
 	GDPR                 GDPR               `mapstructure:"gdpr"`
 }
 
-func (cfg *Configuration) validate() error {
+type configErrors []error
+
+func (c configErrors) Error() string {
+	if len(c) == 0 {
+		return ""
+	}
+	buf := bytes.Buffer{}
+	buf.WriteString("validation errors are:\n\n")
+	for _, err := range c {
+		buf.WriteString("  ")
+		buf.WriteString(err.Error())
+		buf.WriteString("\n")
+	}
+	buf.WriteString("\n")
+	return buf.String()
+}
+
+func (cfg *Configuration) logValues() {
+	glog.Infof("external_url=%s", cfg.ExternalURL)
+	glog.Infof("host=%s", cfg.Host)
+	glog.Infof("port=%d", cfg.Port)
+	glog.Infof("admin_port=%d", cfg.AdminPort)
+	glog.Infof("status_response=%s", cfg.StatusResponse)
+	cfg.AuctionTimeouts.logValues()
+	cfg.CacheURL.logValues()
+	glog.Infof("recaptcha_secret=%s", cfg.RecaptchaSecret)
+	cfg.HostCookie.logValues()
+	cfg.Metrics.logValues()
+	cfg.DataCache.logValues()
+	cfg.StoredRequests.logValues()
+	for name, adapter := range cfg.Adapters {
+		adapter.logValues(name)
+	}
+	glog.Infof("max_request_size=%d", cfg.MaxRequestSize)
+	cfg.Analytics.logValues()
+	glog.Infof("amp_timeout_adjustment_ms=%d", cfg.AMPTimeoutAdjustment)
+	cfg.GDPR.logValues()
+}
+
+func (cfg *Configuration) validate() configErrors {
+	var errs configErrors
+	errs = cfg.AuctionTimeouts.validate(errs)
+	errs = cfg.StoredRequests.validate(errs)
 	if cfg.MaxRequestSize < 0 {
-		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
+		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
-
-	if err := cfg.AuctionTimeouts.validate(); err != nil {
-		return err
-	}
-
-	if err := cfg.StoredRequests.validate(); err != nil {
-		return err
-	}
-
-	return cfg.GDPR.validate()
+	errs = cfg.GDPR.validate(errs)
+	return errs
 }
 
 type AuctionTimeouts struct {
@@ -54,11 +90,16 @@ type AuctionTimeouts struct {
 	Max uint64 `mapstructure:"max"`
 }
 
-func (cfg *AuctionTimeouts) validate() error {
+func (cfg *AuctionTimeouts) logValues() {
+	glog.Infof("auction_timeout_ms.default=%d", cfg.Default)
+	glog.Infof("auction_timeout_ms.max=%d", cfg.Max)
+}
+
+func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 	if cfg.Max < cfg.Default {
-		return fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default)
+		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
 	}
-	return nil
+	return errs
 }
 
 // LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
@@ -82,9 +123,27 @@ type GDPR struct {
 	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
 }
 
+func (cfg *GDPR) logValues() {
+	glog.Infof("gdpr.host_vendor_id=%d", cfg.HostVendorID)
+	glog.Infof("gdpr.usersync_if_ambiguous=%t", cfg.UsersyncIfAmbiguous)
+	cfg.Timeouts.logValues()
+}
+
+func (cfg *GDPR) validate(errs configErrors) configErrors {
+	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
+		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
+	}
+	return errs
+}
+
 type GDPRTimeouts struct {
 	InitVendorlistFetch   int `mapstructure:"init_vendorlist_fetches"`
 	ActiveVendorlistFetch int `mapstructure:"active_vendorlist_fetch"`
+}
+
+func (cfg *GDPRTimeouts) logValues() {
+	glog.Infof("gdpr.timeouts_ms.init_vendorlist_fetches=%d", cfg.InitVendorlistFetch)
+	glog.Infof("gdpr.timeouts_ms.active_vendorlist_fetch=%d", cfg.ActiveVendorlistFetch)
 }
 
 func (t *GDPRTimeouts) InitTimeout() time.Duration {
@@ -95,21 +154,21 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
 }
 
-func (cfg *GDPR) validate() error {
-	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
-		return fmt.Errorf("host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID)
-	}
-
-	return nil
-}
-
 type Analytics struct {
 	File FileLogs `mapstructure:"file"`
+}
+
+func (cfg *Analytics) logValues() {
+	cfg.File.logValues()
 }
 
 //Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
+}
+
+func (cfg *FileLogs) logValues() {
+	glog.Infof("analytics.file.filename=%s", cfg.Filename)
 }
 
 type HostCookie struct {
@@ -123,6 +182,16 @@ type HostCookie struct {
 	TTL int64 `mapstructure:"ttl_days"`
 }
 
+func (cfg *HostCookie) logValues() {
+	glog.Infof("host_cookie.domain=%s", cfg.Domain)
+	glog.Infof("host_cookie.family=%s", cfg.Family)
+	glog.Infof("host_cookie.cookie_name=%s", cfg.CookieName)
+	glog.Infof("host_cookie.opt_out_url=%s", cfg.OptOutURL)
+	glog.Infof("host_cookie.opt_in_url=%s", cfg.OptInURL)
+	cfg.OptOutCookie.logValues()
+	glog.Infof("host_cookie.ttl_days=%d", cfg.TTL)
+}
+
 type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
@@ -134,8 +203,21 @@ type Adapter struct {
 	} `mapstructure:"xapi"` // needed for Rubicon
 }
 
+func (cfg *Adapter) logValues(name string) {
+	glog.Infof("adapters.%s.endpoint=%s", name, cfg.Endpoint)
+	glog.Infof("adapters.%s.usersync_url=%s", name, cfg.UserSyncURL)
+	glog.Infof("adapters.%s.platform_id=%s", name, cfg.PlatformID)
+	glog.Infof("adapters.%s.xapi.username=%s", name, cfg.XAPI.Username)
+	// Don't log passwords for security reasons
+	glog.Infof("adapters.%s.xapi.tracker=%s", name, cfg.XAPI.Tracker)
+}
+
 type Metrics struct {
 	Influxdb InfluxMetrics `mapstructure:"influxdb"`
+}
+
+func (cfg *Metrics) logValues() {
+	cfg.Influxdb.logValues()
 }
 
 type InfluxMetrics struct {
@@ -145,11 +227,25 @@ type InfluxMetrics struct {
 	Password string `mapstructure:"password"`
 }
 
+func (cfg *InfluxMetrics) logValues() {
+	glog.Infof("metrics.influxdb.host=%s", cfg.Host)
+	glog.Infof("metrics.influxdb.database=%s", cfg.Database)
+	glog.Infof("metrics.influxdb.username=%s", cfg.Username)
+	// Omit passwords from the log, for security
+}
+
 type DataCache struct {
 	Type       string `mapstructure:"type"`
 	Filename   string `mapstructure:"filename"`
 	CacheSize  int    `mapstructure:"cache_size"`
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
+}
+
+func (cfg *DataCache) logValues() {
+	glog.Infof("datacache.type=%s", cfg.Type)
+	glog.Infof("datacache.filename=%s", cfg.Filename)
+	glog.Infof("datacache.cache_size=%d", cfg.CacheSize)
+	glog.Infof("datacache.ttl_seconds=%d", cfg.TTLSeconds)
 }
 
 type Cache struct {
@@ -169,18 +265,34 @@ type Cache struct {
 	ExpectedTimeMillis int `mapstructure:"expected_millis"`
 }
 
+func (cfg *Cache) logValues() {
+	glog.Infof("cache.scheme=%s", cfg.Scheme)
+	glog.Infof("cache.host=%s", cfg.Host)
+	glog.Infof("cache.query=%s", cfg.Query)
+	glog.Infof("cache.expected_millis=%d", cfg.ExpectedTimeMillis)
+}
+
 type Cookie struct {
 	Name  string `mapstructure:"name"`
 	Value string `mapstructure:"value"`
 }
 
-// New uses viper to get our server configurations
+func (cfg *Cookie) logValues() {
+	glog.Infof("host_cookie.optout_cookie.name=%s", cfg.Name)
+	glog.Infof("host_cookie.optout_cookie.value=%s", cfg.Value)
+}
+
+// New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
-	return &c, c.validate()
+	c.logValues()
+	if errs := c.validate(); len(errs) > 0 {
+		return &c, errs
+	}
+	return &c, nil
 }
 
 //Allows for protocol relative URL if scheme is empty
@@ -291,5 +403,4 @@ func SetupViper(v *viper.Viper) {
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
-
 }
