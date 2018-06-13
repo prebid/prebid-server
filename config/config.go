@@ -186,7 +186,7 @@ func (cfg *HostCookie) logValues() {
 	glog.Infof("host_cookie.cookie_name=%s", cfg.CookieName)
 	glog.Infof("host_cookie.opt_out_url=%s", cfg.OptOutURL)
 	glog.Infof("host_cookie.opt_in_url=%s", cfg.OptInURL)
-	glog.Infof("host_cookie.optout_cookie=%s", cfg.OptOutCookie)
+	cfg.OptOutCookie.logValues()
 	glog.Infof("host_cookie.ttl_days=%d", cfg.TTL)
 }
 
@@ -264,6 +264,11 @@ func (cfg *Cache) logValues() {
 type Cookie struct {
 	Name  string `mapstructure:"name"`
 	Value string `mapstructure:"value"`
+}
+
+func (cfg *Cookie) logValues() {
+	glog.Infof("host_cookie.optout_cookie.name=%s", cfg.Name)
+	glog.Infof("host_cookie.optout_cookie.value=%s", cfg.Value)
 }
 
 // New uses viper to get our server configurations.

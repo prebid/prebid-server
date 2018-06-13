@@ -118,12 +118,10 @@ func (cfg *PostgresConfig) validate(errs configErrors) configErrors {
 }
 
 func (cfg *PostgresConfig) logValues() {
-	if cfg.ConnectionInfo.Database != "" {
-		cfg.ConnectionInfo.logValues()
-		cfg.FetcherQueries.logValues()
-		cfg.CacheInitialization.logValues()
-		cfg.PollUpdates.logValues()
-	}
+	cfg.ConnectionInfo.logValues()
+	cfg.FetcherQueries.logValues()
+	cfg.CacheInitialization.logValues()
+	cfg.PollUpdates.logValues()
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
@@ -249,12 +247,10 @@ func (cfg *PostgresCacheInitializer) validate(errs configErrors) configErrors {
 }
 
 func (cfg *PostgresCacheInitializer) logValues() {
-	if cfg.Query == "" && cfg.AmpQuery == "" {
-		glog.Infof("The postgres cache will not load Stored Request data at startup. Requests may be slow for a bit.")
-		return
-	}
-
 	glog.Infof("initialize_caches.timeout_ms=%d", cfg.Timeout)
+	glog.Infof("initialize_caches.query=%s", cfg.Query)
+	glog.Infof("initialize_caches.amp_query=%d", cfg.AmpQuery)
+
 }
 
 type PostgresUpdatePolling struct {
