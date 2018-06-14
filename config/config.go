@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/structlog"
 	"github.com/spf13/viper"
 )
 
@@ -196,7 +195,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 	glog.Info("Logging the resolved configuration:")
-	structlog.LogStruct(reflect.ValueOf(c), "  \t")
+	LogGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
 		return &c, errs
 	}

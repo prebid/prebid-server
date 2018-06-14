@@ -1,4 +1,4 @@
-package structlog
+package config
 
 import (
 	"bytes"
@@ -31,8 +31,6 @@ func TestBasic(t *testing.T) {
 
 	mylogger := func(msg string, args ...interface{}) {
 		buf.WriteString(fmt.Sprintf(fmt.Sprintln(msg), args...))
-		fmt.Printf(msg, args...)
-		fmt.Println("")
 	}
 
 	testCfg := testStruct{

@@ -1,4 +1,4 @@
-package structlog
+package config
 
 import (
 	"fmt"
@@ -9,15 +9,14 @@ import (
 	"github.com/golang/glog"
 )
 
-var mapregex *regexp.Regexp
-var blacklistregexp []*regexp.Regexp
-
-func init() {
-	mapregex = regexp.MustCompile(`mapstructure:"([^"]+)"`)
-	blacklistregexp = make([]*regexp.Regexp, 1, 1)
-	blacklistregexp[0] = regexp.MustCompile("password")
+var mapregex *regexp.Regexp = regexp.MustCompile(`mapstructure:"([^"]+)"`)
+var blacklistregexp []*regexp.Regexp = []*regexp.Regexp{
+	regexp.MustCompile("password"),
 }
 
+// LogGeneral will log nearly any sort of value, but requires the name of the root object to be in the
+// prefix if you want that name to be logged. Structs will append .<fieldname> recursively to the prefix
+// to document deeper structure.
 func LogGeneral(v reflect.Value, prefix string) {
 	logGeneralWithLogger(v, prefix, glog.Infof)
 }
@@ -27,21 +26,17 @@ func logGeneralWithLogger(v reflect.Value, prefix string, logger func(msg string
 	case reflect.Struct:
 		logStructWithLogger(v, prefix, logger)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		logInt(v, prefix, logger)
+		logger("%s: %d", prefix, v.Int())
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		logUint(v, prefix, logger)
+		logger("%s: %d", prefix, v.Uint())
 	case reflect.Float32, reflect.Float64:
-		logFloat(v, prefix, logger)
+		logger("%s: %f", prefix, v.Float())
 	case reflect.Bool:
-		logBool(v, prefix, logger)
+		logger("%s: %t", prefix, v.Bool())
 	default:
 		// logString, by using v.String(), will not fail, and indicate what additional cases we need to handle
-		logString(v, prefix, logger)
+		logger("%s: %s", prefix, v.String())
 	}
-}
-
-func LogStruct(v reflect.Value, prefix string) {
-	logStructWithLogger(v, prefix, glog.Infof)
 }
 
 func logStructWithLogger(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
@@ -81,24 +76,4 @@ func extendPrefix(prefix string, field string) string {
 		return fmt.Sprintf("%s%s", prefix, field)
 	}
 	return fmt.Sprintf("%s.%s", prefix, field)
-}
-
-func logInt(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
-	logger("%s: %d", prefix, v.Int())
-}
-
-func logUint(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
-	logger("%s: %d", prefix, v.Uint())
-}
-
-func logFloat(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
-	logger("%s: %f", prefix, v.Float())
-}
-
-func logBool(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
-	logger("%s: %t", prefix, v.Bool())
-}
-
-func logString(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
-	logger("%s: %s", prefix, v.String())
 }
