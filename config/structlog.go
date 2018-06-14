@@ -17,7 +17,7 @@ var blacklistregexp []*regexp.Regexp = []*regexp.Regexp{
 // LogGeneral will log nearly any sort of value, but requires the name of the root object to be in the
 // prefix if you want that name to be logged. Structs will append .<fieldname> recursively to the prefix
 // to document deeper structure.
-func LogGeneral(v reflect.Value, prefix string) {
+func logGeneral(v reflect.Value, prefix string) {
 	logGeneralWithLogger(v, prefix, glog.Infof)
 }
 

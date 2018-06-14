@@ -195,7 +195,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 	glog.Info("Logging the resolved configuration:")
-	LogGeneral(reflect.ValueOf(c), "  \t")
+	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
 		return &c, errs
 	}
