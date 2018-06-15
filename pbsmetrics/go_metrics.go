@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -24,7 +25,7 @@ type Metrics struct {
 	RequestTimer               metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	RequestStatuses     map[RequestType]map[RequestStatus]metrics.Meter
+	RequestStatuses     map[metricsdef.RequestType]map[metricsdef.RequestStatus]metrics.Meter
 	AmpNoCookieMeter    metrics.Meter
 	CookieSyncMeter     metrics.Meter
 	userSyncOptout      metrics.Meter
@@ -81,7 +82,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
 		metricsRegistry:            registry,
-		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
+		RequestStatuses:            make(map[metricsdef.RequestType]map[metricsdef.RequestStatus]metrics.Meter),
 		ConnectionCounter:          metrics.NilCounter{},
 		ConnectionAcceptErrorMeter: blankMeter,
 		ConnectionCloseErrorMeter:  blankMeter,
@@ -107,9 +108,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
 
-	for _, t := range requestTypes() {
-		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
-		for _, s := range requestStatuses() {
+	for _, t := range metricsdef.RequestTypes() {
+		newMetrics.RequestStatuses[t] = make(map[metricsdef.RequestStatus]metrics.Meter)
+		for _, s := range metricsdef.RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
 		}
 	}
@@ -252,18 +253,18 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 // Implement the MetricsEngine interface
 
 // RecordRequest implements a part of the MetricsEngine interface
-func (me *Metrics) RecordRequest(labels Labels) {
+func (me *Metrics) RecordRequest(labels metricsdef.Labels) {
 	me.RequestStatuses[labels.RType][labels.RequestStatus].Mark(1)
-	if labels.Source == DemandApp {
+	if labels.Source == metricsdef.DemandApp {
 		me.AppRequestMeter.Mark(1)
 	} else {
-		if labels.Browser == BrowserSafari {
+		if labels.Browser == metricsdef.BrowserSafari {
 			me.SafariRequestMeter.Mark(1)
-			if labels.CookieFlag == CookieFlagNo {
+			if labels.CookieFlag == metricsdef.CookieFlagNo {
 				me.SafariNoCookieMeter.Mark(1)
 			}
 		}
-		if labels.CookieFlag == CookieFlagNo {
+		if labels.CookieFlag == metricsdef.CookieFlagNo {
 			// NOTE: Old behavior was log me.AMPNoCookieMeter here for AMP requests.
 			// AMP is still new and OpenRTB does not do this, so changing to match
 			// OpenRTB endpoint
@@ -276,7 +277,7 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	am.requestMeter.Mark(1)
 }
 
-func (me *Metrics) RecordImps(labels Labels, numImps int) {
+func (me *Metrics) RecordImps(labels metricsdef.Labels, numImps int) {
 	me.ImpMeter.Mark(int64(numImps))
 }
 
@@ -298,15 +299,15 @@ func (me *Metrics) RecordConnectionClose(success bool) {
 
 // RecordRequestTime implements a part of the MetricsEngine interface. The calling code is responsible
 // for determining the call duration.
-func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
+func (me *Metrics) RecordRequestTime(labels metricsdef.Labels, length time.Duration) {
 	// Only record times for successful requests, as we don't have labels to screen out bad requests.
-	if labels.RequestStatus == RequestStatusOK {
+	if labels.RequestStatus == metricsdef.RequestStatusOK {
 		me.RequestTimer.Update(length)
 	}
 }
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface
-func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
+func (me *Metrics) RecordAdapterRequest(labels metricsdef.AdapterLabels) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
@@ -319,21 +320,21 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	aam.RequestMeter.Mark(1)
 
 	switch labels.AdapterStatus {
-	case AdapterStatusErr:
+	case metricsdef.AdapterStatusErr:
 		am.ErrorMeter.Mark(1)
-	case AdapterStatusNoBid:
+	case metricsdef.AdapterStatusNoBid:
 		am.NoBidMeter.Mark(1)
-	case AdapterStatusTimeout:
+	case metricsdef.AdapterStatusTimeout:
 		am.TimeoutMeter.Mark(1)
 	}
-	if labels.CookieFlag == CookieFlagNo {
+	if labels.CookieFlag == metricsdef.CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}
 }
 
 // RecordAdapterBidsReceived implements a part of the MetricsEngine interface. This tracks the number of bids received
 // from a bidder.
-func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
+func (me *Metrics) RecordAdapterBidsReceived(labels metricsdef.AdapterLabels, bids int64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
@@ -348,7 +349,7 @@ func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
 
 // RecordAdapterBidAdm implements a part of the MetricsEngine interface.
 // This tracks how many bids from each Bidder use `adm` vs. `nurl.
-func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+func (me *Metrics) RecordAdapterBidAdm(labels metricsdef.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
@@ -368,7 +369,7 @@ func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext
 }
 
 // RecordAdapterPrice implements a part of the MetricsEngine interface. Generates a histogram of winning bid prices
-func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
+func (me *Metrics) RecordAdapterPrice(labels metricsdef.AdapterLabels, cpm float64) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter price metrics on %s: adapter metrics not found", string(labels.Adapter))
@@ -382,7 +383,7 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 }
 
 // RecordAdapterTime implements a part of the MetricsEngine interface. Records the adapter response time
-func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration) {
+func (me *Metrics) RecordAdapterTime(labels metricsdef.AdapterLabels, length time.Duration) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter latency metrics on %s: adapter metrics not found", string(labels.Adapter))
@@ -396,20 +397,20 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 }
 
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
-func (me *Metrics) RecordCookieSync(labels Labels) {
+func (me *Metrics) RecordCookieSync(labels metricsdef.Labels) {
 	me.CookieSyncMeter.Mark(1)
 }
 
 // RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request
-func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
+func (me *Metrics) RecordUserIDSet(userLabels metricsdef.UserLabels) {
 	switch userLabels.Action {
-	case RequestActionOptOut:
+	case metricsdef.RequestActionOptOut:
 		me.userSyncOptout.Mark(1)
-	case RequestActionErr:
+	case metricsdef.RequestActionErr:
 		me.userSyncBadRequest.Mark(1)
-	case RequestActionSet:
+	case metricsdef.RequestActionSet:
 		doMark(userLabels.Bidder, me.userSyncSet)
-	case RequestActionGDPR:
+	case metricsdef.RequestActionGDPR:
 		doMark(userLabels.Bidder, me.userSyncGDPRPrevent)
 	}
 }

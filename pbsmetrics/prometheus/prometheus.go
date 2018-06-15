@@ -3,7 +3,6 @@ package prometheusmetrics
 import (
 	"time"
 
-	_ "github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
