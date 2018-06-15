@@ -13,7 +13,10 @@ before_install:
     - go get github.com/mitchellh/gox
 
 install:
-    - $GOPATH/bin/dep ensure
+    # Making sure to dep ensure with the current repository URL to avoid any packages issues
+    # if the build is triggered from a fork.
+    # dep will make sure to get the branch from which the commit originates.
+    - if [ $TRAVIS_REPO_SLUG == "prebid/prebid-server" ]; then dep ensure; else eval "dep ensure -add github.com/prebid/prebid-server:github.com/$TRAVIS_REPO_SLUG@$TRAVIS_BRANCH"; fi
 
 script:
     - "./validate.sh --nofmt --cov --race 10"
