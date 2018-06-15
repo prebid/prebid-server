@@ -11,6 +11,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -27,7 +28,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		pc := usersync.ParsePBSCookieFromRequest(r, &cfg.OptOutCookie)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})
+			metrics.RecordUserIDSet(metricsdef.UserLabels{Action: metricsdef.RequestActionOptOut})
 			so.Status = http.StatusUnauthorized
 			return
 		}
@@ -37,8 +38,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		if shouldReturn, status, body := preventSyncsGDPR(query.Get("gdpr"), query.Get("gdpr_consent"), perms); shouldReturn {
 			w.WriteHeader(status)
 			w.Write([]byte(body))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionGDPR,
+			metrics.RecordUserIDSet(metricsdef.UserLabels{
+				Action: metricsdef.RequestActionGDPR,
 				Bidder: openrtb_ext.BidderName(bidder),
 			})
 			so.Status = status
@@ -48,8 +49,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		if bidder == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`"bidder" query param is required`))
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionErr,
+			metrics.RecordUserIDSet(metricsdef.UserLabels{
+				Action: metricsdef.RequestActionErr,
 				Bidder: openrtb_ext.BidderName(bidder),
 			})
 			so.Status = http.StatusBadRequest
@@ -68,8 +69,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		}
 
 		if err == nil {
-			labels := pbsmetrics.UserLabels{
-				Action: pbsmetrics.RequestActionSet,
+			labels := metricsdef.UserLabels{
+				Action: metricsdef.RequestActionSet,
 				Bidder: openrtb_ext.BidderName(bidder),
 			}
 			metrics.RecordUserIDSet(labels)

@@ -8,7 +8,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 )
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -16,7 +16,7 @@ import (
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*metricsdef.AdapterLabels, labels metricsdef.Labels) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
 		return
@@ -31,7 +31,7 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables
 	return
 }
 
-func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
+func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*metricsdef.AdapterLabels, labels metricsdef.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
 	if err != nil {
@@ -40,20 +40,20 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
-		newLabel := pbsmetrics.AdapterLabels{
+		newLabel := metricsdef.AdapterLabels{
 			Source:        labels.Source,
 			RType:         labels.RType,
 			Adapter:       coreBidder,
 			PubID:         labels.PubID,
 			Browser:       labels.Browser,
 			CookieFlag:    labels.CookieFlag,
-			AdapterStatus: pbsmetrics.AdapterStatusOK,
+			AdapterStatus: metricsdef.AdapterStatusOK,
 		}
 		blabels[coreBidder] = &newLabel
 		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, usersyncs); !hadSync && req.App == nil {
-			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagNo
+			blabels[coreBidder].CookieFlag = metricsdef.CookieFlagNo
 		} else {
-			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
+			blabels[coreBidder].CookieFlag = metricsdef.CookieFlagYes
 		}
 		reqCopy.Imp = imps
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy

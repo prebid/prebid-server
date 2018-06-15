@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -57,13 +58,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Set this as an AMP request in Metrics.
 
 	start := time.Now()
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeAMP,
+	labels := metricsdef.Labels{
+		Source:        metricsdef.DemandUnknown,
+		RType:         metricsdef.ReqTypeAMP,
 		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+		Browser:       metricsdef.BrowserOther,
+		CookieFlag:    metricsdef.CookieFlagUnknown,
+		RequestStatus: metricsdef.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
@@ -74,7 +75,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	isSafari := checkSafari(r)
 	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
+		labels.Browser = metricsdef.BrowserSafari
 	}
 
 	// Add AMP headers
@@ -98,7 +99,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		ao.Errors = append(ao.Errors, errL...)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metricsdef.RequestStatusBadInput
 		return
 	}
 
@@ -113,13 +114,13 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+		labels.Source = metricsdef.DemandApp
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
+		labels.Source = metricsdef.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			labels.CookieFlag = metricsdef.CookieFlagNo
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			labels.CookieFlag = metricsdef.CookieFlagYes
 		}
 	}
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)

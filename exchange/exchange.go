@@ -14,13 +14,14 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
 
 // Exchange runs Auctions. Implementations must be threadsafe, and will be shared across many goroutines.
 type Exchange interface {
 	// HoldAuction executes an OpenRTB v2.5 Auction.
-	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels) (*openrtb.BidResponse, error)
+	HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels metricsdef.Labels) (*openrtb.BidResponse, error)
 }
 
 // IdFetcher can find the user's ID for a specific Bidder.
@@ -58,7 +59,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	return e
 }
 
-func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels) (*openrtb.BidResponse, error) {
+func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels metricsdef.Labels) (*openrtb.BidResponse, error) {
 	// Snapshot of resolved bid request for debug if test request
 	var resolvedRequest json.RawMessage
 	if bidRequest.Test == 1 {
@@ -70,7 +71,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
-	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
+	blabels := make(map[openrtb_ext.BidderName]*metricsdef.AdapterLabels)
 	cleanRequests, aliases, errs := cleanOpenRTBRequests(bidRequest, usersyncs, blabels, labels)
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
@@ -136,7 +137,7 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
+func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*metricsdef.AdapterLabels) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(cleanRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(cleanRequests))
@@ -145,7 +146,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
 		coreBidder := resolveBidder(string(bidderName), aliases)
-		go func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+		go func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *metricsdef.AdapterLabels) {
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidlabels.Adapter == "" {
 				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", aName, coreBidder)
@@ -183,9 +184,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				// in the metrics. Need to remember that in analyzing the data.
 				switch err[i] {
 				case context.DeadlineExceeded:
-					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
+					bidlabels.AdapterStatus = metricsdef.AdapterStatusTimeout
 				default:
-					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusErr
+					bidlabels.AdapterStatus = metricsdef.AdapterStatusErr
 				}
 			}
 			// Append any bid validation errors to the error list
@@ -194,7 +195,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if len(err) == 0 {
 				if bids == nil || len(bids.bids) == 0 {
 					// Don't want to mark no bids on error topreserve legacy behavior.
-					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					bidlabels.AdapterStatus = metricsdef.AdapterStatusNoBid
 				} else {
 					for _, bid := range bids.bids {
 						var cpm = float64(bid.bid.Price * 1000)

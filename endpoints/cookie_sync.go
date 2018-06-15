@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -49,7 +50,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
-	deps.metrics.RecordCookieSync(pbsmetrics.Labels{})
+	deps.metrics.RecordCookieSync(metricsdef.Labels{})
 	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.optOutCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)

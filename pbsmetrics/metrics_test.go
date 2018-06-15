@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -42,22 +43,22 @@ func TestMultiMetricsEngine(t *testing.T) {
 	engineList[1] = &DummyMetricsEngine{}
 	var metricsEngine MetricsEngine
 	metricsEngine = &engineList
-	labels := Labels{
-		Source:        DemandWeb,
-		RType:         ReqTypeORTB2,
+	labels := metricsdef.Labels{
+		Source:        metricsdef.DemandWeb,
+		RType:         metricsdef.ReqTypeORTB2,
 		PubID:         "test1",
-		Browser:       BrowserSafari,
-		CookieFlag:    CookieFlagYes,
-		RequestStatus: RequestStatusOK,
+		Browser:       metricsdef.BrowserSafari,
+		CookieFlag:    metricsdef.CookieFlagYes,
+		RequestStatus: metricsdef.RequestStatusOK,
 	}
-	blabels := AdapterLabels{
-		Source:        DemandWeb,
-		RType:         ReqTypeORTB2,
+	blabels := metricsdef.AdapterLabels{
+		Source:        metricsdef.DemandWeb,
+		RType:         metricsdef.ReqTypeORTB2,
 		Adapter:       openrtb_ext.BidderPubmatic,
 		PubID:         "test1",
-		Browser:       BrowserSafari,
-		CookieFlag:    CookieFlagYes,
-		AdapterStatus: AdapterStatusOK,
+		Browser:       metricsdef.BrowserSafari,
+		CookieFlag:    metricsdef.CookieFlagYes,
+		AdapterStatus: metricsdef.AdapterStatusOK,
 	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
@@ -67,12 +68,12 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterPrice(blabels, 1.34)
 		metricsEngine.RecordAdapterTime(blabels, time.Millisecond*20)
 	}
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[ReqTypeORTB2][RequestStatusOK].Count(), 5)
-	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[ReqTypeLegacy][RequestStatusOK].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[ReqTypeAMP][RequestStatusOK].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[ReqTypeORTB2][RequestStatusErr].Count(), 0)
-	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[ReqTypeORTB2][RequestStatusBadInput].Count(), 0)
-	VerifyMetrics(t, "Request", goEngine.RequestStatuses[ReqTypeORTB2][RequestStatusOK].Count(), 5)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusOK].Count(), 5)
+	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[metricsdef.ReqTypeLegacy][metricsdef.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[metricsdef.ReqTypeAMP][metricsdef.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusErr].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "Request", goEngine.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)

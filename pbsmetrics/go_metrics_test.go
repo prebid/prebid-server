@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -23,28 +24,28 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "usersync.rubicon.gdpr_prevent", m.userSyncGDPRPrevent["rubicon"])
 	ensureContains(t, registry, "usersync.unknown.gdpr_prevent", m.userSyncGDPRPrevent["unknown"])
 
-	ensureContains(t, registry, "requests.ok.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusErr])
-	ensureContains(t, registry, "requests.ok.openrtb2", m.RequestStatuses[ReqTypeORTB2][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.openrtb2", m.RequestStatuses[ReqTypeORTB2][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.openrtb2", m.RequestStatuses[ReqTypeORTB2][RequestStatusErr])
-	ensureContains(t, registry, "requests.ok.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusOK])
-	ensureContains(t, registry, "requests.badinput.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusBadInput])
-	ensureContains(t, registry, "requests.err.amp", m.RequestStatuses[ReqTypeAMP][RequestStatusErr])
+	ensureContains(t, registry, "requests.ok.legacy", m.RequestStatuses[metricsdef.ReqTypeLegacy][metricsdef.RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.legacy", m.RequestStatuses[metricsdef.ReqTypeLegacy][metricsdef.RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.legacy", m.RequestStatuses[metricsdef.ReqTypeLegacy][metricsdef.RequestStatusErr])
+	ensureContains(t, registry, "requests.ok.openrtb2", m.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.openrtb2", m.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.openrtb2", m.RequestStatuses[metricsdef.ReqTypeORTB2][metricsdef.RequestStatusErr])
+	ensureContains(t, registry, "requests.ok.amp", m.RequestStatuses[metricsdef.ReqTypeAMP][metricsdef.RequestStatusOK])
+	ensureContains(t, registry, "requests.badinput.amp", m.RequestStatuses[metricsdef.ReqTypeAMP][metricsdef.RequestStatusBadInput])
+	ensureContains(t, registry, "requests.err.amp", m.RequestStatuses[metricsdef.ReqTypeAMP][metricsdef.RequestStatusErr])
 }
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
 
-	m.RecordAdapterBidReceived(AdapterLabels{
+	m.RecordAdapterBidReceived(metricsdef.AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
 	}, openrtb_ext.BidTypeBanner, true)
 	VerifyMetrics(t, "Appnexus Banner Adm Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeBanner].AdmMeter.Count(), 1)
 	VerifyMetrics(t, "Appnexus Banner Nurl Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeBanner].NurlMeter.Count(), 0)
 
-	m.RecordAdapterBidReceived(AdapterLabels{
+	m.RecordAdapterBidReceived(metricsdef.AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
 	}, openrtb_ext.BidTypeVideo, false)
 	VerifyMetrics(t, "Appnexus Video Adm Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeVideo].AdmMeter.Count(), 0)
@@ -54,8 +55,8 @@ func TestRecordBidType(t *testing.T) {
 func TestRecordGDPRRejection(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
-	m.RecordUserIDSet(UserLabels{
-		Action: RequestActionGDPR,
+	m.RecordUserIDSet(metricsdef.UserLabels{
+		Action: metricsdef.RequestActionGDPR,
 		Bidder: openrtb_ext.BidderAppnexus,
 	})
 	VerifyMetrics(t, "GDPR sync rejects", m.userSyncGDPRPrevent[openrtb_ext.BidderAppnexus].Count(), 1)
