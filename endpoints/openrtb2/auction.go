@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
@@ -63,13 +64,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// We can respect timeouts more accurately if we note the *real* start time, and use it
 	// to compute the auction timeout.
 	start := time.Now()
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2,
+	labels := metricsdef.Labels{
+		Source:        metricsdef.DemandUnknown,
+		RType:         metricsdef.ReqTypeORTB2,
 		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+		Browser:       metricsdef.BrowserOther,
+		CookieFlag:    metricsdef.CookieFlagUnknown,
+		RequestStatus: metricsdef.RequestStatusOK,
 	}
 	numImps := 0
 	defer func() {
@@ -81,13 +82,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	isSafari := checkSafari(r)
 	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
+		labels.Browser = metricsdef.BrowserSafari
 	}
 
 	req, errL := deps.parseRequest(r)
 
 	if writeError(errL, w) {
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metricsdef.RequestStatusBadInput
 		return
 	}
 
@@ -108,13 +109,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+		labels.Source = metricsdef.DemandApp
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
+		labels.Source = metricsdef.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			labels.CookieFlag = metricsdef.CookieFlagNo
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			labels.CookieFlag = metricsdef.CookieFlagYes
 		}
 	}
 
@@ -123,7 +124,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = metricsdef.RequestStatusErr
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
 		glog.Errorf("/openrtb2/auction Critical error: %v", err)

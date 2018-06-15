@@ -51,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/metricsdef"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
@@ -121,19 +122,19 @@ type auctionDeps struct {
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeLegacy,
+	labels := metricsdef.Labels{
+		Source:        metricsdef.DemandUnknown,
+		RType:         metricsdef.ReqTypeLegacy,
 		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
+		Browser:       metricsdef.BrowserOther,
+		CookieFlag:    metricsdef.CookieFlagUnknown,
+		RequestStatus: metricsdef.RequestStatusOK,
 	}
 
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
-			labels.Browser = pbsmetrics.BrowserSafari
+			labels.Browser = metricsdef.BrowserSafari
 		}
 	}
 
@@ -156,20 +157,20 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			glog.Infof("Failed to parse /auction request: %v", err)
 		}
 		writeAuctionError(w, "Error parsing request", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metricsdef.RequestStatusBadInput
 		return
 	}
 
 	status := "OK"
 	if pbs_req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+		labels.Source = metricsdef.DemandApp
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
+		labels.Source = metricsdef.DemandWeb
 		if pbs_req.Cookie.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			labels.CookieFlag = metricsdef.CookieFlagNo
 			status = "no_cookie"
 		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
+			labels.CookieFlag = metricsdef.CookieFlagYes
 		}
 	}
 
@@ -182,7 +183,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			glog.Infof("Invalid account id: %v", err)
 		}
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		labels.RequestStatus = metricsdef.RequestStatusBadInput
 		return
 	}
 	labels.PubID = pbs_req.AccountID
@@ -198,14 +199,14 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	for _, bidder := range pbs_req.Bidders {
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
-			blabels := pbsmetrics.AdapterLabels{
+			blabels := metricsdef.AdapterLabels{
 				Source:        labels.Source,
 				RType:         labels.RType,
 				Adapter:       openrtb_ext.BidderMap[bidder.BidderCode],
 				PubID:         labels.PubID,
 				Browser:       labels.Browser,
 				CookieFlag:    labels.CookieFlag,
-				AdapterStatus: pbsmetrics.AdapterStatusOK,
+				AdapterStatus: metricsdef.AdapterStatusOK,
 			}
 			if blabels.Adapter == "" {
 				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
@@ -231,14 +232,14 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					if deps.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
 						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
 					}
-					blabels.CookieFlag = pbsmetrics.CookieFlagNo
+					blabels.CookieFlag = metricsdef.CookieFlagNo
 					if ex.SkipNoCookies() {
 						continue
 					}
 				}
 			}
 			sentBids++
-			go func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+			go func(bidder *pbs.PBSBidder, blables metricsdef.AdapterLabels) {
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
@@ -246,12 +247,12 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				if err != nil {
 					switch err {
 					case context.DeadlineExceeded:
-						blabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
+						blabels.AdapterStatus = metricsdef.AdapterStatusTimeout
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
+						blabels.AdapterStatus = metricsdef.AdapterStatusErr
 						bidder.Error = err.Error()
 						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
 							if _, isBadServer := err.(*adapters.BadServerResponseError); !isBadServer {
@@ -275,7 +276,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					}
 				} else {
 					bidder.NoBid = true
-					blabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					blabels.AdapterStatus = metricsdef.AdapterStatusNoBid
 				}
 
 				ch <- bidResult{
@@ -321,7 +322,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		err = pbc.Put(ctx, cobjs)
 		if err != nil {
 			writeAuctionError(w, "Prebid cache failed", err)
-			labels.RequestStatus = pbsmetrics.RequestStatusErr
+			labels.RequestStatus = metricsdef.RequestStatusErr
 			return
 		}
 		for i, bid := range pbs_resp.Bids {
@@ -368,7 +369,7 @@ func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.
 }
 
 // cache video bids only for Web
-func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps, labels *pbsmetrics.Labels) {
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps, labels *metricsdef.Labels) {
 	var cobjs []*pbc.CacheObject
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "video" {
@@ -381,7 +382,7 @@ func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWr
 	err := pbc.Put(ctx, cobjs)
 	if err != nil {
 		writeAuctionError(w, "Prebid cache failed", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = metricsdef.RequestStatusErr
 		return
 	}
 	videoIndex := 0
