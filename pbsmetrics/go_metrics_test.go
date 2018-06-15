@@ -92,3 +92,9 @@ func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefi
 	ensureContains(t, registry, prefix+".native.adm_bids_received", mdm[openrtb_ext.BidTypeNative].AdmMeter)
 	ensureContains(t, registry, prefix+".native.nurl_bids_received", mdm[openrtb_ext.BidTypeNative].NurlMeter)
 }
+
+func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
+	if expected != actual {
+		t.Errorf("Error in metric %s: expected %d, got %d.", name, expected, actual)
+	}
+}

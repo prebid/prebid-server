@@ -283,7 +283,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap: adapters,
-		me:         pbsmetrics.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
+		me:         config.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
 		cache:      &wellBehavedCache{},
 		cacheTime:  0,
 	}
