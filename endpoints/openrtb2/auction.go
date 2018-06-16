@@ -292,8 +292,8 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
 	}
 
-	if len(imp.Metric) != 0 {
-		return errors.New("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future.")
+	if err := validateMetric(imp.Metric, index); err != nil {
+		return err
 	}
 
 	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
@@ -328,6 +328,22 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return err
 	}
 
+	return nil
+}
+
+func validateMetric(metrics []openrtb.Metric, impIndex int) error {
+	if len(metrics) == 0 {
+		return nil
+	}
+
+	for i, metric := range metrics {
+		if len(metric.Type) == 0 {
+			return fmt.Errorf("Missing request.imp[%d].metric[%d].type", impIndex, i)
+		}
+		if metric.Value < 0.0 || metric.Value > 1.0 {
+			return fmt.Errorf("request.imp[%d].metric[%d].value must be in the range [0.0, 1.0]", impIndex, i)
+		}
+	}
 	return nil
 }
 

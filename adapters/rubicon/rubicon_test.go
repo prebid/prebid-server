@@ -1006,7 +1006,8 @@ func TestOpenRTBRequest(t *testing.T) {
 				"visitor": {"key2" : "val2"}
 			}}`),
 		}, {
-			ID: "test-imp-video-id",
+			ID:     "test-imp-video-id",
+			Metric: []openrtb.Metric{},
 			Video: &openrtb.Video{
 				W:           640,
 				H:           360,

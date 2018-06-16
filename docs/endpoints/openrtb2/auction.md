@@ -297,6 +297,12 @@ This adds two optional properties:
 
 These fields will be forwarded to each Bidder, so they can decide how to process them.
 
+
+#### Viewability
+
+`bidrequest.imp[i].metric` is now supported. `type` and `value` are mandatory fields. The vendor constant can be sent through `vendor`. Refer [Adding viewability support](../../developers/add-viewability-vendors.md)
+
+
 ### OpenRTB Differences
 
 This section describes the ways in which Prebid Server **breaks** the OpenRTB spec.

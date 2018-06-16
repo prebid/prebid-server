@@ -14,7 +14,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func TestGetBidders(t *testing.T) {
@@ -90,7 +90,7 @@ func TestGetBidderAccuracy(t *testing.T) {
 	r := httptest.NewRecorder()
 	endpoint(r, req, params)
 
-	var fileData infoFile
+	var fileData InfoFile
 	if err := json.Unmarshal(r.Body.Bytes(), &fileData); err != nil {
 		t.Fatalf("Failed to unmarshal JSON from endpoints/info/sample/someBidder.yaml: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestInfoFiles(t *testing.T) {
 			t.Errorf("Failed to read static/bidder-info/%s: %v", fileInfo.Name(), err)
 			continue
 		}
-		var fileInfoContent infoFile
+		var fileInfoContent InfoFile
 		if err := yaml.Unmarshal(content, &fileInfoContent); err != nil {
 			t.Errorf("Error interpreting content from static/bidder-info/%s: %v", fileInfo.Name(), err)
 			continue
@@ -184,7 +184,7 @@ func TestInfoFiles(t *testing.T) {
 	}
 }
 
-func validateInfo(info *infoFile) error {
+func validateInfo(info *InfoFile) error {
 	if err := validateMaintainer(info.Maintainer); err != nil {
 		return err
 	}

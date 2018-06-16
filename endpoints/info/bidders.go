@@ -8,8 +8,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
+
+var responses map[string]json.RawMessage
 
 // NewBiddersEndpoint implements /info/bidders
 func NewBiddersEndpoint() httprouter.Handle {
@@ -34,7 +36,7 @@ func NewBiddersEndpoint() httprouter.Handle {
 // NewBiddersEndpoint implements /info/bidders/*
 func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) httprouter.Handle {
 	// Build all the responses up front, since there are a finite number and it won't use much memory.
-	responses := make(map[string]json.RawMessage, len(bidders))
+	responses = make(map[string]json.RawMessage, len(bidders))
 	for _, bidderName := range bidders {
 		bidderString := string(bidderName)
 		fileData, err := ioutil.ReadFile(infoDir + "/" + bidderString + ".yaml")
@@ -42,7 +44,7 @@ func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) 
 			glog.Fatalf("error reading from file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
 
-		var parsedInfo infoFile
+		var parsedInfo InfoFile
 		if err := yaml.Unmarshal(fileData, &parsedInfo); err != nil {
 			glog.Fatalf("error parsing yaml in file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
@@ -68,9 +70,23 @@ func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) 
 	})
 }
 
-type infoFile struct {
-	Maintainer   *maintainerInfo   `yaml:"maintainer" json:"maintainer"`
-	Capabilities *capabilitiesInfo `yaml:"capabilities" json:"capabilities"`
+//Get information from /static/bidder-info/{bidder}.yaml
+func GetBidderInfo(bidder string) *InfoFile {
+	if jsoninfo, ok := responses[bidder]; ok {
+		var bidderInfo InfoFile
+
+		// Would have reported error in NewBidderDetailsEndpoint() on startup so no need to report error.
+		if err := json.Unmarshal(jsoninfo, &bidderInfo); err == nil {
+			return &bidderInfo
+		}
+	}
+	return nil
+}
+
+type InfoFile struct {
+	Maintainer       *maintainerInfo   `yaml:"maintainer" json:"maintainer"`
+	Capabilities     *capabilitiesInfo `yaml:"capabilities" json:"capabilities"`
+	SupportedVendors []string          `yaml:"vendors" json:"vendors"`
 }
 
 type maintainerInfo struct {
