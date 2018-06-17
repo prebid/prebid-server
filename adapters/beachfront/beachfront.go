@@ -138,6 +138,17 @@ func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
 	return r
 }
 
+func getEndpoint(request openrtb.BidRequest) (uri string) {
+	for i := range request.Imp {
+		if request.Imp[i].Video != nil {
+			// If there are any video imps, we will be running a video auction
+			// and dropping all of the banner actions.
+			return VideoEndpoint
+		}
+	}
+	return BannerEndpoint
+}
+
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -145,16 +156,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	var reqJSON []byte
 	var uri string
 
-	uri = func() string {
-		for i := range request.Imp {
-			if request.Imp[i].Video != nil {
-				// If there are any video imps, we will be running a video auction
-				// and dropping all of the banner actions.
-				return VideoEndpoint
-			}
-		}
-		return BannerEndpoint
-	}()
+	uri = getEndpoint(request)
 
 	beachfrontRequests, err := preprocess(request, uri)
 	if err != nil {
@@ -466,7 +468,7 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 	for i := range openrtbResp.SeatBid {
 		for j := range openrtbResp.SeatBid[i].Bid {
 			openrtbResp.SeatBid[i].Bid[j].ImpID = xtrnal.Imp[i].ImpId
-			openrtbResp.SeatBid[i].Bid[j].CrID = xtrnal.Imp[i].ImpId
+			openrtbResp.SeatBid[i].Bid[j].CrID = xtrnal.Imp[i].Id
 			openrtbResp.SeatBid[i].Bid[j].H = xtrnal.Imp[i].Video.H
 			openrtbResp.SeatBid[i].Bid[j].W = xtrnal.Imp[i].Video.W
 			openrtbResp.SeatBid[i].Bid[j].ID = id

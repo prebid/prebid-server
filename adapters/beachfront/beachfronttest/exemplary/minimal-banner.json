@@ -77,7 +77,7 @@
 
   "expectedBids": [
     {
-      "Bid": {
+      "bid": {
         "id": "12345678",
         "impid": "test-slot",
         "price": 2,
