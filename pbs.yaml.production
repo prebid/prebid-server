@@ -1,0 +1,4 @@
+cache:
+  scheme: https
+  host: prebid-cache.pub.network
+  query: uuid=%PBS_CACHE_UUID%
