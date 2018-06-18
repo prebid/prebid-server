@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 )
@@ -102,7 +103,7 @@ func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, 
 }
 
 func testableEndpoint(perms gdpr.Permissions) httprouter.Handle {
-	return NewCookieSyncEndpoint(syncersForTest(), &config.Cookie{}, perms, &config.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	return NewCookieSyncEndpoint(syncersForTest(), &config.Cookie{}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 }
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {

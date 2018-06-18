@@ -51,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
@@ -694,7 +695,7 @@ func serve(cfg *config.Configuration) error {
 	bidderList := openrtb_ext.BidderList()
 	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
 
-	metricsEngine := config.NewMetricsEngine(cfg, bidderList)
+	metricsEngine := metricsConf.NewMetricsEngine(cfg, bidderList)
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
 	if err != nil {
