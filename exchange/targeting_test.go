@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -67,7 +68,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 
 	ex := &exchange{
 		adapterMap: buildAdapterMap(mockBids, server.URL, server.Client()),
-		me:         &pbsmetrics.DummyMetricsEngine{},
+		me:         &metricsConf.DummyMetricsEngine{},
 		cache:      &wellBehavedCache{},
 		cacheTime:  time.Duration(0),
 	}

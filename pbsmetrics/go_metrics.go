@@ -12,7 +12,7 @@ import (
 
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
-	metricsRegistry            metrics.Registry
+	MetricsRegistry            metrics.Registry
 	ConnectionCounter          metrics.Counter
 	ConnectionAcceptErrorMeter metrics.Meter
 	ConnectionCloseErrorMeter  metrics.Meter
@@ -79,7 +79,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
-		metricsRegistry:            registry,
+		MetricsRegistry:            registry,
 		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
 		ConnectionCounter:          metrics.NilCounter{},
 		ConnectionAcceptErrorMeter: blankMeter,
@@ -237,13 +237,13 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 		return am
 	}
 	am = &accountMetrics{}
-	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.metricsRegistry)
-	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.metricsRegistry)
-	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.MetricsRegistry)
+	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
+	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	for _, a := range me.exchanges {
 		am.adapterMetrics[a] = makeBlankAdapterMetrics()
-		registerAdapterMetrics(me.metricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
+		registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 	}
 
 	me.accountMetrics[id] = am
@@ -335,29 +335,20 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	}
 }
 
-// RecordAdapterBidsReceived implements a part of the MetricsEngine interface. This tracks the number of bids received
-// from a bidder.
-func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
+// RecordAdapterBidReceived implements a part of the MetricsEngine interface.
+// This tracks how many bids from each Bidder use `adm` vs. `nurl.
+func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
+
 	// Adapter metrics
-	am.BidsReceivedMeter.Mark(bids)
+	am.BidsReceivedMeter.Mark(1)
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
-	aam.BidsReceivedMeter.Mark(bids)
-}
-
-// RecordAdapterBidAdm implements a part of the MetricsEngine interface.
-// This tracks how many bids from each Bidder use `adm` vs. `nurl.
-func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
-	if !ok {
-		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
-		return
-	}
+	aam.BidsReceivedMeter.Mark(1)
 
 	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
 		if hasAdm {
