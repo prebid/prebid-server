@@ -13,8 +13,6 @@ import (
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
-
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 )
@@ -127,7 +125,7 @@ func doRequest(req *http.Request, gdprAllowsHostCookies bool, gdprReturnsError b
 		errorHost: gdprReturnsError,
 	}
 	cfg := config.Configuration{}
-	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), pbsmetrics.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
+	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), config.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response

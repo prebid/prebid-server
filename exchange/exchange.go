@@ -199,7 +199,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					for _, bid := range bids.bids {
 						var cpm = float64(bid.bid.Price * 1000)
 						e.me.RecordAdapterPrice(*bidlabels, cpm)
-						e.me.RecordAdapterBidAdm(*bidlabels, bid.bidType, bid.bid.AdM != "")
+						e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
 					}
 				}
 			}
