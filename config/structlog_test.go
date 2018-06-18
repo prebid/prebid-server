@@ -8,10 +8,11 @@ import (
 )
 
 type testStruct struct {
-	myint    int    `mapstructure:"this_int"`
-	mystring string `mapstructure:"mystring"`
-	flag     bool
-	sub      innerStruct `mapstructure:"sub"`
+	Myint    int    `mapstructure:"this_int"`
+	Mystring string `mapstructure:"mystring"`
+	Flag     bool
+	Sub      innerStruct `mapstructure:"sub"`
+	Caps     map[string]string
 }
 
 type innerStruct struct {
@@ -21,9 +22,10 @@ type innerStruct struct {
 
 var expected string = `this_int: 5
 mystring: foobar
-((flag)): false
+((Flag)): false
 sub.int1: 3
 sub.password: <REDACTED>
+((Caps))[Alabama]: Montgomery
 `
 
 func TestBasic(t *testing.T) {
@@ -34,11 +36,15 @@ func TestBasic(t *testing.T) {
 	}
 
 	testCfg := testStruct{
-		myint:    5,
-		mystring: "foobar",
-		sub: innerStruct{
+		Myint:    5,
+		Mystring: "foobar",
+		Sub: innerStruct{
 			int1:     3,
 			password: "secret",
+		},
+		// Can't do more than one entry as order is not guaranteed.
+		Caps: map[string]string{
+			"Alabama": "Montgomery",
 		},
 	}
 

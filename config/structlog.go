@@ -66,6 +66,8 @@ func logMapWithLogger(v reflect.Value, prefix string, logger func(msg string, ar
 		} else {
 			// Use Sprintf("%v", k.Interface) to handle non-string keys. Should not be possible to have a key
 			// too complex to represent by %v.
+			// NOTE: This will break if we have an unexported map in the object. If so we will have to switch
+			// on k.Kind() rather than rely on fmt.Sprintf("%v") doing that work.
 			logGeneralWithLogger(v.MapIndex(k), extendMapPrefix(prefix, fmt.Sprintf("%v", k.Interface())), logger)
 		}
 	}
