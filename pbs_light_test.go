@@ -20,6 +20,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 )
@@ -359,7 +360,7 @@ func TestCacheVideoOnly(t *testing.T) {
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, gdprPerms, &config.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
+	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, gdprPerms, &metricsConf.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}
