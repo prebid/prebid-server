@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	mainConfig "github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
@@ -11,7 +12,7 @@ import (
 
 // Start a simple test to insure we get valid MetricsEngines for various configurations
 func TestDummyMetricsEngine(t *testing.T) {
-	cfg := Configuration{}
+	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := NewMetricsEngine(&cfg, adapterList)
 	_, ok := testEngine.(*DummyMetricsEngine)
@@ -21,7 +22,7 @@ func TestDummyMetricsEngine(t *testing.T) {
 }
 
 func TestGoMetricsEngine(t *testing.T) {
-	cfg := Configuration{}
+	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := NewMetricsEngine(&cfg, adapterList)
@@ -33,7 +34,7 @@ func TestGoMetricsEngine(t *testing.T) {
 
 // Test the multiengine
 func TestMultiMetricsEngine(t *testing.T) {
-	cfg := Configuration{}
+	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.BidderList()
 	goEngine := pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)

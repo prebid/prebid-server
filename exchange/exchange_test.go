@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/rcrowley/go-metrics"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
@@ -283,7 +284,7 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 
 	return &exchange{
 		adapterMap: adapters,
-		me:         config.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
+		me:         metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
 		cache:      &wellBehavedCache{},
 		cacheTime:  0,
 	}
