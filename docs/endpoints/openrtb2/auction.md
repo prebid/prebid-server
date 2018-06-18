@@ -318,7 +318,7 @@ The error message in the response should describe how to "fix" the request to ma
 If the message is unclear, please [log an issue](https://github.com/prebid/prebid-server/issues)
 or [submit a pull request](https://github.com/prebid/prebid-server/pulls) to improve it.
 
-#### Imp Secure Status
+#### Determining Bid Security (http/https)
 
 In the OpenRTB spec, `request.imp[i].secure` says:
 
