@@ -51,31 +51,10 @@ func (cfg HTTPEventsConfig) RefreshRateDuration() time.Duration {
 	return time.Duration(cfg.RefreshRate) * time.Second
 }
 
-func (cfg *HTTPEventsConfig) logValues() {
-	glog.Infof("stored_requests.http_events.amp_endpoint=%s", cfg.AmpEndpoint)
-	glog.Infof("stored_requests.http_events.endpoint=%s", cfg.AmpEndpoint)
-	glog.Infof("stored_requests.http_events.refresh_rate_seconds=%d", cfg.RefreshRate)
-	glog.Infof("stored_requests.http_events.timeout_ms=%d", cfg.Timeout)
-}
-
 // HTTPFetcherConfig configures a stored_requests/backends/http_fetcher/fetcher.go
 type HTTPFetcherConfig struct {
 	Endpoint    string `mapstructure:"endpoint"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
-}
-
-func (cfg *HTTPFetcherConfig) logValues() {
-	glog.Infof("stored_requests.http.endpoint=%s", cfg.Endpoint)
-	glog.Infof("stored_requests.http.amp_endpoint=%s", cfg.AmpEndpoint)
-}
-
-func (cfg *StoredRequests) logValues() {
-	glog.Infof("stored_requests.filesystem=%t", cfg.Files)
-	cfg.Postgres.logValues()
-	cfg.HTTP.logValues()
-	cfg.InMemoryCache.logValues()
-	glog.Infof("stored_requests.cache_events_api=%t", cfg.CacheEventsAPI)
-	cfg.HTTPEvents.logValues()
 }
 
 func (cfg *StoredRequests) validate(errs configErrors) configErrors {
@@ -117,13 +96,6 @@ func (cfg *PostgresConfig) validate(errs configErrors) configErrors {
 	return cfg.PollUpdates.validate(errs)
 }
 
-func (cfg *PostgresConfig) logValues() {
-	cfg.ConnectionInfo.logValues()
-	cfg.FetcherQueries.logValues()
-	cfg.CacheInitialization.logValues()
-	cfg.PollUpdates.logValues()
-}
-
 // PostgresConnection has options which put types to the Postgres Connection string. See:
 // https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters
 type PostgresConnection struct {
@@ -132,14 +104,6 @@ type PostgresConnection struct {
 	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
-}
-
-func (cfg *PostgresConnection) logValues() {
-	glog.Infof("stored_requests.postgres.connection.dbname=%s", cfg.Database)
-	glog.Infof("stored_requests.postgres.connection.host=%s", cfg.Host)
-	glog.Infof("stored_requests.postgres.connection.port=%d", cfg.Port)
-	glog.Infof("stored_requests.postgres.connection.user=%s", cfg.Username)
-	// Don't log the password here for security reasons
 }
 
 func (cfg *PostgresConnection) ConnString() string {
@@ -208,11 +172,6 @@ type PostgresFetcherQueries struct {
 	AmpQueryTemplate string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresFetcherQueries) logValues() {
-	glog.Infof("stored_requests.postgres.fetcher.query=%s", cfg.QueryTemplate)
-	glog.Infof("stored_requests.postgres.fetcher.amp_query=%s", cfg.AmpQueryTemplate)
-}
-
 type PostgresCacheInitializer struct {
 	Timeout int `mapstructure:"timeout_ms"`
 	// Query should be something like:
@@ -246,13 +205,6 @@ func (cfg *PostgresCacheInitializer) validate(errs configErrors) configErrors {
 	return errs
 }
 
-func (cfg *PostgresCacheInitializer) logValues() {
-	glog.Infof("initialize_caches.timeout_ms=%d", cfg.Timeout)
-	glog.Infof("initialize_caches.query=%s", cfg.Query)
-	glog.Infof("initialize_caches.amp_query=%d", cfg.AmpQuery)
-
-}
-
 type PostgresUpdatePolling struct {
 	// RefreshRate determines how frequently the Query and AmpQuery are run.
 	RefreshRate int `mapstructure:"refresh_rate_seconds"`
@@ -275,13 +227,6 @@ type PostgresUpdatePolling struct {
 
 	// AmpQuery is the same as Query, but used for the `/openrtb2/amp` endpoint.
 	AmpQuery string `mapstructure:"amp_query"`
-}
-
-func (cfg *PostgresUpdatePolling) logValues() {
-	glog.Infof("stored_requests.postgres.poll_for_updates.refresh_rate_seconds=%d", cfg.RefreshRate)
-	glog.Infof("stored_requests.postgres.poll_for_updates.timeout_ms=%d", cfg.Timeout)
-	glog.Infof("stored_requests.postgres.poll_for_updates.query=%s", cfg.Query)
-	glog.Infof("stored_requests.postgres.poll_for_updates.amp_query=%s", cfg.AmpQuery)
 }
 
 func (cfg *PostgresUpdatePolling) validate(errs configErrors) configErrors {
@@ -402,11 +347,4 @@ func (cfg *InMemoryCache) validate(errs configErrors) configErrors {
 		errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.type %s is invalid", cfg.Type))
 	}
 	return errs
-}
-
-func (cfg *InMemoryCache) logValues() {
-	glog.Infof("stored_requests.in_memory_cache.type=%s", cfg.Type)
-	glog.Infof("stored_requests.in_memory_cache.ttl=%d", cfg.TTL)
-	glog.Infof("stored_requests.in_memory_cache.request_cache_size_bytes=%d", cfg.RequestCacheSize)
-	glog.Infof("stored_requests.in_memory_cache.imp_cache_size_bytes=%d", cfg.ImpCacheSize)
 }
