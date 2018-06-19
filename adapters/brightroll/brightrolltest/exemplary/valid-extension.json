@@ -12,7 +12,7 @@
         },
         "ext":{
           "bidder":{
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
            }
         }
       }
@@ -36,7 +36,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherName": "cafemom"
+                  "publisher": "cafemom"
                 }
               }
             }
