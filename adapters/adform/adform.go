@@ -253,20 +253,12 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 // COMMON
 
 func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
-	adUnitsParams := make([]string, 0, len(r.adUnits))
-	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
-		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
-	}
-	uri := a.URI
-	if r.isSecure {
-		uri = strings.Replace(uri, "http://", "https://", 1)
-	}
-	var Url *url.URL
-	Url, err := url.Parse(uri)
+	var uriObj *url.URL
+	uriObj, err := url.Parse(a.URI)
 	if err != nil {
-		panic(fmt.Sprintf("Incorrect adfortm request url %s", uri))
+		panic(fmt.Sprintf("Incorrect adfortm request url %s", a.URI))
 	}
+
 	parameters := url.Values{}
 
 	if r.advertisingId != "" {
@@ -286,8 +278,19 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	parameters.Add("gdpr", r.gdprApplies)
 	parameters.Add("gdpr_consent", r.consent)
 
-	Url.RawQuery = parameters.Encode()
-	uri = Url.String()
+	uriObj.RawQuery = parameters.Encode()
+
+	uri := uriObj.String()
+	if r.isSecure {
+		uri = strings.Replace(uri, "http://", "https://", 1)
+	}
+
+	adUnitsParams := make([]string, 0, len(r.adUnits))
+	for _, adUnit := range r.adUnits {
+		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
+		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
+	}
+
 	return fmt.Sprintf("%s&%s", uri, strings.Join(adUnitsParams, "&"))
 }
 

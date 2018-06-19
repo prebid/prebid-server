@@ -376,10 +376,7 @@ func (p PBSRequest) String() string {
 
 // parses the "Regs.ext.gdpr" from the request, if it exists. Otherwise returns an empty string.
 func (req *PBSRequest) ParseGDPR() string {
-	if req == nil || req.Regs == nil {
-		return ""
-	}
-	if len(req.Regs.Ext) == 0 {
+	if req == nil || req.Regs == nil || len(req.Regs.Ext) == 0 {
 		return ""
 	}
 	val, err := jsonparser.GetInt(req.Regs.Ext, "gdpr")
