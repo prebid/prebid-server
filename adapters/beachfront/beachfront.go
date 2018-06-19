@@ -21,6 +21,8 @@ const VideoEndpointSuffix = "&prebidserver"
 const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.1.1"
 
+var r = regexp.MustCompile("\\\"([0-9]+)")
+
 type BeachfrontAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
@@ -138,7 +140,7 @@ func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
 	return r
 }
 
-func getEndpoint(request openrtb.BidRequest) (uri string) {
+func getEndpoint(request *openrtb.BidRequest) (uri string) {
 	for i := range request.Imp {
 		if request.Imp[i].Video != nil {
 			// If there are any video imps, we will be running a video auction
@@ -436,7 +438,6 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 }
 
 func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []BeachfrontResponseSlot, id string) (openrtb.BidResponse, error) {
-	r, _ := regexp.Compile("\\\"([0-9]+)")
 	for k, _ := range openrtbResp.SeatBid {
 		openrtbResp.SeatBid[k].Bid = append(openrtbResp.SeatBid[k].Bid, openrtb.Bid{
 			CrID:  fmt.Sprintf("%s", r.FindStringSubmatch(beachfrontResp[k].Adm)[1]),
@@ -468,7 +469,6 @@ func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters
 	for i := range openrtbResp.SeatBid {
 		for j := range openrtbResp.SeatBid[i].Bid {
 			openrtbResp.SeatBid[i].Bid[j].ImpID = xtrnal.Imp[i].ImpId
-			openrtbResp.SeatBid[i].Bid[j].CrID = xtrnal.Imp[i].Id
 			openrtbResp.SeatBid[i].Bid[j].H = xtrnal.Imp[i].Video.H
 			openrtbResp.SeatBid[i].Bid[j].W = xtrnal.Imp[i].Video.W
 			openrtbResp.SeatBid[i].Bid[j].ID = id
