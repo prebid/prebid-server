@@ -162,7 +162,7 @@ type InfluxMetrics struct {
 
 type PrometheusMetrics struct {
 	Endpoint  string `mapstructure:"endpoint"`
-	Port      string `mapstructure:"port"`
+	Port      int    `mapstructure:"port"`
 	Namespace string `mapstructure:"namespace"`
 	Subsystem string `mapstructure:"subsystem"`
 }

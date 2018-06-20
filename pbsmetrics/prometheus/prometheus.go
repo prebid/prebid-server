@@ -10,21 +10,9 @@ import (
 	_ "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Define the options for prometheus metrics vectors we need to support prometheus.
-type opts struct {
-	connCounter   prometheus.GaugeOpts
-	connError     prometheus.CounterOpts
-	imps          prometheus.CounterOpts
-	requests      prometheus.HistogramOpts
-	reqTimer      prometheus.HistogramOpts
-	adaptRequests prometheus.HistogramOpts
-	adaptTimer    prometheus.HistogramOpts
-	cookieSync    prometheus.HistogramOpts
-	userID        prometheus.HistogramOpts
-}
-
 // Defines the actual Prometheus metrics we will be using. Satisfies interface MetricsEngine
 type Metrics struct {
+	Registry      *prometheus.Registry
 	connCounter   prometheus.Gauge
 	connError     *prometheus.CounterVec
 	imps          *prometheus.CounterVec
@@ -48,58 +36,59 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	standardLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status"}
 
 	adapterLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status", "adapter"}
-	bidLabelNames := append([]string{"bidtype", "hasadm"}, adapterLabelNames...)
+	bidLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status", "adapter", "bidtype", "hasadm"}
 
 	metrics := Metrics{}
+	metrics.Registry = prometheus.NewRegistry()
 	metrics.connCounter = newConnCounter(cfg)
-	prometheus.MustRegister(metrics.connCounter)
+	metrics.Registry.MustRegister(metrics.connCounter)
 	metrics.connError = newCounter(cfg, "active_connections_total",
 		"Errors reported on the connections coming in.",
 		[]string{"ErrorType"},
 	)
-	prometheus.MustRegister(metrics.connError)
+	metrics.Registry.MustRegister(metrics.connError)
 	metrics.imps = newCounter(cfg, "imps_requested_total",
 		"Total number of impressions requested through PBS.",
 		standardLabelNames,
 	)
-	prometheus.MustRegister(metrics.imps)
+	metrics.Registry.MustRegister(metrics.imps)
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
 	)
-	prometheus.MustRegister(metrics.requests)
+	metrics.Registry.MustRegister(metrics.requests)
 	metrics.reqTimer = newHistogram(cfg, "request_time_seconds",
 		"Seconds to resolve each PBS request.",
 		standardLabelNames, timerBuckets,
 	)
-	prometheus.MustRegister(metrics.reqTimer)
+	metrics.Registry.MustRegister(metrics.reqTimer)
 	metrics.adaptRequests = newCounter(cfg, "adapter_requests_total",
 		"Number of requests sent out to each bidder.",
 		adapterLabelNames,
 	)
-	prometheus.MustRegister(metrics.adaptRequests)
+	metrics.Registry.MustRegister(metrics.adaptRequests)
 	metrics.adaptTimer = newHistogram(cfg, "adapter_time_seconds",
 		"Seconds to resolve each request to a bidder.",
 		adapterLabelNames, timerBuckets,
 	)
-	prometheus.MustRegister(metrics.adaptTimer)
+	metrics.Registry.MustRegister(metrics.adaptTimer)
 	metrics.adaptBids = newCounter(cfg, "adapter_bids_recieved_total",
 		"Number of bids recieved from each bidder.",
-		adapterLabelNames,
+		bidLabelNames,
 	)
-	prometheus.MustRegister(metrics.adaptBids)
+	metrics.Registry.MustRegister(metrics.adaptBids)
 	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
 		"Value of the highest bids from each bidder.",
-		bidLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
+		adapterLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
 	)
-	prometheus.MustRegister(metrics.adaptPrices)
+	metrics.Registry.MustRegister(metrics.adaptPrices)
 	metrics.cookieSync = newCookieSync(cfg)
-	prometheus.MustRegister(metrics.cookieSync)
+	metrics.Registry.MustRegister(metrics.cookieSync)
 	metrics.userID = newCounter(cfg, "usersync_total",
 		"Number of user ID syncs performed",
 		[]string{"action", "bidder"},
 	)
-	prometheus.MustRegister(metrics.userID)
+	metrics.Registry.MustRegister(metrics.userID)
 
 	return &metrics
 }
@@ -179,11 +168,7 @@ func (me *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	me.adaptRequests.With(resolveAdapterLabels(labels)).Inc()
 }
 
-func (me *Metrics) RecordAdapterBidsReceived(labels pbsmetrics.AdapterLabels, bids int64) {
-	me.adaptBids.With(resolveAdapterLabels(labels)).Add(float64(bids))
-}
-
-func (me *Metrics) RecordAdapterBidAdm(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
+func (me *Metrics) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	me.adaptBids.With(resolveBidLabels(labels, bidType, hasAdm)).Inc()
 }
 
@@ -237,9 +222,7 @@ func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidTy
 		"status":  string(labels.AdapterStatus),
 		"adapter": string(labels.Adapter),
 		"bidtype": string(bidType),
-	}
-	if hasAdm {
-		bidLabels["hasadm"] = "true"
+		"hasadm":  boolToString(hasAdm),
 	}
 	return bidLabels
 }
@@ -249,4 +232,11 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 		"action": string(userLabels.Action),
 		"bidder": string(userLabels.Bidder),
 	}
+}
+
+func boolToString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
 }

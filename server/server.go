@@ -25,6 +25,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
 	stopAdmin := make(chan os.Signal)
 	stopMain := make(chan os.Signal)
+	stopPrometheus := make(chan os.Signal)
 	done := make(chan struct{})
 
 	adminServer := newAdminServer(cfg)
@@ -32,6 +33,8 @@ func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.
 
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
+
+	prometheusServer := newPrometheusServer(cfg, metrics)
 
 	mainListener, err := newListener(mainServer.Addr, metrics)
 	if err != nil {
@@ -46,7 +49,19 @@ func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.
 	go runServer(mainServer, "Main", mainListener)
 	go runServer(adminServer, "Admin", adminListener)
 
-	wait(stopSignals, done, stopMain, stopAdmin)
+	if cfg.Metrics.Prometheus.Port != 0 {
+		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
+		prometheusListener, err := newListener(adminServer.Addr, nil)
+		if err != nil {
+			glog.Errorf("Error listening for TCP connections on %s: %v", adminServer.Addr, err)
+			return
+		}
+		go runServer(prometheusServer, "Prometheus", prometheusListener)
+
+		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus)
+	} else {
+		wait(stopSignals, done, stopMain, stopAdmin)
+	}
 	return
 }
 

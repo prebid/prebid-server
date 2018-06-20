@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/prometheus"
 	"github.com/rcrowley/go-metrics"
 	"github.com/vrischmann/go-metrics-influxdb"
 )
@@ -32,6 +33,11 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 			cfg.Metrics.Influxdb.Password, // your InfluxDB password
 		)
 		// Influx is not added to the engine list as goMetrics takes care of it already.
+	}
+	if cfg.Metrics.Prometheus.Port != 0 {
+		// Set up the Prometheus metrics.
+		proMetrics := prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus)
+		engineList = append(engineList, proMetrics)
 	}
 
 	// Now return the proper metrics engine
