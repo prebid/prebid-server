@@ -260,7 +260,7 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
 	v.SetDefault("metrics.prometheus.endpoint", "")
-	v.SetDefault("metrics.prometheus.port", "")
+	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("datacache.type", "dummy")
