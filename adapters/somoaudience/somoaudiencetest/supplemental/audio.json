@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "unit": "538225635"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "ignoring imp id=unsupported-audio-imp, Somoaudience doesn't support Audio"
+  ]
+}

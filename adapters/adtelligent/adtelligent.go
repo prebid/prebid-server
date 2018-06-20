@@ -85,7 +85,7 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 
 }
 
-func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, httpRes *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if httpRes.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -98,7 +98,7 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 		}}
 	}
 
-	var bids []*adapters.TypedBid
+	bidResponse := adapters.NewBidderResponse()
 	var errors []error
 
 	var impOK bool
@@ -117,7 +117,6 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 					if imp.Video != nil {
 						mediaType = openrtb_ext.BidTypeVideo
 						break
-
 					}
 				}
 			}
@@ -129,14 +128,14 @@ func (a *AdtelligentAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapte
 				continue
 			}
 
-			bids = append(bids, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: mediaType,
 			})
 		}
 	}
 
-	return bids, errors
+	return bidResponse, errors
 }
 
 func validateImpression(imp *openrtb.Imp) (int, error) {

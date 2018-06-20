@@ -75,6 +75,59 @@ func TestPostgressConnString(t *testing.T) {
 	assertHasValue(t, params, "sslmode", "disable")
 }
 
+func TestInMemoryCacheValidation(t *testing.T) {
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "unbounded",
+	}).validate(nil))
+	assertNoErrs(t, (&InMemoryCache{
+		Type: "none",
+	}).validate(nil))
+	assertNoErrs(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 1000,
+		ImpCacheSize:     1000,
+	}).validate(nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unrecognized",
+	}).validate(nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:         "unbounded",
+		ImpCacheSize: 1000,
+	}).validate(nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "unbounded",
+		RequestCacheSize: 1000,
+	}).validate(nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type: "unbounded",
+		TTL:  500,
+	}).validate(nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 0,
+		ImpCacheSize:     1000,
+	}).validate(nil))
+	assertErrsExist(t, (&InMemoryCache{
+		Type:             "lru",
+		RequestCacheSize: 1000,
+		ImpCacheSize:     0,
+	}).validate(nil))
+}
+
+func assertErrsExist(t *testing.T, err configErrors) {
+	t.Helper()
+	if len(err) == 0 {
+		t.Error("Expected error was not not found.")
+	}
+}
+
+func assertNoErrs(t *testing.T, err configErrors) {
+	t.Helper()
+	if len(err) > 0 {
+		t.Errorf("Got unexpected error(s): %v", err)
+	}
+}
+
 func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
 	t.Helper()
 	realVal, ok := m[key]

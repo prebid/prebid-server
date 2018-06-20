@@ -196,7 +196,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, adapters.BadServerResponseError{
+		return nil, &adapters.BadServerResponseError{
 			Message: fmt.Sprintf("HTTP status: %d, body: %s", resp.StatusCode, string(body)),
 		}
 	}
@@ -209,7 +209,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, adapters.BadServerResponseError{
+		return nil, &adapters.BadServerResponseError{
 			Message: err.Error(),
 		}
 	}

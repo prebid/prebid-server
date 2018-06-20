@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
 	"github.com/prebid/prebid-server/adapters/indexExchange"
@@ -16,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -26,9 +28,13 @@ import (
 
 func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_ext.BidderName]adaptedBidder {
 	return map[openrtb_ext.BidderName]adaptedBidder{
-		openrtb_ext.BidderAppnexus: adaptBidder(appnexus.NewAppNexusBidder(client, cfg.Adapters["appnexus"].Endpoint), client),
+		openrtb_ext.BidderAdform:      adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
+		openrtb_ext.BidderAdtelligent: adaptBidder(adtelligent.NewAdtelligentBidder(client), client),
+		openrtb_ext.BidderAppnexus:    adaptBidder(appnexus.NewAppNexusBidder(client, cfg.Adapters["appnexus"].Endpoint), client),
+		openrtb_ext.BidderBrightroll:  adaptBidder(brightroll.NewBrightrollBidder(cfg.Adapters["brightroll"].Endpoint), client),
 		// TODO #267: Upgrade the Conversant adapter
 		openrtb_ext.BidderConversant: adaptLegacyAdapter(conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint)),
+		openrtb_ext.BidderEPlanning:  adaptBidder(eplanning.NewEPlanningBidder(client, cfg.Adapters["eplanning"].Endpoint), client),
 		// TODO #211: Upgrade the Facebook adapter
 		openrtb_ext.BidderFacebook: adaptLegacyAdapter(audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID)),
 		// TODO #212: Upgrade the Index adapter
@@ -42,9 +48,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderPulsepoint: adaptLegacyAdapter(pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint)),
 		openrtb_ext.BidderRubicon: adaptBidder(rubicon.NewRubiconBidder(client, cfg.Adapters["rubicon"].Endpoint, cfg.Adapters["rubicon"].XAPI.Username,
 			cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker), client),
-		openrtb_ext.BidderAdtelligent: adaptBidder(adtelligent.NewAdtelligentBidder(client), client),
-		openrtb_ext.BidderAdform:      adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
-		openrtb_ext.BidderSovrn:       adaptBidder(sovrn.NewSovrnBidder(client, cfg.Adapters["sovrn"].Endpoint), client),
-		openrtb_ext.BidderEPlanning:   adaptBidder(eplanning.NewEPlanningBidder(client, cfg.Adapters["eplanning"].Endpoint), client),
+		openrtb_ext.BidderSomoaudience: adaptBidder(somoaudience.NewSomoaudienceBidder(), client),
+		openrtb_ext.BidderSovrn:        adaptBidder(sovrn.NewSovrnBidder(client, cfg.Adapters["sovrn"].Endpoint), client),
 	}
 }

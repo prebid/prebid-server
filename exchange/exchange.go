@@ -96,8 +96,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 		if requestExt.Prebid.Targeting != nil {
 			targData = &targetData{
-				priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
-				includeWinners:   requestExt.Prebid.Targeting.IncludeWinners,
+				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
+				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
+				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
 			}
 			if shouldCacheBids {
 				targData.includeCache = true
@@ -198,7 +199,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					for _, bid := range bids.bids {
 						var cpm = float64(bid.bid.Price * 1000)
 						e.me.RecordAdapterPrice(*bidlabels, cpm)
-						e.me.RecordAdapterBidAdm(*bidlabels, bid.bidType, bid.bid.AdM != "")
+						e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
 					}
 				}
 			}
@@ -342,6 +343,9 @@ func (brw *bidResponseWrapper) validateBids() (err []error) {
 	if brw.adapterBids == nil || len(brw.adapterBids.bids) == 0 {
 		return
 	}
+	// TODO #280: Exit if there is a currency mismatch between currencies passed in bid request
+	// and the currency received in the bid.
+	// Check also if the currency received exists.
 	err = make([]error, 0, len(brw.adapterBids.bids))
 	validBids := make([]*pbsOrtbBid, 0, len(brw.adapterBids.bids))
 	for _, bid := range brw.adapterBids.bids {
@@ -370,12 +374,11 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.ImpID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
 	}
-	if bid.bid.Price == 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" missing required field 'price'", bid.bid.ID)
+	if bid.bid.Price <= 0.0 {
+		return false, fmt.Errorf("Bid \"%s\" does not contain a positive 'price'", bid.bid.ID)
 	}
-	// TODO #427: Check creative ID after Bidders have had time to start returning it.
-	// if bid.bid.CrID == "" {
-	// 	return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
-	// }
+	if bid.bid.CrID == "" {
+		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
+	}
 	return true, nil
 }

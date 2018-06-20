@@ -68,16 +68,21 @@
       }
     }
   ],
-  "expectedBids": [
+  "expectedBidResponses": [
     {
-      "bid": {
-        "id": "test-bid-id",
-        "impid": "test-imp-id",
-        "price": 3.5,
-        "w": 900,
-        "h": 250
-      },
-      "type": "video"
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 3.5,
+            "w": 900,
+            "h": 250
+          },
+          "type": "video"
+        }
+      ]
     }
   ]
 }

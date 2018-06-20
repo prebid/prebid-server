@@ -16,7 +16,9 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 /**
@@ -100,6 +102,7 @@ func TestPulsePointBiddingBehavior(t *testing.T) {
 	adapterstest.VerifyIntValue(int(bids[0].Width), 728, t)
 	adapterstest.VerifyIntValue(int(bids[0].Height), 90, t)
 	adapterstest.VerifyIntValue(int(bids[0].Price*100), 210, t)
+	adapterstest.VerifyStringValue(bids[0].CreativeMediaType, string(openrtb_ext.BidTypeBanner), t)
 }
 
 /**
@@ -220,7 +223,7 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	// setup a http request
 	httpReq := httptest.NewRequest("POST", CreateService(adapterstest.BidOnTags("")).Server.URL, body)
 	httpReq.Header.Add("Referer", "http://news.pub/topnews")
-	pc := pbs.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
 	pc.TrySync("pulsepoint", "pulsepointUser123")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
@@ -229,7 +232,10 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient, &hcs)
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

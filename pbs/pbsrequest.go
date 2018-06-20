@@ -9,10 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
+
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
-	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/blang/semver"
@@ -166,11 +168,12 @@ type PBSRequest struct {
 	SDK           *SDK            `json:"sdk"`
 
 	// internal
-	Bidders []*PBSBidder  `json:"-"`
-	User    *openrtb.User `json:"-"`
-	Cookie  *PBSCookie    `json:"-"`
-	Url     string        `json:"-"`
-	Domain  string        `json:"-"`
+	Bidders []*PBSBidder        `json:"-"`
+	User    *openrtb.User       `json:"-"`
+	Cookie  *usersync.PBSCookie `json:"-"`
+	Url     string              `json:"-"`
+	Domain  string              `json:"-"`
+	Regs    *openrtb.Regs       `json:"-"`
 	Start   time.Time
 }
 
@@ -214,7 +217,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -228,9 +231,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 		return nil, fmt.Errorf("No ad units specified")
 	}
 
-	if pbsReq.TimeoutMillis == 0 || pbsReq.TimeoutMillis > 2000 {
-		pbsReq.TimeoutMillis = int64(viper.GetInt("default_timeout_ms"))
-	}
+	pbsReq.TimeoutMillis = int64(cfg.LimitAuctionTimeout(time.Duration(pbsReq.TimeoutMillis)*time.Millisecond) / time.Millisecond)
 
 	if pbsReq.Device == nil {
 		pbsReq.Device = &openrtb.Device{}
@@ -261,7 +262,7 @@ func ParsePBSRequest(r *http.Request, cache cache.Cache, hostCookieSettings *Hos
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
+		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
 
 		// Host has right to leverage private cookie store for user ID
 		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {
@@ -370,4 +371,31 @@ func (req PBSRequest) Elapsed() int {
 func (p PBSRequest) String() string {
 	b, _ := json.MarshalIndent(p, "", "    ")
 	return string(b)
+}
+
+// parses the "Regs.ext.gdpr" from the request, if it exists. Otherwise returns an empty string.
+func (req *PBSRequest) ParseGDPR() string {
+	if req == nil || req.Regs == nil {
+		return ""
+	}
+	return parseString(req.Regs.Ext, "gdpr")
+}
+
+// parses the "User.ext.consent" from the request, if it exists. Otherwise returns an empty string.
+func (req *PBSRequest) ParseConsent() string {
+	if req == nil || req.User == nil {
+		return ""
+	}
+	return parseString(req.User.Ext, "consent")
+}
+
+func parseString(data []byte, key string) string {
+	if len(data) == 0 {
+		return ""
+	}
+	val, err := jsonparser.GetString(data, key)
+	if err != nil {
+		return ""
+	}
+	return val
 }

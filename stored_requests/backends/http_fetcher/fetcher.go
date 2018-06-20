@@ -19,7 +19,7 @@ import (
 //
 // This file expects the endpoint to satisfy the following API:
 //
-// GET {endpoint}?request-ids=req1,req2&imp-ids=imp1,imp2,imp3
+// GET {endpoint}?request-ids=["req1","req2"]&imp-ids=["imp1","imp2","imp3"]
 //
 // This endpoint should return a payload like:
 //
@@ -82,11 +82,11 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
 	if len(requestIDs) > 0 && len(impIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids="+strings.Join(requestIDs, ",")+"&imp-ids="+strings.Join(impIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]&imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
 	} else if len(requestIDs) > 0 {
-		return http.NewRequest("GET", endpoint+"request-ids="+strings.Join(requestIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"request-ids=[\""+strings.Join(requestIDs, "\",\"")+"\"]", nil)
 	} else {
-		return http.NewRequest("GET", endpoint+"imp-ids="+strings.Join(impIDs, ","), nil)
+		return http.NewRequest("GET", endpoint+"imp-ids=[\""+strings.Join(impIDs, "\",\"")+"\"]", nil)
 	}
 }
 

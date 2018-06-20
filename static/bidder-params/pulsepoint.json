@@ -14,8 +14,8 @@
     },
     "cf": {
       "type": "string",
-      "pattern": "^[0-9]+x[0-9]+$",
-      "description": "The size of the ad slot being sold. This should be a string like 300x250"
+      "pattern": "^[0-9]+[xX][0-9]+$",
+      "description": "The size of the ad slot being sold. This should be a string like 300X250"
     }
   },
   "required": ["cp", "ct", "cf"]

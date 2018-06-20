@@ -38,7 +38,7 @@ if $AUTOFMT; then
     done
   fi
 else
-  test $GOFMT_LINES -eq 0 || die "gofmt needs to be run, ${GOFMT_LINES} files have issues.  Below is a list of files to review:\n`gofmt -l *.go pbs adapters`"
+  test $GOFMT_LINES -eq 0 || die "gofmt needs to be run, ${GOFMT_LINES} files have issues.  Below is a list of files to review:\n`gofmt -l $GOGLOB`"
 fi
 
 # Run the actual tests. Make sure there's enough coverage too, if the flags call for it.

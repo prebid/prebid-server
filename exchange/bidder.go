@@ -115,16 +115,19 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 
 		if httpInfo.err == nil {
-			bids, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
+			bidResponse, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
-			for i := 0; i < len(bids); i++ {
-				if bids[i].Bid != nil {
-					bids[i].Bid.Price = bids[i].Bid.Price * bidAdjustment
+			if bidResponse != nil {
+				for i := 0; i < len(bidResponse.Bids); i++ {
+					if bidResponse.Bids[i].Bid != nil {
+						// TODO #280: Convert the bid price
+						bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment
+					}
+					seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
+						bid:     bidResponse.Bids[i].Bid,
+						bidType: bidResponse.Bids[i].BidType,
+					})
 				}
-				seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-					bid:     bids[i].Bid,
-					bidType: bids[i].BidType,
-				})
 			}
 		} else {
 			errs = append(errs, httpInfo.err)

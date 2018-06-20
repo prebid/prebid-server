@@ -23,14 +23,13 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/usersync"
 	"golang.org/x/net/publicsuffix"
 )
 
-const defaultRequestTimeoutMillis = 5000
 const storedRequestTimeoutMillis = 50
 
 func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
@@ -88,7 +87,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	req, errL := deps.parseRequest(r)
 
 	if writeError(errL, w) {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
@@ -101,14 +100,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	ctx := context.Background()
 	cancel := func() {}
-	if req.TMax > 0 {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
-	} else {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(defaultRequestTimeoutMillis)*time.Millisecond))
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
+	if timeout > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
 	}
 	defer cancel()
 
-	usersyncs := pbs.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 	} else {
@@ -742,6 +740,9 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		storedReqIds = []string{storedBidRequestId}
 	}
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
+	if len(errs) != 0 {
+		return nil, errs
+	}
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
@@ -882,7 +883,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
 		return true
 	}

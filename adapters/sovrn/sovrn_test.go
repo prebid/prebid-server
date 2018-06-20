@@ -10,16 +10,18 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 
 	"context"
 	"net/http"
+
+	"strconv"
+	"time"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
-	"strconv"
-	"time"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -181,7 +183,7 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	httpReq.Header.Add("Referer", testUrl)
 	httpReq.Header.Add("User-Agent", testUserAgent)
 	httpReq.Header.Add("X-Forwarded-For", testIp)
-	pc := pbs.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
 	pc.TrySync("sovrn", testSovrnUserId)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
@@ -190,7 +192,10 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	cacheClient, _ := dummycache.New()
 	hcs := pbs.HostCookieSettings{}
 
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cacheClient, &hcs)
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

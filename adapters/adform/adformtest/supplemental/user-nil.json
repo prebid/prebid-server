@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "mid": 1,
+            "priceType": "gross"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://adx.adform.net/adx/?CC=1&rp=4&fd=1&stid=&ip=&pt=gross&bWlkPTE"
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ]
+}
