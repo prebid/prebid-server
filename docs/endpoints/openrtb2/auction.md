@@ -318,6 +318,16 @@ The error message in the response should describe how to "fix" the request to ma
 If the message is unclear, please [log an issue](https://github.com/prebid/prebid-server/issues)
 or [submit a pull request](https://github.com/prebid/prebid-server/pulls) to improve it.
 
+#### Determining Bid Security (http/https)
+
+In the OpenRTB spec, `request.imp[i].secure` says:
+
+> Flag to indicate if the impression requires secure HTTPS URL creative assets and markup,
+> where 0 = non-secure, 1 = secure. If omitted, the secure state is unknown, but non-secure
+> HTTP support can be assumed.
+
+In Prebid Server, an `https` request which does not define `secure` will be forwarded to Bidders with a `1`.
+Publishers who run `https` sites and want insecure ads can still set this to `0` explicitly.
 
 ### See also
 
