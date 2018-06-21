@@ -7,7 +7,6 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
-	"regexp"
 	"strings"
 	"github.com/golang/glog"
 )
@@ -21,8 +20,6 @@ const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.1.1"
-
-var r = regexp.MustCompile("\\\"([0-9]+)")
 
 type BeachfrontAdapter struct {
 	http *adapters.HTTPAdapter
@@ -228,6 +225,8 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error)
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
 	var bannerImpsIndex int = 0
 	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
+	var err error
+
 	/*
 	 step through the prebid request "imp" and inject into the beachfront request. If we got to here,
 	 then we have already stepped through the requested imps and verified that none are Video, so no
@@ -238,9 +237,13 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 
 	for _, imp := range req.Imp {
 		if imp.Audio != nil {
-			// Place holder
+			return beachfrontReq, &adapters.BadInputError{
+				Message: fmt.Sprintf("Beachfront doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
+			}
 		} else if imp.Native != nil {
-			// Place holder
+			return beachfrontReq, &adapters.BadInputError{
+				Message: fmt.Sprintf("Beachfront doesn't support native Imps. Ignoring Imp ID=%s", imp.ID),
+			}
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 			bannerImpsIndex = len(beachfrontReq.Slots) - 1
@@ -257,13 +260,13 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = imp.BidFloor
 
 			var bidderExt adapters.ExtImpBidder
-			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 				// possible banner error 2
 				return beachfrontReq, err
 			}
 
 			var beachfrontExt openrtb_ext.ExtImpBeachfront
-			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
+			if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
 				// possible banner error 3 - supplemental/unmarshal-error-banner.json
 				return beachfrontReq, err
 			}
@@ -449,7 +452,8 @@ func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]op
 }
 
 func extractBannerCrid(adm string) string {
-	return fmt.Sprintf("%s", r.FindStringSubmatch(adm[1]))
+	chunky := strings.SplitAfter(adm, "\"")
+	return strings.TrimSuffix(chunky[1], "\"")
 }
 
 func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, error) {
