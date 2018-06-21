@@ -60,7 +60,7 @@ Check the test results using these guidelines:
 Prebid.js already has lots of tests. Read them to see how Prebid.js is tested, and for inspiration:
 
 - Look in `test/spec` and its subdirectories
-- Tests for bidder adaptors are located in `test/spec/adapters`
+- Tests for bidder adaptors are located in `test/spec/modules`
 
 A test module might have the following general structure:
 
