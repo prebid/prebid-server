@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"sort"
 	"strconv"
 	"time"
@@ -60,6 +60,14 @@ import (
 
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
+
+// Holds binary revision string
+// Set manually at build time using:
+//    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
+// Populated automatically at build / release time via .travis.yml
+//   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
+// See issue #559
+var Rev string
 
 var hostCookieSettings pbs.HostCookieSettings
 
@@ -649,7 +657,7 @@ func main() {
 		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	if err := serve(cfg); err != nil {
+	if err := serve(Rev, cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
@@ -672,7 +680,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	}
 }
 
-func serve(cfg *config.Configuration) error {
+func serve(revision string, cfg *config.Configuration) error {
 	router := httprouter.New()
 	theClient := &http.Client{
 		Transport: &http.Transport{
@@ -775,6 +783,20 @@ func serve(cfg *config.Configuration) error {
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
 
-	server.Listen(cfg, noCacheHandler, metricsEngine)
+	// Add endpoints to the admin server
+	// Making sure to add pprof routes
+	adminRouter := http.NewServeMux()
+
+	// Register pprof handlers
+	adminRouter.HandleFunc("/debug/pprof/", pprof.Index)
+	adminRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	adminRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	adminRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	adminRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	// Register prebid-server defined admin handlers
+	adminRouter.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
+
+	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
 	return nil
 }
