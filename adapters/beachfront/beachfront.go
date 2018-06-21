@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -375,8 +376,8 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var bidResp openrtb.BidResponse
 	var err error
+	var bids []openrtb.Bid
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
 
@@ -388,7 +389,8 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		}
 	}
 
-	bidResp, err = postprocess(response, externalRequest, internalRequest.ID, isVideo)
+	bids, err = postprocess(response, externalRequest, internalRequest.ID, isVideo)
+
 	if err != nil {
 		return nil, []error{fmt.Errorf("Failed to process the beachfront response\n%s", err)}
 	}
@@ -396,87 +398,88 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 
 	var errs []error
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
 
-			bid := sb.Bid[i]
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bid,
-				BidType: bidtype,
-			})
-		}
+	for i := 0; i < len(bids); i++ {
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bids[i],
+			BidType: bidtype,
+		})
 	}
+
 	return bidResponse, errs
 }
 
-func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, isVideo bool) (openrtb.BidResponse, error) {
+func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, isVideo bool) ([]openrtb.Bid, error) {
 	var beachfrontResp []BeachfrontResponseSlot
-	var openrtbResp openrtb.BidResponse
 	var err error
 
 	if isVideo {
-		// Regular video ad. Beachfront returns video ads in openRTB format (or close enough).
+		var openrtbResp openrtb.BidResponse
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
-			return openrtbResp, err
+			return openrtbResp.SeatBid[0].Bid, err
 		}
-		return postprocessVideo(openrtbResp, externalRequest, id)
+		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	} else {
-		/* Beachfront currently returns banner ads in a sparse format which is just the openRTB seatbid
-		object. It needs to be wrapped up in openrtb format.
-		*/
 		if err = json.Unmarshal(response.Body, &beachfrontResp); err != nil {
-			return openrtbResp, err
+			return nil, err
 		}
 
-		openrtbResp.ID = id
-		for range beachfrontResp {
-			openrtbResp.SeatBid = append(openrtbResp.SeatBid, openrtb.SeatBid{})
-		}
-
-		return postprocessBanner(openrtbResp, beachfrontResp, id)
+		return postprocessBanner(beachfrontResp, id)
 	}
 }
 
-func postprocessBanner(openrtbResp openrtb.BidResponse, beachfrontResp []BeachfrontResponseSlot, id string) (openrtb.BidResponse, error) {
-	for k, _ := range openrtbResp.SeatBid {
-		openrtbResp.SeatBid[k].Bid = append(openrtbResp.SeatBid[k].Bid, openrtb.Bid{
-			CrID:  fmt.Sprintf("%s", r.FindStringSubmatch(beachfrontResp[k].Adm)[1]),
-			ImpID: beachfrontResp[k].Slot,
-			Price: beachfrontResp[k].Price,
+func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, error) {
+	var bids []openrtb.Bid = make([]openrtb.Bid,len(beachfrontResp))
+	var crid string
+
+	for i := range beachfrontResp {
+		crid = extractBannerCrid(beachfrontResp[i].Adm)
+
+		bids = append(bids, openrtb.Bid{
+			CrID:  crid,
+			ImpID: beachfrontResp[i].Slot,
+			Price: beachfrontResp[i].Price,
 			ID:    id,
-			AdM:   beachfrontResp[k].Adm,
-			H:     beachfrontResp[k].H,
-			W:     beachfrontResp[k].W,
+			AdM:   beachfrontResp[i].Adm,
+			H:     beachfrontResp[i].H,
+			W:     beachfrontResp[i].W,
 		})
-
-		openrtbResp.SeatBid[k].Seat = Seat
 	}
-
-	return openrtbResp, nil
+	return bids, nil
 }
 
-func postprocessVideo(openrtbResp openrtb.BidResponse, externalRequest *adapters.RequestData, id string) (openrtb.BidResponse, error) {
+func extractBannerCrid(adm string) string {
+	return fmt.Sprintf("%s", r.FindStringSubmatch(adm[1]))
+}
+
+func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, error) {
 	var xtrnal BeachfrontVideoRequest
 	var err error
+	var crid string
 
 	if err = json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
-		return openrtbResp, err
+		return bids, err
 	}
 
-	/* there will only be one seatBid because beachfront only returns a single video ad
-	but if that were to change this should work on all of them:
-	*/
-	for i := range openrtbResp.SeatBid {
-		for j := range openrtbResp.SeatBid[i].Bid {
-			openrtbResp.SeatBid[i].Bid[j].ImpID = xtrnal.Imp[i].ImpId
-			openrtbResp.SeatBid[i].Bid[j].H = xtrnal.Imp[i].Video.H
-			openrtbResp.SeatBid[i].Bid[j].W = xtrnal.Imp[i].Video.W
-			openrtbResp.SeatBid[i].Bid[j].ID = id
-		}
-		openrtbResp.SeatBid[i].Seat = Seat
+	glog.Info(bids)
+	glog.Info(externalRequest.Body)
+
+	for i := range bids {
+		crid = extractVideoCrid(bids[i].NURL)
+
+		bids[i].CrID = crid
+		bids[i].ImpID = xtrnal.Imp[0].ImpId
+		bids[i].H = xtrnal.Imp[0].Video.H
+		bids[i].W = xtrnal.Imp[0].Video.W
+		bids[i].ID = id
 	}
 
-	return openrtbResp, nil
+	return bids, nil
+}
+
+func extractVideoCrid(nurl string) string {
+	chunky := strings.SplitAfter(nurl, ":")
+	return strings.TrimSuffix(chunky[2], ":")
 }
 
 func NewBeachfrontBidder(client *http.Client) *BeachfrontAdapter {
