@@ -9,9 +9,10 @@ type Usersyncer interface {
 	//
 	// For more information about user syncs, see http://clearcode.cc/2015/12/cookie-syncing/
 	GetUsersyncInfo(gdpr string, consent string) *UsersyncInfo
-	// FamilyName identifies the space of cookies for this usersyncer.
-	// For example, if this Usersyncer syncs with adnxs.com, then this
-	// should return "adnxs".
+	// FamilyName should be the same as the `BidderName` for this Usersyncer.
+	// This function only exists for legacy reasons.
+	// TODO #362: when the appnexus usersyncer is consistent, delete this and use the key
+	// of NewSyncerMap() here instead.
 	FamilyName() string
 
 	// GDPRVendorID returns the ID in the IAB Global Vendor List which refers to this Bidder.

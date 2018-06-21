@@ -23,6 +23,6 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-       "ext.bidder.publisherName not provided"
+       "ext.bidder.publisher not provided"
   ]
 }

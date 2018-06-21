@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"sort"
 	"strconv"
 	"time"
@@ -50,6 +50,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
@@ -58,6 +59,14 @@ import (
 
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
+
+// Holds binary revision string
+// Set manually at build time using:
+//    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
+// Populated automatically at build / release time via .travis.yml
+//   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
+// See issue #559
+var Rev string
 
 var hostCookieSettings pbs.HostCookieSettings
 
@@ -112,6 +121,7 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 type auctionDeps struct {
 	cfg           *config.Configuration
 	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
+	gdprPerms     gdpr.Permissions
 	metricsEngine pbsmetrics.MetricsEngine
 }
 
@@ -153,7 +163,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			glog.Infof("Failed to parse /auction request: %v", err)
 		}
 		writeAuctionError(w, "Error parsing request", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
@@ -179,7 +189,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			glog.Infof("Invalid account id: %v", err)
 		}
 		writeAuctionError(w, "Unknown account id", fmt.Errorf("Unknown account"))
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 	labels.PubID = pbs_req.AccountID
@@ -223,7 +233,11 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					bidder.UsersyncInfo = syncer.GetUsersyncInfo(pbs_req.ParseGDPR(), pbs_req.ParseConsent())
+					gdprApplies := pbs_req.ParseGDPR()
+					consent := pbs_req.ParseConsent()
+					if deps.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
+						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
+					}
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
 						continue
@@ -255,15 +269,14 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				} else if bid_list != nil {
 					bid_list = checkForValidBidSize(bid_list, bidder)
 					bidder.NumBids = len(bid_list)
-					deps.metricsEngine.RecordAdapterBidsReceived(blabels, int64(bidder.NumBids))
 					for _, bid := range bid_list {
 						var cpm = float64(bid.Price * 1000)
 						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
@@ -341,6 +354,24 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
+}
+
+func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
+	switch gdprApplies {
+	case "0":
+		return true
+	case "1":
+		if consent == "" {
+			return false
+		}
+		fallthrough
+	default:
+		if canSync, err := deps.gdprPerms.HostCookiesAllowed(ctx, consent); !canSync || err != nil {
+			return false
+		}
+		canSync, err := deps.gdprPerms.BidderSyncAllowed(ctx, bidder, consent)
+		return canSync && err == nil
+	}
 }
 
 // cache video bids only for Web
@@ -579,70 +610,19 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
-	viper.SetConfigName("pbs")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/config")
-
-	viper.SetDefault("external_url", "http://localhost:8000")
-	viper.SetDefault("port", 8000)
-	viper.SetDefault("admin_port", 6060)
-	viper.SetDefault("max_timeout_ms", 5000)
-	viper.SetDefault("cache.expected_millis", 10)
-	viper.SetDefault("datacache.type", "dummy")
-	// no metrics configured by default (metrics{host|database|username|password})
-
-	viper.SetDefault("stored_requests.filesystem", "true")
-	viper.SetDefault("stored_requests.cache_events_api", false)
-
-	// This Appnexus endpoint works for most purposes. Docs can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	viper.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2")
-
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
-	viper.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}")
-	viper.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
-	viper.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
-	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	viper.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
-	viper.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
-	viper.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
-	viper.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
-	viper.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
-	viper.SetDefault("max_request_size", 1024*256)
-	viper.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
-	viper.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
-	viper.SetDefault("host_cookie.ttl_days", 90)
-
-	//brightroll urls
-	// (US east coast),setting this as default, commenting out remaining colo based urls below
-	viper.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	viper.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-	/*	//(US West Coast)
-		viper.SetDefault("adapters.brightroll.endpoint", "http://west-bid.ybp.yahoo.com/bid/appnexuspbs")
-		viper.SetDefault("adapters.brightroll.usersync_url", "http://west-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-		//(APAC)
-		viper.SetDefault("adapters.brightroll.endpoint", "http://apac-sg-bid.ybp.yahoo.com/bid/appnexuspbs")
-		viper.SetDefault("adapters.brightroll.usersync_url", "http://apac-sg-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-		//(EMEA)
-		viper.SetDefault("adapters.brightroll.endpoint", "http://emea-bid.ybp.yahoo.com/bid/appnexuspbs")
-		viper.SetDefault("adapters.brightroll.usersync_url", "http://emea-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
-	*/
-	// Set environment variable support:
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.SetEnvPrefix("PBS")
-	viper.AutomaticEnv()
-	viper.ReadInConfig()
 
 	flag.Parse() // read glog settings from cmd line
 }
 
 func main() {
-	cfg, err := config.New(viper.GetViper())
+	v := viper.New()
+	config.SetupViper(v)
+	cfg, err := config.New(v)
 	if err != nil {
-		glog.Fatalf("Viper was unable to read configurations: %v", err)
+		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	if err := serve(cfg); err != nil {
+	if err := serve(Rev, cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
@@ -665,7 +645,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	}
 }
 
-func serve(cfg *config.Configuration) error {
+func serve(revision string, cfg *config.Configuration) error {
 	router := httprouter.New()
 	theClient := &http.Client{
 		Transport: &http.Transport{
@@ -688,7 +668,7 @@ func serve(cfg *config.Configuration) error {
 	bidderList := openrtb_ext.BidderList()
 	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
 
-	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, bidderList)
+	metricsEngine := metricsConf.NewMetricsEngine(cfg, bidderList)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
@@ -711,7 +691,7 @@ func serve(cfg *config.Configuration) error {
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
-	router.POST("/auction", (&auctionDeps{cfg, syncers, metricsEngine}).auction)
+	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
@@ -756,6 +736,20 @@ func serve(cfg *config.Configuration) error {
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
 
-	server.Listen(cfg, noCacheHandler, metricsEngine)
+	// Add endpoints to the admin server
+	// Making sure to add pprof routes
+	adminRouter := http.NewServeMux()
+
+	// Register pprof handlers
+	adminRouter.HandleFunc("/debug/pprof/", pprof.Index)
+	adminRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	adminRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	adminRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	adminRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	// Register prebid-server defined admin handlers
+	adminRouter.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
+
+	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
 	return nil
 }
