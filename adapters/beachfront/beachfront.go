@@ -434,7 +434,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 	if isVideo {
 		var openrtbResp openrtb.BidResponse
 		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
-			return openrtbResp.SeatBid[0].Bid, err
+			return nil, err
 		}
 		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	} else {
