@@ -70,21 +70,21 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	err = json.Unmarshal(bidderExt.Bidder, &brightrollExt)
 	if err != nil {
 		err = &adapters.BadInputError{
-			Message: "ext.bidder.publisherName not provided",
+			Message: "ext.bidder.publisher not provided",
 		}
 		errors = append(errors, err)
 		return nil, errors
 	}
 
-	if brightrollExt.PublisherName == "" {
+	if brightrollExt.Publisher == "" {
 		err = &adapters.BadInputError{
-			Message: "publisherName is empty",
+			Message: "publisher is empty",
 		}
 		errors = append(errors, err)
 		return nil, errors
 	}
 	thisURI := a.URI
-	thisURI = thisURI + "?publisher=" + brightrollExt.PublisherName
+	thisURI = thisURI + "?publisher=" + brightrollExt.Publisher
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")

@@ -4,10 +4,10 @@
   "description": "A schema which validates params accepted by the Brightroll adapter",
   "type": "object",
   "properties": {
-      "publisherName": {
+      "publisher": {
         "type": "string",
         "description": "Publisher Name to use."
     }
   },
-  "required": ["publisherName"]
+  "required": ["publisher"]
 }
