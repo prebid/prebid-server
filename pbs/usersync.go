@@ -27,16 +27,6 @@ const (
 	USERSYNC_SUCCESS     = "usersync.%s.sets"
 )
 
-type HostCookieSettings struct {
-	Domain       string
-	Family       string
-	CookieName   string
-	OptOutURL    string
-	OptInURL     string
-	OptOutCookie config.Cookie
-	TTL          time.Duration
-}
-
 // uidWithExpiry bundles the UID with an Expiration date.
 // After the expiration, the UID is no longer valid.
 type uidWithExpiry struct {
@@ -47,11 +37,11 @@ type uidWithExpiry struct {
 }
 
 type UserSyncDeps struct {
-	ExternalUrl        string
-	RecaptchaSecret    string
-	HostCookieSettings *HostCookieSettings
-	MetricsEngine      pbsmetrics.MetricsEngine
-	PBSAnalytics       analytics.PBSAnalyticsModule
+	ExternalUrl      string
+	RecaptchaSecret  string
+	HostCookieConfig *config.HostCookie
+	MetricsEngine    pbsmetrics.MetricsEngine
+	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 
 // pbsCookieJson defines the JSON contract for the cookie data's storage format.
@@ -66,8 +56,8 @@ type pbsCookieJson struct {
 }
 
 func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	pc := usersync.ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
+	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
+	pc.SetCookieOnResponse(w, deps.HostCookieConfig.Domain, deps.HostCookieConfig.TTLDuration())
 	json.NewEncoder(w).Encode(pc)
 	return
 }
@@ -120,13 +110,13 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 		return
 	}
 
-	pc := usersync.ParsePBSCookieFromRequest(r, &deps.HostCookieSettings.OptOutCookie)
+	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
 	pc.SetPreference(optout == "")
 
-	pc.SetCookieOnResponse(w, deps.HostCookieSettings.Domain, deps.HostCookieSettings.TTL)
+	pc.SetCookieOnResponse(w, deps.HostCookieConfig.Domain, deps.HostCookieConfig.TTLDuration())
 	if optout == "" {
-		http.Redirect(w, r, deps.HostCookieSettings.OptInURL, 301)
+		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, 301)
 	} else {
-		http.Redirect(w, r, deps.HostCookieSettings.OptOutURL, 301)
+		http.Redirect(w, r, deps.HostCookieConfig.OptOutURL, 301)
 	}
 }

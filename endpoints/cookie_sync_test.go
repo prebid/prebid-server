@@ -103,7 +103,7 @@ func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, 
 }
 
 func testableEndpoint(perms gdpr.Permissions) httprouter.Handle {
-	return NewCookieSyncEndpoint(syncersForTest(), &config.Cookie{}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	return NewCookieSyncEndpoint(syncersForTest(), &config.HostCookie{}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 }
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {

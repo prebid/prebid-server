@@ -69,8 +69,6 @@ import (
 // See issue #559
 var Rev string
 
-var hostCookieSettings pbs.HostCookieSettings
-
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
 var reqSchema *gojsonschema.Schema
@@ -146,7 +144,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, &deps.cfg.AuctionTimeouts, dataCache, &hostCookieSettings)
+	pbs_req, err := pbs.ParsePBSRequest(r, &deps.cfg.AuctionTimeouts, dataCache, &(deps.cfg.HostCookie))
 	// Defer here because we need pbs_req defined.
 	defer func() {
 		if pbs_req == nil {
@@ -743,28 +741,18 @@ func serve(revision string, cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), gdprPerms, metricsEngine, pbsAnalytics))
+	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(cfg.HostCookie), gdprPerms, metricsEngine, pbsAnalytics))
 	router.POST("/validate", validate)
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	hostCookieSettings = pbs.HostCookieSettings{
-		Domain:       cfg.HostCookie.Domain,
-		Family:       cfg.HostCookie.Family,
-		CookieName:   cfg.HostCookie.CookieName,
-		OptOutURL:    cfg.HostCookie.OptOutURL,
-		OptInURL:     cfg.HostCookie.OptInURL,
-		OptOutCookie: cfg.HostCookie.OptOutCookie,
-		TTL:          time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour,
-	}
-
 	userSyncDeps := &pbs.UserSyncDeps{
-		HostCookieSettings: &hostCookieSettings,
-		ExternalUrl:        cfg.ExternalURL,
-		RecaptchaSecret:    cfg.RecaptchaSecret,
-		MetricsEngine:      metricsEngine,
-		PBSAnalytics:       pbsAnalytics,
+		HostCookieConfig: &(cfg.HostCookie),
+		ExternalUrl:      cfg.ExternalURL,
+		RecaptchaSecret:  cfg.RecaptchaSecret,
+		MetricsEngine:    metricsEngine,
+		PBSAnalytics:     pbsAnalytics,
 	}
 
 	router.GET("/getuids", userSyncDeps.GetUIDs)

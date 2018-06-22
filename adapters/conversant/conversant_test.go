@@ -613,12 +613,12 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
 	cache, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, cache, &hcs)
+	}, cache, &hcc)
 
 	return parsedReq, err
 }
