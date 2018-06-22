@@ -3,7 +3,7 @@
     "id": "test-request-id",
     "ext": {
       "bidder": {
-        "publisherName": "cafemom"
+        "publisher": "cafemom"
       }
     }
   },

@@ -18,7 +18,7 @@ import (
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
-func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.MetricsEngine) {
+func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics pbsmetrics.MetricsEngine) {
 	stopSignals := make(chan os.Signal)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
@@ -27,7 +27,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.
 	stopMain := make(chan os.Signal)
 	done := make(chan struct{})
 
-	adminServer := newAdminServer(cfg)
+	adminServer := newAdminServer(cfg, adminHandler)
 	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
 	mainServer := newMainServer(cfg, handler)
@@ -50,9 +50,10 @@ func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.
 	return
 }
 
-func newAdminServer(cfg *config.Configuration) *http.Server {
+func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr: cfg.Host + ":" + strconv.Itoa(cfg.AdminPort),
+		Addr:    cfg.Host + ":" + strconv.Itoa(cfg.AdminPort),
+		Handler: handler,
 	}
 }
 
