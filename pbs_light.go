@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
 	"sort"
 	"strconv"
 	"time"
@@ -51,6 +51,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/server"
 	"github.com/prebid/prebid-server/ssl"
@@ -59,6 +60,14 @@ import (
 
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
+
+// Holds binary revision string
+// Set manually at build time using:
+//    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
+// Populated automatically at build / release time via .travis.yml
+//   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
+// See issue #559
+var Rev string
 
 var hostCookieSettings pbs.HostCookieSettings
 
@@ -262,15 +271,14 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				} else if bid_list != nil {
 					bid_list = checkForValidBidSize(bid_list, bidder)
 					bidder.NumBids = len(bid_list)
-					deps.metricsEngine.RecordAdapterBidsReceived(blabels, int64(bidder.NumBids))
 					for _, bid := range bid_list {
 						var cpm = float64(bid.Price * 1000)
 						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							deps.metricsEngine.RecordAdapterBidAdm(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
@@ -646,10 +654,10 @@ func main() {
 	config.SetupViper(v)
 	cfg, err := config.New(v)
 	if err != nil {
-		glog.Fatalf("Viper was unable to read configurations: %v", err)
+		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	if err := serve(cfg); err != nil {
+	if err := serve(Rev, cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
@@ -672,7 +680,7 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	}
 }
 
-func serve(cfg *config.Configuration) error {
+func serve(revision string, cfg *config.Configuration) error {
 	router := httprouter.New()
 	theClient := &http.Client{
 		Transport: &http.Transport{
@@ -695,7 +703,7 @@ func serve(cfg *config.Configuration) error {
 	bidderList := openrtb_ext.BidderList()
 	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
 
-	metricsEngine := pbsmetrics.NewMetricsEngine(cfg, bidderList)
+	metricsEngine := metricsConf.NewMetricsEngine(cfg, bidderList)
 
 	b, err := ioutil.ReadFile("static/pbs_request.json")
 	if err != nil {
@@ -775,6 +783,20 @@ func serve(cfg *config.Configuration) error {
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
 
-	server.Listen(cfg, noCacheHandler, metricsEngine)
+	// Add endpoints to the admin server
+	// Making sure to add pprof routes
+	adminRouter := http.NewServeMux()
+
+	// Register pprof handlers
+	adminRouter.HandleFunc("/debug/pprof/", pprof.Index)
+	adminRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	adminRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	adminRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	adminRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	// Register prebid-server defined admin handlers
+	adminRouter.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
+
+	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
 	return nil
 }

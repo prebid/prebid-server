@@ -57,29 +57,26 @@ type HTTPFetcherConfig struct {
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
 }
 
-func (cfg *StoredRequests) validate() error {
-	if cfg.InMemoryCache.RequestCacheSize == 0 {
+func (cfg *StoredRequests) validate(errs configErrors) configErrors {
+	if cfg.InMemoryCache.Type == "none" {
 		if cfg.CacheEventsAPI {
-			return errors.New("stored_requests.cache_events_api requires a configured in_memory_cache")
+			errs = append(errs, errors.New("stored_requests.cache_events_api must be false if stored_requests.in_memory_cache=none"))
 		}
 
 		if cfg.HTTPEvents.RefreshRate != 0 {
-			return errors.New("stored_requests.http_events requires a configured in_memory_cache")
+			errs = append(errs, errors.New("stored_requests.http_events.refresh_rate_seconds must be 0 if stored_requests.in_memory_cache=none"))
 		}
 
 		if cfg.Postgres.PollUpdates.Query != "" {
-			return errors.New("stored_requests.poll_for_updates requires a configured in_memory_cache")
+			errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.query must be empty if stored_requests.in_memory_cache=none"))
 		}
 		if cfg.Postgres.CacheInitialization.Query != "" {
-			return errors.New("stored_requests.initialize_caches requires a configured in_memory_cache")
+			errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.query must be empty if stored_requests.in_memory_cache=none"))
 		}
 	}
-
-	if err := cfg.InMemoryCache.validate(); err != nil {
-		return err
-	}
-
-	return cfg.Postgres.validate()
+	errs = cfg.InMemoryCache.validate(errs)
+	errs = cfg.Postgres.validate(errs)
+	return errs
 }
 
 // PostgresConfig configures the Stored Request ecosystem to use Postgres. This must include a Fetcher,
@@ -91,35 +88,12 @@ type PostgresConfig struct {
 	PollUpdates         PostgresUpdatePolling    `mapstructure:"poll_for_updates"`
 }
 
-func (cfg *PostgresConfig) validate() error {
+func (cfg *PostgresConfig) validate(errs configErrors) configErrors {
 	if cfg.ConnectionInfo.Database == "" {
-		return nil
+		return errs
 	}
 
-	return cfg.PollUpdates.validate()
-}
-
-func (cfg *PostgresUpdatePolling) validate() error {
-	if cfg.Query == "" && cfg.AmpQuery == "" {
-		return nil
-	}
-
-	if cfg.RefreshRate <= 0 {
-		return errors.New("stored_requests.postgres.poll_for_updates.refresh_rate_seconds must be positive.")
-	}
-
-	if cfg.Timeout <= 0 {
-		return errors.New("stored_requests.postgres.poll_for_updates.timeout_ms must be positive.")
-	}
-
-	if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
-		return errors.New("stored_requests.postgres.poll_for_updates.query must contain exactly one wildcard.")
-	}
-	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
-		return errors.New("stored_requests.postgres.poll_for_updates.amp_query must contain exactly one wildcard.")
-	}
-
-	return nil
+	return cfg.PollUpdates.validate(errs)
 }
 
 // PostgresConnection has options which put types to the Postgres Connection string. See:
@@ -214,20 +188,21 @@ type PostgresCacheInitializer struct {
 	AmpQuery string `mapstructure:"amp_query"`
 }
 
-func (cfg *PostgresCacheInitializer) validate() error {
+func (cfg *PostgresCacheInitializer) validate(errs configErrors) configErrors {
 	if cfg.Query == "" && cfg.AmpQuery == "" {
-		return nil
+		return errs
 	}
+
 	if cfg.Timeout <= 0 {
-		return errors.New("stored_requests.postgres.initialize_caches.timeout_ms must be positive.")
+		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.timeout_ms must be positive"))
 	}
 	if strings.Contains(cfg.Query, "$") {
-		return errors.New("stored_requests.postgres.initialize_caches.query should not contain any wildcards.")
+		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.query should not contain any wildcards (e.g. $1)"))
 	}
 	if strings.Contains(cfg.AmpQuery, "$") {
-		return errors.New("stored_requests.postgres.initialize_caches.amp_query cannot contain any wildcards.")
+		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.amp_query should not contain any wildcards (e.g. $1)"))
 	}
-	return nil
+	return errs
 }
 
 type PostgresUpdatePolling struct {
@@ -252,6 +227,28 @@ type PostgresUpdatePolling struct {
 
 	// AmpQuery is the same as Query, but used for the `/openrtb2/amp` endpoint.
 	AmpQuery string `mapstructure:"amp_query"`
+}
+
+func (cfg *PostgresUpdatePolling) validate(errs configErrors) configErrors {
+	if cfg.Query == "" && cfg.AmpQuery == "" {
+		return errs
+	}
+
+	if cfg.RefreshRate <= 0 {
+		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.refresh_rate_seconds must be > 0"))
+	}
+
+	if cfg.Timeout <= 0 {
+		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.timeout_ms must be > 0"))
+	}
+
+	if !strings.Contains(cfg.Query, "$1") || strings.Contains(cfg.Query, "$2") {
+		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.query must contain exactly one wildcard"))
+	}
+	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
+		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.amp_query must contain exactly one wildcard"))
+	}
+	return errs
 }
 
 // MakeQuery builds a query which can fetch numReqs Stored Requetss and numImps Stored Imps.
@@ -325,21 +322,29 @@ type InMemoryCache struct {
 	ImpCacheSize int `mapstructure:"imp_cache_size_bytes"`
 }
 
-func (inMemCache *InMemoryCache) validate() error {
-	switch inMemCache.Type {
+func (cfg *InMemoryCache) validate(errs configErrors) configErrors {
+	switch cfg.Type {
 	case "none":
-		return nil
+		// No errors for no config options
 	case "unbounded":
-		if inMemCache.TTL <= 0 {
-			return errors.New("Stored requests In-Memory caches need a TTL when unbounded")
+		if cfg.TTL != 0 {
+			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache must be 0 for unbounded caches. Got %d", cfg.TTL))
 		}
-		return nil
+		if cfg.RequestCacheSize != 0 {
+			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.request_cache_size_bytes must be 0 for unbounded caches. Got %d", cfg.RequestCacheSize))
+		}
+		if cfg.ImpCacheSize != 0 {
+			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.imp_cache_size_bytes must be 0 for unbounded caches. Got %d", cfg.ImpCacheSize))
+		}
 	case "lru":
-		if inMemCache.RequestCacheSize <= 0 || inMemCache.ImpCacheSize <= 0 {
-			return fmt.Errorf("Stored requests In-Memory caches need finite sizes when set to lru. Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
+		if cfg.RequestCacheSize <= 0 {
+			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.request_cache_size_bytes must be >= 0 when stored_requests.in_memory_cache.type=lru. Got %d", cfg.RequestCacheSize))
 		}
-		return nil
+		if cfg.ImpCacheSize <= 0 {
+			errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.imp_cache_size_bytes must be >= 0 when stored_requests.in_memory_cache.type=lru. Got %d", cfg.ImpCacheSize))
+		}
+	default:
+		errs = append(errs, fmt.Errorf("stored_requests.in_memory_cache.type %s is invalid", cfg.Type))
 	}
-
-	return fmt.Errorf("Stored requests In-Memory cache set to unknown type \"%s\". Given: TTL=%d, request-cache-size=%d, imp-cache-size=%d.", inMemCache.Type, inMemCache.TTL, inMemCache.RequestCacheSize, inMemCache.ImpCacheSize)
+	return errs
 }

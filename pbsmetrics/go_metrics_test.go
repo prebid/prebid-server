@@ -38,13 +38,13 @@ func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
 
-	m.RecordAdapterBidAdm(AdapterLabels{
+	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
 	}, openrtb_ext.BidTypeBanner, true)
 	VerifyMetrics(t, "Appnexus Banner Adm Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeBanner].AdmMeter.Count(), 1)
 	VerifyMetrics(t, "Appnexus Banner Nurl Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeBanner].NurlMeter.Count(), 0)
 
-	m.RecordAdapterBidAdm(AdapterLabels{
+	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
 	}, openrtb_ext.BidTypeVideo, false)
 	VerifyMetrics(t, "Appnexus Video Adm Bids", m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[openrtb_ext.BidTypeVideo].AdmMeter.Count(), 0)
@@ -91,4 +91,10 @@ func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefi
 	ensureContains(t, registry, prefix+".audio.nurl_bids_received", mdm[openrtb_ext.BidTypeAudio].NurlMeter)
 	ensureContains(t, registry, prefix+".native.adm_bids_received", mdm[openrtb_ext.BidTypeNative].AdmMeter)
 	ensureContains(t, registry, prefix+".native.nurl_bids_received", mdm[openrtb_ext.BidTypeNative].NurlMeter)
+}
+
+func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
+	if expected != actual {
+		t.Errorf("Error in metric %s: expected %d, got %d.", name, expected, actual)
+	}
 }

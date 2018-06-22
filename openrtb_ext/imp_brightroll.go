@@ -2,5 +2,5 @@ package openrtb_ext
 
 // ExtImpBrightroll defines the contract for bidrequest.imp[i].ext.brightroll
 type ExtImpBrightroll struct {
-	PublisherName string `json:"publisherName"`
+	Publisher string `json:"publisher"`
 }

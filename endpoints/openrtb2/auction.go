@@ -680,6 +680,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	if bidReq.App == nil {
 		setSiteImplicitly(httpReq, bidReq)
 	}
+	setImpsImplicitly(httpReq, bidReq.Imp)
 
 	deps.setUserImplicitly(httpReq, bidReq)
 	setAuctionTypeImplicitly(bidReq)
@@ -719,6 +720,15 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 					bidReq.Site.Page = referrerCandidate
 				}
 			}
+		}
+	}
+}
+
+func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
+	secure := int8(1)
+	for i := 0; i < len(imps); i++ {
+		if imps[i].Secure == nil && prebid.IsSecure(httpReq) {
+			imps[i].Secure = &secure
 		}
 	}
 }

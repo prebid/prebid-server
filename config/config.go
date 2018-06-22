@@ -1,10 +1,13 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
@@ -31,20 +34,32 @@ type Configuration struct {
 	GDPR                 GDPR               `mapstructure:"gdpr"`
 }
 
-func (cfg *Configuration) validate() error {
+type configErrors []error
+
+func (c configErrors) Error() string {
+	if len(c) == 0 {
+		return ""
+	}
+	buf := bytes.Buffer{}
+	buf.WriteString("validation errors are:\n\n")
+	for _, err := range c {
+		buf.WriteString("  ")
+		buf.WriteString(err.Error())
+		buf.WriteString("\n")
+	}
+	buf.WriteString("\n")
+	return buf.String()
+}
+
+func (cfg *Configuration) validate() configErrors {
+	var errs configErrors
+	errs = cfg.AuctionTimeouts.validate(errs)
+	errs = cfg.StoredRequests.validate(errs)
 	if cfg.MaxRequestSize < 0 {
-		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
+		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
-
-	if err := cfg.AuctionTimeouts.validate(); err != nil {
-		return err
-	}
-
-	if err := cfg.StoredRequests.validate(); err != nil {
-		return err
-	}
-
-	return cfg.GDPR.validate()
+	errs = cfg.GDPR.validate(errs)
+	return errs
 }
 
 type AuctionTimeouts struct {
@@ -54,11 +69,11 @@ type AuctionTimeouts struct {
 	Max uint64 `mapstructure:"max"`
 }
 
-func (cfg *AuctionTimeouts) validate() error {
+func (cfg *AuctionTimeouts) validate(errs configErrors) configErrors {
 	if cfg.Max < cfg.Default {
-		return fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default)
+		errs = append(errs, fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default))
 	}
-	return nil
+	return errs
 }
 
 // LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
@@ -82,6 +97,13 @@ type GDPR struct {
 	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
 }
 
+func (cfg *GDPR) validate(errs configErrors) configErrors {
+	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
+		errs = append(errs, fmt.Errorf("gdpr.host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID))
+	}
+	return errs
+}
+
 type GDPRTimeouts struct {
 	InitVendorlistFetch   int `mapstructure:"init_vendorlist_fetches"`
 	ActiveVendorlistFetch int `mapstructure:"active_vendorlist_fetch"`
@@ -93,14 +115,6 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
-}
-
-func (cfg *GDPR) validate() error {
-	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
-		return fmt.Errorf("host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID)
-	}
-
-	return nil
 }
 
 type Analytics struct {
@@ -174,13 +188,18 @@ type Cookie struct {
 	Value string `mapstructure:"value"`
 }
 
-// New uses viper to get our server configurations
+// New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
 	if err := v.Unmarshal(&c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
-	return &c, c.validate()
+	glog.Info("Logging the resolved configuration:")
+	logGeneral(reflect.ValueOf(c), "  \t")
+	if errs := c.validate(); len(errs) > 0 {
+		return &c, errs
+	}
+	return &c, nil
 }
 
 //Allows for protocol relative URL if scheme is empty
@@ -293,5 +312,4 @@ func SetupViper(v *viper.Viper) {
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
-
 }
