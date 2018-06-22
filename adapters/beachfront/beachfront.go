@@ -3,12 +3,12 @@ package beachfront
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strings"
-	"github.com/golang/glog"
 )
 
 const Seat = "beachfront"
@@ -368,11 +368,26 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 	}
 
 	if req.App != nil {
-		beachfrontReq.Domain = req.App.Domain
-		beachfrontReq.Site.Page = req.App.ID
+		if req.App.Domain != "" {
+			beachfrontReq.Domain = req.App.Domain
+			beachfrontReq.Site.Page = req.App.ID
+		}
 	} else {
-		beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
-		beachfrontReq.Site.Page = req.Site.Page
+		if req.Site.Page != "" {
+			if req.Site.Domain == "" {
+				if strings.Contains(req.Site.Page, "//") {
+					// Remove protocol if exists
+					beachfrontReq.Domain = strings.Split(req.Site.Page, "//")[1]
+				}
+				if strings.Contains(beachfrontReq.Domain, "/") {
+					// Drop everything after the first "/"
+					beachfrontReq.Domain = strings.Split(beachfrontReq.Domain, "/")[0]
+				}
+			} else {
+				beachfrontReq.Domain = req.Site.Domain
+			}
+			beachfrontReq.Site.Page = req.Site.Page
+		}
 	}
 
 	return beachfrontReq, nil
@@ -432,7 +447,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 }
 
 func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, error) {
-	var bids []openrtb.Bid = make([]openrtb.Bid,len(beachfrontResp))
+	var bids []openrtb.Bid = make([]openrtb.Bid, len(beachfrontResp))
 	var crid string
 
 	for i := range beachfrontResp {
