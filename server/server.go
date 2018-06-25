@@ -11,14 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
-
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsconfig "github.com/prebid/prebid-server/pbsmetrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
-func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.MetricsEngine) {
+func Listen(cfg *config.Configuration, handler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) {
 	stopSignals := make(chan os.Signal)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
