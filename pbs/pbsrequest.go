@@ -218,7 +218,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieConfig *config.HostCookie) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -263,14 +263,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
-
-		// Host has right to leverage private cookie store for user ID
-		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {
-			if hostCookie, err := r.Cookie(hostCookieSettings.CookieName); err == nil {
-				pbsReq.Cookie.TrySync(hostCookieSettings.Family, hostCookie.Value)
-			}
-		}
+		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, hostCookieConfig)
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 

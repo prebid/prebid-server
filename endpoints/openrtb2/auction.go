@@ -106,7 +106,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 	} else {

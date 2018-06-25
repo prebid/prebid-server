@@ -193,7 +193,7 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	prebidHttpRequest.Header.Add("Referer", adformTestData.referrer)
 	prebidHttpRequest.Header.Add("X-Real-IP", adformTestData.deviceIP)
 
-	pbsCookie := usersync.ParsePBSCookieFromRequest(prebidHttpRequest, &config.Cookie{})
+	pbsCookie := usersync.ParsePBSCookieFromRequest(prebidHttpRequest, &config.HostCookie{})
 	pbsCookie.TrySync("adform", adformTestData.buyerUID)
 	fakeWriter := httptest.NewRecorder()
 	pbsCookie.SetCookieOnResponse(fakeWriter, "", time.Minute)
@@ -203,7 +203,7 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	r, err := pbs.ParsePBSRequest(prebidHttpRequest, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, cacheClient, &pbs.HostCookieSettings{})
+	}, cacheClient, &config.HostCookie{})
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}

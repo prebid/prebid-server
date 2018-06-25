@@ -946,19 +946,19 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	req.Header.Add("User-Agent", rubidata.deviceUA)
 	req.Header.Add("X-Real-IP", rubidata.deviceIP)
 
-	pc := usersync.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	pbReq, err = pbs.ParsePBSRequest(req, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, cacheClient, &hcs)
+	}, cacheClient, &hcc)
 	pbReq.IsDebug = true
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)

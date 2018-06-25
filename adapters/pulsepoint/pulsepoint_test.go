@@ -223,14 +223,14 @@ func SampleRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	// setup a http request
 	httpReq := httptest.NewRequest("POST", CreateService(adapterstest.BidOnTags("")).Server.URL, body)
 	httpReq.Header.Add("Referer", "http://news.pub/topnews")
-	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.HostCookie{})
 	pc.TrySync("pulsepoint", "pulsepointUser123")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 	// parse the http request
 	cacheClient, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcs := config.HostCookie{}
 
 	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
 		Default: 2000,

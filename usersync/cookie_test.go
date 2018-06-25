@@ -161,6 +161,24 @@ func TestParseNilSyncMap(t *testing.T) {
 	ensureConsistency(t, parsed)
 }
 
+func TestParseOtherCookie(t *testing.T) {
+	req := httptest.NewRequest("POST", "http://www.prebid.com", nil)
+	otherCookieName := "other"
+	id := "some-user-id"
+	req.AddCookie(&http.Cookie{
+		Name:  otherCookieName,
+		Value: id,
+	})
+	parsed := ParsePBSCookieFromRequest(req, &config.HostCookie{
+		Family:     "adnxs",
+		CookieName: otherCookieName,
+	})
+	val, _, _ := parsed.GetUID("adnxs")
+	if val != id {
+		t.Errorf("Bad cookie value. Expected %s, got %s", id, val)
+	}
+}
+
 func TestCookieReadWrite(t *testing.T) {
 	cookie := &PBSCookie{
 		uids: map[string]uidWithExpiry{
@@ -334,5 +352,5 @@ func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request, &config.Cookie{})
+	return ParsePBSCookieFromRequest(&request, &config.HostCookie{})
 }
