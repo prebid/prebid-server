@@ -188,6 +188,9 @@ func TestAdapterPriceMetrics(t *testing.T) {
 	proMetrics.RecordAdapterPrice(adaptLabels[0], 6.564)
 	proMetrics.RecordAdapterPrice(adaptLabels[2], 0.03)
 
+	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
+	// returned is still a reference to a Histogram, so this hack works. It may break in the future
+	// if the Prometheus team changes the observer to actually be its own thing.
 	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[0])).(prometheus.Histogram).Write(&metrics0)
 	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
 	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
@@ -215,6 +218,9 @@ func TestAdapterTimeMetrics(t *testing.T) {
 	proMetrics.RecordAdapterTime(adaptLabels[0], 664*time.Millisecond)
 	proMetrics.RecordAdapterTime(adaptLabels[2], 33*time.Millisecond)
 
+	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
+	// returned is still a reference to a Histogram, so this hack works. It may break in the future
+	// if the Prometheus team changes the observer to actually be its own thing.
 	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[0])).(prometheus.Histogram).Write(&metrics0)
 	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
 	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)

@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -222,7 +223,7 @@ func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidTy
 		"status":  string(labels.AdapterStatus),
 		"adapter": string(labels.Adapter),
 		"bidtype": string(bidType),
-		"hasadm":  boolToString(hasAdm),
+		"hasadm":  strconv.FormatBool(hasAdm),
 	}
 	return bidLabels
 }
@@ -232,11 +233,4 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 		"action": string(userLabels.Action),
 		"bidder": string(userLabels.Bidder),
 	}
-}
-
-func boolToString(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
 }
