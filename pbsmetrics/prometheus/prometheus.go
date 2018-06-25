@@ -34,10 +34,10 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
 	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
 
-	standardLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status"}
+	standardLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status"}
 
-	adapterLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status", "adapter"}
-	bidLabelNames := []string{"source", "type", "pubid", "browser", "cookie", "status", "adapter", "bidtype", "hasadm"}
+	adapterLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter"}
+	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter", "bidtype", "hasadm"}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
@@ -192,38 +192,38 @@ func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
 	return prometheus.Labels{
-		"source":  string(labels.Source),
-		"type":    string(labels.RType),
-		"pubid":   labels.PubID,
-		"browser": string(labels.Browser),
-		"cookie":  string(labels.CookieFlag),
-		"status":  string(labels.RequestStatus),
+		"demand_source": string(labels.Source),
+		"request_type":  string(labels.RType),
+		// "pubid":   labels.PubID,
+		"browser":         string(labels.Browser),
+		"cookie":          string(labels.CookieFlag),
+		"response_status": string(labels.RequestStatus),
 	}
 }
 
 func resolveAdapterLabels(labels pbsmetrics.AdapterLabels) prometheus.Labels {
 	return prometheus.Labels{
-		"source":  string(labels.Source),
-		"type":    string(labels.RType),
-		"pubid":   labels.PubID,
-		"browser": string(labels.Browser),
-		"cookie":  string(labels.CookieFlag),
-		"status":  string(labels.AdapterStatus),
-		"adapter": string(labels.Adapter),
+		"demand_source": string(labels.Source),
+		"request_type":  string(labels.RType),
+		// "pubid":   labels.PubID,
+		"browser":         string(labels.Browser),
+		"cookie":          string(labels.CookieFlag),
+		"response_status": string(labels.AdapterStatus),
+		"adapter":         string(labels.Adapter),
 	}
 }
 
 func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) prometheus.Labels {
 	bidLabels := prometheus.Labels{
-		"source":  string(labels.Source),
-		"type":    string(labels.RType),
-		"pubid":   labels.PubID,
-		"browser": string(labels.Browser),
-		"cookie":  string(labels.CookieFlag),
-		"status":  string(labels.AdapterStatus),
-		"adapter": string(labels.Adapter),
-		"bidtype": string(bidType),
-		"hasadm":  strconv.FormatBool(hasAdm),
+		"demand_source": string(labels.Source),
+		"request_type":  string(labels.RType),
+		// "pubid":   labels.PubID,
+		"browser":         string(labels.Browser),
+		"cookie":          string(labels.CookieFlag),
+		"response_status": string(labels.AdapterStatus),
+		"adapter":         string(labels.Adapter),
+		"bidtype":         string(bidType),
+		"hasadm":          strconv.FormatBool(hasAdm),
 	}
 	return bidLabels
 }
