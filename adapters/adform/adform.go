@@ -21,7 +21,7 @@ import (
 
 type AdformAdapter struct {
 	http    *adapters.HTTPAdapter
-	URI     string
+	URL     *url.URL
 	version string
 }
 
@@ -253,12 +253,6 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 // COMMON
 
 func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
-	var uriObj *url.URL
-	uriObj, err := url.Parse(a.URI)
-	if err != nil {
-		panic(fmt.Sprintf("Incorrect adfortm request url %s", a.URI))
-	}
-
 	parameters := url.Values{}
 
 	if r.advertisingId != "" {
@@ -278,9 +272,10 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 	parameters.Add("gdpr", r.gdprApplies)
 	parameters.Add("gdpr_consent", r.consent)
 
-	uriObj.RawQuery = parameters.Encode()
+	URL := *a.URL
+	URL.RawQuery = parameters.Encode()
 
-	uri := uriObj.String()
+	uri := URL.String()
 	if r.isSecure {
 		uri = strings.Replace(uri, "http://", "https://", 1)
 	}
@@ -358,10 +353,15 @@ func parseAdformBids(response []byte) ([]*adformBid, error) {
 
 func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
+	var uriObj *url.URL
+	uriObj, err := url.Parse(endpointURL)
+	if err != nil {
+		panic(fmt.Sprintf("Incorrect Adform request url %s, check the configuration, please.", endpointURL))
+	}
 
 	return &AdformAdapter{
 		http:    a,
-		URI:     endpointURL,
+		URL:     uriObj,
 		version: "0.1.2",
 	}
 }

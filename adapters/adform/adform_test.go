@@ -178,8 +178,7 @@ func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, contex
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
-	adapter := NewAdformAdapter(&conf, "adx.adform.net/adx")
-	adapter.URI = server.URL
+	adapter := NewAdformAdapter(&conf, server.URL)
 
 	prebidRequest := preparePrebidRequest(server.URL, t)
 	ctx := context.TODO()
@@ -270,8 +269,8 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 // OpenRTB auction tests
 
 func TestOpenRTBRequest(t *testing.T) {
-	bidder := new(AdformAdapter)
-	bidder.URI = "http://adx.adform.net"
+	bidder := NewAdformBidder(nil, "http://adx.adform.net")
+
 	testData := createTestData()
 	request := createOpenRtbRequest(testData)
 
