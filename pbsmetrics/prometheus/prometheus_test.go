@@ -107,10 +107,13 @@ func TestTimerMetrics(t *testing.T) {
 	proMetrics.RecordRequestTime(labels[0], 90*time.Millisecond)
 	proMetrics.RecordRequestTime(labels[2], 180*time.Millisecond)
 
-	proMetrics.reqTimer.With(resolveLabels(labels[0])).Write(&metrics0)
-	proMetrics.reqTimer.With(resolveLabels(labels[1])).Write(&metrics1)
-	proMetrics.reqTimer.With(resolveLabels(labels[2])).Write(&metrics2)
-	proMetrics.reqTimer.With(resolveLabels(labels[3])).Write(&metrics3)
+	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
+	// returned is still a reference to a Histogram, so this hack works. It may break in the future
+	// if the Prometheus team changes the observer to actually be its own thing.
+	proMetrics.reqTimer.With(resolveLabels(labels[0])).(prometheus.Histogram).Write(&metrics0)
+	proMetrics.reqTimer.With(resolveLabels(labels[1])).(prometheus.Histogram).Write(&metrics1)
+	proMetrics.reqTimer.With(resolveLabels(labels[2])).(prometheus.Histogram).Write(&metrics2)
+	proMetrics.reqTimer.With(resolveLabels(labels[3])).(prometheus.Histogram).Write(&metrics3)
 
 	assertHistogramValue(t, "request_time[0]", &metrics0, 3)
 	assertHistogramValue(t, "request_time[1]", &metrics1, 1)
@@ -185,10 +188,10 @@ func TestAdapterPriceMetrics(t *testing.T) {
 	proMetrics.RecordAdapterPrice(adaptLabels[0], 6.564)
 	proMetrics.RecordAdapterPrice(adaptLabels[2], 0.03)
 
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[0])).Write(&metrics0)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[1])).Write(&metrics1)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[2])).Write(&metrics2)
-	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[3])).Write(&metrics3)
+	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[0])).(prometheus.Histogram).Write(&metrics0)
+	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
+	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
+	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[3])).(prometheus.Histogram).Write(&metrics3)
 
 	assertHistogramValue(t, "adapter_prices[0]", &metrics0, 3)
 	assertHistogramValue(t, "adapter_prices[1]", &metrics1, 1)
@@ -212,10 +215,10 @@ func TestAdapterTimeMetrics(t *testing.T) {
 	proMetrics.RecordAdapterTime(adaptLabels[0], 664*time.Millisecond)
 	proMetrics.RecordAdapterTime(adaptLabels[2], 33*time.Millisecond)
 
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[0])).Write(&metrics0)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[1])).Write(&metrics1)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[2])).Write(&metrics2)
-	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[3])).Write(&metrics3)
+	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[0])).(prometheus.Histogram).Write(&metrics0)
+	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
+	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
+	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[3])).(prometheus.Histogram).Write(&metrics3)
 
 	assertHistogramValue(t, "adapter_time[0]", &metrics0, 3)
 	assertHistogramValue(t, "adapter_time[1]", &metrics1, 1)

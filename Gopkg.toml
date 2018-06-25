@@ -91,4 +91,4 @@
 
 [[constraint]]
   name = "github.com/prometheus/client_golang"
-  version = "0.8.0"
+  revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"
