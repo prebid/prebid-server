@@ -19,7 +19,7 @@ var counterValueRegexp = regexp.MustCompile("counter:<value:([0-9]+) >")
 var histogramValueRegexp = regexp.MustCompile("histogram:<sample_count:([0-9]+)")
 
 func TestConnectionMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metricConn := dto.Metric{}
 	metricConnErrA := dto.Metric{}
@@ -41,7 +41,7 @@ func TestConnectionMetrics(t *testing.T) {
 }
 
 func TestRequestMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -67,7 +67,7 @@ func TestRequestMetrics(t *testing.T) {
 }
 
 func TestImpMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -93,7 +93,7 @@ func TestImpMetrics(t *testing.T) {
 }
 
 func TestTimerMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -122,7 +122,7 @@ func TestTimerMetrics(t *testing.T) {
 }
 
 func TestAdapterRequestMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -148,7 +148,7 @@ func TestAdapterRequestMetrics(t *testing.T) {
 }
 
 func TestAdapterBidsMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -174,8 +174,7 @@ func TestAdapterBidsMetrics(t *testing.T) {
 }
 
 func TestAdapterPriceMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
-
+	proMetrics := newTestMetricsEngine()
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
@@ -204,7 +203,7 @@ func TestAdapterPriceMetrics(t *testing.T) {
 }
 
 func TestAdapterTimeMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -234,7 +233,7 @@ func TestAdapterTimeMetrics(t *testing.T) {
 }
 
 func TestCookieMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 
@@ -251,7 +250,7 @@ func TestCookieMetrics(t *testing.T) {
 }
 
 func TestUserMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine().(*Metrics)
+	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
 	metrics1 := dto.Metric{}
@@ -281,7 +280,7 @@ func TestMetricsExist(t *testing.T) {
 	metrics := newTestMetricsEngine()
 
 	// Get at the underlying metrics object
-	proMetrics := metrics.(*Metrics)
+	proMetrics := metrics
 
 	if err := proMetrics.Registry.Register(prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "prebid",
@@ -292,7 +291,7 @@ func TestMetricsExist(t *testing.T) {
 	}
 }
 
-func newTestMetricsEngine() pbsmetrics.MetricsEngine {
+func newTestMetricsEngine() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
 		Endpoint:  "/metrics",
 		Port:      8080,
