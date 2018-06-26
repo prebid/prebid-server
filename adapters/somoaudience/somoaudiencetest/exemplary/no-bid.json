@@ -1,0 +1,114 @@
+{
+  "mockBidRequest": {
+  "id": "test-request-id",
+  "imp": [
+    {
+      "id": "test-imp-id",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 300,
+            "h": 600
+          }
+        ]
+      },
+      "ext": {
+        "bidder": {
+          "placement_hash": "22a58cfb0c9b656bff713d1236e930e8"
+        }
+      }
+    }
+  ],
+  "device": {
+    "ua": "test-user-agent",
+    "ip": "123.123.123.123",
+    "language": "en",
+    "dnt": 0
+  },
+  "site": {
+    "domain": "www.publisher.com",
+    "page": "http://www.publisher.com/awesome/site"
+  },
+  "user": {
+    "buyeruid": "test_reader_id"
+  }
+},
+  "httpCalls": [
+    {
+      "expectedRequest":
+      {
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "test-user-agent"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ],
+          "Accept-Language": [
+            "en"
+          ],
+          "Dnt": [
+            "0"
+          ],
+          "Cookie": [
+            "ljt_reader=test_reader_id"
+          ]
+        },
+    "uri": "http://publisher-east.mobileadtrading.com/rtb/bid?s=22a58cfb0c9b656bff713d1236e930e8",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+
+              "ext": {
+                "bidder": {
+                "placement_hash": "22a58cfb0c9b656bff713d1236e930e8"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.publisher.com",
+            "page": "http://www.publisher.com/awesome/site"
+          },
+          "user": {
+            "buyeruid": "test_reader_id"
+          },
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [{}]
+}

@@ -30,6 +30,8 @@ Depending on how the Prebid Server host company has configured their servers, th
 If the `bidders` field is an empty list, it will not supply any syncs. If the `bidders` field is omitted completely, it will attempt
 to sync all bidders.
 
+### Sample Response
+
 This will return a JSON object that will allow the client to request cookie syncs with bidders that still need to be synced:
 
 ```
@@ -47,4 +49,3 @@ This will return a JSON object that will allow the client to request cookie sync
     ]
 }
 ```
-

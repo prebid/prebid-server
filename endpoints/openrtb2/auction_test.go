@@ -343,6 +343,22 @@ func TestImplicitIPs(t *testing.T) {
 	}
 }
 
+func TestImplicitSecure(t *testing.T) {
+	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	httpReq.Header.Set(http.CanonicalHeaderKey("X-Forwarded-Proto"), "https")
+
+	imps := []openrtb.Imp{
+		{},
+		{},
+	}
+	setImpsImplicitly(httpReq, imps)
+	for _, imp := range imps {
+		if imp.Secure == nil || *imp.Secure != 1 {
+			t.Errorf("imp.Secure should be set to 1 if the request is https. Got %#v", imp.Secure)
+		}
+	}
+}
+
 func TestRefererParsing(t *testing.T) {
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("Referer", "http://test.mysite.com")

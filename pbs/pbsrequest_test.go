@@ -2,8 +2,10 @@ package pbs
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/magiconair/properties/assert"
@@ -71,9 +73,12 @@ func TestParseSimpleRequest(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -151,11 +156,14 @@ func TestHeaderParsing(t *testing.T) {
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	r.Header.Add("User-Agent", "Mozilla/")
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed")
 	}
@@ -233,11 +241,14 @@ func TestParseConfig(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -316,9 +327,12 @@ func TestParseMobileRequestFirstVersion(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -412,9 +426,12 @@ func TestParseMobileRequest(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -512,9 +529,12 @@ func TestParseMalformedMobileRequest(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -616,9 +636,12 @@ func TestParseRequestWithInstl(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -632,6 +655,50 @@ func TestParseRequestWithInstl(t *testing.T) {
 		t.Errorf("Parse instl failed.")
 	}
 
+}
+
+func TestTimeouts(t *testing.T) {
+	doTimeoutTest(t, 10, 15, 10, 0)
+	doTimeoutTest(t, 10, 0, 10, 0)
+	doTimeoutTest(t, 5, 5, 10, 0)
+	doTimeoutTest(t, 15, 15, 0, 0)
+	doTimeoutTest(t, 15, 0, 20, 15)
+}
+
+func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def uint64) {
+	t.Helper()
+	cfg := &config.AuctionTimeouts{
+		Default: def,
+		Max:     max,
+	}
+	body := fmt.Sprintf(`{
+		"tid": "abcd",
+		"timeout_millis": %d,
+		"app":{
+			"bundle":"AppNexus.PrebidMobileDemo",
+			"ver":"0.0.2"
+		},
+		"ad_units": [
+				{
+						"code": "first",
+						"sizes": [{"w": 300, "h": 250}],
+						"bids": [
+								{
+										"bidder": "indexExchange"
+								}
+						]
+				}
+		]
+}`, requested)
+	r := httptest.NewRequest("POST", "/auction", strings.NewReader(body))
+	d, _ := dummycache.New()
+	parsed, err := ParsePBSRequest(r, cfg, d, &config.HostCookie{})
+	if err != nil {
+		t.Fatalf("Unexpected err: %v", err)
+	}
+	if parsed.TimeoutMillis != int64(expected) {
+		t.Errorf("Expected %dms timeout, got %dms", expected, parsed.TimeoutMillis)
+	}
 }
 
 func TestParsePBSRequestUsesHostCookie(t *testing.T) {
@@ -661,7 +728,7 @@ func TestParsePBSRequestUsesHostCookie(t *testing.T) {
 	}
 	r.AddCookie(&http.Cookie{Name: "key", Value: "testcookie"})
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{
+	hcc := config.HostCookie{
 		CookieName: "key",
 		Family:     "family",
 		OptOutCookie: config.Cookie{
@@ -670,7 +737,10 @@ func TestParsePBSRequestUsesHostCookie(t *testing.T) {
 		},
 	}
 
-	pbs_req, err2 := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err2 := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err2 != nil {
 		t.Fatalf("Parse simple request failed %v", err2)
 	}

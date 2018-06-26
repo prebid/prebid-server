@@ -87,7 +87,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	req, errL := deps.parseRequest(r)
 
 	if writeError(errL, w) {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
@@ -106,7 +106,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 	} else {
@@ -680,6 +680,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	if bidReq.App == nil {
 		setSiteImplicitly(httpReq, bidReq)
 	}
+	setImpsImplicitly(httpReq, bidReq.Imp)
 
 	deps.setUserImplicitly(httpReq, bidReq)
 	setAuctionTypeImplicitly(bidReq)
@@ -723,6 +724,15 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
+func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
+	secure := int8(1)
+	for i := 0; i < len(imps); i++ {
+		if imps[i].Secure == nil && prebid.IsSecure(httpReq) {
+			imps[i].Secure = &secure
+		}
+	}
+}
+
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
@@ -740,6 +750,9 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		storedReqIds = []string{storedBidRequestId}
 	}
 	storedRequests, storedImps, errs := deps.storedReqFetcher.FetchRequests(ctx, storedReqIds, impIds)
+	if len(errs) != 0 {
+		return nil, errs
+	}
 
 	// Apply the Stored BidRequest, if it exists
 	resolvedRequest := requestJson
@@ -880,7 +893,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
 		return true
 	}

@@ -1,0 +1,12 @@
+maintainer:
+  email: "publishers@somoaudience.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video

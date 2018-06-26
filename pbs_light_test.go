@@ -16,9 +16,11 @@ import (
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 )
@@ -71,9 +73,12 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := pbs.ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}
@@ -344,13 +349,18 @@ func TestCacheVideoOnly(t *testing.T) {
 
 	ctx := context.TODO()
 	w := httptest.NewRecorder()
-	cfg, err := config.New(viper.New())
+	v := viper.New()
+	config.SetupViper(v)
+	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	syncers := usersyncers.NewSyncerMap(cfg)
+	gdprPerms := gdpr.NewPermissions(nil, config.GDPR{
+		HostVendorID: 0,
+	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, &pbsmetrics.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
+	cacheVideoOnly(bids, ctx, w, &auctionDeps{cfg, syncers, gdprPerms, &metricsConf.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}
@@ -366,6 +376,43 @@ func TestCacheVideoOnly(t *testing.T) {
 	if bids[4].CacheID != "UUID-3" {
 		t.Errorf("Second object UUID was '%s', should have been 'UUID-3'", bids[4].CacheID)
 	}
+}
+
+func TestShouldUsersync(t *testing.T) {
+	doTest := func(gdprApplies string, consent string, allowBidderSync bool, allowHostCookies bool, expectAllow bool) {
+		t.Helper()
+		deps := auctionDeps{
+			cfg:     nil,
+			syncers: nil,
+			gdprPerms: &mockPermissions{
+				allowBidderSync:  allowBidderSync,
+				allowHostCookies: allowHostCookies,
+			},
+			metricsEngine: nil,
+		}
+		allowSyncs := deps.shouldUsersync(context.Background(), openrtb_ext.BidderAdform, gdprApplies, consent)
+		if allowSyncs != expectAllow {
+			t.Errorf("Expected syncs: %t, allowed syncs: %t", expectAllow, allowSyncs)
+		}
+	}
+	doTest("0", "", false, false, true)
+	doTest("1", "", true, true, false)
+	doTest("1", "a", true, false, false)
+	doTest("1", "a", false, true, false)
+	doTest("1", "a", true, true, true)
+}
+
+type mockPermissions struct {
+	allowBidderSync  bool
+	allowHostCookies bool
+}
+
+func (m *mockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	return m.allowHostCookies, nil
+}
+
+func (m *mockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return m.allowBidderSync, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {
@@ -607,11 +654,15 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 
 // Test the viper setup
 func TestViperInit(t *testing.T) {
-	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", viper.Get("external_url").(string))
-	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", viper.Get("adapters.pulsepoint.endpoint").(string))
+	v := viper.New()
+	config.SetupViper(v)
+	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
+	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", v.Get("adapters.pulsepoint.endpoint").(string))
 }
 
 func TestViperEnv(t *testing.T) {
+	v := viper.New()
+	config.SetupViper(v)
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 
@@ -622,11 +673,11 @@ func TestViperEnv(t *testing.T) {
 	defer ttl()
 
 	// Basic config set
-	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", viper.Get("port").(string))
+	compareStrings(t, "Viper error: port expected to be %s, found %s", "7777", v.Get("port").(string))
 	// Nested config set
-	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", viper.Get("adapters.pubmatic.endpoint").(string))
+	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", v.Get("adapters.pubmatic.endpoint").(string))
 	// Config set with underscores
-	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", viper.Get("host_cookie.ttl_days").(string))
+	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {

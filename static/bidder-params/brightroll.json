@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Brightroll Adapter Params",
+  "description": "A schema which validates params accepted by the Brightroll adapter",
+  "type": "object",
+  "properties": {
+      "publisher": {
+        "type": "string",
+        "description": "Publisher Name to use."
+    }
+  },
+  "required": ["publisher"]
+}
