@@ -387,6 +387,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bids []openrtb.Bid
 	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
 	var isVideo bool = false
+	var errs []error
 
 	for i := range internalRequest.Imp {
 		if internalRequest.Imp[i].Video != nil {
@@ -399,14 +400,14 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	bids, err = postprocess(response, externalRequest, internalRequest.ID, isVideo)
 
 	if err != nil {
-		return nil, &adapters.BadServerResponseError{
-			Message: fmt.Sprintf("Failed to process the beachfront response\n%s", err),
+		return nil, []error{
+			&adapters.BadServerResponseError{
+				Message: fmt.Sprintf("Failed to process the beachfront response\n%s", err),
+			},
 		}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
-
-	var errs []error
 
 	for i := 0; i < len(bids); i++ {
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
