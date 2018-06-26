@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // Using this set of bids in more than one test

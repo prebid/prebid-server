@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"encoding/gob"
 
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 
 	"github.com/coocood/freecache"
 	"github.com/lib/pq"
-	"github.com/prebid/prebid-server/cache"
+	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 )
 
 type CacheConfig struct {

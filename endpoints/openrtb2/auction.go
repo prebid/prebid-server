@@ -12,6 +12,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/prebid"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
@@ -19,14 +27,6 @@ import (
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
-	"github.com/prebid/prebid-server/analytics"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/exchange"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/prebid"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/usersync"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -49,8 +49,25 @@ type endpointDeps struct {
 	analytics        analytics.PBSAnalyticsModule
 }
 
-func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func OrtbAuctionEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, analytics analytics.PBSAnalyticsModule, w http.ResponseWriter, r *http.Request) error {
+	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
+		return errors.New("OrtbAuctionEndpoint requires non-nil arguments.")
+	}
 
+	endpointDepsParams := &endpointDeps{
+		ex:               ex,
+		paramsValidator:  validator,
+		storedReqFetcher: requestsById,
+		cfg:              cfg,
+		metricsEngine:    met,
+		analytics:        analytics,
+	}
+	endpointDepsParams.Auction(w, r, nil)
+	return nil
+
+}
+
+func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ao := analytics.AuctionObject{
 		Status: http.StatusOK,
 		Errors: make([]error, 0),
@@ -83,9 +100,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if isSafari {
 		labels.Browser = pbsmetrics.BrowserSafari
 	}
-
 	req, errL := deps.parseRequest(r)
-
 	if writeError(errL, w) {
 		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
@@ -120,6 +135,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	numImps = len(req.Imp)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
@@ -131,7 +147,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	}
-
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)

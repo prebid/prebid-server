@@ -11,13 +11,13 @@ import (
 	"github.com/buger/jsonparser"
 
 	"github.com/julienschmidt/httprouter"
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {

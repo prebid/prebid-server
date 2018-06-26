@@ -3,24 +3,24 @@ package exchange
 import (
 	"net/http"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/adform"
-	"github.com/prebid/prebid-server/adapters/adtelligent"
-	"github.com/prebid/prebid-server/adapters/appnexus"
-	"github.com/prebid/prebid-server/adapters/audienceNetwork"
-	"github.com/prebid/prebid-server/adapters/brightroll"
-	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/eplanning"
-	"github.com/prebid/prebid-server/adapters/indexExchange"
-	"github.com/prebid/prebid-server/adapters/lifestreet"
-	"github.com/prebid/prebid-server/adapters/openx"
-	"github.com/prebid/prebid-server/adapters/pubmatic"
-	"github.com/prebid/prebid-server/adapters/pulsepoint"
-	"github.com/prebid/prebid-server/adapters/rubicon"
-	"github.com/prebid/prebid-server/adapters/somoaudience"
-	"github.com/prebid/prebid-server/adapters/sovrn"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adtelligent"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/audienceNetwork"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/brightroll"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/conversant"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/eplanning"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/indexExchange"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lifestreet"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/openx"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/pubmatic"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/pulsepoint"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rubicon"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/somoaudience"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sovrn"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // The newAdapterMap function is segregated to its own file to make it a simple and clean location for each Adapter
@@ -43,7 +43,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderLifestreet: adaptLegacyAdapter(lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig)),
 		openrtb_ext.BidderOpenx:      adaptBidder(openx.NewOpenxBidder(), client),
 		// TODO #214: Upgrade the Pubmatic adapter
-		openrtb_ext.BidderPubmatic: adaptLegacyAdapter(pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint)),
+		openrtb_ext.BidderPubmatic: adaptBidder(pubmatic.NewPubmaticBidder(client, cfg.Adapters["pubmatic"].Endpoint), client),
 		// TODO #215: Upgrade the Pulsepoint adapter
 		openrtb_ext.BidderPulsepoint: adaptLegacyAdapter(pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint)),
 		openrtb_ext.BidderRubicon: adaptBidder(rubicon.NewRubiconBidder(client, cfg.Adapters["rubicon"].Endpoint, cfg.Adapters["rubicon"].XAPI.Username,

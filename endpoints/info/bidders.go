@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
 )
 

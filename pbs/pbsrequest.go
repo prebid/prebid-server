@@ -11,17 +11,17 @@ import (
 
 	"github.com/buger/jsonparser"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/blang/semver"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/prebid"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/cache"
+	"github.com/PubMatic-OpenWrap/prebid-server/prebid"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
 
 const MAX_BIDDERS = 8
@@ -173,7 +173,7 @@ type PBSRequest struct {
 	Cookie  *usersync.PBSCookie `json:"-"`
 	Url     string              `json:"-"`
 	Domain  string              `json:"-"`
-	Regs    *openrtb.Regs       `json:"-"`
+	Regs    *openrtb.Regs       `json:"regs"`
 	Start   time.Time
 }
 

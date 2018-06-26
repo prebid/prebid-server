@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/pbs"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 
 	"fmt"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 )
 
 func TestIndexInvalidCall(t *testing.T) {

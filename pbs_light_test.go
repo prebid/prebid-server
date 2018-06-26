@@ -1,4 +1,4 @@
-package main
+package prebidServer
 
 import (
 	"bytes"
@@ -14,14 +14,14 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/spf13/viper"
 
-	"github.com/prebid/prebid-server/cache/dummycache"
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/gdpr"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/prebid_cache_client"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
 )
 
 const adapterDirectory = "adapters"

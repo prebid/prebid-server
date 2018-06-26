@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.

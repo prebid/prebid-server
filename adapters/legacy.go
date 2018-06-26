@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/ssl"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
+	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 )
 
 // This file contains some deprecated, legacy types.

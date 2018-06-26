@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // Bidder describes how to connect to external demand.
