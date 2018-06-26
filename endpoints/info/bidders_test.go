@@ -1,4 +1,4 @@
-package info
+package info_test
 
 import (
 	"encoding/json"
@@ -13,12 +13,14 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func TestGetBidders(t *testing.T) {
-	endpoint := NewBiddersEndpoint()
+	endpoint := info.NewBiddersEndpoint()
 
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders", strings.NewReader(""))
 	if err != nil {
@@ -50,7 +52,8 @@ func TestGetBidders(t *testing.T) {
 
 // TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
 func TestGetSpecificBidders(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info", openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos("../../static/bidder-info", openrtb_ext.BidderList())
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
 
 	for bidderName, _ := range openrtb_ext.BidderMap {
 		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
@@ -77,7 +80,9 @@ func TestGetSpecificBidders(t *testing.T) {
 
 // TestGetBidderAccuracy validates the output for a known file.
 func TestGetBidderAccuracy(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("./sample", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
+	bidderInfos := adapters.ParseBidderInfos("../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
+
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders request: %v", err)
@@ -90,7 +95,7 @@ func TestGetBidderAccuracy(t *testing.T) {
 	r := httptest.NewRecorder()
 	endpoint(r, req, params)
 
-	var fileData infoFile
+	var fileData adapters.BidderInfo
 	if err := json.Unmarshal(r.Body.Bytes(), &fileData); err != nil {
 		t.Fatalf("Failed to unmarshal JSON from endpoints/info/sample/someBidder.yaml: %v", err)
 	}
@@ -124,7 +129,8 @@ func TestGetBidderAccuracy(t *testing.T) {
 }
 
 func TestGetUnknownBidder(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("./sample", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
+	bidderInfos := adapters.BidderInfos(make(map[string]adapters.BidderInfo))
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someUnknownBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders/someUnknownBidder request: %v", err)
@@ -173,7 +179,7 @@ func TestInfoFiles(t *testing.T) {
 			t.Errorf("Failed to read static/bidder-info/%s: %v", fileInfo.Name(), err)
 			continue
 		}
-		var fileInfoContent infoFile
+		var fileInfoContent adapters.BidderInfo
 		if err := yaml.Unmarshal(content, &fileInfoContent); err != nil {
 			t.Errorf("Error interpreting content from static/bidder-info/%s: %v", fileInfo.Name(), err)
 			continue
@@ -184,7 +190,7 @@ func TestInfoFiles(t *testing.T) {
 	}
 }
 
-func validateInfo(info *infoFile) error {
+func validateInfo(info *adapters.BidderInfo) error {
 	if err := validateMaintainer(info.Maintainer); err != nil {
 		return err
 	}
@@ -196,7 +202,7 @@ func validateInfo(info *infoFile) error {
 	return nil
 }
 
-func validateCapabilities(info *capabilitiesInfo) error {
+func validateCapabilities(info *adapters.CapabilitiesInfo) error {
 	if info == nil {
 		return errors.New("missing required field: capabilities")
 
@@ -217,7 +223,7 @@ func validateCapabilities(info *capabilitiesInfo) error {
 	return nil
 }
 
-func validatePlatformInfo(info *platformInfo) error {
+func validatePlatformInfo(info *adapters.PlatformInfo) error {
 	if info == nil {
 		return errors.New("we can't validate a nil platformInfo")
 	}
@@ -234,7 +240,7 @@ func validatePlatformInfo(info *platformInfo) error {
 	return nil
 }
 
-func validateMaintainer(info *maintainerInfo) error {
+func validateMaintainer(info *adapters.MaintainerInfo) error {
 	if info == nil || info.Email == "" {
 		return errors.New("missing required field: maintainer.email")
 	}

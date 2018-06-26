@@ -693,11 +693,13 @@ func serve(revision string, cfg *config.Configuration) error {
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
+	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
+
 	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
-	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
+	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
 	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(cfg.HostCookie), gdprPerms, metricsEngine, pbsAnalytics))
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
