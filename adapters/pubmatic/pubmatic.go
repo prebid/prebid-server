@@ -374,16 +374,9 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 
 	var err error
 	wrapExt := ""
-	pubID := ""
-	lat := 0.0
-	lon := 0.0
-	yob := 0
-	kadpageUrl := ""
-	gender := ""
 
 	for i := 0; i < len(request.Imp); i++ {
-		err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID, &lat, &lon, &yob, &kadpageUrl, &gender)
-
+		err = parseImpressionObject(&request.Imp[i], &wrapExt)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -395,42 +388,6 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
 		request.Ext = openrtb.RawJSON(rawExt)
-	}
-
-	if request.Site != nil {
-		if request.Site.Publisher != nil {
-			request.Site.Publisher.ID = pubID
-		} else {
-			request.Site.Publisher = &openrtb.Publisher{ID: pubID}
-		}
-		if kadpageUrl != "" {
-			request.Site.Page = kadpageUrl
-		}
-
-	} else {
-		if request.App.Publisher != nil {
-			request.App.Publisher.ID = pubID
-		} else {
-			request.App.Publisher = &openrtb.Publisher{ID: pubID}
-		}
-	}
-
-	if lat != 0.0 || lon != 0.0 {
-		geo := new(openrtb.Geo)
-		geo.Lat = lat
-		geo.Lon = lon
-		if request.User == nil {
-			request.User = new(openrtb.User)
-		}
-		request.User.Geo = geo
-	}
-
-	if gender != "" {
-		request.User.Gender = gender
-	}
-
-	if yob != 0 {
-		request.User.Yob = int64(yob)
 	}
 
 	thisUri := a.URI
@@ -458,8 +415,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 }
 
 // parseImpressionObject parase  the imp to get it ready to send to pubmatic
-func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string,
-	lat *float64, lon *float64, yob *int, kadPageURL *string, gender *string) error {
+func parseImpressionObject(imp *openrtb.Imp, wrapExt *string) error {
 	// PubMatic supports native, banner and video impressions.
 	if imp.Audio != nil {
 		return fmt.Errorf("PubMatic doesn't support audio. Ignoring ImpID = %s", imp.ID)
@@ -483,10 +439,6 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string,
 		return errors.New("No PublisherId parameter provided")
 	}
 
-	if *pubID == "" {
-		*pubID = pubmaticExt.PublisherId
-	}
-
 	// Parse Wrapper Extension, Lat, Long, yob, kadPageURL, gender  only once per request
 	if *wrapExt == "" && len(string(pubmaticExt.WrapExt)) != 0 {
 		var wrapExtMap map[string]int
@@ -495,30 +447,6 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string,
 			return fmt.Errorf("Error in Wrapper Parameters = %v  for ImpID = %v WrapperExt = %v", err.Error(), imp.ID, string(pubmaticExt.WrapExt))
 		}
 		*wrapExt = string(pubmaticExt.WrapExt)
-	}
-
-	if *lat == 0.0 && pubmaticExt.Lat != 0.0 {
-		*lat = pubmaticExt.Lat
-	}
-
-	if *lon == 0.0 && pubmaticExt.Lon != 0.0 {
-		*lon = pubmaticExt.Lon
-	}
-
-	if *yob == 0 && pubmaticExt.Yob != 0 {
-		*yob = pubmaticExt.Yob
-	}
-
-	if *kadPageURL == "" && len(pubmaticExt.Kadpageurl) != 0 {
-		*kadPageURL = pubmaticExt.Kadpageurl
-	}
-
-	if *gender == "" && len(pubmaticExt.Gender) != 0 {
-		*gender = pubmaticExt.Gender
-	}
-
-	if pubmaticExt.Kadfloor != 0.0 {
-		imp.BidFloor = pubmaticExt.Kadfloor
 	}
 
 	adSlotStr := strings.TrimSpace(pubmaticExt.AdSlot)
@@ -543,11 +471,7 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string,
 				if imp.Banner != nil {
 					imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
 					imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
-				} else {
-					imp.Video.H = (uint64)(height)
-					imp.Video.W = (uint64)(width)
 				}
-
 			} else {
 				return errors.New("Invalid adSizes Provided ")
 			}

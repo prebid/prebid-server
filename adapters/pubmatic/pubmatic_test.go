@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/mxmCherry/openrtb"
 )
 
 func CompareStringValue(val1 string, val2 string, t *testing.T) {
@@ -309,7 +309,6 @@ func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 	}
 }
 
-
 func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
@@ -334,12 +333,6 @@ func TestPubmaticBasicResponse_AllParams(t *testing.T) {
 				},
 				Params: json.RawMessage(`{"publisherId": "640",
 							"adSlot": "slot1@336x280",
-							"kadpageurl": "www.test.com",
-							"gender": "M",
-							"lat":40.1,
-							"lon":50.2,
-							"yob":1982,
-							"kadfloor":0.5,
 							"keywords":{
 									"pmZoneId": "Zone1,Zone2"
 									},
@@ -689,24 +682,16 @@ func TestOpenRTBBidRequest(t *testing.T) {
 											"pmZoneID": "Zone1,Zone2",
 											"preference": "sports,movies"
 											},
-								"lat": 12.3,
-								"lon": 34.5,
-								"yob": 1987,
-								"kadpageurl": "www.test.com/view.html",
-								"gender": "M",
-								"kadfloor": 0.5,
 								"wrapper":{"version":1,"profile":5123}
 							}}`),
 		}, {
 			ID: "456",
-			Video: &openrtb.Video{
-				W:           200,
-				H:           350,
-				MIMEs:       []string{"video"},
-				MinDuration: 5,
-				MaxDuration: 10,
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 200,
+					H: 350,
+				}},
 			},
-
 			Ext: openrtb.RawJSON(`{"bidder": {
 				"adSlot": "AdTag_Div2@200x350",
 				"publisherId": "1234",
@@ -724,6 +709,9 @@ func TestOpenRTBBidRequest(t *testing.T) {
 		},
 		Site: &openrtb.Site{
 			ID: "siteID",
+			Publisher: &openrtb.Publisher{
+				ID: "1234",
+			},
 		},
 	}
 
@@ -753,16 +741,13 @@ func TestOpenRTBBidRequest(t *testing.T) {
 		t.Fatalf("Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(ortbRequest.Imp))
 	}
 
-	if ortbRequest.Imp[0].ID == "123" {
+	if ortbRequest.Imp[0].ID == "234" {
 
 		if ortbRequest.Imp[0].Banner.Format[0].W != 300 {
 			t.Fatalf("Banner width does not match. Expected %d, Got %d", 300, ortbRequest.Imp[0].Banner.Format[0].W)
 		}
 		if ortbRequest.Imp[0].Banner.Format[0].H != 250 {
 			t.Fatalf("Banner height does not match. Expected %d, Got %d", 250, ortbRequest.Imp[0].Banner.Format[0].H)
-		}
-		if ortbRequest.Imp[0].BidFloor != 0.5 {
-			t.Fatalf("Failed to Set BidFloor. Expected %f, Got %f", 0.5, ortbRequest.Imp[0].BidFloor)
 		}
 		if ortbRequest.Imp[0].TagID != "AdTag_Div1" {
 			t.Fatalf("Failed to Set TqagID. Expected %s, Got %s", "AdTag_Div1", ortbRequest.Imp[0].TagID)
@@ -775,48 +760,19 @@ func TestOpenRTBBidRequest(t *testing.T) {
 	}
 	if ortbRequest.Imp[1].ID == "456" {
 
-		if ortbRequest.Imp[1].Video.W != 200 {
-			t.Fatalf("Video width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[0].Video.W)
+		if ortbRequest.Imp[1].Banner.Format[0].W != 200 {
+			t.Fatalf("Banner width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[1].Banner.Format[0].W)
 		}
-		if ortbRequest.Imp[1].Video.H != 350 {
-			t.Fatalf("Video height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[0].Video.H)
-		}
-		if ortbRequest.Imp[1].Video.MIMEs[0] != "video" {
-			t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", ortbRequest.Imp[0].Video.MIMEs[0])
-		}
-		if ortbRequest.Imp[1].Video.MinDuration != 5 {
-			t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, ortbRequest.Imp[0].Video.MinDuration)
-		}
-		if ortbRequest.Imp[1].Video.MaxDuration != 10 {
-			t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, ortbRequest.Imp[0].Video.MaxDuration)
+
+		if ortbRequest.Imp[1].Banner.Format[0].H != 350 {
+			t.Fatalf("Banner height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[1].Banner.Format[0].H)
 		}
 		if ortbRequest.Imp[1].TagID != "AdTag_Div2" {
-			t.Fatalf("Failed to Set TqagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[0].TagID)
+			t.Fatalf("Failed to Set TagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[1].TagID)
 		}
-	}
-
-	if ortbRequest.Site.Publisher.ID != "1234" {
-		t.Fatalf("Failed to Publisher ID. Expected %s Actual %s", "1234", ortbRequest.Site.Publisher.ID)
-	}
-
-	if ortbRequest.User.Geo.Lat != 12.3 {
-		t.Fatalf("Failed to set  User.Geo.Lat, Expected %f Actual %f ", 12.3, ortbRequest.User.Geo.Lat)
-	}
-
-	if ortbRequest.User.Geo.Lon != 34.5 {
-		t.Fatalf("Failed to set  User.Geo.Lon, Expected %f Actual %f ", 34.5, ortbRequest.User.Geo.Lon)
-	}
-
-	if ortbRequest.User.Yob != 1987 {
-		t.Fatalf("Failed to set  User.Geo.Lon, Expected %d Actual %d ", 1987, ortbRequest.User.Yob)
-	}
-
-	if ortbRequest.User.Gender != "M" {
-		t.Fatalf("Failed to set  User.Gender, Expected %s Actual %s ", "M", ortbRequest.User.Gender)
-	}
-
-	if ortbRequest.Site.Page != "www.test.com/view.html" {
-		t.Fatalf("Failed to set  Site.Page Expected %s Actual %s ", "www.test.com/view.html", ortbRequest.Site.Page)
+		if ortbRequest.Imp[1].Ext == nil {
+			t.Fatalf("Failed to add imp.Ext into outgoing request.")
+		}
 	}
 
 	if string(ortbRequest.Ext) != "{\"wrapper\":{\"version\":1,\"profile\":5123}}" {
@@ -884,12 +840,6 @@ func TestOpenRTBBidRequest_App(t *testing.T) {
 											"pmZoneID": "Zone1,Zone2",
 											"preference": "sports,movies"
 											},
-								"lat": 12.3,
-								"lon": 34.5,
-								"yob": 1989,
-								"kadpageurl": "www.test.com/view.html",
-								"gender": "F",
-								"kadfloor": 0.5,
 								"wrapper":{"version":1,"profile":5123}
 							}}`),
 		}},
@@ -950,26 +900,6 @@ func TestOpenRTBBidRequest_App(t *testing.T) {
 		}
 
 	}
-	if ortbRequest.App.Publisher.ID != "1234" {
-		t.Fatalf("Failed to Publisher ID. Expected %s Actual %s", "1234", ortbRequest.Site.Publisher.ID)
-	}
-
-	if ortbRequest.User.Geo.Lat != 12.3 {
-		t.Fatalf("Failed to set  User.Geo.Lat, Expected %f Actual %f ", 12.3, ortbRequest.User.Geo.Lat)
-	}
-
-	if ortbRequest.User.Geo.Lon != 34.5 {
-		t.Fatalf("Failed to set  User.Geo.Lon, Expected %f Actual %f ", 34.5, ortbRequest.User.Geo.Lon)
-	}
-
-	if ortbRequest.User.Yob != 1989 {
-		t.Fatalf("Failed to set  User.Geo.Lon, Expected %d Actual %d ", 1989, ortbRequest.User.Yob)
-	}
-
-	if ortbRequest.User.Gender != "F" {
-		t.Fatalf("Failed to set  User.Gender, Expected %s Actual %s ", "F", ortbRequest.User.Gender)
-	}
-
 	if string(ortbRequest.Ext) != "{\"wrapper\":{\"version\":1,\"profile\":5123}}" {
 		t.Fatalf("Failed to set  ortbRequest.Ext. Expected %s Actual %s ", "{\"wrapper\":{\"version\":1,\"profile\":5123}}", string(ortbRequest.Ext))
 	}

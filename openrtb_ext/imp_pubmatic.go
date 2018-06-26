@@ -10,12 +10,6 @@ import "encoding/json"
 type ExtImpPubmatic struct {
 	PublisherId string            `json:"publisherId"`
 	AdSlot      string            `json:"adSlot"`
-	Lat         float64           `json:"lat,omitempty"`
-	Lon         float64           `json:"lon,omitempty"`
-	Yob         int               `json:"yob,omitempty"`
-	Kadpageurl  string            `json:"kadpageurl,omitempty"`
-	Gender      string            `json:"gender,omitempty"`
-	Kadfloor    float64           `json:"kadfloor,omitempty"`
 	WrapExt     json.RawMessage   `json:"wrapper,omitempty"`
 	Keywords    map[string]string `json:"keywords,omitempty"`
 }

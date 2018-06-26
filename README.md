@@ -36,7 +36,7 @@ pbBidder := pbs.PBSBidder{
         },
     }
         
-## Sample Request for legacy /openrtb2/auction endpoint 
+## Sample Request for /openrtb2/auction endpoint 
 
     request := &openrtb.BidRequest{
         ID: "12345",
@@ -55,12 +55,6 @@ pbBidder := pbs.PBSBidder{
                                             "pmZoneID": "Zone1,Zone2",
                                             "preference": "sports,movies"
                                             },
-                                "lat": 12.3,
-                                "lon": 34.5,
-                                "yob": 1987,
-                                "kadpageurl": "www.test.com/view.html",
-                                "gender": "M",
-                                "kadfloor": 0.5,
                                 "wrapper":{"version":1,"profile":5123}
                             }}`),
         }},
