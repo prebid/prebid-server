@@ -32,7 +32,12 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	for _, imp := range request.Imp {
 		//Brightroll supports only banner and video impressions as of now
 		if imp.Banner != nil {
-			validImpExists = true
+			format := imp.Banner.Format
+			if format != nil {
+				imp.Banner.W = &format[0].W
+				imp.Banner.H = &format[0].H
+				validImpExists = true
+			}
 		} else if imp.Video != nil {
 			validImpExists = true
 		} else {
