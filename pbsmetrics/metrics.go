@@ -54,6 +54,14 @@ const (
 	DemandUnknown DemandSource = "unknown"
 )
 
+func DemandTypes() []DemandSource {
+	return []DemandSource{
+		DemandWeb,
+		DemandApp,
+		DemandUnknown,
+	}
+}
+
 // The request types (endpoints)
 const (
 	ReqTypeLegacy RequestType = "legacy"
@@ -75,12 +83,27 @@ const (
 	BrowserOther  Browser = "other"
 )
 
+func BrowserTypes() []Browser {
+	return []Browser{
+		BrowserSafari,
+		BrowserOther,
+	}
+}
+
 // Cookie flag
 const (
 	CookieFlagYes     CookieFlag = "exists"
 	CookieFlagNo      CookieFlag = "no"
 	CookieFlagUnknown CookieFlag = "unknown"
 )
+
+func CookieTypes() []CookieFlag {
+	return []CookieFlag{
+		CookieFlagYes,
+		CookieFlagNo,
+		CookieFlagUnknown,
+	}
+}
 
 // Request/return status
 const (
@@ -104,6 +127,15 @@ const (
 	AdapterStatusNoBid   AdapterStatus = "nobid"
 	AdapterStatusTimeout AdapterStatus = "timeout"
 )
+
+func AdapterStatuses() []AdapterStatus {
+	return []AdapterStatus{
+		AdapterStatusOK,
+		AdapterStatusErr,
+		AdapterStatusNoBid,
+		AdapterStatusTimeout,
+	}
+}
 
 // UserLabels : Labels for /setuid endpoint
 type UserLabels struct {

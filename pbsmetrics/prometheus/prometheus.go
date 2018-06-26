@@ -1,7 +1,6 @@
 package prometheusmetrics
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -37,7 +36,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	standardLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status"}
 
 	adapterLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter"}
-	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter", "bidtype", "hasadm"}
+	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter", "bidtype", "markup_type"}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
@@ -79,7 +78,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	)
 	metrics.Registry.MustRegister(metrics.adaptBids)
 	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
-		"Value of the highest bids from each bidder.",
+		"Values of the bids from each bidder.",
 		adapterLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
 	)
 	metrics.Registry.MustRegister(metrics.adaptPrices)
@@ -90,6 +89,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"action", "bidder"},
 	)
 	metrics.Registry.MustRegister(metrics.userID)
+
+	initializeTimeSeries(&metrics)
 
 	return &metrics
 }
@@ -223,7 +224,10 @@ func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidTy
 		"response_status": string(labels.AdapterStatus),
 		"adapter":         string(labels.Adapter),
 		"bidtype":         string(bidType),
-		"hasadm":          strconv.FormatBool(hasAdm),
+		"markup_type":     "unknown",
+	}
+	if hasAdm {
+		bidLabels["markup_type"] = "adm"
 	}
 	return bidLabels
 }
@@ -233,4 +237,145 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 		"action": string(userLabels.Action),
 		"bidder": string(userLabels.Bidder),
 	}
+}
+
+// initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances
+func initializeTimeSeries(m *Metrics) {
+	// Connection errors
+	labels := addDimension([]prometheus.Labels{}, "ErrorType", []string{"accept_error", "close_error"})
+	for _, l := range labels {
+		_ = m.connError.With(l)
+	}
+
+	// Standard labels
+	labels = addDimension([]prometheus.Labels{}, "demand_source", demandTypesAsString())
+	labels = addDimension(labels, "request_type", requestTypesAsString())
+	labels = addDimension(labels, "browser", browserTypesAsString())
+	labels = addDimension(labels, "cookie", cookieTypesAsString())
+	adapterLabels := labels // save regenerting these dimensions for adapter status
+	labels = addDimension(labels, "response_status", requestStatusesAsString())
+	for _, l := range labels {
+		_ = m.imps.With(l)
+		_ = m.requests.With(l)
+		_ = m.reqTimer.With(l)
+	}
+
+	// Adapter labels
+	labels = addDimension(adapterLabels, "response_status", adapterStatusesAsString())
+	labels = addDimension(labels, "adapter", adaptersAsString())
+	for _, l := range labels {
+		_ = m.adaptRequests.With(l)
+		_ = m.adaptTimer.With(l)
+		_ = m.adaptPrices.With(l)
+	}
+	// AdapterBid labels
+	labels = addDimension(labels, "bidtype", bidTypesAsString())
+	labels = addDimension(labels, "markup_type", []string{"unknown", "adm"})
+}
+
+// addDimesion will expand a slice of labels to add the dimension of a new set of values for a new label name
+func addDimension(labels []prometheus.Labels, field string, values []string) []prometheus.Labels {
+	if len(labels) == 0 {
+		// We are starting a new slice of labels, so we can't loop.
+		return addToLabel(make(prometheus.Labels), field, values)
+	}
+	newLabels := make([]prometheus.Labels, 0, len(labels)*len(values))
+	for _, l := range labels {
+		newLabels = append(newLabels, addToLabel(l, field, values)...)
+	}
+	return newLabels
+}
+
+// addToLabel will create a slice of labels adding a set of values tied to a label name.
+func addToLabel(label prometheus.Labels, field string, values []string) []prometheus.Labels {
+	newLabels := make([]prometheus.Labels, len(values))
+	for i, v := range values {
+		l := copyLabel(label)
+		l[field] = v
+		newLabels[i] = l
+	}
+	return newLabels
+}
+
+// Need to be able to deep copy prometheus labels.
+func copyLabel(label prometheus.Labels) prometheus.Labels {
+	newLabel := make(prometheus.Labels)
+	for k, v := range label {
+		newLabel[k] = v
+	}
+	return newLabel
+}
+
+func demandTypesAsString() []string {
+	list := pbsmetrics.DemandTypes()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func requestTypesAsString() []string {
+	list := pbsmetrics.RequestTypes()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func browserTypesAsString() []string {
+	list := pbsmetrics.BrowserTypes()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func cookieTypesAsString() []string {
+	list := pbsmetrics.CookieTypes()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func requestStatusesAsString() []string {
+	list := pbsmetrics.RequestStatuses()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func adapterStatusesAsString() []string {
+	list := pbsmetrics.AdapterStatuses()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func adaptersAsString() []string {
+	list := openrtb_ext.BidderList()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+
+}
+
+func bidTypesAsString() []string {
+	list := openrtb_ext.BidTypes()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+
 }
