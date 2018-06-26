@@ -755,7 +755,6 @@ func serve(revision string, cfg *config.Configuration) error {
 		PBSAnalytics:     pbsAnalytics,
 	}
 
-	router.GET("/getuids", userSyncDeps.GetUIDs)
 	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
