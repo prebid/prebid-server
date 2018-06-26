@@ -3,7 +3,6 @@ package beachfront
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -22,8 +21,6 @@ const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.1.1"
 
 type BeachfrontAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
 }
 
 type BeachfrontRequests struct {
@@ -112,14 +109,6 @@ type BeachfrontResponseSlot struct {
 	H     uint64  `json:"h"`
 	Slot  string  `json:"slot"`
 	Adm   string  `json:"adm"`
-}
-
-func (a *BeachfrontAdapter) Name() string {
-	return "beachfront"
-}
-
-func (a *BeachfrontAdapter) SkipNoCookies() bool {
-	return true
 }
 
 func NewBeachfrontBannerRequest() BeachfrontBannerRequest {
@@ -410,7 +399,9 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	bids, err = postprocess(response, externalRequest, internalRequest.ID, isVideo)
 
 	if err != nil {
-		return nil, []error{fmt.Errorf("Failed to process the beachfront response\n%s", err)}
+		return nil, &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Failed to process the beachfront response\n%s", err),
+		}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
@@ -480,9 +471,6 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 		return bids, err
 	}
 
-	glog.Info(bids)
-	glog.Info(externalRequest.Body)
-
 	for i := range bids {
 		crid = extractVideoCrid(bids[i].NURL)
 
@@ -501,10 +489,6 @@ func extractVideoCrid(nurl string) string {
 	return strings.TrimSuffix(chunky[2], ":")
 }
 
-func NewBeachfrontBidder(client *http.Client) *BeachfrontAdapter {
-	a := &adapters.HTTPAdapter{Client: client}
-	return &BeachfrontAdapter{
-		http: a,
-		URI:  BannerEndpoint,
-	}
+func NewBeachfrontBidder() *BeachfrontAdapter {
+	return &BeachfrontAdapter{}
 }
