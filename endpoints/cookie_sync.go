@@ -20,10 +20,10 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, optOutCookie *config.Cookie, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
+func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, hostCookie *config.HostCookie, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
 	deps := &cookieSyncDeps{
 		syncers:         syncers,
-		optOutCookie:    optOutCookie,
+		hostCookie:      hostCookie,
 		syncPermissions: syncPermissions,
 		metrics:         metrics,
 		pbsAnalytics:    pbsAnalytics,
@@ -33,7 +33,7 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 
 type cookieSyncDeps struct {
 	syncers         map[openrtb_ext.BidderName]usersync.Usersyncer
-	optOutCookie    *config.Cookie
+	hostCookie      *config.HostCookie
 	syncPermissions gdpr.Permissions
 	metrics         pbsmetrics.MetricsEngine
 	pbsAnalytics    analytics.PBSAnalyticsModule
@@ -50,7 +50,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
 	deps.metrics.RecordCookieSync(pbsmetrics.Labels{})
-	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.optOutCookie)
+	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.hostCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		co.Status = http.StatusUnauthorized
