@@ -44,10 +44,9 @@ type Metrics struct {
 // AdapterMetrics houses the metrics for a particular adapter
 type AdapterMetrics struct {
 	NoCookieMeter     metrics.Meter
-	ErrorMeter        metrics.Meter
+	ErrorMeters       map[AdapterError]metrics.Meter
 	NoBidMeter        metrics.Meter
-	TimeoutMeter      metrics.Meter
-	RequestMeter      metrics.Meter
+	GotBidsMeter      metrics.Meter
 	RequestTimer      metrics.Timer
 	PriceHistogram    metrics.Histogram
 	BidsReceivedMeter metrics.Meter
@@ -157,14 +156,16 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
 		NoCookieMeter:     blankMeter,
-		ErrorMeter:        blankMeter,
+		ErrorMeters:       make(map[AdapterError]metrics.Meter),
 		NoBidMeter:        blankMeter,
-		TimeoutMeter:      blankMeter,
-		RequestMeter:      blankMeter,
+		GotBidsMeter:      blankMeter,
 		RequestTimer:      &metrics.NilTimer{},
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+	}
+	for _, err := range AdapterErrors() {
+		newAdapter.ErrorMeters[err] = blankMeter
 	}
 	return newAdapter
 }
@@ -187,10 +188,8 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
 	am.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), registry)
-	am.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.error_requests", adapterOrAccount, exchange), registry)
-	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_bid_requests", adapterOrAccount, exchange), registry)
-	am.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.timeout_requests", adapterOrAccount, exchange), registry)
-	am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), registry)
+	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
+	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
@@ -198,6 +197,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
+	}
+	for err := range am.ErrorMeters {
+		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
@@ -312,20 +314,22 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
-	// Adapter metrics
-	am.RequestMeter.Mark(1)
-	// Account-Adapter metrics
-	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
-	aam.RequestMeter.Mark(1)
 
-	switch labels.AdapterStatus {
-	case AdapterStatusErr:
-		am.ErrorMeter.Mark(1)
-	case AdapterStatusNoBid:
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	switch labels.AdapterBids {
+	case AdapterBidNone:
 		am.NoBidMeter.Mark(1)
-	case AdapterStatusTimeout:
-		am.TimeoutMeter.Mark(1)
+		aam.NoBidMeter.Mark(1)
+	case AdapterBidPresent:
+		am.GotBidsMeter.Mark(1)
+		aam.GotBidsMeter.Mark(1)
+	default:
+		glog.Warningf("No go-metrics logged for AdapterBids value: %s", labels.AdapterBids)
 	}
+	for errType := range labels.AdapterErrors {
+		am.ErrorMeters[errType].Mark(1)
+	}
+
 	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}

@@ -65,7 +65,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	start := time.Now()
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2,
+		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
@@ -94,8 +94,11 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.Site != nil && req.Site.Publisher != nil {
 		labels.PubID = req.Site.Publisher.ID
 	}
-	if req.App != nil && req.App.Publisher != nil {
-		labels.PubID = req.App.Publisher.ID
+	if req.App != nil {
+		labels.RType = pbsmetrics.ReqTypeORTB2App
+		if req.App.Publisher != nil {
+			labels.PubID = req.App.Publisher.ID
+		}
 	}
 
 	ctx := context.Background()

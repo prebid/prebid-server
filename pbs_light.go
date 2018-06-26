@@ -204,13 +204,13 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
 			blabels := pbsmetrics.AdapterLabels{
-				Source:        labels.Source,
-				RType:         labels.RType,
-				Adapter:       openrtb_ext.BidderMap[bidder.BidderCode],
-				PubID:         labels.PubID,
-				Browser:       labels.Browser,
-				CookieFlag:    labels.CookieFlag,
-				AdapterStatus: pbsmetrics.AdapterStatusOK,
+				Source:      labels.Source,
+				RType:       labels.RType,
+				Adapter:     openrtb_ext.BidderMap[bidder.BidderCode],
+				PubID:       labels.PubID,
+				Browser:     labels.Browser,
+				CookieFlag:  labels.CookieFlag,
+				AdapterBids: pbsmetrics.AdapterBidPresent,
 			}
 			if blabels.Adapter == "" {
 				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
@@ -249,19 +249,23 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
+					var s struct{}
 					switch err {
 					case context.DeadlineExceeded:
-						blabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
+						blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
-						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
-							if _, isBadServer := err.(*adapters.BadServerResponseError); !isBadServer {
-								glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-							}
+						switch err.(type) {
+						case *adapters.BadInputError:
+							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
+						case *adapters.BadServerResponseError:
+							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
+						default:
+							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
+							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
 						}
 					}
 				} else if bid_list != nil {
@@ -280,7 +284,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					}
 				} else {
 					bidder.NoBid = true
-					blabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					blabels.AdapterBids = pbsmetrics.AdapterBidNone
 				}
 
 				ch <- bidResult{
