@@ -149,8 +149,8 @@
     "vendorconsent",
     "vendorlist"
   ]
-  revision = "95fe7a8dd52871a1376606f68a58dfb82ba61026"
-  version = "v0.6.0"
+  revision = "92f359d7fe49a20de0633e5a810776f51ee723f7"
+  version = "0.6.1"
 
 [[projects]]
   name = "github.com/rcrowley/go-metrics"
@@ -283,6 +283,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "714fc71f32216329328d9ae881c8fd69cb814d0526eb81976c96f36886fde67a"
+  inputs-digest = "0f7ccce862620417701817f766249e937b2fc0ee8bafff998f7ad4876b96ac60"
   solver-name = "gps-cdcl"
   solver-version = 1

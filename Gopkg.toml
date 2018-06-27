@@ -83,7 +83,7 @@
 
 [[constraint]]
   name = "github.com/prebid/go-gdpr"
-  version = "0.6.0"
+  version = "^0.6.1"
 
 [prune]
   go-tests = true
