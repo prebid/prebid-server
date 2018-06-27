@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
+	"github.com/pkg/errors"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
@@ -139,20 +140,18 @@ func getEndpoint(request *openrtb.BidRequest) (uri string) {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-
 	var beachfrontRequests BeachfrontRequests
 	var reqJSON []byte
 	var uri string
+	var errs = make([]error, 0)
+	var err error
+	var imps int
 
 	uri = getEndpoint(request)
 
-	beachfrontRequests, err := preprocess(request, uri)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
+	beachfrontRequests, errs, imps = preprocess(request, uri)
 
+	// These are fatal errors -------------
 	if uri == VideoEndpoint {
 		reqJSON, err = json.Marshal(beachfrontRequests.Video)
 		uri = uri + beachfrontRequests.Video.AppId + VideoEndpointSuffix
@@ -164,10 +163,16 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		reqJSON, err = json.Marshal(beachfrontRequests.Banner)
 	}
 
+	if imps == 0 {
+		errs = append(errs, errors.New("No valid impressions were found"))
+		return nil, errs
+	}
+
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
+	// ------------------------------------
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -191,30 +196,26 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 We have received a prebid request. It needs to be converted to a beachfront request. This is complicated
 by the fact that we have different servers for video/display and they have different contracts.
 */
-func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, error) {
+func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, []error, int) {
 	var beachfrontReqs BeachfrontRequests
-	var err error
+	var errs = make([]error, 0, len(req.Imp))
+	var imps int
 
 	if uri == BannerEndpoint {
-		beachfrontReqs.Banner, err = getBannerRequest(req)
-		if err != nil {
-			return beachfrontReqs, err
-		}
+		beachfrontReqs.Banner, errs, imps = getBannerRequest(req)
 	} else {
 		// If there were any Video imps in the request, we have skipped to here.
-		beachfrontReqs.Video, err = getVideoRequest(req)
-		if err != nil {
-			return beachfrontReqs, err
-		}
+		beachfrontReqs.Video, errs, imps = getVideoRequest(req)
 	}
 
-	return beachfrontReqs, err
+	return beachfrontReqs, errs, imps
 }
 
-func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) {
+func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error, int) {
 	var bannerImpsIndex int = 0
 	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
-	var err error
+	var errs = make([]error, 0, len(req.Imp))
+	var imps int = 0
 
 	/*
 	 step through the prebid request "imp" and inject into the beachfront request. If we got to here,
@@ -226,13 +227,15 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 
 	for _, imp := range req.Imp {
 		if imp.Audio != nil {
-			return beachfrontReq, &adapters.BadInputError{
+			errs = append(errs, &adapters.BadInputError{
 				Message: fmt.Sprintf("Beachfront doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
-			}
+			})
+			continue
 		} else if imp.Native != nil {
-			return beachfrontReq, &adapters.BadInputError{
+			errs = append(errs, &adapters.BadInputError{
 				Message: fmt.Sprintf("Beachfront doesn't support native Imps. Ignoring Imp ID=%s", imp.ID),
-			}
+			})
+			continue
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 			bannerImpsIndex = len(beachfrontReq.Slots) - 1
@@ -249,15 +252,17 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = imp.BidFloor
 
 			var bidderExt adapters.ExtImpBidder
-			if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 				// possible banner error 2
-				return beachfrontReq, err
+				errs = append(errs, err)
+				continue
 			}
 
 			var beachfrontExt openrtb_ext.ExtImpBeachfront
-			if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
+			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
 				// possible banner error 3 - supplemental/unmarshal-error-banner.json
-				return beachfrontReq, err
+				errs = append(errs, err)
+				continue
 			}
 
 			if req.Device != nil {
@@ -273,6 +278,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 			beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
 			beachfrontReq.Slots[bannerImpsIndex].Id = beachfrontExt.AppId
 		}
+
+		imps++
 	}
 
 	if req.User != nil {
@@ -287,15 +294,17 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, error) 
 		beachfrontReq.Page = req.Site.Page
 	}
 
-	return beachfrontReq, nil
+	return beachfrontReq, errs, imps
 }
 
 /*
 Prepare the request that has been received from Prebid.js, translating it to the beachfront format
 */
-func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
+func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, int) {
 	var videoImpsIndex int = 0
 	var beachfrontReq BeachfrontVideoRequest = NewBeachfrontVideoRequest()
+	var errs = make([]error, 0, len(req.Imp))
+	var imps int = 0
 
 	/*
 		The req could contain banner,audio,native and video imps when It arrives here. I am only
@@ -319,12 +328,14 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-				return beachfrontReq, err
+				errs = append(errs, err)
+				continue
 			}
 
 			var beachfrontVideoExt openrtb_ext.ExtImpBeachfront
 			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontVideoExt); err != nil {
-				return beachfrontReq, err
+				errs = append(errs, err)
+				continue
 			}
 
 			beachfrontReq.Imp[videoImpsIndex].Bidfloor = beachfrontVideoExt.BidFloor
@@ -337,7 +348,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 			}
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
-
+			imps++
 		}
 	}
 
@@ -379,32 +390,24 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, error) {
 		}
 	}
 
-	return beachfrontReq, nil
+	return beachfrontReq, errs, imps
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	var err error
 	var bids []openrtb.Bid
-	var bidtype openrtb_ext.BidType = openrtb_ext.BidTypeBanner
-	var isVideo bool = false
-	var errs []error
+	var bidtype openrtb_ext.BidType = getBidType(internalRequest)
+	var errors = make([]error, 0)
 
-	for i := range internalRequest.Imp {
-		if internalRequest.Imp[i].Video != nil {
-			isVideo = true
-			bidtype = openrtb_ext.BidTypeVideo
-			break
+	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
+
+	if len(errs) != 0 {
+		errors = append(errors, errs...)
+		err := &adapters.BadServerResponseError{
+			Message: "Failed to process the beachfront response",
 		}
-	}
 
-	bids, err = postprocess(response, externalRequest, internalRequest.ID, isVideo)
-
-	if err != nil {
-		return nil, []error{
-			&adapters.BadServerResponseError{
-				Message: fmt.Sprintf("Failed to process the beachfront response\n%s", err),
-			},
-		}
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
@@ -416,34 +419,36 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		})
 	}
 
-	return bidResponse, errs
+	return bidResponse, errors
 }
 
-func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, isVideo bool) ([]openrtb.Bid, error) {
+func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, bidtype openrtb_ext.BidType) ([]openrtb.Bid, []error) {
 	var beachfrontResp []BeachfrontResponseSlot
-	var err error
+	var errs = make([]error, 0)
 
-	if isVideo {
+	if bidtype == openrtb_ext.BidTypeVideo {
 		var openrtbResp openrtb.BidResponse
-		if err = json.Unmarshal(response.Body, &openrtbResp); err != nil {
-			return nil, err
+		if err := json.Unmarshal(response.Body, &openrtbResp); err != nil {
+			errs = append(errs, err)
+			return nil, errs
 		}
 		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	} else {
-		if err = json.Unmarshal(response.Body, &beachfrontResp); err != nil {
-			return nil, err
+		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
+			errs = append(errs, err)
+			return nil, errs
 		}
 
 		return postprocessBanner(beachfrontResp, id)
 	}
 }
 
-func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, error) {
+func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, []error) {
 	var bids []openrtb.Bid = make([]openrtb.Bid, len(beachfrontResp))
-	var crid string
+	var errs = make([]error, 0)
 
 	for i := range beachfrontResp {
-		crid = extractBannerCrid(beachfrontResp[i].Adm)
+		crid := extractBannerCrid(beachfrontResp[i].Adm)
 
 		bids = append(bids, openrtb.Bid{
 			CrID:  crid,
@@ -455,25 +460,22 @@ func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]op
 			W:     beachfrontResp[i].W,
 		})
 	}
-	return bids, nil
+
+	// Am not adding any errors
+	return bids, errs
 }
 
-func extractBannerCrid(adm string) string {
-	chunky := strings.SplitAfter(adm, "\"")
-	return strings.TrimSuffix(chunky[1], "\"")
-}
-
-func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, error) {
+func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
 	var xtrnal BeachfrontVideoRequest
-	var err error
-	var crid string
+	var errs = make([]error, 0)
 
-	if err = json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
-		return bids, err
+	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+		errs = append(errs, err)
+		return bids, errs
 	}
 
 	for i := range bids {
-		crid = extractVideoCrid(bids[i].NURL)
+		crid := extractVideoCrid(bids[i].NURL)
 
 		bids[i].CrID = crid
 		bids[i].ImpID = xtrnal.Imp[0].ImpId
@@ -482,7 +484,22 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 		bids[i].ID = id
 	}
 
-	return bids, nil
+	return bids, errs
+}
+
+func extractBannerCrid(adm string) string {
+	chunky := strings.SplitAfter(adm, "\"")
+	return strings.TrimSuffix(chunky[1], "\"")
+}
+
+func getBidType(internal *openrtb.BidRequest) openrtb_ext.BidType {
+	for i := range internal.Imp {
+		if internal.Imp[i].Video != nil {
+			return openrtb_ext.BidTypeVideo
+		}
+	}
+
+	return openrtb_ext.BidTypeBanner
 }
 
 func extractVideoCrid(nurl string) string {
