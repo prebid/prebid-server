@@ -374,9 +374,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 
 	var err error
 	wrapExt := ""
+	pubID := ""
 
 	for i := 0; i < len(request.Imp); i++ {
-		err = parseImpressionObject(&request.Imp[i], &wrapExt)
+		err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
 		// If the parsing is failed, remove imp and add the error.
 		if err != nil {
 			errs = append(errs, err)
@@ -388,6 +389,20 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
 		request.Ext = openrtb.RawJSON(rawExt)
+	}
+
+	if request.Site != nil {
+		if request.Site.Publisher != nil {
+			request.Site.Publisher.ID = pubID
+		} else {
+			request.Site.Publisher = &openrtb.Publisher{ID: pubID}
+		}
+	} else {
+		if request.App.Publisher != nil {
+			request.App.Publisher.ID = pubID
+		} else {
+			request.App.Publisher = &openrtb.Publisher{ID: pubID}
+		}
 	}
 
 	thisUri := a.URI
@@ -415,7 +430,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 }
 
 // parseImpressionObject parase  the imp to get it ready to send to pubmatic
-func parseImpressionObject(imp *openrtb.Imp, wrapExt *string) error {
+func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
 	// PubMatic supports native, banner and video impressions.
 	if imp.Audio != nil {
 		return fmt.Errorf("PubMatic doesn't support audio. Ignoring ImpID = %s", imp.ID)
@@ -437,6 +452,10 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string) error {
 
 	if pubmaticExt.PublisherId == "" {
 		return errors.New("No PublisherId parameter provided")
+	}
+
+	if *pubID == "" {
+		*pubID = pubmaticExt.PublisherId
 	}
 
 	// Parse Wrapper Extension, Lat, Long, yob, kadPageURL, gender  only once per request

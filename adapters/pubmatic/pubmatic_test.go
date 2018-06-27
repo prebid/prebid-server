@@ -774,6 +774,9 @@ func TestOpenRTBBidRequest(t *testing.T) {
 			t.Fatalf("Failed to add imp.Ext into outgoing request.")
 		}
 	}
+	if ortbRequest.Site.Publisher.ID != "1234" {
+		t.Fatalf("Failed to Publisher ID. Expected %s Actual %s", "1234", ortbRequest.Site.Publisher.ID)
+	}
 
 	if string(ortbRequest.Ext) != "{\"wrapper\":{\"version\":1,\"profile\":5123}}" {
 		t.Fatalf("Failed to set  ortbRequest.Ext. Expected %s Actual %s ", "{\"wrapper\":{\"version\":8,\"profile\":593}}", string(ortbRequest.Ext))
@@ -900,6 +903,11 @@ func TestOpenRTBBidRequest_App(t *testing.T) {
 		}
 
 	}
+
+	if ortbRequest.App.Publisher.ID != "1234" {
+		t.Fatalf("Failed to Publisher ID. Expected %s Actual %s", "1234", ortbRequest.Site.Publisher.ID)
+	}
+
 	if string(ortbRequest.Ext) != "{\"wrapper\":{\"version\":1,\"profile\":5123}}" {
 		t.Fatalf("Failed to set  ortbRequest.Ext. Expected %s Actual %s ", "{\"wrapper\":{\"version\":1,\"profile\":5123}}", string(ortbRequest.Ext))
 	}
