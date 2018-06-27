@@ -72,9 +72,11 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 		return decodeAccount(b), nil
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(50)*time.Millisecond)
+	defer cancel()
 	var id string
 	var priceGranularity sql.NullString
-	if err := s.shared.db.QueryRow("SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity); err != nil {
+	if err := s.shared.db.QueryRowContext(ctx, "SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity); err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
 		return nil, err
 	}
