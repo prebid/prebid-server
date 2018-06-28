@@ -155,8 +155,10 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			}
 			brw := new(bidResponseWrapper)
 			brw.bidder = aName
-			// Defer basic metrics to insure we capture them at the
-			defer e.me.RecordAdapterRequest(*bidlabels)
+			// Defer basic metrics to insure we capture them after all the values have been set
+			defer func() {
+				e.me.RecordAdapterRequest(*bidlabels)
+			}()
 			start := time.Now()
 
 			adjustmentFactor := 1.0
