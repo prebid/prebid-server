@@ -1,11 +1,68 @@
 package adapters_test
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
+
+func TestAppNotSupported(t *testing.T) {
+	bidder := &mockBidder{}
+	info := adapters.BidderInfo{
+		Capabilities: &adapters.CapabilitiesInfo{
+			Site: &adapters.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+	}
+	constrained := adapters.EnforceBidderInfo(bidder, info)
+	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
+		App: &openrtb.App{},
+	})
+	if len(errs) != 1 || errs[0].Error() != "this bidder does not support app requests" {
+		t.Errorf("Unexpected error: %s", errs[0].Error())
+	}
+	if len(bids) != 0 {
+		t.Errorf("Got %d unexpected bids", len(bids))
+	}
+}
+
+func TestSiteNotSupported(t *testing.T) {
+	bidder := &mockBidder{}
+	info := adapters.BidderInfo{
+		Capabilities: &adapters.CapabilitiesInfo{
+			App: &adapters.PlatformInfo{
+				MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner},
+			},
+		},
+	}
+	constrained := adapters.EnforceBidderInfo(bidder, info)
+	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
+		Site: &openrtb.Site{},
+	})
+	if len(errs) != 1 || errs[0].Error() != "this bidder does not support site requests" {
+		t.Errorf("Unexpected error: %s", errs[0].Error())
+	}
+	if len(bids) != 0 {
+		t.Errorf("Got %d unexpected bids", len(bids))
+	}
+}
+
+type mockBidder struct {
+	gotRequest *openrtb.BidRequest
+}
+
+func (m *mockBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	m.gotRequest = request
+	return nil, []error{errors.New("mock MakeRequests error")}
+}
+
+func (m *mockBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	return nil, []error{errors.New("mock MakeBids error")}
+}
 
 func TestParsing(t *testing.T) {
 	mockBidderName := openrtb_ext.BidderName("someBidder")

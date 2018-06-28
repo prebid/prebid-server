@@ -1,12 +1,127 @@
 package adapters
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
 )
+
+// EnforceBidderInfo decorates the input Bidder by making sure that all the requests
+// to it are in sync with its static/bidder-info/{bidder}.yaml file.
+//
+// It adjusts incoming requests in the following ways:
+//   1. If App or Site traffic is not supported by the info file, then requests from
+//      those sources will be rejected before the delegate is called.
+//   2. If a given MediaType is not supported for the platform, then it will be set
+//      to nil before the request is forwarded to the delegate.
+//   3. Any Imps which have no MediaTypes left will be removed.
+//   4. If there are no valid Imps left, the delegate won't be called at all.
+func EnforceBidderInfo(bidder Bidder, info BidderInfo) Bidder {
+	return &InfoAwareBidder{
+		Bidder: bidder,
+		info:   info,
+	}
+}
+
+type InfoAwareBidder struct {
+	Bidder
+	info BidderInfo
+}
+
+func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
+	var allowedMediaTypes []openrtb_ext.BidType
+	if request.Site != nil {
+		if i.info.Capabilities.Site == nil {
+			return nil, []error{errors.New("this bidder does not support site requests")}
+		}
+		allowedMediaTypes = i.info.Capabilities.Site.MediaTypes
+	}
+	if request.App != nil {
+		if i.info.Capabilities.App == nil {
+			return nil, []error{errors.New("this bidder does not support app requests")}
+		}
+		allowedMediaTypes = i.info.Capabilities.App.MediaTypes
+	}
+
+	// Filtering imps is quite expensive (array filter with large, non-pointer elements)... but should be rare,
+	// because it only happens if the publisher makes a really bad request.
+	//
+	// To avoid allocating new arrays and copying in the normal case, we'll make one pass to
+	// see if any imps need to be removed, and another to do the removing if necessary.
+	numToFilter, errs := i.pruneImps(request.Imp, allowedMediaTypes)
+	if numToFilter != 0 {
+		request.Imp = i.filterImps(request.Imp, numToFilter)
+	}
+	reqs, delegateErrs := i.MakeRequests(request)
+	return reqs, append(errs, delegateErrs...)
+}
+
+// pruneImps trims invalid media types from each imp, and returns true if any of the
+// Imps have _no_ valid Media Types left.
+func (i *InfoAwareBidder) pruneImps(imps []openrtb.Imp, allowedTypes []openrtb_ext.BidType) (int, []error) {
+	allowBanner, allowVideo, allowAudio, allowNative := parseAllowedTypes(allowedTypes)
+	numToFilter := 0
+	var errs []error
+	for i := 0; i < len(imps); i++ {
+		if !allowBanner {
+			imps[i].Banner = nil
+			errs = append(errs, fmt.Errorf("request.imp[%d] uses banner, but this bidder doesn't support it", i))
+		}
+		if !allowVideo {
+			imps[i].Video = nil
+			errs = append(errs, fmt.Errorf("request.imp[%d] uses video, but this bidder doesn't support it", i))
+		}
+		if !allowAudio {
+			imps[i].Audio = nil
+			errs = append(errs, fmt.Errorf("request.imp[%d] uses audio, but this bidder doesn't support it", i))
+		}
+		if !allowNative {
+			imps[i].Native = nil
+			errs = append(errs, fmt.Errorf("request.imp[%d] uses native, but this bidder doesn't support it", i))
+		}
+		if !hasAnyTypes(&imps[i]) {
+			numToFilter = numToFilter + 1
+		}
+	}
+	return numToFilter, errs
+}
+
+func parseAllowedTypes(allowedTypes []openrtb_ext.BidType) (allowBanner bool, allowVideo bool, allowAudio bool, allowNative bool) {
+	for _, allowedType := range allowedTypes {
+		switch allowedType {
+		case openrtb_ext.BidTypeBanner:
+			allowBanner = true
+		case openrtb_ext.BidTypeVideo:
+			allowVideo = true
+		case openrtb_ext.BidTypeAudio:
+			allowAudio = true
+		case openrtb_ext.BidTypeNative:
+			allowNative = true
+		}
+	}
+	return
+}
+
+func hasAnyTypes(imp *openrtb.Imp) bool {
+	return imp.Banner != nil || imp.Video != nil || imp.Audio != nil || imp.Native != nil
+}
+
+func (i *InfoAwareBidder) filterImps(imps []openrtb.Imp, numToFilter int) []openrtb.Imp {
+	newImps := make([]openrtb.Imp, 0, numToFilter)
+	thisIndex := 0
+	for i := 0; i < len(imps); i++ {
+		if hasAnyTypes(&imps[i]) {
+			newImps[thisIndex] = imps[i]
+			thisIndex = thisIndex + 1
+		}
+	}
+	return newImps
+}
 
 type BidderInfos map[string]BidderInfo
 
