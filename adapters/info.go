@@ -55,9 +55,11 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestD
 	// see if any imps need to be removed, and another to do the removing if necessary.
 	numToFilter, errs := i.pruneImps(request.Imp, allowedMediaTypes)
 	if numToFilter != 0 {
-		request.Imp = i.filterImps(request.Imp, numToFilter)
+		filteredImps, newErrs := i.filterImps(request.Imp, numToFilter)
+		request.Imp = filteredImps
+		errs = append(errs, newErrs...)
 	}
-	reqs, delegateErrs := i.MakeRequests(request)
+	reqs, delegateErrs := i.Bidder.MakeRequests(request)
 	return reqs, append(errs, delegateErrs...)
 }
 
@@ -68,19 +70,19 @@ func (i *InfoAwareBidder) pruneImps(imps []openrtb.Imp, allowedTypes []openrtb_e
 	numToFilter := 0
 	var errs []error
 	for i := 0; i < len(imps); i++ {
-		if !allowBanner {
+		if !allowBanner && imps[i].Banner != nil {
 			imps[i].Banner = nil
 			errs = append(errs, fmt.Errorf("request.imp[%d] uses banner, but this bidder doesn't support it", i))
 		}
-		if !allowVideo {
+		if !allowVideo && imps[i].Video != nil {
 			imps[i].Video = nil
 			errs = append(errs, fmt.Errorf("request.imp[%d] uses video, but this bidder doesn't support it", i))
 		}
-		if !allowAudio {
+		if !allowAudio && imps[i].Audio != nil {
 			imps[i].Audio = nil
 			errs = append(errs, fmt.Errorf("request.imp[%d] uses audio, but this bidder doesn't support it", i))
 		}
-		if !allowNative {
+		if !allowNative && imps[i].Native != nil {
 			imps[i].Native = nil
 			errs = append(errs, fmt.Errorf("request.imp[%d] uses native, but this bidder doesn't support it", i))
 		}
@@ -111,16 +113,17 @@ func hasAnyTypes(imp *openrtb.Imp) bool {
 	return imp.Banner != nil || imp.Video != nil || imp.Audio != nil || imp.Native != nil
 }
 
-func (i *InfoAwareBidder) filterImps(imps []openrtb.Imp, numToFilter int) []openrtb.Imp {
-	newImps := make([]openrtb.Imp, 0, numToFilter)
-	thisIndex := 0
+func (i *InfoAwareBidder) filterImps(imps []openrtb.Imp, numToFilter int) ([]openrtb.Imp, []error) {
+	newImps := make([]openrtb.Imp, 0, len(imps)-numToFilter)
+	errs := make([]error, 0, numToFilter)
 	for i := 0; i < len(imps); i++ {
 		if hasAnyTypes(&imps[i]) {
-			newImps[thisIndex] = imps[i]
-			thisIndex = thisIndex + 1
+			newImps = append(newImps, imps[i])
+		} else {
+			errs = append(errs, fmt.Errorf("request.imp[%d] has no supported MediaTypes. It will be ignored", i))
 		}
 	}
-	return newImps
+	return newImps, errs
 }
 
 type BidderInfos map[string]BidderInfo

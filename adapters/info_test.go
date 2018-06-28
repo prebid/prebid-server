@@ -23,12 +23,11 @@ func TestAppNotSupported(t *testing.T) {
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		App: &openrtb.App{},
 	})
-	if !assert.Len(t, errs, 1) || !assert.EqualError(t, errs[0], "this bidder does not support app requests") {
+	if !assert.Len(t, errs, 1) {
 		return
 	}
-	if !assert.Len(t, bids, 0) {
-		return
-	}
+	assert.EqualError(t, errs[0], "this bidder does not support app requests")
+	assert.Len(t, bids, 0)
 }
 
 func TestSiteNotSupported(t *testing.T) {
@@ -44,12 +43,11 @@ func TestSiteNotSupported(t *testing.T) {
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Site: &openrtb.Site{},
 	})
-	if !assert.Len(t, errs, 1) || !assert.EqualError(t, errs[0], "this bidder does not support site requests") {
+	if !assert.Len(t, errs, 1) {
 		return
 	}
-	if !assert.Len(t, bids, 0) {
-		return
-	}
+	assert.EqualError(t, errs[0], "this bidder does not support site requests")
+	assert.Len(t, bids, 0)
 }
 
 func TestImpFiltering(t *testing.T) {
@@ -66,11 +64,43 @@ func TestImpFiltering(t *testing.T) {
 	}
 
 	constrained := adapters.EnforceBidderInfo(bidder, info)
-	_, _ = constrained.MakeRequests(&openrtb.BidRequest{
-		Imp:  []openrtb.Imp{},
+	_, errs := constrained.MakeRequests(&openrtb.BidRequest{
+		Imp: []openrtb.Imp{
+			{
+				ID:    "imp-1",
+				Video: &openrtb.Video{},
+			},
+			{
+				Native: &openrtb.Native{},
+			},
+			{
+				ID:     "imp-2",
+				Video:  &openrtb.Video{},
+				Native: &openrtb.Native{},
+			},
+			{
+				Banner: &openrtb.Banner{},
+			},
+		},
 		Site: &openrtb.Site{},
 	})
+	if !assert.Len(t, errs, 6) {
+		return
+	}
+	assert.EqualError(t, errs[0], "request.imp[1] uses native, but this bidder doesn't support it")
+	assert.EqualError(t, errs[1], "request.imp[2] uses native, but this bidder doesn't support it")
+	assert.EqualError(t, errs[2], "request.imp[3] uses banner, but this bidder doesn't support it")
+	assert.EqualError(t, errs[3], "request.imp[1] has no supported MediaTypes. It will be ignored")
+	assert.EqualError(t, errs[4], "request.imp[3] has no supported MediaTypes. It will be ignored")
+	assert.EqualError(t, errs[5], "mock MakeRequests error")
 
+	req := bidder.gotRequest
+	if !assert.Len(t, req.Imp, 2) {
+		return
+	}
+	assert.Equal(t, "imp-1", req.Imp[0].ID)
+	assert.Equal(t, "imp-2", req.Imp[1].ID)
+	assert.Nil(t, req.Imp[1].Native)
 }
 
 type mockBidder struct {
