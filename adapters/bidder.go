@@ -32,6 +32,12 @@ type Bidder interface {
 	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
 }
 
+func BadInput(msg string) *BadInputError {
+	return &BadInputError{
+		Message: msg,
+	}
+}
+
 // BadInputError should be used when returning errors which are caused by bad input.
 // It should _not_ be used if the error is a server-side issue (e.g. failed to send the external request).
 //

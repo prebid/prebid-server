@@ -36,17 +36,13 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestD
 	var allowedMediaTypes []openrtb_ext.BidType
 	if request.Site != nil {
 		if i.info.Capabilities.Site == nil {
-			return nil, []error{&BadInputError{
-				Message: "this bidder does not support site requests",
-			}}
+			return nil, []error{BadInput("this bidder does not support site requests")}
 		}
 		allowedMediaTypes = i.info.Capabilities.Site.MediaTypes
 	}
 	if request.App != nil {
 		if i.info.Capabilities.App == nil {
-			return nil, []error{&BadInputError{
-				Message: "this bidder does not support app requests",
-			}}
+			return nil, []error{BadInput("this bidder does not support app requests")}
 		}
 		allowedMediaTypes = i.info.Capabilities.App.MediaTypes
 	}
@@ -75,27 +71,19 @@ func (i *InfoAwareBidder) pruneImps(imps []openrtb.Imp, allowedTypes []openrtb_e
 	for i := 0; i < len(imps); i++ {
 		if !allowBanner && imps[i].Banner != nil {
 			imps[i].Banner = nil
-			errs = append(errs, &BadInputError{
-				Message: fmt.Sprintf("request.imp[%d] uses banner, but this bidder doesn't support it", i),
-			})
+			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses banner, but this bidder doesn't support it", i)))
 		}
 		if !allowVideo && imps[i].Video != nil {
 			imps[i].Video = nil
-			errs = append(errs, &BadInputError{
-				Message: fmt.Sprintf("request.imp[%d] uses video, but this bidder doesn't support it", i),
-			})
+			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses video, but this bidder doesn't support it", i)))
 		}
 		if !allowAudio && imps[i].Audio != nil {
 			imps[i].Audio = nil
-			errs = append(errs, &BadInputError{
-				Message: fmt.Sprintf("request.imp[%d] uses audio, but this bidder doesn't support it", i),
-			})
+			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses audio, but this bidder doesn't support it", i)))
 		}
 		if !allowNative && imps[i].Native != nil {
 			imps[i].Native = nil
-			errs = append(errs, &BadInputError{
-				Message: fmt.Sprintf("request.imp[%d] uses native, but this bidder doesn't support it", i),
-			})
+			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses native, but this bidder doesn't support it", i)))
 		}
 		if !hasAnyTypes(&imps[i]) {
 			numToFilter = numToFilter + 1
@@ -131,9 +119,7 @@ func (i *InfoAwareBidder) filterImps(imps []openrtb.Imp, numToFilter int) ([]ope
 		if hasAnyTypes(&imps[i]) {
 			newImps = append(newImps, imps[i])
 		} else {
-			errs = append(errs, &BadInputError{
-				Message: fmt.Sprintf("request.imp[%d] has no supported MediaTypes. It will be ignored", i),
-			})
+			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] has no supported MediaTypes. It will be ignored", i)))
 		}
 	}
 	return newImps, errs
