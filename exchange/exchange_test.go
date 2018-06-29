@@ -79,23 +79,6 @@ func TestRaceIntegration(t *testing.T) {
 	}
 }
 
-func TestRaceRemote(t *testing.T) {
-	cfg := &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			"facebook": config.Adapter{
-				PlatformID: "abc",
-			},
-		},
-	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	ex := NewExchange(&http.Client{}, &wellBehavedCache{}, cfg, theMetrics)
-	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
-	if err != nil {
-		t.Errorf("HoldAuction returned unexpected error: %v", err)
-	}
-}
-
 // newRaceCheckingRequest builds a BidRequest from all the params in the
 // adapters/{bidder}/{bidder}test/params/race/*.json files
 func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
