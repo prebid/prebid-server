@@ -1,0 +1,7 @@
+{
+  "site_id": "88563",
+  "api": [2],
+  "protocols": [1, 2],
+  "mimes": ["video/mp4"],
+  "maxduration": 5000
+}

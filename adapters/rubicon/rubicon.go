@@ -609,8 +609,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		}
 
 		if thisImp.Video != nil {
+			videoCopy := *thisImp.Video
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
-			thisImp.Video.Ext, err = json.Marshal(&videoExt)
+			videoCopy.Ext, err = json.Marshal(&videoExt)
+			thisImp.Video = &videoCopy
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
 			if err != nil {
