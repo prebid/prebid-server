@@ -79,6 +79,23 @@ func TestRaceIntegration(t *testing.T) {
 	}
 }
 
+func TestRaceRemote(t *testing.T) {
+	cfg := &config.Configuration{
+		Adapters: map[string]config.Adapter{
+			"facebook": config.Adapter{
+				PlatformID: "abc",
+			},
+		},
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	ex := NewExchange(&http.Client{}, &wellBehavedCache{}, cfg, theMetrics)
+	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
+	if err != nil {
+		t.Errorf("HoldAuction returned unexpected error: %v", err)
+	}
+}
+
 // newRaceCheckingRequest builds a BidRequest from all the params in the
 // adapters/{bidder}/{bidder}test/params/race/*.json files
 func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
@@ -89,6 +106,24 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 			Publisher: &openrtb.Publisher{
 				ID: "some-publisher-id",
 			},
+		},
+		Device: &openrtb.Device{
+			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
+			IFA:      "ifa",
+			IP:       "132.173.230.74",
+			DNT:      1,
+			Language: "EN",
+		},
+		Source: &openrtb.Source{
+			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+		},
+		User: &openrtb.User{
+			ID:       "our-id",
+			BuyerUID: "their-id",
+			Ext:      openrtb.RawJSON(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+		},
+		Regs: &openrtb.Regs{
+			Ext: openrtb.RawJSON(`{"gdpr":1}`),
 		},
 		Imp: []openrtb.Imp{{
 			ID: "some-imp-id",
