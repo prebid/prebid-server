@@ -167,8 +167,8 @@
     "vendorconsent",
     "vendorlist"
   ]
-  revision = "95fe7a8dd52871a1376606f68a58dfb82ba61026"
-  version = "v0.6.0"
+  revision = "92f359d7fe49a20de0633e5a810776f51ee723f7"
+  version = "0.6.1"
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
@@ -336,6 +336,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ff3fe30080788cd7d43300f8cefca6825df207ec681d0070ea7f56821b3f2890"
+  inputs-digest = "54cd681a8a9376867dc5c3224bad5c7c09b7916109ec5f25dbeefa5a5a6bb957"
   solver-name = "gps-cdcl"
   solver-version = 1

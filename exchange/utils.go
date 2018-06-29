@@ -41,13 +41,13 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
 		newLabel := pbsmetrics.AdapterLabels{
-			Source:        labels.Source,
-			RType:         labels.RType,
-			Adapter:       coreBidder,
-			PubID:         labels.PubID,
-			Browser:       labels.Browser,
-			CookieFlag:    labels.CookieFlag,
-			AdapterStatus: pbsmetrics.AdapterStatusOK,
+			Source:      labels.Source,
+			RType:       labels.RType,
+			Adapter:     coreBidder,
+			PubID:       labels.PubID,
+			Browser:     labels.Browser,
+			CookieFlag:  labels.CookieFlag,
+			AdapterBids: pbsmetrics.AdapterBidPresent,
 		}
 		blabels[coreBidder] = &newLabel
 		if hadSync := prepareUser(&reqCopy, bidder, coreBidder, explicitBuyerUIDs, usersyncs); !hadSync && req.App == nil {

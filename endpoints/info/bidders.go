@@ -2,13 +2,12 @@ package info
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // NewBiddersEndpoint implements /info/bidders
@@ -32,26 +31,15 @@ func NewBiddersEndpoint() httprouter.Handle {
 }
 
 // NewBiddersEndpoint implements /info/bidders/*
-func NewBidderDetailsEndpoint(infoDir string, bidders []openrtb_ext.BidderName) httprouter.Handle {
+func NewBidderDetailsEndpoint(infos adapters.BidderInfos) httprouter.Handle {
 	// Build all the responses up front, since there are a finite number and it won't use much memory.
-	responses := make(map[string]json.RawMessage, len(bidders))
-	for _, bidderName := range bidders {
-		bidderString := string(bidderName)
-		fileData, err := ioutil.ReadFile(infoDir + "/" + bidderString + ".yaml")
+	responses := make(map[string]json.RawMessage, len(infos))
+	for bidderName, bidderInfo := range infos {
+		jsonData, err := json.Marshal(bidderInfo)
 		if err != nil {
-			glog.Fatalf("error reading from file %s: %v", infoDir+"/"+bidderString+".yaml", err)
+			glog.Fatalf("Failed to JSON-marshal bidder-info/%s.yaml data.", bidderName)
 		}
-
-		var parsedInfo infoFile
-		if err := yaml.Unmarshal(fileData, &parsedInfo); err != nil {
-			glog.Fatalf("error parsing yaml in file %s: %v", infoDir+"/"+bidderString+".yaml", err)
-		}
-
-		jsonBytes, err := json.Marshal(parsedInfo)
-		if err != nil {
-			glog.Fatalf("error writing JSON of file %s: %v", infoDir+"/"+bidderString+".yaml", err)
-		}
-		responses[bidderString] = json.RawMessage(jsonBytes)
+		responses[bidderName] = jsonData
 	}
 
 	// Return an endpoint which writes the responses from memory.

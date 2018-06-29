@@ -128,6 +128,11 @@ func TestAdapterRequestMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	emetrics0 := dto.Metric{}
+	emetrics1a := dto.Metric{}
+	emetrics1b := dto.Metric{}
+	emetrics2 := dto.Metric{}
+	emetrics3 := dto.Metric{}
 
 	proMetrics.RecordAdapterRequest(adaptLabels[0])
 	proMetrics.RecordAdapterRequest(adaptLabels[1])
@@ -141,10 +146,22 @@ func TestAdapterRequestMetrics(t *testing.T) {
 	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[2])).Write(&metrics2)
 	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[3])).Write(&metrics3)
 
+	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[0], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics0)
+	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[1], string(pbsmetrics.AdapterErrorBadServerResponse))).Write(&emetrics1a)
+	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[1], string(pbsmetrics.AdapterErrorUnknown))).Write(&emetrics1b)
+	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[2], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics2)
+	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[3], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics3)
+
 	assertCounterValue(t, "adapter_requests[0]", &metrics0, 3)
 	assertCounterValue(t, "adapter_requests[1]", &metrics1, 1)
 	assertCounterValue(t, "adapter_requests[2]", &metrics2, 2)
 	assertCounterValue(t, "adapter_requests[3]", &metrics3, 0)
+
+	assertCounterValue(t, "adapter_errors[0]", &emetrics0, 0)
+	assertCounterValue(t, "adapter_errors[1]a", &emetrics1a, 1)
+	assertCounterValue(t, "adapter_errors[1]b", &emetrics1b, 1)
+	assertCounterValue(t, "adapter_errors[2]", &emetrics2, 0)
+	assertCounterValue(t, "adapter_errors[3]", &emetrics3, 0)
 }
 
 func TestAdapterBidsMetrics(t *testing.T) {
@@ -319,7 +336,7 @@ var labels = []pbsmetrics.Labels{
 	},
 	{
 		Source:        pbsmetrics.DemandApp,
-		RType:         pbsmetrics.ReqTypeORTB2,
+		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         "Pub2",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagNo,
@@ -327,13 +344,15 @@ var labels = []pbsmetrics.Labels{
 	},
 	{
 		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2,
+		RType:         pbsmetrics.ReqTypeORTB2App,
 		PubID:         "Pub3",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusBadInput,
 	},
 }
+
+var s struct{}
 
 var adaptLabels = []pbsmetrics.AdapterLabels{
 	{
@@ -343,34 +362,41 @@ var adaptLabels = []pbsmetrics.AdapterLabels{
 		PubID:         "Pub1",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagYes,
-		AdapterStatus: pbsmetrics.AdapterStatusOK,
+		AdapterBids:   pbsmetrics.AdapterBidPresent,
+		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
 	},
 	{
-		Source:        pbsmetrics.DemandWeb,
-		RType:         pbsmetrics.ReqTypeLegacy,
-		Adapter:       openrtb_ext.BidderEPlanning,
-		PubID:         "Pub1",
-		Browser:       pbsmetrics.BrowserSafari,
-		CookieFlag:    pbsmetrics.CookieFlagYes,
-		AdapterStatus: pbsmetrics.AdapterStatusErr,
+		Source:      pbsmetrics.DemandWeb,
+		RType:       pbsmetrics.ReqTypeLegacy,
+		Adapter:     openrtb_ext.BidderEPlanning,
+		PubID:       "Pub1",
+		Browser:     pbsmetrics.BrowserSafari,
+		CookieFlag:  pbsmetrics.CookieFlagYes,
+		AdapterBids: pbsmetrics.AdapterBidPresent,
+		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{
+			pbsmetrics.AdapterErrorBadServerResponse: s,
+			pbsmetrics.AdapterErrorUnknown:           s,
+		},
 	},
 	{
 		Source:        pbsmetrics.DemandApp,
-		RType:         pbsmetrics.ReqTypeORTB2,
+		RType:         pbsmetrics.ReqTypeORTB2Web,
 		Adapter:       openrtb_ext.BidderIndex,
 		PubID:         "Pub2",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagNo,
-		AdapterStatus: pbsmetrics.AdapterStatusOK,
+		AdapterBids:   pbsmetrics.AdapterBidPresent,
+		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
 	},
 	{
 		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2,
+		RType:         pbsmetrics.ReqTypeORTB2App,
 		Adapter:       openrtb_ext.BidderAppnexus,
 		PubID:         "Pub3",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		AdapterStatus: pbsmetrics.AdapterStatusOK,
+		AdapterBids:   pbsmetrics.AdapterBidPresent,
+		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
 	},
 }
 

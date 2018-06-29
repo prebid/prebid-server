@@ -186,7 +186,9 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
-		err = fmt.Errorf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode)
+		err = &adapters.BadServerResponseError{
+			Message: fmt.Sprintf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode),
+		}
 	}
 
 	return &httpCallInfo{

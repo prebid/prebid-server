@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prebid/prebid-server/adapters"
+
 	"github.com/golang/glog"
 
 	"github.com/mxmCherry/openrtb"
@@ -176,31 +178,17 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
-			serr := make([]string, len(err))
-			for i := 0; i < len(err); i++ {
-				serr[i] = err[i].Error()
-				// TODO: #142: for a bidder that return multiple errors, we will log multiple errors for that request
-				// in the metrics. Need to remember that in analyzing the data.
-				switch err[i] {
-				case context.DeadlineExceeded:
-					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
-				default:
-					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusErr
-				}
-			}
+			serr := errsToStrings(err)
+			bidlabels.AdapterBids = bidsToMetric(bids)
+			bidlabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
 			ae.Errors = serr
 			brw.adapterExtra = ae
-			if len(err) == 0 {
-				if bids == nil || len(bids.bids) == 0 {
-					// Don't want to mark no bids on error topreserve legacy behavior.
-					bidlabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
-				} else {
-					for _, bid := range bids.bids {
-						var cpm = float64(bid.bid.Price * 1000)
-						e.me.RecordAdapterPrice(*bidlabels, cpm)
-						e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
-					}
+			if bids != nil {
+				for _, bid := range bids.bids {
+					var cpm = float64(bid.bid.Price * 1000)
+					e.me.RecordAdapterPrice(*bidlabels, cpm)
+					e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
 				}
 			}
 			chBids <- brw
@@ -214,6 +202,44 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	}
 
 	return adapterBids, adapterExtra
+}
+
+func bidsToMetric(bids *pbsOrtbSeatBid) pbsmetrics.AdapterBid {
+	if bids == nil || len(bids.bids) == 0 {
+		return pbsmetrics.AdapterBidNone
+	}
+	return pbsmetrics.AdapterBidPresent
+}
+
+func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
+	if len(errs) == 0 {
+		return nil
+	}
+	ret := make(map[pbsmetrics.AdapterError]struct{}, len(errs))
+	var s struct{}
+	for _, err := range errs {
+		if err == context.DeadlineExceeded {
+			ret[pbsmetrics.AdapterErrorTimeout] = s
+		} else {
+			switch err.(type) {
+			case *adapters.BadInputError:
+				ret[pbsmetrics.AdapterErrorBadInput] = s
+			case *adapters.BadServerResponseError:
+				ret[pbsmetrics.AdapterErrorBadServerResponse] = s
+			default:
+				ret[pbsmetrics.AdapterErrorUnknown] = s
+			}
+		}
+	}
+	return ret
+}
+
+func errsToStrings(errs []error) []string {
+	serr := make([]string, len(errs))
+	for i := 0; i < len(errs); i++ {
+		serr[i] = errs[i].Error()
+	}
+	return serr
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester

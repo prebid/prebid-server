@@ -22,6 +22,7 @@ type Metrics struct {
 	adaptTimer    *prometheus.HistogramVec
 	adaptBids     *prometheus.CounterVec
 	adaptPrices   *prometheus.HistogramVec
+	adaptErrors   *prometheus.CounterVec
 	cookieSync    prometheus.Counter
 	userID        *prometheus.CounterVec
 }
@@ -35,8 +36,9 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	standardLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status"}
 
-	adapterLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter"}
-	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status", "adapter", "bidtype", "markup_type"}
+	adapterLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter"}
+	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter", "bidtype", "markup_type"}
+	errorLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_error", "adapter"}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
@@ -82,6 +84,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		adapterLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
 	)
 	metrics.Registry.MustRegister(metrics.adaptPrices)
+	metrics.adaptErrors = newCounter(cfg, "adapter_errors_total",
+		"Number of unique error types seen in each request to an adapter.",
+		errorLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.adaptErrors)
 	metrics.cookieSync = newCookieSync(cfg)
 	metrics.Registry.MustRegister(metrics.cookieSync)
 	metrics.userID = newCounter(cfg, "usersync_total",
@@ -168,6 +175,9 @@ func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durat
 
 func (me *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	me.adaptRequests.With(resolveAdapterLabels(labels)).Inc()
+	for k, _ := range labels.AdapterErrors {
+		me.adaptErrors.With(resolveAdapterErrorLabels(labels, string(k))).Inc()
+	}
 }
 
 func (me *Metrics) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
@@ -207,10 +217,10 @@ func resolveAdapterLabels(labels pbsmetrics.AdapterLabels) prometheus.Labels {
 		"demand_source": string(labels.Source),
 		"request_type":  string(labels.RType),
 		// "pubid":   labels.PubID,
-		"browser":         string(labels.Browser),
-		"cookie":          string(labels.CookieFlag),
-		"response_status": string(labels.AdapterStatus),
-		"adapter":         string(labels.Adapter),
+		"browser":     string(labels.Browser),
+		"cookie":      string(labels.CookieFlag),
+		"adapter_bid": string(labels.AdapterBids),
+		"adapter":     string(labels.Adapter),
 	}
 }
 
@@ -219,17 +229,29 @@ func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidTy
 		"demand_source": string(labels.Source),
 		"request_type":  string(labels.RType),
 		// "pubid":   labels.PubID,
-		"browser":         string(labels.Browser),
-		"cookie":          string(labels.CookieFlag),
-		"response_status": string(labels.AdapterStatus),
-		"adapter":         string(labels.Adapter),
-		"bidtype":         string(bidType),
-		"markup_type":     "unknown",
+		"browser":     string(labels.Browser),
+		"cookie":      string(labels.CookieFlag),
+		"adapter_bid": string(labels.AdapterBids),
+		"adapter":     string(labels.Adapter),
+		"bidtype":     string(bidType),
+		"markup_type": "unknown",
 	}
 	if hasAdm {
 		bidLabels["markup_type"] = "adm"
 	}
 	return bidLabels
+}
+
+func resolveAdapterErrorLabels(labels pbsmetrics.AdapterLabels, errorType string) prometheus.Labels {
+	return prometheus.Labels{
+		"demand_source": string(labels.Source),
+		"request_type":  string(labels.RType),
+		// "pubid":   labels.PubID,
+		"browser":       string(labels.Browser),
+		"cookie":        string(labels.CookieFlag),
+		"adapter_error": errorType,
+		"adapter":       string(labels.Adapter),
+	}
 }
 
 func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
@@ -252,7 +274,7 @@ func initializeTimeSeries(m *Metrics) {
 	labels = addDimension(labels, "request_type", requestTypesAsString())
 	labels = addDimension(labels, "browser", browserTypesAsString())
 	labels = addDimension(labels, "cookie", cookieTypesAsString())
-	adapterLabels := labels // save regenerting these dimensions for adapter status
+	adapterLabels := labels // save regenerating these dimensions for adapter status
 	labels = addDimension(labels, "response_status", requestStatusesAsString())
 	for _, l := range labels {
 		_ = m.imps.With(l)
@@ -261,8 +283,9 @@ func initializeTimeSeries(m *Metrics) {
 	}
 
 	// Adapter labels
-	labels = addDimension(adapterLabels, "response_status", adapterStatusesAsString())
-	labels = addDimension(labels, "adapter", adaptersAsString())
+	labels = addDimension(adapterLabels, "adapter", adaptersAsString())
+	errorLabels := labels // save regenerating these dimensions for adapter errors
+	labels = addDimension(labels, "adapter_bid", adapterBidsAsString())
 	for _, l := range labels {
 		_ = m.adaptRequests.With(l)
 		_ = m.adaptTimer.With(l)
@@ -271,6 +294,13 @@ func initializeTimeSeries(m *Metrics) {
 	// AdapterBid labels
 	labels = addDimension(labels, "bidtype", bidTypesAsString())
 	labels = addDimension(labels, "markup_type", []string{"unknown", "adm"})
+	for _, l := range labels {
+		_ = m.adaptBids.With(l)
+	}
+	labels = addDimension(errorLabels, "adapter_error", adapterErrorsAsString())
+	for _, l := range labels {
+		_ = m.adaptErrors.With(l)
+	}
 }
 
 // addDimesion will expand a slice of labels to add the dimension of a new set of values for a new label name
@@ -351,8 +381,17 @@ func requestStatusesAsString() []string {
 	return output
 }
 
-func adapterStatusesAsString() []string {
-	list := pbsmetrics.AdapterStatuses()
+func adapterBidsAsString() []string {
+	list := pbsmetrics.AdapterBids()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func adapterErrorsAsString() []string {
+	list := pbsmetrics.AdapterErrors()
 	output := make([]string, len(list))
 	for i, s := range list {
 		output[i] = string(s)
