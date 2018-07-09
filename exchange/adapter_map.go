@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
@@ -31,6 +32,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		openrtb_ext.BidderAdform:      adaptBidder(adform.NewAdformBidder(client, cfg.Adapters["adform"].Endpoint), client),
 		openrtb_ext.BidderAdtelligent: adaptBidder(adtelligent.NewAdtelligentBidder(client), client),
 		openrtb_ext.BidderAppnexus:    adaptBidder(appnexus.NewAppNexusBidder(client, cfg.Adapters["appnexus"].Endpoint), client),
+		openrtb_ext.BidderBeachfront:  adaptBidder(beachfront.NewBeachfrontBidder(), client),
 		openrtb_ext.BidderBrightroll:  adaptBidder(brightroll.NewBrightrollBidder(cfg.Adapters["brightroll"].Endpoint), client),
 		// TODO #267: Upgrade the Conversant adapter
 		openrtb_ext.BidderConversant: adaptLegacyAdapter(conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint)),
