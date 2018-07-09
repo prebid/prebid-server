@@ -2,13 +2,14 @@ package beachfront
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/pkg/errors"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const Seat = "beachfront"
