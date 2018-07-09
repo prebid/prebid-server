@@ -2,6 +2,7 @@ FROM alpine:3.8 AS build
 WORKDIR /go/src/github.com/prebid/prebid-server/
 RUN apk add -U --no-cache go git dep musl-dev
 ENV GOPATH /go
+ENV CGO_ENABLED 0
 COPY ./ ./
 RUN dep ensure
 RUN go build .
