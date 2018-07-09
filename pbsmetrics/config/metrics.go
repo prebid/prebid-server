@@ -22,23 +22,23 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	if cfg.Metrics.Influxdb.Host != "" {
 		// Currently use go-metrics as the metrics piece for influx
-		goMetrics := pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
-		engineList = append(engineList, goMetrics)
+		returnEngine.GoMetrics = pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
+		engineList = append(engineList, returnEngine.GoMetrics)
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
-			goMetrics.MetricsRegistry,     // metrics registry
-			time.Second*10,                // interval
-			cfg.Metrics.Influxdb.Host,     // the InfluxDB url
-			cfg.Metrics.Influxdb.Database, // your InfluxDB database
-			cfg.Metrics.Influxdb.Username, // your InfluxDB user
-			cfg.Metrics.Influxdb.Password, // your InfluxDB password
+			returnEngine.GoMetrics.MetricsRegistry, // metrics registry
+			time.Second*10,                         // interval
+			cfg.Metrics.Influxdb.Host,              // the InfluxDB url
+			cfg.Metrics.Influxdb.Database,          // your InfluxDB database
+			cfg.Metrics.Influxdb.Username,          // your InfluxDB user
+			cfg.Metrics.Influxdb.Password,          // your InfluxDB password
 		)
 		// Influx is not added to the engine list as goMetrics takes care of it already.
 	}
 	if cfg.Metrics.Prometheus.Port != 0 {
 		// Set up the Prometheus metrics.
-		proMetrics := prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus)
-		engineList = append(engineList, proMetrics)
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus)
+		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
 	// Now return the proper metrics engine

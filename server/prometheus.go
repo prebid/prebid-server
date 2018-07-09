@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -21,7 +22,17 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 		glog.Fatal("Prometheus metrics configured, but a Prometheus metrics engine was not found. Cannot set up a Prometheus listener.")
 	}
 	return &http.Server{
-		Addr:    cfg.Host + ":" + strconv.Itoa(cfg.Metrics.Prometheus.Port),
-		Handler: promhttp.HandlerFor(proMetrics.Registry, promhttp.HandlerOpts{}),
+		Addr: cfg.Host + ":" + strconv.Itoa(cfg.Metrics.Prometheus.Port),
+		Handler: promhttp.HandlerFor(proMetrics.Registry, promhttp.HandlerOpts{
+			ErrorLog:            loggerForPrometheus{},
+			MaxRequestsInFlight: 5,
+			Timeout:             5 * time.Second,
+		}),
 	}
+}
+
+type loggerForPrometheus struct{}
+
+func (loggerForPrometheus) Println(v ...interface{}) {
+	glog.Warningln(v...)
 }
