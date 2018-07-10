@@ -11,20 +11,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
-
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsconfig "github.com/prebid/prebid-server/pbsmetrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
-func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics pbsmetrics.MetricsEngine) {
+func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) {
 	stopSignals := make(chan os.Signal)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
 	stopAdmin := make(chan os.Signal)
 	stopMain := make(chan os.Signal)
+	stopPrometheus := make(chan os.Signal)
 	done := make(chan struct{})
 
 	adminServer := newAdminServer(cfg, adminHandler)
@@ -32,6 +33,8 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
+
+	prometheusServer := newPrometheusServer(cfg, metrics)
 
 	mainListener, err := newListener(mainServer.Addr, metrics)
 	if err != nil {
@@ -46,7 +49,19 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	go runServer(mainServer, "Main", mainListener)
 	go runServer(adminServer, "Admin", adminListener)
 
-	wait(stopSignals, done, stopMain, stopAdmin)
+	if cfg.Metrics.Prometheus.Port != 0 {
+		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
+		prometheusListener, err := newListener(prometheusServer.Addr, nil)
+		if err != nil {
+			glog.Errorf("Error listening for TCP connections on %s: %v", adminServer.Addr, err)
+			return
+		}
+		go runServer(prometheusServer, "Prometheus", prometheusListener)
+
+		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus)
+	} else {
+		wait(stopSignals, done, stopMain, stopAdmin)
+	}
 	return
 }
 

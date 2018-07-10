@@ -106,9 +106,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
 
-	for _, t := range requestTypes() {
+	for _, t := range RequestTypes() {
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
-		for _, s := range requestStatuses() {
+		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
 		}
 	}

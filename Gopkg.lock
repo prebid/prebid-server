@@ -8,6 +8,12 @@
   version = "v1.3.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
+
+[[projects]]
   name = "github.com/blang/semver"
   packages = ["."]
   revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
@@ -66,6 +72,12 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
+  name = "github.com/golang/protobuf"
+  packages = ["proto"]
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/hashicorp/hcl"
   packages = [
     ".",
@@ -87,8 +99,8 @@
     "models",
     "pkg/escape"
   ]
-  revision = "6d2685d1738277a1c2672fc58df7994627769be6"
-  version = "v1.4.2"
+  revision = "89e084a80fb1e0bf5e7d38038e3367f821fdf3d7"
+  version = "v1.5.3"
 
 [[projects]]
   name = "github.com/julienschmidt/httprouter"
@@ -111,6 +123,12 @@
     "assert"
   ]
   revision = "8d7837e64d3c1ee4e54a880c5a920ab4316fc90a"
+
+[[projects]]
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/mitchellh/mapstructure"
@@ -151,6 +169,41 @@
   ]
   revision = "92f359d7fe49a20de0633e5a810776f51ee723f7"
   version = "0.6.1"
+
+[[projects]]
+  name = "github.com/prometheus/client_golang"
+  packages = [
+    "prometheus",
+    "prometheus/promhttp"
+  ]
+  revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  revision = "99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/common"
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model"
+  ]
+  revision = "7600349dcfe1abd18d72d3a1770870d9800a7801"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/prometheus/procfs"
+  packages = [
+    ".",
+    "internal/util",
+    "nfs",
+    "xfs"
+  ]
+  revision = "94663424ae5ae9856b40a9f170762b4197024661"
 
 [[projects]]
   name = "github.com/rcrowley/go-metrics"
@@ -283,6 +336,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0f7ccce862620417701817f766249e937b2fc0ee8bafff998f7ad4876b96ac60"
+  inputs-digest = "54cd681a8a9376867dc5c3224bad5c7c09b7916109ec5f25dbeefa5a5a6bb957"
   solver-name = "gps-cdcl"
   solver-version = 1
