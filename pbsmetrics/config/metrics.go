@@ -6,41 +6,58 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/pbsmetrics/prometheus"
 	"github.com/rcrowley/go-metrics"
 	"github.com/vrischmann/go-metrics-influxdb"
 )
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
 // for this instance.
-func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName) pbsmetrics.MetricsEngine {
+func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.BidderName) *DetailedMetricsEngine {
 	// Create a list of metrics engines to use.
 	// Capacity of 2, as unlikely to have more than 2 metrics backends, and in the case
 	// of 1 we won't use the list so it will be garbage collected.
 	engineList := make(MultiMetricsEngine, 0, 2)
+	returnEngine := DetailedMetricsEngine{}
 
 	if cfg.Metrics.Influxdb.Host != "" {
 		// Currently use go-metrics as the metrics piece for influx
-		goMetrics := pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
-		engineList = append(engineList, goMetrics)
+		returnEngine.GoMetrics = pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
+		engineList = append(engineList, returnEngine.GoMetrics)
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
-			goMetrics.MetricsRegistry,     // metrics registry
-			time.Second*10,                // interval
-			cfg.Metrics.Influxdb.Host,     // the InfluxDB url
-			cfg.Metrics.Influxdb.Database, // your InfluxDB database
-			cfg.Metrics.Influxdb.Username, // your InfluxDB user
-			cfg.Metrics.Influxdb.Password, // your InfluxDB password
+			returnEngine.GoMetrics.MetricsRegistry, // metrics registry
+			time.Second*10,                         // interval
+			cfg.Metrics.Influxdb.Host,              // the InfluxDB url
+			cfg.Metrics.Influxdb.Database,          // your InfluxDB database
+			cfg.Metrics.Influxdb.Username,          // your InfluxDB user
+			cfg.Metrics.Influxdb.Password,          // your InfluxDB password
 		)
 		// Influx is not added to the engine list as goMetrics takes care of it already.
+	}
+	if cfg.Metrics.Prometheus.Port != 0 {
+		// Set up the Prometheus metrics.
+		returnEngine.PrometheusMetrics = prometheusmetrics.NewMetrics(cfg.Metrics.Prometheus)
+		engineList = append(engineList, returnEngine.PrometheusMetrics)
 	}
 
 	// Now return the proper metrics engine
 	if len(engineList) > 1 {
-		return &engineList
+		returnEngine.MetricsEngine = &engineList
 	} else if len(engineList) == 1 {
-		return engineList[0]
+		returnEngine.MetricsEngine = engineList[0]
+	} else {
+		returnEngine.MetricsEngine = &DummyMetricsEngine{}
 	}
-	return &DummyMetricsEngine{}
+
+	return &returnEngine
+}
+
+// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to unerlying metrics engines.
+type DetailedMetricsEngine struct {
+	pbsmetrics.MetricsEngine
+	GoMetrics         *pbsmetrics.Metrics
+	PrometheusMetrics *prometheusmetrics.Metrics
 }
 
 // MultiMetricsEngine logs metrics to multiple metrics databases The can be useful in transitioning

@@ -58,6 +58,14 @@ const (
 	DemandUnknown DemandSource = "unknown"
 )
 
+func DemandTypes() []DemandSource {
+	return []DemandSource{
+		DemandWeb,
+		DemandApp,
+		DemandUnknown,
+	}
+}
+
 // The request types (endpoints)
 const (
 	ReqTypeLegacy   RequestType = "legacy"
@@ -66,7 +74,7 @@ const (
 	ReqTypeAMP      RequestType = "amp"
 )
 
-func requestTypes() []RequestType {
+func RequestTypes() []RequestType {
 	return []RequestType{
 		ReqTypeLegacy,
 		ReqTypeORTB2Web,
@@ -81,12 +89,27 @@ const (
 	BrowserOther  Browser = "other"
 )
 
+func BrowserTypes() []Browser {
+	return []Browser{
+		BrowserSafari,
+		BrowserOther,
+	}
+}
+
 // Cookie flag
 const (
 	CookieFlagYes     CookieFlag = "exists"
 	CookieFlagNo      CookieFlag = "no"
 	CookieFlagUnknown CookieFlag = "unknown"
 )
+
+func CookieTypes() []CookieFlag {
+	return []CookieFlag{
+		CookieFlagYes,
+		CookieFlagNo,
+		CookieFlagUnknown,
+	}
+}
 
 // Request/return status
 const (
@@ -95,7 +118,7 @@ const (
 	RequestStatusErr      RequestStatus = "err"
 )
 
-func requestStatuses() []RequestStatus {
+func RequestStatuses() []RequestStatus {
 	return []RequestStatus{
 		RequestStatusOK,
 		RequestStatusBadInput,
@@ -108,6 +131,13 @@ const (
 	AdapterBidPresent AdapterBid = "bid"
 	AdapterBidNone    AdapterBid = "nobid"
 )
+
+func AdapterBids() []AdapterBid {
+	return []AdapterBid{
+		AdapterBidPresent,
+		AdapterBidNone,
+	}
+}
 
 // Adapter execution status
 const (

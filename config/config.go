@@ -153,7 +153,8 @@ type Adapter struct {
 }
 
 type Metrics struct {
-	Influxdb InfluxMetrics `mapstructure:"influxdb"`
+	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
+	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
 }
 
 type InfluxMetrics struct {
@@ -161,6 +162,13 @@ type InfluxMetrics struct {
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+}
+
+type PrometheusMetrics struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	Port      int    `mapstructure:"port"`
+	Namespace string `mapstructure:"namespace"`
+	Subsystem string `mapstructure:"subsystem"`
 }
 
 type DataCache struct {
@@ -255,6 +263,10 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.prometheus.endpoint", "")
+	v.SetDefault("metrics.prometheus.port", 0)
+	v.SetDefault("metrics.prometheus.namespace", "")
+	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)

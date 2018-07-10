@@ -15,7 +15,7 @@ func TestDummyMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := NewMetricsEngine(&cfg, adapterList)
-	_, ok := testEngine.(*DummyMetricsEngine)
+	_, ok := testEngine.MetricsEngine.(*DummyMetricsEngine)
 	if !ok {
 		t.Error("Expected a DummyMetricsEngine, but didn't get it")
 	}
@@ -26,7 +26,7 @@ func TestGoMetricsEngine(t *testing.T) {
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := make([]openrtb_ext.BidderName, 0, 2)
 	testEngine := NewMetricsEngine(&cfg, adapterList)
-	_, ok := testEngine.(*pbsmetrics.Metrics)
+	_, ok := testEngine.MetricsEngine.(*pbsmetrics.Metrics)
 	if !ok {
 		t.Error("Expected a legacy Metrics as MetricsEngine, but didn't get it")
 	}

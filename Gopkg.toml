@@ -88,3 +88,7 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"
