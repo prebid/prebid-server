@@ -43,11 +43,11 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	// Now return the proper metrics engine
 	if len(engineList) > 1 {
-		returnEngine.metricsEngine = &engineList
+		returnEngine.MetricsEngine = &engineList
 	} else if len(engineList) == 1 {
-		returnEngine.metricsEngine = engineList[0]
+		returnEngine.MetricsEngine = engineList[0]
 	} else {
-		returnEngine.metricsEngine = &DummyMetricsEngine{}
+		returnEngine.MetricsEngine = &DummyMetricsEngine{}
 	}
 
 	return &returnEngine
@@ -55,64 +55,9 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 // DetailedMetricsEngine is a MultiMetricsEngine that preserves links to unerlying metrics engines.
 type DetailedMetricsEngine struct {
-	metricsEngine     pbsmetrics.MetricsEngine
+	pbsmetrics.MetricsEngine
 	GoMetrics         *pbsmetrics.Metrics
 	PrometheusMetrics *prometheusmetrics.Metrics
-}
-
-// RecordRequest passthrough
-func (me *DetailedMetricsEngine) RecordRequest(labels pbsmetrics.Labels) {
-	me.metricsEngine.RecordRequest(labels)
-}
-
-// RecordConnectionAccept passthrough
-func (me *DetailedMetricsEngine) RecordConnectionAccept(success bool) {
-	me.metricsEngine.RecordConnectionAccept(success)
-}
-
-// RecordConnectionClose passthrough
-func (me *DetailedMetricsEngine) RecordConnectionClose(success bool) {
-	me.metricsEngine.RecordConnectionClose(success)
-}
-
-// RecordImps passthrough
-func (me *DetailedMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
-	me.metricsEngine.RecordImps(labels, numImps)
-}
-
-// RecordRequestTime passthrough
-func (me *DetailedMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
-	me.metricsEngine.RecordRequestTime(labels, length)
-}
-
-// RecordAdapterRequest passthrough
-func (me *DetailedMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
-	me.metricsEngine.RecordAdapterRequest(labels)
-}
-
-// RecordAdapterBidReceived passthrough
-func (me *DetailedMetricsEngine) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	me.metricsEngine.RecordAdapterBidReceived(labels, bidType, hasAdm)
-}
-
-// RecordAdapterPrice passthrough
-func (me *DetailedMetricsEngine) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64) {
-	me.metricsEngine.RecordAdapterPrice(labels, cpm)
-}
-
-// RecordAdapterTime passthrough
-func (me *DetailedMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
-	me.metricsEngine.RecordAdapterTime(labels, length)
-}
-
-// RecordCookieSync passthrough
-func (me *DetailedMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
-	me.metricsEngine.RecordCookieSync(labels)
-}
-
-// RecordUserIDSet across all engines
-func (me *DetailedMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
-	me.metricsEngine.RecordUserIDSet(userLabels)
 }
 
 // MultiMetricsEngine logs metrics to multiple metrics databases The can be useful in transitioning

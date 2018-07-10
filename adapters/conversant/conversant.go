@@ -89,6 +89,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		// Fill in additional impression info
 
 		imp.DisplayManager = "prebid-s2s"
+		imp.DisplayManagerVer = "1.0.1"
 		imp.BidFloor = params.BidFloor
 		imp.TagID = params.TagID
 
