@@ -26,11 +26,6 @@
   revision = "c62392af379ca40e0f383bdec8044ee25545c29f"
 
 [[projects]]
-  name = "github.com/cloudfoundry/gosigar"
-  packages = ["."]
-  revision = "14c0a766933d517675369dae6f551f5c1a10f0d8"
-
-[[projects]]
   name = "github.com/coocood/freecache"
   packages = ["."]
   revision = "a47e26eb67ac2657e4b5a62b1975bb2b65e0b8b3"
@@ -283,6 +278,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0f7ccce862620417701817f766249e937b2fc0ee8bafff998f7ad4876b96ac60"
+  inputs-digest = "f69471696d16c45954f18e736f5cc03522a606d96be2fd29e68f6f37fd6019c1"
   solver-name = "gps-cdcl"
   solver-version = 1
