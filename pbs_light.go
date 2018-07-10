@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
@@ -591,8 +590,6 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 		if db == nil {
 			return fmt.Errorf("Nil db cannot connect to postgres. Did you forget to set the config.stored_requests.postgres values?")
 		}
-		mem := sigar.Mem{}
-		mem.Get()
 		dataCache = postgrescache.New(db, postgrescache.CacheConfig{
 			Size: cfg.DataCache.CacheSize,
 			TTL:  cfg.DataCache.TTLSeconds,
