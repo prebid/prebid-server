@@ -84,8 +84,19 @@ func TestCookieSyncNoBidders(t *testing.T) {
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
 
+func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
+	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true})
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork")
+	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
-	endpoint := testableEndpoint(mockPermissions(gdprHostConsent, gdprBidders))
+	return doConfigurablePost(body, existingSyncs, gdprHostConsent, gdprBidders, config.GDPR{})
+}
+
+func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, cfgGDPR config.GDPR) *httptest.ResponseRecorder {
+	endpoint := testableEndpoint(mockPermissions(gdprHostConsent, gdprBidders), cfgGDPR)
 	router := httprouter.New()
 	router.POST("/cookie_sync", endpoint)
 	req, _ := http.NewRequest("POST", "/cookie_sync", strings.NewReader(body))
@@ -102,8 +113,8 @@ func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, 
 	return rr
 }
 
-func testableEndpoint(perms gdpr.Permissions) httprouter.Handle {
-	return NewCookieSyncEndpoint(syncersForTest(), &config.HostCookie{}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR) httprouter.Handle {
+	return NewCookieSyncEndpoint(syncersForTest(), &config.Configuration{GDPR: cfgGDPR}, perms, &metricsConf.DummyMetricsEngine{}, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 }
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {

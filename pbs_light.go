@@ -698,7 +698,7 @@ func serve(revision string, cfg *config.Configuration) error {
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(cfg.HostCookie), gdprPerms, metricsEngine, pbsAnalytics))
+	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, metricsEngine, pbsAnalytics))
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
