@@ -9,7 +9,7 @@ RUN go build .
 
 
 FROM alpine:3.8 AS release
-MAINTAINER Brian O'Kelley <bokelley@appnexus.com>
+MAINTAINER Dave Bemiller <dbemiller@appnexus.com>
 WORKDIR /usr/local/bin/
 COPY --from=build /go/src/github.com/prebid/prebid-server/prebid-server .
 COPY static static/
