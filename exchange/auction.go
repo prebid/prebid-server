@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"context"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -60,10 +59,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client)
 
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
-			// Fixes #199
-			if roundedPrice, ok := a.roundedPrices[topBidPerBidder]; ok && strings.ContainsAny(roundedPrice, "123456789") {
-				toCache = append(toCache, topBidPerBidder.bid)
-			}
+			toCache = append(toCache, topBidPerBidder.bid)
 		}
 	}
 
