@@ -34,8 +34,6 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	mainServer := newMainServer(cfg, handler)
 	go shutdownAfterSignals(mainServer, stopMain, done)
 
-	prometheusServer := newPrometheusServer(cfg, metrics)
-
 	mainListener, err := newListener(mainServer.Addr, metrics)
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v", mainServer.Addr, err)
@@ -50,6 +48,7 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	go runServer(adminServer, "Admin", adminListener)
 
 	if cfg.Metrics.Prometheus.Port != 0 {
+		prometheusServer := newPrometheusServer(cfg, metrics)
 		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
 		prometheusListener, err := newListener(prometheusServer.Addr, nil)
 		if err != nil {
