@@ -32,9 +32,6 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 	return deps.Endpoint
 }
 
-var one = 1
-var zero = 0
-
 type cookieSyncDeps struct {
 	syncers         map[openrtb_ext.BidderName]usersync.Usersyncer
 	hostCookie      *config.HostCookie
@@ -95,11 +92,11 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	// If GDPR is ambiguous, lets untangle it here.
 	if parsedReq.GDPR == nil {
+		var gdpr = 1
 		if deps.gDPR.UsersyncIfAmbiguous {
-			parsedReq.GDPR = &zero
-		} else {
-			parsedReq.GDPR = &one
+			gdpr = 0
 		}
+		parsedReq.GDPR = &gdpr
 	}
 
 	if len(biddersJSON) == 0 {
