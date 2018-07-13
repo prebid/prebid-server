@@ -52,8 +52,10 @@ func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *
 	shutdown = func() {
 		shutdown1()
 		shutdown2()
-		if err := db.Close(); err != nil {
-			glog.Errorf("Error closing DB connection: %v", err)
+		if db != nil {
+			if err := db.Close(); err != nil {
+				glog.Errorf("Error closing DB connection: %v", err)
+			}
 		}
 	}
 	return
