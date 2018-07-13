@@ -56,28 +56,30 @@ func TestNewExchange(t *testing.T) {
 //
 // The "known" file names right now are "banner.json" and "video.json". These files should hold params
 // which the Bidder would expect on banner or video Imps, respectively.
-func TestRaceIntegration(t *testing.T) {
-	noBidServer := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(204)
-	}
-	server := httptest.NewServer(http.HandlerFunc(noBidServer))
-	defer server.Close()
 
-	cfg := &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			"facebook": config.Adapter{
-				PlatformID: "abc",
-			},
-		},
-	}
+// TODO #615: Remove the external dependency and un-comment this.
+// func TestRaceIntegration(t *testing.T) {
+// 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(204)
+// 	}
+// 	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+// 	defer server.Close()
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics)
-	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
-	if err != nil {
-		t.Errorf("HoldAuction returned unexpected error: %v", err)
-	}
-}
+// 	cfg := &config.Configuration{
+// 		Adapters: map[string]config.Adapter{
+// 			"facebook": config.Adapter{
+// 				PlatformID: "abc",
+// 			},
+// 		},
+// 	}
+
+// 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+// 	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics)
+// 	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
+// 	if err != nil {
+// 		t.Errorf("HoldAuction returned unexpected error: %v", err)
+// 	}
+// }
 
 // newRaceCheckingRequest builds a BidRequest from all the params in the
 // adapters/{bidder}/{bidder}test/params/race/*.json files
