@@ -57,7 +57,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 				cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password,
 				cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 			client),
-		openrtb_ext.BidderSomoaudience: adaptBidder(somoaudience.NewSomoaudienceBidder(), client),
+		openrtb_ext.BidderSomoaudience: adaptBidder(somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint), client),
 		openrtb_ext.BidderSovrn:        adaptBidder(sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint), client),
 	}
 }

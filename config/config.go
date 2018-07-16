@@ -400,6 +400,13 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("adapters.beachfront.xapi.password", "")
 	v.SetDefault("adapters.beachfront.xapi.tracker", "")
 
+	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
+	v.SetDefault("adapters.somoaudience.usersync_url", "")
+	v.SetDefault("adapters.somoaudience.platform_id", "")
+	v.SetDefault("adapters.somoaudience.xapi.username", "")
+	v.SetDefault("adapters.somoaudience.xapi.password", "")
+	v.SetDefault("adapters.somoaudience.xapi.tracker", "")
+
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)

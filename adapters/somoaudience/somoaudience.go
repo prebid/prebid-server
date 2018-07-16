@@ -10,9 +10,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uri = "http://publisher-east.mobileadtrading.com/rtb/bid"
-
 type SomoaudienceAdapter struct {
+	endpoint string
 }
 
 func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -67,7 +66,7 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adap
 
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     uri + fmt.Sprintf("?s=%s", placementHash),
+			Uri:     a.endpoint + fmt.Sprintf("?s=%s", placementHash),
 			Body:    body,
 			Headers: headers,
 		})
@@ -171,6 +170,8 @@ func validateImpression(imp *openrtb.Imp) (string, error) {
 	return impExt.PlacementHash, nil
 }
 
-func NewSomoaudienceBidder() *SomoaudienceAdapter {
-	return &SomoaudienceAdapter{}
+func NewSomoaudienceBidder(endpoint string) *SomoaudienceAdapter {
+	return &SomoaudienceAdapter{
+		endpoint: endpoint,
+	}
 }
