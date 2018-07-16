@@ -43,7 +43,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		// TODO #212: Upgrade the Index adapter
 		openrtb_ext.BidderIndex: adaptLegacyAdapter(indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint)),
 		// TODO #213: Upgrade the Lifestreet adapter
-		openrtb_ext.BidderLifestreet: adaptLegacyAdapter(lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig)),
+		openrtb_ext.BidderLifestreet: adaptLegacyAdapter(lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint)),
 		openrtb_ext.BidderOpenx:      adaptBidder(openx.NewOpenxBidder(), client),
 		// TODO #214: Upgrade the Pubmatic adapter
 		openrtb_ext.BidderPubmatic: adaptLegacyAdapter(pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint)),

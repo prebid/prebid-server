@@ -316,6 +316,13 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("adapters.appnexus.xapi.password", "")
 	v.SetDefault("adapters.appnexus.xapi.tracker", "")
 
+	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
+	v.SetDefault("adapters.lifestreet.usersync_url", "")
+	v.SetDefault("adapters.lifestreet.platform_id", "")
+	v.SetDefault("adapters.lifestreet.xapi.username", "")
+	v.SetDefault("adapters.lifestreet.xapi.password", "")
+	v.SetDefault("adapters.lifestreet.xapi.tracker", "")
+
 	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.pubmatic.usersync_url", "")
 	v.SetDefault("adapters.pubmatic.platform_id", "")
