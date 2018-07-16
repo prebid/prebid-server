@@ -10,10 +10,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uri = "http://rtb.openx.net/prebid"
 const config = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
+	endpoint string
 }
 
 type openxImpExt struct {
@@ -49,7 +49,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	reqCopy := *request
 
 	reqCopy.Imp = bannerImps
-	adapterReq, errors := makeRequest(&reqCopy)
+	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
 	}
@@ -58,7 +58,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	// OpenX only supports single imp video request
 	for _, videoImp := range videoImps {
 		reqCopy.Imp = []openrtb.Imp{videoImp}
-		adapterReq, errors := makeRequest(&reqCopy)
+		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
@@ -68,7 +68,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	return adapterRequests, errs
 }
 
-func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
 	reqExt := openxReqExt{BidderConfig: config}
@@ -106,7 +106,7 @@ func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	headers.Add("Accept", "application/json")
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     uri,
+		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
 	}, errs
@@ -201,6 +201,8 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewOpenxBidder() *OpenxAdapter {
-	return &OpenxAdapter{}
+func NewOpenxBidder(endpoint string) *OpenxAdapter {
+	return &OpenxAdapter{
+		endpoint: endpoint,
+	}
 }
