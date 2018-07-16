@@ -301,6 +301,13 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
 
+	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
+	v.SetDefault("adapters.adtelligent.usersync_url", "")
+	v.SetDefault("adapters.adtelligent.platform_id", "")
+	v.SetDefault("adapters.adtelligent.xapi.username", "")
+	v.SetDefault("adapters.adtelligent.xapi.password", "")
+	v.SetDefault("adapters.adtelligent.xapi.tracker", "")
+
 	// This Appnexus endpoint works for most purposes. Docs can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2")
 	v.SetDefault("adapters.appnexus.usersync_url", "")
