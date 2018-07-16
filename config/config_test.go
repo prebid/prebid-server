@@ -2,8 +2,11 @@ package config
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/spf13/viper"
 )
@@ -22,7 +25,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
-	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 }
 
 var fullConfig = []byte(`
@@ -61,6 +64,10 @@ datacache:
 adapters:
   appnexus:
     endpoint: http://ib.adnxs.com/some/endpoint
+  audienceNetwork:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
   indexExchange:
     endpoint: http://ixtest.com/api
   rubicon:
@@ -69,10 +76,6 @@ adapters:
     xapi:
       username: rubiuser
       password: rubipw23
-  facebook:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
   brightroll:
     usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s
     endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
@@ -135,17 +138,17 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
-	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters["appnexus"].Endpoint, "http://ib.adnxs.com/some/endpoint")
-	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
-	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
-	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
-	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters["rubicon"].XAPI.Username, "rubiuser")
-	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters["rubicon"].XAPI.Password, "rubipw23")
-	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
-	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
-	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
-	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters["brightroll"].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
+	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
+	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].Endpoint, "http://facebook.com/pbs")
+	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
+	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.indexexchange.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint, "http://ixtest.com/api")
+	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint, "http://rubitest.com/api")
+	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
+	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, "rubiuser")
+	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
+	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
 }
 
 func TestValidConfig(t *testing.T) {

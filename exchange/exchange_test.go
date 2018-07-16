@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,8 +58,6 @@ func TestNewExchange(t *testing.T) {
 // The "known" file names right now are "banner.json" and "video.json". These files should hold params
 // which the Bidder would expect on banner or video Imps, respectively.
 func TestRaceIntegration(t *testing.T) {
-	// TODO #615: Remove the external dependency and stop skipping this.
-	t.SkipNow()
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	}
@@ -66,11 +65,16 @@ func TestRaceIntegration(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			"facebook": config.Adapter{
-				PlatformID: "abc",
-			},
-		},
+		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+	}
+	for _, bidder := range openrtb_ext.BidderList() {
+		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
+			Endpoint: server.URL,
+		}
+	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
+		Endpoint:   server.URL,
+		PlatformID: "abc",
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())

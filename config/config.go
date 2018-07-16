@@ -19,14 +19,17 @@ type Configuration struct {
 	AdminPort   int    `mapstructure:"admin_port"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse       string             `mapstructure:"status_response"`
-	AuctionTimeouts      AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
-	CacheURL             Cache              `mapstructure:"cache"`
-	RecaptchaSecret      string             `mapstructure:"recaptcha_secret"`
-	HostCookie           HostCookie         `mapstructure:"host_cookie"`
-	Metrics              Metrics            `mapstructure:"metrics"`
-	DataCache            DataCache          `mapstructure:"datacache"`
-	StoredRequests       StoredRequests     `mapstructure:"stored_requests"`
+	StatusResponse  string          `mapstructure:"status_response"`
+	AuctionTimeouts AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	CacheURL        Cache           `mapstructure:"cache"`
+	RecaptchaSecret string          `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie      `mapstructure:"host_cookie"`
+	Metrics         Metrics         `mapstructure:"metrics"`
+	DataCache       DataCache       `mapstructure:"datacache"`
+	StoredRequests  StoredRequests  `mapstructure:"stored_requests"`
+
+	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
+	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
 	Adapters             map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize       int64              `mapstructure:"max_request_size"`
 	Analytics            Analytics          `mapstructure:"analytics"`
@@ -303,7 +306,7 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
 	v.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	v.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
+	v.SetDefault("adapters.indexExchange.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
