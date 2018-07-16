@@ -50,6 +50,14 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		return nil, err
 	}
 
+	// Without this, the code crashes with a nil-pointer dereference below, on
+	// cnvrReq.Site.ID = params.SiteID
+	if cnvrReq.Site == nil {
+		return nil, &adapters.BadInputError{
+			Message: "Conversant doesn't support App requests",
+		}
+	}
+
 	// Create a map of impression objects for both request creation
 	// and response parsing.
 
