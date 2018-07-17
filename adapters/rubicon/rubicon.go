@@ -332,7 +332,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	callOneObjects := make([]callOneObject, 0, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
-	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes, true)
+	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes)
 	if err != nil {
 		return nil, err
 	}

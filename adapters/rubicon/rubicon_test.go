@@ -71,8 +71,6 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Request", string(body))
-
 	var breq openrtb.BidRequest
 	err = json.Unmarshal(body, &breq)
 	if err != nil {
@@ -938,8 +936,6 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	if err != nil {
 		t.Fatalf("Json encoding failed: %v", err)
 	}
-
-	fmt.Println("body", body)
 
 	req := httptest.NewRequest("POST", server.URL, body)
 	req.Header.Add("Referer", rubidata.page)

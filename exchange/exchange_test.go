@@ -57,6 +57,8 @@ func TestNewExchange(t *testing.T) {
 // The "known" file names right now are "banner.json" and "video.json". These files should hold params
 // which the Bidder would expect on banner or video Imps, respectively.
 func TestRaceIntegration(t *testing.T) {
+	// TODO #615: Remove the external dependency and stop skipping this.
+	t.SkipNow()
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	}

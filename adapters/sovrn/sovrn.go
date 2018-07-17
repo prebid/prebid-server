@@ -41,7 +41,7 @@ func (s *SovrnAdapter) SkipNoCookies() bool {
 // Call send bid requests to sovrn and receive responses
 func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
-	sReq, err := adapters.MakeOpenRTBGeneric(req, bidder, s.FamilyName(), supportedMediaTypes, true)
+	sReq, err := adapters.MakeOpenRTBGeneric(req, bidder, s.FamilyName(), supportedMediaTypes)
 
 	if err != nil {
 		return nil, err
