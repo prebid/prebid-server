@@ -44,10 +44,18 @@ type conversantParams struct {
 
 func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	cnvrReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes, true)
+	cnvrReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Without this, the code crashes with a nil-pointer dereference below, on
+	// cnvrReq.Site.ID = params.SiteID
+	if cnvrReq.Site == nil {
+		return nil, &adapters.BadInputError{
+			Message: "Conversant doesn't support App requests",
+		}
 	}
 
 	// Create a map of impression objects for both request creation

@@ -1,9 +1,6 @@
 maintainer:
   email: "mediapsr@conversantmedia.com"
 capabilities:
-  app:
-    mediaTypes:
-      - banner
   site:
     mediaTypes:
       - banner
