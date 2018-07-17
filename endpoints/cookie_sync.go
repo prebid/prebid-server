@@ -20,10 +20,11 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, hostCookie *config.HostCookie, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
+func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
 	deps := &cookieSyncDeps{
 		syncers:         syncers,
-		hostCookie:      hostCookie,
+		hostCookie:      &cfg.HostCookie,
+		gDPR:            &cfg.GDPR,
 		syncPermissions: syncPermissions,
 		metrics:         metrics,
 		pbsAnalytics:    pbsAnalytics,
@@ -34,6 +35,7 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 type cookieSyncDeps struct {
 	syncers         map[openrtb_ext.BidderName]usersync.Usersyncer
 	hostCookie      *config.HostCookie
+	gDPR            *config.GDPR
 	syncPermissions gdpr.Permissions
 	metrics         pbsmetrics.MetricsEngine
 	pbsAnalytics    analytics.PBSAnalyticsModule
@@ -87,6 +89,14 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		co.Errors = append(co.Errors, errors.New("gdpr_consent is required if gdpr is 1"))
 		http.Error(w, "gdpr_consent is required if gdpr=1", http.StatusBadRequest)
 		return
+	}
+	// If GDPR is ambiguous, lets untangle it here.
+	if parsedReq.GDPR == nil {
+		var gdpr = 1
+		if deps.gDPR.UsersyncIfAmbiguous {
+			gdpr = 0
+		}
+		parsedReq.GDPR = &gdpr
 	}
 
 	if len(biddersJSON) == 0 {
