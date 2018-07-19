@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"time"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -204,6 +205,17 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	}
 
 	return adapterBids, adapterExtra
+}
+
+func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels)) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels) {
+	return func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+		defer func() {
+			if r := recover(); r != nil {
+				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack()))
+			}
+		}()
+		inner(aName, coreBidder, request, bidlabels)
+	}
 }
 
 func bidsToMetric(bids *pbsOrtbSeatBid) pbsmetrics.AdapterBid {

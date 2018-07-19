@@ -680,6 +680,14 @@ func TestViperEnv(t *testing.T) {
 	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
 }
 
+func TestPanicRecovery(t *testing.T) {
+	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+		panic("panic!")
+	}
+	recovered := recoverSafely(panicker)
+	recovered(nil, pbsmetrics.AdapterLabels{})
+}
+
 func compareStrings(t *testing.T, message string, expect string, actual string) {
 	if expect != actual {
 		t.Errorf(message, expect, actual)

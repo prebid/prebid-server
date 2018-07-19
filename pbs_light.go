@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/pprof"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"time"
@@ -242,7 +243,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				}
 			}
 			sentBids++
-			go func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
@@ -292,7 +293,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					// Bidder done, record bidder metrics
 				}
 				deps.metricsEngine.RecordAdapterRequest(blabels)
-			}(bidder, blabels)
+			})
+
+			go bidderRunner(bidder, blabels)
 
 		} else {
 			bidder.Error = "Unsupported bidder"
@@ -355,6 +358,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
+}
+
+func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
+	return func(bidder *pbs.PBSBidder, labels pbsmetrics.AdapterLabels) {
+		defer func() {
+			if r := recover(); r != nil {
+				if bidder == nil {
+					glog.Errorf("Legacy auction recovered panic: %v. Stack trace is: %v", r, string(debug.Stack()))
+				} else {
+					glog.Errorf("Legacy auction recovered panic from Bidder %s: %v. Stack trace is: %v", bidder.BidderCode, r, string(debug.Stack()))
+				}
+			}
+		}()
+		inner(bidder, labels)
+	}
 }
 
 func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {

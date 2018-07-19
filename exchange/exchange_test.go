@@ -139,6 +139,14 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 	}
 }
 
+func TestPanicRecovery(t *testing.T) {
+	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+		panic("panic!")
+	}
+	recovered := recoverSafely(panicker)
+	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil)
+}
+
 func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
 	if err != nil {
