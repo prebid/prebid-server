@@ -27,20 +27,20 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
-	// Make a copy of the request as we don't want to change the original request
-	reqCopy := *request
-
 	validImpExists := false
+	i := 0
 
-	for _, imp := range reqCopy.Imp {
+	for _, imp := range request.Imp {
 		//Brightroll supports only banner and video impressions as of now
 		if imp.Banner != nil {
-			format := imp.Banner.Format
-			if format != nil {
-				imp.Banner.W = &format[0].W
-				imp.Banner.H = &format[0].H
-				validImpExists = true
+			bannerCopy := *imp.Banner
+			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+				firstFormat := bannerCopy.Format[0]
+				bannerCopy.W = &(firstFormat.W)
+				bannerCopy.H = &(firstFormat.H)
 			}
+			imp.Banner = &bannerCopy
+			validImpExists = true
 		} else if imp.Video != nil {
 			validImpExists = true
 		} else {
@@ -48,7 +48,10 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", imp.ID),
 			}
 			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
 		}
+		i++
 	}
 
 	if !validImpExists {
@@ -59,7 +62,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
-	reqJSON, err := json.Marshal(reqCopy)
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -67,7 +70,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	errors := make([]error, 0, 1)
 
 	var bidderExt adapters.ExtImpBidder
-	err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt)
+	err = json.Unmarshal(request.Imp[0].Ext, &bidderExt)
 
 	if err != nil {
 		err = &errortypes.BadInput{
@@ -100,12 +103,13 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
-	if reqCopy.Device != nil {
+	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
 		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
