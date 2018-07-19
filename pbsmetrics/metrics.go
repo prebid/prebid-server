@@ -113,9 +113,10 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK       RequestStatus = "ok"
-	RequestStatusBadInput RequestStatus = "badinput"
-	RequestStatusErr      RequestStatus = "err"
+	RequestStatusOK         RequestStatus = "ok"
+	RequestStatusBadInput   RequestStatus = "badinput"
+	RequestStatusErr        RequestStatus = "err"
+	RequestStatusNetworkErr RequestStatus = "networkerr"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -123,6 +124,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusOK,
 		RequestStatusBadInput,
 		RequestStatusErr,
+		RequestStatusNetworkErr,
 	}
 }
 
