@@ -27,9 +27,12 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
+	// Make a copy of the request as we don't want to change the original request
+	reqCopy := *request
+
 	validImpExists := false
 
-	for _, imp := range request.Imp {
+	for _, imp := range reqCopy.Imp {
 		//Brightroll supports only banner and video impressions as of now
 		if imp.Banner != nil {
 			format := imp.Banner.Format
@@ -56,7 +59,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
-	reqJSON, err := json.Marshal(request)
+	reqJSON, err := json.Marshal(reqCopy)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -64,7 +67,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	errors := make([]error, 0, 1)
 
 	var bidderExt adapters.ExtImpBidder
-	err = json.Unmarshal(request.Imp[0].Ext, &bidderExt)
+	err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt)
 
 	if err != nil {
 		err = &errortypes.BadInput{
@@ -97,7 +100,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
-	if request.Device != nil {
+	if reqCopy.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
