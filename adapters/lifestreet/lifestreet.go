@@ -195,10 +195,10 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig) *LifestreetAdapter {
+func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *LifestreetAdapter {
 	a := adapters.NewHTTPAdapter(config)
 	return &LifestreetAdapter{
 		http: a,
-		URI:  "https://prebid.s2s.lfstmedia.com/adrequest",
+		URI:  endpoint,
 	}
 }

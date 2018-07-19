@@ -10,9 +10,8 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uri = "http://hb.adtelligent.com/auction"
-
 type AdtelligentAdapter struct {
+	endpoint string
 }
 
 type adtelligentImpExt struct {
@@ -71,7 +70,7 @@ func (a *AdtelligentAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     uri + fmt.Sprintf("?aid=%d", sourceId),
+			Uri:     a.endpoint + fmt.Sprintf("?aid=%d", sourceId),
 			Body:    body,
 			Headers: headers,
 		})
@@ -184,6 +183,8 @@ func validateImpression(imp *openrtb.Imp) (int, error) {
 	return impExt.SourceId, nil
 }
 
-func NewAdtelligentBidder(client *http.Client) *AdtelligentAdapter {
-	return &AdtelligentAdapter{}
+func NewAdtelligentBidder(endpoint string) *AdtelligentAdapter {
+	return &AdtelligentAdapter{
+		endpoint: endpoint,
+	}
 }
