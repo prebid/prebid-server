@@ -28,18 +28,26 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	validImpExists := false
-
-	for _, imp := range request.Imp {
+	for i := 0; i < len(request.Imp); i++ {
 		//Brightroll supports only banner and video impressions as of now
-		if imp.Banner != nil {
+		if request.Imp[i].Banner != nil {
+			bannerCopy := *request.Imp[i].Banner
+			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+				firstFormat := bannerCopy.Format[0]
+				bannerCopy.W = &(firstFormat.W)
+				bannerCopy.H = &(firstFormat.H)
+			}
+			request.Imp[i].Banner = &bannerCopy
 			validImpExists = true
-		} else if imp.Video != nil {
+		} else if request.Imp[i].Video != nil {
 			validImpExists = true
 		} else {
 			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", imp.ID),
+				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", request.Imp[i].ID),
 			}
 			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
 		}
 	}
 
@@ -98,6 +106,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
 		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
 	}
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
