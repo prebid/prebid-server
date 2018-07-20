@@ -763,6 +763,10 @@ func InitPrebidServer(configFile string) {
 	//viper.AddConfigPath(".")
 	//viper.AddConfigPath("/etc/config")
 
+	// scheme shall be http or https
+	viper.SetDefault("cache.scheme", "http")
+	viper.SetDefault("cache.query", "uuid")
+
 	//viper.SetDefault("external_url", "http://localhost:8000")
 	//viper.SetDefault("port", 8000)
 	//viper.SetDefault("admin_port", 6060)
@@ -935,6 +939,8 @@ func serve(cfg *config.Configuration) error {
 		MetricsEngine:      g_metrics,
 		PBSAnalytics:       g_analytics,
 	}
+
+	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
 	/*
 			router.GET("/getuids", userSyncDeps.GetUIDs)
