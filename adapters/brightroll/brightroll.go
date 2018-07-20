@@ -3,11 +3,13 @@ package brightroll
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 type BrightrollAdapter struct {
@@ -18,7 +20,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
-		err := &adapters.BadInputError{
+		err := &errortypes.BadInput{
 			Message: "No impression in the bid request",
 		}
 		errs = append(errs, err)
@@ -34,7 +36,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		} else if imp.Video != nil {
 			validImpExists = true
 		} else {
-			err := &adapters.BadInputError{
+			err := &errortypes.BadInput{
 				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", imp.ID),
 			}
 			errs = append(errs, err)
@@ -42,7 +44,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	if !validImpExists {
-		err := &adapters.BadInputError{
+		err := &errortypes.BadInput{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
 		}
 		errs = append(errs, err)
@@ -60,7 +62,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	err = json.Unmarshal(request.Imp[0].Ext, &bidderExt)
 
 	if err != nil {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
 		errors = append(errors, err)
@@ -69,7 +71,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	var brightrollExt openrtb_ext.ExtImpBrightroll
 	err = json.Unmarshal(bidderExt.Bidder, &brightrollExt)
 	if err != nil {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: "ext.bidder.publisher not provided",
 		}
 		errors = append(errors, err)
@@ -77,7 +79,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	if brightrollExt.Publisher == "" {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: "publisher is empty",
 		}
 		errors = append(errors, err)
@@ -111,20 +113,20 @@ func (a *BrightrollAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bad server response: %d. ", err),
 		}}
 	}

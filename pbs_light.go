@@ -45,6 +45,7 @@ import (
 	"github.com/prebid/prebid-server/endpoints"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -259,9 +260,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					default:
 						bidder.Error = err.Error()
 						switch err.(type) {
-						case *adapters.BadInputError:
+						case *errortypes.BadInput:
 							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
-						case *adapters.BadServerResponseError:
+						case *errortypes.BadServerResponse:
 							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
 						default:
 							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)

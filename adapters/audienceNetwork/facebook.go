@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -76,7 +77,7 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 	result.ResponseBody = string(body)
 
 	if anResp.StatusCode == http.StatusBadRequest {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.ResponseBody),
 		}
 		return
@@ -87,7 +88,7 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 	}
 
 	if anResp.StatusCode != http.StatusOK {
-		err = &adapters.BadServerResponseError{
+		err = &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, result.ResponseBody),
 		}
 		return
@@ -96,7 +97,7 @@ func (a *FacebookAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (re
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		err = &adapters.BadServerResponseError{
+		err = &errortypes.BadServerResponse{
 			Message: err.Error(),
 		}
 		return
@@ -152,7 +153,7 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 		// if instl = 0 and type is banner, do not send non supported size
 		if fbReq.Imp[0].Instl == 0 && fbReq.Imp[0].Banner != nil {
 			if !supportedHeight[*fbReq.Imp[0].Banner.H] {
-				return fbReq, &adapters.BadInputError{
+				return fbReq, &errortypes.BadInput{
 					Message: "Facebook do not support banner height other than 50, 90 and 250",
 				}
 			}
@@ -163,7 +164,7 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 		}
 		return fbReq, nil
 	} else {
-		return fbReq, &adapters.BadInputError{
+		return fbReq, &errortypes.BadInput{
 			Message: "No supported impressions",
 		}
 	}
@@ -179,13 +180,13 @@ func (a *FacebookAdapter) GenerateRequestsForFacebook(req *pbs.PBSRequest, bidde
 			return nil, err
 		}
 		if params.PlacementId == "" {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: "Missing placementId param",
 			}
 		}
 		s := strings.Split(params.PlacementId, "_")
 		if len(s) != 2 {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid placementId param '%s'", params.PlacementId),
 			}
 		}
@@ -240,7 +241,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				}
 				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
 				if result.Bid.BidID == "" {
-					result.Error = &adapters.BadServerResponseError{
+					result.Error = &errortypes.BadServerResponse{
 						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
 					}
 					result.Bid = nil

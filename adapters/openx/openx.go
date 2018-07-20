@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -37,7 +38,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
 		} else {
-			err := &adapters.BadInputError{
+			err := &errortypes.BadInput{
 				Message: fmt.Sprintf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID),
 			}
 			errs = append(errs, err)
@@ -116,14 +117,14 @@ func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Reque
 func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &adapters.BadInputError{
+		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var openxExt openrtb_ext.ExtImpOpenx
 	if err := json.Unmarshal(bidderExt.Bidder, &openxExt); err != nil {
-		return &adapters.BadInputError{
+		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -140,7 +141,7 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 		}
 		var err error
 		if imp.Ext, err = json.Marshal(impExt); err != nil {
-			return &adapters.BadInputError{
+			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -155,13 +156,13 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}

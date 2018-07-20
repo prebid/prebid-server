@@ -9,6 +9,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -186,7 +187,7 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
-		err = &adapters.BadServerResponseError{
+		err = &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode),
 		}
 	}

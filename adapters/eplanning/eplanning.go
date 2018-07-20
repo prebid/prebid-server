@@ -8,6 +8,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"strconv"
@@ -90,7 +91,7 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 func verifyImp(imp *openrtb.Imp) (string, error) {
 	// We currently only support banner impressions
 	if imp.Banner == nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("EPlanning only supports banner Imps. Ignoring Imp ID=%s", imp.ID),
 		}
 	}
@@ -98,7 +99,7 @@ func verifyImp(imp *openrtb.Imp) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
 	}
@@ -106,7 +107,7 @@ func verifyImp(imp *openrtb.Imp) (string, error) {
 	impExt := openrtb_ext.ExtImpEPlanning{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
 		}
 	}
@@ -130,20 +131,20 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}

@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/mxmCherry/openrtb"
@@ -98,7 +99,7 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 				newImp.Video = makeVideo(unit)
 				// It's strange to error here... but preserves legacy behavior in legacy code. See #603.
 				if newImp.Video == nil {
-					return openrtb.BidRequest{}, &BadInputError{
+					return openrtb.BidRequest{}, &errortypes.BadInput{
 						Message: "Invalid AdUnit: VIDEO media type with no video data",
 					}
 				}
@@ -110,7 +111,7 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	}
 
 	if len(imps) < 1 {
-		return openrtb.BidRequest{}, &BadInputError{
+		return openrtb.BidRequest{}, &errortypes.BadInput{
 			Message: "openRTB bids need at least one Imp",
 		}
 	}
