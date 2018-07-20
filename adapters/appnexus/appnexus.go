@@ -15,6 +15,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -99,7 +100,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 
 		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: "No placement or member+invcode provided",
 			}
 		}
@@ -188,13 +189,13 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	responseBody := string(body)
 
 	if anResp.StatusCode == http.StatusBadRequest {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
 		}
 	}
 
 	if anResp.StatusCode != http.StatusOK {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
 		}
 	}
@@ -215,7 +216,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		for _, bid := range sb.Bid {
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, &adapters.BadServerResponseError{
+				return nil, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}
 			}
@@ -312,7 +313,7 @@ func keys(m map[string]bool) []string {
 func preprocess(imp *openrtb.Imp) (string, error) {
 	// We don't support audio imps yet.
 	if imp.Audio != nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
 		}
 	}
@@ -339,7 +340,7 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 	}
 
 	if appnexusExt.PlacementId == 0 && (appnexusExt.InvCode == "" || appnexusExt.Member == "") {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: "No placement or member+invcode provided",
 		}
 	}
@@ -403,7 +404,7 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}

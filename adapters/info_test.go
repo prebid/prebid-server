@@ -6,6 +6,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +28,7 @@ func TestAppNotSupported(t *testing.T) {
 		return
 	}
 	assert.EqualError(t, errs[0], "this bidder does not support app requests")
-	assert.IsType(t, &adapters.BadInputError{}, errs[0])
+	assert.IsType(t, &errortypes.BadInput{}, errs[0])
 	assert.Len(t, bids, 0)
 }
 
@@ -48,7 +49,7 @@ func TestSiteNotSupported(t *testing.T) {
 		return
 	}
 	assert.EqualError(t, errs[0], "this bidder does not support site requests")
-	assert.IsType(t, &adapters.BadInputError{}, errs[0])
+	assert.IsType(t, &errortypes.BadInput{}, errs[0])
 	assert.Len(t, bids, 0)
 }
 
@@ -95,11 +96,11 @@ func TestImpFiltering(t *testing.T) {
 	assert.EqualError(t, errs[3], "request.imp[1] has no supported MediaTypes. It will be ignored")
 	assert.EqualError(t, errs[4], "request.imp[3] has no supported MediaTypes. It will be ignored")
 	assert.EqualError(t, errs[5], "mock MakeRequests error")
-	assert.IsType(t, &adapters.BadInputError{}, errs[0])
-	assert.IsType(t, &adapters.BadInputError{}, errs[1])
-	assert.IsType(t, &adapters.BadInputError{}, errs[2])
-	assert.IsType(t, &adapters.BadInputError{}, errs[3])
-	assert.IsType(t, &adapters.BadInputError{}, errs[4])
+	assert.IsType(t, &errortypes.BadInput{}, errs[0])
+	assert.IsType(t, &errortypes.BadInput{}, errs[1])
+	assert.IsType(t, &errortypes.BadInput{}, errs[2])
+	assert.IsType(t, &errortypes.BadInput{}, errs[3])
+	assert.IsType(t, &errortypes.BadInput{}, errs[4])
 
 	req := bidder.gotRequest
 	if !assert.Len(t, req.Imp, 2) {

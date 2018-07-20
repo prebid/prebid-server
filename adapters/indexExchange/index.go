@@ -14,6 +14,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 )
 
 type IndexAdapter struct {
@@ -36,7 +37,7 @@ type indexParams struct {
 
 func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	if req.App != nil {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: "Index doesn't support apps",
 		}
 	}
@@ -51,12 +52,12 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		var params indexParams
 		err := json.Unmarshal(unit.Params, &params)
 		if err != nil {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
 			}
 		}
 		if params.SiteID == 0 {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: "Missing siteID param",
 			}
 		}
@@ -104,13 +105,13 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	}
 
 	if ixResp.StatusCode == http.StatusBadRequest {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status: %d", ixResp.StatusCode),
 		}
 	}
 
 	if ixResp.StatusCode != http.StatusOK {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status: %d", ixResp.StatusCode),
 		}
 	}
@@ -128,7 +129,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error parsing response: %v", err),
 		}
 	}
@@ -142,7 +143,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, &adapters.BadServerResponseError{
+				return nil, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}
 			}

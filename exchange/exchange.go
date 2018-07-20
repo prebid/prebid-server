@@ -7,13 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/prebid/prebid-server/adapters"
-
 	"github.com/golang/glog"
 
 	"github.com/mxmCherry/openrtb"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -224,9 +223,9 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 			ret[pbsmetrics.AdapterErrorTimeout] = s
 		} else {
 			switch err.(type) {
-			case *adapters.BadInputError:
+			case *errortypes.BadInput:
 				ret[pbsmetrics.AdapterErrorBadInput] = s
-			case *adapters.BadServerResponseError:
+			case *errortypes.BadServerResponse:
 				ret[pbsmetrics.AdapterErrorBadServerResponse] = s
 			default:
 				ret[pbsmetrics.AdapterErrorUnknown] = s
