@@ -232,17 +232,15 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 	ret := make(map[pbsmetrics.AdapterError]struct{}, len(errs))
 	var s struct{}
 	for _, err := range errs {
-		if _, ok := err.(*errortypes.Timeout); ok {
+		switch errortypes.DecodeError(err) {
+		case errortypes.TimeoutCode:
 			ret[pbsmetrics.AdapterErrorTimeout] = s
-		} else {
-			switch err.(type) {
-			case *errortypes.BadInput:
-				ret[pbsmetrics.AdapterErrorBadInput] = s
-			case *errortypes.BadServerResponse:
-				ret[pbsmetrics.AdapterErrorBadServerResponse] = s
-			default:
-				ret[pbsmetrics.AdapterErrorUnknown] = s
-			}
+		case errortypes.BadInputCode:
+			ret[pbsmetrics.AdapterErrorBadInput] = s
+		case errortypes.BadServerResponseCode:
+			ret[pbsmetrics.AdapterErrorBadServerResponse] = s
+		default:
+			ret[pbsmetrics.AdapterErrorUnknown] = s
 		}
 	}
 	return ret
