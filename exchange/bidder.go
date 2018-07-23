@@ -171,6 +171,9 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
+		if err == context.DeadlineExceeded {
+			err = &errortypes.Timeout{Message: err.Error()}
+		}
 		return &httpCallInfo{
 			request: req,
 			err:     err,
