@@ -49,6 +49,11 @@ var (
 	putURL  string
 )
 
+// GetPrebidCacheURL for the global prebid cache
+func GetPrebidCacheURL() string {
+	return putURL
+}
+
 // InitPrebidCache setup the global prebid cache
 func InitPrebidCache(baseurl string) {
 	baseURL = baseurl
