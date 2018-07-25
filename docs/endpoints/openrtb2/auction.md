@@ -270,7 +270,7 @@ The codes currently defined are:
 1	TimeoutCode
 2	BadInputCode
 3	BadServerResponseCode
-4	JSONEncodingCode
+999 UnknownErrorCode
 ```
 
 #### Debugging

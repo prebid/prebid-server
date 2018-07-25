@@ -356,7 +356,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []error) {
 	bids := make([]openrtb.Bid, 0, len(Bids))
 	errList := make([]error, 0, 1)
-	for i, thisBid := range Bids {
+	for _, thisBid := range Bids {
 		bidExt := &openrtb_ext.ExtBid{
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
@@ -367,7 +367,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
-			errList = append(errList, &errortypes.JSONEncoding{Message: fmt.Sprintf("Error writing SeatBid.Bid[%d].Ext: %s", i, err.Error())})
+			errList = append(errList, err)
 		} else {
 			bids = append(bids, *thisBid.bid)
 			bids[len(bids)-1].Ext = ext

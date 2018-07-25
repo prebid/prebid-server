@@ -7,7 +7,6 @@ const (
 	TimeoutCode
 	BadInputCode
 	BadServerResponseCode
-	JSONEncodingCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -69,18 +68,6 @@ func (err *BadServerResponse) Error() string {
 
 func (err *BadServerResponse) Code() int {
 	return BadServerResponseCode
-}
-
-type JSONEncoding struct {
-	Message string
-}
-
-func (err *JSONEncoding) Error() string {
-	return err.Message
-}
-
-func (err *JSONEncoding) Code() int {
-	return JSONEncodingCode
 }
 
 // DecodeError provides the error code for an error, as defined above
