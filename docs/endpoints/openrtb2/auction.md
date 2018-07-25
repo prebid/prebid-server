@@ -232,16 +232,14 @@ It will become impossible to fetch bids from Appnexus within that Request.
 `response.ext.responsetimemillis.{bidderName}` tells how long each bidder took to respond.
 These can help quantify the performance impact of "the slowest bidder."
 
+#### Bidder Errors
+
 `response.ext.errors.{bidderName}` contains messages which describe why a request may be "suboptimal".
 For example, suppose a `banner` and a `video` impression are offered to a bidder
 which only supports `banner`.
 
 In cases like these, the bidder can ignore the `video` impression and bid on the `banner` one.
 However, the publisher can improve performance by only offering impressions which the bidder supports.
-
-#### Bidder Errors
-
-`response.ext.errors` contains any errors reported by the bidders as they processed the request, broken out by bidder.
 
 For example, a request may return this in `response.ext`
 
