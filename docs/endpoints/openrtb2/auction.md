@@ -239,6 +239,40 @@ which only supports `banner`.
 In cases like these, the bidder can ignore the `video` impression and bid on the `banner` one.
 However, the publisher can improve performance by only offering impressions which the bidder supports.
 
+#### Bidder Errors
+
+`response.ext.errors` contains any errors reported by the bidders as they processed the request, broken out by bidder.
+
+For example, a request may return this in `response.ext`
+
+```
+{
+  "errors": {
+    "appnexus": [
+      {
+        "code": 2,
+        "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
+      }
+    ],
+    "rubicon": [
+      {
+        "code": 1, "The request exceeded the timeout allocated"
+      }
+    ]
+  }
+}
+```
+
+The codes currently defined are:
+
+```
+0	NoErrorCode
+1	TimeoutCode
+2	BadInputCode
+3	BadServerResponseCode
+4	JSONEncodingCode
+```
+
 #### Debugging
 
 `response.ext.debug.httpcalls.{bidder}` will be populated **only if** `request.test` **was set to 1**.
