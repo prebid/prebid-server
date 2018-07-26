@@ -9,18 +9,17 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	_ "net/http/pprof"
+	"net/http/pprof"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"time"
 
-	"github.com/cloudfoundry/gosigar"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
-	"github.com/xeipuuv/gojsonschema"
 
 	"crypto/tls"
 	"strings"
@@ -46,6 +45,7 @@ import (
 	"github.com/prebid/prebid-server/endpoints"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -61,11 +61,16 @@ import (
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 )
 
-var hostCookieSettings pbs.HostCookieSettings
+// Holds binary revision string
+// Set manually at build time using:
+//    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
+// Populated automatically at build / release time via .travis.yml
+//   `gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;`
+// See issue #559
+var Rev string
 
 var exchanges map[string]adapters.Adapter
 var dataCache cache.Cache
-var reqSchema *gojsonschema.Schema
 
 type bidResult struct {
 	bidder   *pbs.PBSBidder
@@ -138,7 +143,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		}
 	}
 
-	pbs_req, err := pbs.ParsePBSRequest(r, &deps.cfg.AuctionTimeouts, dataCache, &hostCookieSettings)
+	pbs_req, err := pbs.ParsePBSRequest(r, &deps.cfg.AuctionTimeouts, dataCache, &(deps.cfg.HostCookie))
 	// Defer here because we need pbs_req defined.
 	defer func() {
 		if pbs_req == nil {
@@ -200,13 +205,13 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		if ex, ok := exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
 			blabels := pbsmetrics.AdapterLabels{
-				Source:        labels.Source,
-				RType:         labels.RType,
-				Adapter:       openrtb_ext.BidderMap[bidder.BidderCode],
-				PubID:         labels.PubID,
-				Browser:       labels.Browser,
-				CookieFlag:    labels.CookieFlag,
-				AdapterStatus: pbsmetrics.AdapterStatusOK,
+				Source:      labels.Source,
+				RType:       labels.RType,
+				Adapter:     openrtb_ext.BidderMap[bidder.BidderCode],
+				PubID:       labels.PubID,
+				Browser:     labels.Browser,
+				CookieFlag:  labels.CookieFlag,
+				AdapterBids: pbsmetrics.AdapterBidPresent,
 			}
 			if blabels.Adapter == "" {
 				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
@@ -239,25 +244,29 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				}
 			}
 			sentBids++
-			go func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
+					var s struct{}
 					switch err {
 					case context.DeadlineExceeded:
-						blabels.AdapterStatus = pbsmetrics.AdapterStatusTimeout
+						blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
 					default:
-						blabels.AdapterStatus = pbsmetrics.AdapterStatusErr
 						bidder.Error = err.Error()
-						if _, isBadInput := err.(*adapters.BadInputError); !isBadInput {
-							if _, isBadServer := err.(*adapters.BadServerResponseError); !isBadServer {
-								glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-							}
+						switch err.(type) {
+						case *errortypes.BadInput:
+							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
+						case *errortypes.BadServerResponse:
+							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
+						default:
+							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
+							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
 						}
 					}
 				} else if bid_list != nil {
@@ -276,7 +285,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					}
 				} else {
 					bidder.NoBid = true
-					blabels.AdapterStatus = pbsmetrics.AdapterStatusNoBid
+					blabels.AdapterBids = pbsmetrics.AdapterBidNone
 				}
 
 				ch <- bidResult{
@@ -285,7 +294,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					// Bidder done, record bidder metrics
 				}
 				deps.metricsEngine.RecordAdapterRequest(blabels)
-			}(bidder, blabels)
+			})
+
+			go bidderRunner(bidder, blabels)
 
 		} else {
 			bidder.Error = "Unsupported bidder"
@@ -348,6 +359,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
+}
+
+func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
+	return func(bidder *pbs.PBSBidder, labels pbsmetrics.AdapterLabels) {
+		defer func() {
+			if r := recover(); r != nil {
+				if bidder == nil {
+					glog.Errorf("Legacy auction recovered panic: %v. Stack trace is: %v", r, string(debug.Stack()))
+				} else {
+					glog.Errorf("Legacy auction recovered panic from Bidder %s: %v. Stack trace is: %v", bidder.BidderCode, r, string(debug.Stack()))
+				}
+			}
+		}()
+		inner(bidder, labels)
+	}
 }
 
 func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
@@ -571,39 +597,6 @@ func (m NoCache) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.handler.ServeHTTP(w, r)
 }
 
-func validate(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	w.Header().Add("Content-Type", "text/plain")
-	defer r.Body.Close()
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		fmt.Fprintf(w, "Unable to read body\n")
-		return
-	}
-
-	if reqSchema == nil {
-		fmt.Fprintf(w, "Validation schema not loaded\n")
-		return
-	}
-
-	js := gojsonschema.NewStringLoader(string(b))
-	result, err := reqSchema.Validate(js)
-	if err != nil {
-		fmt.Fprintf(w, "Error parsing json: %v\n", err)
-		return
-	}
-
-	if result.Valid() {
-		fmt.Fprintf(w, "Validation successful\n")
-		return
-	}
-
-	for _, err := range result.Errors() {
-		fmt.Fprintf(w, "Error: %s %v\n", err.Context().String(), err)
-	}
-
-	return
-}
-
 func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 	switch cfg.DataCache.Type {
 	case "dummy":
@@ -616,8 +609,6 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 		if db == nil {
 			return fmt.Errorf("Nil db cannot connect to postgres. Did you forget to set the config.stored_requests.postgres values?")
 		}
-		mem := sigar.Mem{}
-		mem.Get()
 		dataCache = postgrescache.New(db, postgrescache.CacheConfig{
 			Size: cfg.DataCache.CacheSize,
 			TTL:  cfg.DataCache.TTLSeconds,
@@ -649,7 +640,7 @@ func main() {
 		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
 	}
 
-	if err := serve(cfg); err != nil {
+	if err := serve(Rev, cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
@@ -657,22 +648,22 @@ func main() {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["appnexus"].Endpoint),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["appnexus"].Endpoint),
-		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
-		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
-		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
-		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint),
-		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint),
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
+		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
+		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
+		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
+		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 	}
 }
 
-func serve(cfg *config.Configuration) error {
+func serve(revision string, cfg *config.Configuration) error {
 	router := httprouter.New()
 	theClient := &http.Client{
 		Transport: &http.Transport{
@@ -697,17 +688,6 @@ func serve(cfg *config.Configuration) error {
 
 	metricsEngine := metricsConf.NewMetricsEngine(cfg, bidderList)
 
-	b, err := ioutil.ReadFile("static/pbs_request.json")
-	if err != nil {
-		glog.Errorf("Unable to open pbs_request.json: %v", err)
-	} else {
-		sl := gojsonschema.NewStringLoader(string(b))
-		reqSchema, err = gojsonschema.NewSchema(sl)
-		if err != nil {
-			glog.Errorf("Unable to load request schema: %v", err)
-		}
-	}
-
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
@@ -729,37 +709,27 @@ func serve(cfg *config.Configuration) error {
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
+	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
+
 	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
 	router.GET("/openrtb2/amp", ampEndpoint)
 	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
-	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint("./static/bidder-info", openrtb_ext.BidderList()))
+	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
 	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, &(hostCookieSettings.OptOutCookie), gdprPerms, metricsEngine, pbsAnalytics))
-	router.POST("/validate", validate)
+	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, metricsEngine, pbsAnalytics))
 	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	router.GET("/", serveIndex)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
-	hostCookieSettings = pbs.HostCookieSettings{
-		Domain:       cfg.HostCookie.Domain,
-		Family:       cfg.HostCookie.Family,
-		CookieName:   cfg.HostCookie.CookieName,
-		OptOutURL:    cfg.HostCookie.OptOutURL,
-		OptInURL:     cfg.HostCookie.OptInURL,
-		OptOutCookie: cfg.HostCookie.OptOutCookie,
-		TTL:          time.Duration(cfg.HostCookie.TTL) * 24 * time.Hour,
-	}
-
 	userSyncDeps := &pbs.UserSyncDeps{
-		HostCookieSettings: &hostCookieSettings,
-		ExternalUrl:        cfg.ExternalURL,
-		RecaptchaSecret:    cfg.RecaptchaSecret,
-		MetricsEngine:      metricsEngine,
-		PBSAnalytics:       pbsAnalytics,
+		HostCookieConfig: &(cfg.HostCookie),
+		ExternalUrl:      cfg.ExternalURL,
+		RecaptchaSecret:  cfg.RecaptchaSecret,
+		MetricsEngine:    metricsEngine,
+		PBSAnalytics:     pbsAnalytics,
 	}
 
-	router.GET("/getuids", userSyncDeps.GetUIDs)
 	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
 	router.POST("/optout", userSyncDeps.OptOut)
 	router.GET("/optout", userSyncDeps.OptOut)
@@ -775,6 +745,20 @@ func serve(cfg *config.Configuration) error {
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
 
-	server.Listen(cfg, noCacheHandler, metricsEngine)
+	// Add endpoints to the admin server
+	// Making sure to add pprof routes
+	adminRouter := http.NewServeMux()
+
+	// Register pprof handlers
+	adminRouter.HandleFunc("/debug/pprof/", pprof.Index)
+	adminRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	adminRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	adminRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	adminRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	// Register prebid-server defined admin handlers
+	adminRouter.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
+
+	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
 	return nil
 }

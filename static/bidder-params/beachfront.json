@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Beachfront Adapter Params",
+  "description": "A schema which validates params accepted by the Beachfront adapter",
+  "type": "object",
+  "properties": {
+    "appId" : {
+      "type": "string",
+      "description": "The id of an inventory target"
+    },
+    "bidfloor": {
+      "type": "number",
+      "description": "The price floor for the bid"
+    }
+  },
+
+  "required": ["appId", "bidfloor"]
+}

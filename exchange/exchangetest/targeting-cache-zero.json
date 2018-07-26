@@ -1,0 +1,88 @@
+{
+  "//": "Prevents #199",
+
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "site": {
+        "page": "test.somepage.com"
+      },
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "video": {
+            "mimes": ["video/mp4"]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            }
+          }
+        }
+      ],
+      "ext": {
+        "prebid": {
+          "cache": {
+            "bids": {}
+          },
+          "targeting": {}
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "mockResponse": {
+        "pbsSeatBid": {
+          "pbsBids": [
+            {
+              "ortbBid": {
+                "id": "winning-bid",
+                "impid": "my-imp-id",
+                "price": 0.01,
+                "w": 200,
+                "h": 250,
+                "crid": "creative-1"
+              },
+              "bidType": "video"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "appnexus",
+          "bid": [{
+            "id": "winning-bid",
+            "impid": "my-imp-id",
+            "price": 0.01,
+            "w": 200,
+            "h": 250,
+            "crid": "creative-1",
+            "ext": {
+              "prebid": {
+                "type": "video",
+                "targeting": {
+                  "hb_bidder": "appnexus",
+                  "hb_bidder_appnexus": "appnexus",
+                  "hb_cache_id": "0",
+                  "hb_cache_id_appnexus": "0",
+                  "hb_pb": "0.00",
+                  "hb_pb_appnexus": "0.00",
+                  "hb_size": "200x250",
+                  "hb_size_appnexus": "200x250",
+                  "hb_creative_loadtype": "html"
+                }
+              }
+            }
+          }]
+        }
+      ]
+    }
+  }
+}

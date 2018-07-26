@@ -73,12 +73,12 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	pbs_req, err := pbs.ParsePBSRequest(r, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, d, &hcs)
+	}, d, &hcc)
 	if err != nil {
 		t.Errorf("Unexpected error on parsing %v", err)
 	}
@@ -678,6 +678,14 @@ func TestViperEnv(t *testing.T) {
 	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", v.Get("adapters.pubmatic.endpoint").(string))
 	// Config set with underscores
 	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
+}
+
+func TestPanicRecovery(t *testing.T) {
+	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+		panic("panic!")
+	}
+	recovered := recoverSafely(panicker)
+	recovered(nil, pbsmetrics.AdapterLabels{})
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {

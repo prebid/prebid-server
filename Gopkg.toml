@@ -83,8 +83,12 @@
 
 [[constraint]]
   name = "github.com/prebid/go-gdpr"
-  version = "0.6.0"
+  version = "^0.6.1"
 
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"

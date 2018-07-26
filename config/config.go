@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 )
 
@@ -19,14 +20,17 @@ type Configuration struct {
 	AdminPort   int    `mapstructure:"admin_port"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse       string             `mapstructure:"status_response"`
-	AuctionTimeouts      AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
-	CacheURL             Cache              `mapstructure:"cache"`
-	RecaptchaSecret      string             `mapstructure:"recaptcha_secret"`
-	HostCookie           HostCookie         `mapstructure:"host_cookie"`
-	Metrics              Metrics            `mapstructure:"metrics"`
-	DataCache            DataCache          `mapstructure:"datacache"`
-	StoredRequests       StoredRequests     `mapstructure:"stored_requests"`
+	StatusResponse  string          `mapstructure:"status_response"`
+	AuctionTimeouts AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
+	CacheURL        Cache           `mapstructure:"cache"`
+	RecaptchaSecret string          `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie      `mapstructure:"host_cookie"`
+	Metrics         Metrics         `mapstructure:"metrics"`
+	DataCache       DataCache       `mapstructure:"datacache"`
+	StoredRequests  StoredRequests  `mapstructure:"stored_requests"`
+
+	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
+	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
 	Adapters             map[string]Adapter `mapstructure:"adapters"`
 	MaxRequestSize       int64              `mapstructure:"max_request_size"`
 	Analytics            Analytics          `mapstructure:"analytics"`
@@ -137,6 +141,10 @@ type HostCookie struct {
 	TTL int64 `mapstructure:"ttl_days"`
 }
 
+func (cfg *HostCookie) TTLDuration() time.Duration {
+	return time.Duration(cfg.TTL) * time.Hour * 24
+}
+
 type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
@@ -149,7 +157,8 @@ type Adapter struct {
 }
 
 type Metrics struct {
-	Influxdb InfluxMetrics `mapstructure:"influxdb"`
+	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
+	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
 }
 
 type InfluxMetrics struct {
@@ -157,6 +166,13 @@ type InfluxMetrics struct {
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+}
+
+type PrometheusMetrics struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	Port      int    `mapstructure:"port"`
+	Namespace string `mapstructure:"namespace"`
+	Subsystem string `mapstructure:"subsystem"`
 }
 
 type DataCache struct {
@@ -251,6 +267,10 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.prometheus.endpoint", "")
+	v.SetDefault("metrics.prometheus.port", 0)
+	v.SetDefault("metrics.prometheus.namespace", "")
+	v.SetDefault("metrics.prometheus.subsystem", "")
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)
@@ -266,6 +286,10 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("stored_requests.postgres.initialize_caches.timeout_ms", 0)
 	v.SetDefault("stored_requests.postgres.initialize_caches.query", "")
 	v.SetDefault("stored_requests.postgres.initialize_caches.amp_query", "")
+	v.SetDefault("stored_requests.postgres.poll_for_updates.refresh_rate_seconds", 0)
+	v.SetDefault("stored_requests.postgres.poll_for_updates.timeout_ms", 0)
+	v.SetDefault("stored_requests.postgres.poll_for_updates.query", "")
+	v.SetDefault("stored_requests.postgres.poll_for_updates.amp_query", "")
 	v.SetDefault("stored_requests.http.endpoint", "")
 	v.SetDefault("stored_requests.http.amp_endpoint", "")
 	v.SetDefault("stored_requests.in_memory_cache.type", "none")
@@ -278,24 +302,38 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
 
-	// This Appnexus endpoint works for most purposes. Docs can be found at https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2")
+	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
+	v.SetDefault("adapters.adtelligent.usersync_url", "")
+	v.SetDefault("adapters.adtelligent.platform_id", "")
+	v.SetDefault("adapters.adtelligent.xapi.username", "")
+	v.SetDefault("adapters.adtelligent.xapi.password", "")
+	v.SetDefault("adapters.adtelligent.xapi.tracker", "")
 
-	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
-	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}")
-	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
-	v.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
-	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	v.SetDefault("adapters.index.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
-	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
-	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
+	for _, bidder := range openrtb_ext.BidderMap {
+		setBidderDefaults(v, strings.ToLower(string(bidder)))
+	}
+
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
-	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
-	v.SetDefault("adapters.conversant.usersync_url", "http://prebid-match.dotomi.com/prebid/match?rurl=")
+	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
+	v.SetDefault("adapters.beachfront.endpoint", "//sync.bfmio.com/syncb?pid=")
+	v.SetDefault("adapters.beachfront.platform_id", "142")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
+	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
+	v.SetDefault("adapters.conversant.usersync_url", "//prebid-match.dotomi.com/prebid/match?rurl=")
+	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
+	v.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
+	v.SetDefault("adapters.indexexchange.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
+	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
+	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
+	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
+	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}")
+	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
+	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
+	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -310,4 +348,13 @@ func SetupViper(v *viper.Viper) {
 	v.SetEnvPrefix("PBS")
 	v.AutomaticEnv()
 	v.ReadInConfig()
+}
+
+func setBidderDefaults(v *viper.Viper, bidder string) {
+	v.SetDefault("adapters."+bidder+".endpoint", "")
+	v.SetDefault("adapters."+bidder+".usersync_url", "")
+	v.SetDefault("adapters."+bidder+".platform_id", "")
+	v.SetDefault("adapters."+bidder+".xapi.username", "")
+	v.SetDefault("adapters."+bidder+".xapi.password", "")
+	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
 }

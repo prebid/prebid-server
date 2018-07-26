@@ -56,21 +56,10 @@
                     "w": 300,
                     "h": 600
                   }
-                ]
-              },
-              "ext": {
-                "bidder": {
-                  "publisher": "cafemom"
-                }
-              }
-            },
-            {
-              "id": "unsupported-audio-imp",
-              "audio": {
-                "mimes": [
-                  "video/mp4"
-                ]
-              },
+                ],
+                "w": 300,
+                "h": 250
+               },
               "ext": {
                 "bidder": {
                   "publisher": "cafemom"

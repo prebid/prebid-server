@@ -24,7 +24,8 @@ type AdapterLabels struct {
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
-	AdapterStatus AdapterStatus
+	AdapterBids   AdapterBid
+	AdapterErrors map[AdapterError]struct{}
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -44,8 +45,11 @@ type CookieFlag string
 // RequestStatus : The request return status
 type RequestStatus string
 
-// AdapterStatus : The radapter execution status
-type AdapterStatus string
+// AdapterBid : Whether or not the adapter returned bids
+type AdapterBid string
+
+// AdapterError : Errors which may have occurred during the adapter's execution
+type AdapterError string
 
 // The demand sources
 const (
@@ -54,17 +58,27 @@ const (
 	DemandUnknown DemandSource = "unknown"
 )
 
+func DemandTypes() []DemandSource {
+	return []DemandSource{
+		DemandWeb,
+		DemandApp,
+		DemandUnknown,
+	}
+}
+
 // The request types (endpoints)
 const (
-	ReqTypeLegacy RequestType = "legacy"
-	ReqTypeORTB2  RequestType = "openrtb2"
-	ReqTypeAMP    RequestType = "amp"
+	ReqTypeLegacy   RequestType = "legacy"
+	ReqTypeORTB2Web RequestType = "openrtb2-web"
+	ReqTypeORTB2App RequestType = "openrtb2-app"
+	ReqTypeAMP      RequestType = "amp"
 )
 
-func requestTypes() []RequestType {
+func RequestTypes() []RequestType {
 	return []RequestType{
 		ReqTypeLegacy,
-		ReqTypeORTB2,
+		ReqTypeORTB2Web,
+		ReqTypeORTB2App,
 		ReqTypeAMP,
 	}
 }
@@ -75,6 +89,13 @@ const (
 	BrowserOther  Browser = "other"
 )
 
+func BrowserTypes() []Browser {
+	return []Browser{
+		BrowserSafari,
+		BrowserOther,
+	}
+}
+
 // Cookie flag
 const (
 	CookieFlagYes     CookieFlag = "exists"
@@ -82,28 +103,60 @@ const (
 	CookieFlagUnknown CookieFlag = "unknown"
 )
 
+func CookieTypes() []CookieFlag {
+	return []CookieFlag{
+		CookieFlagYes,
+		CookieFlagNo,
+		CookieFlagUnknown,
+	}
+}
+
 // Request/return status
 const (
-	RequestStatusOK       RequestStatus = "ok"
-	RequestStatusBadInput RequestStatus = "badinput"
-	RequestStatusErr      RequestStatus = "err"
+	RequestStatusOK         RequestStatus = "ok"
+	RequestStatusBadInput   RequestStatus = "badinput"
+	RequestStatusErr        RequestStatus = "err"
+	RequestStatusNetworkErr RequestStatus = "networkerr"
 )
 
-func requestStatuses() []RequestStatus {
+func RequestStatuses() []RequestStatus {
 	return []RequestStatus{
 		RequestStatusOK,
 		RequestStatusBadInput,
 		RequestStatusErr,
+		RequestStatusNetworkErr,
+	}
+}
+
+// Adapter bid repsonse status.
+const (
+	AdapterBidPresent AdapterBid = "bid"
+	AdapterBidNone    AdapterBid = "nobid"
+)
+
+func AdapterBids() []AdapterBid {
+	return []AdapterBid{
+		AdapterBidPresent,
+		AdapterBidNone,
 	}
 }
 
 // Adapter execution status
 const (
-	AdapterStatusOK      AdapterStatus = "ok"
-	AdapterStatusErr     AdapterStatus = "err"
-	AdapterStatusNoBid   AdapterStatus = "nobid"
-	AdapterStatusTimeout AdapterStatus = "timeout"
+	AdapterErrorBadInput          AdapterError = "badinput"
+	AdapterErrorBadServerResponse AdapterError = "badserverresponse"
+	AdapterErrorTimeout           AdapterError = "timeout"
+	AdapterErrorUnknown           AdapterError = "unknown_error"
 )
+
+func AdapterErrors() []AdapterError {
+	return []AdapterError{
+		AdapterErrorBadInput,
+		AdapterErrorBadServerResponse,
+		AdapterErrorTimeout,
+		AdapterErrorUnknown,
+	}
+}
 
 // UserLabels : Labels for /setuid endpoint
 type UserLabels struct {

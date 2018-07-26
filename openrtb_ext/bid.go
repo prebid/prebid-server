@@ -35,6 +35,15 @@ const (
 	BidTypeNative         = "native"
 )
 
+func BidTypes() []BidType {
+	return []BidType{
+		BidTypeBanner,
+		BidTypeVideo,
+		BidTypeAudio,
+		BidTypeNative,
+	}
+}
+
 func ParseBidType(bidType string) (BidType, error) {
 	switch bidType {
 	case "banner":

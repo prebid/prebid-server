@@ -2,8 +2,10 @@ package postgrescache
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/gob"
+	"time"
 
 	"github.com/prebid/prebid-server/stored_requests"
 
@@ -70,9 +72,11 @@ func (s *accountService) Get(key string) (*cache.Account, error) {
 		return decodeAccount(b), nil
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(50)*time.Millisecond)
+	defer cancel()
 	var id string
 	var priceGranularity sql.NullString
-	if err := s.shared.db.QueryRow("SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity); err != nil {
+	if err := s.shared.db.QueryRowContext(ctx, "SELECT uuid, price_granularity FROM accounts_account where uuid = $1 LIMIT 1", key).Scan(&id, &priceGranularity); err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
 		return nil, err
 	}
@@ -119,8 +123,10 @@ func (s *configService) Get(key string) (string, error) {
 		return string(b), nil
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(50)*time.Millisecond)
+	defer cancel()
 	var config string
-	if err := s.shared.db.QueryRow("SELECT config FROM s2sconfig_config where uuid = $1 LIMIT 1", key).Scan(&config); err != nil {
+	if err := s.shared.db.QueryRowContext(ctx, "SELECT config FROM s2sconfig_config where uuid = $1 LIMIT 1", key).Scan(&config); err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
 		if pqErr, ok := err.(*pq.Error); ok {
 			// If the user didn't give us a UUID, the query fails with this error. Wrap it so that we don't

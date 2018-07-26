@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,11 +65,16 @@ func TestRaceIntegration(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			"facebook": config.Adapter{
-				PlatformID: "abc",
-			},
-		},
+		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+	}
+	for _, bidder := range openrtb_ext.BidderList() {
+		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
+			Endpoint: server.URL,
+		}
+	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
+		Endpoint:   server.URL,
+		PlatformID: "abc",
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
@@ -89,6 +95,24 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 			Publisher: &openrtb.Publisher{
 				ID: "some-publisher-id",
 			},
+		},
+		Device: &openrtb.Device{
+			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
+			IFA:      "ifa",
+			IP:       "132.173.230.74",
+			DNT:      1,
+			Language: "EN",
+		},
+		Source: &openrtb.Source{
+			TID: "61018dc9-fa61-4c41-b7dc-f90b9ae80e87",
+		},
+		User: &openrtb.User{
+			ID:       "our-id",
+			BuyerUID: "their-id",
+			Ext:      openrtb.RawJSON(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+		},
+		Regs: &openrtb.Regs{
+			Ext: openrtb.RawJSON(`{"gdpr":1}`),
 		},
 		Imp: []openrtb.Imp{{
 			ID: "some-imp-id",
@@ -113,6 +137,14 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 			Ext: buildImpExt(t, "video"),
 		}},
 	}
+}
+
+func TestPanicRecovery(t *testing.T) {
+	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+		panic("panic!")
+	}
+	recovered := recoverSafely(panicker)
+	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil)
 }
 
 func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
