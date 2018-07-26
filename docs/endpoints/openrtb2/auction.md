@@ -264,10 +264,10 @@ For example, a request may return this in `response.ext`
 The codes currently defined are:
 
 ```
-0	NoErrorCode
-1	TimeoutCode
-2	BadInputCode
-3	BadServerResponseCode
+0   NoErrorCode
+1   TimeoutCode
+2   BadInputCode
+3   BadServerResponseCode
 999 UnknownErrorCode
 ```
 
