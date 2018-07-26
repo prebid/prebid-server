@@ -414,8 +414,9 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 		setDefaults = true
 		extRequest.Prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
 			// Fixes #452
-			IncludeWinners:   true,
-			PriceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			IncludeWinners:    true,
+			IncludeBidderKeys: true,
+			PriceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
 		}
 	}
 	if extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {

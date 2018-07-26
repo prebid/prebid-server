@@ -151,6 +151,9 @@ func TestAmpTargetingDefaults(t *testing.T) {
 	if !extRequest.Prebid.Targeting.IncludeWinners {
 		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
 	}
+	if !extRequest.Prebid.Targeting.IncludeBidderKeys {
+		t.Error("AMP defaults should set request.ext.targeting.includebidderkeys to true")
+	}
 	if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med")) {
 		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
 	}
