@@ -57,7 +57,7 @@ func GetPrebidCacheURL() string {
 
 // InitPrebidCache setup the global prebid cache
 func InitPrebidCacheURL(baseurl string) {
-	cacheURL = fmt.Sprintf("//%s", baseurl)
+	cacheURL = fmt.Sprintf("%s", baseurl)
 }
 
 // InitPrebidCache setup the global prebid cache
