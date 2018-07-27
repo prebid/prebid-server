@@ -942,6 +942,8 @@ func serve(cfg *config.Configuration) error {
 
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
+	pbc.InitPrebidCacheURL(cfg.ExternalURL)
+
 	/*
 			router.GET("/getuids", userSyncDeps.GetUIDs)
 			router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
