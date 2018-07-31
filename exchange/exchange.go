@@ -41,7 +41,7 @@ type exchange struct {
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
 type seatResponseExtra struct {
 	ResponseTimeMillis int
-	Errors             []string
+	Errors             []openrtb_ext.ExtBidderError
 }
 
 type bidResponseWrapper struct {
@@ -180,7 +180,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
-			serr := errsToStrings(err)
+			serr := errsToBidderErrors(err)
 			bidlabels.AdapterBids = bidsToMetric(bids)
 			bidlabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
@@ -232,26 +232,25 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 	ret := make(map[pbsmetrics.AdapterError]struct{}, len(errs))
 	var s struct{}
 	for _, err := range errs {
-		if err == context.DeadlineExceeded {
+		switch errortypes.DecodeError(err) {
+		case errortypes.TimeoutCode:
 			ret[pbsmetrics.AdapterErrorTimeout] = s
-		} else {
-			switch err.(type) {
-			case *errortypes.BadInput:
-				ret[pbsmetrics.AdapterErrorBadInput] = s
-			case *errortypes.BadServerResponse:
-				ret[pbsmetrics.AdapterErrorBadServerResponse] = s
-			default:
-				ret[pbsmetrics.AdapterErrorUnknown] = s
-			}
+		case errortypes.BadInputCode:
+			ret[pbsmetrics.AdapterErrorBadInput] = s
+		case errortypes.BadServerResponseCode:
+			ret[pbsmetrics.AdapterErrorBadServerResponse] = s
+		default:
+			ret[pbsmetrics.AdapterErrorUnknown] = s
 		}
 	}
 	return ret
 }
 
-func errsToStrings(errs []error) []string {
-	serr := make([]string, len(errs))
+func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
+	serr := make([]openrtb_ext.ExtBidderError, len(errs))
 	for i := 0; i < len(errs); i++ {
-		serr[i] = errs[i].Error()
+		serr[i].Code = errortypes.DecodeError(errs[i])
+		serr[i].Message = errs[i].Error()
 	}
 	return serr
 }
@@ -287,7 +286,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 // Extract all the data from the SeatBids and build the ExtBidResponse
 func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
-		Errors:             make(map[openrtb_ext.BidderName][]string, len(adapterBids)),
+		Errors:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
 		ResponseTimeMillis: make(map[openrtb_ext.BidderName]int, len(adapterBids)),
 	}
 	if req.Test == 1 {
@@ -311,11 +310,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 			bidResponseExt.Errors[a] = adapterExtra[a].Errors
 		}
 		if len(errList) > 0 {
-			s := make([]string, len(errList))
-			for i := 0; i < len(errList); i++ {
-				s[i] = errList[i].Error()
-			}
-			bidResponseExt.Errors["prebid"] = s
+			bidResponseExt.Errors["prebid"] = errsToBidderErrors(errList)
 		}
 		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
 		// Defering the filling of bidResponseExt.Usersync[a] until later
@@ -339,25 +334,29 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 
 		ext, err := json.Marshal(sbExt)
 		if err != nil {
-			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()))
+			extError := openrtb_ext.ExtBidderError{
+				Code:    errortypes.DecodeError(err),
+				Message: fmt.Sprintf("Error writing SeatBid.Ext: %s", err.Error()),
+			}
+			adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, extError)
 		}
 		seatBid.Ext = ext
 	}
 
-	var errList []string
+	var errList []error
 	seatBid.Bid, errList = e.makeBid(adapterBid.bids, adapter)
 	if len(errList) > 0 {
-		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errList...)
+		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
 
 	return seatBid
 }
 
 // Create the Bid array inside of SeatBid
-func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []string) {
+func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []error) {
 	bids := make([]openrtb.Bid, 0, len(Bids))
-	errList := make([]string, 0, 1)
-	for i, thisBid := range Bids {
+	errList := make([]error, 0, 1)
+	for _, thisBid := range Bids {
 		bidExt := &openrtb_ext.ExtBid{
 			Bidder: thisBid.bid.Ext,
 			Prebid: &openrtb_ext.ExtBidPrebid{
@@ -368,7 +367,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
-			errList = append(errList, fmt.Sprintf("Error writing SeatBid.Bid[%d].Ext: %s", i, err.Error()))
+			errList = append(errList, err)
 		} else {
 			bids = append(bids, *thisBid.bid)
 			bids[len(bids)-1].Ext = ext

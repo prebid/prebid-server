@@ -232,12 +232,44 @@ It will become impossible to fetch bids from Appnexus within that Request.
 `response.ext.responsetimemillis.{bidderName}` tells how long each bidder took to respond.
 These can help quantify the performance impact of "the slowest bidder."
 
+#### Bidder Errors
+
 `response.ext.errors.{bidderName}` contains messages which describe why a request may be "suboptimal".
 For example, suppose a `banner` and a `video` impression are offered to a bidder
 which only supports `banner`.
 
 In cases like these, the bidder can ignore the `video` impression and bid on the `banner` one.
 However, the publisher can improve performance by only offering impressions which the bidder supports.
+
+For example, a request may return this in `response.ext`
+
+```
+{
+  "errors": {
+    "appnexus": [
+      {
+        "code": 2,
+        "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
+      }
+    ],
+    "rubicon": [
+      {
+        "code": 1, "The request exceeded the timeout allocated"
+      }
+    ]
+  }
+}
+```
+
+The codes currently defined are:
+
+```
+0   NoErrorCode
+1   TimeoutCode
+2   BadInputCode
+3   BadServerResponseCode
+999 UnknownErrorCode
+```
 
 #### Debugging
 
