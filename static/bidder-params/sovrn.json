@@ -14,5 +14,5 @@
       "description": "The minimium acceptable bid, in CPM, using US Dollars"
     }
   },
-  "required": ["tagid"]
+  "required": ["tagId"]
 }
