@@ -146,6 +146,7 @@ const (
 	AdapterErrorBadInput          AdapterError = "badinput"
 	AdapterErrorBadServerResponse AdapterError = "badserverresponse"
 	AdapterErrorTimeout           AdapterError = "timeout"
+	AdapterErrorFailedToBid       AdapterError = "failedtobid"
 	AdapterErrorUnknown           AdapterError = "unknown_error"
 )
 
@@ -154,6 +155,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorBadInput,
 		AdapterErrorBadServerResponse,
 		AdapterErrorTimeout,
+		AdapterErrorFailedToBid,
 		AdapterErrorUnknown,
 	}
 }
