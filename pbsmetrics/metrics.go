@@ -143,11 +143,11 @@ func AdapterBids() []AdapterBid {
 
 // Adapter execution status
 const (
-	AdapterErrorBadInput          AdapterError = "badinput"
-	AdapterErrorBadServerResponse AdapterError = "badserverresponse"
-	AdapterErrorTimeout           AdapterError = "timeout"
-	AdapterErrorFailedToBid       AdapterError = "failedtobid"
-	AdapterErrorUnknown           AdapterError = "unknown_error"
+	AdapterErrorBadInput            AdapterError = "badinput"
+	AdapterErrorBadServerResponse   AdapterError = "badserverresponse"
+	AdapterErrorTimeout             AdapterError = "timeout"
+	AdapterErrorFailedToRequestBids AdapterError = "failedtorequestbid"
+	AdapterErrorUnknown             AdapterError = "unknown_error"
 )
 
 func AdapterErrors() []AdapterError {
@@ -155,7 +155,7 @@ func AdapterErrors() []AdapterError {
 		AdapterErrorBadInput,
 		AdapterErrorBadServerResponse,
 		AdapterErrorTimeout,
-		AdapterErrorFailedToBid,
+		AdapterErrorFailedToRequestBids,
 		AdapterErrorUnknown,
 	}
 }
