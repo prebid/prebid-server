@@ -7,14 +7,14 @@ const (
 	TimeoutCode
 	BadInputCode
 	BadServerResponseCode
+	FailedToRequestBidsCode
 )
 
 // We should use this code for any Error interface that is not in this package
 const UnknownErrorCode = 999
 
-// PBSError provides an interface to use if we want to deal with any error type created in this package.
-type PBSError interface {
-	Error() string
+// Coder provides an interface to use if we want to check the code of an error type created in this package.
+type Coder interface {
 	Code() int
 }
 
@@ -69,4 +69,29 @@ func (err *BadServerResponse) Error() string {
 
 func (err *BadServerResponse) Code() int {
 	return BadServerResponseCode
+}
+
+// FailedToRequestBids is an error to cover the case where an adapter failed to generate any http requests to get bids,
+// but did not generate any error messages. This should not happen in practice and will signal that an adapter is poorly
+// coded. If there was something wrong with a request such that an adapter could not generate a bid, then it should
+// generate an error explaining the deficiency. Otherwise it will be extremely difficult to debug the reason why an
+// adapter is not bidding.
+type FailedToRequestBids struct {
+	Message string
+}
+
+func (err *FailedToRequestBids) Error() string {
+	return err.Message
+}
+
+func (err *FailedToRequestBids) Code() int {
+	return FailedToRequestBidsCode
+}
+
+// DecodeError provides the error code for an error, as defined above
+func DecodeError(err error) int {
+	if ce, ok := err.(Coder); ok {
+		return ce.Code()
+	}
+	return UnknownErrorCode
 }
