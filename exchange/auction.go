@@ -54,7 +54,11 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client) {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool) {
+	// TODO: Start cache here once the PBC client supports it.
+	if !bids {
+		return
+	}
 	toCache := make([]*openrtb.Bid, 0, len(a.roundedPrices))
 
 	for _, topBidsPerImp := range a.winningBidsByBidder {

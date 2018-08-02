@@ -20,7 +20,8 @@ type targetData struct {
 	priceGranularity  openrtb_ext.PriceGranularity
 	includeWinners    bool
 	includeBidderKeys bool
-	includeCache      bool
+	includeCacheBids  bool
+	includeCacheVast  bool
 }
 
 // setTargeting writes all the targeting params into the bids.
