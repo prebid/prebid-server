@@ -13,6 +13,7 @@ For more information, see:
 
 - [What is Prebid?](http://prebid.org/overview/intro.html)
 - [Getting started with Prebid Server](http://prebid.org/dev-docs/get-started-with-prebid-server.html)
+- [Current Bidders](http://prebid.org/dev-docs/prebid-server-bidders.html)
 
 ## Installation
 
