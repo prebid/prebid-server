@@ -45,6 +45,15 @@
   branch = "master"
   name = "github.com/evanphx/json-patch"
 
+# The main project has an open PR with a bugfix that affects us.
+# This jsonparser fork includes that PR.  Once merged, this can
+# return to the main project.
+# See: https://github.com/buger/jsonparser/pull/137
+[[constraint]]
+  branch = "master"
+  name = "github.com/buger/jsonparser"
+  source = "https://github.com/dbemiller/jsonparser.git"
+
 [[constraint]]
   branch = "master"
   name = "github.com/golang/glog"
