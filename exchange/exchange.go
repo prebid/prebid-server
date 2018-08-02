@@ -239,6 +239,8 @@ func errorsToMetric(errs []error) map[pbsmetrics.AdapterError]struct{} {
 			ret[pbsmetrics.AdapterErrorBadInput] = s
 		case errortypes.BadServerResponseCode:
 			ret[pbsmetrics.AdapterErrorBadServerResponse] = s
+		case errortypes.FailedToRequestBidsCode:
+			ret[pbsmetrics.AdapterErrorFailedToRequestBids] = s
 		default:
 			ret[pbsmetrics.AdapterErrorUnknown] = s
 		}
