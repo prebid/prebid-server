@@ -99,7 +99,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
 			shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
 		}
-		shouldCacheBids = requestExt.Prebid.Cache != nil && requestExt.Prebid.Cache.Bids != nil
 
 		if requestExt.Prebid.Targeting != nil {
 			targData = &targetData{
