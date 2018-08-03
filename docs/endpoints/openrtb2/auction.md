@@ -254,7 +254,8 @@ For example, a request may return this in `response.ext`
     ],
     "rubicon": [
       {
-        "code": 1, "The request exceeded the timeout allocated"
+        "code": 1, 
+        "message": "The request exceeded the timeout allocated"
       }
     ]
   }

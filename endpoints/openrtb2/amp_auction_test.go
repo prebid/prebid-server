@@ -68,6 +68,9 @@ func TestGoodAmpRequests(t *testing.T) {
 		if response.Debug != nil {
 			t.Errorf("Debug present but not requested")
 		}
+		if _, ok := response.Errors[openrtb_ext.BidderOpenx]; !ok {
+			t.Errorf("OpenX error message is not present. (%v)", response.Errors)
+		}
 	}
 }
 
@@ -333,6 +336,7 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 				Ext: openrtb.RawJSON(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
 			}},
 		}},
+		Ext: openrtb.RawJSON(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
 
 	if bidRequest.Test == 1 {
