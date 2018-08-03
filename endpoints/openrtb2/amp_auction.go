@@ -167,7 +167,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	var extResponse openrtb_ext.ExtBidResponse
 	eRErr := json.Unmarshal(response.Ext, &extResponse)
 	if eRErr != nil {
-		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext: %v", eRErr))
+		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
 	}
 
 	// Now JSONify the targets for the AMP response.
