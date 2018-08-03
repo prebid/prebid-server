@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/prebid_cache_client"
+
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
@@ -511,7 +513,7 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 
 type wellBehavedCache struct{}
 
-func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage) []string {
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) []string {
 	ids := make([]string, len(values))
 	for i := 0; i < len(values); i++ {
 		ids[i] = strconv.Itoa(i)
