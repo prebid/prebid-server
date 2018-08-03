@@ -68,11 +68,7 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		if len(sovrnReq.Imp) <= i {
 			break
 		}
-		if len(params.TagId) > 0 {
-			sovrnReq.Imp[i].TagID = params.TagId
-		} else {
-			sovrnReq.Imp[i].TagID = params.Tagid
-		}
+		sovrnReq.Imp[i].TagID = getTagid(params)
 	}
 
 	reqJSON, err := json.Marshal(sovrnReq)
@@ -291,14 +287,18 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 		}
 	}
 
-	if len(sovrnExt.TagId) > 0 {
-		imp.TagID = sovrnExt.TagId
-	} else {
-		imp.TagID = sovrnExt.Tagid
-	}
+	imp.TagID = getTagid(sovrnExt)
 	imp.BidFloor = sovrnExt.BidFloor
 
 	return imp.TagID, nil
+}
+
+func getTagid(sovrnExt openrtb_ext.ExtImpSovrn) string {
+	if len(sovrnExt.Tagid) > 0 {
+		return sovrnExt.Tagid
+	} else {
+		return sovrnExt.TagId
+	}
 }
 
 // NewSovrnAdapter create a new SovrnAdapter instance
