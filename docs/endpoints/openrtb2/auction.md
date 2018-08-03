@@ -302,7 +302,7 @@ Bids can be temporarily cached on the server by sending the following data as `r
 
 ```
 {
-  "bids": {}
+  "bids": {},
   "vastxml": {}
 }
 ```
