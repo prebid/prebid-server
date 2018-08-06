@@ -1,5 +1,5 @@
 {
-  "message": "Invalid request: unexpected end of JSON input\n",
+  "message": "request.imp[0].native missing required property \"request\"\n",
   "requestPayload": {
     "id": "req-id",
     "imp": [

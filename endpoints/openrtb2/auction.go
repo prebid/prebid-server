@@ -369,6 +369,9 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return nil
 	}
 
+	if len(n.Request) == 0 {
+		return fmt.Errorf("request.imp[%d].native missing required property \"request\"", impIndex)
+	}
 	var nativePayload nativeRequests.Request
 	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
 		return err
