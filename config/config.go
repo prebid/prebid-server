@@ -235,8 +235,8 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func SetupViper(v *viper.Viper) {
-	v.SetConfigName("pbs")
+func SetupViper(v *viper.Viper, name string) {
+	v.SetConfigName(name)
 	v.AddConfigPath(".")
 	v.AddConfigPath("/etc/config")
 
