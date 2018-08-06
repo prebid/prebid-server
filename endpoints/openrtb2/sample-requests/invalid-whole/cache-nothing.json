@@ -1,5 +1,5 @@
 {
-  "message": "Invalid request: request.ext is invalid: request.ext.prebid.cache missing required property \"bids\"\n",
+  "message": "Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the \"bids\" or \"vastml\" properties\n",
   "requestPayload": {
     "id": "some-request-id",
     "site": {

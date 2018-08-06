@@ -1,11 +1,14 @@
 {
+  "message": "Invalid request: Request imp[0].banner.format[0] should define *either* {w, h} (for static size requirements) *or* {wmin, wratio, hratio} (for flexible sizes) to be non-zero.\n",
+  "requestPayload": {
     "id":"req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "banner": {
-                "format": [{}]
-            }
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [{}]
         }
+      }
     ]
+  }
 }

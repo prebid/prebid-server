@@ -1,21 +1,24 @@
 {
+  "message": "Invalid request: request.imp[0].pmp.deals[0] missing required field: \"id\"\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "video": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "pmp": {
-                "deals": [
-                    {
-                        "private_auction": 1,
-                        "id": ""
-                    }
-                ]
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "private_auction": 1,
+              "id": ""
             }
+          ]
         }
+      }
     ]
+  }
 }

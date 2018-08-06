@@ -1,11 +1,14 @@
 {
+  "message": "Invalid request: unexpected end of JSON input\n",
+  "requestPayload": {
     "id":"req-id",
     "imp": [
-        {
-            "id":"imp-id",
-            "banner":{
-                "format":[]
-            }
+      {
+        "id":"imp-id",
+        "banner":{
+          "format":[]
         }
+      }
     ]
+  }
 }
