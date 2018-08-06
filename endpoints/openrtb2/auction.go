@@ -568,6 +568,9 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 }
 
 func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+	if len(ext) == 0 {
+		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
+	}
 	var bidderExts map[string]openrtb.RawJSON
 	if err := json.Unmarshal(ext, &bidderExts); err != nil {
 		return err
