@@ -12,7 +12,9 @@
           "mimes":["video/mp4"]
         },
         "ext": {
-          "appnexus": "good"
+          "appnexus": {
+            "placementId": 10433394
+          }
         }
       }
     ],
