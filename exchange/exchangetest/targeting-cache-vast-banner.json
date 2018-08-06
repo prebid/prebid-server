@@ -1,6 +1,4 @@
 {
-  "//": "Prevents #199",
-
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -10,8 +8,9 @@
       "imp": [
         {
           "id": "my-imp-id",
-          "video": {
-            "mimes": ["video/mp4"]
+          "banner": {
+            "w": 300,
+            "h": 250
           },
           "ext": {
             "appnexus": {
@@ -23,7 +22,6 @@
       "ext": {
         "prebid": {
           "cache": {
-            "bids": {},
             "vastxml": {}
           },
           "targeting": {}
@@ -45,7 +43,7 @@
                 "h": 250,
                 "crid": "creative-1"
               },
-              "bidType": "video"
+              "bidType": "banner"
             }
           ]
         }
@@ -67,14 +65,10 @@
             "crid": "creative-1",
             "ext": {
               "prebid": {
-                "type": "video",
+                "type": "banner",
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
-                  "hb_cache_id": "0",
-                  "hb_cache_id_appnexus": "0",
-                  "hb_uuid": "1",
-                  "hb_uuid_appnexus": "1",
                   "hb_pb": "0.00",
                   "hb_pb_appnexus": "0.00",
                   "hb_size": "200x250",

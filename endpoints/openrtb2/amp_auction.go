@@ -427,11 +427,14 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 			PriceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
 		}
 	}
-	if extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {
+	if extRequest.Prebid.Cache == nil {
 		setDefaults = true
 		extRequest.Prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
 			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
 		}
+	} else if extRequest.Prebid.Cache.Bids == nil {
+		setDefaults = true
+		extRequest.Prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
 	}
 	if setDefaults {
 		newExt, err := json.Marshal(extRequest)
