@@ -24,6 +24,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/rcrowley/go-metrics"
+	"github.com/stretchr/testify/assert"
 )
 
 const maxSize = 1024 * 256
@@ -135,32 +136,39 @@ func TestImplicitUserId(t *testing.T) {
 
 // TestGoodRequests makes sure we return 200s on good requests.
 func TestGoodRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/valid-whole/exemplary", unpackExamplary, http.StatusOK)
-	assertResponseFromDirectory(t, "sample-requests/valid-whole/supplementary", nil, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole/exemplary", getRequestPayload, nilReturner, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole/supplementary", noop, nilReturner, http.StatusOK)
 }
 
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
 func TestGoodNativeRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/valid-native", buildNativeRequest, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-native", buildNativeRequest, nilReturner, http.StatusOK)
 }
 
 // TestBadRequests makes sure we return 400s on bad requests.
 func TestBadRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/invalid-whole", nil, http.StatusBadRequest)
+	assertResponseFromDirectory(t, "sample-requests/invalid-whole", getRequestPayload, getMessage, http.StatusBadRequest)
 }
 
 // TestBadRequests makes sure we return 400s on requests with bad Native requests.
 func TestBadNativeRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/invalid-native", buildNativeRequest, http.StatusBadRequest)
+	assertResponseFromDirectory(t, "sample-requests/invalid-native", buildNativeRequest, nilReturner, http.StatusBadRequest)
 }
 
 // assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
 // from the /openrtb2/auction endpoint.
-func assertResponseFromDirectory(t *testing.T, dir string, preprocessor func(*testing.T, []byte) []byte, expectedCode int) {
+func assertResponseFromDirectory(t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int) {
 	t.Helper()
 	for _, fileInfo := range fetchFiles(t, dir) {
 		filename := dir + "/" + fileInfo.Name()
-		assertResponseCode(t, filename, runFile(t, filename, preprocessor), expectedCode)
+		fileData := readFile(t, filename)
+		code, msg := doRequest(t, payloadGetter(t, fileData))
+		assertResponseCode(t, filename, code, expectedCode)
+
+		expectMsg := messageGetter(t, fileData)
+		if len(expectMsg) > 0 {
+			assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+		}
 	}
 }
 
@@ -182,23 +190,17 @@ func readFile(t *testing.T, filename string) []byte {
 	return data
 }
 
-// runFile reads the data from filename, sends it through the preprocessor (if non-nil),
-// and returns the status code that the /openrtb2/auction endpoint gives for that request data,
-func runFile(t *testing.T, filename string, preprocessor func(*testing.T, []byte) []byte) int {
+// doRequest populates the app with mock dependencies and sends requestData to the /openrtb2/auction endpoint.
+func doRequest(t *testing.T, requestData []byte) (int, string) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
-	requestData := readFile(t, filename)
-
-	if preprocessor != nil {
-		requestData = preprocessor(t, requestData)
-	}
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
-	return recorder.Code
+	return recorder.Code, recorder.Body.String()
 }
 
 func newParamsValidator(t *testing.T) openrtb_ext.BidderParamValidator {
@@ -231,13 +233,29 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 	return buf.Bytes()
 }
 
-func unpackExamplary(t *testing.T, example []byte) []byte {
-	if value, dataType, _, err := jsonparser.Get(example, "requestPayload"); err != nil {
-		t.Fatalf("Error parsing root.requestPayload from exemplary request: %v.", err)
-	} else if dataType != jsonparser.Object {
-		t.Fatalf("root.requestPayload must be a JSON object. Got %s", dataType.String())
+func noop(t *testing.T, data []byte) []byte {
+	return data
+}
+
+func nilReturner(t *testing.T, data []byte) []byte {
+	return nil
+}
+
+func getRequestPayload(t *testing.T, example []byte) []byte {
+	t.Helper()
+	if value, _, _, err := jsonparser.Get(example, "requestPayload"); err != nil {
+		t.Fatalf("Error parsing root.requestPayload from request: %v.", err)
 	} else {
 		return value
+	}
+	return nil
+}
+
+func getMessage(t *testing.T, example []byte) []byte {
+	if value, err := jsonparser.GetString(example, "message"); err != nil {
+		t.Fatalf("Error parsing root.message from request: %v.", err)
+	} else {
+		return []byte(value)
 	}
 	return nil
 }

@@ -1,14 +1,17 @@
 {
+  "message": "Invalid request: request.imp[0].ext must contain at least one bidder\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "video": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "ext": {}
-        }
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {}
+      }
     ]
+  }
 }

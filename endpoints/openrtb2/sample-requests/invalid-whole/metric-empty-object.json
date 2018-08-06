@@ -1,9 +1,12 @@
 {
+  "message": "Invalid request: request.imp[0].metric is not yet supported by prebid-server. Support may be added in the future\n",
+  "requestPayload": {
     "id":"req-id",
     "imp":[
-        {
-            "id":"imp-id",
-            "metric": [{}]
-        }
+      {
+        "id":"imp-id",
+        "metric": [{}]
+      }
     ]
+  }
 }

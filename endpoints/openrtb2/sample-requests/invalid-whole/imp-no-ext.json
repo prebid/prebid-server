@@ -1,5 +1,5 @@
 {
-  "message": "Invalid request: request.site or request.app must be defined, but not both.\n",
+  "message": "Invalid request: request.imp[0].ext is required\n",
   "requestPayload": {
     "id": "req-id",
     "imp": [
@@ -9,11 +9,6 @@
           "mimes": [
             "video/mp4"
           ]
-        },
-        "ext": {
-          "appnexus": {
-            "placementId": 10433394
-          }
         }
       }
     ]
