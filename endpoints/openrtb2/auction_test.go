@@ -238,7 +238,7 @@ func noop(t *testing.T, data []byte) []byte {
 }
 
 func nilReturner(t *testing.T, data []byte) []byte {
-	return data
+	return nil
 }
 
 func getRequestPayload(t *testing.T, example []byte) []byte {
