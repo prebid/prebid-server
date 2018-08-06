@@ -1,24 +1,27 @@
 {
+  "message": "Invalid request: request.ext is invalid: request.ext.prebid.cache missing required property \"bids\"\n",
+  "requestPayload": {
     "id": "some-request-id",
     "site": {
-        "page": "test.somepage.com"
+      "page": "test.somepage.com"
     },
     "imp": [
-        {
-            "id": "my-imp-id",
-            "video": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "ext": {
-                "appnexus": "good"
-            }
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": "good"
         }
+      }
     ],
     "ext": {
-        "prebid": {
-            "cache": {}
-        }
+      "prebid": {
+        "cache": {}
+      }
     }
+  }
 }

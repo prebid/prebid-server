@@ -297,11 +297,11 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 	}
 
 	if len(imp.Metric) != 0 {
-		return errors.New("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future.")
+		return fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)
 	}
 
 	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
-		return errors.New("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"")
+		return fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)
 	}
 
 	if err := validateBanner(imp.Banner, index); err != nil {

@@ -1,0 +1,25 @@
+{
+  "message": "foo",
+  "requestPayload": {
+    "id": "req-id",
+    "site": {
+      "page": "test.mysite.com"
+    },
+    "app": {},
+    "imp": [
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,24 +1,29 @@
 {
+  "message": "Invalid request: request.ext.prebid.aliases.appnexus defines a no-op alias. Choose a different alias, or remove this entry.\n",
+  "requestPayload": {
     "id": "some-request-id",
     "site": {
-        "page": "test.somepage.com"
+      "page": "test.somepage.com"
     },
     "imp": [
-        {
-            "id": "my-imp-id",
-            "video": {
-                "mimes":["video/mp4"]
-            },
-            "ext": {
-                "appnexus": "good"
-            }
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes":["video/mp4"]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
         }
+      }
     ],
     "ext": {
-        "prebid": {
-            "aliases": {
-                "appnexus": "appnexus"
-            }
-        }
+      "prebid": {
+          "aliases": {
+            "appnexus": "appnexus"
+          }
+      }
     }
+  }
 }
