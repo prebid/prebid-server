@@ -20,7 +20,8 @@ type targetData struct {
 	priceGranularity  openrtb_ext.PriceGranularity
 	includeWinners    bool
 	includeBidderKeys bool
-	includeCache      bool
+	includeCacheBids  bool
+	includeCacheVast  bool
 }
 
 // setTargeting writes all the targeting params into the bids.
@@ -43,8 +44,11 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool) {
 			if hbSize := makeHbSize(topBidPerBidder.bid); hbSize != "" {
 				targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, bidderName, isOverallWinner)
 			}
-			if cacheId, ok := auc.cacheIds[topBidPerBidder.bid]; ok {
-				targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheId, bidderName, isOverallWinner)
+			if cacheID, ok := auc.cacheIds[topBidPerBidder.bid]; ok {
+				targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, bidderName, isOverallWinner)
+			}
+			if vastID, ok := auc.vastCacheIds[topBidPerBidder.bid]; ok {
+				targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner)
 			}
 			if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
 				targData.addKeys(targets, openrtb_ext.HbDealIdConstantKey, deal, bidderName, isOverallWinner)

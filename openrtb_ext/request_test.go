@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Test the unmashalling of the prebid extensions and setting default Price Granularity
@@ -80,14 +82,23 @@ func TestCacheIllegal(t *testing.T) {
 	}
 }
 
-func TestCacheLegal(t *testing.T) {
+func TestCacheBids(t *testing.T) {
 	var bids ExtRequestPrebidCache
-	if err := json.Unmarshal([]byte(`{"bids":{}}`), &bids); err != nil {
-		t.Error("Unmarshal should succeed when cache.bids is defined.")
-	}
-	if bids.Bids == nil {
-		t.Error("bids.Bids should not be nil.")
-	}
+	assert.NoError(t, json.Unmarshal([]byte(`{"bids":{}}`), &bids))
+	assert.NotNil(t, bids.Bids)
+	assert.Nil(t, bids.VastXML)
+}
+
+func TestCacheVast(t *testing.T) {
+	var bids ExtRequestPrebidCache
+	assert.NoError(t, json.Unmarshal([]byte(`{"vastxml":{}}`), &bids))
+	assert.Nil(t, bids.Bids)
+	assert.NotNil(t, bids.VastXML)
+}
+
+func TestCacheNothing(t *testing.T) {
+	var bids ExtRequestPrebidCache
+	assert.Error(t, json.Unmarshal([]byte(`{}`), &bids))
 }
 
 type granularityTestData struct {

@@ -1,6 +1,4 @@
 {
-  "//": "Prevents #199",
-
   "incomingRequest": {
     "ortbRequest": {
       "id": "some-request-id",
@@ -23,7 +21,6 @@
       "ext": {
         "prebid": {
           "cache": {
-            "bids": {},
             "vastxml": {}
           },
           "targeting": {}
@@ -71,10 +68,8 @@
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
-                  "hb_cache_id": "0",
-                  "hb_cache_id_appnexus": "0",
-                  "hb_uuid": "1",
-                  "hb_uuid_appnexus": "1",
+                  "hb_uuid": "0",
+                  "hb_uuid_appnexus": "0",
                   "hb_pb": "0.00",
                   "hb_pb_appnexus": "0.00",
                   "hb_size": "200x250",

@@ -86,6 +86,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// Process the request to check for targeting parameters.
 	var targData *targetData
 	shouldCacheBids := false
+	shouldCacheVAST := false
 	var bidAdjustmentFactors map[string]float64
 	if len(bidRequest.Ext) > 0 {
 		var requestExt openrtb_ext.ExtRequest
@@ -94,7 +95,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
 		}
 		bidAdjustmentFactors = requestExt.Prebid.BidAdjustmentFactors
-		shouldCacheBids = requestExt.Prebid.Cache != nil && requestExt.Prebid.Cache.Bids != nil
+		if requestExt.Prebid.Cache != nil {
+			shouldCacheBids = requestExt.Prebid.Cache.Bids != nil
+			shouldCacheVAST = requestExt.Prebid.Cache.VastXML != nil
+		}
 
 		if requestExt.Prebid.Targeting != nil {
 			targData = &targetData{
@@ -103,7 +107,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
 			}
 			if shouldCacheBids {
-				targData.includeCache = true
+				targData.includeCacheBids = true
+			}
+			if shouldCacheVAST {
+				targData.includeCacheVast = true
 			}
 		}
 	}
@@ -117,9 +124,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if targData != nil {
 		auc.setRoundedPrices(targData.priceGranularity)
-		if targData.includeCache {
-			auc.doCache(ctx, e.cache)
-		}
+		auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast)
 		targData.setTargeting(auc, bidRequest.App != nil)
 	}
 	// Build the response
