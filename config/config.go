@@ -237,7 +237,7 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 // Set the default config values for the viper object we are using.
 func SetupViper(v *viper.Viper, filename string) {
 	if filename != "" {
-		v.SetConfigName(name)
+		v.SetConfigName(filename)
 		v.AddConfigPath(".")
 		v.AddConfigPath("/etc/config")
 	}
