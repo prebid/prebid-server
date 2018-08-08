@@ -694,7 +694,11 @@ func TestCORSSupport(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {}
 	cors := supportCORS(http.HandlerFunc(handler))
 	rr := httptest.NewRecorder()
-	req, err := http.NewRequest("POST", "http://some-domain.com/openrtb2/auction", nil)
+	req, err := http.NewRequest("OPTIONS", "http://some-domain.com/openrtb2/auction", nil)
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "origin")
+	req.Header.Set("Origin", "https://publisher-domain.com")
+
 	if !assert.NoError(t, err) {
 		return
 	}
