@@ -634,7 +634,7 @@ func init() {
 
 func main() {
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "pbs")
 	cfg, err := config.New(v)
 	if err != nil {
 		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)

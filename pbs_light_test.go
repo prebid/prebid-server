@@ -350,7 +350,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	ctx := context.TODO()
 	w := httptest.NewRecorder()
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "")
 	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -655,14 +655,14 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 // Test the viper setup
 func TestViperInit(t *testing.T) {
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "")
 	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
 	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", v.Get("adapters.pulsepoint.endpoint").(string))
 }
 
 func TestViperEnv(t *testing.T) {
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "")
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 

@@ -13,7 +13,7 @@ import (
 
 func TestDefaults(t *testing.T) {
 	v := viper.New()
-	SetupViper(v)
+	SetupViper(v, "")
 	cfg, err := New(v)
 	if err != nil {
 		t.Error(err.Error())
@@ -104,7 +104,7 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 
 func TestFullConfig(t *testing.T) {
 	v := viper.New()
-	SetupViper(v)
+	SetupViper(v, "")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)

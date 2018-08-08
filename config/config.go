@@ -235,11 +235,12 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func SetupViper(v *viper.Viper) {
-	v.SetConfigName("pbs")
-	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/config")
-
+func SetupViper(v *viper.Viper, filename string) {
+	if filename != "" {
+		v.SetConfigName(filename)
+		v.AddConfigPath(".")
+		v.AddConfigPath("/etc/config")
+	}
 	// Fixes #475: Some defaults will be set just so they are accessable via environment variables
 	// (basically so viper knows they exist)
 	v.SetDefault("external_url", "http://localhost:8000")
