@@ -13,6 +13,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -686,6 +687,19 @@ func TestPanicRecovery(t *testing.T) {
 	}
 	recovered := recoverSafely(panicker)
 	recovered(nil, pbsmetrics.AdapterLabels{})
+}
+
+// Prevents #648
+func TestCORSSupport(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {}
+	cors := supportCORS(http.HandlerFunc(handler))
+	rr := httptest.NewRecorder()
+	req, err := http.NewRequest("POST", "http://some-domain.com/openrtb2/auction", nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	cors.ServeHTTP(rr, req)
+	assert.NotEqual(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {
