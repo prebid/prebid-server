@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -395,6 +396,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID),
 			})
+			glog.Warning("Adform CAPABILITY VIOLATION: no banner present")
 			continue
 		}
 
