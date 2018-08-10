@@ -691,19 +691,20 @@ func TestPanicRecovery(t *testing.T) {
 
 // Prevents #648
 func TestCORSSupport(t *testing.T) {
+	const origin = "https://publisher-domain.com"
 	handler := func(w http.ResponseWriter, r *http.Request) {}
 	cors := supportCORS(http.HandlerFunc(handler))
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest("OPTIONS", "http://some-domain.com/openrtb2/auction", nil)
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	req.Header.Set("Access-Control-Request-Headers", "origin")
-	req.Header.Set("Origin", "https://publisher-domain.com")
+	req.Header.Set("Origin", origin)
 
 	if !assert.NoError(t, err) {
 		return
 	}
 	cors.ServeHTTP(rr, req)
-	assert.NotEqual(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	assert.Equal(t, origin, rr.Header().Get("Access-Control-Allow-Origin"))
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {
