@@ -230,6 +230,134 @@ func TestConnectionClose(t *testing.T) {
 	}
 }
 
+// TestMultiCurrencies makes sure that bidderAdapter.requestBid returns errors if the bidder pass several currencies in case of multi HTTP calls.
+func TestMultiCurrencies(t *testing.T) {
+	// Setup:
+	respStatus := 200
+	getRespBody := "{\"wasPost\":false}"
+	postRespBody := "{\"wasPost\":true}"
+
+	testCases := []struct {
+		bidRequestCurrencies           []string
+		bidCurrency                    []string
+		expectedBidsCount              uint
+		expectedBadCurrencyErrorsCount uint
+	}{
+		// Bidder respond with the same currency (default one) on all HTTP responses
+		{
+			bidCurrency:                    []string{"USD", "USD", "USD"},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+		// Bidder respond with the same currency (not default one) on all HTTP responses
+		{
+			bidCurrency:                    []string{"EUR", "EUR", "EUR"},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+		// Bidder responds with currency not set on all HTTP responses
+		{
+			bidCurrency:                    []string{"", "", ""},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+		// Bidder responds with a mix of not set and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"", "USD", ""},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+		// Bidder responds with a mix of not set and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"USD", "USD", ""},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+		// Bidder responds with a mix of not set and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"", "", "USD"},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+		// Bidder responds with a mix of not set, non default currency and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"EUR", "", "USD"},
+			expectedBidsCount:              1,
+			expectedBadCurrencyErrorsCount: 2,
+		},
+		// Bidder responds with a mix of not set, non default currency and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"GDB", "", "USD"},
+			expectedBidsCount:              1,
+			expectedBadCurrencyErrorsCount: 2,
+		},
+		// Bidder responds with a mix of not set and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"GDB", "", ""},
+			expectedBidsCount:              1,
+			expectedBadCurrencyErrorsCount: 2,
+		},
+		// Bidder responds with a mix of not set and default currency in HTTP responses
+		{
+			bidCurrency:                    []string{"GDB", "GDB", "GDB"},
+			expectedBidsCount:              3,
+			expectedBadCurrencyErrorsCount: 0,
+		},
+	}
+
+	server := httptest.NewServer(mockHandler(respStatus, getRespBody, postRespBody))
+	defer server.Close()
+
+	for _, tc := range testCases {
+		mockBidderResponses := make([]*adapters.BidderResponse, len(tc.bidCurrency))
+		bidderImpl := &goodMultiHTTPCallsBidder{
+			bidResponses: mockBidderResponses,
+		}
+		bidderImpl.httpRequest = make([]*adapters.RequestData, len(tc.bidCurrency))
+
+		for i, cur := range tc.bidCurrency {
+
+			mockBidderResponses[i] = &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid:     &openrtb.Bid{},
+						BidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+				Currency: cur,
+			}
+
+			bidderImpl.httpRequest[i] = &adapters.RequestData{
+				Method:  "POST",
+				Uri:     server.URL,
+				Body:    []byte("{\"key\":\"val\"}"),
+				Headers: http.Header{},
+			}
+		}
+
+		// Execute:
+		bidder := adaptBidder(bidderImpl, server.Client())
+		seatBid, errs := bidder.requestBid(
+			context.Background(),
+			&openrtb.BidRequest{},
+			"test",
+			1,
+		)
+
+		// Verify:
+		if seatBid == nil && tc.expectedBidsCount != 0 {
+			t.Errorf("Seatbid is nil but expected not to be nil")
+		}
+		if tc.expectedBidsCount != uint(len(seatBid.bids)) {
+			t.Errorf("Expected to have %d bids count but got %d", tc.expectedBidsCount, len(seatBid.bids))
+		}
+		if tc.expectedBadCurrencyErrorsCount != uint(len(errs)) {
+			t.Errorf("Expected to have %d errors count but got %d", tc.expectedBadCurrencyErrorsCount, len(errs))
+		}
+
+	}
+}
+
 // TestBadResponseLogging makes sure that openrtb_ext works properly on malformed HTTP requests.
 func TestBadRequestLogging(t *testing.T) {
 	info := &httpCallInfo{
@@ -370,6 +498,32 @@ func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*ad
 func (bidder *goodSingleBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	bidder.httpResponse = response
 	return bidder.bidResponse, nil
+}
+
+type goodMultiHTTPCallsBidder struct {
+	bidRequest        *openrtb.BidRequest
+	httpRequest       []*adapters.RequestData
+	httpResponses     []*adapters.ResponseData
+	bidResponses      []*adapters.BidderResponse
+	bidResponseNumber int
+}
+
+func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	bidder.bidRequest = request
+	response := make([]*adapters.RequestData, len(bidder.httpRequest))
+
+	for i, r := range bidder.httpRequest {
+		response[i] = r
+	}
+	return response, nil
+}
+
+func (bidder *goodMultiHTTPCallsBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	br := bidder.bidResponses[bidder.bidResponseNumber]
+	bidder.bidResponseNumber++
+	bidder.httpResponses = append(bidder.httpResponses, response)
+
+	return br, nil
 }
 
 type mixedMultiBidder struct {

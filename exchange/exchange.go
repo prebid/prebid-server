@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
+	"golang.org/x/text/currency"
 
 	"github.com/mxmCherry/openrtb"
 
@@ -176,7 +178,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			elapsed := time.Since(start)
 			brw.adapterBids = bids
 			// validate bids ASAP, so we don't waste time on invalid bids.
-			err2 := brw.validateBids()
+			err2 := brw.validateBids(request)
 			if len(err2) > 0 {
 				err = append(err, err2...)
 			}
@@ -384,15 +386,21 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 }
 
 // validateBids will run some validation checks on the returned bids and excise any invalid bids
-func (brw *bidResponseWrapper) validateBids() (err []error) {
+func (brw *bidResponseWrapper) validateBids(request *openrtb.BidRequest) (err []error) {
 	// Exit early if there is nothing to do.
 	if brw.adapterBids == nil || len(brw.adapterBids.bids) == 0 {
 		return
 	}
-	// TODO #280: Exit if there is a currency mismatch between currencies passed in bid request
-	// and the currency received in the bid.
-	// Check also if the currency received exists.
+
 	err = make([]error, 0, len(brw.adapterBids.bids))
+
+	// By design, default currency is USD.
+	if cerr := validateCurrency(request.Cur, brw.adapterBids.currency); cerr != nil {
+		brw.adapterBids.bids = nil
+		err = append(err, cerr)
+		return
+	}
+
 	validBids := make([]*pbsOrtbBid, 0, len(brw.adapterBids.bids))
 	for _, bid := range brw.adapterBids.bids {
 		if ok, berr := validateBid(bid); ok {
@@ -406,6 +414,42 @@ func (brw *bidResponseWrapper) validateBids() (err []error) {
 		brw.adapterBids.bids = validBids
 	}
 	return err
+}
+
+// validateCurrency will run currency validation checks and return true if it passes, false otherwise.
+func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) error {
+	// Default currency is `USD` by design.
+	defaultCurrency := "USD"
+	// Make sure bid currency is a valid ISO currency code
+	if bidCurrency == "" {
+		// If bid currency is not set, then consider it's default currency.
+		bidCurrency = defaultCurrency
+	}
+	currencyUnit, cerr := currency.ParseISO(bidCurrency)
+	if cerr != nil {
+		return cerr
+	}
+	// Make sure the bid currency is allowed from bid request via `cur` field.
+	// If `cur` field array from bid request is empty, then consider it accepts the default currency.
+	currencyAllowed := false
+	if len(requestAllowedCurrencies) == 0 {
+		requestAllowedCurrencies = []string{defaultCurrency}
+	}
+	for _, allowedCurrency := range requestAllowedCurrencies {
+		if strings.ToUpper(allowedCurrency) == currencyUnit.String() {
+			currencyAllowed = true
+			break
+		}
+	}
+	if currencyAllowed == false {
+		return fmt.Errorf(
+			"Bid currency is not allowed. Was '%s', wants: ['%s']",
+			currencyUnit.String(),
+			strings.Join(requestAllowedCurrencies, "', '"),
+		)
+	}
+
+	return nil
 }
 
 // validateBid will run the supplied bid through validation checks and return true if it passes, false otherwise.
@@ -426,5 +470,6 @@ func validateBid(bid *pbsOrtbBid) (bool, error) {
 	if bid.bid.CrID == "" {
 		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
 	}
+
 	return true, nil
 }
