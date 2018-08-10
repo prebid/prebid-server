@@ -35,13 +35,13 @@ type InfoAwareBidder struct {
 func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
 	if request.Site != nil {
-		if i.info.site.enabled == false {
+		if !i.info.site.enabled {
 			return nil, []error{BadInput("this bidder does not support site requests")}
 		}
 		allowedMediaTypes = i.info.site
 	}
 	if request.App != nil {
-		if i.info.app.enabled == false {
+		if !i.info.app.enabled {
 			return nil, []error{BadInput("this bidder does not support app requests")}
 		}
 		allowedMediaTypes = i.info.app
