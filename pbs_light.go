@@ -736,10 +736,27 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
-	// Add CORS middleware
+	// Fixes #648
+	//
+	// These CORS options pose a security risk... but it's a calculated one.
+	// People _must_ call us with "withCredentials" set to "true" because that's how we use the cookie sync info.
+	// We also must allow all origins because every site on the internet _could_ call us.
+	//
+	// This is an inherent security risk. However, PBS doesn't use cookies for authorization--just identification.
+	// We only store the User's ID for each Bidder, and each Bidder has already exposed a public cookie sync endpoint
+	// which returns that data anyway.
+	//
+	// For more info, see:
+	//
+	// - https://github.com/rs/cors/issues/55
+	// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+	// - https://portswigger.net/blog/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
 	c := cors.New(cors.Options{
 		AllowCredentials: true,
-		AllowedHeaders:   []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
 	corsRouter := c.Handler(router)
 
 	// Add no cache headers

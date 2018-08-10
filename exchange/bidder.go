@@ -56,6 +56,9 @@ type pbsOrtbBid struct {
 type pbsOrtbSeatBid struct {
 	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
+	// currency is the currency in which the bids are made.
+	// Should be a valid curreny ISO code.
+	currency string
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
@@ -107,8 +110,11 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 
 	seatBid := &pbsOrtbSeatBid{
 		bids:      make([]*pbsOrtbBid, 0, len(reqData)),
+		currency:  "USD",
 		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
+
+	firstHTTPCallCurrency := ""
 
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
 	// even if the timeout occurs sometime halfway through.
@@ -120,18 +126,43 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 
 		if httpInfo.err == nil {
+
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
+
 			if bidResponse != nil {
-				for i := 0; i < len(bidResponse.Bids); i++ {
-					if bidResponse.Bids[i].Bid != nil {
-						// TODO #280: Convert the bid price
-						bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment
+
+				if bidResponse.Currency == "" {
+					bidResponse.Currency = "USD"
+				}
+
+				// Related to #281 - currency support
+				// Prebid can't make sure that each HTTP call returns bids with the same currency as the others.
+				// If a Bidder makes two HTTP calls, and their servers respond with different currencies,
+				// we will consider the first call currency as standard currency and then reject others which contradict it.
+				if firstHTTPCallCurrency == "" { // First HTTP call
+					firstHTTPCallCurrency = bidResponse.Currency
+				}
+
+				// TODO: #281 - Once currencies rate conversion is out, this shouldn't be an issue anymore, we will only
+				// need to convert the bid price based on the currency.
+				if firstHTTPCallCurrency == bidResponse.Currency {
+					for i := 0; i < len(bidResponse.Bids); i++ {
+						if bidResponse.Bids[i].Bid != nil {
+							// TODO #280: Convert the bid price
+							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment
+						}
+						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
+							bid:     bidResponse.Bids[i].Bid,
+							bidType: bidResponse.Bids[i].BidType,
+						})
 					}
-					seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-						bid:     bidResponse.Bids[i].Bid,
-						bidType: bidResponse.Bids[i].BidType,
-					})
+				} else {
+					errs = append(errs, fmt.Errorf(
+						"Bid currencies mistmatch found. Expected all bids to have the same currencies. Expected '%s', was: '%s'",
+						firstHTTPCallCurrency,
+						bidResponse.Currency,
+					))
 				}
 			}
 		} else {
