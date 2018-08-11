@@ -1,5 +1,10 @@
 [![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
 
+# Gamoshi Notes
+
+Prebid Server fork, with the following changes:
+- Kubernetes [deployment descriptor](./kubernetes.yaml)
+
 # Prebid Server
 
 Prebid Server is an open source implementation of Server-Side Header Bidding.
