@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -313,6 +314,7 @@ func keys(m map[string]bool) []string {
 func preprocess(imp *openrtb.Imp) (string, error) {
 	// We don't support audio imps yet.
 	if imp.Audio != nil {
+		glog.Warning("Appnexus CAPABILITY VIOLATION: audio Imps not supported")
 		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
 		}
