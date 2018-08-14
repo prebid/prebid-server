@@ -970,3 +970,83 @@ func TestOpenRTBBidRequest_InvalidParams(t *testing.T) {
 	}
 
 }
+
+func TestOpenRTBBidRequest_UnsupportedMediaType(t *testing.T) {
+	bidder := new(PubmaticAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "12345",
+		Imp: []openrtb.Imp{{
+			ID: "234",
+			Audio: &openrtb.Audio{
+				MinDuration: 100,
+				MaxDuration: 200,
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+								"adSlot": "AdTag_Div1@300x250",
+								"publisherId": "1234"
+							}}`),
+		}},
+		Device: &openrtb.Device{
+			UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+		},
+		User: &openrtb.User{
+			ID: "testID",
+		},
+		Site: &openrtb.Site{
+			ID: "siteID",
+		},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) == 0 {
+		t.Fatalf("Should get errors while Making HTTP requests for audio: %v", errs)
+	}
+	if len(reqs) != 0 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+
+}
+func TestOpenRTBBidRequest_UnsupportedMediaTypeWithValidMediaType(t *testing.T) {
+	bidder := new(PubmaticAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "12345",
+		Imp: []openrtb.Imp{{
+			ID: "234",
+			Audio: &openrtb.Audio{
+				MinDuration: 100,
+				MaxDuration: 200,
+			},
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+								"adSlot": "AdTag_Div1@300x250",
+								"publisherId": "1234"
+							}}`),
+		}},
+		Device: &openrtb.Device{
+			UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+		},
+		User: &openrtb.User{
+			ID: "testID",
+		},
+		Site: &openrtb.Site{
+			ID: "siteID",
+		},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) != 0 {
+		t.Fatalf("Should not get errors while Making HTTP requests for audio: %v", errs)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+}

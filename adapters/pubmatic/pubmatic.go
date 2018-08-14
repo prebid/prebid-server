@@ -26,11 +26,6 @@ type PubmaticAdapter struct {
 	URI  string
 }
 
-/* Name - export adapter name */
-func (a *PubmaticAdapter) Name() string {
-	return "pubmatic"
-}
-
 // used for cookies and such
 func (a *PubmaticAdapter) FamilyName() string {
 	return "pubmatic"
@@ -112,7 +107,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		}
 
 		// Parse Wrapper Extension i.e. ProfileID and VersionID only once per request
-		if wrapExt == "" && len(string(params.WrapExt)) != 0 {
+		if wrapExt == "" && len(params.WrapExt) != 0 {
 			var wrapExtMap map[string]int
 			err := json.Unmarshal([]byte(params.WrapExt), &wrapExtMap)
 			if err != nil {
@@ -342,7 +337,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		}
 	}
 
-	thisUri := a.URI
+	thisURI := a.URI
 
 	// If all the requests are invalid, Call to adaptor is skipped
 	if len(request.Imp) == 0 {
@@ -360,7 +355,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisUri,
+		Uri:     thisURI,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
@@ -369,8 +364,12 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 // parseImpressionObject parase  the imp to get it ready to send to pubmatic
 func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
 	// PubMatic supports native, banner and video impressions.
-	if imp.Audio != nil {
+	if imp.Audio != nil && imp.Banner == nil && imp.Video == nil {
 		return fmt.Errorf("PubMatic doesn't support audio. Ignoring ImpID = %s", imp.ID)
+	}
+
+	if imp.Audio != nil {
+		imp.Audio = nil
 	}
 
 	var bidderExt adapters.ExtImpBidder
@@ -395,7 +394,7 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		*pubID = pubmaticExt.PublisherId
 	}
 
-	// Parse Wrapper Extension, Lat, Long, yob, kadPageURL, gender  only once per request
+	// Parse Wrapper Extension only once per request
 	if *wrapExt == "" && len(string(pubmaticExt.WrapExt)) != 0 {
 		var wrapExtMap map[string]int
 		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExtMap)

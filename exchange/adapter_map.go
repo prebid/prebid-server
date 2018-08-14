@@ -44,8 +44,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration) map[openrtb_e
 		// TODO #213: Upgrade the Lifestreet adapter
 		openrtb_ext.BidderLifestreet: adaptLegacyAdapter(lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig)),
 		openrtb_ext.BidderOpenx:      adaptBidder(openx.NewOpenxBidder(), client),
-		// TODO #214: Upgrade the Pubmatic adapter
-		openrtb_ext.BidderPubmatic: adaptBidder(pubmatic.NewPubmaticBidder(client, cfg.Adapters["pubmatic"].Endpoint), client),
+		openrtb_ext.BidderPubmatic:   adaptBidder(pubmatic.NewPubmaticBidder(client, cfg.Adapters["pubmatic"].Endpoint), client),
 		// TODO #215: Upgrade the Pulsepoint adapter
 		openrtb_ext.BidderPulsepoint: adaptLegacyAdapter(pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint)),
 		openrtb_ext.BidderRubicon: adaptBidder(rubicon.NewRubiconBidder(client, cfg.Adapters["rubicon"].Endpoint, cfg.Adapters["rubicon"].XAPI.Username,
