@@ -100,7 +100,7 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   namespace: prebid
-  name: server
+  name: prebid-server
   labels:
     app: prebid
   annotations:
