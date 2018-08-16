@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/somoaudience.json

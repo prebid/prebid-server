@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	"github.com/spf13/viper"
 )

@@ -1,5 +1,5 @@
 FROM alpine:3.8 AS build
-WORKDIR /go/src/github.com/prebid/prebid-server/
+WORKDIR /go/src/github.com/PubMatic-OpenWrap/prebid-server/
 RUN apk add -U --no-cache go git dep musl-dev
 ENV GOPATH /go
 ENV CGO_ENABLED 0
@@ -11,7 +11,7 @@ RUN go build .
 FROM alpine:3.8 AS release
 MAINTAINER Dave Bemiller <dbemiller@appnexus.com>
 WORKDIR /usr/local/bin/
-COPY --from=build /go/src/github.com/prebid/prebid-server/prebid-server .
+COPY --from=build /go/src/github.com/PubMatic-OpenWrap/prebid-server/prebid-server .
 COPY static static/
 COPY stored_requests/data stored_requests/data
 RUN apk add -U --no-cache ca-certificates

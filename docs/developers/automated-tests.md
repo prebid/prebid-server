@@ -15,7 +15,7 @@ For more info on how to write tests in Go, see [the Go docs](https://golang.org/
 ## Adapter Tests
 
 If your adapter makes HTTP calls using standard JSON, you should use the
-[RunJSONBidderTest](https://github.com/prebid/prebid-server/blob/master/adapters/adapterstest/test_json.go#L50) function.
+[RunJSONBidderTest](https://github.com/PubMatic-OpenWrap/prebid-server/blob/master/adapters/adapterstest/test_json.go#L50) function.
 
 This will be much more thorough, convenient, maintainable, and reusable than writing standard Go tests
 for your adapter.

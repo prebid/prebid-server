@@ -2,7 +2,7 @@ package brightroll
 
 import (
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"testing"
 )
 

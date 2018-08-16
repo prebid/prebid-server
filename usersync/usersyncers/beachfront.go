@@ -2,7 +2,7 @@ package usersyncers
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
 
 func NewBeachfrontSyncer(usersyncURL string, platformId string) usersync.Usersyncer {

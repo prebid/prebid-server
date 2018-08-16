@@ -3,7 +3,7 @@ package usersyncers
 import (
 	"net/url"
 
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
 
 func NewAppnexusSyncer(externalURL string) usersync.Usersyncer {
