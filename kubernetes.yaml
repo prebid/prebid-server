@@ -19,7 +19,6 @@ spec:
   selector:
     app: prebid
     role: server
-    env: prod
 ---
 apiVersion: apps/v1
 kind: Deployment
