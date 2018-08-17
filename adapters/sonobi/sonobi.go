@@ -10,22 +10,27 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// Adapter - Sonobi Adapter definition
-type Adapter struct {
-	http *adapters.HTTPAdapter
+// SonobiAdapter - Sonobi SonobiAdapter definition
+type SonobiAdapter struct {
+	http *adapters.HTTPSonobiAdapter
 	URI  string
 }
 
 // Name returns the name fo cookie stuff
-func (a *Adapter) Name() string {
+func (a *SonobiAdapter) Name() string {
 	return "sonobi"
 }
 
-// NewSonobiBidder Initializes the Bidder
-func NewSonobiBidder(client *http.Client, endpoint string) *Adapter {
-	a := &adapters.HTTPAdapter{Client: client}
+// NewSovrnSonobiAdapter create a new SovrnSonobiAdapter instance
+func NewSonobiSonobiAdapter(config *adapters.HTTPSonobiAdapterConfig, endpoint string) *SonobiAdapter {
+	return NewSonobiBidder(adapters.NewHTTPSonobiAdapter(config).Client, endpoint)
+}
 
-	return &Adapter{
+// NewSonobiBidder Initializes the Bidder
+func NewSonobiBidder(client *http.Client, endpoint string) *SonobiAdapter {
+	a := &adapters.HTTPSonobiAdapter{Client: client}
+
+	return &SonobiAdapter{
 		http: a,
 		URI:  endpoint,
 	}
@@ -36,7 +41,7 @@ type sonobiParams struct {
 }
 
 // MakeRequests
-func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var sonobiExt openrtb_ext.ExtImpSoonobi
 	var bannerImps []openrtb.Imp
@@ -87,7 +92,7 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Request
 }
 
 // makeRequest helper method to crete the http request data
-func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *SonobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
 	reqJSON, err := json.Marshal(request)
@@ -108,7 +113,7 @@ func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 }
 
 // MakeBids makes the bids
-func (a *Adapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
+func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) ([]*adapters.TypedBid, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}

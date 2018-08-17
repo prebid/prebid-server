@@ -335,6 +335,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
+	v.SetDefault("adapters.sonobi.endpoint", "http://192.168.0.231/bid?partnerid=71d9d3d8af&debug")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
