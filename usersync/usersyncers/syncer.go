@@ -13,6 +13,7 @@ import (
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderAdform:       NewAdformSyncer(cfg.Adapters[string(openrtb_ext.BidderAdform)].UserSyncURL, cfg.ExternalURL),
+		openrtb_ext.BidderAdkernelAdn:  NewAdkernelAdnSyncer(cfg.ExternalURL, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL),
 		openrtb_ext.BidderAdtelligent:  NewAdtelligentSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderAppnexus:     NewAppnexusSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderBeachfront:   NewBeachfrontSyncer(cfg.Adapters[string(openrtb_ext.BidderBeachfront)].UserSyncURL, cfg.Adapters[string(openrtb_ext.BidderBeachfront)].PlatformID),
