@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -28,7 +29,13 @@ func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest) ([]
 	}
 	errs = append(errs, *err...)
 
-	pub2impressions := dispatchImpressions(imps, impExts)
+	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
+	if len(*dispErrors) > 0 {
+		errs = append(errs, *dispErrors...)
+	}
+	if len(pub2impressions) == 0 {
+		return nil, errs
+	}
 	result := make([]*adapters.RequestData, 0, len(pub2impressions))
 	for k, imps := range pub2impressions {
 		bidRequest, err := buildAdapterRequest(request, &k, &imps)
@@ -67,7 +74,7 @@ func getImpressionsInfo(imps *[]openrtb.Imp) (*[]openrtb.Imp, *[]openrtb_ext.Ext
 
 func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn) error {
 	if imp.Banner == nil && imp.Video == nil {
-		return newBadInputError(fmt.Sprintf("Only banner and video impressions are supported. Ignoring imp id=%s", imp.ID))
+		glog.Warning("Adkernel CAPABILITY VIOLATION: only banner and video imps supported")
 	}
 	if impExt.PublisherID < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid pubId value. Ignoring imp id=%s", imp.ID))
@@ -76,11 +83,16 @@ func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn)
 }
 
 //Group impressions by AdKernel-specific parameters `pubId` & `host`
-func dispatchImpressions(imps *[]openrtb.Imp, impsExt *[]openrtb_ext.ExtImpAdkernelAdn) map[openrtb_ext.ExtImpAdkernelAdn][]openrtb.Imp {
+func dispatchImpressions(imps *[]openrtb.Imp, impsExt *[]openrtb_ext.ExtImpAdkernelAdn) (map[openrtb_ext.ExtImpAdkernelAdn][]openrtb.Imp, *[]error) {
 	res := make(map[openrtb_ext.ExtImpAdkernelAdn][]openrtb.Imp)
+	errors := make([]error, 0)
 	for idx := range *imps {
 		imp := (*imps)[idx]
-		compatImpression(&imp)
+		err := compatImpression(&imp)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
 		impExt := (*impsExt)[idx]
 		if res[impExt] == nil {
 			res[impExt] = make([]openrtb.Imp, 0)
@@ -88,7 +100,7 @@ func dispatchImpressions(imps *[]openrtb.Imp, impsExt *[]openrtb_ext.ExtImpAdker
 		res[impExt] = append(res[impExt], imp)
 
 	}
-	return res
+	return res, &errors
 }
 
 //Alter impression info to comply with adkernel platform requirements
@@ -104,7 +116,7 @@ func compatBanerImpression(banner *openrtb.Banner) error {
 	//As banner.w/h are required fields for adkernel adn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
-			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry"))
+			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry or explicit w/h"))
 		}
 		format := banner.Format[0]
 		banner.Format = banner.Format[1:]
