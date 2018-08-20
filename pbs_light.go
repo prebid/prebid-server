@@ -1,15 +1,17 @@
-package main
+package prebidServer
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"flag"
+	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	//"flag"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"net/http/pprof"
+	//"net/http/pprof"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -18,13 +20,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
-	"github.com/rs/cors"
+	//"github.com/rs/cors"
 	"github.com/spf13/viper"
 
 	"crypto/tls"
 	"strings"
 
-	_ "github.com/lib/pq"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
@@ -43,7 +44,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/postgrescache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints"
-	infoEndpoints "github.com/PubMatic-OpenWrap/prebid-server/endpoints/info"
+	//infoEndpoints "github.com/PubMatic-OpenWrap/prebid-server/endpoints/info"
 	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
@@ -53,10 +54,11 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
-	"github.com/PubMatic-OpenWrap/prebid-server/server"
+	//"github.com/PubMatic-OpenWrap/prebid-server/server"
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
+	_ "github.com/lib/pq"
 
 	storedRequestsConf "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/config"
 )
@@ -77,7 +79,7 @@ type bidResult struct {
 	bid_list pbs.PBSBidSlice
 }
 
-const schemaDirectory = "./static/bidder-params"
+const schemaDirectory = "/home/http/GO_SERVER/dmhbserver/static/"
 
 const defaultPriceGranularity = "med"
 
@@ -94,6 +96,19 @@ const hbSizeConstantKey = "hb_size"
 // `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
 const hbCreativeLoadMethodHTML = "html"
 const hbCreativeLoadMethodDemandSDK = "demand_sdk"
+
+// Made global stuctures to use in InitPrebidServer()
+var (
+	g_userSyncDeps     *pbs.UserSyncDeps
+	g_syncers          map[openrtb_ext.BidderName]usersync.Usersyncer
+	g_cfg              *config.Configuration
+	g_ex               exchange.Exchange
+	g_paramsValidator  openrtb_ext.BidderParamValidator
+	g_storedReqFetcher stored_requests.Fetcher
+	g_gdprPerms        gdpr.Permissions
+	g_metrics          pbsmetrics.MetricsEngine
+	g_analytics        analytics.PBSAnalyticsModule
+)
 
 func min(x, y int) int {
 	if x < y {
@@ -122,6 +137,22 @@ type auctionDeps struct {
 	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
 	gdprPerms     gdpr.Permissions
 	metricsEngine pbsmetrics.MetricsEngine
+}
+
+func OrtbAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
+	err := openrtb2.OrtbAuctionEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_cfg, g_metrics, g_analytics, w, r)
+	return err
+
+}
+
+func Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	auctionDepsParams := &auctionDeps{
+		cfg:           g_cfg,
+		syncers:       g_syncers,
+		gdprPerms:     g_gdprPerms,
+		metricsEngine: g_metrics,
+	}
+	auctionDepsParams.auction(w, r, nil)
 }
 
 func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -582,8 +613,8 @@ func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprout
 	}
 }
 
-func serveIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	http.ServeFile(w, r, "static/index.html")
+func ServeIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	http.ServeFile(w, r, schemaDirectory+"index.html")
 }
 
 type NoCache struct {
@@ -626,6 +657,23 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 	return nil
 }
 
+func GetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
+	// /var temp httprouter.Params
+	//	g_userSyncDeps.GetUIDs(w, r, temp)
+}
+
+func SetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
+	var temp httprouter.Params
+	setUID := endpoints.NewSetUIDEndpoint(g_cfg.HostCookie, g_gdprPerms, g_analytics, g_metrics)
+	setUID(w, r, temp)
+}
+
+func CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	cookiesync := endpoints.NewCookieSyncEndpoint(g_syncers, g_cfg, g_gdprPerms, g_metrics, g_analytics)
+	cookiesync(w, r, nil)
+}
+
+/*
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -641,6 +689,25 @@ func main() {
 	}
 
 	if err := serve(Rev, cfg); err != nil {
+		glog.Errorf("prebid-server failed: %v", err)
+	}
+}
+*/
+
+func InitPrebidServer(configFile string) {
+	rand.Seed(time.Now().UnixNano())
+	v := viper.New()
+	v.SetConfigFile(configFile)
+	v.ReadInConfig()
+	config.SetupViper(v, "pbs")
+	var err error
+	g_cfg, err = config.New(v)
+
+	if err != nil {
+		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
+	}
+
+	if err := serve(Rev, g_cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
@@ -673,69 +740,72 @@ func serve(revision string, cfg *config.Configuration) error {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	fetcher, ampFetcher, db, shutdown := storedRequestsConf.NewStoredRequests(&cfg.StoredRequests, theClient, router)
+	fetcher, _, db, shutdown := storedRequestsConf.NewStoredRequests(&cfg.StoredRequests, theClient, router)
 	defer shutdown()
-
+	g_storedReqFetcher = fetcher
 	if err := loadDataCache(cfg, db); err != nil {
 		return fmt.Errorf("Prebid Server could not load data cache: %v", err)
 	}
 
-	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
+	g_analytics = analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 
 	// Hack because of how legacy handles districtm
 	bidderList := openrtb_ext.BidderList()
 	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
 
-	metricsEngine := metricsConf.NewMetricsEngine(cfg, bidderList)
-
-	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
+	g_metrics = metricsConf.NewMetricsEngine(cfg, bidderList)
+	var err error
+	g_paramsValidator, err = openrtb_ext.NewBidderParamsValidator(schemaDirectory + "bidder-params")
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
 	exchanges = newExchangeMap(cfg)
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine)
+	g_ex = exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, g_metrics)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, metricsEngine, pbsAnalytics)
-	if err != nil {
-		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
-	}
+	/*
+		openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, metricsEngine, pbsAnalytics)
+		if err != nil {
+			glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
+		}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, metricsEngine, pbsAnalytics)
-	if err != nil {
-		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
-	}
+		ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, metricsEngine, pbsAnalytics)
+		if err != nil {
+			glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
+		}
+	*/
+	g_syncers = usersyncers.NewSyncerMap(cfg)
+	g_gdprPerms = gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(g_syncers), theClient)
 
-	syncers := usersyncers.NewSyncerMap(cfg)
-	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
-
-	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
-
-	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
-	router.POST("/openrtb2/auction", openrtbEndpoint)
-	router.GET("/openrtb2/amp", ampEndpoint)
-	router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
-	router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
-	router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
-	router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, metricsEngine, pbsAnalytics))
-	router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
-	router.GET("/", serveIndex)
-	router.ServeFiles("/static/*filepath", http.Dir("static"))
-
-	userSyncDeps := &pbs.UserSyncDeps{
+	// /	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
+	/*
+		router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
+		router.POST("/openrtb2/auction", openrtbEndpoint)
+		router.GET("/openrtb2/amp", ampEndpoint)
+		router.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
+		router.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
+		router.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
+		router.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, metricsEngine, pbsAnalytics))
+		router.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
+		router.GET("/", serveIndex)
+		router.ServeFiles("/static/*filepath", http.Dir("static"))
+	*/
+	g_userSyncDeps = &pbs.UserSyncDeps{
 		HostCookieConfig: &(cfg.HostCookie),
 		ExternalUrl:      cfg.ExternalURL,
 		RecaptchaSecret:  cfg.RecaptchaSecret,
-		MetricsEngine:    metricsEngine,
-		PBSAnalytics:     pbsAnalytics,
+		MetricsEngine:    g_metrics,
+		PBSAnalytics:     g_analytics,
 	}
 
-	router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
-	router.POST("/optout", userSyncDeps.OptOut)
-	router.GET("/optout", userSyncDeps.OptOut)
-
+	/*
+		router.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, metricsEngine))
+		router.POST("/optout", userSyncDeps.OptOut)
+		router.GET("/optout", userSyncDeps.OptOut)
+	*/
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
+	pbc.InitPrebidCacheURL(cfg.ExternalURL)
 	// Fixes #648
 	//
 	// These CORS options pose a security risk... but it's a calculated one.
@@ -751,31 +821,33 @@ func serve(revision string, cfg *config.Configuration) error {
 	// - https://github.com/rs/cors/issues/55
 	// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
 	// - https://portswigger.net/blog/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
-	c := cors.New(cors.Options{
-		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			return true
-		},
-		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
-	corsRouter := c.Handler(router)
+	/*
+		c := cors.New(cors.Options{
+			AllowCredentials: true,
+			AllowOriginFunc: func(origin string) bool {
+				return true
+			},
+			AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
+		corsRouter := c.Handler(router)
 
-	// Add no cache headers
-	noCacheHandler := NoCache{corsRouter}
+		// Add no cache headers
+		noCacheHandler := NoCache{corsRouter}
 
-	// Add endpoints to the admin server
-	// Making sure to add pprof routes
-	adminRouter := http.NewServeMux()
+		// Add endpoints to the admin server
+		// Making sure to add pprof routes
+		adminRouter := http.NewServeMux()
 
-	// Register pprof handlers
-	adminRouter.HandleFunc("/debug/pprof/", pprof.Index)
-	adminRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	adminRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	adminRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	adminRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		// Register pprof handlers
+		adminRouter.HandleFunc("/debug/pprof/", pprof.Index)
+		adminRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		adminRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		adminRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		adminRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-	// Register prebid-server defined admin handlers
-	adminRouter.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
+		// Register prebid-server defined admin handlers
+		adminRouter.HandleFunc("/version", endpoints.NewVersionEndpoint(revision))
 
-	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
+		server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
+	*/
 	return nil
 }

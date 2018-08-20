@@ -17,11 +17,11 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/net/publicsuffix"
 
-	"github.com/blang/semver"
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 	"github.com/PubMatic-OpenWrap/prebid-server/prebid"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/blang/semver"
+	"github.com/mxmCherry/openrtb"
 	"strconv"
 )
 
@@ -174,7 +174,7 @@ type PBSRequest struct {
 	Cookie  *usersync.PBSCookie `json:"-"`
 	Url     string              `json:"-"`
 	Domain  string              `json:"-"`
-	Regs    *openrtb.Regs       `json:"-"`
+	Regs    *openrtb.Regs       `json:"regs"`
 	Start   time.Time
 }
 
