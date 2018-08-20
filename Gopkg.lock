@@ -333,7 +333,10 @@
   packages = [
     "collate",
     "collate/build",
+    "currency",
+    "internal",
     "internal/colltab",
+    "internal/format",
     "internal/gen",
     "internal/tag",
     "internal/triegen",
@@ -358,6 +361,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "74be7ac34be5f08759028399a71b49c9d14b166840b7719f50020f93761bfb97"
+  inputs-digest = "b7ee78c7684d22aa722728d8b82b2870d177679c140106e14b12da2fd43c64f7"
   solver-name = "gps-cdcl"
   solver-version = 1

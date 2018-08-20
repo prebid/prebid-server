@@ -5,13 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
-	"strings"
-
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -19,6 +12,12 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 type SovrnAdapter struct {

@@ -12,7 +12,7 @@ import (
 
 // SonobiAdapter - Sonobi SonobiAdapter definition
 type SonobiAdapter struct {
-	http *adapters.HTTPSonobiAdapter
+	http *adapters.HTTPAdapter
 	URI  string
 }
 
@@ -21,14 +21,14 @@ func (a *SonobiAdapter) Name() string {
 	return "sonobi"
 }
 
-// NewSovrnSonobiAdapter create a new SovrnSonobiAdapter instance
-func NewSonobiSonobiAdapter(config *adapters.HTTPSonobiAdapterConfig, endpoint string) *SonobiAdapter {
-	return NewSonobiBidder(adapters.NewHTTPSonobiAdapter(config).Client, endpoint)
+// NewSonobiAdapter create a new SovrnSonobiAdapter instance
+func NewSonobiAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *SonobiAdapter {
+	return NewSonobiBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
 }
 
 // NewSonobiBidder Initializes the Bidder
 func NewSonobiBidder(client *http.Client, endpoint string) *SonobiAdapter {
-	a := &adapters.HTTPSonobiAdapter{Client: client}
+	a := &adapters.HTTPAdapter{Client: client}
 
 	return &SonobiAdapter{
 		http: a,
