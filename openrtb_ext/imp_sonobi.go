@@ -1,5 +1,5 @@
 package openrtb_ext
 
-type ExtImpSoonobi struct {
+type ExtImpSonobi struct {
 	TagID string `json:"tagid"`
 }
