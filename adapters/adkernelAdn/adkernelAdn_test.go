@@ -7,5 +7,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "adkerneladntest", new(adkernelAdnAdapter))
+	adapterstest.RunJSONBidderTest(t, "adkerneladntest", NewAdkernelAdnAdapter("http://{{.Host}}/rtbpub?account={{.PublisherID}}"))
 }

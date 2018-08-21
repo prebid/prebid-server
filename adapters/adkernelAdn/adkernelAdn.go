@@ -1,9 +1,11 @@
 package adkernelAdn
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"text/template"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -14,7 +16,9 @@ import (
 
 const defaultDomain string = "tag.adkernel.com"
 
-type adkernelAdnAdapter struct{}
+type adkernelAdnAdapter struct {
+	EndpointTemplate template.Template
+}
 
 //MakeRequests prepares request information for prebid-server core
 func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -23,22 +27,22 @@ func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest) ([]
 		errs = append(errs, newBadInputError("No impression in the bid request"))
 		return nil, errs
 	}
-	imps, impExts, err := getImpressionsInfo(&request.Imp)
-	if len(*imps) == 0 {
-		return nil, *err
+	imps, impExts, err := getImpressionsInfo(request.Imp)
+	if len(imps) == 0 {
+		return nil, err
 	}
-	errs = append(errs, *err...)
+	errs = append(errs, err...)
 
 	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
-	if len(*dispErrors) > 0 {
-		errs = append(errs, *dispErrors...)
+	if len(dispErrors) > 0 {
+		errs = append(errs, dispErrors...)
 	}
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
 	result := make([]*adapters.RequestData, 0, len(pub2impressions))
 	for k, imps := range pub2impressions {
-		bidRequest, err := buildAdapterRequest(request, &k, &imps)
+		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -49,13 +53,13 @@ func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest) ([]
 }
 
 // getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
-func getImpressionsInfo(imps *[]openrtb.Imp) (*[]openrtb.Imp, *[]openrtb_ext.ExtImpAdkernelAdn, *[]error) {
-	impsCount := len(*imps)
+func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImpAdkernelAdn, []error) {
+	impsCount := len(imps)
 	errors := make([]error, 0, impsCount)
 	resImps := make([]openrtb.Imp, 0, impsCount)
 	resImpExts := make([]openrtb_ext.ExtImpAdkernelAdn, 0, impsCount)
 
-	for _, imp := range *imps {
+	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
 		if err != nil {
 			errors = append(errors, err)
@@ -69,7 +73,7 @@ func getImpressionsInfo(imps *[]openrtb.Imp) (*[]openrtb.Imp, *[]openrtb_ext.Ext
 		resImpExts = append(resImpExts, *impExt)
 
 	}
-	return &resImps, &resImpExts, &errors
+	return resImps, resImpExts, errors
 }
 
 func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn) error {
@@ -83,24 +87,24 @@ func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn)
 }
 
 //Group impressions by AdKernel-specific parameters `pubId` & `host`
-func dispatchImpressions(imps *[]openrtb.Imp, impsExt *[]openrtb_ext.ExtImpAdkernelAdn) (map[openrtb_ext.ExtImpAdkernelAdn][]openrtb.Imp, *[]error) {
+func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpAdkernelAdn) (map[openrtb_ext.ExtImpAdkernelAdn][]openrtb.Imp, []error) {
 	res := make(map[openrtb_ext.ExtImpAdkernelAdn][]openrtb.Imp)
 	errors := make([]error, 0)
-	for idx := range *imps {
-		imp := (*imps)[idx]
+	for idx := range imps {
+		imp := imps[idx]
 		err := compatImpression(&imp)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		impExt := (*impsExt)[idx]
+		impExt := impsExt[idx]
 		if res[impExt] == nil {
 			res[impExt] = make([]openrtb.Imp, 0)
 		}
 		res[impExt] = append(res[impExt], imp)
 
 	}
-	return res, &errors
+	return res, errors
 }
 
 //Alter impression info to comply with adkernel platform requirements
@@ -142,7 +146,7 @@ func getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpAdkernelAdn, error) 
 	return &adkernelAdnExt, nil
 }
 
-func buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps *[]openrtb.Imp) (*adapters.RequestData, error) {
+func (adapter *adkernelAdnAdapter) buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps []openrtb.Imp) (*adapters.RequestData, error) {
 	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
 	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
@@ -154,16 +158,21 @@ func buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_e
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
 
+	url, err := adapter.buildEndpointURL(params)
+	if err != nil {
+		return nil, err
+	}
+
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     buildEndpointURL(params),
+		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers}, nil
 }
 
-func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps *[]openrtb.Imp) *openrtb.BidRequest {
+func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps []openrtb.Imp) *openrtb.BidRequest {
 	bidRequest := *prebidBidRequest
-	bidRequest.Imp = *imps
+	bidRequest.Imp = imps
 	for idx := range bidRequest.Imp {
 		imp := &bidRequest.Imp[idx]
 		imp.TagID = imp.ID
@@ -175,20 +184,29 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 	if bidRequest.App != nil {
 		bidRequest.App.Publisher = nil
 	}
-	//nullify as prebid-server passes base64 adapter->uid map for all adapters
-	if bidRequest.User != nil {
-		bidRequest.User.ID = ""
-	}
 	return &bidRequest
 }
 
+// EndpointVars contains
+type EndpointVars struct {
+	Host        string
+	PublisherID int
+}
+
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
-func buildEndpointURL(params *openrtb_ext.ExtImpAdkernelAdn) string {
+func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdkernelAdn) (string, error) {
 	reqHost := defaultDomain
 	if params.Host != "" {
 		reqHost = params.Host
 	}
-	return fmt.Sprintf("http://%s/rtbpub?account=%d", reqHost, params.PublisherID)
+	endpointParams := EndpointVars{Host: reqHost, PublisherID: params.PublisherID}
+	buf := new(bytes.Buffer)
+	err := adapter.EndpointTemplate.Execute(buf, endpointParams)
+	if err != nil {
+		return "", err
+	}
+	res := buf.String()
+	return res, nil
 }
 
 //MakeBids translates adkernel bid response to prebid-server specific format
@@ -249,6 +267,11 @@ func newBadServerResponseError(message string) error {
 }
 
 // NewAdkernelAdnAdapter to be called in prebid-server core to create AdkernelAdn adapter instance
-func NewAdkernelAdnAdapter() adapters.Bidder {
-	return &adkernelAdnAdapter{}
+func NewAdkernelAdnAdapter(endpointTemplate string) adapters.Bidder {
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
+		return nil
+	}
+	return &adkernelAdnAdapter{EndpointTemplate: *template}
 }
