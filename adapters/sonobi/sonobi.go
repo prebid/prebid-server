@@ -178,6 +178,7 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 	var err error
 	// NOTE: sonobi only supports 1 impression. Only the first will be considered until Sonobi supports more than 1.
 	for _, imp := range request.Imp {
+		// Sonobi doesn't allow multi-type imp. Banner takes priority over video.
 		if imp.Banner != nil {
 			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
