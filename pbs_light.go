@@ -697,9 +697,10 @@ func main() {
 func InitPrebidServer(configFile string) {
 	rand.Seed(time.Now().UnixNano())
 	v := viper.New()
+	config.SetupViper(v, configFile)
 	v.SetConfigFile(configFile)
 	v.ReadInConfig()
-	config.SetupViper(v, "pbs")
+
 	var err error
 	g_cfg, err = config.New(v)
 
