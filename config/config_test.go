@@ -79,6 +79,8 @@ adapters:
   brightroll:
     usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s
     endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
+  adkerneladn:
+     usersync_url: https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
@@ -149,6 +151,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
+	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 }
 
 func TestValidConfig(t *testing.T) {

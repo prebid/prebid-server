@@ -6,6 +6,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
@@ -31,6 +32,7 @@ import (
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
 	return map[openrtb_ext.BidderName]adaptedBidder{
 		openrtb_ext.BidderAdform:      adaptBidder(adapters.EnforceBidderInfo(adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint), infos[string(openrtb_ext.BidderAdform)]), client),
+		openrtb_ext.BidderAdkernelAdn: adaptBidder(adapters.EnforceBidderInfo(adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint), infos[string(openrtb_ext.BidderAdkernelAdn)]), client),
 		openrtb_ext.BidderAdtelligent: adaptBidder(adapters.EnforceBidderInfo(adtelligent.NewAdtelligentBidder(cfg.Adapters[string(openrtb_ext.BidderAdtelligent)].Endpoint), infos[string(openrtb_ext.BidderAdtelligent)]), client),
 		openrtb_ext.BidderAppnexus:    adaptBidder(adapters.EnforceBidderInfo(appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint), infos[string(openrtb_ext.BidderAppnexus)]), client),
 		// TODO #615: Update the config setup so that the Beachfront URLs can be configured, and use those in TestRaceIntegration in exchange_test.go

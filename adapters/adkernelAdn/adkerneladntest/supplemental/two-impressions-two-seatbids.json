@@ -1,0 +1,103 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "banner-adunit-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "pubId": 101,
+            "host": "tag.test.com"
+          }
+        }
+      },{
+        "id": "video-adunit-2",
+        "video": {"mimes": ["video/mp4"]},
+        "ext": {
+          "bidder": {
+            "pubId": 101,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app_001",
+      "bundle": "com.rovia.angrybirds",
+      "publisher": {
+        "id": "2"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://tag.test.com/rtbpub?account=101",
+        "body": {
+            "app": {
+            "bundle": "com.rovia.angrybirds",
+            "id": "app_001"
+          },
+          "id": "0000000000001",
+          "imp": [
+            {
+              "id": "banner-adunit-1",
+              "tagid": "banner-adunit-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }, {
+              "id": "video-adunit-2",
+              "tagid": "video-adunit-2",
+              "video": {"mimes": ["video/mp4"]}
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "75472df2-1cb3-4f8e-9a28-10cb95fe05a4",
+          "seatbid": [{
+            "bid":[{
+              "id": "bid02",
+              "impid": "video-adunit-2",
+              "price": 2.25,
+              "cid": "1001",
+              "crid": "2002",
+              "adid": "2002",
+              "adm": "<!-- admarkup -->",
+              "cat": ["IAB2"],
+              "adomain": ["video-example.com"],
+              "h": 480,
+              "w": 640
+            }]
+          },{
+              "bid": [{
+                  "id": "bid01",
+                  "impid": "banner-adunit-1",
+                  "price": 0.5,
+                  "cid": "3706",
+                  "crid": "19005",
+                  "adid": "19005",
+                  "adm": "<!-- admarkup -->",
+                  "cat": ["IAB2"],
+                  "adomain": ["test.com"],
+                  "h": 250,
+                  "w": 300
+              }]
+          }],
+          "bidid": "wehM-93KGr0"
+        }
+      }
+    }
+  ],
+
+  "expectedMakeBidsErrors": ["Invalid SeatBids count: 2"]
+}

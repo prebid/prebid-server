@@ -20,6 +20,7 @@ type BidderName string
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
+	BidderAdkernelAdn  BidderName = "adkernelAdn"
 	BidderAdtelligent  BidderName = "adtelligent"
 	BidderAdform       BidderName = "adform"
 	BidderAppnexus     BidderName = "appnexus"
@@ -40,6 +41,7 @@ const (
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
+	"adkernelAdn":     BidderAdkernelAdn,
 	"adtelligent":     BidderAdtelligent,
 	"adform":          BidderAdform,
 	"appnexus":        BidderAppnexus,
