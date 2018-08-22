@@ -77,13 +77,13 @@ func cleanIP(fullIP string) string {
 	return fullIP[0:i] + ".000"
 }
 
-// Zero the last two sections of an IPv6 address
+// Zero the last two bytes of an IPv6 address
 func cleanIPv6(fullIP string) string {
 	i := strings.LastIndex(fullIP, ":")
 	return fullIP[0:i] + ":0000"
 }
 
-// Return a cleaned Geo object pointer
+// Return a cleaned Geo object pointer (round off the latitude/longitude)
 func cleanGeo(geo *openrtb.Geo) *openrtb.Geo {
 	newGeo := *geo
 	newGeo.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0
