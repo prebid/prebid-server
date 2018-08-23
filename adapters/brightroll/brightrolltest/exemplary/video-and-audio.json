@@ -51,19 +51,6 @@
                   "publisher": "cafemom"
                 }
               }
-            },
-            {
-              "id": "unsupported-audio-imp",
-              "audio": {
-                "mimes": [
-                  "video/mp4"
-                ]
-              },
-              "ext": {
-                "bidder": {
-                  "publisher": "cafemom"
-                }
-              }
             }
           ]
         }

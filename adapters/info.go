@@ -23,28 +23,28 @@ import (
 func EnforceBidderInfo(bidder Bidder, info BidderInfo) Bidder {
 	return &InfoAwareBidder{
 		Bidder: bidder,
-		info:   info,
+		info:   parseBidderInfo(info),
 	}
 }
 
 type InfoAwareBidder struct {
 	Bidder
-	info BidderInfo
+	info parsedBidderInfo
 }
 
 func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
-	var allowedMediaTypes []openrtb_ext.BidType
+	var allowedMediaTypes parsedSupports
 	if request.Site != nil {
-		if i.info.Capabilities.Site == nil {
+		if !i.info.site.enabled {
 			return nil, []error{BadInput("this bidder does not support site requests")}
 		}
-		allowedMediaTypes = i.info.Capabilities.Site.MediaTypes
+		allowedMediaTypes = i.info.site
 	}
 	if request.App != nil {
-		if i.info.Capabilities.App == nil {
+		if !i.info.app.enabled {
 			return nil, []error{BadInput("this bidder does not support app requests")}
 		}
-		allowedMediaTypes = i.info.Capabilities.App.MediaTypes
+		allowedMediaTypes = i.info.app
 	}
 
 	// Filtering imps is quite expensive (array filter with large, non-pointer elements)... but should be rare,
@@ -64,24 +64,23 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestD
 
 // pruneImps trims invalid media types from each imp, and returns true if any of the
 // Imps have _no_ valid Media Types left.
-func (i *InfoAwareBidder) pruneImps(imps []openrtb.Imp, allowedTypes []openrtb_ext.BidType) (int, []error) {
-	allowBanner, allowVideo, allowAudio, allowNative := parseAllowedTypes(allowedTypes)
+func (i *InfoAwareBidder) pruneImps(imps []openrtb.Imp, allowedTypes parsedSupports) (int, []error) {
 	numToFilter := 0
 	var errs []error
 	for i := 0; i < len(imps); i++ {
-		if !allowBanner && imps[i].Banner != nil {
+		if !allowedTypes.banner && imps[i].Banner != nil {
 			imps[i].Banner = nil
 			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses banner, but this bidder doesn't support it", i)))
 		}
-		if !allowVideo && imps[i].Video != nil {
+		if !allowedTypes.video && imps[i].Video != nil {
 			imps[i].Video = nil
 			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses video, but this bidder doesn't support it", i)))
 		}
-		if !allowAudio && imps[i].Audio != nil {
+		if !allowedTypes.audio && imps[i].Audio != nil {
 			imps[i].Audio = nil
 			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses audio, but this bidder doesn't support it", i)))
 		}
-		if !allowNative && imps[i].Native != nil {
+		if !allowedTypes.native && imps[i].Native != nil {
 			imps[i].Native = nil
 			errs = append(errs, BadInput(fmt.Sprintf("request.imp[%d] uses native, but this bidder doesn't support it", i)))
 		}
@@ -189,4 +188,31 @@ func containsMediaType(haystack []openrtb_ext.BidType, needle openrtb_ext.BidTyp
 		}
 	}
 	return false
+}
+
+// Structs to handle parsed bidder info, so we aren't reparsing every request
+type parsedBidderInfo struct {
+	app  parsedSupports
+	site parsedSupports
+}
+
+type parsedSupports struct {
+	enabled bool
+	banner  bool
+	video   bool
+	audio   bool
+	native  bool
+}
+
+func parseBidderInfo(info BidderInfo) parsedBidderInfo {
+	var parsedInfo parsedBidderInfo
+	if info.Capabilities.App != nil {
+		parsedInfo.app.enabled = true
+		parsedInfo.app.banner, parsedInfo.app.video, parsedInfo.app.audio, parsedInfo.app.native = parseAllowedTypes(info.Capabilities.App.MediaTypes)
+	}
+	if info.Capabilities.Site != nil {
+		parsedInfo.site.enabled = true
+		parsedInfo.site.banner, parsedInfo.site.video, parsedInfo.site.audio, parsedInfo.site.native = parseAllowedTypes(info.Capabilities.Site.MediaTypes)
+	}
+	return parsedInfo
 }

@@ -23,7 +23,8 @@
       "ext": {
         "prebid": {
           "cache": {
-            "bids": {}
+            "bids": {},
+            "vastxml": {}
           },
           "targeting": {}
         }
@@ -72,6 +73,8 @@
                   "hb_bidder_appnexus": "appnexus",
                   "hb_cache_id": "0",
                   "hb_cache_id_appnexus": "0",
+                  "hb_uuid": "1",
+                  "hb_uuid_appnexus": "1",
                   "hb_pb": "0.00",
                   "hb_pb_appnexus": "0.00",
                   "hb_size": "200x250",

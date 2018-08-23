@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -228,14 +230,16 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 
 	for _, imp := range req.Imp {
 		if imp.Audio != nil {
-			errs = append(errs, &adapters.BadInputError{
+			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Beachfront doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
 			})
+			glog.Warning("Beachfront CAPABILITY VIOLATION: audio Imps not supported")
 			continue
 		} else if imp.Native != nil {
-			errs = append(errs, &adapters.BadInputError{
+			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Beachfront doesn't support native Imps. Ignoring Imp ID=%s", imp.ID),
 			})
+			glog.Warning("Beachfront CAPABILITY VIOLATION: native Imps not supported")
 			continue
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
@@ -403,7 +407,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	if len(errs) != 0 {
 		errors = append(errors, errs...)
-		err := &adapters.BadServerResponseError{
+		err := &errortypes.BadServerResponse{
 			Message: "Failed to process the beachfront response",
 		}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -100,7 +101,7 @@ func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *p
 
 		return lsReq, nil
 	} else {
-		return lsReq, &adapters.BadInputError{
+		return lsReq, &errortypes.BadInput{
 			Message: "No supported impressions",
 		}
 	}
@@ -116,13 +117,13 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			return nil, err
 		}
 		if params.SlotTag == "" {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: "Missing slot_tag param",
 			}
 		}
 		s := strings.Split(params.SlotTag, ".")
 		if len(s) != 2 {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid slot_tag param '%s'", params.SlotTag),
 			}
 		}
@@ -157,7 +158,7 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				result.Bid.BidderCode = bidder.BidderCode
 				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
 				if result.Bid.BidID == "" {
-					result.Error = &adapters.BadServerResponseError{
+					result.Error = &errortypes.BadServerResponse{
 						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
 					}
 					result.Bid = nil
@@ -195,10 +196,10 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig) *LifestreetAdapter {
+func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *LifestreetAdapter {
 	a := adapters.NewHTTPAdapter(config)
 	return &LifestreetAdapter{
 		http: a,
-		URI:  "https://prebid.s2s.lfstmedia.com/adrequest",
+		URI:  endpoint,
 	}
 }

@@ -146,8 +146,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
+		glog.Warningf("/openrtb2/auction Failed to send response: %v", err)
+		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
 }
 
@@ -296,11 +297,11 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 	}
 
 	if len(imp.Metric) != 0 {
-		return errors.New("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future.")
+		return fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)
 	}
 
 	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
-		return errors.New("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"")
+		return fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)
 	}
 
 	if err := validateBanner(imp.Banner, index); err != nil {
@@ -368,6 +369,9 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return nil
 	}
 
+	if len(n.Request) == 0 {
+		return fmt.Errorf("request.imp[%d].native missing required property \"request\"", impIndex)
+	}
 	var nativePayload nativeRequests.Request
 	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
 		return err
@@ -567,6 +571,9 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 }
 
 func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+	if len(ext) == 0 {
+		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
+	}
 	var bidderExts map[string]openrtb.RawJSON
 	if err := json.Unmarshal(ext, &bidderExts); err != nil {
 		return err

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "AdkernelAdn Adapter Params",
+  "description": "A schema which validates params accepted by the AdkernelAdn adapter",
+
+  "type": "object",
+  "properties": {
+      "pubId": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Publisher Id to use."
+      },
+      "host": {
+        "type": "string",
+        "description": "Network host to send request"
+      }
+  },
+  "required": ["pubId"]
+}

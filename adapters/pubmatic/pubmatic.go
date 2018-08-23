@@ -14,6 +14,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
@@ -27,7 +28,7 @@ type PubmaticAdapter struct {
 }
 
 // used for cookies and such
-func (a *PubmaticAdapter) FamilyName() string {
+func (a *PubmaticAdapter) Name() string {
 	return "pubmatic"
 }
 
@@ -65,7 +66,7 @@ func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...inte
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
-	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), mediaTypes)
+	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
 
 	if err != nil {
 		logf("[PUBMATIC] Failed to make ortb request for request id [%s] \n", pbReq.ID)
@@ -192,7 +193,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if !(adSlotFlag) {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: "Incorrect adSlot / Publisher params, Error list: [" + strings.Join(errState, ",") + "]",
 		}
 	}
@@ -213,7 +214,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 		bidder.Debug = append(bidder.Debug, debug)
 	}
 
-	userId, _, _ := req.Cookie.GetUID(a.FamilyName())
+	userId, _, _ := req.Cookie.GetUID(a.Name())
 	httpReq, err := http.NewRequest("POST", a.URI, bytes.NewBuffer(reqJSON))
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
@@ -234,13 +235,13 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	}
 
 	if pbResp.StatusCode == http.StatusBadRequest {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
 		}
 	}
 
 	if pbResp.StatusCode != http.StatusOK {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
 		}
 	}
@@ -258,7 +259,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status: %d", pbResp.StatusCode),
 		}
 	}
@@ -272,7 +273,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
-				return nil, &adapters.BadServerResponseError{
+				return nil, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}
 			}
@@ -426,6 +427,9 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 				if imp.Banner != nil {
 					imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
 					imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+				} else {
+					imp.Video.H = uint64(height)
+					imp.Video.W = uint64(width)
 				}
 			} else {
 				return errors.New("Invalid adSizes Provided ")
@@ -470,7 +474,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}

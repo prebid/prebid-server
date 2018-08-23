@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const uri = "http://rtb.openx.net/prebid"
 const config = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
+	endpoint string
 }
 
 type openxImpExt struct {
@@ -37,9 +39,10 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
 		} else {
-			err := &adapters.BadInputError{
+			err := &errortypes.BadInput{
 				Message: fmt.Sprintf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID),
 			}
+			glog.Warning("OpenX CAPABILITY VIOLATION: only supports banner and video imps")
 			errs = append(errs, err)
 		}
 	}
@@ -49,7 +52,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	reqCopy := *request
 
 	reqCopy.Imp = bannerImps
-	adapterReq, errors := makeRequest(&reqCopy)
+	adapterReq, errors := a.makeRequest(&reqCopy)
 	if adapterReq != nil {
 		adapterRequests = append(adapterRequests, adapterReq)
 	}
@@ -58,7 +61,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	// OpenX only supports single imp video request
 	for _, videoImp := range videoImps {
 		reqCopy.Imp = []openrtb.Imp{videoImp}
-		adapterReq, errors := makeRequest(&reqCopy)
+		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
@@ -68,7 +71,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 	return adapterRequests, errs
 }
 
-func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
 	reqExt := openxReqExt{BidderConfig: config}
@@ -106,7 +109,7 @@ func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	headers.Add("Accept", "application/json")
 	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     uri,
+		Uri:     a.endpoint,
 		Body:    reqJSON,
 		Headers: headers,
 	}, errs
@@ -116,14 +119,14 @@ func makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &adapters.BadInputError{
+		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var openxExt openrtb_ext.ExtImpOpenx
 	if err := json.Unmarshal(bidderExt.Bidder, &openxExt); err != nil {
-		return &adapters.BadInputError{
+		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
@@ -140,7 +143,7 @@ func preprocess(imp *openrtb.Imp, reqExt *openxReqExt) error {
 		}
 		var err error
 		if imp.Ext, err = json.Marshal(impExt); err != nil {
-			return &adapters.BadInputError{
+			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -155,13 +158,13 @@ func (a *OpenxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
@@ -201,6 +204,8 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewOpenxBidder() *OpenxAdapter {
-	return &OpenxAdapter{}
+func NewOpenxBidder(endpoint string) *OpenxAdapter {
+	return &OpenxAdapter{
+		endpoint: endpoint,
+	}
 }

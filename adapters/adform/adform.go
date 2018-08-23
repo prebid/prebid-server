@@ -9,14 +9,17 @@ import (
 	"net/http"
 	"strings"
 
+	"net/url"
+	"strconv"
+
 	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
-	"net/url"
-	"strconv"
 )
 
 type AdformAdapter struct {
@@ -134,13 +137,13 @@ func (a *AdformAdapter) Call(ctx context.Context, request *pbs.PBSRequest, bidde
 	responseBody := string(body)
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
 		}
 	}
 
 	if response.StatusCode != 200 {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
 		}
 	}
@@ -168,12 +171,12 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		}
 		mid, err := adformAdUnit.MasterTagId.Int64()
 		if err != nil {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 		if mid <= 0 {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId),
 			}
 		}
@@ -341,7 +344,7 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 func parseAdformBids(response []byte) ([]*adformBid, error) {
 	var bids []*adformBid
 	if err := json.Unmarshal(response, &bids); err != nil {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: err.Error(),
 		}
 	}
@@ -390,22 +393,23 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	secure := false
 	for _, imp := range request.Imp {
 		if imp.Banner == nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID),
 			})
+			glog.Warning("Adform CAPABILITY VIOLATION: no banner present")
 			continue
 		}
 
 		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
 		if err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		var adformAdUnit adformAdUnit
 		if err := json.Unmarshal(params, &adformAdUnit); err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
@@ -413,13 +417,13 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 		mid, err := adformAdUnit.MasterTagId.Int64()
 		if err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		if mid <= 0 {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId),
 			})
 			continue
@@ -448,7 +452,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	var extRegs openrtb_ext.ExtRegs
 	if request.Regs != nil {
 		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 		}
@@ -527,13 +531,13 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}

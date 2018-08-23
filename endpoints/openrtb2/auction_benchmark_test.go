@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/prebid/prebid-server/adapters"
+
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
@@ -57,12 +59,14 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(dummyServer))
 	defer server.Close()
 
+	var infos adapters.BidderInfos
+	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return
 	}
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics), paramValidator, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics, infos), paramValidator, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

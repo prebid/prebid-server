@@ -1,9 +1,12 @@
 {
+  "message": "Invalid request: request.imp[0].native missing required property \"request\"\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "native": {}
-        }
+      {
+        "id": "imp-id",
+        "native": {}
+      }
     ]
+  }
 }

@@ -9,8 +9,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/prebid_cache_client"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
@@ -37,7 +41,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}
 
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters)).(*exchange)
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList())).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
@@ -57,8 +61,6 @@ func TestNewExchange(t *testing.T) {
 // The "known" file names right now are "banner.json" and "video.json". These files should hold params
 // which the Bidder would expect on banner or video Imps, respectively.
 func TestRaceIntegration(t *testing.T) {
-	// TODO #615: Remove the external dependency and stop skipping this.
-	t.SkipNow()
 	noBidServer := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	}
@@ -66,15 +68,20 @@ func TestRaceIntegration(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			"facebook": config.Adapter{
-				PlatformID: "abc",
-			},
-		},
+		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+	}
+	for _, bidder := range openrtb_ext.BidderList() {
+		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
+			Endpoint: server.URL,
+		}
+	}
+	cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))] = config.Adapter{
+		Endpoint:   server.URL,
+		PlatformID: "abc",
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics)
+	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()))
 	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -133,6 +140,14 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 			Ext: buildImpExt(t, "video"),
 		}},
 	}
+}
+
+func TestPanicRecovery(t *testing.T) {
+	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+		panic("panic!")
+	}
+	recovered := recoverSafely(panicker)
+	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil)
 }
 
 func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
@@ -499,7 +514,7 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 
 type wellBehavedCache struct{}
 
-func (c *wellBehavedCache) PutJson(ctx context.Context, values []json.RawMessage) []string {
+func (c *wellBehavedCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) []string {
 	ids := make([]string, len(values))
 	for i := 0; i < len(values); i++ {
 		ids[i] = strconv.Itoa(i)

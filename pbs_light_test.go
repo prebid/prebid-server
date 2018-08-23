@@ -13,6 +13,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
@@ -350,7 +351,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	ctx := context.TODO()
 	w := httptest.NewRecorder()
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "")
 	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -655,14 +656,14 @@ func (validator *testValidator) Schema(name openrtb_ext.BidderName) string {
 // Test the viper setup
 func TestViperInit(t *testing.T) {
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "")
 	compareStrings(t, "Viper error: external_url expected to be %s, found %s", "http://localhost:8000", v.Get("external_url").(string))
 	compareStrings(t, "Viper error: adapters.pulsepoint.endpoint expected to be %s, found %s", "http://bid.contextweb.com/header/s/ortb/prebid-s2s", v.Get("adapters.pulsepoint.endpoint").(string))
 }
 
 func TestViperEnv(t *testing.T) {
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "")
 	port := forceEnv(t, "PBS_PORT", "7777")
 	defer port()
 
@@ -678,6 +679,32 @@ func TestViperEnv(t *testing.T) {
 	compareStrings(t, "Viper error: adapters.pubmatic.endpoint expected to be %s, found %s", "not_an_endpoint", v.Get("adapters.pubmatic.endpoint").(string))
 	// Config set with underscores
 	compareStrings(t, "Viper error: host_cookie.ttl_days expected to be %s, found %s", "60", v.Get("host_cookie.ttl_days").(string))
+}
+
+func TestPanicRecovery(t *testing.T) {
+	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+		panic("panic!")
+	}
+	recovered := recoverSafely(panicker)
+	recovered(nil, pbsmetrics.AdapterLabels{})
+}
+
+// Prevents #648
+func TestCORSSupport(t *testing.T) {
+	const origin = "https://publisher-domain.com"
+	handler := func(w http.ResponseWriter, r *http.Request) {}
+	cors := supportCORS(http.HandlerFunc(handler))
+	rr := httptest.NewRecorder()
+	req, err := http.NewRequest("OPTIONS", "http://some-domain.com/openrtb2/auction", nil)
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "origin")
+	req.Header.Set("Origin", origin)
+
+	if !assert.NoError(t, err) {
+		return
+	}
+	cors.ServeHTTP(rr, req)
+	assert.Equal(t, origin, rr.Header().Get("Access-Control-Allow-Origin"))
 }
 
 func compareStrings(t *testing.T, message string, expect string, actual string) {

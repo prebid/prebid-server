@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"golang.org/x/net/context/ctxhttp"
-	"io/ioutil"
-	"net/http"
 )
 
 // Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
@@ -19,7 +20,19 @@ type Client interface {
 	// The returned string slice will always have the same number of elements as the values argument. If a
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
 	// logging any relevant errors to the app logs
-	PutJson(ctx context.Context, values []json.RawMessage) []string
+	PutJson(ctx context.Context, values []Cacheable) []string
+}
+
+type PayloadType string
+
+const (
+	TypeJSON PayloadType = "json"
+	TypeXML  PayloadType = "xml"
+)
+
+type Cacheable struct {
+	Type PayloadType
+	Data json.RawMessage
 }
 
 func NewClient(conf *config.Cache) Client {
@@ -39,7 +52,7 @@ type clientImpl struct {
 	putUrl     string
 }
 
-func (c *clientImpl) PutJson(ctx context.Context, values []json.RawMessage) (uuids []string) {
+func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string) {
 	if len(values) < 1 {
 		return nil
 	}
@@ -95,7 +108,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []json.RawMessage) (uui
 	return uuidsToReturn
 }
 
-func encodeValues(values []json.RawMessage) ([]byte, error) {
+func encodeValues(values []Cacheable) ([]byte, error) {
 	// This function assumes that m is non-nil and has at least one element.
 	// clientImp.PutBids should respect this.
 	var buf bytes.Buffer
@@ -109,18 +122,15 @@ func encodeValues(values []json.RawMessage) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func encodeValueToBuffer(value json.RawMessage, leadingComma bool, buffer *bytes.Buffer) error {
+func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffer) error {
 	if leadingComma {
 		buffer.WriteByte(',')
 	}
 
-	encodedBytes, err := json.Marshal(value)
-	if err != nil {
-		return err
-	} else {
-		buffer.WriteString(`{"type":"json","value":`)
-		buffer.Write(encodedBytes)
-		buffer.WriteByte('}')
-	}
+	buffer.WriteString(`{"type":"`)
+	buffer.WriteString(string(value.Type))
+	buffer.WriteString(`","value":`)
+	buffer.Write(value.Data)
+	buffer.WriteByte('}')
 	return nil
 }

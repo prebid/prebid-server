@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/pprof"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"time"
@@ -44,6 +45,7 @@ import (
 	"github.com/prebid/prebid-server/endpoints"
 	infoEndpoints "github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/endpoints/openrtb2"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -242,7 +244,7 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				}
 			}
 			sentBids++
-			go func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 				start := time.Now()
 				bid_list, err := ex.Call(ctx, pbs_req, bidder)
 				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
@@ -258,9 +260,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					default:
 						bidder.Error = err.Error()
 						switch err.(type) {
-						case *adapters.BadInputError:
+						case *errortypes.BadInput:
 							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
-						case *adapters.BadServerResponseError:
+						case *errortypes.BadServerResponse:
 							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
 						default:
 							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
@@ -292,7 +294,9 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 					// Bidder done, record bidder metrics
 				}
 				deps.metricsEngine.RecordAdapterRequest(blabels)
-			}(bidder, blabels)
+			})
+
+			go bidderRunner(bidder, blabels)
 
 		} else {
 			bidder.Error = "Unsupported bidder"
@@ -355,6 +359,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(pbs_resp)
+}
+
+func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
+	return func(bidder *pbs.PBSBidder, labels pbsmetrics.AdapterLabels) {
+		defer func() {
+			if r := recover(); r != nil {
+				if bidder == nil {
+					glog.Errorf("Legacy auction recovered panic: %v. Stack trace is: %v", r, string(debug.Stack()))
+				} else {
+					glog.Errorf("Legacy auction recovered panic from Bidder %s: %v. Stack trace is: %v", bidder.BidderCode, r, string(debug.Stack()))
+				}
+			}
+		}()
+		inner(bidder, labels)
+	}
 }
 
 func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
@@ -615,7 +634,7 @@ func init() {
 
 func main() {
 	v := viper.New()
-	config.SetupViper(v)
+	config.SetupViper(v, "pbs")
 	cfg, err := config.New(v)
 	if err != nil {
 		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
@@ -629,18 +648,18 @@ func main() {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["appnexus"].Endpoint),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["appnexus"].Endpoint),
-		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["indexexchange"].Endpoint),
-		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pubmatic"].Endpoint),
-		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["pulsepoint"].Endpoint),
-		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["rubicon"].Endpoint,
-			cfg.Adapters["rubicon"].XAPI.Username, cfg.Adapters["rubicon"].XAPI.Password, cfg.Adapters["rubicon"].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["facebook"].PlatformID),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["conversant"].Endpoint),
-		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["adform"].Endpoint),
-		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters["sovrn"].Endpoint),
+		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint),
+		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
+		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
+		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
+			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
+		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID),
+		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
+		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
+		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
+		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 	}
 }
 
@@ -674,8 +693,10 @@ func serve(revision string, cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
+	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
+
 	exchanges = newExchangeMap(cfg)
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine, bidderInfos)
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, metricsEngine, pbsAnalytics)
 	if err != nil {
@@ -689,8 +710,6 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
-
-	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
@@ -717,11 +736,7 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
-	// Add CORS middleware
-	c := cors.New(cors.Options{
-		AllowCredentials: true,
-		AllowedHeaders:   []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
-	corsRouter := c.Handler(router)
+	corsRouter := supportCORS(router)
 
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
@@ -742,4 +757,29 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
 	return nil
+}
+
+// Fixes #648
+//
+// These CORS options pose a security risk... but it's a calculated one.
+// People _must_ call us with "withCredentials" set to "true" because that's how we use the cookie sync info.
+// We also must allow all origins because every site on the internet _could_ call us.
+//
+// This is an inherent security risk. However, PBS doesn't use cookies for authorization--just identification.
+// We only store the User's ID for each Bidder, and each Bidder has already exposed a public cookie sync endpoint
+// which returns that data anyway.
+//
+// For more info, see:
+//
+// - https://github.com/rs/cors/issues/55
+// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+// - https://portswigger.net/blog/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
+func supportCORS(handler http.Handler) http.Handler {
+	c := cors.New(cors.Options{
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
+	return c.Handler(handler)
 }
