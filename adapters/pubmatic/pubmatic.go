@@ -427,6 +427,9 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 				if imp.Banner != nil {
 					imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
 					imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+				} else {
+					imp.Video.H = uint64(height)
+					imp.Video.W = uint64(width)
 				}
 			} else {
 				return errors.New("Invalid adSizes Provided ")

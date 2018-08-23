@@ -56,17 +56,31 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 	var bids []openrtb.Bid
 
 	for i, imp := range breq.Imp {
-		bids = append(bids, openrtb.Bid{
-			ID:     fmt.Sprintf("SeatID_%d", i),
-			ImpID:  imp.ID,
-			Price:  float64(int(rand.Float64()*1000)) / 100,
-			AdID:   fmt.Sprintf("adID-%d", i),
-			AdM:    "AdContent",
-			CrID:   fmt.Sprintf("creative-%d", i),
-			W:      *imp.Banner.W,
-			H:      *imp.Banner.H,
-			DealID: fmt.Sprintf("DealID_%d", i),
-		})
+		if imp.Banner != nil {
+			bids = append(bids, openrtb.Bid{
+				ID:     fmt.Sprintf("SeatID_%d", i),
+				ImpID:  imp.ID,
+				Price:  float64(int(rand.Float64()*1000)) / 100,
+				AdID:   fmt.Sprintf("adID-%d", i),
+				AdM:    "AdContent",
+				CrID:   fmt.Sprintf("creative-%d", i),
+				W:      *imp.Banner.W,
+				H:      *imp.Banner.H,
+				DealID: fmt.Sprintf("DealID_%d", i),
+			})
+		} else {
+			bids = append(bids, openrtb.Bid{
+				ID:     fmt.Sprintf("SeatID_%d", i),
+				ImpID:  imp.ID,
+				Price:  float64(int(rand.Float64()*1000)) / 100,
+				AdID:   fmt.Sprintf("adID-%d", i),
+				AdM:    "AdContent",
+				CrID:   fmt.Sprintf("creative-%d", i),
+				W:      imp.Video.W,
+				H:      imp.Video.H,
+				DealID: fmt.Sprintf("DealID_%d", i),
+			})
+		}
 	}
 	resp.SeatBid[0].Bid = bids
 
@@ -686,12 +700,14 @@ func TestOpenRTBBidRequest(t *testing.T) {
 							}}`),
 		}, {
 			ID: "456",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
-					W: 200,
-					H: 350,
-				}},
+			Video: &openrtb.Video{
+				W:           300,
+				H:           600,
+				MIMEs:       []string{"video"},
+				MinDuration: 5,
+				MaxDuration: 10,
 			},
+
 			Ext: openrtb.RawJSON(`{"bidder": {
 				"adSlot": "AdTag_Div2@200x350",
 				"publisherId": "1234",
@@ -759,18 +775,23 @@ func TestOpenRTBBidRequest(t *testing.T) {
 	}
 	if ortbRequest.Imp[1].ID == "456" {
 
-		if ortbRequest.Imp[1].Banner.Format[0].W != 200 {
-			t.Fatalf("Banner width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[1].Banner.Format[0].W)
+		if ortbRequest.Imp[1].Video.W != 200 {
+			t.Fatalf("Video width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[0].Video.W)
 		}
-
-		if ortbRequest.Imp[1].Banner.Format[0].H != 350 {
-			t.Fatalf("Banner height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[1].Banner.Format[0].H)
+		if ortbRequest.Imp[1].Video.H != 350 {
+			t.Fatalf("Video height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[0].Video.H)
+		}
+		if ortbRequest.Imp[1].Video.MIMEs[0] != "video" {
+			t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", ortbRequest.Imp[0].Video.MIMEs[0])
+		}
+		if ortbRequest.Imp[1].Video.MinDuration != 5 {
+			t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, ortbRequest.Imp[0].Video.MinDuration)
+		}
+		if ortbRequest.Imp[1].Video.MaxDuration != 10 {
+			t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, ortbRequest.Imp[0].Video.MaxDuration)
 		}
 		if ortbRequest.Imp[1].TagID != "AdTag_Div2" {
-			t.Fatalf("Failed to Set TagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[1].TagID)
-		}
-		if ortbRequest.Imp[1].Ext == nil {
-			t.Fatalf("Failed to add imp.Ext into outgoing request.")
+			t.Fatalf("Failed to Set TagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[0].TagID)
 		}
 	}
 	if ortbRequest.Site.Publisher.ID != "1234" {
