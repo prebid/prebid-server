@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Openx Adapter Params",
+  "description": "A schema which validates params accepted by the Openx adapter",
+
+  "type": "object",
+  "properties": {
+    "unit": {
+      "type": "string",
+      "description": "The ad unit id.",
+      "pattern": "^[0-9]+$"
+    },
+    "delDomain": {
+      "type": "string",
+      "description": "The delivery domain for the customer.",
+      "pattern": "\\.[a-zA-Z]{2,3}$",
+      "format": "hostname"
+    },
+    "customFloor": {
+      "type": "number",
+      "description": "The minimum CPM price in USD.",
+      "minimum": 0
+    },
+    "customParams": {
+      "type": "object",
+      "description": "User-defined targeting key-value pairs."
+    }
+  },
+
+  "required": ["unit", "delDomain"]
+}

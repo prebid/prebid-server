@@ -1,83 +1,63 @@
-package config_test
+package config
 
 import (
 	"bytes"
 	"testing"
+	"time"
 
-	"github.com/prebid/prebid-server/config"
 	"github.com/spf13/viper"
 )
 
-func init() {
-	viper.SetConfigName("pbs")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/config")
-
-	viper.SetDefault("external_url", "http://localhost:8000")
-	viper.SetDefault("port", 8000)
-	viper.SetDefault("admin_port", 6060)
-	viper.SetDefault("default_timeout_ms", 250)
-	viper.SetDefault("datacache.type", "dummy")
-
-	viper.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
-	viper.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	viper.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
-	viper.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-}
-
 func TestDefaults(t *testing.T) {
-
-	cfg, err := config.New()
+	cfg, err := New(newViperWithDefaults())
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	if cfg.Port != 8000 {
-		t.Error("Expected Port 8000")
-	}
-
-	if cfg.AdminPort != 6060 {
-		t.Error("Expected Admin Port 6060")
-	}
-
-	if cfg.DefaultTimeout != uint64(250) {
-		t.Error("Expected DefaultTimeout of 250ms")
-	}
-
-	if cfg.DataCache.Type != "dummy" {
-		t.Error("Expected DataCache Type of 'dummy'")
-	}
-
-	if cfg.Adapters["pubmatic"].Endpoint != "http://openbid-useast.pubmatic.com/translator?" {
-		t.Errorf("Expected Pubmatic Endpoint of http://openbid-useast.pubmatic.com/translator?")
-	}
-
+	cmpInts(t, "port", cfg.Port, 8000)
+	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 250)
+	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 100)
+	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://openbid-useast.pubmatic.com/translator?")
 }
 
-var fullConfig = []byte(`cookie_domain: ".adnxs.com"
-external_url: http://prebid.adnxs.com/
-host: prebid.adnxs.com
+var fullConfig = []byte(`
+gdpr:
+  host_vendor_id: 15
+  usersync_if_ambiguous: true
+host_cookie:
+  cookie_name: userid
+  family: prebid
+  domain: cookies.prebid.org
+  opt_out_url: http://prebid.org/optout
+  opt_in_url: http://prebid.org/optin
+external_url: http://prebid-server.prebid.org/
+host: prebid-server.prebid.org
 port: 1234
 admin_port: 5678
-default_timeout_ms: 123
-prebid_cache_url: http://prebidcache.net/test/a1?qs=something
-require_uuid2: true
+auction_timeouts_ms:
+  max: 123
+  default: 50
+cache:
+  scheme: http
+  host: prebidcache.net
+  query: uuid=%PBS_CACHE_UUID%
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
-  host: upstream:8232
-  database: metricsdb
-  username: admin
-  password: admin1324
+  influxdb:
+    host: upstream:8232
+    database: metricsdb
+    username: admin
+    password: admin1324
 datacache:
   type: postgres
   filename: /usr/db/db.db
-  dbname: pbsdb
-  host: postgres.internal
-  user: dbadmin
-  password: db2342
   cache_size: 10000000
   ttl_seconds: 3600
 adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
   indexExchange:
     endpoint: http://ixtest.com/api
   rubicon:
@@ -90,52 +70,68 @@ adapters:
     endpoint: http://facebook.com/pbs
     usersync_url: http://facebook.com/ortb/prebid-s2s
     platform_id: abcdefgh1234
+  brightroll:
+    usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s
+    endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
+	t.Helper()
 	if a != b {
 		t.Errorf("%s: %s != %s", key, a, b)
 	}
 }
 
 func cmpInts(t *testing.T, key string, a int, b int) {
+	t.Helper()
 	if a != b {
 		t.Errorf("%s: %d != %d", key, a, b)
 	}
 }
 
+func cmpBools(t *testing.T, key string, a bool, b bool) {
+	t.Helper()
+	if a != b {
+		t.Errorf("%s: %t != %t", key, a, b)
+	}
+}
+
 func TestFullConfig(t *testing.T) {
-	viper.SetConfigType("yaml")
-	viper.ReadConfig(bytes.NewBuffer(fullConfig))
-	cfg, err := config.New()
+	v := newViperWithDefaults()
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(fullConfig))
+	cfg, err := New(v)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	cmpStrings(t, "cookie domain", cfg.CookieDomain, ".adnxs.com")
-	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid.adnxs.com/")
-	cmpStrings(t, "host", cfg.Host, "prebid.adnxs.com")
+	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
+	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
+	cmpStrings(t, "cookie family", cfg.HostCookie.Family, "prebid")
+	cmpStrings(t, "opt out", cfg.HostCookie.OptOutURL, "http://prebid.org/optout")
+	cmpStrings(t, "opt in", cfg.HostCookie.OptInURL, "http://prebid.org/optin")
+	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid-server.prebid.org/")
+	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)
 	cmpInts(t, "admin_port", cfg.AdminPort, 5678)
-	if cfg.DefaultTimeout != 123 {
-		t.Errorf("DefaultTimeout was %d not 123", cfg.DefaultTimeout)
-	}
-	cmpStrings(t, "prebid_cache_url", cfg.CacheURL, "http://prebidcache.net/test/a1?qs=something")
-	if cfg.RequireUUID2 != true {
-		t.Errorf("RequireUUID2 was false")
-	}
+	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 50)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 123)
+	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
+	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
+	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
+	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
-	cmpStrings(t, "metrics.host", cfg.Metrics.Host, "upstream:8232")
-	cmpStrings(t, "metrics.database", cfg.Metrics.Database, "metricsdb")
-	cmpStrings(t, "metrics.username", cfg.Metrics.Username, "admin")
-	cmpStrings(t, "metrics.password", cfg.Metrics.Password, "admin1324")
+	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
+	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
+	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
+	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
-	cmpStrings(t, "datacache.dbname", cfg.DataCache.Database, "pbsdb")
-	cmpStrings(t, "datacache.host", cfg.DataCache.Host, "postgres.internal")
-	cmpStrings(t, "datacache.user", cfg.DataCache.Username, "dbadmin")
-	cmpStrings(t, "datacache.password", cfg.DataCache.Password, "db2342")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
+	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
+	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
+	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters["appnexus"].Endpoint, "http://ib.adnxs.com/some/endpoint")
 	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
 	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
@@ -144,4 +140,96 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters["brightroll"].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
+}
+
+func newViperWithDefaults() *viper.Viper {
+	v := viper.New()
+	v.SetConfigName("pbs")
+	v.AddConfigPath(".")
+	v.AddConfigPath("/etc/config")
+
+	v.SetDefault("external_url", "http://localhost:8000")
+	v.SetDefault("port", 8000)
+	v.SetDefault("admin_port", 6060)
+	v.SetDefault("auction_timeouts_ms.max", 250)
+	v.SetDefault("auction_timeouts_ms.default", 100)
+	v.SetDefault("datacache.type", "dummy")
+
+	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
+	v.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
+	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
+	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
+	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
+	return v
+}
+
+func TestValidConfig(t *testing.T) {
+	cfg := Configuration{
+		StoredRequests: StoredRequests{
+			Files: true,
+		},
+	}
+
+	if err := cfg.validate(); err != nil {
+		t.Errorf("OpenRTB filesystem config should work. %v", err)
+	}
+}
+
+func TestNegativeRequestSize(t *testing.T) {
+	cfg := Configuration{
+		MaxRequestSize: -1,
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("cfg.max_request_size should prevent negative values, but it doesn't")
+	}
+}
+
+func TestNegativeVendorID(t *testing.T) {
+	cfg := Configuration{
+		GDPR: GDPR{
+			HostVendorID: -1,
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Error("cfg.gdpr.host_vendor_id should prevent negative values, but it doesn't")
+	}
+}
+
+func TestOverflowedVendorID(t *testing.T) {
+	cfg := Configuration{
+		GDPR: GDPR{
+			HostVendorID: (0xffff) + 1,
+		},
+	}
+
+	if err := cfg.validate(); err == nil {
+		t.Errorf("cfg.gdpr.host_vendor_id should prevent values over %d, but it doesn't", 0xffff)
+	}
+}
+
+func TestLimitTimeout(t *testing.T) {
+	doTimeoutTest(t, 10, 15, 10, 0)
+	doTimeoutTest(t, 10, 0, 10, 0)
+	doTimeoutTest(t, 5, 5, 10, 0)
+	doTimeoutTest(t, 15, 15, 0, 0)
+	doTimeoutTest(t, 15, 0, 20, 15)
+
+}
+
+func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def uint64) {
+	t.Helper()
+	cfg := AuctionTimeouts{
+		Default: def,
+		Max:     max,
+	}
+	expectedDuration := time.Duration(expected) * time.Millisecond
+	limited := cfg.LimitAuctionTimeout(time.Duration(requested) * time.Millisecond)
+	if limited != expectedDuration {
+		t.Errorf("Expected %dms timeout, got %dms", expectedDuration, limited/time.Millisecond)
+	}
 }

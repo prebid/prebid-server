@@ -10,14 +10,26 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+// This file is deprecated, and is only used to cache things for the legacy (/auction) endpoint.
+// For /openrtb2/auction cache, see client.go in this package.
+
 type CacheObject struct {
-	Value string
-	UUID  string
+	Value   interface{}
+	UUID    string
+	IsVideo bool
+}
+
+type BidCache struct {
+	Adm    string `json:"adm,omitempty"`
+	NURL   string `json:"nurl,omitempty"`
+	Width  uint64 `json:"width,omitempty"`
+	Height uint64 `json:"height,omitempty"`
 }
 
 // internal protocol objects
 type putObject struct {
-	Value string `json:"value"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }
 
 type putRequest struct {
@@ -32,15 +44,26 @@ type response struct {
 }
 
 var (
-	client  *http.Client
-	baseURL string
-	putURL  string
+	client   *http.Client
+	baseURL  string
+	putURL   string
+	cacheURL string
 )
+
+// GetPrebidCacheURL for the global prebid cache
+func GetPrebidCacheURL() string {
+	return cacheURL
+}
+
+// InitPrebidCache setup the global prebid cache
+func InitPrebidCacheURL(baseurl string) {
+	cacheURL = fmt.Sprintf("%s", baseurl)
+}
 
 // InitPrebidCache setup the global prebid cache
 func InitPrebidCache(baseurl string) {
 	baseURL = baseurl
-	putURL = fmt.Sprintf("%s/put", baseURL)
+	putURL = fmt.Sprintf("%s/cache", baseURL)
 
 	ts := &http.Transport{
 		MaxIdleConns:    10,
@@ -54,17 +77,29 @@ func InitPrebidCache(baseurl string) {
 
 // Put will send the array of objs and update each with a UUID
 func Put(ctx context.Context, objs []*CacheObject) error {
+	// Fixes #197
+	if len(objs) == 0 {
+		return nil
+	}
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
+		if obj.IsVideo {
+			pr.Puts[i].Type = "xml"
+		} else {
+			pr.Puts[i].Type = "json"
+		}
 		pr.Puts[i].Value = obj.Value
 	}
-
-	reqJSON, err := json.Marshal(pr)
+	// Don't want to escape the HTML for adm and nurl
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	err := enc.Encode(pr)
 	if err != nil {
 		return err
 	}
 
-	httpReq, err := http.NewRequest("POST", putURL, bytes.NewBuffer(reqJSON))
+	httpReq, err := http.NewRequest("POST", putURL, buf)
 	if err != nil {
 		return err
 	}

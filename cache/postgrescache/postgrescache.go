@@ -4,48 +4,17 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
-	"fmt"
 
-	_ "github.com/lib/pq"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 
 	"github.com/coocood/freecache"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/cache"
+	"github.com/lib/pq"
+	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 )
 
-type PostgresConfig struct {
-	Host     string
-	Port     int
-	Dbname   string
-	User     string
-	Password string
-	TTL      int
-	Size     int
-}
-
-func (c PostgresConfig) uri() string {
-	uri := ""
-	if c.Host != "" {
-		uri += fmt.Sprintf("host=%s ", c.Host)
-	}
-
-	if c.Port > 0 {
-		uri += fmt.Sprintf("port=%d ", c.Port)
-	}
-
-	if c.User != "" {
-		uri += fmt.Sprintf("user=%s ", c.User)
-	}
-
-	if c.Password != "" {
-		uri += fmt.Sprintf("password=%s ", c.Password)
-	}
-
-	if c.Dbname != "" {
-		uri += fmt.Sprintf("dbname=%s ", c.Dbname)
-	}
-
-	return uri
+type CacheConfig struct {
+	TTL  int
+	Size int
 }
 
 // shared configuration that get used by all of the services
@@ -53,26 +22,6 @@ type shared struct {
 	db         *sql.DB
 	lru        *freecache.Cache
 	ttlSeconds int
-}
-
-func newShared(conf PostgresConfig) (*shared, error) {
-	db, err := sql.Open("postgres", conf.uri()+" sslmode=disable")
-	if err != nil {
-		return nil, err
-	}
-
-	s := &shared{
-		db:         db,
-		lru:        freecache.NewCache(conf.Size),
-		ttlSeconds: conf.TTL,
-	}
-
-	if err := s.db.Ping(); err != nil {
-		/* This is for information only; we'll still operate w/o db */
-		glog.Errorf("failed to connect to db store: %v", err)
-	}
-
-	return s, nil
 }
 
 // Cache postgres
@@ -83,17 +32,17 @@ type Cache struct {
 }
 
 // New creates new postgres.Cache
-func New(cfg PostgresConfig) (*Cache, error) {
-
-	shared, err := newShared(cfg)
-	if err != nil {
-		return nil, err
+func New(db *sql.DB, cfg CacheConfig) *Cache {
+	shared := &shared{
+		db:         db,
+		lru:        freecache.NewCache(cfg.Size),
+		ttlSeconds: cfg.TTL,
 	}
 	return &Cache{
 		shared:   shared,
 		accounts: &accountService{shared: shared},
 		config:   &configService{shared: shared},
-	}, nil
+	}
 }
 
 func (c *Cache) Accounts() cache.AccountsService {
@@ -169,9 +118,20 @@ func (s *configService) Get(key string) (string, error) {
 	if b, err := s.shared.lru.Get([]byte(key)); err == nil {
 		return string(b), nil
 	}
+
 	var config string
 	if err := s.shared.db.QueryRow("SELECT config FROM s2sconfig_config where uuid = $1 LIMIT 1", key).Scan(&config); err != nil {
 		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
+		if pqErr, ok := err.(*pq.Error); ok {
+			// If the user didn't give us a UUID, the query fails with this error. Wrap it so that we don't
+			// pollute the app logs with bad user input.
+			if string(pqErr.Code) == "22P02" {
+				err = &stored_requests.NotFoundError{
+					ID:       key,
+					DataType: "Legacy Config",
+				}
+			}
+		}
 		return "", err
 	}
 	s.shared.lru.Set([]byte(key), []byte(config), s.shared.ttlSeconds)

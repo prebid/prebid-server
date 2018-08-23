@@ -16,6 +16,8 @@ type PBSBid struct {
 	// it helps publishers and bidders identify and communicate about malicious or inappropriate ads.
 	// This project simply passes it along with the bid.
 	Creative_id string `json:"creative_id,omitempty"`
+	// CreativeMediaType shows whether the creative is a video or banner.
+	CreativeMediaType string `json:"media_type,omitempty"`
 	// BidderCode is the PBSBidder.BidderCode of the PBSBidder who made this bid.
 	BidderCode string `json:"bidder"`
 	// BidHash is the hash of the bidder's unique bid identifier for blockchain. It should not be sent to browser.
@@ -39,6 +41,9 @@ type PBSBid struct {
 	// CacheId is an ID in prebid-cache which can be used to fetch this ad's content.
 	// This supports prebid-mobile, which requires that the content be available from a URL.
 	CacheID string `json:"cache_id,omitempty"`
+	// Complete cache url returned from the prebid-cache.
+	// more flexible than a design that assumes the UUID is always appended to the end of the URL.
+	CacheURL string `json:"cache_url,omitempty"`
 	// ResponseTime is the number of milliseconds it took for the adapter to return a bid.
 	ResponseTime      int               `json:"response_time_ms,omitempty"`
 	AdServerTargeting map[string]string `json:"ad_server_targeting,omitempty"`
@@ -68,12 +73,6 @@ type BidderDebug struct {
 	RequestBody  string `json:"request_body,omitempty"`
 	ResponseBody string `json:"response_body,omitempty"`
 	StatusCode   int    `json:"status_code,omitempty"`
-}
-
-type UsersyncInfo struct {
-	URL         string `json:"url,omitempty"`
-	Type        string `json:"type,omitempty"`
-	SupportCORS bool   `json:"supportCORS,omitempty"`
 }
 
 type PBSResponse struct {

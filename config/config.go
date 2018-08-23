@@ -1,23 +1,126 @@
 package config
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/spf13/viper"
 )
 
 // Configuration
 type Configuration struct {
-	CookieDomain    string             `mapstructure:"cookie_domain"`
-	ExternalURL     string             `mapstructure:"external_url"`
-	Host            string             `mapstructure:"host"`
-	Port            int                `mapstructure:"port"`
-	AdminPort       int                `mapstructure:"admin_port"`
-	DefaultTimeout  uint64             `mapstructure:"default_timeout_ms"`
-	CacheURL        string             `mapstructure:"prebid_cache_url"`
-	RequireUUID2    bool               `mapstructure:"require_uuid2"`
-	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
-	Metrics         Metrics            `mapstructure:"metrics"`
-	DataCache       DataCache          `mapstructure:"datacache"`
-	Adapters        map[string]Adapter `mapstructure:"adapters"`
+	ExternalURL string `mapstructure:"external_url"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	AdminPort   int    `mapstructure:"admin_port"`
+	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
+	// If empty, it will return a 204 with no content.
+	StatusResponse       string             `mapstructure:"status_response"`
+	AuctionTimeouts      AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
+	CacheURL             Cache              `mapstructure:"cache"`
+	RecaptchaSecret      string             `mapstructure:"recaptcha_secret"`
+	HostCookie           HostCookie         `mapstructure:"host_cookie"`
+	Metrics              Metrics            `mapstructure:"metrics"`
+	DataCache            DataCache          `mapstructure:"datacache"`
+	StoredRequests       StoredRequests     `mapstructure:"stored_requests"`
+	Adapters             map[string]Adapter `mapstructure:"adapters"`
+	MaxRequestSize       int64              `mapstructure:"max_request_size"`
+	Analytics            Analytics          `mapstructure:"analytics"`
+	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
+	GDPR                 GDPR               `mapstructure:"gdpr"`
+}
+
+func (cfg *Configuration) validate() error {
+	if cfg.MaxRequestSize < 0 {
+		return fmt.Errorf("cfg.max_request_size must be a positive number. Got  %d", cfg.MaxRequestSize)
+	}
+
+	if err := cfg.AuctionTimeouts.validate(); err != nil {
+		return err
+	}
+
+	if err := cfg.StoredRequests.validate(); err != nil {
+		return err
+	}
+
+	return cfg.GDPR.validate()
+}
+
+type AuctionTimeouts struct {
+	// The default timeout is used if the user's request didn't define one. Use 0 if there's no default.
+	Default uint64 `mapstructure:"default"`
+	// The max timeout is used as an absolute cap, to prevent excessively long ones. Use 0 for no cap
+	Max uint64 `mapstructure:"max"`
+}
+
+func (cfg *AuctionTimeouts) validate() error {
+	if cfg.Max < cfg.Default {
+		return fmt.Errorf("auction_timeouts_ms.max cannot be less than auction_timeouts_ms.default. max=%d, default=%d", cfg.Max, cfg.Default)
+	}
+	return nil
+}
+
+// LimitAuctionTimeout returns the min of requested or cfg.MaxAuctionTimeout.
+// Both values treat "0" as "infinite".
+func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Duration {
+	if requested == 0 && cfg.Default != 0 {
+		return time.Duration(cfg.Default) * time.Millisecond
+	}
+	if cfg.Max > 0 {
+		maxTimeout := time.Duration(cfg.Max) * time.Millisecond
+		if requested == 0 || requested > maxTimeout {
+			return maxTimeout
+		}
+	}
+	return requested
+}
+
+type GDPR struct {
+	HostVendorID        int          `mapstructure:"host_vendor_id"`
+	UsersyncIfAmbiguous bool         `mapstructure:"usersync_if_ambiguous"`
+	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
+}
+
+type GDPRTimeouts struct {
+	InitVendorlistFetch   int `mapstructure:"init_vendorlist_fetches"`
+	ActiveVendorlistFetch int `mapstructure:"active_vendorlist_fetch"`
+}
+
+func (t *GDPRTimeouts) InitTimeout() time.Duration {
+	return time.Duration(t.InitVendorlistFetch) * time.Millisecond
+}
+
+func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
+	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+func (cfg *GDPR) validate() error {
+	if cfg.HostVendorID < 0 || cfg.HostVendorID > 0xffff {
+		return fmt.Errorf("host_vendor_id must be in the range [0, %d]. Got %d", 0xffff, cfg.HostVendorID)
+	}
+
+	return nil
+}
+
+type Analytics struct {
+	File FileLogs `mapstructure:"file"`
+}
+
+//Corresponding config for FileLogger as a PBS Analytics Module
+type FileLogs struct {
+	Filename string `mapstructure:"filename"`
+}
+
+type HostCookie struct {
+	Domain       string `mapstructure:"domain"`
+	Family       string `mapstructure:"family"`
+	CookieName   string `mapstructure:"cookie_name"`
+	OptOutURL    string `mapstructure:"opt_out_url"`
+	OptInURL     string `mapstructure:"opt_in_url"`
+	OptOutCookie Cookie `mapstructure:"optout_cookie"`
+	// Cookie timeout in days
+	TTL int64 `mapstructure:"ttl_days"`
 }
 
 type Adapter struct {
@@ -32,6 +135,10 @@ type Adapter struct {
 }
 
 type Metrics struct {
+	Influxdb InfluxMetrics `mapstructure:"influxdb"`
+}
+
+type InfluxMetrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
@@ -41,19 +148,53 @@ type Metrics struct {
 type DataCache struct {
 	Type       string `mapstructure:"type"`
 	Filename   string `mapstructure:"filename"`
-	Database   string `mapstructure:"dbname"`
-	Host       string `mapstructure:"host"`
-	Username   string `mapstructure:"user"`
-	Password   string `mapstructure:"password"`
 	CacheSize  int    `mapstructure:"cache_size"`
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
 
+type Cache struct {
+	Scheme string `mapstructure:"scheme"`
+	Host   string `mapstructure:"host"`
+	Query  string `mapstructure:"query"`
+
+	// A static timeout here is not ideal. This is a hack because we have some aggressive timelines for OpenRTB support.
+	// This value specifies how much time the prebid server host expects a call to prebid cache to take.
+	//
+	// OpenRTB allows the caller to specify the auction timeout. Prebid Server will subtract _this_ amount of time
+	// from the timeout it gives demand sources to respond.
+	//
+	// In reality, the cache response time will probably fluctuate with the traffic over time. Someday,
+	// this should be replaced by code which tracks the response time of recent cache calls and
+	// adjusts the time dynamically.
+	ExpectedTimeMillis int `mapstructure:"expected_millis"`
+}
+
+type Cookie struct {
+	Name  string `mapstructure:"name"`
+	Value string `mapstructure:"value"`
+}
+
 // New uses viper to get our server configurations
-func New() (*Configuration, error) {
+func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
-	if err := viper.Unmarshal(&c); err != nil {
+	if err := v.Unmarshal(&c); err != nil {
 		return nil, err
 	}
-	return &c, nil
+	return &c, c.validate()
+}
+
+//Allows for protocol relative URL if scheme is empty
+func (cfg *Cache) GetBaseURL() string {
+	cfg.Scheme = strings.ToLower(cfg.Scheme)
+	if strings.Contains(cfg.Scheme, "https") {
+		return fmt.Sprintf("https://%s", cfg.Host)
+	}
+	if strings.Contains(cfg.Scheme, "http") {
+		return fmt.Sprintf("http://%s", cfg.Host)
+	}
+	return fmt.Sprintf("//%s", cfg.Host)
+}
+
+func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
+	return fmt.Sprintf("%s/cache?%s", cfg.CacheURL.GetBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
 }

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Facebook Audience Network Adapter Params",
+  "description": "A schema which validates params accepted by the Facebook Audience Network adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "An ID which identifies the placement selling the impression"
+    }
+  },
+  "required": ["placementId"]
+}

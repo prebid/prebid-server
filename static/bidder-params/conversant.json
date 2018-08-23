@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Conversant Adapter Params",
+  "description": "A schema which validates params accepted by the Conversant adapter.",
+  "type": "object",
+  "properties": {
+    "site_id": {
+      "type": "string",
+      "description": "A Conversant specific ID which identifies the site."
+    },
+   	"secure": {
+   	  "type": "integer",
+   	  "description": "Override http/https context on ad markup."
+   	},
+    "bidfloor" : {
+      "type": "number",
+      "description": "Minimum bid price that will be considered."
+   	},
+   	"tag_id": {
+      "type": "string",
+      "description": "Identifies specific ad placement."
+    },
+   	"position": {
+      "type": "integer",
+      "description": "Ad position on screen."
+   	},
+   	"mobile": {
+   	  "type": "integer",
+   	  "description": "Indicate if the site is mobile optimized."
+   	},
+   	"mimes": {
+   	  "type": "array",
+   	  "description": "Array of content MIME types.  For videos only.",
+   	  "items": {
+   	     "type": "string"
+   	  }
+    },
+    "maxduration": {
+      "type": "integer",
+      "description": "Maximum duration in seconds.  For videos only."
+    },
+    "api": {
+      "type": "array",
+      "description": "Array of supported API frameworks.  For videos only.",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "protocols": {
+      "type": "array",
+      "description": "Array of supported video protocols.  For videos only.",
+      "items": {
+        "type": "integer"
+      }
+    }
+  },
+  "required": ["site_id"]
+}
