@@ -17,6 +17,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "ignoring imp id=unsupported-audio-imp, Somoaudience doesn't support Audio"
+    "SomoAudience only supports banner and video imps. Ignoring imp id=unsupported-audio-imp"
   ]
 }
