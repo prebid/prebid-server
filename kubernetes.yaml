@@ -71,6 +71,8 @@ spec:
           resources:
             requests: { cpu: 2, memory: 100Mi }
             limits:   { cpu: 2, memory: 500Mi }
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gservice-8cpu-20gb-preemptibles
       tolerations:
         - key: app
           operator: Equal
