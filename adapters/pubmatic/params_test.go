@@ -40,8 +40,8 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890"}`,
-	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":{"pmZoneID": "1","key": "v1,v2"}}`,
-	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":{"pmZoneID": "zone1"}, "wrapper":{"profile":5123}}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":[{"key": "pmZoneID", "value":["zone1"]},{"key": "dctr", "value":[ "v1","v2"]}]}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":[{"key": "pmZoneID", "value":["zone1", "zone2"]}], "wrapper":{"profile":5123}}`,
 }
 
 var invalidParams = []string{
@@ -57,6 +57,13 @@ var invalidParams = []string{
 	`{"adSlot":"AdTag_Div1@728x90:0","publisherId":1}`,
 	`{"adSlot":123,"publisherId":"7890"}`,
 	`{"adSlot":123,"publisherId":7890}`,
-	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":{"pmZoneID": "zone1"}, "wrapper":{"version":"1","profile":5123}}`,
-	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":{"pmZoneID": "zone1"}, "wrapper":{"version":1,"profile":"5123"}}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "keywords":[]}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "keywords":["foo"]}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "keywords":[{"key": "foo", "value":[]}]}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "keywords":[{"key": "foo"}]}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "keywords":[{"value":[]}]}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "wrapper":{}}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "wrapper":{"version":"1","profile":5123}}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890", "wrapper":{"version":"1"}}`,
+	`{"adSlot":"AdTag_Div1@728x90","publisherId":"7890","keywords":[{"key": "pmZoneID", "value":["1"]}], "wrapper":{"version":1,"profile":"5123"}}`,
 }

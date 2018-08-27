@@ -678,10 +678,15 @@ func TestOpenRTBBidRequest(t *testing.T) {
 			Ext: openrtb.RawJSON(`{"bidder": {
 								"adSlot": "AdTag_Div1@300x250",
 								"publisherId": "1234",
-								"keywords":{
-											"pmZoneID": "Zone1,Zone2",
-											"preference": "sports,movies"
-											},
+								"keywords": [{
+									"key": "pmZoneID",
+									"value": ["Zone1", "Zone2"]
+								},
+								{
+									"key": "preference",
+									"value": ["sports", "movies"]
+								}
+								],			
 								"wrapper":{"version":1,"profile":5123}
 							}}`),
 		}, {
@@ -695,10 +700,13 @@ func TestOpenRTBBidRequest(t *testing.T) {
 			Ext: openrtb.RawJSON(`{"bidder": {
 				"adSlot": "AdTag_Div2@200x350",
 				"publisherId": "1234",
-				"keywords":{
-							"pmZoneID": "Zone3,Zone4",
-							"preference": "movies"
-							}
+				"keywords": [{
+					"key": "pmZoneID",
+					"value": ["Zone1", "Zone2"]
+				},{
+					"key": "preference",
+					"value": ["sports"]
+				}]
 			}}`),
 		}},
 		Device: &openrtb.Device{
@@ -838,10 +846,13 @@ func TestOpenRTBBidRequest_App(t *testing.T) {
 			Ext: openrtb.RawJSON(`{"bidder": {
 								"adSlot": "AdTag_Div1@300x250",
 								"publisherId": "1234",
-								"keywords":{
-											"pmZoneID": "Zone1,Zone2",
-											"preference": "sports,movies"
-											},
+								"keywords": [{
+									"key": "pmZoneID",
+									"value": ["Zone1", "Zone2"]
+								},{
+									"key": "preference",
+									"value": ["sports"]
+								}],
 								"wrapper":{"version":1,"profile":5123}
 							}}`),
 		}},

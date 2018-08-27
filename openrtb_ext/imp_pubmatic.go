@@ -8,8 +8,14 @@ import "encoding/json"
 // WrapExt needs to be sent once per bid request
 
 type ExtImpPubmatic struct {
-	PublisherId string            `json:"publisherId"`
-	AdSlot      string            `json:"adSlot"`
-	WrapExt     json.RawMessage   `json:"wrapper,omitempty"`
-	Keywords    map[string]string `json:"keywords,omitempty"`
+	PublisherId string                  `json:"publisherId"`
+	AdSlot      string                  `json:"adSlot"`
+	WrapExt     json.RawMessage         `json:"wrapper,omitempty"`
+	Keywords    []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
+}
+
+// ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]
+type ExtImpPubmaticKeyVal struct {
+	Key    string   `json:"key,omitempty"`
+	Values []string `json:"value,omitempty"`
 }

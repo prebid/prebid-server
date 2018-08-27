@@ -441,8 +441,8 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		imp.TagID = strings.TrimSpace(adSlotStr)
 	}
 
-	if len(pubmaticExt.Keywords) != 0 {
-		kvstr := prepareImpressionExt(pubmaticExt.Keywords)
+	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
+		kvstr := makeKeywordStr(pubmaticExt.Keywords)
 		imp.Ext = openrtb.RawJSON([]byte(kvstr))
 	} else {
 		imp.Ext = nil
@@ -450,6 +450,21 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 
 	return nil
 
+}
+
+func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
+	eachKv := make([]string, 0, len(keywords))
+	for _, keyVal := range keywords {
+		if len(keyVal.Values) == 0 {
+			logf("No values present for key = %s", keyVal.Key)
+			continue
+		} else {
+			eachKv = append(eachKv, fmt.Sprintf("\"%s\":\"%s\"", keyVal.Key, strings.Join(keyVal.Values[:], ",")))
+		}
+	}
+
+	kvStr := "{" + strings.Join(eachKv, ",") + "}"
+	return kvStr
 }
 
 func prepareImpressionExt(keywords map[string]string) string {
