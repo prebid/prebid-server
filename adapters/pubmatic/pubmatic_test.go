@@ -701,8 +701,8 @@ func TestOpenRTBBidRequest(t *testing.T) {
 		}, {
 			ID: "456",
 			Video: &openrtb.Video{
-				W:           300,
-				H:           600,
+				W:           640,
+				H:           480,
 				MIMEs:       []string{"video"},
 				MinDuration: 5,
 				MaxDuration: 10,
@@ -775,23 +775,23 @@ func TestOpenRTBBidRequest(t *testing.T) {
 	}
 	if ortbRequest.Imp[1].ID == "456" {
 
-		if ortbRequest.Imp[1].Video.W != 200 {
-			t.Fatalf("Video width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[0].Video.W)
+		if ortbRequest.Imp[1].Video.W != 640 {
+			t.Fatalf("Video width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[1].Video.W)
 		}
-		if ortbRequest.Imp[1].Video.H != 350 {
-			t.Fatalf("Video height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[0].Video.H)
+		if ortbRequest.Imp[1].Video.H != 480 {
+			t.Fatalf("Video height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[1].Video.H)
 		}
 		if ortbRequest.Imp[1].Video.MIMEs[0] != "video" {
-			t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", ortbRequest.Imp[0].Video.MIMEs[0])
+			t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", ortbRequest.Imp[1].Video.MIMEs[0])
 		}
 		if ortbRequest.Imp[1].Video.MinDuration != 5 {
-			t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, ortbRequest.Imp[0].Video.MinDuration)
+			t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, ortbRequest.Imp[1].Video.MinDuration)
 		}
 		if ortbRequest.Imp[1].Video.MaxDuration != 10 {
-			t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, ortbRequest.Imp[0].Video.MaxDuration)
+			t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, ortbRequest.Imp[1].Video.MaxDuration)
 		}
 		if ortbRequest.Imp[1].TagID != "AdTag_Div2" {
-			t.Fatalf("Failed to Set TagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[0].TagID)
+			t.Fatalf("Failed to Set TagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[1].TagID)
 		}
 	}
 	if ortbRequest.Site.Publisher.ID != "1234" {

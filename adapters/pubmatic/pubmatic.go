@@ -427,10 +427,12 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 				if imp.Banner != nil {
 					imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
 					imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
-				} else {
+				} /* In case of video, params.adSlot would always be adunit@0x0,
+				so we are not replacing video.W and video.H with size passed in params.adSlot
+					else {
 					imp.Video.H = uint64(height)
 					imp.Video.W = uint64(width)
-				}
+				}*/
 			} else {
 				return errors.New("Invalid adSizes Provided ")
 			}
@@ -474,7 +476,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadServerResponse{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
