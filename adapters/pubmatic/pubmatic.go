@@ -261,7 +261,7 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 
 func logf(msg string, args ...interface{}) {
 	if glog.V(2) {
-		glog.Infof(msg, args)
+		glog.Infof(msg, args...)
 	}
 }
 
