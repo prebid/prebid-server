@@ -92,8 +92,11 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (f
 		ampIDList = append(ampIDList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeAmpQuery))
 	}
 	if cfg.HTTP.Endpoint != "" {
-		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
+		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s", cfg.HTTP.Endpoint)
 		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
+	}
+	if cfg.HTTP.AmpEndpoint != "" {
+		glog.Infof("Loading Stored Requests via HTTP. amp_endpoint=%s", cfg.HTTP.AmpEndpoint)
 		ampIDList = append(ampIDList, http_fetcher.NewFetcher(client, cfg.HTTP.AmpEndpoint))
 	}
 

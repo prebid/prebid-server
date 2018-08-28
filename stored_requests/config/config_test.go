@@ -54,6 +54,24 @@ func TestNewHTTPFetcher(t *testing.T) {
 	}
 }
 
+func TestNewHTTPFetcherNoAmp(t *testing.T) {
+	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
+			Endpoint:    "stored-requests.prebid.com",
+			AmpEndpoint: "",
+		},
+	}, nil, nil)
+	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
+		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
+			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
+		}
+	} else {
+		t.Errorf("An HTTP Fetching config should return an HTTPFetcher. Got %v", ampFetcher)
+	}
+	if httpAmpFetcher, ok := ampFetcher.(*http_fetcher.HttpFetcher); ok && httpAmpFetcher == nil {
+		t.Errorf("An HTTP Fetching config should not return an Amp HTTP fetcher in this case. Got %v (%v)", ampFetcher, httpAmpFetcher)
+	}
+}
 func TestNewHTTPEvents(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
