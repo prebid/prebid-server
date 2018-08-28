@@ -330,7 +330,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		} else {
 			request.Site.Publisher = &openrtb.Publisher{ID: pubID}
 		}
-	} else {
+	} else if request.App != nil {
 		if request.App.Publisher != nil {
 			request.App.Publisher.ID = pubID
 		} else {
@@ -362,11 +362,11 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}}, errs
 }
 
-// parseImpressionObject parase  the imp to get it ready to send to pubmatic
+// parseImpressionObject parse the imp to get it ready to send to pubmatic
 func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
-	// PubMatic supports native, banner and video impressions.
+	// PubMatic supports banner and video impressions.
 	if imp.Audio != nil && imp.Banner == nil && imp.Video == nil {
-		return fmt.Errorf("PubMatic doesn't support audio. Ignoring ImpID = %s", imp.ID)
+		return fmt.Errorf("PubMatic doesn't support audio. Ignoring ImpID=%s", imp.ID)
 	}
 
 	if imp.Audio != nil {
@@ -384,7 +384,7 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 	}
 
 	if pubmaticExt.AdSlot == "" {
-		return errors.New("No AdSlot  parameter provided")
+		return errors.New("No AdSlot parameter provided")
 	}
 
 	if pubmaticExt.PublisherId == "" {
@@ -416,26 +416,28 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 			if len(adSize) == 2 {
 				width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
 				if err != nil {
-					return errors.New("Invalid Width Provided ")
+					return errors.New("Invalid width provided in adSlot")
 				}
 
 				heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
 				height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 				if err != nil {
-					return errors.New("Invalid Height Provided ")
+					return errors.New("Invalid height provided in adSlot")
 				}
 				if imp.Banner != nil {
 					imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
 					imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
-				} else {
+				} /* In case of video, params.adSlot would always be in the format adunit@0x0,
+				so we are not replacing video.W and video.H with size passed in params.adSlot
+					else {
 					imp.Video.H = uint64(height)
 					imp.Video.W = uint64(width)
-				}
+				}*/
 			} else {
-				return errors.New("Invalid adSizes Provided ")
+				return errors.New("Invalid size provided in adSlot")
 			}
 		} else {
-			return errors.New("Invalid adSlot  Provided ")
+			return errors.New("Invalid adSlot provided")
 		}
 	} else {
 		imp.TagID = strings.TrimSpace(adSlotStr)
