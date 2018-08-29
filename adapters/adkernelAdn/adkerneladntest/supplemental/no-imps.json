@@ -1,0 +1,13 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [],
+    "site": {
+      "page": "http://example.com/test.html",
+      "publisher": {
+        "id": "1"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": ["No impression in the bid request"]
+}

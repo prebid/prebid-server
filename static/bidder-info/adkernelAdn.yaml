@@ -1,0 +1,10 @@
+maintainer:
+  email: "denis@adkernel.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner      
+  site:
+    mediaTypes:
+      - banner
+      - video

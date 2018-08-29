@@ -1,25 +1,30 @@
 language: go
 
 go:
-    - '1.9'
-    - '1.10'
+  - '1.9'
+  - '1.10'
+  - '1.11'
 
 env:
-    - DEP_VERSION="0.4.1"
+  - DEP_VERSION="0.5.0"
+
+matrix:
+  allow_failures:
+    - go: '1.11'
 
 before_install:
-    - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
-    - chmod +x $GOPATH/bin/dep
+  - curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
+  - chmod +x $GOPATH/bin/dep
 
 install:
-    - $GOPATH/bin/dep ensure
+  - $GOPATH/bin/dep ensure
 
 script:
-    - "./validate.sh --nofmt --cov --race 10"
+  - "./validate.sh --nofmt --cov --race 10"
 
 before_deploy:
-    - go get github.com/mitchellh/gox
-    - gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;
+  - go get github.com/mitchellh/gox
+  - gox -os="linux" -arch="386" -output="{{.Dir}}_{{.OS}}_{{.Arch}}" -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...;
 
 deploy:
   provider: releases
@@ -32,4 +37,4 @@ deploy:
     repo: prebid/prebid-server
     tags: true
     branch:
-        - master
+      - master

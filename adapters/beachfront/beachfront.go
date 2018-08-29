@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -232,11 +233,13 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Beachfront doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
 			})
+			glog.Warning("Beachfront CAPABILITY VIOLATION: audio Imps not supported")
 			continue
 		} else if imp.Native != nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("Beachfront doesn't support native Imps. Ignoring Imp ID=%s", imp.ID),
 			})
+			glog.Warning("Beachfront CAPABILITY VIOLATION: native Imps not supported")
 			continue
 		} else if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})

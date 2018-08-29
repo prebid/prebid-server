@@ -693,8 +693,10 @@ func serve(revision string, cfg *config.Configuration) error {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
+	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
+
 	exchanges = newExchangeMap(cfg)
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, metricsEngine, bidderInfos)
 
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, metricsEngine, pbsAnalytics)
 	if err != nil {
@@ -708,8 +710,6 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
-
-	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
 
 	router.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, metricsEngine}).auction)
 	router.POST("/openrtb2/auction", openrtbEndpoint)
@@ -736,28 +736,7 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 
-	// Fixes #648
-	//
-	// These CORS options pose a security risk... but it's a calculated one.
-	// People _must_ call us with "withCredentials" set to "true" because that's how we use the cookie sync info.
-	// We also must allow all origins because every site on the internet _could_ call us.
-	//
-	// This is an inherent security risk. However, PBS doesn't use cookies for authorization--just identification.
-	// We only store the User's ID for each Bidder, and each Bidder has already exposed a public cookie sync endpoint
-	// which returns that data anyway.
-	//
-	// For more info, see:
-	//
-	// - https://github.com/rs/cors/issues/55
-	// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
-	// - https://portswigger.net/blog/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
-	c := cors.New(cors.Options{
-		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			return true
-		},
-		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
-	corsRouter := c.Handler(router)
+	corsRouter := supportCORS(router)
 
 	// Add no cache headers
 	noCacheHandler := NoCache{corsRouter}
@@ -778,4 +757,29 @@ func serve(revision string, cfg *config.Configuration) error {
 
 	server.Listen(cfg, noCacheHandler, adminRouter, metricsEngine)
 	return nil
+}
+
+// Fixes #648
+//
+// These CORS options pose a security risk... but it's a calculated one.
+// People _must_ call us with "withCredentials" set to "true" because that's how we use the cookie sync info.
+// We also must allow all origins because every site on the internet _could_ call us.
+//
+// This is an inherent security risk. However, PBS doesn't use cookies for authorization--just identification.
+// We only store the User's ID for each Bidder, and each Bidder has already exposed a public cookie sync endpoint
+// which returns that data anyway.
+//
+// For more info, see:
+//
+// - https://github.com/rs/cors/issues/55
+// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials
+// - https://portswigger.net/blog/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
+func supportCORS(handler http.Handler) http.Handler {
+	c := cors.New(cors.Options{
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
+	return c.Handler(handler)
 }
