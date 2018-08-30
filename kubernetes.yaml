@@ -54,6 +54,12 @@ spec:
             - { name: POD_NAME,                   valueFrom: { fieldRef: { fieldPath: metadata.name } } }
             - { name: POD_IP,                     valueFrom: { fieldRef: { fieldPath: status.podIP } } }
             - { name: HOST_IP,                    valueFrom: { fieldRef: { fieldPath: status.hostIP } } }
+            - { name: PBS_EXTERNAL_URL,  value: http://prebid.gamoshi.io }
+            - { name: PBS_HOST_COOKIE_DOMAIN,  value: .gamoshi.io }
+            - { name: PBS_HOST_COOKIE_COOKIE_NAME, value: gpbsuid }
+            - { name: PBS_ADAPTERS_RUBICON_XAPI_USERNAME, value: answermedia }
+            - { name: PBS_ADAPTERS_RUBICON_XAPI_PASSWORD, value: MCAD7S2FOY }
+
           livenessProbe:
             failureThreshold: 3
             httpGet:
