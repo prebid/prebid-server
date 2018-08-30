@@ -340,7 +340,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("analytics.file.filename", "")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.host_vendor_id", 0)
-	v.SetDefault("gdpr.usersync_if_ambiguous", false)
+	v.SetDefault("gdpr.usersync_if_ambiguous", true)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 
