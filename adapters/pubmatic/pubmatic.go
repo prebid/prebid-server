@@ -325,17 +325,25 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}
 
 	if request.Site != nil {
-		if request.Site.Publisher != nil {
-			request.Site.Publisher.ID = pubID
+		siteCopy := *request.Site
+		if siteCopy.Publisher != nil {
+			publisherCopy := *siteCopy.Publisher
+			publisherCopy.ID = pubID
+			siteCopy.Publisher = &publisherCopy
 		} else {
-			request.Site.Publisher = &openrtb.Publisher{ID: pubID}
+			siteCopy.Publisher = &openrtb.Publisher{ID: pubID}
 		}
+		request.Site = &siteCopy
 	} else if request.App != nil {
-		if request.App.Publisher != nil {
-			request.App.Publisher.ID = pubID
+		appCopy := *request.App
+		if appCopy.Publisher != nil {
+			publisherCopy := *appCopy.Publisher
+			publisherCopy.ID = pubID
+			appCopy.Publisher = &publisherCopy
 		} else {
-			request.App.Publisher = &openrtb.Publisher{ID: pubID}
+			appCopy.Publisher = &openrtb.Publisher{ID: pubID}
 		}
+		request.App = &appCopy
 	}
 
 	thisURI := a.URI
