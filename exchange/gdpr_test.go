@@ -16,14 +16,14 @@ func TestExtractGDPRFound(t *testing.T) {
 			Ext: openrtb.RawJSON(`{"gdpr": 1}`),
 		},
 	}
-	gdpr, consent, err := extractGDPR(&gdprTest, false)
-	assert.NoError(t, err)
+	gdpr := extractGDPR(&gdprTest, false)
+	consent := extractConsent(&gdprTest)
 	assert.Equal(t, 1, gdpr)
 	assert.Equal(t, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA", consent)
 
 	gdprTest.Regs.Ext = openrtb.RawJSON(`{"gdpr": 0}`)
-	gdpr, consent, err = extractGDPR(&gdprTest, true)
-	assert.NoError(t, err)
+	gdpr = extractGDPR(&gdprTest, true)
+	consent = extractConsent(&gdprTest)
 	assert.Equal(t, 0, gdpr)
 	assert.Equal(t, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA", consent)
 }
@@ -31,13 +31,14 @@ func TestExtractGDPRFound(t *testing.T) {
 func TestGDPRUnknown(t *testing.T) {
 	gdprTest := openrtb.BidRequest{}
 
-	gdpr, consent, err := extractGDPR(&gdprTest, false)
-	assert.Equal(t, 0, gdpr)
-	assert.Equal(t, "", consent)
-	assert.NoError(t, err)
-
-	gdpr, consent, err = extractGDPR(&gdprTest, true)
+	gdpr := extractGDPR(&gdprTest, false)
+	consent := extractConsent(&gdprTest)
 	assert.Equal(t, 1, gdpr)
+	assert.Equal(t, "", consent)
+
+	gdpr = extractGDPR(&gdprTest, true)
+	consent = extractConsent(&gdprTest)
+	assert.Equal(t, 0, gdpr)
 
 }
 

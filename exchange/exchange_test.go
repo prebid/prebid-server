@@ -319,10 +319,12 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 
 	return &exchange{
-		adapterMap: adapters,
-		me:         metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
-		cache:      &wellBehavedCache{},
-		cacheTime:  0,
+		adapterMap:          adapters,
+		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
+		cache:               &wellBehavedCache{},
+		cacheTime:           0,
+		gDPR:                gdpr.AlwaysAllow{},
+		UsersyncIfAmbiguous: false,
 	}
 }
 

@@ -32,8 +32,8 @@ func cleanOpenRTBRequests(ctx context.Context, orig *openrtb.BidRequest, usersyn
 	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
 
 	// Clean PI from bidrequests if not allowed per GDPR
-	gdpr, consent, _ := extractGDPR(orig, usersyncIfAmbiguous)
-	// TODO : do something with the error value
+	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
+	consent := extractConsent(orig)
 	if gdpr == 1 {
 		for bidder, bidReq := range requestsByBidder {
 			if ok, err := gDPR.PersonalInfoAllowed(ctx, bidder, consent); !ok && err == nil {
