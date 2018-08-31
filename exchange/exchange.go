@@ -81,18 +81,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, errs := cleanOpenRTBRequests(bidRequest, usersyncs, blabels, labels)
-
-	// Clean PI from bidrequests if not allowed per GDPR
-	gdpr, consent, _ := extractGDPR(bidRequest, e.UsersyncIfAmbiguous)
-	// TODO : do something with the error value
-	if gdpr == 1 {
-		for bidder, bidReq := range cleanRequests {
-			if ok, err := e.gDPR.PersonalInfoAllowed(ctx, bidder, consent); !ok && err == nil {
-				cleanPI(bidReq)
-			}
-		}
-	}
+	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
 
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))

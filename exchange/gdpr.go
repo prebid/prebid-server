@@ -8,13 +8,13 @@ import (
 )
 
 // ExtractGDPR will pull the gdpr info from an openrtb request
-func extractGDPR(bidRequest *openrtb.BidRequest, UsersyncIfAmbiguous bool) (gdpr int, consent string, err error) {
+func extractGDPR(bidRequest *openrtb.BidRequest, usersyncIfAmbiguous bool) (gdpr int, consent string, err error) {
 	var re regsExt
 	if bidRequest.Regs != nil {
 		err = json.Unmarshal(bidRequest.Regs.Ext, &re)
 	}
 	if re.GDPR == nil || err != nil {
-		if UsersyncIfAmbiguous {
+		if usersyncIfAmbiguous {
 			gdpr = 1
 		} else {
 			gdpr = 0

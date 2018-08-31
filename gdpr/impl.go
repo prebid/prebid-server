@@ -57,20 +57,11 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	parsedConsent, err := vendorconsent.ParseString(consent)
-	if err != nil {
-		return false, &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
-		}
-	}
-
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, err
 	}
 
-	vendor := vendorList.Vendor(vendorID)
 	if vendor == nil {
 		return false, nil
 	}
@@ -88,20 +79,11 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	parsedConsent, err := vendorconsent.ParseString(consent)
-	if err != nil {
-		return false, &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
-		}
-	}
-
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, err
 	}
 
-	vendor := vendorList.Vendor(vendorID)
 	if vendor == nil {
 		return false, nil
 	}
@@ -111,6 +93,25 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 	}
 
 	return false, nil
+}
+
+func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent vendorconsent.VendorConsents, vendor vendorlist.Vendor, err error) {
+	parsedConsent, err = vendorconsent.ParseString(consent)
+	if err != nil {
+		err = &ErrorMalformedConsent{
+			consent: consent,
+			cause:   err,
+		}
+		return
+	}
+
+	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	if err != nil {
+		return
+	}
+
+	vendor = vendorList.Vendor(vendorID)
+	return
 }
 
 // Exporting to allow for easy test setups
