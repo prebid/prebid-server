@@ -143,10 +143,11 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 }
 
 func TestPanicRecovery(t *testing.T) {
+	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
 		panic("panic!")
 	}
-	recovered := recoverSafely(panicker)
+	recovered := recoverSafely(panicker, chBids)
 	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil)
 }
 
