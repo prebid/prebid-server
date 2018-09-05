@@ -31,7 +31,6 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adap
 	var nativeImps []openrtb.Imp
 
 	for _, imp := range request.Imp {
-		// OpenX doesn't allow multi-type imp. Banner takes priority over video.
 		if imp.Banner != nil {
 			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
@@ -136,7 +135,6 @@ func (a *SomoaudienceAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	}, errs
 }
 
-// Mutate the imp to get it ready to send to openx.
 func preprocess(imp *openrtb.Imp, reqExt *somoaudienceReqExt) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
