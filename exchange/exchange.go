@@ -189,7 +189,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
 			serr := errsToBidderErrors(err)
-			bidlabels.AdapterBids = bidsToMetric(bids)
+			bidlabels.AdapterBids = bidsToMetric(brw.adapterBids)
 			bidlabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
 			ae.Errors = serr
