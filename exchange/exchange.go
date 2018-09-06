@@ -222,6 +222,7 @@ func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *o
 				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack()))
 				// Let the master request know that there is no data here
 				brw := new(bidResponseWrapper)
+				brw.adapterExtra = new(seatResponseExtra)
 				chBids <- brw
 			}
 		}()
