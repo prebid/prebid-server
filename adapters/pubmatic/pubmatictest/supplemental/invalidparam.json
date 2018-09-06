@@ -58,34 +58,6 @@
                     "publisherId": "999"
                 }
             }
-        },{
-            "id": "test-imp-id-5",
-            "banner": {
-                "format": [{
-                    "w": 300,
-                    "h": 250
-                }]
-            },
-            "ext": {
-                "bidder": {
-                    "adSlot": "",
-                    "publisherId": "999"
-                }
-            }
-        },{
-            "id": "test-imp-id-6",
-            "banner": {
-                "format": [{
-                    "w": 300,
-                    "h": 250
-                }]
-            },
-            "ext": {
-                "bidder": {
-                    "adSlot": "AdTag_Div1",
-                    "publisherId": ""
-                }
-            }
         }],
         "site": {
 			"id": "siteID",
@@ -99,8 +71,6 @@
         "Invalid adSlot provided",
         "Invalid size provided in adSlot",
         "Invalid width provided in adSlot",
-        "Invalid height provided in adSlot",
-        "No AdSlot parameter provided",
-        "No PublisherId parameter provided"
+        "Invalid height provided in adSlot"
       ]
   }

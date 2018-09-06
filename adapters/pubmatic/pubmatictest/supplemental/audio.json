@@ -21,6 +21,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "PubMatic doesn't support audio. Ignoring ImpID=unsupported-audio-imp"
+    "Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=unsupported-audio-imp"
   ]
 }
