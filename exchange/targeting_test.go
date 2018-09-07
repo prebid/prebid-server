@@ -120,7 +120,7 @@ func buildAdapterMap(bids map[openrtb_ext.BidderName][]*openrtb.Bid, mockServerU
 	return adapterMap
 }
 
-func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys bool) openrtb.RawJSON {
+func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys bool) json.RawMessage {
 	var targeting string
 	if includeWinners && includeBidderKeys {
 		targeting = "{}"
@@ -133,16 +133,16 @@ func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys
 	}
 
 	if includeCache {
-		return openrtb.RawJSON(`{"prebid":{"targeting":` + targeting + `,"cache":{"bids":{}}}}`)
+		return json.RawMessage(`{"prebid":{"targeting":` + targeting + `,"cache":{"bids":{}}}}`)
 	}
 
-	return openrtb.RawJSON(`{"prebid":{"targeting":` + targeting + `}}`)
+	return json.RawMessage(`{"prebid":{"targeting":` + targeting + `}}`)
 }
 
-func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid) openrtb.RawJSON {
-	params := make(map[string]openrtb.RawJSON)
+func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid) json.RawMessage {
+	params := make(map[string]json.RawMessage)
 	for bidder, _ := range mockBids {
-		params[string(bidder)] = openrtb.RawJSON(`{"whatever":true}`)
+		params[string(bidder)] = json.RawMessage(`{"whatever":true}`)
 	}
 	ext, err := json.Marshal(params)
 	if err != nil {

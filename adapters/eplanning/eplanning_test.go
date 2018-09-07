@@ -1,10 +1,10 @@
 package eplanning
 
 import (
-	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"net/http"
 	"testing"
 
-	"net/http"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 )
 
 func TestJsonSamples(t *testing.T) {

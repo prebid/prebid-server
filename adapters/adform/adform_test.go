@@ -300,13 +300,13 @@ func TestOpenRTBIncorrectRequest(t *testing.T) {
 	request := &openrtb.BidRequest{
 		ID: "test-request-id",
 		Imp: []openrtb.Imp{
-			{ID: "video-not-supported", Video: &openrtb.Video{}, Ext: openrtb.RawJSON(`{"bidder": { "mid": "32344" }}`)},
-			{ID: "audio-not-supported", Audio: &openrtb.Audio{}, Ext: openrtb.RawJSON(`{"bidder": { "mid": "32344" }}`)},
-			{ID: "native-not-supported", Native: &openrtb.Native{}, Ext: openrtb.RawJSON(`{"bidder": { "mid": "32344" }}`)},
-			{ID: "incorrect-bidder-field", Ext: openrtb.RawJSON(`{"bidder1": { "mid": "32344" }}`)},
-			{ID: "incorrect-adform-params", Ext: openrtb.RawJSON(`{"bidder": { : "33" }}`)},
-			{ID: "mid-integer", Ext: openrtb.RawJSON(`{"bidder": { "mid": 1.234 }}`)},
-			{ID: "mid-greater-then-zero", Ext: openrtb.RawJSON(`{"bidder": { "mid": -1 }}`)},
+			{ID: "video-not-supported", Video: &openrtb.Video{}, Ext: json.RawMessage(`{"bidder": { "mid": "32344" }}`)},
+			{ID: "audio-not-supported", Audio: &openrtb.Audio{}, Ext: json.RawMessage(`{"bidder": { "mid": "32344" }}`)},
+			{ID: "native-not-supported", Native: &openrtb.Native{}, Ext: json.RawMessage(`{"bidder": { "mid": "32344" }}`)},
+			{ID: "incorrect-bidder-field", Ext: json.RawMessage(`{"bidder1": { "mid": "32344" }}`)},
+			{ID: "incorrect-adform-params", Ext: json.RawMessage(`{"bidder": { : "33" }}`)},
+			{ID: "mid-integer", Ext: json.RawMessage(`{"bidder": { "mid": 1.234 }}`)},
+			{ID: "mid-greater-then-zero", Ext: json.RawMessage(`{"bidder": { "mid": -1 }}`)},
 		},
 		Device: &openrtb.Device{UA: "ua", IP: "ip"},
 		User:   &openrtb.User{BuyerUID: "buyerUID"},
@@ -368,7 +368,7 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 		bidRequest.Imp[i] = openrtb.Imp{
 			ID:     tag.code,
 			Secure: &secure,
-			Ext:    openrtb.RawJSON(fmt.Sprintf("{\"bidder\": { \"mid\": %d%s}}", tag.mid, getPriceTypeString(tag.priceType))),
+			Ext:    json.RawMessage(fmt.Sprintf("{\"bidder\": { \"mid\": %d%s}}", tag.mid, getPriceTypeString(tag.priceType))),
 			Banner: &openrtb.Banner{},
 		}
 	}

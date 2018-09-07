@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -10,10 +11,10 @@ import (
 func TestExtractGDPRFound(t *testing.T) {
 	gdprTest := openrtb.BidRequest{
 		User: &openrtb.User{
-			Ext: openrtb.RawJSON(`{"consent": "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}`),
+			Ext: json.RawMessage(`{"consent": "BOS2bx5OS2bx5ABABBAAABoAAAAAFA"}`),
 		},
 		Regs: &openrtb.Regs{
-			Ext: openrtb.RawJSON(`{"gdpr": 1}`),
+			Ext: json.RawMessage(`{"gdpr": 1}`),
 		},
 	}
 	gdpr := extractGDPR(&gdprTest, false)
@@ -21,7 +22,7 @@ func TestExtractGDPRFound(t *testing.T) {
 	assert.Equal(t, 1, gdpr)
 	assert.Equal(t, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA", consent)
 
-	gdprTest.Regs.Ext = openrtb.RawJSON(`{"gdpr": 0}`)
+	gdprTest.Regs.Ext = json.RawMessage(`{"gdpr": 0}`)
 	gdpr = extractGDPR(&gdprTest, true)
 	consent = extractConsent(&gdprTest)
 	assert.Equal(t, 0, gdpr)

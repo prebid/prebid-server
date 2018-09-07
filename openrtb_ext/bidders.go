@@ -2,13 +2,13 @@ package openrtb_ext
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -85,7 +85,7 @@ func (name *BidderName) String() string {
 //
 // This is treated differently from the other types because we rely on JSON-schemas to validate bidder params.
 type BidderParamValidator interface {
-	Validate(name BidderName, ext openrtb.RawJSON) error
+	Validate(name BidderName, ext json.RawMessage) error
 	// Schema returns the JSON schema used to perform validation.
 	Schema(name BidderName) string
 }
@@ -135,7 +135,7 @@ type bidderParamValidator struct {
 	parsedSchemas  map[BidderName]*gojsonschema.Schema
 }
 
-func (validator *bidderParamValidator) Validate(name BidderName, ext openrtb.RawJSON) error {
+func (validator *bidderParamValidator) Validate(name BidderName, ext json.RawMessage) error {
 	result, err := validator.parsedSchemas[name].Validate(gojsonschema.NewBytesLoader(ext))
 	if err != nil {
 		return err

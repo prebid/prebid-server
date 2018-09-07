@@ -173,7 +173,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targeting := "{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"
-	rawTargeting := openrtb.RawJSON(targeting)
+	rawTargeting := json.RawMessage(targeting)
 
 	resp.SeatBid[0].Bid[0] = openrtb.Bid{
 		ID:    "random-id",
@@ -711,7 +711,7 @@ func TestWrongBidIdResponse(t *testing.T) {
 			ImpID: "zma",
 			Price: 1.67,
 			AdM:   "zma",
-			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+			Ext:   json.RawMessage("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
 		}
 		js, _ := json.Marshal(resp)
 		w.Write(js)
@@ -754,7 +754,7 @@ func TestZeroPriceBidResponse(t *testing.T) {
 			ImpID: "first-tag",
 			Price: 0,
 			AdM:   "zma",
-			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+			Ext:   json.RawMessage("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
 		}
 		js, _ := json.Marshal(resp)
 		w.Write(js)
@@ -994,7 +994,7 @@ func TestOpenRTBRequest(t *testing.T) {
 					SIZE_ID[10],
 				},
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {
+			Ext: json.RawMessage(`{"bidder": {
 				"zoneId": 8394,
 				"siteId": 283282,
 				"accountId": 7891,
@@ -1010,7 +1010,7 @@ func TestOpenRTBRequest(t *testing.T) {
 				MinDuration: 15,
 				MaxDuration: 30,
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {
+			Ext: json.RawMessage(`{"bidder": {
 				"zoneId": 7780,
 				"siteId": 283282,
 				"accountId": 7891,
@@ -1030,7 +1030,7 @@ func TestOpenRTBRequest(t *testing.T) {
 			PxRatio: rubidata.devicePxRatio,
 		},
 		User: &openrtb.User{
-			Ext: openrtb.RawJSON(`{"digitrust": {
+			Ext: json.RawMessage(`{"digitrust": {
 				"id": "some-digitrust-id",
 				"keyv": 1,
 				"pref": 0
@@ -1160,7 +1160,7 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 					H: 50,
 				}},
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {
+			Ext: json.RawMessage(`{"bidder": {
 				"accountId": 2763,
 				"siteId": 68780,
 				"zoneId": 327642
