@@ -38,26 +38,30 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	id, ok := p.vendorIDs[bidder]
+	if ok {
+		return p.allowPI(ctx, id, consent)
+	}
+
+	if consent == "" {
+		return p.cfg.UsersyncIfAmbiguous, nil
+	}
+
+	return false, nil
+}
+
 func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consent string) (bool, error) {
 	// If we're not given a consent string, respect the preferences in the app config.
 	if consent == "" {
 		return p.cfg.UsersyncIfAmbiguous, nil
 	}
 
-	parsedConsent, err := vendorconsent.ParseString(consent)
-	if err != nil {
-		return false, &ErrorMalformedConsent{
-			consent: consent,
-			cause:   err,
-		}
-	}
-
-	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
 	if err != nil {
 		return false, err
 	}
 
-	vendor := vendorList.Vendor(vendorID)
 	if vendor == nil {
 		return false, nil
 	}
@@ -69,12 +73,58 @@ func (p *permissionsImpl) allowSync(ctx context.Context, vendorID uint16, consen
 	return false, nil
 }
 
-type alwaysAllow struct{}
+func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent string) (bool, error) {
+	// If we're not given a consent string, respect the preferences in the app config.
+	if consent == "" {
+		return p.cfg.UsersyncIfAmbiguous, nil
+	}
 
-func (a alwaysAllow) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
+	parsedConsent, vendor, err := p.parseVendor(ctx, vendorID, consent)
+	if err != nil {
+		return false, err
+	}
+
+	if vendor == nil {
+		return false, nil
+	}
+
+	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (p *permissionsImpl) parseVendor(ctx context.Context, vendorID uint16, consent string) (parsedConsent vendorconsent.VendorConsents, vendor vendorlist.Vendor, err error) {
+	parsedConsent, err = vendorconsent.ParseString(consent)
+	if err != nil {
+		err = &ErrorMalformedConsent{
+			consent: consent,
+			cause:   err,
+		}
+		return
+	}
+
+	vendorList, err := p.fetchVendorList(ctx, parsedConsent.VendorListVersion())
+	if err != nil {
+		return
+	}
+
+	vendor = vendorList.Vendor(vendorID)
+	return
+}
+
+// Exporting to allow for easy test setups
+type AlwaysAllow struct{}
+
+func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
 	return true, nil
 }
 
-func (a alwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return true, nil
+}
+
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
 	return true, nil
 }

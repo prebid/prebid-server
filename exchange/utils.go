@@ -1,12 +1,14 @@
 package exchange
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 )
@@ -16,7 +18,7 @@ import (
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+func cleanOpenRTBRequests(ctx context.Context, orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels, gDPR gdpr.Permissions, usersyncIfAmbiguous bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
 		return
@@ -28,6 +30,18 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables
 	}
 
 	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
+
+	// Clean PI from bidrequests if not allowed per GDPR
+	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
+	consent := extractConsent(orig)
+	if gdpr == 1 {
+		for bidder, bidReq := range requestsByBidder {
+			if ok, err := gDPR.PersonalInfoAllowed(ctx, bidder, consent); !ok && err == nil {
+				cleanPI(bidReq)
+			}
+		}
+	}
+
 	return
 }
 

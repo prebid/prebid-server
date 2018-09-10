@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -35,10 +36,12 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	me         pbsmetrics.MetricsEngine
-	cache      prebid_cache_client.Client
-	cacheTime  time.Duration
+	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
+	me                  pbsmetrics.MetricsEngine
+	cache               prebid_cache_client.Client
+	cacheTime           time.Duration
+	gDPR                gdpr.Permissions
+	UsersyncIfAmbiguous bool
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -53,13 +56,15 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg, infos)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.me = metricsEngine
+	e.gDPR = gDPR
+	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	return e
 }
 
@@ -76,7 +81,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, errs := cleanOpenRTBRequests(bidRequest, usersyncs, blabels, labels)
+	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
+
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0

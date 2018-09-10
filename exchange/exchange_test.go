@@ -19,6 +19,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
@@ -41,7 +42,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}
 
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList())).(*exchange)
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}).(*exchange)
 	for _, bidderName := range knownAdapters {
 		if _, ok := e.adapterMap[bidderName]; !ok {
 			t.Errorf("NewExchange produced an Exchange without bidder %s", bidderName)
@@ -81,7 +82,7 @@ func TestRaceIntegration(t *testing.T) {
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()))
+	ex := NewExchange(server.Client(), &wellBehavedCache{}, cfg, theMetrics, adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{})
 	_, err := ex.HoldAuction(context.Background(), newRaceCheckingRequest(t), &emptyUsersync{}, pbsmetrics.Labels{})
 	if err != nil {
 		t.Errorf("HoldAuction returned unexpected error: %v", err)
@@ -374,10 +375,12 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 
 	return &exchange{
-		adapterMap: adapters,
-		me:         metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
-		cache:      &wellBehavedCache{},
-		cacheTime:  0,
+		adapterMap:          adapters,
+		me:                  metricsConf.NewMetricsEngine(&config.Configuration{}, openrtb_ext.BidderList()),
+		cache:               &wellBehavedCache{},
+		cacheTime:           0,
+		gDPR:                gdpr.AlwaysAllow{},
+		UsersyncIfAmbiguous: false,
 	}
 }
 

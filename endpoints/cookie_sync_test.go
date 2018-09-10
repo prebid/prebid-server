@@ -199,3 +199,7 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 	_, ok := g.allowedBidders[bidder]
 	return ok, nil
 }
+
+func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return true, nil
+}
