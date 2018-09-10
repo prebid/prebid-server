@@ -295,7 +295,15 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 		beachfrontReq.Domain = req.App.Domain
 		beachfrontReq.Page = req.App.ID
 	} else {
-		beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
+		protoUrl := strings.Split(req.Site.Page, "//")
+		var domainPage string
+		// Resolves a panic for any Site.Page that does not include the protocol
+		if len(protoUrl) > 1 {
+			domainPage = protoUrl[1]
+		} else {
+			domainPage = protoUrl[0]
+		}
+		beachfrontReq.Domain = strings.Split(domainPage, "/")[0]
 		beachfrontReq.Page = req.Site.Page
 	}
 
