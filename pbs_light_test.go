@@ -646,7 +646,7 @@ func TestExchangeMap(t *testing.T) {
 
 type testValidator struct{}
 
-func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
+func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
 }
 

@@ -113,10 +113,10 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 		User: &openrtb.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
-			Ext:      openrtb.RawJSON(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+			Ext:      json.RawMessage(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
 		},
 		Regs: &openrtb.Regs{
-			Ext: openrtb.RawJSON(`{"gdpr":1}`),
+			Ext: json.RawMessage(`{"gdpr":1}`),
 		},
 		Imp: []openrtb.Imp{{
 			ID: "some-imp-id",
@@ -152,7 +152,7 @@ func TestPanicRecovery(t *testing.T) {
 	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil)
 }
 
-func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
+func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
 	if err != nil {
 		t.Fatalf("Failed to open adapters directory: %v", err)
@@ -173,7 +173,7 @@ func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
 	if err != nil {
 		t.Fatalf("Failed to marshal JSON: %v", err)
 	}
-	return openrtb.RawJSON(toReturn)
+	return json.RawMessage(toReturn)
 }
 
 func TestPanicRecoveryHighLevel(t *testing.T) {
@@ -207,7 +207,7 @@ func TestPanicRecoveryHighLevel(t *testing.T) {
 		User: &openrtb.User{
 			ID:       "our-id",
 			BuyerUID: "their-id",
-			Ext:      openrtb.RawJSON(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+			Ext:      json.RawMessage(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
 		},
 		Imp: []openrtb.Imp{{
 			ID: "some-imp-id",

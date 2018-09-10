@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -65,7 +66,7 @@ type pbsOrtbSeatBid struct {
 	// ext contains the extension for this seatbid.
 	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
 	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
-	ext openrtb.RawJSON
+	ext json.RawMessage
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.

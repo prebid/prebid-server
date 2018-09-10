@@ -1,9 +1,9 @@
 package somoaudience
 
 import (
+	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -19,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderSomoaudience, openrtb.RawJSON(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderSomoaudience, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected somoaudience params: %s", validParam)
 		}
 	}
@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderSomoaudience, openrtb.RawJSON(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderSomoaudience, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
@@ -110,7 +111,7 @@ type ExtImpBidder struct {
 	//
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
-	Bidder openrtb.RawJSON `json:"bidder"`
+	Bidder json.RawMessage `json:"bidder"`
 }
 
 func (r *RequestData) SetBasicAuth(username string, password string) {

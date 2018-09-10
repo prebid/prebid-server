@@ -148,9 +148,9 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 // sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid" and intendedBidder exist.
 // It will not mutate the input imp.
 // This function expects the "ext" argument to have been unmarshalled from "imp", so we don't have to repeat that work.
-func sanitizedImpCopy(imp *openrtb.Imp, ext map[string]openrtb.RawJSON, intendedBidder string) (*openrtb.Imp, error) {
+func sanitizedImpCopy(imp *openrtb.Imp, ext map[string]json.RawMessage, intendedBidder string) (*openrtb.Imp, error) {
 	impCopy := *imp
-	newExt := make(map[string]openrtb.RawJSON, 2)
+	newExt := make(map[string]json.RawMessage, 2)
 	if value, ok := ext["prebid"]; ok {
 		newExt["prebid"] = value
 	}
@@ -206,8 +206,8 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
 // The keys in the returned map are expected to be "prebid", core BidderNames, or Aliases for this request.
-func parseImpExts(imps []openrtb.Imp) ([]map[string]openrtb.RawJSON, error) {
-	exts := make([]map[string]openrtb.RawJSON, len(imps))
+func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
+	exts := make([]map[string]json.RawMessage, len(imps))
 	// Loop over every impression in the request
 	for i := 0; i < len(imps); i++ {
 		// Unpack each set of extensions found in the Imp array

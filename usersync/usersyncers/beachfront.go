@@ -2,6 +2,7 @@ package usersyncers
 
 import (
 	"fmt"
+
 	"github.com/prebid/prebid-server/usersync"
 )
 

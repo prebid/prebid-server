@@ -191,15 +191,16 @@
   version = "v0.4.1"
 
 [[projects]]
-  digest = "1:5afb0d5751e49d60cd4f6925a4443d0091792b0d014e4e38bb0b352c181623b1"
+  digest = "1:201a3deb0bbd1b035114a920ad932d656e6e9133825118902f6264914d72286c"
   name = "github.com/mxmCherry/openrtb"
   packages = [
     ".",
+    "native",
     "native/request",
   ]
   pruneopts = "UT"
-  revision = "3f56f5d84c99cf28c575a90ffddbf9f0337c39bd"
-  version = "v9.2.0"
+  revision = "e642f66bd4f9b51c99b0c7b51188b751969465cb"
+  version = "v10.0.0"
 
 [[projects]]
   digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
@@ -470,6 +471,7 @@
     "github.com/magiconair/properties/assert",
     "github.com/mssola/user_agent",
     "github.com/mxmCherry/openrtb",
+    "github.com/mxmCherry/openrtb/native",
     "github.com/mxmCherry/openrtb/native/request",
     "github.com/prebid/go-gdpr/consentconstants",
     "github.com/prebid/go-gdpr/vendorconsent",
