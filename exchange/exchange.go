@@ -202,7 +202,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				}
 			}
 			chBids <- brw
-		})
+		}, chBids)
 		go bidderRunner(bidderName, coreBidder, req, blabels[coreBidder])
 	}
 	// Wait for the bidders to do their thing
@@ -215,11 +215,15 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	return adapterBids, adapterExtra
 }
 
-func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels)) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels) {
+func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels), chBids chan *bidResponseWrapper) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels) {
 	return func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
 		defer func() {
 			if r := recover(); r != nil {
 				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack()))
+				// Let the master request know that there is no data here
+				brw := new(bidResponseWrapper)
+				brw.adapterExtra = new(seatResponseExtra)
+				chBids <- brw
 			}
 		}()
 		inner(aName, coreBidder, request, bidlabels)

@@ -45,7 +45,7 @@ fi
 if $COVERAGE; then
   ./scripts/check_coverage.sh
 else
-  go test $(go list ./... | grep -v /vendor/)
+  go test -timeout 120s $(go list ./... | grep -v /vendor/)
 fi
 
 # Then run the race condition tests. These only run on tests named TestRace.* for two reasons.

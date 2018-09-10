@@ -143,10 +143,11 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 }
 
 func TestPanicRecovery(t *testing.T) {
+	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
 		panic("panic!")
 	}
-	recovered := recoverSafely(panicker)
+	recovered := recoverSafely(panicker, chBids)
 	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil)
 }
 
@@ -172,6 +173,61 @@ func buildImpExt(t *testing.T, jsonFilename string) openrtb.RawJSON {
 		t.Fatalf("Failed to marshal JSON: %v", err)
 	}
 	return openrtb.RawJSON(toReturn)
+}
+
+func TestPanicRecoveryHighLevel(t *testing.T) {
+	noBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(noBidServer))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+	}
+	for _, bidder := range openrtb_ext.BidderList() {
+		cfg.Adapters[strings.ToLower(string(bidder))] = config.Adapter{
+			Endpoint: server.URL,
+		}
+	}
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList())).(*exchange)
+
+	e.adapterMap[openrtb_ext.BidderBeachfront] = panicingAdapter{}
+	e.adapterMap[openrtb_ext.BidderAppnexus] = panicingAdapter{}
+
+	request := &openrtb.BidRequest{
+		Site: &openrtb.Site{
+			Page:   "www.some.domain.com",
+			Domain: "domain.com",
+			Publisher: &openrtb.Publisher{
+				ID: "some-publisher-id",
+			},
+		},
+		User: &openrtb.User{
+			ID:       "our-id",
+			BuyerUID: "their-id",
+			Ext:      openrtb.RawJSON(`{"consent":"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw","digitrust":{"id":"digi-id","keyv":1,"pref":1}}`),
+		},
+		Imp: []openrtb.Imp{{
+			ID: "some-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: buildImpExt(t, "banner"),
+		}},
+	}
+
+	_, err := e.HoldAuction(context.Background(), request, &emptyUsersync{}, pbsmetrics.Labels{})
+	if err != nil {
+		t.Errorf("HoldAuction returned unexpected error: %v", err)
+	}
+
 }
 
 func TestTimeoutComputation(t *testing.T) {
@@ -535,4 +591,10 @@ type mockUsersync struct {
 func (e *mockUsersync) GetId(bidder openrtb_ext.BidderName) (id string, exists bool) {
 	id, exists = e.syncs[string(bidder)]
 	return
+}
+
+type panicingAdapter struct{}
+
+func (panicingAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (posb *pbsOrtbSeatBid, errs []error) {
+	panic("Panic! Panic! The world is ending!")
 }
