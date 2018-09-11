@@ -120,8 +120,12 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 		ampEventProducers = append(ampEventProducers, newEventsAPI(router, "/storedrequests/amp"))
 	}
 	if cfg.HTTPEvents.RefreshRate != 0 {
-		eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
-		ampEventProducers = append(ampEventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.AmpEndpoint))
+		if cfg.HTTPEvents.Endpoint != "" {
+			eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
+		}
+		if cfg.HTTPEvents.AmpEndpoint != "" {
+			ampEventProducers = append(ampEventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.AmpEndpoint))
+		}
 	}
 	if cfg.Postgres.CacheInitialization.Query != "" {
 		// Make sure we don't miss any updates in between the initial fetch and the "update" polling.

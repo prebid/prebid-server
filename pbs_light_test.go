@@ -406,6 +406,7 @@ func TestShouldUsersync(t *testing.T) {
 type mockPermissions struct {
 	allowBidderSync  bool
 	allowHostCookies bool
+	allowPI          bool
 }
 
 func (m *mockPermissions) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -414,6 +415,10 @@ func (m *mockPermissions) HostCookiesAllowed(ctx context.Context, consent string
 
 func (m *mockPermissions) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
 	return m.allowBidderSync, nil
+}
+
+func (m *mockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return m.allowPI, nil
 }
 
 func TestBidSizeValidate(t *testing.T) {
@@ -641,7 +646,7 @@ func TestExchangeMap(t *testing.T) {
 
 type testValidator struct{}
 
-func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext openrtb.RawJSON) error {
+func (validator *testValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
 	return nil
 }
 

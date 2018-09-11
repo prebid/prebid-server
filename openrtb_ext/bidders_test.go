@@ -1,10 +1,10 @@
 package openrtb_ext
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -38,13 +38,13 @@ func TestBidderParamSchemas(t *testing.T) {
 // TestValidParams and TestInvalidParams overlap with adapters/appnexus/params_test... but those tests
 // from the other packages don't show up in code coverage.
 func TestValidParams(t *testing.T) {
-	if err := validator.Validate(BidderAppnexus, openrtb.RawJSON(`{"placementId":123}`)); err != nil {
+	if err := validator.Validate(BidderAppnexus, json.RawMessage(`{"placementId":123}`)); err != nil {
 		t.Errorf("These params should be valid. Error was: %v", err)
 	}
 }
 
 func TestInvalidParams(t *testing.T) {
-	if err := validator.Validate(BidderAppnexus, openrtb.RawJSON(`{}`)); err == nil {
+	if err := validator.Validate(BidderAppnexus, json.RawMessage(`{}`)); err == nil {
 		t.Error("These params should be invalid.")
 	}
 }

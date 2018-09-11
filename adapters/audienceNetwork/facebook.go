@@ -23,7 +23,7 @@ type FacebookAdapter struct {
 	http         *adapters.HTTPAdapter
 	URI          string
 	nonSecureUri string
-	platformJSON openrtb.RawJSON
+	platformJSON json.RawMessage
 }
 
 var supportedHeight = map[uint64]bool{
@@ -298,6 +298,6 @@ func NewFacebookAdapter(config *adapters.HTTPAdapterConfig, partnerID string) *F
 		URI:  "https://an.facebook.com/placementbid.ortb",
 		//for AB test
 		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
-		platformJSON: openrtb.RawJSON(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
+		platformJSON: json.RawMessage(fmt.Sprintf("{\"platformid\": %s}", partnerID)),
 	}
 }

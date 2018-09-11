@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
@@ -35,10 +36,12 @@ type IdFetcher interface {
 }
 
 type exchange struct {
-	adapterMap map[openrtb_ext.BidderName]adaptedBidder
-	me         pbsmetrics.MetricsEngine
-	cache      prebid_cache_client.Client
-	cacheTime  time.Duration
+	adapterMap          map[openrtb_ext.BidderName]adaptedBidder
+	me                  pbsmetrics.MetricsEngine
+	cache               prebid_cache_client.Client
+	cacheTime           time.Duration
+	gDPR                gdpr.Permissions
+	UsersyncIfAmbiguous bool
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -53,13 +56,15 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg, infos)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.me = metricsEngine
+	e.gDPR = gDPR
+	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	return e
 }
 
@@ -76,7 +81,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, errs := cleanOpenRTBRequests(bidRequest, usersyncs, blabels, labels)
+	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
+
 	// List of bidders we have requests for.
 	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
 	i := 0
@@ -189,7 +195,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			// Timing statistics
 			e.me.RecordAdapterTime(*bidlabels, time.Since(start))
 			serr := errsToBidderErrors(err)
-			bidlabels.AdapterBids = bidsToMetric(bids)
+			bidlabels.AdapterBids = bidsToMetric(brw.adapterBids)
 			bidlabels.AdapterErrors = errorsToMetric(err)
 			// Append any bid validation errors to the error list
 			ae.Errors = serr
@@ -202,7 +208,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 				}
 			}
 			chBids <- brw
-		})
+		}, chBids)
 		go bidderRunner(bidderName, coreBidder, req, blabels[coreBidder])
 	}
 	// Wait for the bidders to do their thing
@@ -215,11 +221,15 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	return adapterBids, adapterExtra
 }
 
-func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels)) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels) {
+func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels), chBids chan *bidResponseWrapper) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels) {
 	return func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
 		defer func() {
 			if r := recover(); r != nil {
 				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack()))
+				// Let the master request know that there is no data here
+				brw := new(bidResponseWrapper)
+				brw.adapterExtra = new(seatResponseExtra)
+				chBids <- brw
 			}
 		}()
 		inner(aName, coreBidder, request, bidlabels)

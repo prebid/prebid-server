@@ -18,6 +18,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/native"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -146,7 +147,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		glog.Warningf("/openrtb2/auction Failed to send response: %v", err)
 		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
@@ -397,14 +397,14 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	return nil
 }
 
-func validateNativeContext(c nativeRequests.ContextType, impIndex int) error {
+func validateNativeContext(c native.ContextType, impIndex int) error {
 	if c < 1 || c > 3 {
 		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, c)
 	}
 	return nil
 }
 
-func validateNativePlacementType(pt nativeRequests.PlacementType, impIndex int) error {
+func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
 	if pt < 1 || pt > 4 {
 		return fmt.Errorf("request.imp[%d].native.request.plcmttype must be in the range [1, 4]. Got %d", impIndex, pt)
 	}
@@ -520,7 +520,7 @@ func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex
 	return nil
 }
 
-func validateNativeVideoProtocols(protocols []nativeRequests.Protocol, impIndex int, assetIndex int) error {
+func validateNativeVideoProtocols(protocols []native.Protocol, impIndex int, assetIndex int) error {
 	if len(protocols) < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
 	}
@@ -532,7 +532,7 @@ func validateNativeVideoProtocols(protocols []nativeRequests.Protocol, impIndex 
 	return nil
 }
 
-func validateNativeVideoProtocol(protocol nativeRequests.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
+func validateNativeVideoProtocol(protocol native.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
 	if protocol < 0 || protocol > 10 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] must be in the range [1, 10]. Got %d", impIndex, assetIndex, protocolIndex, protocol)
 	}
@@ -570,11 +570,11 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+func (deps *endpointDeps) validateImpExt(ext json.RawMessage, aliases map[string]string, impIndex int) error {
 	if len(ext) == 0 {
 		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
 	}
-	var bidderExts map[string]openrtb.RawJSON
+	var bidderExts map[string]json.RawMessage
 	if err := json.Unmarshal(ext, &bidderExts); err != nil {
 		return err
 	}
@@ -602,7 +602,7 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string
 	return nil
 }
 
-func (deps *endpointDeps) parseBidExt(ext openrtb.RawJSON) (*openrtb_ext.ExtRequest, error) {
+func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
 	if len(ext) < 1 {
 		return nil, nil
 	}

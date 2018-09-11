@@ -197,7 +197,7 @@ func DummyAppNexusServer(w http.ResponseWriter, r *http.Request) {
 			ImpID: imp.ID,
 			Price: andata.tags[i].bid,
 			AdM:   andata.tags[i].content,
-			Ext:   openrtb.RawJSON(fmt.Sprintf(`{"appnexus":{"bid_ad_type":%d}}`, bidTypeToInt(andata.tags[i].mediaType))),
+			Ext:   json.RawMessage(fmt.Sprintf(`{"appnexus":{"bid_ad_type":%d}}`, bidTypeToInt(andata.tags[i].mediaType))),
 		}
 
 		if imp.Video != nil {

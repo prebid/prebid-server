@@ -1,9 +1,10 @@
 package appnexus
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"encoding/json"
 	"testing"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/appnexus.json
@@ -18,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderAppnexus, openrtb.RawJSON(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderAppnexus, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected appnexus params: %s", validParam)
 		}
 	}
@@ -32,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderAppnexus, openrtb.RawJSON(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderAppnexus, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
