@@ -48,8 +48,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		// TODO #213: Upgrade the Lifestreet adapter
 		openrtb_ext.BidderLifestreet: adaptLegacyAdapter(lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint)),
 		openrtb_ext.BidderOpenx:      adaptBidder(adapters.EnforceBidderInfo(openx.NewOpenxBidder(cfg.Adapters[string(openrtb_ext.BidderOpenx)].Endpoint), infos[string(openrtb_ext.BidderOpenx)]), client),
-		// TODO #214: Upgrade the Pubmatic adapter
-		openrtb_ext.BidderPubmatic: adaptLegacyAdapter(pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint)),
+		openrtb_ext.BidderPubmatic:   adaptBidder(adapters.EnforceBidderInfo(pubmatic.NewPubmaticBidder(client, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint), infos[string(openrtb_ext.BidderPubmatic)]), client),
 		// TODO #215: Upgrade the Pulsepoint adapter
 		openrtb_ext.BidderPulsepoint: adaptLegacyAdapter(pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint)),
 		openrtb_ext.BidderRubicon: adaptBidder(adapters.EnforceBidderInfo(

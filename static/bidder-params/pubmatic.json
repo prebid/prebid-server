@@ -1,17 +1,53 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Pubmatic Adapter Params",
-  "description": "A schema which validates params accepted by the Pubmatic adapter",
-  "type": "object",
-  "properties": {
-    "publisherId": {
-      "type": "string",
-      "description": "An ID which identifies the publisher"
-    },
-    "adSlot": {
-      "type": "string",
-      "description": "An ID which identifies the ad slot"
-    }
-  },
-  "required": ["publisherId", "adSlot"]
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Pubmatic Adapter Params",
+	"description": "A schema which validates params accepted by the Pubmatic adapter",
+	"type": "object",
+	"properties": {
+		"publisherId": {
+			"type": "string",
+			"description": "An ID which identifies the publisher"
+		},
+		"adSlot": {
+			"type": "string",
+			"description": "An ID which identifies the ad slot"
+		},
+		"wrapper": {
+			"type": "object",
+			"description": "Specifies pubmatic openwrap configuration for a publisher",
+			"properties": {
+				"profile": {
+					"type": "integer",
+					"description": "An ID which identifies the openwrap profile of publisher"
+				},
+				"version": {
+					"type": "integer",
+					"description": "An ID which identifies version of the openwrap profile"
+				}
+			},
+			"required": ["profile"]
+		},
+		"keywords": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+			  "type": "object",
+			  "description": "A key with one or more values associated with it. These are used in buy-side segment targeting.",
+			  "properties": {
+				"key": {
+				  "type": "string"
+				},
+				"value": {
+				  "type": "array",
+				  "minItems": 1,
+				  "items": {
+					"type": "string"
+				  }
+				}
+			  },
+			  "required": ["key", "value"]
+			}
+		  }
+	},
+	"required": ["publisherId", "adSlot"]
 }
