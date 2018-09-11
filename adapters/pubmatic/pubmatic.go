@@ -153,7 +153,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
-						pbReq.Imp[i].Ext = openrtb.RawJSON([]byte(kvstr))
+						pbReq.Imp[i].Ext = json.RawMessage([]byte(kvstr))
 					} else {
 						pbReq.Imp[i].Ext = nil
 					}
@@ -198,7 +198,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
-		pbReq.Ext = openrtb.RawJSON(rawExt)
+		pbReq.Ext = json.RawMessage(rawExt)
 	}
 
 	reqJSON, err := json.Marshal(pbReq)
@@ -319,7 +319,7 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
-		request.Ext = openrtb.RawJSON(rawExt)
+		request.Ext = json.RawMessage(rawExt)
 	}
 
 	if request.Site != nil {
@@ -439,7 +439,7 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
 		kvstr := makeKeywordStr(pubmaticExt.Keywords)
-		imp.Ext = openrtb.RawJSON([]byte(kvstr))
+		imp.Ext = json.RawMessage([]byte(kvstr))
 	} else {
 		imp.Ext = nil
 	}
