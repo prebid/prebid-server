@@ -74,12 +74,18 @@ func cleanPI(bidRequest *openrtb.BidRequest) {
 // Zero the last byte of an IP address
 func cleanIP(fullIP string) string {
 	i := strings.LastIndex(fullIP, ".")
+	if i == -1 {
+		return ""
+	}
 	return fullIP[0:i] + ".000"
 }
 
 // Zero the last two bytes of an IPv6 address
 func cleanIPv6(fullIP string) string {
 	i := strings.LastIndex(fullIP, ":")
+	if i == -1 {
+		return ""
+	}
 	return fullIP[0:i] + ":0000"
 }
 

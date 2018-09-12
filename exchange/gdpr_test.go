@@ -92,3 +92,11 @@ func assertStringEmpty(t *testing.T, str string) {
 		t.Errorf("Expected an empty string, got %s", str)
 	}
 }
+
+func TestBadIPs(t *testing.T) {
+	assertStringEmpty(t, cleanIP("not an IP"))
+	assertStringEmpty(t, cleanIP(""))
+	assertStringEmpty(t, cleanIP("36278042"))
+	assertStringEmpty(t, cleanIPv6("not an IP"))
+	assertStringEmpty(t, cleanIPv6(""))
+}
