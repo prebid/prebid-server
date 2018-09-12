@@ -329,7 +329,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 				},
 			},
 			Bids: []pbs.Bids{
-				pbs.Bids{
+				{
 					BidderCode: "appnexus",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
 					Params:     params,

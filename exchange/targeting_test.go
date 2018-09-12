@@ -20,18 +20,18 @@ import (
 
 // Using this set of bids in more than one test
 var mockBids = map[openrtb_ext.BidderName][]*openrtb.Bid{
-	openrtb_ext.BidderAppnexus: []*openrtb.Bid{&openrtb.Bid{
+	openrtb_ext.BidderAppnexus: {{
 		ID:    "losing-bid",
 		ImpID: "some-imp",
 		Price: 0.5,
 		CrID:  "1",
-	}, &openrtb.Bid{
+	}, {
 		ID:    "winning-bid",
 		ImpID: "some-imp",
 		Price: 0.7,
 		CrID:  "2",
 	}},
-	openrtb_ext.BidderRubicon: []*openrtb.Bid{&openrtb.Bid{
+	openrtb_ext.BidderRubicon: {{
 		ID:    "contending-bid",
 		ImpID: "some-imp",
 		Price: 0.6,
@@ -103,7 +103,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 
 func buildBidderList(bids map[openrtb_ext.BidderName][]*openrtb.Bid) []openrtb_ext.BidderName {
 	bidders := make([]openrtb_ext.BidderName, 0, len(bids))
-	for name, _ := range bids {
+	for name := range bids {
 		bidders = append(bidders, name)
 	}
 	return bidders
@@ -141,7 +141,7 @@ func buildTargetingExt(includeCache bool, includeWinners bool, includeBidderKeys
 
 func buildParams(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid) json.RawMessage {
 	params := make(map[string]json.RawMessage)
-	for bidder, _ := range mockBids {
+	for bidder := range mockBids {
 		params[string(bidder)] = json.RawMessage(`{"whatever":true}`)
 	}
 	ext, err := json.Marshal(params)
@@ -163,7 +163,7 @@ func buildImps(t *testing.T, mockBids map[openrtb_ext.BidderName][]*openrtb.Bid)
 	}
 
 	imps := make([]openrtb.Imp, 0, len(impIds))
-	for impId, _ := range impIds {
+	for impId := range impIds {
 		imps = append(imps, openrtb.Imp{
 			ID:  impId,
 			Ext: impExt,

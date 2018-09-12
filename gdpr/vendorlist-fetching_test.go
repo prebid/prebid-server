@@ -14,12 +14,12 @@ import (
 
 func TestVendorFetch(t *testing.T) {
 	vendorListOne := mockVendorListData(t, 1, map[uint16]*purposes{
-		32: &purposes{
+		32: {
 			purposes: []uint8{1, 2},
 		},
 	})
 	vendorListTwo := mockVendorListData(t, 2, map[uint16]*purposes{
-		32: &purposes{
+		32: {
 			purposes: []uint8{1, 2, 3},
 		},
 	})
@@ -46,12 +46,12 @@ func TestVendorFetch(t *testing.T) {
 
 func TestLazyFetch(t *testing.T) {
 	firstVendorList := mockVendorListData(t, 1, map[uint16]*purposes{
-		32: &purposes{
+		32: {
 			purposes: []uint8{1, 2},
 		},
 	})
 	secondVendorList := mockVendorListData(t, 2, map[uint16]*purposes{
-		3: &purposes{
+		3: {
 			purposes: []uint8{1},
 		},
 	})
@@ -72,7 +72,7 @@ func TestLazyFetch(t *testing.T) {
 
 func TestInitialTimeout(t *testing.T) {
 	list := mockVendorListData(t, 1, map[uint16]*purposes{
-		32: &purposes{
+		32: {
 			purposes: []uint8{1, 2},
 		},
 	})
@@ -90,12 +90,12 @@ func TestInitialTimeout(t *testing.T) {
 
 func TestFetchThrottling(t *testing.T) {
 	vendorListTwo := mockVendorListData(t, 2, map[uint16]*purposes{
-		32: &purposes{
+		32: {
 			purposes: []uint8{1, 2},
 		},
 	})
 	vendorListThree := mockVendorListData(t, 3, map[uint16]*purposes{
-		32: &purposes{
+		32: {
 			purposes: []uint8{1, 2},
 		},
 	})

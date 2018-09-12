@@ -39,10 +39,10 @@ func TestBadResponse(t *testing.T) {
 		putUrl:     server.URL,
 	}
 	ids := client.PutJson(context.Background(), []Cacheable{
-		Cacheable{
+		{
 			Type: TypeJSON,
 			Data: json.RawMessage("true"),
-		}, Cacheable{
+		}, {
 			Type: TypeJSON,
 			Data: json.RawMessage("false"),
 		},
@@ -66,7 +66,7 @@ func TestCancelledContext(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	ids := client.PutJson(ctx, []Cacheable{Cacheable{
+	ids := client.PutJson(ctx, []Cacheable{{
 		Type: TypeJSON,
 		Data: json.RawMessage("true"),
 	},
@@ -85,10 +85,10 @@ func TestSuccessfulPut(t *testing.T) {
 	}
 
 	ids := client.PutJson(context.Background(), []Cacheable{
-		Cacheable{
+		{
 			Type: TypeJSON,
 			Data: json.RawMessage("true"),
-		}, Cacheable{
+		}, {
 			Type: TypeJSON,
 			Data: json.RawMessage("false"),
 		},
