@@ -33,7 +33,7 @@ if $AUTOFMT; then
   if [[ $GOFMT_LINES -ne 0 ]]; then
     FMT_FILES=`gofmt -s -l $GOGLOB | xargs`
     for FILE in $FMT_FILES; do
-        echo "Running: gofmt -w $FILE"
+        echo "Running: gofmt -s -w $FILE"
         `gofmt -s -w $FILE`
     done
   fi
