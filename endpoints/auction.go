@@ -1,4 +1,4 @@
-package router
+package endpoints
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
@@ -26,8 +28,8 @@ import (
 )
 
 type bidResult struct {
-	bidder   *pbs.PBSBidder
-	bid_list pbs.PBSBidSlice
+	bidder  *pbs.PBSBidder
+	bidList pbs.PBSBidSlice
 }
 
 const defaultPriceGranularity = "med"
@@ -68,16 +70,29 @@ func writeAuctionError(w http.ResponseWriter, s string, err error) {
 	}
 }
 
-type auctionDeps struct {
+type auction struct {
 	cfg           *config.Configuration
 	syncers       map[openrtb_ext.BidderName]usersync.Usersyncer
 	gdprPerms     gdpr.Permissions
 	metricsEngine pbsmetrics.MetricsEngine
+	dataCache     cache.Cache
+	exchanges     map[string]adapters.Adapter
 }
 
-func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	w.Header().Add("Content-Type", "application/json")
+func Auction(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, gdprPerms gdpr.Permissions, metricsEngine pbsmetrics.MetricsEngine, dataCache cache.Cache, exchanges map[string]adapters.Adapter) httprouter.Handle {
+	a := &auction{
+		cfg:           cfg,
+		syncers:       syncers,
+		gdprPerms:     gdprPerms,
+		metricsEngine: metricsEngine,
+		dataCache:     dataCache,
+		exchanges:     exchanges,
+	}
+	return a.auction
+}
 
+func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Add("Content-Type", "application/json")
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeLegacy,
@@ -86,28 +101,25 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
 			labels.Browser = pbsmetrics.BrowserSafari
 		}
 	}
-
-	pbs_req, err := pbs.ParsePBSRequest(r, &deps.cfg.AuctionTimeouts, dataCache, &(deps.cfg.HostCookie))
-	// Defer here because we need pbs_req defined.
+	req, err := pbs.ParsePBSRequest(r, &a.cfg.AuctionTimeouts, a.dataCache, &(a.cfg.HostCookie))
+	// Defer here because we need req defined.
 	defer func() {
-		if pbs_req == nil {
-			deps.metricsEngine.RecordRequest(labels)
-			deps.metricsEngine.RecordImps(labels, 0)
+		if req == nil {
+			a.metricsEngine.RecordRequest(labels)
+			a.metricsEngine.RecordImps(labels, 0)
 		} else {
-			// handles the case that ParsePBSRequest returns an error, so pbs_req.Start is not defined
-			deps.metricsEngine.RecordRequest(labels)
-			deps.metricsEngine.RecordImps(labels, len(pbs_req.AdUnits))
-			deps.metricsEngine.RecordRequestTime(labels, time.Since(pbs_req.Start))
+			// handles the case that ParsePBSRequest returns an error, so req.Start is not defined
+			a.metricsEngine.RecordRequest(labels)
+			a.metricsEngine.RecordImps(labels, len(req.AdUnits))
+			a.metricsEngine.RecordRequestTime(labels, time.Since(req.Start))
 		}
 	}()
-
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Failed to parse /auction request: %v", err)
@@ -116,24 +128,21 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
-
 	status := "OK"
-	if pbs_req.App != nil {
+	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 	} else {
 		labels.Source = pbsmetrics.DemandWeb
-		if pbs_req.Cookie.LiveSyncCount() == 0 {
+		if req.Cookie.LiveSyncCount() == 0 {
 			labels.CookieFlag = pbsmetrics.CookieFlagNo
 			status = "no_cookie"
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(pbs_req.TimeoutMillis))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(req.TimeoutMillis))
 	defer cancel()
-
-	account, err := dataCache.Accounts().Get(pbs_req.AccountID)
+	account, err := a.dataCache.Accounts().Get(req.AccountID)
 	if err != nil {
 		if glog.V(2) {
 			glog.Infof("Invalid account id: %v", err)
@@ -142,18 +151,16 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
-	labels.PubID = pbs_req.AccountID
-
-	pbs_resp := pbs.PBSResponse{
+	labels.PubID = req.AccountID
+	resp := pbs.PBSResponse{
 		Status:       status,
-		TID:          pbs_req.Tid,
-		BidderStatus: pbs_req.Bidders,
+		TID:          req.Tid,
+		BidderStatus: req.Bidders,
 	}
-
 	ch := make(chan bidResult)
 	sentBids := 0
-	for _, bidder := range pbs_req.Bidders {
-		if ex, ok := exchanges[bidder.BidderCode]; ok {
+	for _, bidder := range req.Bidders {
+		if ex, ok := a.exchanges[bidder.BidderCode]; ok {
 			// Make sure we have an independent label struct for each bidder. We don't want to run into issues with the goroutine below.
 			blabels := pbsmetrics.AdapterLabels{
 				Source:      labels.Source,
@@ -168,10 +175,10 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
 				blabels.Adapter = openrtb_ext.BidderName(bidder.BidderCode)
 			}
-			if pbs_req.App == nil {
-				// If exchanges[bidderCode] exists, then deps.syncers[bidderCode] exists *except for districtm*.
+			if req.App == nil {
+				// If exchanges[bidderCode] exists, then a.syncers[bidderCode] exists *except for districtm*.
 				// OpenRTB handles aliases differently, so this hack will keep legacy code working. For all other
-				// bidderCodes, deps.syncers[bidderCode] will exist if exchanges[bidderCode] also does.
+				// bidderCodes, a.syncers[bidderCode] will exist if exchanges[bidderCode] also does.
 				// This is guaranteed by the following unit tests, which compare these maps to the (source of truth) openrtb_ext.BidderMap:
 				//   1. TestSyncers inside usersync/usersync_test.go
 				//   2. TestExchangeMap inside pbs_light_test.go
@@ -179,13 +186,13 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				if syncerCode == "districtm" {
 					syncerCode = "appnexus"
 				}
-				syncer := deps.syncers[openrtb_ext.BidderName(syncerCode)]
-				uid, _, _ := pbs_req.Cookie.GetUID(syncer.FamilyName())
+				syncer := a.syncers[openrtb_ext.BidderName(syncerCode)]
+				uid, _, _ := req.Cookie.GetUID(syncer.FamilyName())
 				if uid == "" {
 					bidder.NoCookie = true
-					gdprApplies := pbs_req.ParseGDPR()
-					consent := pbs_req.ParseConsent()
-					if deps.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
+					gdprApplies := req.ParseGDPR()
+					consent := req.ParseConsent()
+					if a.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
 						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
 					}
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
@@ -197,8 +204,8 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			sentBids++
 			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 				start := time.Now()
-				bid_list, err := ex.Call(ctx, pbs_req, bidder)
-				deps.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
+				bidList, err := ex.Call(ctx, req, bidder)
+				a.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
 					var s struct{}
@@ -220,17 +227,17 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
 						}
 					}
-				} else if bid_list != nil {
-					bid_list = checkForValidBidSize(bid_list, bidder)
-					bidder.NumBids = len(bid_list)
-					for _, bid := range bid_list {
+				} else if bidList != nil {
+					bidList = checkForValidBidSize(bidList, bidder)
+					bidder.NumBids = len(bidList)
+					for _, bid := range bidList {
 						var cpm = float64(bid.Price * 1000)
-						deps.metricsEngine.RecordAdapterPrice(blables, cpm)
+						a.metricsEngine.RecordAdapterPrice(blables, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							deps.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
@@ -240,11 +247,11 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				}
 
 				ch <- bidResult{
-					bidder:   bidder,
-					bid_list: bid_list,
+					bidder:  bidder,
+					bidList: bidList,
 					// Bidder done, record bidder metrics
 				}
-				deps.metricsEngine.RecordAdapterRequest(blabels)
+				a.metricsEngine.RecordAdapterRequest(blabels)
 			})
 
 			go bidderRunner(bidder, blabels)
@@ -253,17 +260,15 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 			bidder.Error = "Unsupported bidder"
 		}
 	}
-
 	for i := 0; i < sentBids; i++ {
 		result := <-ch
-
-		for _, bid := range result.bid_list {
-			pbs_resp.Bids = append(pbs_resp.Bids, bid)
+		for _, bid := range result.bidList {
+			resp.Bids = append(resp.Bids, bid)
 		}
 	}
-	if pbs_req.CacheMarkup == 1 {
-		cobjs := make([]*pbc.CacheObject, len(pbs_resp.Bids))
-		for i, bid := range pbs_resp.Bids {
+	if req.CacheMarkup == 1 {
+		cobjs := make([]*pbc.CacheObject, len(resp.Bids))
+		for i, bid := range resp.Bids {
 			if bid.CreativeMediaType == "video" {
 				cobjs[i] = &pbc.CacheObject{
 					Value:   bid.Adm,
@@ -281,35 +286,30 @@ func (deps *auctionDeps) auction(w http.ResponseWriter, r *http.Request, _ httpr
 				}
 			}
 		}
-		err = pbc.Put(ctx, cobjs)
-		if err != nil {
+		if err := pbc.Put(ctx, cobjs); err != nil {
 			writeAuctionError(w, "Prebid cache failed", err)
 			labels.RequestStatus = pbsmetrics.RequestStatusErr
 			return
 		}
-		for i, bid := range pbs_resp.Bids {
+		for i, bid := range resp.Bids {
 			bid.CacheID = cobjs[i].UUID
-			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
+			bid.CacheURL = a.cfg.GetCachedAssetURL(bid.CacheID)
 			bid.NURL = ""
 			bid.Adm = ""
 		}
 	}
-
-	if pbs_req.CacheMarkup == 2 {
-		cacheVideoOnly(pbs_resp.Bids, ctx, w, deps, &labels)
+	if req.CacheMarkup == 2 {
+		cacheVideoOnly(resp.Bids, ctx, w, a, &labels)
 	}
-
-	if pbs_req.SortBids == 1 {
-		sortBidsAddKeywordsMobile(pbs_resp.Bids, pbs_req, account.PriceGranularity)
+	if req.SortBids == 1 {
+		sortBidsAddKeywordsMobile(resp.Bids, req, account.PriceGranularity)
 	}
-
 	if glog.V(2) {
-		glog.Infof("Request for %d ad units on url %s by account %s got %d bids", len(pbs_req.AdUnits), pbs_req.Url, pbs_req.AccountID, len(pbs_resp.Bids))
+		glog.Infof("Request for %d ad units on url %s by account %s got %d bids", len(req.AdUnits), req.Url, req.AccountID, len(resp.Bids))
 	}
-
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
-	enc.Encode(pbs_resp)
+	enc.Encode(resp)
 }
 
 func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
@@ -327,7 +327,7 @@ func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*p
 	}
 }
 
-func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
 	switch gdprApplies {
 	case "0":
 		return true
@@ -337,16 +337,16 @@ func (deps *auctionDeps) shouldUsersync(ctx context.Context, bidder openrtb_ext.
 		}
 		fallthrough
 	default:
-		if canSync, err := deps.gdprPerms.HostCookiesAllowed(ctx, consent); !canSync || err != nil {
+		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, consent); !canSync || err != nil {
 			return false
 		}
-		canSync, err := deps.gdprPerms.BidderSyncAllowed(ctx, bidder, consent)
+		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, consent)
 		return canSync && err == nil
 	}
 }
 
 // cache video bids only for Web
-func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auctionDeps, labels *pbsmetrics.Labels) {
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auction, labels *pbsmetrics.Labels) {
 	var cobjs []*pbc.CacheObject
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "video" {
@@ -463,33 +463,33 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			if bid.AdServerTargeting == nil {
 				bid.AdServerTargeting = make(map[string]string)
 			}
-			pbs_kvs := bid.AdServerTargeting
+			kvs := bid.AdServerTargeting
 
-			pbs_kvs[hbPbBidderKey] = roundedCpm
-			pbs_kvs[hbBidderBidderKey] = bid.BidderCode
-			pbs_kvs[hbCacheIdBidderKey] = bid.CacheID
+			kvs[hbPbBidderKey] = roundedCpm
+			kvs[hbBidderBidderKey] = bid.BidderCode
+			kvs[hbCacheIdBidderKey] = bid.CacheID
 
 			if hbSize != "" {
-				pbs_kvs[hbSizeBidderKey] = hbSize
+				kvs[hbSizeBidderKey] = hbSize
 			}
 			if bid.DealId != "" {
-				pbs_kvs[hbDealIdBidderKey] = bid.DealId
+				kvs[hbDealIdBidderKey] = bid.DealId
 			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
-				pbs_kvs[hbpbConstantKey] = roundedCpm
-				pbs_kvs[hbBidderConstantKey] = bid.BidderCode
-				pbs_kvs[hbCacheIdConstantKey] = bid.CacheID
+				kvs[hbpbConstantKey] = roundedCpm
+				kvs[hbBidderConstantKey] = bid.BidderCode
+				kvs[hbCacheIdConstantKey] = bid.CacheID
 				if bid.DealId != "" {
-					pbs_kvs[hbDealIdConstantKey] = bid.DealId
+					kvs[hbDealIdConstantKey] = bid.DealId
 				}
 				if hbSize != "" {
-					pbs_kvs[hbSizeConstantKey] = hbSize
+					kvs[hbSizeConstantKey] = hbSize
 				}
 				if bid.BidderCode == "audienceNetwork" {
-					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
+					kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
 				} else {
-					pbs_kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+					kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
 				}
 			}
 		}

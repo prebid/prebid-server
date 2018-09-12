@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -50,7 +51,7 @@ import (
 var dataCache cache.Cache
 var exchanges map[string]adapters.Adapter
 
-const schemaDirectory = "./static/bidder-params"
+const schemaDirectory = "../static/bidder-params"
 
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
@@ -171,6 +172,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		},
 	}
 	fetcher, ampFetcher, db, shutdown := storedRequestsConf.NewStoredRequests(&cfg.StoredRequests, theClient, r.Router)
+	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
 		return nil, fmt.Errorf("Prebid Server could not load data cache: %v", err)
@@ -190,7 +192,8 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	bidderInfos := adapters.ParseBidderInfos("./static/bidder-info", openrtb_ext.BidderList())
+	p, _ := filepath.Abs("../static/bidder-info")
+	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
@@ -208,7 +211,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	r.POST("/auction", (&auctionDeps{cfg, syncers, gdprPerms, r.MetricsEngine}).auction)
+	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
