@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -85,4 +86,62 @@ func TestCORSSupport(t *testing.T) {
 	}
 	cors.ServeHTTP(rr, req)
 	assert.Equal(t, origin, rr.Header().Get("Access-Control-Allow-Origin"))
+}
+
+func TestNoCache(t *testing.T) {
+	nc := NoCache{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+	}
+	rw := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "http://localhost/nocache", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("ETag", "abcdef")
+	nc.ServeHTTP(rw, req)
+	h := rw.Header()
+	if expected := "no-cache, no-store, must-revalidate"; expected != h.Get("Cache-Control") {
+		t.Errorf("invalid cache-control header: expected: %s got: %s", expected, h.Get("Cache-Control"))
+	}
+	if expected := "no-cache"; expected != h.Get("Pragma") {
+		t.Errorf("invalid pragma header: expected: %s got: %s", expected, h.Get("Pragma"))
+	}
+	if expected := "0"; expected != h.Get("Expires") {
+		t.Errorf("invalid expires header: expected: %s got: %s", expected, h.Get("Expires"))
+	}
+	if expected := ""; expected != h.Get("ETag") {
+		t.Errorf("invalid etag header: expected: %s got: %s", expected, h.Get("ETag"))
+	}
+}
+
+func TestLoadDataCache(t *testing.T) {
+	// Test dummy
+	if err := loadDataCache(&config.Configuration{
+		DataCache: config.DataCache{
+			Type: "dummy",
+		},
+	}, nil); err != nil {
+		t.Errorf("data cache: dummy: %s", err)
+	}
+	// Test postgres error
+	if err := loadDataCache(&config.Configuration{
+		DataCache: config.DataCache{
+			Type: "postgres",
+		},
+	}, nil); err == nil {
+		t.Errorf("data cache: postgres: db nil should return error")
+	}
+	// Test file
+	d, _ := ioutil.TempDir("", "pbs-filecache")
+	defer os.RemoveAll(d)
+	f, _ := ioutil.TempFile(d, "file")
+	defer f.Close()
+	if err := loadDataCache(&config.Configuration{
+		DataCache: config.DataCache{
+			Type:     "filecache",
+			Filename: f.Name(),
+		},
+	}, nil); err != nil {
+		t.Errorf("data cache: filecache: %s", err)
+	}
 }
