@@ -313,7 +313,7 @@ func findBiddersInAuction(t *testing.T, context string, req *openrtb.BidRequest)
 		return nil
 	} else {
 		bidders := make([]string, 0, len(splitImps))
-		for bidderName, _ := range splitImps {
+		for bidderName := range splitImps {
 			bidders = append(bidders, bidderName)
 		}
 		return bidders

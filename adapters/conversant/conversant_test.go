@@ -729,7 +729,7 @@ func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrt
 	prices2 := make([]float64, 0)
 	imps2 := make([]openrtb.Imp, 0)
 
-	for i, _ := range prices {
+	for i := range prices {
 		if prices[i] > 0 {
 			prices2 = append(prices2, prices[i])
 			imps2 = append(imps2, imps[i])

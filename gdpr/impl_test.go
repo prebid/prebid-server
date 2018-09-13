@@ -48,10 +48,10 @@ func TestNoConsentAndRejectByDefault(t *testing.T) {
 
 func TestAllowedSyncs(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1},
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{1},
 		},
 	})
@@ -79,10 +79,10 @@ func TestAllowedSyncs(t *testing.T) {
 
 func TestProhibitedPurposes(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1}, // cookie reads/writes
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{3}, // ad personalization
 		},
 	})
@@ -110,10 +110,10 @@ func TestProhibitedPurposes(t *testing.T) {
 
 func TestProhibitedVendors(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1}, // cookie reads/writes
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{3}, // ad personalization
 		},
 	})
@@ -154,10 +154,10 @@ func TestMalformedConsent(t *testing.T) {
 
 func TestAllowPersonalInfo(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1}, // cookie reads/writes
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{1, 3}, // ad personalization
 		},
 	})

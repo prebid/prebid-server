@@ -228,7 +228,7 @@ func (a *FacebookAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 	ch := make(chan adapters.CallOneResult)
 
-	for i, _ := range requests {
+	for i := range requests {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, reqJSON)
 			result.Error = err

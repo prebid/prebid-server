@@ -55,7 +55,7 @@ func TestGetSpecificBidders(t *testing.T) {
 	bidderInfos := adapters.ParseBidderInfos("../../static/bidder-info", openrtb_ext.BidderList())
 	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
 
-	for bidderName, _ := range openrtb_ext.BidderMap {
+	for bidderName := range openrtb_ext.BidderMap {
 		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
 		if err != nil {
 			t.Errorf("Failed to create a GET /info/bidders request: %v", err)
@@ -156,7 +156,7 @@ func TestInfoFiles(t *testing.T) {
 	}
 
 	// Make sure that files exist for each BidderName
-	for bidderName, _ := range openrtb_ext.BidderMap {
+	for bidderName := range openrtb_ext.BidderMap {
 		if _, err := os.Stat(fmt.Sprintf("../../static/bidder-info/%s.yaml", bidderName)); os.IsNotExist(err) {
 			t.Errorf("static/bidder-info/%s.yaml not found. Did you forget to create it?", bidderName)
 		}

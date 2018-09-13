@@ -63,7 +63,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	// and response parsing.
 
 	impMap := make(map[string]*openrtb.Imp, len(cnvrReq.Imp))
-	for idx, _ := range cnvrReq.Imp {
+	for idx := range cnvrReq.Imp {
 		impMap[cnvrReq.Imp[idx].ID] = &cnvrReq.Imp[idx]
 	}
 
