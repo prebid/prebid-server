@@ -38,7 +38,7 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	handler := NewJsonDirectoryServer(&testValidator{})
+	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{})
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)

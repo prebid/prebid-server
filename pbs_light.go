@@ -49,5 +49,6 @@ func serve(revision string, cfg *config.Configuration) error {
 	// Add cors support
 	corsRouter := router.SupportCORS(r)
 	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision), r.MetricsEngine)
+	r.Shutdown()
 	return nil
 }

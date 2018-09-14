@@ -51,8 +51,6 @@ import (
 var dataCache cache.Cache
 var exchanges map[string]adapters.Adapter
 
-const schemaDirectory = "../static/bidder-params"
-
 // NewJsonDirectoryServer is used to serve .json files from a directory as a single blob. For example,
 // given a directory containing the files "a.json" and "b.json", this returns a Handle which serves JSON like:
 //
@@ -63,7 +61,7 @@ const schemaDirectory = "../static/bidder-params"
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
-func NewJsonDirectoryServer(validator openrtb_ext.BidderParamValidator) httprouter.Handle {
+func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
@@ -160,6 +158,7 @@ type Router struct {
 }
 
 func New(cfg *config.Configuration) (r *Router, err error) {
+	const schemaDirectory = "./static/bidder-params"
 	r = &Router{
 		Router: httprouter.New(),
 	}
@@ -192,7 +191,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	p, _ := filepath.Abs("../static/bidder-info")
+	p, _ := filepath.Abs(schemaDirectory)
 	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
 	syncers := usersyncers.NewSyncerMap(cfg)
@@ -216,7 +215,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
-	r.GET("/bidders/params", NewJsonDirectoryServer(paramsValidator))
+	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
