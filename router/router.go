@@ -191,7 +191,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	p, _ := filepath.Abs("./static/bidder-info")
+	p, _ := filepath.Abs(schemaDirectory)
 	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
 	syncers := usersyncers.NewSyncerMap(cfg)
