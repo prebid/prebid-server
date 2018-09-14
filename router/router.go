@@ -158,7 +158,7 @@ type Router struct {
 }
 
 func New(cfg *config.Configuration) (r *Router, err error) {
-	const bidderParamsDirectory = "./static/bidder-params"
+	const schemaDirectory = "./static/bidder-params"
 	r = &Router{
 		Router: httprouter.New(),
 	}
@@ -186,7 +186,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, bidderList)
 
-	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(bidderParamsDirectory)
+	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
@@ -215,7 +215,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
-	r.GET("/bidders/params", NewJsonDirectoryServer(bidderParamsDirectory, paramsValidator))
+	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
