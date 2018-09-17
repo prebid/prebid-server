@@ -71,7 +71,7 @@ func TestCleanPI(t *testing.T) {
 	// Verify cleaned values
 	assertStringEmpty(t, bidReqCopy.User.BuyerUID)
 	assertStringEmpty(t, bidReqCopy.Device.DIDMD5)
-	assert.Equal(t, "12.123.56.000", bidReqCopy.Device.IP)
+	assert.Equal(t, "12.123.56.0", bidReqCopy.Device.IP)
 	assert.Equal(t, "2001:0db8:85a3:0000:0000:8a2e:0370:0000", bidReqCopy.Device.IPv6)
 	assert.Equal(t, 123.46, bidReqCopy.Device.Geo.Lat)
 	assert.Equal(t, 7.98, bidReqCopy.Device.Geo.Lon)
