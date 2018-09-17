@@ -133,7 +133,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if targData != nil {
 		auc.setRoundedPrices(targData.priceGranularity)
-		auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast)
+		auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast, bidRequest, 60)
 		targData.setTargeting(auc, bidRequest.App != nil)
 	}
 	// Build the response

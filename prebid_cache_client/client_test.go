@@ -86,8 +86,9 @@ func TestSuccessfulPut(t *testing.T) {
 
 	ids := client.PutJson(context.Background(), []Cacheable{
 		{
-			Type: TypeJSON,
-			Data: json.RawMessage("true"),
+			Type:       TypeJSON,
+			Data:       json.RawMessage("true"),
+			TTLSeconds: 300,
 		}, {
 			Type: TypeJSON,
 			Data: json.RawMessage("false"),
