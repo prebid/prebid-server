@@ -48,7 +48,7 @@ func TestCleanPI(t *testing.T) {
 
 	bidReqCopy := bidReqOrig
 	// Make sure cleanIP handles the empty case
-	cleanPI(&bidReqCopy)
+	cleanPI(&bidReqCopy, false)
 
 	// Add values to clean
 	bidReqOrig.User = &openrtb.User{
@@ -66,7 +66,7 @@ func TestCleanPI(t *testing.T) {
 	// Make a shallow copy
 	bidReqCopy = bidReqOrig
 
-	cleanPI(&bidReqCopy)
+	cleanPI(&bidReqCopy, false)
 
 	// Verify cleaned values
 	assertStringEmpty(t, bidReqCopy.User.BuyerUID)
@@ -84,6 +84,40 @@ func TestCleanPI(t *testing.T) {
 	assert.Equal(t, 123.4567, bidReqOrig.Device.Geo.Lat)
 	assert.Equal(t, 7.9836, bidReqOrig.Device.Geo.Lon)
 
+}
+
+func TestCleanPIAmp(t *testing.T) {
+	bidReqOrig := openrtb.BidRequest{}
+
+	bidReqCopy := bidReqOrig
+	// Make sure cleanIP handles the empty case
+	cleanPI(&bidReqCopy, false)
+
+	// Add values to clean
+	bidReqOrig.User = &openrtb.User{
+		BuyerUID: "abc123",
+	}
+	bidReqOrig.Device = &openrtb.Device{
+		DIDMD5: "teapot",
+		IP:     "12.123.56.128",
+		IPv6:   "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+		Geo: &openrtb.Geo{
+			Lat: 123.4567,
+			Lon: 7.9836,
+		},
+	}
+	// Make a shallow copy
+	bidReqCopy = bidReqOrig
+
+	cleanPI(&bidReqCopy, true)
+
+	// Verify cleaned values
+	assert.Equal(t, "abc123", bidReqCopy.User.BuyerUID)
+	assertStringEmpty(t, bidReqCopy.Device.DIDMD5)
+	assert.Equal(t, "12.123.56.000", bidReqCopy.Device.IP)
+	assert.Equal(t, "2001:0db8:85a3:0000:0000:8a2e:0370:0000", bidReqCopy.Device.IPv6)
+	assert.Equal(t, 123.46, bidReqCopy.Device.Geo.Lat)
+	assert.Equal(t, 7.98, bidReqCopy.Device.Geo.Lon)
 }
 
 func assertStringEmpty(t *testing.T, str string) {

@@ -49,12 +49,14 @@ type regsExt struct {
 }
 
 // cleanPI removes IP address last byte, device ID, buyer ID, and rounds off lattitude/longitude
-func cleanPI(bidRequest *openrtb.BidRequest) {
+func cleanPI(bidRequest *openrtb.BidRequest, isAMP bool) {
 	if bidRequest.User != nil {
 		// Need to duplicate pointer objects
 		user := *bidRequest.User
 		bidRequest.User = &user
-		bidRequest.User.BuyerUID = ""
+		if isAMP == false {
+			bidRequest.User.BuyerUID = ""
+		}
 		bidRequest.User.Geo = cleanGeo(bidRequest.User.Geo)
 	}
 	if bidRequest.Device != nil {
