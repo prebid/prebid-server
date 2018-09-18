@@ -77,7 +77,7 @@ func cleanIP(fullIP string) string {
 	if i == -1 {
 		return ""
 	}
-	return fullIP[0:i] + ".000"
+	return fullIP[0:i] + ".0"
 }
 
 // Zero the last two bytes of an IPv6 address
