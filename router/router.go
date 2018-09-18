@@ -159,6 +159,7 @@ type Router struct {
 
 func New(cfg *config.Configuration) (r *Router, err error) {
 	const schemaDirectory = "./static/bidder-params"
+	const infoDirectory = "./static/bidder-info"
 	r = &Router{
 		Router: httprouter.New(),
 	}
@@ -191,7 +192,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
-	p, _ := filepath.Abs(schemaDirectory)
+	p, _ := filepath.Abs(infoDirectory)
 	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
 	syncers := usersyncers.NewSyncerMap(cfg)
