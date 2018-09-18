@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -314,6 +315,14 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 			req.Site = &openrtb.Site{Page: canonicalURL}
 		} else {
 			req.Site.Page = canonicalURL
+		}
+		// Fixes #683
+		if parsedURL, err := url.Parse(canonicalURL); err == nil {
+			domain := parsedURL.Host
+			if colonIndex := strings.LastIndex(domain, ":"); colonIndex != -1 {
+				domain = domain[:colonIndex]
+			}
+			req.Site.Domain = domain
 		}
 	}
 
