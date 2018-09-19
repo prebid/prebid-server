@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
-
 	"net/url"
 	"strconv"
+	"strings"
 
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
