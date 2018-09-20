@@ -147,22 +147,22 @@ func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
 func cacheTTL(impTTL int64, bidTTL int64, buffer int64) (ttl int64) {
 	if impTTL <= 0 {
 		// Use <= to handle the case of someone sending a negative ttl. We treat it as zero
-		ttl = bidTTL
-	} else {
-		if bidTTL <= 0 {
-			ttl = impTTL
-		} else {
-			if impTTL < bidTTL {
-				ttl = impTTL
-			} else {
-				ttl = bidTTL
-			}
-		}
+		return addBuffer(bidTTL, buffer)
 	}
-	if ttl > 0 {
-		return ttl + buffer
+	if bidTTL <= 0 {
+		return addBuffer(impTTL, buffer)
 	}
-	return 0
+	if impTTL < bidTTL {
+		return addBuffer(impTTL, buffer)
+	}
+	return addBuffer(bidTTL, buffer)
+}
+
+func addBuffer(base int64, buffer int64) int64 {
+	if base <= 0 {
+		return 0
+	}
+	return base + buffer
 }
 
 type auction struct {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -132,7 +133,7 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 	buffer.WriteString(string(value.Type))
 	if value.TTLSeconds > 0 {
 		buffer.WriteString(`","ttlseconds":`)
-		buffer.WriteString(string(value.TTLSeconds))
+		buffer.WriteString(strconv.FormatInt(value.TTLSeconds, 10))
 		buffer.WriteString(`,"value":`)
 	} else {
 		buffer.WriteString(`","value":`)
