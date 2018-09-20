@@ -163,7 +163,7 @@ func assertResponseFromDirectory(t *testing.T, dir string, payloadGetter func(*t
 		filename := dir + "/" + fileInfo.Name()
 		fileData := readFile(t, filename)
 		code, msg := doRequest(t, payloadGetter(t, fileData))
-		assertResponseCode(t, filename, code, expectedCode)
+		assertResponseCode(t, filename, code, expectedCode, msg)
 
 		expectMsg := messageGetter(t, fileData)
 		if len(expectMsg) > 0 {
@@ -211,10 +211,10 @@ func newParamsValidator(t *testing.T) openrtb_ext.BidderParamValidator {
 	return paramValidator
 }
 
-func assertResponseCode(t *testing.T, filename string, actual int, expected int) {
+func assertResponseCode(t *testing.T, filename string, actual int, expected int, msg string) {
 	t.Helper()
 	if actual != expected {
-		t.Errorf("Expected a %d response from %v. Got %d", expected, filename, actual)
+		t.Errorf("Expected a %d response from %v. Got %d: %s", expected, filename, actual, msg)
 	}
 }
 

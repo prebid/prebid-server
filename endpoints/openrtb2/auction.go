@@ -377,7 +377,7 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return err
 	}
 
-	if err := validateNativeContext(nativePayload.Context, impIndex); err != nil {
+	if err := validateNativeContextTypes(nativePayload.Context, nativePayload.ContextSubType, impIndex); err != nil {
 		return err
 	}
 	if err := validateNativePlacementType(nativePayload.PlcmtType, impIndex); err != nil {
@@ -386,8 +386,9 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	if err := fillAndValidateNativeAssets(nativePayload.Assets, impIndex); err != nil {
 		return err
 	}
-
-	// TODO #218: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
+	if err := validateNativeEventTrackers(nativePayload.EventTrackers, impIndex); err != nil {
+		return err
+	}
 
 	serialized, err := json.Marshal(nativePayload)
 	if err != nil {
@@ -397,9 +398,17 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	return nil
 }
 
-func validateNativeContext(c native.ContextType, impIndex int) error {
-	if c < 1 || c > 3 {
-		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, c)
+func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
+	if cType < 1 || cType > 3 {
+		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, cType)
+	}
+	if cSubtype < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype must not be negative. Got %d", impIndex, cSubtype)
+	}
+	if cSubtype > 0 {
+		if int64(cSubtype)/10 != int64(cType) {
+			return fmt.Errorf("request.imp[%d].native.request has a context of %d, but subtype of %d. Subtype must begin with the same digit as the context", impIndex, cType, cSubtype)
+		}
 	}
 	return nil
 }
@@ -413,7 +422,7 @@ func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
 
 func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) error {
 	if len(assets) < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object.", impIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object", impIndex)
 	}
 
 	for i := 0; i < len(assets); i++ {
@@ -430,7 +439,7 @@ func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) er
 
 func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
 	if asset.ID != 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.`, impIndex, assetIndex)
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
 	}
 
 	foundType := false
@@ -475,10 +484,35 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 	return nil
 }
 
+func validateNativeEventTrackers(trackers []nativeRequests.EventTracker, impIndex int) error {
+	for i := 0; i < len(trackers); i++ {
+		if err := validateNativeEventTracker(trackers[i], impIndex, i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
 	if title.Len < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
 	}
+	return nil
+}
+
+func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex int, eventIndex int) error {
+	if tracker.Event < 1 || tracker.Event > 4 {
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d] must be in the range [1, 4]. Got %d", impIndex, eventIndex, tracker.Event)
+	}
+	if len(tracker.Methods) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method must be an array with at least one element", impIndex, eventIndex)
+	}
+	for methodIndex, method := range tracker.Methods {
+		if method < 1 || method > 2 {
+			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method[%d] must be in the range [0, 1]. Got %d", impIndex, eventIndex, methodIndex, method)
+		}
+	}
+
 	return nil
 }
 
