@@ -29,6 +29,6 @@
     ],
     "eventtrackers": [{
         "event": 1,
-        "method": []
+        "methods": []
     }]
 }
