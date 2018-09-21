@@ -41,9 +41,12 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"placement_hash":"22a58cfb0c9b656bff713d1236e930e8"}`,
+	`{"placement_hash":"22a58cfb0c9b656bff713d1236e930e8", "bid_floor": 1.05}`,
 }
 
 var invalidParams = []string{
 	`{"placement_hash": 323423}`,
 	`{"tag_id":"234234"}`,
+	`{"placement_hash":"22a58cfb0c9b656bff713d1236e930e8", "bid_floor": "423s"}`,
+	`{"placement_hash":"22a58cfb0c9b656bff713d1236e930e8", "bid_floor": -1}`,
 }

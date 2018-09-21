@@ -8,6 +8,11 @@
     "placement_hash": {
       "type": "string",
       "description": "A hash defining the placement selling the impression"
+    },
+    "bid_floor": {
+      "type": "number",
+      "description": "Bid Floor for Impression",
+      "minimum": 0
     }
   },
   "required": ["placement_hash"]

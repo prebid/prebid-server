@@ -4,81 +4,156 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+const config = "hb_pbs_1.0.0"
+
 type SomoaudienceAdapter struct {
 	endpoint string
 }
 
+type somoaudienceReqExt struct {
+	BidderConfig string `json:"prebid"`
+}
+
 func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 
-	totalImps := len(request.Imp)
-	errors := make([]error, 0, totalImps)
-	imp2placement := make(map[string][]int)
+	var errs []error
+	var bannerImps []openrtb.Imp
+	var videoImps []openrtb.Imp
+	var nativeImps []openrtb.Imp
 
-	for i := 0; i < totalImps; i++ {
-
-		placementHash, err := validateImpression(&request.Imp[i])
-
-		if err != nil {
-			errors = append(errors, err)
-			continue
+	for _, imp := range request.Imp {
+		if imp.Banner != nil {
+			bannerImps = append(bannerImps, imp)
+		} else if imp.Video != nil {
+			videoImps = append(videoImps, imp)
+		} else if imp.Native != nil {
+			nativeImps = append(nativeImps, imp)
+		} else {
+			err := &errortypes.BadInput{
+				Message: fmt.Sprintf("SomoAudience only supports banner and video imps. Ignoring imp id=%s", imp.ID),
+			}
+			glog.Warning("SomoAudience CAPABILITY VIOLATION: only supports banner and video imps")
+			errs = append(errs, err)
 		}
+	}
+	var adapterRequests []*adapters.RequestData
+	// Make a copy as we don't want to change the original request
+	reqCopy := *request
 
-		if _, ok := imp2placement[placementHash]; !ok {
-			imp2placement[placementHash] = make([]int, 0, totalImps-i)
+	reqCopy.Imp = bannerImps
+	adapterReq, errors := a.makeRequest(&reqCopy)
+	if adapterReq != nil {
+		adapterRequests = append(adapterRequests, adapterReq)
+	}
+	errs = append(errs, errors...)
+
+	// Somoaudience only supports single imp video request
+	for _, videoImp := range videoImps {
+		reqCopy.Imp = []openrtb.Imp{videoImp}
+		adapterReq, errors := a.makeRequest(&reqCopy)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
 		}
-
-		imp2placement[placementHash] = append(imp2placement[placementHash], i)
-
+		errs = append(errs, errors...)
 	}
 
-	totalReqs := len(imp2placement)
-	if 0 == totalReqs {
-		return nil, errors
+	// Somoaudience only supports single imp video request
+	for _, nativeImp := range nativeImps {
+		reqCopy.Imp = []openrtb.Imp{nativeImp}
+		adapterReq, errors := a.makeRequest(&reqCopy)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
+		}
+		errs = append(errs, errors...)
+	}
+	return adapterRequests, errs
+
+}
+
+func (a *SomoaudienceAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+	var errs []error
+	var err error
+	var validImps []openrtb.Imp
+	reqExt := somoaudienceReqExt{BidderConfig: config}
+
+	var placementHash string
+
+	for _, imp := range request.Imp {
+		placementHash, err = preprocess(&imp, &reqExt)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		imp.Ext = nil
+		validImps = append(validImps, imp)
+	}
+
+	// If all the imps were malformed, don't bother making a server call with no impressions.
+	if len(validImps) == 0 {
+		return nil, errs
+	}
+
+	request.Imp = validImps
+
+	request.Ext, err = json.Marshal(reqExt)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	headers.Add("x-openrtb-version", "2.5")
 
-	reqs := make([]*adapters.RequestData, 0, totalReqs)
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
+	}
+	return &adapters.RequestData{
+		Method:  "POST",
+		Uri:     a.endpoint + fmt.Sprintf("?s=%s", placementHash),
+		Body:    reqJSON,
+		Headers: headers,
+	}, errs
+}
 
-	imps := request.Imp
-	request.Imp = make([]openrtb.Imp, 0, len(imps))
-
-	for placementHash, impIds := range imp2placement {
-		request.Imp = request.Imp[:0]
-
-		for i := 0; i < len(impIds); i++ {
-			request.Imp = append(request.Imp, imps[impIds[i]])
+func preprocess(imp *openrtb.Imp, reqExt *somoaudienceReqExt) (string, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", &errortypes.BadInput{
+			Message: "ignoring imp id=empty-extbid-test, extImpBidder is empty",
 		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("error while encoding bidRequest, err: %s", err))
-			return nil, errors
-		}
-
-		reqs = append(reqs, &adapters.RequestData{
-			Method:  "POST",
-			Uri:     a.endpoint + fmt.Sprintf("?s=%s", placementHash),
-			Body:    body,
-			Headers: headers,
-		})
 	}
 
-	if 0 == len(reqs) {
-		return nil, errors
+	var somoExt openrtb_ext.ExtImpSomoaudience
+	if err := json.Unmarshal(bidderExt.Bidder, &somoExt); err != nil {
+		return "", &errortypes.BadInput{
+			Message: "ignoring imp id=empty-extbid-test, error while decoding impExt, err: " + err.Error(),
+		}
 	}
 
-	return reqs, errors
+	imp.BidFloor = somoExt.BidFloor
+	imp.Ext = nil
 
+	return somoExt.PlacementHash, nil
 }
 
 func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -118,10 +193,10 @@ func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapt
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
-		if imp.ID == impId {
+		if imp.ID == impID {
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
 			} else if imp.Video != nil {
@@ -138,37 +213,11 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func validateImpression(imp *openrtb.Imp) (string, error) {
-
-	if imp.Audio != nil {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, Somoaudience doesn't support Audio", imp.ID),
-		}
+//Adding header fields to request header
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
+	if len(headerValue) > 0 {
+		headers.Add(headerName, headerValue)
 	}
-
-	if 0 == len(imp.Ext) {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
-		}
-	}
-
-	var bidderExt adapters.ExtImpBidder
-
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
-		}
-	}
-
-	impExt := openrtb_ext.ExtImpSomoaudience{}
-	err := json.Unmarshal(bidderExt.Bidder, &impExt)
-	if err != nil {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
-		}
-	}
-
-	return impExt.PlacementHash, nil
 }
 
 func NewSomoaudienceBidder(endpoint string) *SomoaudienceAdapter {
