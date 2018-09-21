@@ -49,6 +49,10 @@ cache:
   scheme: http
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
+http_client:
+  max_idle_connections: 500
+  max_idle_connections_per_host: 20
+  idle_connection_timeout_seconds: 30
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
   influxdb:
@@ -127,6 +131,9 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
+	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
+	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")

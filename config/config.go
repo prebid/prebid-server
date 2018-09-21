@@ -14,10 +14,11 @@ import (
 
 // Configuration
 type Configuration struct {
-	ExternalURL string `mapstructure:"external_url"`
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	AdminPort   int    `mapstructure:"admin_port"`
+	ExternalURL string     `mapstructure:"external_url"`
+	Host        string     `mapstructure:"host"`
+	Port        int        `mapstructure:"port"`
+	Client      HTTPClient `mapstructure:"http_client"`
+	AdminPort   int        `mapstructure:"admin_port"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse  string          `mapstructure:"status_response"`
@@ -36,6 +37,12 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+}
+
+type HTTPClient struct {
+	MaxIdleConns        int `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
 }
 
 type configErrors []error
@@ -263,6 +270,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
+	v.SetDefault("http_client.max_idle_connections", 400)
+	v.SetDefault("http_client.max_idle_connections_per_host", 10)
+	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
