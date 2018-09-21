@@ -165,9 +165,9 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	}
 	theClient := &http.Client{
 		Transport: &http.Transport{
-			MaxIdleConns:        400,
-			MaxIdleConnsPerHost: 10,
-			IdleConnTimeout:     60 * time.Second,
+			MaxIdleConns:        cfg.Client.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
