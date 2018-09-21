@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 
+	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	"github.com/stretchr/testify/assert"
 )
@@ -134,7 +134,7 @@ func TestDoCache(t *testing.T) {
 
 	for _, cExpected := range cacheables {
 		for _, cFound := range cache.items {
-			eq, _ := jSONBytesEqual(cExpected.Data, cFound.Data)
+			eq := jsonpatch.Equal(cExpected.Data, cFound.Data)
 			if cExpected.TTLSeconds == cFound.TTLSeconds && eq {
 				found++
 			}
@@ -156,17 +156,4 @@ type mockCache struct {
 func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) []string {
 	c.items = values
 	return []string{"", "", "", "", ""}
-}
-
-// JSONBytesEqual compares the JSON in two byte slices.
-// By twotwotwo via Stack Overflow (https://stackoverflow.com/questions/32408890/how-to-compare-two-json-requests)
-func jSONBytesEqual(a, b []byte) (bool, error) {
-	var j, j2 interface{}
-	if err := json.Unmarshal(a, &j); err != nil {
-		return false, err
-	}
-	if err := json.Unmarshal(b, &j2); err != nil {
-		return false, err
-	}
-	return reflect.DeepEqual(j2, j), nil
 }
