@@ -400,22 +400,43 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 
 func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
 	if cType < 1 || cType > 3 {
-		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, cType)
+		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype < 0 {
-		return fmt.Errorf("request.imp[%d].native.request.contextsubtype must not be negative. Got %d", impIndex, cSubtype)
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
-	if cSubtype > 0 {
-		if int64(cSubtype)/10 != int64(cType) {
-			return fmt.Errorf("request.imp[%d].native.request has a context of %d, but subtype of %d. Subtype must begin with the same digit as the context", impIndex, cType, cSubtype)
+	if cSubtype == 0 {
+		return nil
+	}
+
+	if cSubtype >= 100 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+	}
+	if cSubtype >= 10 && cSubtype < 16 {
+		if cType != native.ContextTypeContent {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combation. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
 		}
+		return nil
 	}
-	return nil
+	if cSubtype >= 20 && cSubtype < 23 {
+		if cType != native.ContextTypeSocial {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combation. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+	if cSubtype >= 30 && cSubtype < 33 {
+		if cType != native.ContextTypeProduct {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combation. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 }
 
 func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
 	if pt < 1 || pt > 4 {
-		return fmt.Errorf("request.imp[%d].native.request.plcmttype must be in the range [1, 4]. Got %d", impIndex, pt)
+		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
 	return nil
 }
@@ -502,14 +523,14 @@ func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIn
 
 func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex int, eventIndex int) error {
 	if tracker.Event < 1 || tracker.Event > 4 {
-		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d] must be in the range [1, 4]. Got %d", impIndex, eventIndex, tracker.Event)
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
 	}
 	if len(tracker.Methods) < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method must be an array with at least one element", impIndex, eventIndex)
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
 	}
 	for methodIndex, method := range tracker.Methods {
 		if method < 1 || method > 2 {
-			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method[%d] must be in the range [0, 1]. Got %d", impIndex, eventIndex, methodIndex, method)
+			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].methods[%d] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex, methodIndex)
 		}
 	}
 
