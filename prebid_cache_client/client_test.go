@@ -1,6 +1,7 @@
 package prebid_cache_client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -86,8 +87,9 @@ func TestSuccessfulPut(t *testing.T) {
 
 	ids := client.PutJson(context.Background(), []Cacheable{
 		{
-			Type: TypeJSON,
-			Data: json.RawMessage("true"),
+			Type:       TypeJSON,
+			Data:       json.RawMessage("true"),
+			TTLSeconds: 300,
 		}, {
 			Type: TypeJSON,
 			Data: json.RawMessage("false"),
@@ -96,6 +98,19 @@ func TestSuccessfulPut(t *testing.T) {
 	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "0")
 	assertStringEqual(t, ids[1], "1")
+}
+
+func TestEncodeValueToBuffer(t *testing.T) {
+	buf := new(bytes.Buffer)
+	testCache := Cacheable{
+		Type:       TypeJSON,
+		Data:       json.RawMessage(`{}`),
+		TTLSeconds: 300,
+	}
+	expected := string(`{"type":"json","ttlseconds":300,"value":{}}`)
+	_ = encodeValueToBuffer(testCache, false, buf)
+	actual := buf.String()
+	assertStringEqual(t, expected, actual)
 }
 
 func assertIntEqual(t *testing.T, expected, actual int) {

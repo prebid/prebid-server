@@ -55,7 +55,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool) {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64) {
 	if !bids && !vast {
 		return
 	}
@@ -65,14 +65,20 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	bidIndices := make(map[int]*openrtb.Bid, expectNumBids)
 	vastIndices := make(map[int]*openrtb.Bid, expectNumVast)
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
+	expByImp := make(map[string]int64)
 
-	for _, topBidsPerImp := range a.winningBidsByBidder {
+	// Grab the imp TTLs
+	for _, imp := range bidRequest.Imp {
+		expByImp[imp.ID] = imp.Exp
+	}
+	for impID, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
 			if bids {
 				if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
 					toCache = append(toCache, prebid_cache_client.Cacheable{
-						Type: prebid_cache_client.TypeJSON,
-						Data: jsonBytes,
+						Type:       prebid_cache_client.TypeJSON,
+						Data:       jsonBytes,
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, ttlBuffer),
 					})
 					bidIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -81,8 +87,9 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				vast := makeVAST(topBidPerBidder.bid)
 				if jsonBytes, err := json.Marshal(vast); err == nil {
 					toCache = append(toCache, prebid_cache_client.Cacheable{
-						Type: prebid_cache_client.TypeXML,
-						Data: jsonBytes,
+						Type:       prebid_cache_client.TypeXML,
+						Data:       jsonBytes,
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, ttlBuffer),
 					})
 					vastIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -135,6 +142,27 @@ func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
 		return make([]prebid_cache_client.Cacheable, 0, capacity)
 	}
 	return nil
+}
+
+func cacheTTL(impTTL int64, bidTTL int64, buffer int64) (ttl int64) {
+	if impTTL <= 0 {
+		// Use <= to handle the case of someone sending a negative ttl. We treat it as zero
+		return addBuffer(bidTTL, buffer)
+	}
+	if bidTTL <= 0 {
+		return addBuffer(impTTL, buffer)
+	}
+	if impTTL < bidTTL {
+		return addBuffer(impTTL, buffer)
+	}
+	return addBuffer(bidTTL, buffer)
+}
+
+func addBuffer(base int64, buffer int64) int64 {
+	if base <= 0 {
+		return 0
+	}
+	return base + buffer
 }
 
 type auction struct {

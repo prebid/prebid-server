@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -31,8 +32,9 @@ const (
 )
 
 type Cacheable struct {
-	Type PayloadType
-	Data json.RawMessage
+	Type       PayloadType
+	Data       json.RawMessage
+	TTLSeconds int64
 }
 
 func NewClient(conf *config.Cache) Client {
@@ -129,7 +131,13 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 
 	buffer.WriteString(`{"type":"`)
 	buffer.WriteString(string(value.Type))
-	buffer.WriteString(`","value":`)
+	if value.TTLSeconds > 0 {
+		buffer.WriteString(`","ttlseconds":`)
+		buffer.WriteString(strconv.FormatInt(value.TTLSeconds, 10))
+		buffer.WriteString(`,"value":`)
+	} else {
+		buffer.WriteString(`","value":`)
+	}
 	buffer.Write(value.Data)
 	buffer.WriteByte('}')
 	return nil
