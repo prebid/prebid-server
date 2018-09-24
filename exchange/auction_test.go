@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 
@@ -98,7 +99,7 @@ func TestDoCache(t *testing.T) {
 	ctx := context.Background()
 	cache := &mockCache{}
 
-	testAuction.doCache(ctx, cache, true, false, bidRequest, 60)
+	testAuction.doCache(ctx, cache, true, false, bidRequest, 60, config.Configuration)
 	json0, _ := json.Marshal(bid[0].bid)
 	json1, _ := json.Marshal(bid[1].bid)
 	json2, _ := json.Marshal(bid[2].bid)

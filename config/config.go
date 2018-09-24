@@ -204,6 +204,16 @@ type Cache struct {
 	// this should be replaced by code which tracks the response time of recent cache calls and
 	// adjusts the time dynamically.
 	ExpectedTimeMillis int `mapstructure:"expected_millis"`
+
+	DefaultTTLs DefaultTTLs `mapstructure:"default_ttls"`
+}
+
+// Default TTLs to use to cache bids for different types of imps.
+type DefaultTTLs struct {
+	Banner int `mapstructure:"banner_seconds"`
+	Video  int `mapstructure:"video_seconds"`
+	Native int `mapstructure:"native_seconds"`
+	Audio  int `mapstructure:"audio_seconds"`
 }
 
 type Cookie struct {
@@ -261,6 +271,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("cache.host", "")
 	v.SetDefault("cache.query", "")
 	v.SetDefault("cache.expected_millis", 10)
+	v.SetDefault("cache.default_ttls.banner_seconds", 0)
+	v.SetDefault("cache.default_ttls.video_seconds", 0)
+	v.SetDefault("cache.default_ttls.native_seconds", 0)
+	v.SetDefault("cache.default_ttls.audio_seconds", 0)
 	v.SetDefault("recaptcha_secret", "")
 	v.SetDefault("host_cookie.domain", "")
 	v.SetDefault("host_cookie.family", "")

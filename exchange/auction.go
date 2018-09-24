@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
@@ -55,7 +56,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64) {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs) {
 	if !bids && !vast {
 		return
 	}
@@ -66,10 +67,12 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	vastIndices := make(map[int]*openrtb.Bid, expectNumVast)
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
+	defTTLByImp := make(map[string]int64)
 
 	// Grab the imp TTLs
 	for _, imp := range bidRequest.Imp {
 		expByImp[imp.ID] = imp.Exp
+		defTTLByImp[imp.ID] = impTTL(&imp, defaultTTLs)
 	}
 	for impID, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
@@ -78,7 +81,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					toCache = append(toCache, prebid_cache_client.Cacheable{
 						Type:       prebid_cache_client.TypeJSON,
 						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, ttlBuffer),
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTLByImp[impID], ttlBuffer),
 					})
 					bidIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -89,7 +92,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					toCache = append(toCache, prebid_cache_client.Cacheable{
 						Type:       prebid_cache_client.TypeXML,
 						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, ttlBuffer),
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTLByImp[impID], ttlBuffer),
 					})
 					vastIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -144,7 +147,12 @@ func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
 	return nil
 }
 
-func cacheTTL(impTTL int64, bidTTL int64, buffer int64) (ttl int64) {
+func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) (ttl int64) {
+	if impTTL <= 0 && bidTTL <= 0 {
+		// Only use default if there is no imp nor bid TTL provided. We don't want the default
+		// to cut short a requested longer TTL.
+		return addBuffer(defTTL, buffer)
+	}
 	if impTTL <= 0 {
 		// Use <= to handle the case of someone sending a negative ttl. We treat it as zero
 		return addBuffer(bidTTL, buffer)
@@ -163,6 +171,22 @@ func addBuffer(base int64, buffer int64) int64 {
 		return 0
 	}
 	return base + buffer
+}
+
+func impTTL(imp *openrtb.Imp, defaultTTLs *config.DefaultTTLs) (ttl int64) {
+	if imp.Video != nil && int64(defaultTTLs.Video) > ttl {
+		ttl = int64(defaultTTLs.Video)
+	}
+	if imp.Banner != nil && int64(defaultTTLs.Banner) > ttl {
+		ttl = int64(defaultTTLs.Banner)
+	}
+	if imp.Native != nil && int64(defaultTTLs.Native) > ttl {
+		ttl = int64(defaultTTLs.Native)
+	}
+	if imp.Audio != nil && int64(defaultTTLs.Audio) > ttl {
+		ttl = int64(defaultTTLs.Audio)
+	}
+	return
 }
 
 type auction struct {
