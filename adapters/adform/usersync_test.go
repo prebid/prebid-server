@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/internal/testutil"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAdformSyncer(t *testing.T) {
@@ -14,11 +15,9 @@ func TestAdformSyncer(t *testing.T) {
 			UserSyncURL: "//cm.adform.net?return_url=",
 		},
 	}})
-	u := testutil.UsersyncTest(t, syncer, syncer.GetUsersyncInfo("1", "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw"))
-	u.Assert(
-		"//cm.adform.net?return_url=localhost%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D1%26gdpr_consent%3DBONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%24UID",
-		"redirect",
-		50,
-		false,
-	)
+	u := syncer.GetUsersyncInfo("1", "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw")
+	assert.Equal(t, "//cm.adform.net?return_url=localhost%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D1%26gdpr_consent%3DBONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%24UID", u.URL)
+	assert.Equal(t, "redirect", u.Type)
+	assert.Equal(t, uint16(50), syncer.GDPRVendorID())
+	assert.Equal(t, false, u.SupportCORS)
 }

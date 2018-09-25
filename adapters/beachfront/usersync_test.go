@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/internal/testutil"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBeachfrontSyncer(t *testing.T) {
@@ -14,11 +15,9 @@ func TestBeachfrontSyncer(t *testing.T) {
 			UserSyncURL: "localhost",
 		},
 	}})
-	u := testutil.UsersyncTest(t, syncer, syncer.GetUsersyncInfo("0", ""))
-	u.Assert(
-		"localhost",
-		"redirect",
-		0,
-		false,
-	)
+	u := syncer.GetUsersyncInfo("0", "")
+	assert.Equal(t, "localhost", u.URL)
+	assert.Equal(t, "redirect", u.Type)
+	assert.Equal(t, uint16(0), syncer.GDPRVendorID())
+	assert.Equal(t, false, u.SupportCORS)
 }

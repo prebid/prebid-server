@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/internal/testutil"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSovrnSyncer(t *testing.T) {
@@ -14,11 +15,9 @@ func TestSovrnSyncer(t *testing.T) {
 			UserSyncURL: "//ap.lijit.com/pixel?",
 		},
 	}})
-	u := testutil.UsersyncTest(t, syncer, syncer.GetUsersyncInfo("0", ""))
-	u.Assert(
-		"//ap.lijit.com/pixel?redir=external.com%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24UID",
-		"redirect",
-		13,
-		false,
-	)
+	u := syncer.GetUsersyncInfo("0", "")
+	assert.Equal(t, "//ap.lijit.com/pixel?redir=external.com%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24UID", u.URL)
+	assert.Equal(t, "redirect", u.Type)
+	assert.Equal(t, uint16(13), syncer.GDPRVendorID())
+	assert.Equal(t, false, u.SupportCORS)
 }

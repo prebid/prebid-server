@@ -10,7 +10,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-const adkernelGDPRVendorID = 14
+const adkernelGDPRVendorID = uint16(14)
 
 func NewAdkernelAdnSyncer(cfg *config.Configuration) usersync.Usersyncer {
 	usersyncURL := cfg.Adapters[string(openrtb_ext.BidderAdkernelAdn)].UserSyncURL
