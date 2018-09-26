@@ -98,7 +98,7 @@ func TestDoCache(t *testing.T) {
 	ctx := context.Background()
 	cache := &mockCache{}
 
-	testAuction.doCache(ctx, cache, true, false, bidRequest, 60)
+	_ = testAuction.doCache(ctx, cache, true, false, bidRequest, 60)
 	json0, _ := json.Marshal(bid[0].bid)
 	json1, _ := json.Marshal(bid[1].bid)
 	json2, _ := json.Marshal(bid[2].bid)
@@ -153,7 +153,7 @@ type mockCache struct {
 	items []prebid_cache_client.Cacheable
 }
 
-func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) []string {
+func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	c.items = values
-	return []string{"", "", "", "", ""}
+	return []string{"", "", "", "", ""}, nil
 }
