@@ -67,12 +67,10 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	vastIndices := make(map[int]*openrtb.Bid, expectNumVast)
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
-	defTTLByImp := make(map[string]int64)
 
 	// Grab the imp TTLs
 	for _, imp := range bidRequest.Imp {
 		expByImp[imp.ID] = imp.Exp
-		defTTLByImp[imp.ID] = impTTL(&imp, defaultTTLs)
 	}
 	for impID, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
@@ -81,7 +79,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					toCache = append(toCache, prebid_cache_client.Cacheable{
 						Type:       prebid_cache_client.TypeJSON,
 						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTLByImp[impID], ttlBuffer),
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
 					})
 					bidIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -92,7 +90,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					toCache = append(toCache, prebid_cache_client.Cacheable{
 						Type:       prebid_cache_client.TypeXML,
 						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTLByImp[impID], ttlBuffer),
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
 					})
 					vastIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -173,20 +171,18 @@ func addBuffer(base int64, buffer int64) int64 {
 	return base + buffer
 }
 
-func impTTL(imp *openrtb.Imp, defaultTTLs *config.DefaultTTLs) (ttl int64) {
-	if imp.Video != nil && int64(defaultTTLs.Video) > ttl {
-		ttl = int64(defaultTTLs.Video)
+func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl int64) {
+	switch bidType {
+	case openrtb_ext.BidTypeBanner:
+		return int64(defaultTTLs.Banner)
+	case openrtb_ext.BidTypeVideo:
+		return int64(defaultTTLs.Video)
+	case openrtb_ext.BidTypeNative:
+		return int64(defaultTTLs.Native)
+	case openrtb_ext.BidTypeAudio:
+		return int64(defaultTTLs.Audio)
 	}
-	if imp.Banner != nil && int64(defaultTTLs.Banner) > ttl {
-		ttl = int64(defaultTTLs.Banner)
-	}
-	if imp.Native != nil && int64(defaultTTLs.Native) > ttl {
-		ttl = int64(defaultTTLs.Native)
-	}
-	if imp.Audio != nil && int64(defaultTTLs.Audio) > ttl {
-		ttl = int64(defaultTTLs.Audio)
-	}
-	return
+	return 0
 }
 
 type auction struct {
