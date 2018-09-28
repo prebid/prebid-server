@@ -1,4 +1,4 @@
-package indexExchange
+package ix
 
 import (
 	"context"
@@ -16,9 +16,11 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 )
 
-func TestIndexInvalidCall(t *testing.T) {
+const url string = "http://appnexus-us-east.lb.indexww.com/bidder?p=184932"
 
-	an := NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, "http://appnexus-eu.lb.indexww.com/bidder?p=184932")
+func TestIxInvalidCall(t *testing.T) {
+
+	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
 	an.URI = "blah"
 
 	ctx := context.TODO()
@@ -30,7 +32,55 @@ func TestIndexInvalidCall(t *testing.T) {
 	}
 }
 
-func TestIndexTimeout(t *testing.T) {
+func TestIxInvalidCallReqAppNil(t *testing.T) {
+
+	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
+	an.URI = "blah"
+
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{
+		App: &openrtb.App{},
+	}
+
+	pbBidder := pbs.PBSBidder{}
+	_, err := an.Call(ctx, &pbReq, &pbBidder)
+
+	if err == nil {
+		t.Fatalf("No error recived for invalid request")
+	}
+}
+
+func TestIxInvalidCallMissingSiteID(t *testing.T) {
+
+	an := NewIxAdapter(adapters.DefaultHTTPAdapterConfig, url)
+	an.URI = "blah"
+
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 10,
+						H: 12,
+					},
+				},
+				Params: json.RawMessage("{}"),
+			},
+		},
+	}
+	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	if err == nil {
+		t.Fatalf("No error received for request with missing siteId")
+	}
+}
+
+func TestIxTimeout(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +90,7 @@ func TestIndexTimeout(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL)
+	an := NewIxAdapter(&conf, server.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
@@ -57,7 +107,7 @@ func TestIndexTimeout(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"siteID\": 12}"),
+				Params: json.RawMessage("{\"siteId\": \"12\"}"),
 			},
 		},
 	}
@@ -67,7 +117,7 @@ func TestIndexTimeout(t *testing.T) {
 	}
 }
 
-func TestIndexInvalidJson(t *testing.T) {
+func TestIxInvalidJsonResponse(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +127,7 @@ func TestIndexInvalidJson(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL)
+	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -92,7 +142,7 @@ func TestIndexInvalidJson(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"siteID\": 12}"),
+				Params: json.RawMessage("{\"siteId\": \"12\"}"),
 			},
 		},
 	}
@@ -102,7 +152,7 @@ func TestIndexInvalidJson(t *testing.T) {
 	}
 }
 
-func TestIndexInvalidStatusCode(t *testing.T) {
+func TestIxInvalidStatusCode(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +163,7 @@ func TestIndexInvalidStatusCode(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL)
+	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -128,7 +178,7 @@ func TestIndexInvalidStatusCode(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"siteID\": 12}"),
+				Params: json.RawMessage("{\"siteId\": \"12\"}"),
 			},
 		},
 	}
@@ -138,18 +188,18 @@ func TestIndexInvalidStatusCode(t *testing.T) {
 	}
 }
 
-func TestIndexMissingSiteId(t *testing.T) {
+func TestIxBadRequest(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Send 404
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			// Send 400
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}),
 	)
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL)
+	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -164,16 +214,90 @@ func TestIndexMissingSiteId(t *testing.T) {
 						H: 12,
 					},
 				},
+				Params: json.RawMessage("{\"siteId\": \"12\"}"),
 			},
 		},
 	}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error received for missing siteID")
+		t.Fatalf("No error received for bad request")
 	}
 }
 
-func TestIndexBasicResponse(t *testing.T) {
+func TestIxNoContent(t *testing.T) {
+
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Send 204
+			http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		}),
+	)
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewIxAdapter(&conf, server.URL)
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 10,
+						H: 12,
+					},
+				},
+				Params: json.RawMessage("{\"siteId\": \"12\"}"),
+			},
+		},
+	}
+
+	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	if err != nil || bids != nil {
+		t.Fatalf("Must return nil for no content")
+	}
+}
+
+func TestIxInvalidCallMissingSize(t *testing.T) {
+
+	server := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			resp := openrtb.BidResponse{}
+			js, err := json.Marshal(resp)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(js)
+		}),
+	)
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewIxAdapter(&conf, server.URL)
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code:       "unitCode",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				BidID:      "bidid",
+				Params:     json.RawMessage("{\"siteId\": \"12\"}"),
+			},
+		},
+	}
+	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	if err == nil {
+		t.Fatalf("Should not have gotten an error for missing/invalid size: %v", err)
+	}
+}
+
+func TestIxBasicResponse(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +332,7 @@ func TestIndexBasicResponse(t *testing.T) {
 	defer server.Close()
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewIndexAdapter(&conf, server.URL)
+	an := NewIxAdapter(&conf, server.URL)
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
@@ -224,7 +348,7 @@ func TestIndexBasicResponse(t *testing.T) {
 						H: 12,
 					},
 				},
-				Params: json.RawMessage("{\"siteID\": 12}"),
+				Params: json.RawMessage("{\"siteId\": \"12\"}"),
 			},
 		},
 	}

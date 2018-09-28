@@ -14,7 +14,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
-	"github.com/prebid/prebid-server/adapters/indexExchange"
+	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
@@ -59,7 +59,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		// TODO #211: Upgrade the Facebook adapter
 		openrtb_ext.BidderFacebook: audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID),
 		// TODO #212: Upgrade the Index adapter
-		openrtb_ext.BidderIndex: indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint),
+		openrtb_ext.BidderIx: ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		// TODO #213: Upgrade the Lifestreet adapter
 		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
 		// TODO #215: Upgrade the Pulsepoint adapter

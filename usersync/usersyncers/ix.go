@@ -1,8 +1,8 @@
 package usersyncers
 
-func NewIndexSyncer(userSyncURL string) *syncer {
+func NewIxSyncer(userSyncURL string) *syncer {
 	return &syncer{
-		familyName:          "indexExchange",
+		familyName:          "ix",
 		gdprVendorID:        10,
 		syncEndpointBuilder: resolveMacros(userSyncURL),
 		syncType:            SyncTypeRedirect,

@@ -21,7 +21,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderBrightroll:   NewBrightrollSyncer(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderConversant:   NewConversantSyncer(cfg.Adapters[string(openrtb_ext.BidderConversant)].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderEPlanning:    NewEPlanningSyncer(cfg.Adapters[string(openrtb_ext.BidderEPlanning)].UserSyncURL, cfg.ExternalURL),
-		openrtb_ext.BidderIndex:        NewIndexSyncer(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].UserSyncURL),
+		openrtb_ext.BidderIx:           NewIxSyncer(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].UserSyncURL),
 		openrtb_ext.BidderLifestreet:   NewLifestreetSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderOpenx:        NewOpenxSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderPubmatic:     NewPubmaticSyncer(cfg.ExternalURL),

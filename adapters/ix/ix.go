@@ -1,4 +1,4 @@
-package indexExchange
+package ix
 
 import (
 	"bytes"
@@ -17,31 +17,31 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 )
 
-type IndexAdapter struct {
+type IxAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
 }
 
 // used for cookies and such
-func (a *IndexAdapter) Name() string {
-	return "indexExchange"
+func (a *IxAdapter) Name() string {
+	return "ix"
 }
 
-func (a *IndexAdapter) SkipNoCookies() bool {
+func (a *IxAdapter) SkipNoCookies() bool {
 	return false
 }
 
 type indexParams struct {
-	SiteID int `json:"siteID"`
+	SiteID string `json:"siteId"`
 }
 
-func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	if req.App != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Index doesn't support apps",
 		}
 	}
-	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
 	indexReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
 
 	if err != nil {
@@ -56,9 +56,9 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 				Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
 			}
 		}
-		if params.SiteID == 0 {
+		if params.SiteID == "" {
 			return nil, &errortypes.BadInput{
-				Message: "Missing siteID param",
+				Message: "Missing siteId param",
 			}
 		}
 
@@ -72,7 +72,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		// ext is DFP div ID and KV pairs if avail
 		//indexReq.Imp[i].Ext = json.RawMessage("{}")
 		siteCopy := *indexReq.Site
-		siteCopy.Publisher = &openrtb.Publisher{ID: fmt.Sprintf("%d", params.SiteID)}
+		siteCopy.Publisher = &openrtb.Publisher{ID: fmt.Sprintf("%s", params.SiteID)}
 		indexReq.Site = &siteCopy
 	}
 	// spec also asks for publisher id if set
@@ -136,11 +136,8 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 
 	bids := make(pbs.PBSBidSlice, 0)
 
-	numBids := 0
 	for _, sb := range bidResp.SeatBid {
-		for i, bid := range sb.Bid {
-			numBids++
-
+		for _, bid := range sb.Bid {
 			bidID := bidder.LookupBidID(bid.ImpID)
 			if bidID == "" {
 				return nil, &errortypes.BadServerResponse{
@@ -148,26 +145,31 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 				}
 			}
 
-			pbid := pbs.PBSBid{
-				BidID:       bidID,
-				AdUnitCode:  bidder.AdUnits[i].Code, // todo: check this
-				BidderCode:  bidder.BidderCode,
-				Price:       bid.Price,
-				Adm:         bid.AdM,
-				Creative_id: bid.CrID,
-				Width:       bid.W,
-				Height:      bid.H,
-				DealId:      bid.DealID,
+			for _, adunit := range bidder.AdUnits {
+				if adunit.BidID == bidID {
+					pbid := pbs.PBSBid{
+						BidID:             bidID,
+						AdUnitCode:        adunit.Code,
+						BidderCode:        bidder.BidderCode,
+						Price:             bid.Price,
+						Adm:               bid.AdM,
+						Creative_id:       bid.CrID,
+						Width:             bid.W,
+						Height:            bid.H,
+						DealId:            bid.DealID,
+						CreativeMediaType: "banner",
+					}
+					bids = append(bids, &pbid)
+				}
 			}
-			bids = append(bids, &pbid)
 		}
 	}
 	return bids, nil
 }
 
-func NewIndexAdapter(config *adapters.HTTPAdapterConfig, uri string) *IndexAdapter {
+func NewIxAdapter(config *adapters.HTTPAdapterConfig, uri string) *IxAdapter {
 	a := adapters.NewHTTPAdapter(config)
-	return &IndexAdapter{
+	return &IxAdapter{
 		http: a,
 		URI:  uri,
 	}
