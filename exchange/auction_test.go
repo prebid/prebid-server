@@ -96,7 +96,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	testAuction := &auction{
 		winningBidsByBidder: winningBidsByBidder,
 	}
-	testAuction.doCache(ctx, cache, true, false, &specData.BidRequest, 60, &specData.DefaultTTLs)
+	_ = testAuction.doCache(ctx, cache, true, false, &specData.BidRequest, 60, &specData.DefaultTTLs)
 	found := 0
 
 	for _, cExpected := range specData.ExpectedCacheables {
@@ -133,7 +133,7 @@ type mockCache struct {
 	items []prebid_cache_client.Cacheable
 }
 
-func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) []string {
+func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	c.items = values
-	return []string{"", "", "", "", ""}
+	return []string{"", "", "", "", ""}, nil
 }

@@ -56,9 +56,9 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs) {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs) []error {
 	if !bids && !vast {
-		return
+		return nil
 	}
 
 	expectNumBids := valOrZero(bids, len(a.roundedPrices))
@@ -98,7 +98,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	ids := cache.PutJson(ctx, toCache)
+	ids, errs := cache.PutJson(ctx, toCache)
 
 	if bids {
 		a.cacheIds = make(map[*openrtb.Bid]string, len(bidIndices))
@@ -116,6 +116,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			}
 		}
 	}
+	return errs
 }
 
 // makeVAST returns some VAST XML for the given bid. If AdM is defined,

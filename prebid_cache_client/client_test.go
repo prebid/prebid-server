@@ -22,9 +22,9 @@ func TestEmptyPut(t *testing.T) {
 		httpClient: server.Client(),
 		putUrl:     server.URL,
 	}
-	ids := client.PutJson(context.Background(), nil)
+	ids, _ := client.PutJson(context.Background(), nil)
 	assertIntEqual(t, len(ids), 0)
-	ids = client.PutJson(context.Background(), []Cacheable{})
+	ids, _ = client.PutJson(context.Background(), []Cacheable{})
 	assertIntEqual(t, len(ids), 0)
 }
 
@@ -39,7 +39,7 @@ func TestBadResponse(t *testing.T) {
 		httpClient: server.Client(),
 		putUrl:     server.URL,
 	}
-	ids := client.PutJson(context.Background(), []Cacheable{
+	ids, _ := client.PutJson(context.Background(), []Cacheable{
 		{
 			Type: TypeJSON,
 			Data: json.RawMessage("true"),
@@ -67,7 +67,7 @@ func TestCancelledContext(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	ids := client.PutJson(ctx, []Cacheable{{
+	ids, _ := client.PutJson(ctx, []Cacheable{{
 		Type: TypeJSON,
 		Data: json.RawMessage("true"),
 	},
@@ -85,7 +85,7 @@ func TestSuccessfulPut(t *testing.T) {
 		putUrl:     server.URL,
 	}
 
-	ids := client.PutJson(context.Background(), []Cacheable{
+	ids, _ := client.PutJson(context.Background(), []Cacheable{
 		{
 			Type:       TypeJSON,
 			Data:       json.RawMessage("true"),
