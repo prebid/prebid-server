@@ -377,7 +377,7 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return err
 	}
 
-	if err := validateNativeContext(nativePayload.Context, impIndex); err != nil {
+	if err := validateNativeContextTypes(nativePayload.Context, nativePayload.ContextSubType, impIndex); err != nil {
 		return err
 	}
 	if err := validateNativePlacementType(nativePayload.PlcmtType, impIndex); err != nil {
@@ -386,8 +386,9 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	if err := fillAndValidateNativeAssets(nativePayload.Assets, impIndex); err != nil {
 		return err
 	}
-
-	// TODO #218: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
+	if err := validateNativeEventTrackers(nativePayload.EventTrackers, impIndex); err != nil {
+		return err
+	}
 
 	serialized, err := json.Marshal(nativePayload)
 	if err != nil {
@@ -397,23 +398,52 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	return nil
 }
 
-func validateNativeContext(c native.ContextType, impIndex int) error {
-	if c < 1 || c > 3 {
-		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, c)
+func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
+	if cType < native.ContextTypeContent || cType > native.ContextTypeProduct {
+		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
-	return nil
+	if cSubtype < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+	}
+	if cSubtype == 0 {
+		return nil
+	}
+
+	if cSubtype >= 100 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+	}
+	if cSubtype >= native.ContextSubTypeGeneral && cSubtype <= native.ContextSubTypeUserGenerated {
+		if cType != native.ContextTypeContent {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+	if cSubtype >= native.ContextSubTypeSocial && cSubtype <= native.ContextSubTypeChat {
+		if cType != native.ContextTypeSocial {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+	if cSubtype >= native.ContextSubTypeSelling && cSubtype <= native.ContextSubTypeProductReview {
+		if cType != native.ContextTypeProduct {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 }
 
 func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
-	if pt < 1 || pt > 4 {
-		return fmt.Errorf("request.imp[%d].native.request.plcmttype must be in the range [1, 4]. Got %d", impIndex, pt)
+	if pt < native.PlacementTypeFeed || pt > native.PlacementTypeRecommendationWidget {
+		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
 	return nil
 }
 
 func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) error {
 	if len(assets) < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object.", impIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object", impIndex)
 	}
 
 	for i := 0; i < len(assets); i++ {
@@ -430,7 +460,7 @@ func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) er
 
 func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
 	if asset.ID != 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.`, impIndex, assetIndex)
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
 	}
 
 	foundType := false
@@ -475,10 +505,35 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 	return nil
 }
 
+func validateNativeEventTrackers(trackers []nativeRequests.EventTracker, impIndex int) error {
+	for i := 0; i < len(trackers); i++ {
+		if err := validateNativeEventTracker(trackers[i], impIndex, i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
 	if title.Len < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
 	}
+	return nil
+}
+
+func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex int, eventIndex int) error {
+	if tracker.Event < native.EventTypeImpression || tracker.Event > native.EventTypeViewableVideo50 {
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
+	}
+	if len(tracker.Methods) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
+	}
+	for methodIndex, method := range tracker.Methods {
+		if method < native.EventTrackingMethodImage || method > native.EventTrackingMethodJS {
+			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].methods[%d] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex, methodIndex)
+		}
+	}
+
 	return nil
 }
 
@@ -497,13 +552,13 @@ func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetInde
 
 func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIndex int) error {
 	if len(video.MIMEs) < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.mimes must be an array with at least one MIME type.", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.mimes must be an array with at least one MIME type", impIndex, assetIndex)
 	}
 	if video.MinDuration < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.minduration must be a positive integer.", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.minduration must be a positive integer", impIndex, assetIndex)
 	}
 	if video.MaxDuration < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.maxduration must be a positive integer.", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.maxduration must be a positive integer", impIndex, assetIndex)
 	}
 	if err := validateNativeVideoProtocols(video.Protocols, impIndex, assetIndex); err != nil {
 		return err
@@ -513,8 +568,8 @@ func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIn
 }
 
 func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
-	if data.Type < 1 || data.Type > 12 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type must in the range [1, 12]. Got %d.", impIndex, assetIndex, data.Type)
+	if data.Type < native.DataAssetTypeSponsored || data.Type > native.DataAssetTypeCTAText {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex, assetIndex)
 	}
 
 	return nil
@@ -533,8 +588,8 @@ func validateNativeVideoProtocols(protocols []native.Protocol, impIndex int, ass
 }
 
 func validateNativeVideoProtocol(protocol native.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
-	if protocol < 0 || protocol > 10 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] must be in the range [1, 10]. Got %d", impIndex, assetIndex, protocolIndex, protocol)
+	if protocol < native.ProtocolVAST10 || protocol > native.ProtocolDAAST10Wrapper {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] is invalid. See Section 5.8: https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=52", impIndex, assetIndex, protocolIndex)
 	}
 	return nil
 }
