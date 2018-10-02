@@ -14,6 +14,12 @@ import (
 type Bidder interface {
 	// MakeRequests makes the HTTP requests which should be made to fetch bids.
 	//
+	// Bidder implementations can assume that the incoming BidRequest has:
+	//
+	//   1. Only {Imp.Type, Platform} combinations which are valid, as defined by the static/bidder-info.{bidder}.yaml file.
+	//   2. Imp.Ext of the form {"bidder": params}, where "params" has been validated against the static/bidder-params/{bidder}.json JSON Schema.
+	//
+	//
 	// nil return values are acceptable, but nil elements *inside* those slices are not.
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
