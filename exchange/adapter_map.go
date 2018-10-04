@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -61,5 +62,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			infos[string(openrtb_ext.BidderRubicon)]), client),
 		openrtb_ext.BidderSomoaudience: adaptBidder(adapters.EnforceBidderInfo(somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint), infos[string(openrtb_ext.BidderSomoaudience)]), client),
 		openrtb_ext.BidderSovrn:        adaptBidder(adapters.EnforceBidderInfo(sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint), infos[string(openrtb_ext.BidderSovrn)]), client),
+		openrtb_ext.BidderRhythmone:    adaptBidder(adapters.EnforceBidderInfo(rhythmone.NewRhythmoneBidder(client, cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint), infos[string(openrtb_ext.BidderRhythmone)]), client),
 	}
 }

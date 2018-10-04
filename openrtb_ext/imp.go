@@ -6,6 +6,7 @@ type ExtImp struct {
 	Appnexus *ExtImpAppnexus `json:"appnexus"`
 	Rubicon  *ExtImpRubicon  `json:"rubicon"`
 	Adform   *ExtImpAdform   `json:"adform"`
+	Rhythmone *ExtImpRhythmone `json:"rhythmone"`
 }
 
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid

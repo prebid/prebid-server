@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "ext": {
+      "bidder": {
+	"placementId": "72721",
+	"path": "mvo",
+	"zone": "1r"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    "No imp data provided in the bid request."
+  ]
+}
