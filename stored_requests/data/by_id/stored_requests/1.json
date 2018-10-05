@@ -1,0 +1,32 @@
+{
+  "id": "1",
+  "ext": {
+    "prebid": {
+      "targeting": {
+        "pricegranularity": {
+          "ranges": [
+            {
+              "max": 100,
+              "increment": 0.01
+            },
+            {
+              "max": 500,
+              "increment": 1
+            }
+          ]
+        }
+      }
+    }
+  },
+  "imp": [
+    {
+      "id": "1",
+      "banner": {},
+      "ext": {
+        "appnexus": {
+          "placementId": 11016434
+        }
+      }
+    }
+  ]
+}
