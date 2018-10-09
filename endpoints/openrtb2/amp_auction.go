@@ -325,6 +325,11 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 			req.Site.Domain = domain
 		}
 	}
+	if data, err := json.Marshal(openrtb_ext.ExtSite{
+		AMP: 1,
+	}); err != nil {
+		req.Site.Ext = data
+	}
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {

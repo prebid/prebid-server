@@ -491,6 +491,28 @@ func TestTimeoutParser(t *testing.T) {
 	}
 }
 
+func TestImplicitAMP(t *testing.T) {
+	httpReq, err := http.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	var bidReq openrtb.BidRequest
+	setSiteImplicitly(httpReq, &bidReq)
+	assert.JSONEq(t, `{"amp":0}`, string(bidReq.Site.Ext))
+}
+
+func TestExplicitAMP(t *testing.T) {
+	httpReq, err := http.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site-amp.json")))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	var bidReq openrtb.BidRequest
+	setSiteImplicitly(httpReq, &bidReq)
+	assert.JSONEq(t, `{"amp":1}`, string(bidReq.Site.Ext))
+}
+
 // TestContentType prevents #328
 func TestContentType(t *testing.T) {
 	endpoint, _ := NewEndpoint(

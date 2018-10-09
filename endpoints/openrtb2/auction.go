@@ -684,6 +684,12 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if site != nil && site.ID == "" && site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
 	}
+	if len(site.Ext) > 0 {
+		var s openrtb_ext.ExtSite
+		if err := json.Unmarshal(site.Ext, &s); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -768,13 +774,13 @@ func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
+	if bidReq.Site == nil {
+		bidReq.Site = &openrtb.Site{}
+	}
+	if bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
 		referrerCandidate := httpReq.Referer()
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
 			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
-				if bidReq.Site == nil {
-					bidReq.Site = &openrtb.Site{}
-				}
 				if bidReq.Site.Domain == "" {
 					bidReq.Site.Domain = domain
 				}
@@ -786,6 +792,15 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 				}
 			}
 		}
+	}
+	if len(bidReq.Site.Ext) > 0 {
+		if _, dataType, _, _ := jsonparser.Get(bidReq.Site.Ext, "amp"); dataType == jsonparser.NotExist {
+			if val, err := jsonparser.Set(bidReq.Site.Ext, []byte("0"), "amp"); err == nil {
+				bidReq.Site.Ext = val
+			}
+		}
+	} else {
+		bidReq.Site.Ext = json.RawMessage(`{"amp":0}`)
 	}
 }
 
