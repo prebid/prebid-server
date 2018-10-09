@@ -1,0 +1,9 @@
+maintainer:
+  email: "cactus-dev@sortable.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
