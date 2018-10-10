@@ -147,7 +147,6 @@ func TestAmpBadRequests(t *testing.T) {
 // TestAmpDebug makes sure we get debug information back when requested
 func TestAmpDebug(t *testing.T) {
 	requests := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "app.json")),
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
