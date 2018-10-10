@@ -6,15 +6,18 @@
   "properties": {
     "placementId": {
       "type": "string",
-      "description": "An ID which is used to frame Rhythmone ad tag"
+      "description": "An ID which is used to frame Rhythmone ad tag",
+      "minLength": 1
     },
-	"path": {
+    "path": {
       "type": "string",
-      "description": "An ID which is used to frame Rhythmone ad tag"
+      "description": "An ID which is used to frame Rhythmone ad tag",
+      "minLength": 1
     },
-	"zone": {
+    "zone": {
       "type": "string",
-      "description": "An ID which is used to frame Rhythmone ad tag"
+      "description": "An ID which is used to frame Rhythmone ad tag",
+      "minLength": 1
     }
   },
   "required": ["placementId", "path", "zone"]
