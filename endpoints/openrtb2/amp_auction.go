@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
@@ -460,4 +461,16 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	}
 
 	return
+}
+
+func setAmpExt(site *openrtb.Site, value string) {
+	if len(site.Ext) > 0 {
+		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
+			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
+				site.Ext = val
+			}
+		}
+	} else {
+		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
+	}
 }

@@ -802,18 +802,6 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
-func setAmpExt(site *openrtb.Site, value string) {
-	if len(site.Ext) > 0 {
-		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
-			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
-				site.Ext = val
-			}
-		}
-	} else {
-		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
-	}
-}
-
 func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	secure := int8(1)
 	for i := 0; i < len(imps); i++ {
