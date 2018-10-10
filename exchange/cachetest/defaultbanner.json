@@ -1,0 +1,41 @@
+{
+    "bidRequest": {
+		"imp": [
+			{
+				"id":  "oneImp"
+            }
+        ]
+    },
+    "pbsBids": [{
+        "bid":{
+            "id": "oneImp",
+            "price": 7.64,
+            "exp":   600
+        },
+        "bidType": "banner",
+        "bidder": "appnexus"
+    }, {
+        "bid": {
+            "id": "oneImp",
+            "price": 5.64
+        },
+        "bidType": "banner",
+        "bidder": "pubmatic"
+    }],
+    "expectedCacheables": [
+        {
+            "Type": "json",
+            "TTLSeconds": 660
+        }, {
+            "Type": "json",
+            "TTLSeconds": 360
+        }
+    ],
+    "defaultTTLs": {
+        "banner": 300,
+        "video": 3600,
+        "audio": 1800,
+        "native": 300
+    }
+}
+            
