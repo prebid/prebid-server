@@ -347,6 +347,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.ttx.endpoint", "http://ssc.33across.com/api/v1/hb")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
