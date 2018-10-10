@@ -20,5 +20,9 @@ func TestInvalidSiteExt(t *testing.T) {
 func TestValidSiteExt(t *testing.T) {
 	var s openrtb_ext.ExtSite
 	assert.NoError(t, json.Unmarshal([]byte(`{"amp":0}`), &s))
+	assert.EqualValues(t, 0, s.AMP)
 	assert.NoError(t, json.Unmarshal([]byte(`{"amp":1}`), &s))
+	assert.EqualValues(t, 1, s.AMP)
+	assert.NoError(t, json.Unmarshal([]byte(`{"amp":      1   }`), &s))
+	assert.EqualValues(t, 1, s.AMP)
 }

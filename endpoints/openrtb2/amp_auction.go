@@ -280,6 +280,11 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	if req.App != nil {
+		errs = []error{errors.New("request.app must not exist in AMP stored requests.")}
+		return
+	}
+
 	// Force HTTPS as AMP requires it, but pubs can forget to set it.
 	if req.Imp[0].Secure == nil {
 		secure := int8(1)
@@ -294,6 +299,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 }
 
 func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+	if req.Site == nil {
+		req.Site = &openrtb.Site{}
+	}
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
 		width := parseFormInt(httpRequest, "w", 0)
@@ -311,11 +319,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	canonicalURL := httpRequest.FormValue("curl")
 	if canonicalURL != "" {
-		if req.Site == nil {
-			req.Site = &openrtb.Site{Page: canonicalURL}
-		} else {
-			req.Site.Page = canonicalURL
-		}
+		req.Site.Page = canonicalURL
 		// Fixes #683
 		if parsedURL, err := url.Parse(canonicalURL); err == nil {
 			domain := parsedURL.Host
@@ -325,11 +329,8 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 			req.Site.Domain = domain
 		}
 	}
-	if data, err := json.Marshal(openrtb_ext.ExtSite{
-		AMP: 1,
-	}); err != nil {
-		req.Site.Ext = data
-	}
+
+	setAmpExt(req.Site, "1")
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {

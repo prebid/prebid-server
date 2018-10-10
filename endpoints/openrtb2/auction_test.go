@@ -491,7 +491,7 @@ func TestTimeoutParser(t *testing.T) {
 	}
 }
 
-func TestImplicitAMP(t *testing.T) {
+func TestImplicitAMPNoExt(t *testing.T) {
 	httpReq, err := http.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	if !assert.NoError(t, err) {
 		return
@@ -502,13 +502,32 @@ func TestImplicitAMP(t *testing.T) {
 	assert.JSONEq(t, `{"amp":0}`, string(bidReq.Site.Ext))
 }
 
+func TestImplicitAMPOtherExt(t *testing.T) {
+	httpReq, err := http.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	bidReq := openrtb.BidRequest{
+		Site: &openrtb.Site{
+			Ext: json.RawMessage(`{"other":true}`),
+		},
+	}
+	setSiteImplicitly(httpReq, &bidReq)
+	assert.JSONEq(t, `{"amp":0,"other":true}`, string(bidReq.Site.Ext))
+}
+
 func TestExplicitAMP(t *testing.T) {
 	httpReq, err := http.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site-amp.json")))
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	var bidReq openrtb.BidRequest
+	bidReq := openrtb.BidRequest{
+		Site: &openrtb.Site{
+			Ext: json.RawMessage(`{"amp":1}`),
+		},
+	}
 	setSiteImplicitly(httpReq, &bidReq)
 	assert.JSONEq(t, `{"amp":1}`, string(bidReq.Site.Ext))
 }

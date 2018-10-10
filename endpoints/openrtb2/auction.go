@@ -793,14 +793,18 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			}
 		}
 	}
-	if len(bidReq.Site.Ext) > 0 {
-		if _, dataType, _, _ := jsonparser.Get(bidReq.Site.Ext, "amp"); dataType == jsonparser.NotExist {
-			if val, err := jsonparser.Set(bidReq.Site.Ext, []byte("0"), "amp"); err == nil {
-				bidReq.Site.Ext = val
+	setAmpExt(bidReq.Site, "0")
+}
+
+func setAmpExt(site *openrtb.Site, value string) {
+	if len(site.Ext) > 0 {
+		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
+			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
+				site.Ext = val
 			}
 		}
 	} else {
-		bidReq.Site.Ext = json.RawMessage(`{"amp":0}`)
+		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
 	}
 }
 
