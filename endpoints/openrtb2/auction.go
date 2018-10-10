@@ -778,13 +778,13 @@ func setAuctionTypeImplicitly(bidReq *openrtb.BidRequest) {
 
 // setSiteImplicitly uses implicit info from httpReq to populate bidReq.Site
 func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.Site == nil {
-		bidReq.Site = &openrtb.Site{}
-	}
-	if bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
+	if bidReq.Site == nil || bidReq.Site.Page == "" || bidReq.Site.Domain == "" {
 		referrerCandidate := httpReq.Referer()
 		if parsedUrl, err := url.Parse(referrerCandidate); err == nil {
 			if domain, err := publicsuffix.EffectiveTLDPlusOne(parsedUrl.Host); err == nil {
+				if bidReq.Site == nil {
+					bidReq.Site = &openrtb.Site{}
+				}
 				if bidReq.Site.Domain == "" {
 					bidReq.Site.Domain = domain
 				}
@@ -797,7 +797,9 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			}
 		}
 	}
-	setAmpExt(bidReq.Site, "0")
+	if bidReq.Site != nil {
+		setAmpExt(bidReq.Site, "0")
+	}
 }
 
 func setAmpExt(site *openrtb.Site, value string) {

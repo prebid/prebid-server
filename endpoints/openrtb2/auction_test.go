@@ -497,7 +497,9 @@ func TestImplicitAMPNoExt(t *testing.T) {
 		return
 	}
 
-	var bidReq openrtb.BidRequest
+	bidReq := openrtb.BidRequest{
+		Site: &openrtb.Site{},
+	}
 	setSiteImplicitly(httpReq, &bidReq)
 	assert.JSONEq(t, `{"amp":0}`, string(bidReq.Site.Ext))
 }
