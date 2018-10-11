@@ -38,6 +38,11 @@ var validParams = []string{
 }
 
 var invalidParams = []string{
+	`{"placementId":"123", "zone":"12345", "path":34567}`,
+	`{"placementId":"123", "zone":12345, "path":"34567"}`,
+	`{"placementId":123, "zone":"12345", "path":"34567"}`,
+	`{"placementId":123, "zone":12345, "path":34567}`,
+	`{"placementId":123, "zone":12345, "path":"34567"}`,
 	`{"appId":"123", "bidfloor":0.01}`,
 	`{"publisherName": 100}`,
 	`{"placementId": 1234}`,

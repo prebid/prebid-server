@@ -101,11 +101,9 @@ func NewRhythmoneBidder(endpoint string) *RhythmoneAdapter {
 
 func (a *RhythmoneAdapter) preProcess(req *openrtb.BidRequest, errors []error) (*openrtb.BidRequest, string, []error) {
 	numRequests := len(req.Imp)
-
-	requestImpCopy := req.Imp
 	var uri string = ""
 	for i := 0; i < numRequests; i++ {
-		imp := requestImpCopy[i]
+		imp := req.Imp[i]
 		var bidderExt adapters.ExtImpBidder
 		err := json.Unmarshal(imp.Ext, &bidderExt)
 		if err != nil {
