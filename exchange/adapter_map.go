@@ -52,7 +52,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderPubmatic:   adaptBidder(adapters.EnforceBidderInfo(pubmatic.NewPubmaticBidder(client, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint), infos[string(openrtb_ext.BidderPubmatic)]), client),
 		// TODO #215: Upgrade the Pulsepoint adapter
 		openrtb_ext.BidderPulsepoint: adaptLegacyAdapter(pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint)),
-		openrtb_ext.BidderRhythmone:  adaptBidder(adapters.EnforceBidderInfo(rhythmone.NewRhythmoneBidder(client, cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint), infos[string(openrtb_ext.BidderRhythmone)]), client),
+		openrtb_ext.BidderRhythmone:  adaptBidder(adapters.EnforceBidderInfo(rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint), infos[string(openrtb_ext.BidderRhythmone)]), client),
 		openrtb_ext.BidderRubicon: adaptBidder(adapters.EnforceBidderInfo(
 			rubicon.NewRubiconBidder(
 				client,

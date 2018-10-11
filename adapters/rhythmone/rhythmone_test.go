@@ -6,5 +6,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "rhythmonetest", NewRhythmoneBidder(nil, "http://tag.1rx.io/rmp"))
+	adapterstest.RunJSONBidderTest(t, "rhythmonetest", NewRhythmoneBidder("http://tag.1rx.io/rmp"))
 }

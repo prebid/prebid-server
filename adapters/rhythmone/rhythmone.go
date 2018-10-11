@@ -93,7 +93,7 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	return mediaType
 }
 
-func NewRhythmoneBidder(client *http.Client, endpoint string) *RhythmoneAdapter {
+func NewRhythmoneBidder(endpoint string) *RhythmoneAdapter {
 	return &RhythmoneAdapter{
 		endPoint: endpoint,
 	}
