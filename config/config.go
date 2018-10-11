@@ -37,6 +37,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+	AliasConfig          AliasConfig        `mapstructure:"aliases"`
 }
 
 type HTTPClient struct {
@@ -221,6 +222,11 @@ type Cookie struct {
 	Value string `mapstructure:"value"`
 }
 
+type AliasConfig struct {
+	FileName string `mapstructure:"filename"`
+	Info     bool   `mapstructure:"info"`
+}
+
 // New uses viper to get our server configurations.
 func New(v *viper.Viper) (*Configuration, error) {
 	var c Configuration
@@ -369,6 +375,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
+	v.SetDefault("aliases.filename", "")
+	v.SetDefault("aliases.info", false)
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

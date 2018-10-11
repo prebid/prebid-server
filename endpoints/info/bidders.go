@@ -11,10 +11,14 @@ import (
 )
 
 // NewBiddersEndpoint implements /info/bidders
-func NewBiddersEndpoint() httprouter.Handle {
-	bidderNames := make([]string, 0, len(openrtb_ext.BidderMap))
+func NewBiddersEndpoint(aliases map[string]string) httprouter.Handle {
+	bidderNames := make([]string, 0, len(openrtb_ext.BidderMap)+len(aliases))
 	for bidderName := range openrtb_ext.BidderMap {
 		bidderNames = append(bidderNames, bidderName)
+	}
+
+	for aliasName, _ := range aliases {
+		bidderNames = append(bidderNames, aliasName)
 	}
 
 	biddersJson, err := json.Marshal(bidderNames)
@@ -31,7 +35,7 @@ func NewBiddersEndpoint() httprouter.Handle {
 }
 
 // NewBiddersEndpoint implements /info/bidders/*
-func NewBidderDetailsEndpoint(infos adapters.BidderInfos) httprouter.Handle {
+func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]string) httprouter.Handle {
 	// Build all the responses up front, since there are a finite number and it won't use much memory.
 	responses := make(map[string]json.RawMessage, len(infos))
 	for bidderName, bidderInfo := range infos {
@@ -54,6 +58,16 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos) httprouter.Handle {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	})
+}
+
+func createAliasInfo(responses map[string]json.RawMessage, alias string, core string) json.RawMessage {
+	coreJSON, ok := responses[core]
+	if !ok {
+		glog.Fatalf("Unknown core bidder %s for default alias %s", core, alias)
+	}
+	jsonData := make(json.RawMessage, len(coreJSON))
+	copy(jsonData, coreJSON)
+
 }
 
 type infoFile struct {

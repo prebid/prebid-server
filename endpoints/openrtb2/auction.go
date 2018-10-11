@@ -33,12 +33,16 @@ import (
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, aliasJSON []byte) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
+	aliases := false
+	if aliasJSON != nil && len(aliasJSON) > 0 {
+		aliases = true
+	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, aliases, aliasJSON}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -48,6 +52,8 @@ type endpointDeps struct {
 	cfg              *config.Configuration
 	metricsEngine    pbsmetrics.MetricsEngine
 	analytics        analytics.PBSAnalyticsModule
+	defaultAliases   bool
+	aliasJSON        []byte
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -826,6 +832,15 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		if err != nil {
 			return nil, []error{err}
 		}
+	}
+
+	// Apply default aliases, if they are provided
+	if deps.defaultAliases {
+		aliasedRequest, err := jsonpatch.MergePatch(deps.aliasJSON, resolvedRequest)
+		if err != nil {
+			return nil, []error{err}
+		}
+		resolvedRequest = aliasedRequest
 	}
 
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,

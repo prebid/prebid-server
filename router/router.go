@@ -1,6 +1,7 @@
 package router
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"database/sql"
@@ -195,18 +196,20 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	p, _ := filepath.Abs(infoDirectory)
 	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
+	defaultAliases, aliasJSON := readDefaultAliases(cfg.AliasConfig.FileName, cfg.AliasConfig.Info)
+
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, aliasJSON)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, aliasJSON)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -214,8 +217,8 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
+	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases.Aliases))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases.Aliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
@@ -260,4 +263,47 @@ func SupportCORS(handler http.Handler) http.Handler {
 		},
 		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
 	return c.Handler(handler)
+}
+
+type defaultAliases struct {
+	Aliases map[string]string `json:"aliases"`
+}
+
+func readDefaultAliases(filename string, popDefault bool) (*defaultAliases, []byte) {
+	aliases := &defaultAliases{}
+	aliases.Aliases = make(map[string]string)
+	if len(filename) == 0 {
+		return aliases, []byte{}
+	}
+	fileData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		glog.Errorf("error reading aliases from file %s: %v", filename, err)
+		return aliases, []byte{}
+	}
+
+	if err := json.Unmarshal(fileData, aliases); err != nil {
+		glog.Errorf("error parsing alias json in file %s: %v", filename, err)
+		aliases.Aliases = make(map[string]string)
+		return aliases, []byte{}
+	}
+
+	// Re-Marshal the JSON to ensure any extraneous noise that was dropped by the Unmashal gets dropped
+	// This helps ensure the aliases applied to the incoming requests is clean.
+	aJSON, err := json.Marshal(aliases)
+	if err != nil {
+		glog.Errorf("error re-Marshalling alias JSON in file %s: %v", filename, err)
+		aliases.Aliases = make(map[string]string)
+		return aliases, []byte{}
+	}
+	var buf bytes.Buffer
+	buf.WriteString(`{"ext":{"prebid":`)
+	buf.Write(aJSON)
+	buf.WriteString(`}}`)
+	aliasJSON := buf.Bytes()
+	// Blank out the map if we don't want to populate the info endpoints with aliases.
+	if !popDefault {
+		aliases.Aliases = make(map[string]string)
+	}
+
+	return aliases, aliasJSON
 }
