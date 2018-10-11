@@ -673,6 +673,10 @@ func CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	cookiesync(w, r, nil)
 }
 
+func SyncerMap() map[openrtb_ext.BidderName]usersync.Usersyncer {
+	return g_syncers
+}
+
 /*
 func init() {
 	rand.Seed(time.Now().UnixNano())
