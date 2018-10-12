@@ -355,6 +355,11 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].banner uses unsupported property: \"hmax\". Use the \"format\" array instead.", impIndex)
 	}
 
+	hasRootSize := banner.H != nil && banner.W != nil && *banner.H > 0 && *banner.W > 0
+	if !hasRootSize && len(banner.Format) == 0 {
+		return fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.", impIndex)
+	}
+
 	for fmtIndex, format := range banner.Format {
 		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
 			return err
