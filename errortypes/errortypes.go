@@ -8,6 +8,7 @@ const (
 	BadInputCode
 	BadServerResponseCode
 	FailedToRequestBidsCode
+	NonFatalValidationCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -86,6 +87,21 @@ func (err *FailedToRequestBids) Error() string {
 
 func (err *FailedToRequestBids) Code() int {
 	return FailedToRequestBidsCode
+}
+
+// NonFatalValidation is used at the request validation step, where we want to continue processing as best we
+// can rather than returning a 4xx, and still return an error message.
+// The initial usecase is to flag deprecated bidders.
+type NonFatalValidation struct {
+	Message string
+}
+
+func (err *NonFatalValidation) Error() string {
+	return err.Message
+}
+
+func (err *NonFatalValidation) Code() int {
+	return NonFatalValidationCode
 }
 
 // DecodeError provides the error code for an error, as defined above
