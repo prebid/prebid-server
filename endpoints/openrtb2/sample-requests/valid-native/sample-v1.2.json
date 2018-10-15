@@ -26,5 +26,9 @@
                 "type": 2
             }
         }
-    ]
+    ],
+    "eventtrackers": [{
+        "event": 1,
+        "methods": [1]
+    }]
 }

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -37,12 +36,6 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adap
 			videoImps = append(videoImps, imp)
 		} else if imp.Native != nil {
 			nativeImps = append(nativeImps, imp)
-		} else {
-			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("SomoAudience only supports banner and video imps. Ignoring imp id=%s", imp.ID),
-			}
-			glog.Warning("SomoAudience CAPABILITY VIOLATION: only supports banner and video imps")
-			errs = append(errs, err)
 		}
 	}
 	var adapterRequests []*adapters.RequestData
