@@ -26,6 +26,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderOpenx:        NewOpenxSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderPubmatic:     NewPubmaticSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderPulsepoint:   NewPulsepointSyncer(cfg.ExternalURL),
+		openrtb_ext.BidderRhythmone:    NewRhythmoneSyncer(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderRubicon:      NewRubiconSyncer(cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL),
 		openrtb_ext.BidderSomoaudience: NewSomoaudienceSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderSovrn:        NewSovrnSyncer(cfg.ExternalURL, cfg.Adapters[string(openrtb_ext.BidderSovrn)].UserSyncURL),
