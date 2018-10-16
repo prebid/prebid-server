@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/adapters"
@@ -17,7 +18,7 @@ func NewBiddersEndpoint(aliases map[string]string) httprouter.Handle {
 		bidderNames = append(bidderNames, bidderName)
 	}
 
-	for aliasName, _ := range aliases {
+	for aliasName := range aliases {
 		bidderNames = append(bidderNames, aliasName)
 	}
 
@@ -46,6 +47,11 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 		responses[bidderName] = jsonData
 	}
 
+	// Add in any default aliases
+	for aliasName, bidderName := range aliases {
+		responses[aliasName] = createAliasInfo(responses, aliasName, bidderName)
+	}
+
 	// Return an endpoint which writes the responses from memory.
 	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		forBidder := ps.ByName("bidderName")
@@ -68,6 +74,11 @@ func createAliasInfo(responses map[string]json.RawMessage, alias string, core st
 	jsonData := make(json.RawMessage, len(coreJSON))
 	copy(jsonData, coreJSON)
 
+	jsonInfo, err := jsonparser.Set(jsonData, []byte(`"`+core+`"`), "alias_of")
+	if err != nil {
+		glog.Fatalf("Failed to generate bidder info for %s, an alias of %s", alias, core)
+	}
+	return jsonInfo
 }
 
 type infoFile struct {

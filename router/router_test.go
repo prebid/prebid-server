@@ -145,3 +145,26 @@ func TestLoadDataCache(t *testing.T) {
 		t.Errorf("data cache: filecache: %s", err)
 	}
 }
+
+func TestLoadDefaultAliases(t *testing.T) {
+	defAliases, aliasJSON := readDefaultAliases("test_aliases.json", true)
+	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
+	expectedAliases := map[string]string{
+		"test1": "appnexus",
+		"test2": "rubicon",
+		"test3": "openx",
+	}
+
+	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
+	assert.Equal(t, expectedAliases, defAliases.Aliases)
+}
+
+func TestLoadDefaultAliasesNoInfo(t *testing.T) {
+	defAliases, aliasJSON := readDefaultAliases("test_aliases.json", false)
+	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
+	expectedAliases := map[string]string{}
+
+	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
+	assert.Equal(t, expectedAliases, defAliases.Aliases)
+
+}

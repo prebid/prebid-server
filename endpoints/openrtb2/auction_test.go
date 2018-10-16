@@ -136,33 +136,38 @@ func TestImplicitUserId(t *testing.T) {
 
 // TestGoodRequests makes sure we return 200s on good requests.
 func TestGoodRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/valid-whole/exemplary", getRequestPayload, nilReturner, http.StatusOK)
-	assertResponseFromDirectory(t, "sample-requests/valid-whole/supplementary", noop, nilReturner, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole/exemplary", getRequestPayload, nilReturner, http.StatusOK, true)
+	assertResponseFromDirectory(t, "sample-requests/valid-whole/supplementary", noop, nilReturner, http.StatusOK, true)
 }
 
 // TestGoodNativeRequests makes sure we return 200s on well-formed Native requests.
 func TestGoodNativeRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/valid-native", buildNativeRequest, nilReturner, http.StatusOK)
+	assertResponseFromDirectory(t, "sample-requests/valid-native", buildNativeRequest, nilReturner, http.StatusOK, true)
 }
 
 // TestBadRequests makes sure we return 400s on bad requests.
 func TestBadRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/invalid-whole", getRequestPayload, getMessage, http.StatusBadRequest)
+	// Need to turn off aliases for bad requests as applying the alias can fail on a bad request before the expected error is reached.
+	assertResponseFromDirectory(t, "sample-requests/invalid-whole", getRequestPayload, getMessage, http.StatusBadRequest, false)
 }
 
 // TestBadRequests makes sure we return 400s on requests with bad Native requests.
 func TestBadNativeRequests(t *testing.T) {
-	assertResponseFromDirectory(t, "sample-requests/invalid-native", buildNativeRequest, nilReturner, http.StatusBadRequest)
+	assertResponseFromDirectory(t, "sample-requests/invalid-native", buildNativeRequest, nilReturner, http.StatusBadRequest, false)
+}
+
+func TestAliasedRequests(t *testing.T) {
+	assertResponseFromDirectory(t, "sample-requests/aliased", noop, nilReturner, http.StatusOK, true)
 }
 
 // assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
 // from the /openrtb2/auction endpoint.
-func assertResponseFromDirectory(t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int) {
+func assertResponseFromDirectory(t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
 	t.Helper()
 	for _, fileInfo := range fetchFiles(t, dir) {
 		filename := dir + "/" + fileInfo.Name()
 		fileData := readFile(t, filename)
-		code, msg := doRequest(t, payloadGetter(t, fileData))
+		code, msg := doRequest(t, payloadGetter(t, fileData), aliased)
 		assertResponseCode(t, filename, code, expectedCode, msg)
 
 		expectMsg := messageGetter(t, fileData)
@@ -191,11 +196,15 @@ func readFile(t *testing.T, filename string) []byte {
 }
 
 // doRequest populates the app with mock dependencies and sends requestData to the /openrtb2/auction endpoint.
-func doRequest(t *testing.T, requestData []byte) (int, string) {
+func doRequest(t *testing.T, requestData []byte, aliased bool) (int, string) {
+	aliasJSON := []byte{}
+	if aliased {
+		aliasJSON = []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
+	}
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), aliasJSON)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
 	recorder := httptest.NewRecorder()
