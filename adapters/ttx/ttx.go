@@ -19,6 +19,7 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Requ
 
 	if err != nil {
 		errs = append(errs, err)
+		return nil, errs
 	}
 
 	headers := http.Header{}
