@@ -156,7 +156,7 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	PartnerId  	string `mapstructure:"partner_id"` // needed for 33Across
+	PartnerId   string `mapstructure:"partner_id"`  // needed for 33Across
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
