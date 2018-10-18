@@ -1,12 +1,14 @@
 package exchange
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 )
@@ -16,7 +18,7 @@ import (
 //   1. BidRequest.Imp[].Ext will only contain the "prebid" field and a "bidder" field which has the params for the intended Bidder.
 //   2. Every BidRequest.Imp[] requested Bids from the Bidder who keys it.
 //   3. BidRequest.User.BuyerUID will be set to that Bidder's ID.
-func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+func cleanOpenRTBRequests(ctx context.Context, orig *openrtb.BidRequest, usersyncs IdFetcher, blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels, gDPR gdpr.Permissions, usersyncIfAmbiguous bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
 		return
@@ -28,6 +30,18 @@ func cleanOpenRTBRequests(orig *openrtb.BidRequest, usersyncs IdFetcher, blables
 	}
 
 	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
+
+	// Clean PI from bidrequests if not allowed per GDPR
+	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
+	consent := extractConsent(orig)
+	if gdpr == 1 {
+		for bidder, bidReq := range requestsByBidder {
+			if ok, err := gDPR.PersonalInfoAllowed(ctx, bidder, consent); !ok && err == nil {
+				cleanPI(bidReq, labels.RType == pbsmetrics.ReqTypeAMP)
+			}
+		}
+	}
+
 	return
 }
 
@@ -134,9 +148,9 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 // sanitizedImpCopy returns a copy of imp with its ext filtered so that only "prebid" and intendedBidder exist.
 // It will not mutate the input imp.
 // This function expects the "ext" argument to have been unmarshalled from "imp", so we don't have to repeat that work.
-func sanitizedImpCopy(imp *openrtb.Imp, ext map[string]openrtb.RawJSON, intendedBidder string) (*openrtb.Imp, error) {
+func sanitizedImpCopy(imp *openrtb.Imp, ext map[string]json.RawMessage, intendedBidder string) (*openrtb.Imp, error) {
 	impCopy := *imp
-	newExt := make(map[string]openrtb.RawJSON, 2)
+	newExt := make(map[string]json.RawMessage, 2)
 	if value, ok := ext["prebid"]; ok {
 		newExt["prebid"] = value
 	}
@@ -192,8 +206,8 @@ func resolveBidder(bidder string, aliases map[string]string) openrtb_ext.BidderN
 
 // parseImpExts does a partial-unmarshal of the imp[].Ext field.
 // The keys in the returned map are expected to be "prebid", core BidderNames, or Aliases for this request.
-func parseImpExts(imps []openrtb.Imp) ([]map[string]openrtb.RawJSON, error) {
-	exts := make([]map[string]openrtb.RawJSON, len(imps))
+func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
+	exts := make([]map[string]json.RawMessage, len(imps))
 	// Loop over every impression in the request
 	for i := 0; i < len(imps); i++ {
 		// Unpack each set of extensions found in the Imp array

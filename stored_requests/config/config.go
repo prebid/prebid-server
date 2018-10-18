@@ -92,8 +92,11 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (f
 		ampIDList = append(ampIDList, db_fetcher.NewFetcher(db, cfg.Postgres.FetcherQueries.MakeAmpQuery))
 	}
 	if cfg.HTTP.Endpoint != "" {
-		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s, amp_endpoint=%s", cfg.HTTP.Endpoint, cfg.HTTP.AmpEndpoint)
+		glog.Infof("Loading Stored Requests via HTTP. endpoint=%s", cfg.HTTP.Endpoint)
 		idList = append(idList, http_fetcher.NewFetcher(client, cfg.HTTP.Endpoint))
+	}
+	if cfg.HTTP.AmpEndpoint != "" {
+		glog.Infof("Loading Stored Requests via HTTP. amp_endpoint=%s", cfg.HTTP.AmpEndpoint)
 		ampIDList = append(ampIDList, http_fetcher.NewFetcher(client, cfg.HTTP.AmpEndpoint))
 	}
 
@@ -117,8 +120,12 @@ func newEventProducers(cfg *config.StoredRequests, client *http.Client, db *sql.
 		ampEventProducers = append(ampEventProducers, newEventsAPI(router, "/storedrequests/amp"))
 	}
 	if cfg.HTTPEvents.RefreshRate != 0 {
-		eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
-		ampEventProducers = append(ampEventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.AmpEndpoint))
+		if cfg.HTTPEvents.Endpoint != "" {
+			eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
+		}
+		if cfg.HTTPEvents.AmpEndpoint != "" {
+			ampEventProducers = append(ampEventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.AmpEndpoint))
+		}
 	}
 	if cfg.Postgres.CacheInitialization.Query != "" {
 		// Make sure we don't miss any updates in between the initial fetch and the "update" polling.

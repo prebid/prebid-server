@@ -1,15 +1,14 @@
 package openrtb_ext
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/mxmCherry/openrtb"
 )
 
 // ExtBid defines the contract for bidresponse.seatbid.bid[i].ext
 type ExtBid struct {
 	Prebid *ExtBidPrebid   `json:"prebid,omitempty"`
-	Bidder openrtb.RawJSON `json:"bidder,omitempty"`
+	Bidder json.RawMessage `json:"bidder,omitempty"`
 }
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
@@ -87,9 +86,14 @@ const (
 	// Other demand sources are happy to let Prebid Mobile use a Webview.
 	HbCreativeLoadMethodConstantKey TargetingKey = "hb_creative_loadtype"
 	HbDealIdConstantKey             TargetingKey = "hb_deal"
-	// HbCacheKey stores the UUID which can be used to fetch the bid data from prebid cache.
-	// Callers should *never* assume that this exists, since the call to the cache may always fail.
-	HbCacheKey TargetingKey = "hb_cache_id"
+
+	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
+	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.
+	//
+	// HbVastCacheKey's UUID will fetch the entire bid JSON, while HbVastCacheKey will fetch just the VAST XML.
+	// HbVastCacheKey will only ever exist for Video bids.
+	HbCacheKey     TargetingKey = "hb_cache_id"
+	HbVastCacheKey TargetingKey = "hb_uuid"
 
 	// These are not keys, but values used by hbCreativeLoadMethodConstantKey
 	HbCreativeLoadMethodHTML      string = "html"

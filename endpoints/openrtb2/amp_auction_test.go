@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
@@ -68,7 +70,33 @@ func TestGoodAmpRequests(t *testing.T) {
 		if response.Debug != nil {
 			t.Errorf("Debug present but not requested")
 		}
+		if _, ok := response.Errors[openrtb_ext.BidderOpenx]; !ok {
+			t.Errorf("OpenX error message is not present. (%v)", response.Errors)
+		}
 	}
+}
+
+// Prevents #683
+func TestAMPPageInfo(t *testing.T) {
+	const page = "http://test.somepage.co.uk:1234?myquery=1&other=2"
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	exchange := &mockAmpExchange{}
+	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	if !assert.NotNil(t, exchange.lastRequest.Site) {
+		return
+	}
+	assert.Equal(t, page, exchange.lastRequest.Site.Page)
+	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
 // TestBadRequests makes sure we return 400's on bad requests.
@@ -330,9 +358,10 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{{
 				AdM: "<script></script>",
-				Ext: openrtb.RawJSON(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
+				Ext: json.RawMessage(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
 			}},
 		}},
+		Ext: json.RawMessage(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
 
 	if bidRequest.Test == 1 {
@@ -340,7 +369,7 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 		if err != nil {
 			resolvedRequest = json.RawMessage("{}")
 		}
-		response.Ext = openrtb.RawJSON(fmt.Sprintf(`{"debug": {"httpcalls": {}, "resolvedrequest": %s}}`, resolvedRequest))
+		response.Ext = json.RawMessage(fmt.Sprintf(`{"debug": {"httpcalls": {}, "resolvedrequest": %s}}`, resolvedRequest))
 	}
 
 	return response, nil

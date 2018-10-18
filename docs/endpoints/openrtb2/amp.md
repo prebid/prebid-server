@@ -73,11 +73,21 @@ A sample response payload looks like this:
         "hb_size": "300x250",
         "hb_size_appnexus": "300x250"
     }
+    "errors": {
+        "openx":[
+            {
+               "code": 1, 
+               "message": "The request exceeded the timeout allocated"
+            }
+        ]
+    }
 }
 ```
 
 In [the typical AMP setup](http://prebid.org/dev-docs/show-prebid-ads-on-amp-pages.html),
 these targeting params will be sent to DFP.
+
+Note that "errors" will only appear if there were any errors generated. They are identical to the "errors" field in the response.ext of the OpenRTB endpoint.
 
 ### Query Parameters
 

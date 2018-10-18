@@ -1,6 +1,8 @@
 package adapters
 
 import (
+	"encoding/json"
+
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
 
@@ -135,7 +137,7 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	buyerUID, _, _ := req.Cookie.GetUID(bidderFamily)
 	id, _, _ := req.Cookie.GetUID("adnxs")
 
-	var userExt openrtb.RawJSON
+	var userExt json.RawMessage
 	if req.User != nil {
 		userExt = req.User.Ext
 	}

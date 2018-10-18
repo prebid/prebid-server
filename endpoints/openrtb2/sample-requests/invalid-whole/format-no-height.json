@@ -1,16 +1,19 @@
 {
+  "message": "Invalid request: Request imp[0].banner.format[0] must define non-zero \"h\" and \"w\" properties.\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "banner": {
-                "format": [
-                    {
-                        "w":30,
-                        "h":0
-                    }
-                ]
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w":30,
+              "h":0
             }
+          ]
         }
+      }
     ]
+  }
 }

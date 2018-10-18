@@ -1,4 +1,7 @@
 {
+  "message": "Invalid request: request.imp must contain at least one element.\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": []
+  }
 }

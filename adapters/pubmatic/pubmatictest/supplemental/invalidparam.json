@@ -1,0 +1,76 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [{
+            "id": "test-imp-id-1",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "adSlot": "AdTag_Div1",
+                    "publisherId": "999"
+                }
+            }
+        },{
+            "id": "test-imp-id-2",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "adSlot": "AdTag_Div1@300",
+                    "publisherId": "999"
+                }
+            }
+        },{
+            "id": "test-imp-id-3",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "adSlot": "AdTag_Div1@valx250",
+                    "publisherId": "999"
+                }
+            }
+        },
+        {
+            "id": "test-imp-id-4",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "adSlot": "AdTag_Div1@300xval",
+                    "publisherId": "999"
+                }
+            }
+        }],
+        "site": {
+			"id": "siteID",
+			"publisher": {
+				"id": "1234"
+			}
+		}
+    },
+  
+    "expectedMakeRequestsErrors": [
+        "Invalid adSlot provided",
+        "Invalid size provided in adSlot",
+        "Invalid width provided in adSlot",
+        "Invalid height provided in adSlot"
+      ]
+  }

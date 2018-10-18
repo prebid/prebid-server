@@ -37,11 +37,6 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
-		} else {
-			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID),
-			}
-			errs = append(errs, err)
 		}
 	}
 

@@ -175,7 +175,7 @@ func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durat
 
 func (me *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	me.adaptRequests.With(resolveAdapterLabels(labels)).Inc()
-	for k, _ := range labels.AdapterErrors {
+	for k := range labels.AdapterErrors {
 		me.adaptErrors.With(resolveAdapterErrorLabels(labels, string(k))).Inc()
 	}
 }

@@ -70,7 +70,7 @@ func (a *IndexAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		indexReq.Imp[i].TagID = unit.Code
 		// Index spec says "adunit path representing ad server inventory" but we don't have this
 		// ext is DFP div ID and KV pairs if avail
-		//indexReq.Imp[i].Ext = openrtb.RawJSON("{}")
+		//indexReq.Imp[i].Ext = json.RawMessage("{}")
 		siteCopy := *indexReq.Site
 		siteCopy.Publisher = &openrtb.Publisher{ID: fmt.Sprintf("%d", params.SiteID)}
 		indexReq.Site = &siteCopy

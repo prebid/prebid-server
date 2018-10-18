@@ -41,13 +41,6 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 			validImpExists = true
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
-		} else {
-			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", request.Imp[i].ID),
-			}
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
 		}
 	}
 

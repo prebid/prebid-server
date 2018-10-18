@@ -1,11 +1,14 @@
 {
+  "message": "Invalid request: request.imp[0].audio.mimes must contain at least one supported MIME type\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "audio": {
-                "mimes": []
-            }
+      {
+        "id": "imp-id",
+        "audio": {
+          "mimes": []
         }
+      }
     ]
+  }
 }

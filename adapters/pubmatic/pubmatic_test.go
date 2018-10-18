@@ -14,11 +14,20 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 )
+
+func TestJsonSamples(t *testing.T) {
+	adapterstest.RunJSONBidderTest(t, "pubmatictest", NewPubmaticBidder(nil, "http://hbopenbid.pubmatic.com/translator?source=prebid-server"))
+}
+
+// ----------------------------------------------------------------------------
+// Code below this line tests the legacy, non-openrtb code flow. It can be deleted after we
+// clean up the existing code and make everything openrtb.
 
 func CompareStringValue(val1 string, val2 string, t *testing.T) {
 	if val1 != val2 {
@@ -202,9 +211,13 @@ func TestPubmaticInvalidStatusCode(t *testing.T) {
 
 func TestPubmaticInvalidInputParameters(t *testing.T) {
 
+	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
+	defer server.Close()
+
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewPubmaticAdapter(&conf, "http://localhost/test")
+	an := NewPubmaticAdapter(&conf, server.URL)
 	ctx := context.Background()
+
 	pbReq := pbs.PBSRequest{}
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
@@ -223,83 +236,53 @@ func TestPubmaticInvalidInputParameters(t *testing.T) {
 		},
 	}
 
-	// Invalid Request JSON
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120x240\"")
-	_, err := an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
+	pbReq.IsDebug = true
+	inValidPubmaticParams := []json.RawMessage{
+		// Invalid Request JSON
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120x240\""),
+		// Missing adSlot in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\"}"),
+		// Missing publisher ID
+		json.RawMessage("{\"adSlot\": \"slot@120x240\"}"),
+		// Missing slot name  in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"@120x240\"}"),
+		// Invalid adSize in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120-240\"}"),
+		// Missing impression width and height in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@\"}"),
+		// Missing height  in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120\"}"),
+		// Missing width  in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@x120\"}"),
+		// Incorrect width param  in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@valx120\"}"),
+		// Incorrect height param  in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120xval\"}"),
+		// Empty slot name in AdUnits.Params,
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \" @120x240\"}"),
+		// Empty width in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@ x240\"}"),
+		// Empty height in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120x \"}"),
+		// Empty height in AdUnits.Params
+		json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \" @120x \"}"),
+		// Invalid Keywords
+		json.RawMessage(`{"publisherId": "640",	"adSlot": "slot1@336x280","keywords":{"pmZoneId":1},"wrapper":{"version":2,"profile":595}}`),
+		// Invalid Wrapper ext
+		json.RawMessage(`{"publisherId": "640",	"adSlot": "slot1@336x280","keywords":{"pmZoneId":"Zone1,Zone2"},"wrapper":{"version":"2","profile":595}}`),
+	}
 
-	// Missing adSlot in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Missing publisher ID
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"adSlot\": \"slot@120x240\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Missing slot name  in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"@120x240\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Invalid adSize in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120-240\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Missing impression width and height in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Missing height  in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120x\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Missing width  in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@x120\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Incorrect width param  in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@valx120\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Incorrect height param  in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120xval\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Empty slot name in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \" @120x240\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Empty width in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@ x240\"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Empty height in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \"slot@120x \"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
-
-	// Empty height in AdUnits.Params
-	pbBidder.AdUnits[0].Params = json.RawMessage("{\"publisherId\": \"10\", \"adSlot\": \" @120x \"}")
-	_, err = an.Call(ctx, &pbReq, &pbBidder)
-	CompareStringValue(err.Error(), "Incorrect adSlot / Publisher param", t)
+	for _, param := range inValidPubmaticParams {
+		pbBidder.AdUnits[0].Params = param
+		_, err := an.Call(ctx, &pbReq, &pbBidder)
+		if err == nil {
+			t.Fatalf("Should get errors for params = %v", string(param))
+		}
+	}
 
 }
 
-func TestPubmaticBasicResponse(t *testing.T) {
+func TestPubmaticBasicResponse_MandatoryParams(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
 	defer server.Close()
@@ -322,6 +305,50 @@ func TestPubmaticBasicResponse(t *testing.T) {
 					},
 				},
 				Params: json.RawMessage("{\"publisherId\": \"640\", \"adSlot\": \"slot1@336x280\"}"),
+			},
+		},
+	}
+	pbReq.IsDebug = true
+	bids, err := an.Call(ctx, &pbReq, &pbBidder)
+	if err != nil {
+		t.Fatalf("Should not have gotten an error: %v", err)
+	}
+	if len(bids) != 1 {
+		t.Fatalf("Should have received one bid")
+	}
+}
+
+func TestPubmaticBasicResponse_AllParams(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(DummyPubMaticServer))
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewPubmaticAdapter(&conf, server.URL)
+	ctx := context.Background()
+	pbReq := pbs.PBSRequest{}
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			{
+				Code:       "unitCode",
+				BidID:      "bidid",
+				MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
+				Sizes: []openrtb.Format{
+					{
+						W: 336,
+						H: 280,
+					},
+				},
+				Params: json.RawMessage(`{"publisherId": "640",
+							"adSlot": "slot1@336x280",
+							"keywords":{
+									"pmZoneId": "Zone1,Zone2"
+									},
+							"wrapper":
+									{"version":2,
+									"profile":595}
+									}`),
 			},
 		},
 	}
@@ -633,12 +660,12 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	hcc := config.HostCookie{}
+	hcs := config.HostCookie{}
 
 	_, err = pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, cacheClient, &hcc)
+	}, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}

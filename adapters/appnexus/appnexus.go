@@ -301,7 +301,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 // get the keys from the map
 func keys(m map[string]bool) []string {
 	keys := make([]string, 0, len(m))
-	for key, _ := range m {
+	for key := range m {
 		keys = append(keys, key)
 	}
 	return keys
@@ -311,12 +311,6 @@ func keys(m map[string]bool) []string {
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
 func preprocess(imp *openrtb.Imp) (string, error) {
-	// We don't support audio imps yet.
-	if imp.Audio != nil {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("Appnexus doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
-		}
-	}
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", err

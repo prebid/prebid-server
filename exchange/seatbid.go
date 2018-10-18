@@ -1,8 +1,8 @@
 package exchange
 
-import "github.com/mxmCherry/openrtb"
+import "encoding/json"
 
 // ExtSeatBid defines the contract for bidresponse.seatbid.ext
 type ExtSeatBid struct {
-	Bidder openrtb.RawJSON `json:"bidder,omitempty"`
+	Bidder json.RawMessage `json:"bidder,omitempty"`
 }

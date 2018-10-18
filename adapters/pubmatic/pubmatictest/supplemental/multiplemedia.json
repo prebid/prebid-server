@@ -1,0 +1,117 @@
+{
+    "mockBidRequest": {
+      "id": "multiple-media-request",
+      "imp": [
+        {
+          "id": "multiple-media-imp",
+          "audio": {
+            "mimes": ["video/mp4"]
+          },
+          "banner": {
+            "format": [{
+                "w": 300,
+                "h": 250
+            }]
+          },
+          "ext": {
+            "bidder": {
+                "adSlot": "AdTag_Div1@300x250",
+                "publisherId": "999"			
+             }
+          }
+        }
+      ], 
+      "site": {
+        "id": "siteID"
+        }
+    },
+  
+    "httpCalls": [
+        {
+          "expectedRequest": {
+            "uri": "http://hbopenbid.pubmatic.com/translator?source=prebid-server",
+            "body": {
+              "id": "multiple-media-request",
+              "imp": [
+                {
+                  "id": "multiple-media-imp",
+                  "tagid":"AdTag_Div1",
+                   "banner": {
+                    "format": [
+                      {
+                        "w": 300,
+                        "h": 250
+                      }
+                  ],
+                  "h": 250,
+                  "w": 300
+              }
+                }
+              ], 
+              "site": {
+                  "id": "siteID",
+                  "publisher": {
+                      "id": "999"
+                  }
+              }
+            }
+          },
+          "mockResponse": {
+            "status": 200,
+            "body": {
+              "id": "multiple-media-request",
+              "seatbid": [
+                {
+                  "seat": "958",
+                  "bid": [{
+                    "id": "7706636740145184841",
+                    "impid": "multiple-media-imp",
+                    "price": 0.500000,
+                    "adid": "29681110",
+                    "adm": "some-test-ad",
+                    "adomain": ["pubmatic.com"],
+                    "crid": "29681110",
+                    "h": 250,
+                    "w": 300,
+                    "dealid":"test deal",
+                    "ext": {
+                      "dspid": 6,
+                      "deal_channel": 1
+                    }
+                  }]
+                }
+              ],
+              "bidid": "5778926625248726496",
+              "cur": "USD"
+            }
+          }
+        }
+      ],
+    
+      "expectedBidResponses": [
+        {
+          "currency": "USD",
+          "bids": [
+            {
+              "bid": {
+                "id": "7706636740145184841",
+                "impid": "multiple-media-imp",
+                "price": 0.5,
+                "adid": "29681110",
+                "adm": "some-test-ad",
+                "adomain": ["pubmatic.com"],
+                "crid": "29681110",
+                "w": 300,
+                "h": 250,
+                "dealid":"test deal",
+                "ext": {
+                  "dspid": 6,
+                  "deal_channel": 1
+                }
+              },
+              "type": "banner"
+            }
+          ]
+        }
+      ]
+    }

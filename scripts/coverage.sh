@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Generate test coverage statistics for Go packages.
 # 
 # Works around the fact that `go test -coverprofile` currently does not work
@@ -21,7 +21,11 @@ generate_cover_data() {
 
     for pkg in "$@"; do
         f="$workdir/$(echo $pkg | tr / -).cover"
-        go test -covermode="$mode" -coverprofile="$f" "$pkg"
+        cover=""
+        if ! [[ "$pkg" =~ ^github\.com\/prebid\/prebid\-server$ ]]; then
+            cover="-covermode=$mode -coverprofile=$f"
+        fi
+        go test ${cover} "$pkg"
     done
 
     echo "mode: $mode" >"$profile"

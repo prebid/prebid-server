@@ -13,7 +13,7 @@ import (
 
 func TestDefaults(t *testing.T) {
 	v := viper.New()
-	SetupViper(v)
+	SetupViper(v, "")
 	cfg, err := New(v)
 	if err != nil {
 		t.Error(err.Error())
@@ -49,6 +49,10 @@ cache:
   scheme: http
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
+http_client:
+  max_idle_connections: 500
+  max_idle_connections_per_host: 20
+  idle_connection_timeout_seconds: 30
 recaptcha_secret: asdfasdfasdfasdf
 metrics:
   influxdb:
@@ -79,6 +83,8 @@ adapters:
   brightroll:
     usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s
     endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
+  adkerneladn:
+     usersync_url: https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
@@ -104,7 +110,7 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 
 func TestFullConfig(t *testing.T) {
 	v := viper.New()
-	SetupViper(v)
+	SetupViper(v, "")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)
@@ -125,6 +131,9 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
+	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
+	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
@@ -149,6 +158,9 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
+	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
+	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
+	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 }
 
 func TestValidConfig(t *testing.T) {

@@ -391,13 +391,6 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	errors := make([]error, 0, len(request.Imp))
 	secure := false
 	for _, imp := range request.Imp {
-		if imp.Banner == nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID),
-			})
-			continue
-		}
-
 		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
 		if err != nil {
 			errors = append(errors, &errortypes.BadInput{

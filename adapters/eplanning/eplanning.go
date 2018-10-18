@@ -89,13 +89,6 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 }
 
 func verifyImp(imp *openrtb.Imp) (string, error) {
-	// We currently only support banner impressions
-	if imp.Banner == nil {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("EPlanning only supports banner Imps. Ignoring Imp ID=%s", imp.ID),
-		}
-	}
-
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {

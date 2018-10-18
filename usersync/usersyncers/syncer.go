@@ -13,6 +13,7 @@ import (
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderAdform:       NewAdformSyncer(cfg.Adapters[string(openrtb_ext.BidderAdform)].UserSyncURL, cfg.ExternalURL),
+		openrtb_ext.BidderAdkernelAdn:  NewAdkernelAdnSyncer(cfg.ExternalURL, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL),
 		openrtb_ext.BidderAdtelligent:  NewAdtelligentSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderAppnexus:     NewAppnexusSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderBeachfront:   NewBeachfrontSyncer(cfg.Adapters[string(openrtb_ext.BidderBeachfront)].UserSyncURL, cfg.Adapters[string(openrtb_ext.BidderBeachfront)].PlatformID),
@@ -25,6 +26,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderOpenx:        NewOpenxSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderPubmatic:     NewPubmaticSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderPulsepoint:   NewPulsepointSyncer(cfg.ExternalURL),
+		openrtb_ext.BidderRhythmone:    NewRhythmoneSyncer(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, cfg.ExternalURL),
 		openrtb_ext.BidderRubicon:      NewRubiconSyncer(cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL),
 		openrtb_ext.BidderSomoaudience: NewSomoaudienceSyncer(cfg.ExternalURL),
 		openrtb_ext.BidderSovrn:        NewSovrnSyncer(cfg.ExternalURL, cfg.Adapters[string(openrtb_ext.BidderSovrn)].UserSyncURL),

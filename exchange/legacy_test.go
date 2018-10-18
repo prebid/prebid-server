@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
@@ -48,7 +49,7 @@ func TestSiteVideo(t *testing.T) {
 					H: 250,
 				}},
 			},
-			Ext: openrtb.RawJSON(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
+			Ext: json.RawMessage(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
 		}},
 	}
 
@@ -248,7 +249,7 @@ func newAppOrtbRequest() *openrtb.BidRequest {
 					H: 250,
 				}},
 			},
-			Ext: openrtb.RawJSON(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
+			Ext: json.RawMessage(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
 		}},
 	}
 }
@@ -272,7 +273,7 @@ func TestErrorResponse(t *testing.T) {
 					H: 250,
 				}},
 			},
-			Ext: openrtb.RawJSON(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
+			Ext: json.RawMessage(`{"bidder":{"cp":512379,"ct":486653,"cf":"300x250"}}`),
 		}},
 	}
 
@@ -309,7 +310,7 @@ func TestWithTargeting(t *testing.T) {
 					H: 250,
 				}},
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {"placementId": "1959066997713356_1959836684303054"}}`),
+			Ext: json.RawMessage(`{"bidder": {"placementId": "1959066997713356_1959836684303054"}}`),
 		}},
 	}
 

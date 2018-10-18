@@ -1,17 +1,22 @@
 {
+  "message": "Invalid request: request.site should include at least one of request.site.id or request.site.page.\n",
+  "requestPayload": {
     "id": "req-id",
     "site": {},
     "imp": [
-        {
-            "id": "imp-id",
-            "video": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "ext": {
-                "appnexus": "good"
-            }
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
         }
+      }
     ]
+  }
 }

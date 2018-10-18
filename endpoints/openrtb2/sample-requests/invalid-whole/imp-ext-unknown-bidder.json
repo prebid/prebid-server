@@ -1,18 +1,21 @@
 {
+  "message": "Invalid request: request.imp[0].ext contains unknown bidder: noBidderShouldEverHaveThisName. Did you forget an alias in request.ext.prebid.aliases?\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "audio": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "ext": {
-                "noBidderShouldEverHaveThisName": {
-                    "bogusParam": 5
-                }
-            }
+      {
+        "id": "imp-id",
+        "audio": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "noBidderShouldEverHaveThisName": {
+            "bogusParam": 5
+          }
         }
+      }
     ]
+  }
 }

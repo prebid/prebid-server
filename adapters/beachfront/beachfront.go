@@ -3,7 +3,6 @@ package beachfront
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -219,26 +218,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 	var errs = make([]error, 0, len(req.Imp))
 	var imps int = 0
 
-	/*
-	 step through the prebid request "imp" and inject into the beachfront request. If we got to here,
-	 then we have already stepped through the requested imps and verified that none are Video, so no
-	 reason to check that here, but there could be Audio or Native (or maybe they are filtered out before
-	 I get here based on the capabilities in bidder-info/beachfront.yaml? Regardless, I'll leave
-	 place holders here) .
-	*/
-
+	// step through the prebid request "imp" and inject into the beachfront request.
 	for _, imp := range req.Imp {
-		if imp.Audio != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Beachfront doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
-			})
-			continue
-		} else if imp.Native != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Beachfront doesn't support native Imps. Ignoring Imp ID=%s", imp.ID),
-			})
-			continue
-		} else if imp.Banner != nil {
+		if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 			bannerImpsIndex = len(beachfrontReq.Slots) - 1
 
@@ -292,7 +274,15 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 		beachfrontReq.Domain = req.App.Domain
 		beachfrontReq.Page = req.App.ID
 	} else {
-		beachfrontReq.Domain = strings.Split(strings.Split(req.Site.Page, "//")[1], "/")[0]
+		protoUrl := strings.Split(req.Site.Page, "//")
+		var domainPage string
+		// Resolves a panic for any Site.Page that does not include the protocol
+		if len(protoUrl) > 1 {
+			domainPage = protoUrl[1]
+		} else {
+			domainPage = protoUrl[0]
+		}
+		beachfrontReq.Domain = strings.Split(domainPage, "/")[0]
 		beachfrontReq.Page = req.Site.Page
 	}
 

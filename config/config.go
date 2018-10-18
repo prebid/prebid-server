@@ -14,10 +14,11 @@ import (
 
 // Configuration
 type Configuration struct {
-	ExternalURL string `mapstructure:"external_url"`
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	AdminPort   int    `mapstructure:"admin_port"`
+	ExternalURL string     `mapstructure:"external_url"`
+	Host        string     `mapstructure:"host"`
+	Port        int        `mapstructure:"port"`
+	Client      HTTPClient `mapstructure:"http_client"`
+	AdminPort   int        `mapstructure:"admin_port"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse  string          `mapstructure:"status_response"`
@@ -36,6 +37,12 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+}
+
+type HTTPClient struct {
+	MaxIdleConns        int `mapstructure:"max_idle_connections"`
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_connections_per_host"`
+	IdleConnTimeout     int `mapstructure:"idle_connection_timeout_seconds"`
 }
 
 type configErrors []error
@@ -197,6 +204,16 @@ type Cache struct {
 	// this should be replaced by code which tracks the response time of recent cache calls and
 	// adjusts the time dynamically.
 	ExpectedTimeMillis int `mapstructure:"expected_millis"`
+
+	DefaultTTLs DefaultTTLs `mapstructure:"default_ttl_seconds"`
+}
+
+// Default TTLs to use to cache bids for different types of imps.
+type DefaultTTLs struct {
+	Banner int `mapstructure:"banner"`
+	Video  int `mapstructure:"video"`
+	Native int `mapstructure:"native"`
+	Audio  int `mapstructure:"audio"`
 }
 
 type Cookie struct {
@@ -235,11 +252,12 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 }
 
 // Set the default config values for the viper object we are using.
-func SetupViper(v *viper.Viper) {
-	v.SetConfigName("pbs")
-	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/config")
-
+func SetupViper(v *viper.Viper, filename string) {
+	if filename != "" {
+		v.SetConfigName(filename)
+		v.AddConfigPath(".")
+		v.AddConfigPath("/etc/config")
+	}
 	// Fixes #475: Some defaults will be set just so they are accessable via environment variables
 	// (basically so viper knows they exist)
 	v.SetDefault("external_url", "http://localhost:8000")
@@ -253,6 +271,10 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("cache.host", "")
 	v.SetDefault("cache.query", "")
 	v.SetDefault("cache.expected_millis", 10)
+	v.SetDefault("cache.default_ttl_seconds.banner", 0)
+	v.SetDefault("cache.default_ttl_seconds.video", 0)
+	v.SetDefault("cache.default_ttl_seconds.native", 0)
+	v.SetDefault("cache.default_ttl_seconds.audio", 0)
 	v.SetDefault("recaptcha_secret", "")
 	v.SetDefault("host_cookie.domain", "")
 	v.SetDefault("host_cookie.family", "")
@@ -262,6 +284,9 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
+	v.SetDefault("http_client.max_idle_connections", 400)
+	v.SetDefault("http_client.max_idle_connections_per_host", 10)
+	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
@@ -334,6 +359,10 @@ func SetupViper(v *viper.Viper) {
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
+	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
+	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
+	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
