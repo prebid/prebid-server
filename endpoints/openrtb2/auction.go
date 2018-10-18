@@ -660,7 +660,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 				}
 			} else {
 				if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
-					errL = append(errL, &errortypes.NonFatalValidation{Message: msg})
+					errL = append(errL, &errortypes.BidderTemporarilyDisabled{Message: msg})
 					disabledBidders = append(disabledBidders, bidder)
 				} else {
 					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
@@ -681,7 +681,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		imp.Ext = extJSON
 	}
 
-	// TODO: Fix issue #713 here
+	// TODO #713 Fix this here
 	if len(bidderExts) < 1 {
 		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
 		return errL
@@ -1001,7 +1001,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 // Checks to see if an error in an error list is a fatal error
 func fatalError(errL []error) bool {
 	for _, err := range errL {
-		if _, ok := err.(*errortypes.NonFatalValidation); !ok {
+		if errortypes.DecodeError(err) != errortypes.BidderTemporarilyDisabledCode {
 			return true
 		}
 	}
