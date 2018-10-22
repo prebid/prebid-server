@@ -146,8 +146,16 @@ func TestLoadDataCache(t *testing.T) {
 	}
 }
 
+var testDefReqConfig = config.DefReqConfig{
+	Type: "file",
+	FileSystem: config.DefReqFiles{
+		FileName: "test_aliases.json",
+	},
+	AliasInfo: true,
+}
+
 func TestLoadDefaultAliases(t *testing.T) {
-	defAliases, aliasJSON := readDefaultAliases("test_aliases.json", true)
+	defAliases, aliasJSON := readDefaultRequest(testDefReqConfig)
 	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
 	expectedAliases := map[string]string{
 		"test1": "appnexus",
@@ -156,15 +164,17 @@ func TestLoadDefaultAliases(t *testing.T) {
 	}
 
 	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
-	assert.Equal(t, expectedAliases, defAliases.Aliases)
+	assert.Equal(t, expectedAliases, defAliases)
 }
 
 func TestLoadDefaultAliasesNoInfo(t *testing.T) {
-	defAliases, aliasJSON := readDefaultAliases("test_aliases.json", false)
+	noInfoConfig := testDefReqConfig
+	noInfoConfig.AliasInfo = false
+	defAliases, aliasJSON := readDefaultRequest(noInfoConfig)
 	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
 	expectedAliases := map[string]string{}
 
 	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
-	assert.Equal(t, expectedAliases, defAliases.Aliases)
+	assert.Equal(t, expectedAliases, defAliases)
 
 }

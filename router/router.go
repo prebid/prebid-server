@@ -1,7 +1,6 @@
 package router
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"database/sql"
@@ -196,7 +195,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	p, _ := filepath.Abs(infoDirectory)
 	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
-	defaultAliases, aliasJSON := readDefaultAliases(cfg.AliasConfig.FileName, cfg.AliasConfig.Info)
+	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
@@ -204,12 +203,12 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, aliasJSON)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, defReqJSON)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, aliasJSON)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, defReqJSON)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -217,8 +216,8 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases.Aliases))
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases.Aliases))
+	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
 	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
@@ -265,45 +264,40 @@ func SupportCORS(handler http.Handler) http.Handler {
 	return c.Handler(handler)
 }
 
+type defReq struct {
+	Ext defExt `json:"ext"`
+}
+type defExt struct {
+	Prebid defaultAliases `json:"prebid"`
+}
 type defaultAliases struct {
 	Aliases map[string]string `json:"aliases"`
 }
 
-func readDefaultAliases(filename string, popDefault bool) (*defaultAliases, []byte) {
-	aliases := &defaultAliases{}
-	aliases.Aliases = make(map[string]string)
-	if len(filename) == 0 {
-		return aliases, []byte{}
-	}
-	fileData, err := ioutil.ReadFile(filename)
-	if err != nil {
-		glog.Errorf("error reading aliases from file %s: %v", filename, err)
-		return aliases, []byte{}
-	}
+func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []byte) {
+	defReq := &defReq{}
+	aliases := make(map[string]string)
+	if defReqConfig.Type == "file" {
+		if len(defReqConfig.FileSystem.FileName) == 0 {
+			return aliases, []byte{}
+		}
+		defReqJSON, err := ioutil.ReadFile(defReqConfig.FileSystem.FileName)
+		if err != nil {
+			glog.Errorf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
+			return aliases, []byte{}
+		}
 
-	if err := json.Unmarshal(fileData, aliases); err != nil {
-		glog.Errorf("error parsing alias json in file %s: %v", filename, err)
-		aliases.Aliases = make(map[string]string)
-		return aliases, []byte{}
-	}
+		if err := json.Unmarshal(defReqJSON, defReq); err != nil {
+			// we might not have aliases defined, but will atleast show that the JSON file is parsable.
+			glog.Errorf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
+			return aliases, []byte{}
+		}
 
-	// Re-Marshal the JSON to ensure any extraneous noise that was dropped by the Unmashal gets dropped
-	// This helps ensure the aliases applied to the incoming requests is clean.
-	aJSON, err := json.Marshal(aliases)
-	if err != nil {
-		glog.Errorf("error re-Marshalling alias JSON in file %s: %v", filename, err)
-		aliases.Aliases = make(map[string]string)
-		return aliases, []byte{}
+		// Read in the alias map if we want to populate the info endpoints with aliases.
+		if defReqConfig.AliasInfo {
+			aliases = defReq.Ext.Prebid.Aliases
+		}
+		return aliases, defReqJSON
 	}
-	var buf bytes.Buffer
-	buf.WriteString(`{"ext":{"prebid":`)
-	buf.Write(aJSON)
-	buf.WriteString(`}}`)
-	aliasJSON := buf.Bytes()
-	// Blank out the map if we don't want to populate the info endpoints with aliases.
-	if !popDefault {
-		aliases.Aliases = make(map[string]string)
-	}
-
-	return aliases, aliasJSON
+	return aliases, []byte{}
 }

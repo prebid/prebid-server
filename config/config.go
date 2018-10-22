@@ -37,7 +37,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
-	AliasConfig          AliasConfig        `mapstructure:"aliases"`
+	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 }
 
 type HTTPClient struct {
@@ -222,9 +222,16 @@ type Cookie struct {
 	Value string `mapstructure:"value"`
 }
 
-type AliasConfig struct {
+// AliasConfig will define the various source(s) or the default aliases
+// Currently only filesystem is supported, but keeping the config structure
+type DefReqConfig struct {
+	Type       string      `mapstructure:"type"`
+	FileSystem DefReqFiles `mapstructure:"filesystem"`
+	AliasInfo  bool        `mapstructure:"alias_info"`
+}
+
+type DefReqFiles struct {
 	FileName string `mapstructure:"filename"`
-	Info     bool   `mapstructure:"info"`
 }
 
 // New uses viper to get our server configurations.
@@ -375,8 +382,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
-	v.SetDefault("aliases.filename", "")
-	v.SetDefault("aliases.info", false)
+	v.SetDefault("default_request.type", "")
+	v.SetDefault("default_request.filesystem.filename", "")
+	v.SetDefault("default_request.alias_info", false)
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
