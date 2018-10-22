@@ -686,8 +686,18 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 }
 
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
-	if site != nil && site.ID == "" && site.Page == "" {
+	if site == nil {
+		return nil
+	}
+
+	if site.ID == "" && site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+	}
+	if len(site.Ext) > 0 {
+		var s openrtb_ext.ExtSite
+		if err := json.Unmarshal(site.Ext, &s); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -791,6 +801,9 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 				}
 			}
 		}
+	}
+	if bidReq.Site != nil {
+		setAmpExt(bidReq.Site, "0")
 	}
 }
 

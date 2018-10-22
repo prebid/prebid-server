@@ -30,12 +30,10 @@ func TestGoodAmpRequests(t *testing.T) {
 	goodRequests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
 		"2": json.RawMessage(validRequest(t, "aliases.json")),
-		"3": json.RawMessage(validRequest(t, "app.json")),
 		"4": json.RawMessage(validRequest(t, "digitrust.json")),
 		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
 		"6": json.RawMessage(validRequest(t, "gdpr.json")),
 		"7": json.RawMessage(validRequest(t, "site.json")),
-		"8": json.RawMessage(validRequest(t, "timeout.json")),
 		"9": json.RawMessage(validRequest(t, "user.json")),
 	}
 
@@ -99,6 +97,29 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
+func TestAMPSiteExt(t *testing.T) {
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	exchange := &mockAmpExchange{}
+	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	if !assert.NotNil(t, exchange.lastRequest.Site) {
+		return
+	}
+	assert.JSONEq(t, `{"amp":1}`, string(exchange.lastRequest.Site.Ext))
+}
+
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	files := fetchFiles(t, "sample-requests/invalid-whole")
@@ -126,7 +147,6 @@ func TestAmpBadRequests(t *testing.T) {
 // TestAmpDebug makes sure we get debug information back when requested
 func TestAmpDebug(t *testing.T) {
 	requests := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "app.json")),
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
