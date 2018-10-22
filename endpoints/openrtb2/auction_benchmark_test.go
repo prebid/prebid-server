@@ -67,7 +67,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 	if err != nil {
 		return
 	}
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics, infos, gdpr.AlwaysAllow{}), paramValidator, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics, infos, gdpr.AlwaysAllow{}), paramValidator, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{})
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
