@@ -13,13 +13,12 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
+	"github.com/stretchr/testify/assert"
 )
 
 // From auction_test.go
@@ -103,7 +102,7 @@ func TestAMPSiteExt(t *testing.T) {
 	}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	exchange := &mockAmpExchange{}
-	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), nil)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
 		return
