@@ -166,7 +166,7 @@ func (infos BidderInfos) SupportsWebMediaType(bidder openrtb_ext.BidderName, med
 type BidderInfo struct {
 	Maintainer   *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
 	Capabilities *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
-	AliasOf      string            `json:"alias_of,omitempty"`
+	AliasOf      string            `json:"aliasOf,omitempty"`
 }
 
 type MaintainerInfo struct {

@@ -226,12 +226,12 @@ type Cookie struct {
 // Currently only filesystem is supported, but keeping the config structure
 type DefReqConfig struct {
 	Type       string      `mapstructure:"type"`
-	FileSystem DefReqFiles `mapstructure:"filesystem"`
+	FileSystem DefReqFiles `mapstructure:"file"`
 	AliasInfo  bool        `mapstructure:"alias_info"`
 }
 
 type DefReqFiles struct {
-	FileName string `mapstructure:"filename"`
+	FileName string `mapstructure:"name"`
 }
 
 // New uses viper to get our server configurations.

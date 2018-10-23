@@ -74,7 +74,7 @@ func createAliasInfo(responses map[string]json.RawMessage, alias string, core st
 	jsonData := make(json.RawMessage, len(coreJSON))
 	copy(jsonData, coreJSON)
 
-	jsonInfo, err := jsonparser.Set(jsonData, []byte(`"`+core+`"`), "alias_of")
+	jsonInfo, err := jsonparser.Set(jsonData, []byte(`"`+core+`"`), "aliasOf")
 	if err != nil {
 		glog.Fatalf("Failed to generate bidder info for %s, an alias of %s", alias, core)
 	}

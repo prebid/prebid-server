@@ -158,11 +158,11 @@ func testGetBidderAccuracy(t *testing.T, alias string) {
 	}
 	if len(alias) > 0 {
 		if fileData.AliasOf != "someBidder" {
-			t.Errorf("alias_of should be \"someBidder\". Got \"%s\"", fileData.AliasOf)
+			t.Errorf("aliasOf should be \"someBidder\". Got \"%s\"", fileData.AliasOf)
 		}
 	} else {
 		if len(fileData.AliasOf) != 0 {
-			t.Errorf("alias_of should be empty. Got \"%s\"", fileData.AliasOf)
+			t.Errorf("aliasOf should be empty. Got \"%s\"", fileData.AliasOf)
 		}
 	}
 }

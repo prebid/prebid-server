@@ -61,7 +61,7 @@ var exchanges map[string]adapters.Adapter
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
-func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator) httprouter.Handle {
+func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
@@ -77,6 +77,16 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		}
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
+
+	// Add in any default aliases
+	for aliasName, bidderName := range aliases {
+		bidderData, ok := data[bidderName]
+		if !ok {
+			glog.Fatalf("Default alias (%s) exists referencing unknown bidder: %s", aliasName, bidderName)
+		}
+		data[aliasName] = bidderData
+	}
+
 	response, err := json.Marshal(data)
 	if err != nil {
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
@@ -218,7 +228,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
-	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
+	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
@@ -283,13 +293,13 @@ func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []
 		}
 		defReqJSON, err := ioutil.ReadFile(defReqConfig.FileSystem.FileName)
 		if err != nil {
-			glog.Errorf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
+			glog.Fatalf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
 		}
 
 		if err := json.Unmarshal(defReqJSON, defReq); err != nil {
 			// we might not have aliases defined, but will atleast show that the JSON file is parsable.
-			glog.Errorf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
+			glog.Fatalf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
 			return aliases, []byte{}
 		}
 

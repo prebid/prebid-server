@@ -10,8 +10,8 @@ Three config options are exposed to support this feature.
 ```
 default_request:
     type: "file"
-    filesystem:
-        filename : /path/to/aliases.json
+    file:
+        name : /path/to/aliases.json
     alias_info     : false
 ```
 
@@ -21,10 +21,10 @@ The `filename` option is the path/filename of a JSON file containing the default
     "tmax": "<auction_timeouts_ms.default>",
     "regs": {
         "ext": {
-            "gdpr": <gdpr.usersync_if_ambiguous>
+            "gdpr": 1
         }
     },
-    "etc": {
+    "ext": {
         "prebid": {
             "aliases": {
                 "districtm": "appnexus"
