@@ -616,6 +616,15 @@ func (e *brokenExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.Bi
 	return nil, errors.New("Critical, unrecoverable error.")
 }
 
+func getMessage(t *testing.T, example []byte) []byte {
+	if value, err := jsonparser.GetString(example, "message"); err != nil {
+		t.Fatalf("Error parsing root.message from request: %v.", err)
+	} else {
+		return []byte(value)
+	}
+	return nil
+}
+
 // StoredRequest testing
 
 // Test stored request data
