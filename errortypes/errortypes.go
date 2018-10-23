@@ -8,6 +8,7 @@ const (
 	BadInputCode
 	BadServerResponseCode
 	FailedToRequestBidsCode
+	BidderTemporarilyDisabledCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -86,6 +87,21 @@ func (err *FailedToRequestBids) Error() string {
 
 func (err *FailedToRequestBids) Code() int {
 	return FailedToRequestBidsCode
+}
+
+// BidderTemporarilyDisabled is used at the request validation step, where we want to continue processing as best we
+// can rather than returning a 4xx, and still return an error message.
+// The initial usecase is to flag deprecated bidders.
+type BidderTemporarilyDisabled struct {
+	Message string
+}
+
+func (err *BidderTemporarilyDisabled) Error() string {
+	return err.Message
+}
+
+func (err *BidderTemporarilyDisabled) Code() int {
+	return BidderTemporarilyDisabledCode
 }
 
 // DecodeError provides the error code for an error, as defined above

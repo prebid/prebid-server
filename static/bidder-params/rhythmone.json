@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Rhythmone Adapter Params",
+  "description": "A schema which validates params accepted by the Rhythmone adapter",
+  "type": "object",
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "An ID which is used to frame Rhythmone ad tag",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string",
+      "description": "An ID which is used to frame Rhythmone ad tag",
+      "minLength": 1
+    },
+    "zone": {
+      "type": "string",
+      "description": "An ID which is used to frame Rhythmone ad tag",
+      "minLength": 1
+    }
+  },
+  "required": ["placementId", "path", "zone"]
+}

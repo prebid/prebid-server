@@ -300,9 +300,6 @@ func TestOpenRTBIncorrectRequest(t *testing.T) {
 	request := &openrtb.BidRequest{
 		ID: "test-request-id",
 		Imp: []openrtb.Imp{
-			{ID: "video-not-supported", Video: &openrtb.Video{}, Ext: json.RawMessage(`{"bidder": { "mid": "32344" }}`)},
-			{ID: "audio-not-supported", Audio: &openrtb.Audio{}, Ext: json.RawMessage(`{"bidder": { "mid": "32344" }}`)},
-			{ID: "native-not-supported", Native: &openrtb.Native{}, Ext: json.RawMessage(`{"bidder": { "mid": "32344" }}`)},
 			{ID: "incorrect-bidder-field", Ext: json.RawMessage(`{"bidder1": { "mid": "32344" }}`)},
 			{ID: "incorrect-adform-params", Ext: json.RawMessage(`{"bidder": { : "33" }}`)},
 			{ID: "mid-integer", Ext: json.RawMessage(`{"bidder": { "mid": 1.234 }}`)},

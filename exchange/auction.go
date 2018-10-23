@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 )
@@ -55,7 +56,7 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64) []error {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs) []error {
 	if !bids && !vast {
 		return nil
 	}
@@ -78,7 +79,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					toCache = append(toCache, prebid_cache_client.Cacheable{
 						Type:       prebid_cache_client.TypeJSON,
 						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, ttlBuffer),
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
 					})
 					bidIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -89,7 +90,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 					toCache = append(toCache, prebid_cache_client.Cacheable{
 						Type:       prebid_cache_client.TypeXML,
 						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, ttlBuffer),
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
 					})
 					vastIndices[len(toCache)-1] = topBidPerBidder.bid
 				}
@@ -145,7 +146,12 @@ func maybeMake(shouldMake bool, capacity int) []prebid_cache_client.Cacheable {
 	return nil
 }
 
-func cacheTTL(impTTL int64, bidTTL int64, buffer int64) (ttl int64) {
+func cacheTTL(impTTL int64, bidTTL int64, defTTL int64, buffer int64) (ttl int64) {
+	if impTTL <= 0 && bidTTL <= 0 {
+		// Only use default if there is no imp nor bid TTL provided. We don't want the default
+		// to cut short a requested longer TTL.
+		return addBuffer(defTTL, buffer)
+	}
 	if impTTL <= 0 {
 		// Use <= to handle the case of someone sending a negative ttl. We treat it as zero
 		return addBuffer(bidTTL, buffer)
@@ -164,6 +170,20 @@ func addBuffer(base int64, buffer int64) int64 {
 		return 0
 	}
 	return base + buffer
+}
+
+func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl int64) {
+	switch bidType {
+	case openrtb_ext.BidTypeBanner:
+		return int64(defaultTTLs.Banner)
+	case openrtb_ext.BidTypeVideo:
+		return int64(defaultTTLs.Video)
+	case openrtb_ext.BidTypeNative:
+		return int64(defaultTTLs.Native)
+	case openrtb_ext.BidTypeAudio:
+		return int64(defaultTTLs.Audio)
+	}
+	return 0
 }
 
 type auction struct {

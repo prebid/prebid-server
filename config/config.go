@@ -204,6 +204,16 @@ type Cache struct {
 	// this should be replaced by code which tracks the response time of recent cache calls and
 	// adjusts the time dynamically.
 	ExpectedTimeMillis int `mapstructure:"expected_millis"`
+
+	DefaultTTLs DefaultTTLs `mapstructure:"default_ttl_seconds"`
+}
+
+// Default TTLs to use to cache bids for different types of imps.
+type DefaultTTLs struct {
+	Banner int `mapstructure:"banner"`
+	Video  int `mapstructure:"video"`
+	Native int `mapstructure:"native"`
+	Audio  int `mapstructure:"audio"`
 }
 
 type Cookie struct {
@@ -261,6 +271,10 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("cache.host", "")
 	v.SetDefault("cache.query", "")
 	v.SetDefault("cache.expected_millis", 10)
+	v.SetDefault("cache.default_ttl_seconds.banner", 0)
+	v.SetDefault("cache.default_ttl_seconds.video", 0)
+	v.SetDefault("cache.default_ttl_seconds.native", 0)
+	v.SetDefault("cache.default_ttl_seconds.audio", 0)
 	v.SetDefault("recaptcha_secret", "")
 	v.SetDefault("host_cookie.domain", "")
 	v.SetDefault("host_cookie.family", "")
@@ -335,7 +349,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.conversant.usersync_url", "//prebid-match.dotomi.com/prebid/match?rurl=")
 	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
 	v.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
-	v.SetDefault("adapters.indexexchange.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
+	v.SetDefault("adapters.ix.usersync_url", "http://ssum.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dix%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
+	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
 	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
@@ -347,6 +362,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
+	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")

@@ -77,9 +77,6 @@ func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImp
 }
 
 func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn) error {
-	if imp.Banner == nil && imp.Video == nil {
-		glog.Warning("Adkernel CAPABILITY VIOLATION: only banner and video imps supported")
-	}
 	if impExt.PublisherID < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid pubId value. Ignoring imp id=%s", imp.ID))
 	}
