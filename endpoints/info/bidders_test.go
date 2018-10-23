@@ -93,56 +93,6 @@ func TestGetSpecificBidders(t *testing.T) {
 	}
 }
 
-// TestGetBidderAccuracy validates the output for a known file.
-func TestGetBidderAccuracy(t *testing.T) {
-	bidderInfos := adapters.ParseBidderInfos("../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
-
-	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
-	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someBidder", strings.NewReader(""))
-	if err != nil {
-		t.Fatalf("Failed to create a GET /info/bidders request: %v", err)
-	}
-	params := []httprouter.Param{{
-		Key:   "bidderName",
-		Value: "someBidder",
-	}}
-
-	r := httptest.NewRecorder()
-	endpoint(r, req, params)
-
-	var fileData adapters.BidderInfo
-	if err := json.Unmarshal(r.Body.Bytes(), &fileData); err != nil {
-		t.Fatalf("Failed to unmarshal JSON from endpoints/info/sample/someBidder.yaml: %v", err)
-	}
-
-	if fileData.Maintainer.Email != "some-email@domain.com" {
-		t.Errorf("maintainer.email should be some-email@domain.com. Got %s", fileData.Maintainer.Email)
-	}
-
-	if len(fileData.Capabilities.App.MediaTypes) != 2 {
-		t.Fatalf("Expected 2 supported mediaTypes on app. Got %d", len(fileData.Capabilities.App.MediaTypes))
-	}
-	if fileData.Capabilities.App.MediaTypes[0] != "banner" {
-		t.Errorf("capabilities.app.mediaTypes[0] should be banner. Got %s", fileData.Capabilities.App.MediaTypes[0])
-	}
-	if fileData.Capabilities.App.MediaTypes[1] != "native" {
-		t.Errorf("capabilities.app.mediaTypes[1] should be native. Got %s", fileData.Capabilities.App.MediaTypes[1])
-	}
-
-	if len(fileData.Capabilities.Site.MediaTypes) != 3 {
-		t.Fatalf("Expected 3 supported mediaTypes on app. Got %d", len(fileData.Capabilities.Site.MediaTypes))
-	}
-	if fileData.Capabilities.Site.MediaTypes[0] != "banner" {
-		t.Errorf("capabilities.app.mediaTypes[0] should be banner. Got %s", fileData.Capabilities.Site.MediaTypes[0])
-	}
-	if fileData.Capabilities.Site.MediaTypes[1] != "video" {
-		t.Errorf("capabilities.app.mediaTypes[1] should be video. Got %s", fileData.Capabilities.Site.MediaTypes[1])
-	}
-	if fileData.Capabilities.Site.MediaTypes[2] != "native" {
-		t.Errorf("capabilities.app.mediaTypes[2] should be native. Got %s", fileData.Capabilities.Site.MediaTypes[2])
-	}
-}
-
 func TestGetBidderAccuracyNoAliases(t *testing.T) {
 	testGetBidderAccuracy(t, "")
 }
