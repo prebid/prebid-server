@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -586,6 +588,25 @@ func TestDisabledBidder(t *testing.T) {
 	if bytesRead, err := req.Body.Read(make([]byte, 1)); bytesRead != 0 || err != io.EOF {
 		t.Errorf("The request body should have been read to completion.")
 	}
+}
+
+func TestValidateImpExtDisabledBidder(t *testing.T) {
+	imp := &openrtb.Imp{
+		Ext: json.RawMessage(`{"appnexus":{"placement_id":555},"unknownbidder":{"foo":"bar"}}`),
+	}
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		&config.Configuration{MaxRequestSize: int64(8096)},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
+	}
+	errs := deps.validateImpExt(imp, nil, 0)
+	fmt.Printf("%v", errs)
+	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
+	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The biddder 'unknownbidder' has been disabled."}}, errs)
 }
 
 func validRequest(t *testing.T, filename string) string {

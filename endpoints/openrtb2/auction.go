@@ -255,8 +255,9 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
-	for index, imp := range req.Imp {
-		errs := deps.validateImp(&imp, aliases, index)
+	for index := range req.Imp {
+		imp := &req.Imp[index]
+		errs := deps.validateImp(imp, aliases, index)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -692,7 +693,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		return errL
 	}
 
-	return nil
+	return errL
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
