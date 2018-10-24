@@ -604,7 +604,6 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
 	}
 	errs := deps.validateImpExt(imp, nil, 0)
-	fmt.Printf("%v", errs)
 	assert.JSONEq(t, `{"appnexus":{"placement_id":555}}`, string(imp.Ext))
 	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The biddder 'unknownbidder' has been disabled."}}, errs)
 }
