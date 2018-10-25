@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Index Adapter Params",
-  "description": "A schema which validates params accepted by the Index adapter",
+  "title": "Ix Adapter Params",
+  "description": "A schema which validates params accepted by the Ix adapter",
   "type": "object",
   "properties": {
-    "siteID": {
-      "type": "integer",
+    "siteId": {
+      "type": "string",
       "description": "An ID which identifies the site selling the impression"
     }
   },
-  "required": ["siteID"]
+  "required": ["siteId"]
 }

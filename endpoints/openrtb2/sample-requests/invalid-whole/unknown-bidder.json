@@ -1,0 +1,38 @@
+{
+    "description": "Copy of the prebid test ad, with the addition of an unknown bidder",
+  
+    "message": "Invalid request: request.imp[0].ext contains unknown bidder: unknownbidder. Did you forget an alias in request.ext.prebid.aliases?\n",
+    "requestPayload": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org"
+      },
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              },
+              {
+                "w": 300,
+                "h": 600
+              }
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 10433394
+            },
+            "unknownbidder": {
+                "param1": "foobar",
+                "param2": 42
+            }
+          }
+        }
+      ],
+      "tmax": 500
+    }
+  }

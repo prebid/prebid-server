@@ -13,13 +13,12 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/rcrowley/go-metrics"
+	"github.com/stretchr/testify/assert"
 )
 
 // From auction_test.go
@@ -30,19 +29,17 @@ func TestGoodAmpRequests(t *testing.T) {
 	goodRequests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "aliased-buyeruids.json")),
 		"2": json.RawMessage(validRequest(t, "aliases.json")),
-		"3": json.RawMessage(validRequest(t, "app.json")),
 		"4": json.RawMessage(validRequest(t, "digitrust.json")),
 		"5": json.RawMessage(validRequest(t, "gdpr-no-consentstring.json")),
 		"6": json.RawMessage(validRequest(t, "gdpr.json")),
 		"7": json.RawMessage(validRequest(t, "site.json")),
-		"8": json.RawMessage(validRequest(t, "timeout.json")),
 		"9": json.RawMessage(validRequest(t, "user.json")),
 	}
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{goodRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{goodRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{})
 
 	for requestID := range goodRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -84,7 +81,7 @@ func TestAMPPageInfo(t *testing.T) {
 	}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	exchange := &mockAmpExchange{}
-	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{})
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -99,6 +96,29 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
+func TestAMPSiteExt(t *testing.T) {
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "site.json")),
+	}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	exchange := &mockAmpExchange{}
+	endpoint, _ := NewAmpEndpoint(exchange, newParamsValidator(t), &mockAmpStoredReqFetcher{stored}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), nil, nil)
+	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
+	if !assert.NoError(t, err) {
+		return
+	}
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	if !assert.NotNil(t, exchange.lastRequest.Site) {
+		return
+	}
+	assert.JSONEq(t, `{"amp":1}`, string(exchange.lastRequest.Site.Ext))
+}
+
 // TestBadRequests makes sure we return 400's on bad requests.
 func TestAmpBadRequests(t *testing.T) {
 	files := fetchFiles(t, "sample-requests/invalid-whole")
@@ -110,7 +130,7 @@ func TestAmpBadRequests(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{badRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{badRequests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{})
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
 		recorder := httptest.NewRecorder()
@@ -126,12 +146,11 @@ func TestAmpBadRequests(t *testing.T) {
 // TestAmpDebug makes sure we get debug information back when requested
 func TestAmpDebug(t *testing.T) {
 	requests := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "app.json")),
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{})
 
 	for requestID := range requests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s&debug=1", requestID), nil)
@@ -192,7 +211,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{})
 
 	requestID := "1"
 	curl := "http://example.com"
@@ -309,7 +328,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), []byte{})
+	endpoint, _ := NewAmpEndpoint(&mockAmpExchange{}, newParamsValidator(t), &mockAmpStoredReqFetcher{requests}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{})
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize)
 	request := httptest.NewRequest("GET", url, nil)
