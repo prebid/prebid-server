@@ -11,7 +11,7 @@ func NewTtxSyncer(externalURL string, userSyncUrl string, partnerId string) *syn
 	syncerUrl := userSyncUrl + "/?ri=" + partnerId + "&ru=" + redirectURL
 
 	if partnerId == "" {
-		syncerUrl = ""
+		syncerUrl = "/"
 	}
 
 	return &syncer{

@@ -9,7 +9,8 @@
       {
         "id": "imp-id",
         "banner": {
-          "format": []
+          "h": 300,
+          "w": 0
         },
         "ext": {
           "appnexus": {

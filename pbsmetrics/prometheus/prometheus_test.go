@@ -381,7 +381,7 @@ var adaptLabels = []pbsmetrics.AdapterLabels{
 	{
 		Source:        pbsmetrics.DemandApp,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
-		Adapter:       openrtb_ext.BidderIndex,
+		Adapter:       openrtb_ext.BidderIx,
 		PubID:         "Pub2",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagNo,

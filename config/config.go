@@ -350,7 +350,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.conversant.usersync_url", "//prebid-match.dotomi.com/prebid/match?rurl=")
 	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
 	v.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
-	v.SetDefault("adapters.indexexchange.usersync_url", "//ssum-sec.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DindexExchange%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
+	v.SetDefault("adapters.ix.usersync_url", "http://ssum.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dix%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
+	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
 	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
@@ -365,6 +366,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.ttx.partner_id", "")
 	v.SetDefault("adapters.ttx.usersync_url", "https://ssc-cms.33across.com/ps")
 	v.SetDefault("adapters.ttx.endpoint", "http://ssc.33across.com/api/v1/hb")
+	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
+	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")

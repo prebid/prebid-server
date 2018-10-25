@@ -3,11 +3,9 @@ package beachfront
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -220,28 +218,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 	var errs = make([]error, 0, len(req.Imp))
 	var imps int = 0
 
-	/*
-	 step through the prebid request "imp" and inject into the beachfront request. If we got to here,
-	 then we have already stepped through the requested imps and verified that none are Video, so no
-	 reason to check that here, but there could be Audio or Native (or maybe they are filtered out before
-	 I get here based on the capabilities in bidder-info/beachfront.yaml? Regardless, I'll leave
-	 place holders here) .
-	*/
-
+	// step through the prebid request "imp" and inject into the beachfront request.
 	for _, imp := range req.Imp {
-		if imp.Audio != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Beachfront doesn't support audio Imps. Ignoring Imp ID=%s", imp.ID),
-			})
-			glog.Warning("Beachfront CAPABILITY VIOLATION: audio Imps not supported")
-			continue
-		} else if imp.Native != nil {
-			errs = append(errs, &errortypes.BadInput{
-				Message: fmt.Sprintf("Beachfront doesn't support native Imps. Ignoring Imp ID=%s", imp.ID),
-			})
-			glog.Warning("Beachfront CAPABILITY VIOLATION: native Imps not supported")
-			continue
-		} else if imp.Banner != nil {
+		if imp.Banner != nil {
 			beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
 			bannerImpsIndex = len(beachfrontReq.Slots) - 1
 

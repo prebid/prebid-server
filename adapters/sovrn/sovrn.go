@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -267,14 +266,6 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 }
 
 func preprocess(imp *openrtb.Imp) (string, error) {
-	// We currently only support banner impressions
-	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
-		glog.Warning("Sovrn CAPABILITY VIOLATION: no banner present")
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("Sovrn doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID),
-		}
-	}
-
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", &errortypes.BadInput{
