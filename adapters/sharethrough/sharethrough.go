@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -69,7 +68,7 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 
 		hbURI := generateHBUri(pKey, "testBidID-"+strconv.Itoa(i))
 		potentialRequests = append(potentialRequests, &adapters.RequestData{
-			Method:  "GET",
+			Method:  "POST",
 			Uri:     hbURI,
 			Body:    nil,
 			Headers: headers,
@@ -95,51 +94,73 @@ func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	// var bidResp openrtb.BidResponse
-	var strBidResp openrtb_ext.ExtImpSharethroughResponse
-	if err := json.Unmarshal(response.Body, &strBidResp); err != nil {
+	var bidResp openrtb.BidResponse
+	// var strBidResp openrtb_ext.ExtImpSharethroughResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	glog.Infof("body: %+v\n", strBidResp)
+	// bidResp.ID = strBidResp.AdServerRequestID
+	// bidResp.BidID = strBidResp.BidID
+	// bidResp.Cur = "USD"
+	// if len(strBidResp.Creatives) > 0 {
+	// 	var bid openrtb.Bid
+	// 	bid.ImpID = strBidResp.Creatives[0].AuctionWinID
+	// 	bid.Price = strBidResp.Creatives[0].CPM
+	// 	if _, ok := strBidResp.Creatives[0].beacons["win-notification"]; ok {
+	// 		bid.NURL = strBidResp.Creatives[0].beacons["win-notification"][0]
+	// 	}
+	// 	bidResp.SeatBid.Bid = append(bidResp.SeatBid.Bid, bid)
+	// }
+
+	glog.Infof("body: %+v\n", bidResp)
 	bidResponse := adapters.NewBidderResponse()
 
 	var errs []error
-	// for _, sb := range bidResp.SeatBid {
-	// 	for i := 0; i < len(sb.Bid); i++ {
-	// 		bid := sb.Bid[i]
-	// 		if bidType, err := getMediaTypeForBid(&bid); err == nil {
-	// 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-	// 				Bid:     &bid,
-	// 				BidType: bidType,
-	// 			})
-	// 		} else {
-	// 			errs = append(errs, err)
-	// 		}
-	// 	}
-	// }
+	for _, sb := range bidResp.SeatBid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
+			if bidType, err := getMediaTypeForBid(&bid); err == nil {
+				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+					Bid:     &bid,
+					BidType: bidType,
+				})
+			} else {
+				errs = append(errs, err)
+			}
+		}
+	}
+	for _, bid := range bidResponse.Bids {
+		glog.Infof("bidResponse.Bids: %+v\n", bid)
+	}
+	if len(errs) > 0 {
+		for _, err := range errs {
+			glog.Infof("error: %s\n", err)
+		}
+	}
 	return bidResponse, errs
 }
 
 func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
-	var impExt struct {
-		Sharethrough struct {
-			BidType int `json:"bid_type"`
-		} `json:"sharethrough"`
-	}
-	if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
-		return "", err
-	}
-	switch impExt.Sharethrough.BidType {
-	case 0:
-		return openrtb_ext.BidTypeBanner, nil
-	case 1:
-		return openrtb_ext.BidTypeVideo, nil
-	case 2:
-		return openrtb_ext.BidTypeNative, nil
-	default:
-		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", impExt.Sharethrough.BidType)
-	}
+	return openrtb_ext.BidTypeNative, nil
+	// var impExt struct {
+	// 	Sharethrough struct {
+	// 		BidType int `json:"bid_type"`
+	// 	} `json:"sharethrough"`
+	// }
+	// if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
+	// 	return "", err
+	// }
+	// switch impExt.Sharethrough.BidType {
+	// case 0:
+	// 	return openrtb_ext.BidTypeBanner, nil
+	// case 1:
+	// 	return openrtb_ext.BidTypeVideo, nil
+	// case 2:
+	// 	return openrtb_ext.BidTypeNative, nil
+	// default:
+	// 	return "", fmt.Errorf("Unrecognized bid_ad_type in response from sharethrough: %d", impExt.Sharethrough.BidType)
+	// }
 }
 
 func preprocess(imp *openrtb.Imp) (pKey string, err error) {
@@ -157,11 +178,15 @@ func preprocess(imp *openrtb.Imp) (pKey string, err error) {
 }
 
 func generateHBUri(pKey string, bidID string) string {
-	v := url.Values{}
-	v.Set("placement_key", pKey)
-	v.Set("bidId", bidID)
-	v.Set("hbVersion", "test-version")
-	v.Set("hbSource", "prebid-server")
-
-	return hbEndpoint + "?" + v.Encode()
+	return "http://localhost:8000/bid"
 }
+
+// func generateHBUri(pKey string, bidID string) string {
+// 	v := url.Values{}
+// 	v.Set("placement_key", pKey)
+// 	v.Set("bidId", bidID)
+// 	v.Set("hbVersion", "test-version")
+// 	v.Set("hbSource", "prebid-server")
+
+// 	return hbEndpoint + "?" + v.Encode()
+// }
