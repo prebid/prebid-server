@@ -1,0 +1,15 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Ttx Adapter Params",
+    "description": "A schema which validates params accepted by the Ttx adapter",
+  
+    "type": "object",
+    "properties": {
+      "prod": {
+        "type": "string",
+        "description": "Product type"
+      }
+    },
+    "required": []
+  }
