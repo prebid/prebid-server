@@ -386,7 +386,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("default_request.type", "")
-	v.SetDefault("default_request.filesystem.filename", "")
+	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
 
 	// Set environment variable support:
