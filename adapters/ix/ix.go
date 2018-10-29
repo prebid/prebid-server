@@ -29,7 +29,7 @@ type IxAdapter struct {
 
 // Name is used for cookies and such
 func (a *IxAdapter) Name() string {
-	return fmt.Sprintf("%s", openrtb_ext.BidderIx)
+	return string(openrtb_ext.BidderIx)
 }
 
 func (a *IxAdapter) SkipNoCookies() bool {
@@ -244,7 +244,7 @@ func (a *IxAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (ixBidRes
 		Width:             bid.W,
 		Height:            bid.H,
 		DealId:            bid.DealID,
-		CreativeMediaType: fmt.Sprintf("%s", openrtb_ext.BidTypeBanner),
+		CreativeMediaType: string(openrtb_ext.BidTypeBanner),
 	}
 	return result, nil
 }
