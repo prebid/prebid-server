@@ -320,7 +320,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 		for _, b := range bidders {
 			var bidder *PBSBidder
 			// index requires a different request for each ad unit
-			if b.BidderCode != "indexExchange" {
+			if b.BidderCode != "ix" {
 				for _, pb := range pbsReq.Bidders {
 					if pb.BidderCode == b.BidderCode {
 						bidder = pb
@@ -329,7 +329,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 			}
 			if bidder == nil {
 				bidder = &PBSBidder{BidderCode: b.BidderCode}
-				if b.BidderCode == "indexExchange" {
+				if b.BidderCode == "ix" {
 					bidder.AdUnitCode = unit.Code
 				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)

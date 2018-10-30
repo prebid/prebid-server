@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -38,12 +37,6 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
-		} else {
-			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID),
-			}
-			glog.Warning("OpenX CAPABILITY VIOLATION: only supports banner and video imps")
-			errs = append(errs, err)
 		}
 	}
 

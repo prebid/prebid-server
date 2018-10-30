@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/conversant"
-	"github.com/prebid/prebid-server/adapters/indexExchange"
+	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -61,7 +61,7 @@ var exchanges map[string]adapters.Adapter
 //
 // This function stores the file contents in memory, and should not be used on large directories.
 // If the root directory, or any of the files in it, cannot be read, then the program will exit.
-func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator) httprouter.Handle {
+func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.BidderParamValidator, aliases map[string]string) httprouter.Handle {
 	// Slurp the files into memory first, since they're small and it minimizes request latency.
 	files, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
@@ -77,6 +77,16 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		}
 		data[bidder] = json.RawMessage(validator.Schema(bidderName))
 	}
+
+	// Add in any default aliases
+	for aliasName, bidderName := range aliases {
+		bidderData, ok := data[bidderName]
+		if !ok {
+			glog.Fatalf("Default alias (%s) exists referencing unknown bidder: %s", aliasName, bidderName)
+		}
+		data[aliasName] = bidderData
+	}
+
 	response, err := json.Marshal(data)
 	if err != nil {
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
@@ -135,11 +145,11 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":      appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
-		"districtm":     appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
-		"indexExchange": indexExchange.NewIndexAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint),
-		"pubmatic":      pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
-		"pulsepoint":    pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
+		"appnexus":   appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"districtm":  appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"ix":         ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
+		"pubmatic":   pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
+		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID),
@@ -160,6 +170,10 @@ type Router struct {
 func New(cfg *config.Configuration) (r *Router, err error) {
 	const schemaDirectory = "./static/bidder-params"
 	const infoDirectory = "./static/bidder-info"
+	disabledBidders := map[string]string{
+		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
+	}
+
 	r = &Router{
 		Router: httprouter.New(),
 	}
@@ -195,18 +209,20 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	p, _ := filepath.Abs(infoDirectory)
 	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
 
+	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
+
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, usersyncers.GDPRAwareSyncerIDs(syncers), theClient)
 
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
@@ -214,9 +230,9 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
-	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint())
-	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos))
-	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator))
+	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
+	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
+	r.GET("/bidders/params", NewJsonDirectoryServer(schemaDirectory, paramsValidator, defaultAliases))
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
@@ -260,4 +276,42 @@ func SupportCORS(handler http.Handler) http.Handler {
 		},
 		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})
 	return c.Handler(handler)
+}
+
+type defReq struct {
+	Ext defExt `json:"ext"`
+}
+type defExt struct {
+	Prebid defaultAliases `json:"prebid"`
+}
+type defaultAliases struct {
+	Aliases map[string]string `json:"aliases"`
+}
+
+func readDefaultRequest(defReqConfig config.DefReqConfig) (map[string]string, []byte) {
+	defReq := &defReq{}
+	aliases := make(map[string]string)
+	if defReqConfig.Type == "file" {
+		if len(defReqConfig.FileSystem.FileName) == 0 {
+			return aliases, []byte{}
+		}
+		defReqJSON, err := ioutil.ReadFile(defReqConfig.FileSystem.FileName)
+		if err != nil {
+			glog.Fatalf("error reading aliases from file %s: %v", defReqConfig.FileSystem.FileName, err)
+			return aliases, []byte{}
+		}
+
+		if err := json.Unmarshal(defReqJSON, defReq); err != nil {
+			// we might not have aliases defined, but will atleast show that the JSON file is parsable.
+			glog.Fatalf("error parsing alias json in file %s: %v", defReqConfig.FileSystem.FileName, err)
+			return aliases, []byte{}
+		}
+
+		// Read in the alias map if we want to populate the info endpoints with aliases.
+		if defReqConfig.AliasInfo {
+			aliases = defReq.Ext.Prebid.Aliases
+		}
+		return aliases, defReqJSON
+	}
+	return aliases, []byte{}
 }

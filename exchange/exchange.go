@@ -42,6 +42,7 @@ type exchange struct {
 	cacheTime           time.Duration
 	gDPR                gdpr.Permissions
 	UsersyncIfAmbiguous bool
+	defaultTTLs         config.DefaultTTLs
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -65,6 +66,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.me = metricsEngine
 	e.gDPR = gDPR
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
+	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
 	return e
 }
 
@@ -133,7 +135,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if targData != nil {
 		auc.setRoundedPrices(targData.priceGranularity)
-		cacheErrs := auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast, bidRequest, 60)
+		cacheErrs := auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast, bidRequest, 60, &e.defaultTTLs)
 		if len(cacheErrs) > 0 {
 			errs = append(errs, cacheErrs...)
 		}

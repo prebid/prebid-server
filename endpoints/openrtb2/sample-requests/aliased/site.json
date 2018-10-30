@@ -1,0 +1,50 @@
+{
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          },
+          "test1": {
+            "placementId": 10433394
+          },
+          "test2": {
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510
+          }          
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
+    }
+  }
+  

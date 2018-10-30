@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
@@ -34,12 +35,14 @@ type AmpResponse struct {
 
 // NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
 // of the request, and the return value, using the OpenRTB machinery to handle everything inbetween.
-func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
+func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewAmpEndpoint requires non-nil arguments.")
 	}
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).AmpAuction), nil
+	defRequest := defReqJSON != nil && len(defReqJSON) > 0
+
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON}).AmpAuction), nil
 }
 
 func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -94,7 +97,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	req, errL := deps.parseAmpRequest(r)
 
-	if len(errL) > 0 {
+	if fatalError(errL) {
 		w.WriteHeader(http.StatusBadRequest)
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
@@ -226,10 +229,11 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 
 	// At this point, we should have a valid request that definitely has Targeting and Cache turned on
 
-	if err := deps.validateRequest(req); err != nil {
-		errs = []error{err}
-		return
+	errL := deps.validateRequest(req)
+	if len(errL) > 0 {
+		errs = append(errs, errL...)
 	}
+
 	return
 }
 
@@ -280,6 +284,11 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	if req.App != nil {
+		errs = []error{errors.New("request.app must not exist in AMP stored requests.")}
+		return
+	}
+
 	// Force HTTPS as AMP requires it, but pubs can forget to set it.
 	if req.Imp[0].Secure == nil {
 		secure := int8(1)
@@ -294,6 +303,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 }
 
 func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+	if req.Site == nil {
+		req.Site = &openrtb.Site{}
+	}
 	// Override the stored request sizes with AMP ones, if they exist.
 	if req.Imp[0].Banner != nil {
 		width := parseFormInt(httpRequest, "w", 0)
@@ -311,11 +323,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	canonicalURL := httpRequest.FormValue("curl")
 	if canonicalURL != "" {
-		if req.Site == nil {
-			req.Site = &openrtb.Site{Page: canonicalURL}
-		} else {
-			req.Site.Page = canonicalURL
-		}
+		req.Site.Page = canonicalURL
 		// Fixes #683
 		if parsedURL, err := url.Parse(canonicalURL); err == nil {
 			domain := parsedURL.Host
@@ -325,6 +333,8 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 			req.Site.Domain = domain
 		}
 	}
+
+	setAmpExt(req.Site, "1")
 
 	slot := httpRequest.FormValue("slot")
 	if slot != "" {
@@ -454,4 +464,16 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	}
 
 	return
+}
+
+func setAmpExt(site *openrtb.Site, value string) {
+	if len(site.Ext) > 0 {
+		if _, dataType, _, _ := jsonparser.Get(site.Ext, "amp"); dataType == jsonparser.NotExist {
+			if val, err := jsonparser.Set(site.Ext, []byte(value), "amp"); err == nil {
+				site.Ext = val
+			}
+		}
+	} else {
+		site.Ext = json.RawMessage(`{"amp":` + value + `}`)
+	}
 }
