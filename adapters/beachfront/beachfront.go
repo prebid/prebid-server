@@ -442,7 +442,7 @@ func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]op
 	for i := range beachfrontResp {
 		crid := extractBannerCrid(beachfrontResp[i].Adm)
 
-		bids[i] =  openrtb.Bid{
+		bids[i] = openrtb.Bid{
 			CrID:  crid,
 			ImpID: beachfrontResp[i].Slot,
 			Price: beachfrontResp[i].Price,
