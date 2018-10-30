@@ -10,10 +10,12 @@ import (
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -36,10 +38,12 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollSyncer(cfg),
 		openrtb_ext.BidderConversant:   conversant.NewConversantSyncer(cfg),
 		openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningSyncer(cfg),
+		openrtb_ext.BidderIx:           ix.NewIxSyncer(cfg),
 		openrtb_ext.BidderLifestreet:   lifestreet.NewLifestreetSyncer(cfg),
 		openrtb_ext.BidderOpenx:        openx.NewOpenxSyncer(cfg),
 		openrtb_ext.BidderPubmatic:     pubmatic.NewPubmaticSyncer(cfg),
 		openrtb_ext.BidderPulsepoint:   pulsepoint.NewPulsepointSyncer(cfg),
+		openrtb_ext.BidderRhythmone:    rhythmone.NewRhythmoneSyncer(cfg),
 		openrtb_ext.BidderRubicon:      rubicon.NewRubiconSyncer(cfg),
 		openrtb_ext.BidderSomoaudience: somoaudience.NewSomoaudienceSyncer(cfg),
 		openrtb_ext.BidderSovrn:        sovrn.NewSovrnSyncer(cfg),
