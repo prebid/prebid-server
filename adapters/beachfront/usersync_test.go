@@ -21,3 +21,16 @@ func TestBeachfrontSyncer(t *testing.T) {
 	assert.Equal(t, uint16(0), syncer.GDPRVendorID())
 	assert.Equal(t, false, u.SupportCORS)
 }
+
+func TestBeachfrontNullSyncer(t *testing.T) {
+	syncer := NewBeachfrontSyncer(&config.Configuration{ExternalURL: "localhost", Adapters: map[string]config.Adapter{
+		string(openrtb_ext.BidderBeachfront): {
+			PlatformID: "142",
+		},
+	}})
+	u := syncer.GetUsersyncInfo("0", "")
+	assert.Equal(t, "", u.URL)
+	assert.Equal(t, "redirect", u.Type)
+	assert.Equal(t, uint16(0), syncer.GDPRVendorID())
+	assert.Equal(t, false, u.SupportCORS)
+}
