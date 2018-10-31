@@ -254,7 +254,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	if request.App != nil {
 		source, err1 := jsonparser.GetString(request.App.Ext, "prebid", "source")
 		version, err2 := jsonparser.GetString(request.App.Ext, "prebid", "version")
-		if (err1 != nil) && (err2 != nil) {
+		if (err1 == nil) && (err2 == nil) {
 			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
 		}
 	}
