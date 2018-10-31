@@ -442,7 +442,7 @@ func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]op
 	for i := range beachfrontResp {
 		crid := extractBannerCrid(beachfrontResp[i].Adm)
 
-		bids = append(bids, openrtb.Bid{
+		bids[i] = openrtb.Bid{
 			CrID:  crid,
 			ImpID: beachfrontResp[i].Slot,
 			Price: beachfrontResp[i].Price,
@@ -450,7 +450,7 @@ func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]op
 			AdM:   beachfrontResp[i].Adm,
 			H:     beachfrontResp[i].H,
 			W:     beachfrontResp[i].W,
-		})
+		}
 	}
 
 	// Am not adding any errors
