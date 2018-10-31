@@ -258,7 +258,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
-	impIDs := make(map[string]int)
+	impIDs := make(map[string]int, len(req.Imp))
 	for index := range req.Imp {
 		imp := &req.Imp[index]
 		if firstIndex, ok := impIDs[imp.ID]; ok {
