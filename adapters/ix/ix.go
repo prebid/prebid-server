@@ -104,7 +104,10 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 			// ext is DFP div ID and KV pairs if avail
 			//indexReq.Imp[i].Ext = json.RawMessage("{}")
 
-			indexReq.Site.Publisher = &openrtb.Publisher{ID: fmt.Sprintf("%s", params.SiteID)}
+			// Any objects pointed to by indexReq *must not be mutated*, or we will get race conditions.
+			siteCopy := *indexReq.Site
+			siteCopy.Publisher = &openrtb.Publisher{ID: params.SiteID}
+			indexReq.Site = &siteCopy
 
 			// spec also asks for publisher id if set
 			// ext object on request for prefetch
