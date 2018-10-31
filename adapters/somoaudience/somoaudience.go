@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+
+	"github.com/mxmCherry/openrtb"
 )
 
-const config = "hb_pbs_1.0.0"
+const hbconfig = "hb_pbs_1.0.0"
 
 type SomoaudienceAdapter struct {
 	endpoint string
@@ -76,7 +77,7 @@ func (a *SomoaudienceAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	var errs []error
 	var err error
 	var validImps []openrtb.Imp
-	reqExt := somoaudienceReqExt{BidderConfig: config}
+	reqExt := somoaudienceReqExt{BidderConfig: hbconfig}
 
 	var placementHash string
 
