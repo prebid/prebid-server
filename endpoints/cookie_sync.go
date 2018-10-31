@@ -111,14 +111,17 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	csResp := cookieSyncResponse{
 		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
-		BidderStatus: make([]*usersync.CookieSyncBidders, len(parsedReq.Bidders)),
+		BidderStatus: make([]*usersync.CookieSyncBidders, 0, len(parsedReq.Bidders)),
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		csResp.BidderStatus[i] = &usersync.CookieSyncBidders{
+		newSync := &usersync.CookieSyncBidders{
 			BidderCode:   bidder,
 			NoCookie:     true,
 			UsersyncInfo: deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent),
+		}
+		if len(newSync.UsersyncInfo.URL) > 0 {
+			csResp.BidderStatus = append(csResp.BidderStatus, newSync)
 		}
 	}
 
