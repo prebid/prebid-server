@@ -162,6 +162,8 @@ func TestIxTimeout(t *testing.T) {
 }
 
 func TestIxTimeoutMultipleSlots(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -176,11 +178,6 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 			}
 
 			impression := breq.Imp[0]
-
-			// delay only the second bid
-			if impression.ID == "unitCode2" {
-				<-time.After(20 * time.Millisecond)
-			}
 
 			resp := openrtb.BidResponse{
 				SeatBid: []openrtb.SeatBid{
@@ -197,6 +194,15 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+
+			// cancel the request before 2nd impression is returned
+			// delay to let 1st impression return successfully
+			if impression.ID == "unitCode2" {
+				<-time.After(10 * time.Millisecond)
+				cancel()
+				<-r.Context().Done()
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(js)
 		}),
@@ -205,9 +211,7 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 
 	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewIxAdapter(&conf, server.URL)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	pbReq := pbs.PBSRequest{}
-	defer cancel()
 
 	adUnit1 := getAdUnit()
 	adUnit2 := getAdUnit()
