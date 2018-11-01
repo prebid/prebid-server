@@ -38,7 +38,7 @@ func ensureHasKey(t *testing.T, data map[string]json.RawMessage, key string) {
 }
 
 func TestNewJsonDirectoryServer(t *testing.T) {
-	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{})
+	handler := NewJsonDirectoryServer("../static/bidder-params", &testValidator{}, nil)
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest("GET", "/whatever", nil)
 	handler(recorder, request, nil)
@@ -144,4 +144,37 @@ func TestLoadDataCache(t *testing.T) {
 	}, nil); err != nil {
 		t.Errorf("data cache: filecache: %s", err)
 	}
+}
+
+var testDefReqConfig = config.DefReqConfig{
+	Type: "file",
+	FileSystem: config.DefReqFiles{
+		FileName: "test_aliases.json",
+	},
+	AliasInfo: true,
+}
+
+func TestLoadDefaultAliases(t *testing.T) {
+	defAliases, aliasJSON := readDefaultRequest(testDefReqConfig)
+	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
+	expectedAliases := map[string]string{
+		"test1": "appnexus",
+		"test2": "rubicon",
+		"test3": "openx",
+	}
+
+	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
+	assert.Equal(t, expectedAliases, defAliases)
+}
+
+func TestLoadDefaultAliasesNoInfo(t *testing.T) {
+	noInfoConfig := testDefReqConfig
+	noInfoConfig.AliasInfo = false
+	defAliases, aliasJSON := readDefaultRequest(noInfoConfig)
+	expectedJSON := []byte(`{"ext":{"prebid":{"aliases": {"test1": "appnexus", "test2": "rubicon", "test3": "openx"}}}}`)
+	expectedAliases := map[string]string{}
+
+	assert.JSONEq(t, string(expectedJSON), string(aliasJSON))
+	assert.Equal(t, expectedAliases, defAliases)
+
 }

@@ -19,8 +19,21 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func TestGetBidders(t *testing.T) {
-	endpoint := info.NewBiddersEndpoint()
+func TestGetBiddersNoAliases(t *testing.T) {
+	testGetBidders(t, map[string]string{})
+}
+
+func TestGetBiddersWithAliases(t *testing.T) {
+	aliases := map[string]string{
+		"test1": "appnexus",
+		"test2": "rubicon",
+		"test3": "openx",
+	}
+	testGetBidders(t, aliases)
+}
+
+func testGetBidders(t *testing.T, aliases map[string]string) {
+	endpoint := info.NewBiddersEndpoint(aliases)
 
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders", strings.NewReader(""))
 	if err != nil {
@@ -36,16 +49,18 @@ func TestGetBidders(t *testing.T) {
 		t.Errorf("Bad /info/bidders content type. Expected application/json. Got %s", r.Header().Get("Content-Type"))
 	}
 	bodyBytes := r.Body.Bytes()
-	bidderSlice := make([]string, 0, len(openrtb_ext.BidderMap))
+	bidderSlice := make([]string, 0, len(openrtb_ext.BidderMap)+len(aliases))
 	if err := json.Unmarshal(bodyBytes, &bidderSlice); err != nil {
 		t.Errorf("Failed to unmarshal /info/bidders response: %v", err)
 	}
 	for _, bidderName := range bidderSlice {
 		if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
-			t.Errorf("Response from /info/bidders contained unexpected BidderName: %s", bidderName)
+			if _, aok := aliases[bidderName]; !aok {
+				t.Errorf("Response from /info/bidders contained unexpected BidderName: %s", bidderName)
+			}
 		}
 	}
-	if len(bidderSlice) != len(openrtb_ext.BidderMap) {
+	if len(bidderSlice) != len(openrtb_ext.BidderMap)+len(aliases) {
 		t.Errorf("Response from /info/bidders did not match BidderMap. Expected %d elements. Got %d", len(openrtb_ext.BidderMap), len(bidderSlice))
 	}
 }
@@ -53,7 +68,7 @@ func TestGetBidders(t *testing.T) {
 // TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
 func TestGetSpecificBidders(t *testing.T) {
 	bidderInfos := adapters.ParseBidderInfos("../../static/bidder-info", openrtb_ext.BidderList())
-	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 
 	for bidderName := range openrtb_ext.BidderMap {
 		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
@@ -78,18 +93,33 @@ func TestGetSpecificBidders(t *testing.T) {
 	}
 }
 
-// TestGetBidderAccuracy validates the output for a known file.
-func TestGetBidderAccuracy(t *testing.T) {
+func TestGetBidderAccuracyNoAliases(t *testing.T) {
+	testGetBidderAccuracy(t, "")
+}
+
+func TestGetBidderAccuracyAliases(t *testing.T) {
+	testGetBidderAccuracy(t, "aliasedBidder")
+}
+
+// TestGetBidderAccuracyAlias validates the output for an alias of a known file.
+func testGetBidderAccuracy(t *testing.T, alias string) {
 	bidderInfos := adapters.ParseBidderInfos("../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
 
-	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
-	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someBidder", strings.NewReader(""))
+	aliases := map[string]string{}
+	bidder := "someBidder"
+	if len(alias) > 0 {
+		aliases[alias] = bidder
+		bidder = alias
+	}
+
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, aliases)
+	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidder, strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders request: %v", err)
 	}
 	params := []httprouter.Param{{
 		Key:   "bidderName",
-		Value: "someBidder",
+		Value: bidder,
 	}}
 
 	r := httptest.NewRecorder()
@@ -126,11 +156,20 @@ func TestGetBidderAccuracy(t *testing.T) {
 	if fileData.Capabilities.Site.MediaTypes[2] != "native" {
 		t.Errorf("capabilities.app.mediaTypes[2] should be native. Got %s", fileData.Capabilities.Site.MediaTypes[2])
 	}
+	if len(alias) > 0 {
+		if fileData.AliasOf != "someBidder" {
+			t.Errorf("aliasOf should be \"someBidder\". Got \"%s\"", fileData.AliasOf)
+		}
+	} else {
+		if len(fileData.AliasOf) != 0 {
+			t.Errorf("aliasOf should be empty. Got \"%s\"", fileData.AliasOf)
+		}
+	}
 }
 
 func TestGetUnknownBidder(t *testing.T) {
 	bidderInfos := adapters.BidderInfos(make(map[string]adapters.BidderInfo))
-	endpoint := info.NewBidderDetailsEndpoint(bidderInfos)
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someUnknownBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders/someUnknownBidder request: %v", err)

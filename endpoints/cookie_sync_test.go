@@ -8,16 +8,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/buger/jsonparser"
-
-	"github.com/julienschmidt/httprouter"
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/usersync/usersyncers"
+
+	"github.com/buger/jsonparser"
+	"github.com/julienschmidt/httprouter"
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {
@@ -37,7 +40,7 @@ func TestGDPRPreventsCookie(t *testing.T) {
 
 func TestGDPRPreventsBidders(t *testing.T) {
 	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("someurl.com"),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(&config.Configuration{ExternalURL: "someurl.com"}),
 	})
 	assertIntsMatch(t, http.StatusOK, rr.Code)
 	assertSyncsExist(t, rr.Body.Bytes(), "lifestreet")
@@ -119,10 +122,14 @@ func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR) httprouter.Ha
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAppnexus:   usersyncers.NewAppnexusSyncer("someurl.com"),
-		openrtb_ext.BidderFacebook:   usersyncers.NewFacebookSyncer("facebookurl.com"),
-		openrtb_ext.BidderLifestreet: usersyncers.NewLifestreetSyncer("anotherurl.com"),
-		openrtb_ext.BidderPubmatic:   usersyncers.NewPubmaticSyncer("thaturl.com"),
+		openrtb_ext.BidderAppnexus: appnexus.NewAppnexusSyncer(&config.Configuration{ExternalURL: "someurl.com"}),
+		openrtb_ext.BidderFacebook: audienceNetwork.NewFacebookSyncer(&config.Configuration{Adapters: map[string]config.Adapter{
+			strings.ToLower(string(openrtb_ext.BidderFacebook)): {
+				UserSyncURL: "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24UID",
+			},
+		}}),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(&config.Configuration{ExternalURL: "anotherurl.com"}),
+		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(&config.Configuration{ExternalURL: "thaturl.com"}),
 	}
 }
 

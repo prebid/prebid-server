@@ -49,7 +49,6 @@ func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Request
 	// Make a copy as we don't want to change the original request
 	reqCopy := *request
 	if err := preprocess(&reqCopy); err != nil {
-		fmt.Println(err)
 		errs = append(errs, err)
 	}
 
@@ -105,7 +104,7 @@ func preprocess(request *openrtb.BidRequest) error {
 			Message: err.Error(),
 		}
 	}
-	fmt.Println(string(impExtJSON))
+
 	imp.Ext = impExtJSON
 	request.Site.ID = ttxExt.SiteId
 
@@ -131,7 +130,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 	}
 
 	var bidResp openrtb.BidResponse
-	fmt.Println(string(response.Body))
+
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
