@@ -6,9 +6,16 @@
         "id": "test-imp-id",
         "banner": {
           "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "siteId": "fake-site-id",
+            "productId": "inview"
+          }
         }
       }
-    ]
+    ],
+    "site": {}
   },
 
   "httpCalls": [
@@ -19,12 +26,20 @@
           "id": "test-request-id",
           "imp": [
             {
-              "id": "test-imp-id",
+              "id":"test-imp-id",
               "banner": {
                 "format": [{"w": 728, "h": 90}]
+              },
+              "ext": {
+                "ttx": {
+                  "prod": "inview"
+                }
               }
             }
-          ]
+          ],
+          "site": {
+            "id": "fake-site-id"
+          }
         }
       },
       "mockResponse": {
