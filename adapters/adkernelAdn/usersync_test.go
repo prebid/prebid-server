@@ -1,17 +1,18 @@
 package adkernelAdn
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAdkernelAdnSyncer(t *testing.T) {
 	syncer := NewAdkernelAdnSyncer(&config.Configuration{ExternalURL: "https://localhost:8888", Adapters: map[string]config.Adapter{
-		string(openrtb_ext.BidderAdkernelAdn): {
+		// Prevents #736
+		strings.ToLower(string(openrtb_ext.BidderAdkernelAdn)): {
 			UserSyncURL: "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=",
 		},
 	}})
