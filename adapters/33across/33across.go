@@ -149,7 +149,7 @@ func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 
 }
 
-func NewTtxBidder(endpoint string) *TtxAdapter {
+func New33AcrossBidder(endpoint string) *TtxAdapter {
 	return &TtxAdapter{
 		endpoint: endpoint,
 	}
