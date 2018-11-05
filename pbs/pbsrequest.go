@@ -319,19 +319,14 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 		mtypes := ParseMediaTypes(unit.MediaTypes)
 		for _, b := range bidders {
 			var bidder *PBSBidder
-			// index requires a different request for each ad unit
-			if b.BidderCode != "ix" {
-				for _, pb := range pbsReq.Bidders {
-					if pb.BidderCode == b.BidderCode {
-						bidder = pb
-					}
+			for _, pb := range pbsReq.Bidders {
+				if pb.BidderCode == b.BidderCode {
+					bidder = pb
 				}
 			}
+
 			if bidder == nil {
 				bidder = &PBSBidder{BidderCode: b.BidderCode}
-				if b.BidderCode == "ix" {
-					bidder.AdUnitCode = unit.Code
-				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
 			if b.BidID == "" {
