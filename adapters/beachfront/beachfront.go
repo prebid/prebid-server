@@ -65,6 +65,7 @@ type BeachfrontVideoImp struct {
 type BeachfrontVideoDevice struct {
 	UA         string `json:"ua"`
 	IP         string `json:"ip"`
+	JS		   string `json:"js"`
 }
 
 // ---------------------------------------------------
@@ -368,6 +369,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 			if req.Device != nil {
 				beachfrontReq.Device.IP = req.Device.IP
 				beachfrontReq.Device.UA = req.Device.UA
+				beachfrontReq.Device.JS = "1"
 			}
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
