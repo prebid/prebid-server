@@ -19,5 +19,5 @@ func NewBeachfrontSyncer(cfg *config.Configuration) usersync.Usersyncer {
 	if len(usersyncURL) > 0 {
 		url = fmt.Sprintf("%s%s", usersyncURL, platformID)
 	}
-	return adapters.NewSyncer("beachfront", 0, adapters.ResolveMacros(url), adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("beachfront", 0, adapters.ResolveMacros(url), adapters.SyncTypeIframe)
 }
