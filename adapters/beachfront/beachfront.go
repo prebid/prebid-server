@@ -19,8 +19,8 @@ const BidCapacity = 5
 // const BannerEndpoint = "http://display.bfmio.com/prebid_display"
 const BannerEndpoint = "http://qa.bfmio.com/prebid_display"
 
-// const VideoEndpoint = "http://reachms.bfmio.com/bid.json?exchange_id="
-const VideoEndpoint = "http://qa.bfmio.com/bid.json?exchange_id="
+// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
 
