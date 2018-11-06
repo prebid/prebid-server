@@ -17,9 +17,11 @@ const Seat = "beachfront"
 const BidCapacity = 5
 
 const BannerEndpoint = "http://display.bfmio.com/prebid_display"
+
 // const BannerEndpoint = "http://qa.bfmio.com/prebid_display"
 
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+
 // const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
@@ -63,9 +65,9 @@ type BeachfrontVideoImp struct {
 }
 
 type BeachfrontVideoDevice struct {
-	UA         string `json:"ua"`
-	IP         string `json:"ip"`
-	JS		   string `json:"js"`
+	UA string `json:"ua"`
+	IP string `json:"ip"`
+	JS string `json:"js"`
 }
 
 // ---------------------------------------------------
