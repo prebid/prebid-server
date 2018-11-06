@@ -16,13 +16,11 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+// const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+const BannerEndpoint = "https://qa.bfmio.com/prebid_display"
 
-// const BannerEndpoint = "https://qa.bfmio.com/prebid_display"
-
-const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
-
-// const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
+// const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
 
