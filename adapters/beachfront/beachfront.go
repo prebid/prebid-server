@@ -64,7 +64,6 @@ type BeachfrontVideoImp struct {
 
 type BeachfrontVideoDevice struct {
 	UA         string `json:"ua"`
-	Devicetype int    `json:"deviceType"`
 	IP         string `json:"ip"`
 }
 
