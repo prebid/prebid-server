@@ -23,7 +23,7 @@ const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.1.1"
+const beachfrontAdapterVersion = "0.2.1"
 
 type BeachfrontAdapter struct {
 }
@@ -40,33 +40,23 @@ type BeachfrontRequests struct {
 type BeachfrontVideoRequest struct {
 	IsPrebid bool                  `json:"isPrebid"`
 	AppId    string                `json:"appId"`
-	Id       string                `json:"id"`
+	Id       string                `json:"id"`		// This ID is unique to this client page load and is sent by
+													// prebid.js. There is nowhere to put it on the banner request,
+													// but sure would be nice if there was.
 	Imp      []BeachfrontVideoImp  `json:"imp"`
-	Site     BeachfrontSite        `json:"site"`
-	Device   BeachfrontVideoDevice `json:"device"`
+	Site     openrtb.Site	       `json:"site"`
+	Device   openrtb.Device		    `json:"device"`
 	User     openrtb.User          `json:"user"`
 	Cur      []string              `json:"cur"`
-}
-
-type BeachfrontSite struct {
-	Page string 		`json:"page"`
-	Domain   string     `json:"domain"`
-}
-
-type BeachfrontPublisher struct {
-	Id string `json:"id"`
-}
-
-type BeachfrontVideoDevice struct {
-	Ua         string             `json:"ua"`
-	Ip 			string `json:"ip"`
 }
 
 // Soooo close, but not quite openRTB
 type BeachfrontVideoImp struct {
 	Video    BeachfrontSize `json:"video"`
 	Bidfloor float64        `json:"bidfloor"`
-	Id       int            `json:"id"`			// A sequential count of which imp on the page this is
+	Id       int            `json:"id"`			// A sequential count of which imp on the page this is. Since the bfm
+												// 	video endpoint only returns one response for one imp, this is
+												//	never going to happen. This will always be 0.
 	ImpId    string         `json:"impid"`		// DNE in openRTB, would be "ID"
 	Secure	 int8			`json:"secure"`
 }
@@ -94,7 +84,7 @@ type BeachfrontBannerRequest struct {
 
 type BeachfrontSlot struct {
 	Slot     string           `json:"slot"`
-	Id       string           `json:"id"`
+	Id       string           `json:"id"`			// This is the AppID, aka, exchange id on platform.beachfront.com
 	Bidfloor float64          `json:"bidfloor"`
 	Sizes    []BeachfrontSize `json:"sizes"`
 }
@@ -165,7 +155,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	if imps == 0 {
-		errs = append(errs, errors.New("No valid impressions were found"))
+		errs = append(errs, errors.New("no valid impressions were found"))
 		return nil, errs
 	}
 
@@ -207,10 +197,10 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, []erro
 }
 
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error, int) {
-	var bannerImpsIndex int = 0
-	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
+	var bannerImpsIndex = 0
+	var beachfrontReq = NewBeachfrontBannerRequest()
 	var errs = make([]error, 0, len(req.Imp))
-	var imps int = 0
+	var imps = 0
 
 	// step through the prebid request "imp" and inject into the beachfront request.
 	for _, imp := range req.Imp {
@@ -257,6 +247,11 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 		}
 
 		imps++
+	}
+
+	// Just take the last one... I guess?
+	if req.Imp[bannerImpsIndex].Secure != nil {
+		beachfrontReq.Secure = *req.Imp[bannerImpsIndex].Secure
 	}
 
 	beachfrontReq.User.ID = req.User.ID
@@ -356,8 +351,8 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 			beachfrontReq.Imp[videoImpsIndex].ImpId = imp.ID
 
 			if req.Device != nil {
-				beachfrontReq.Device.Ip = req.Device.IP
-				beachfrontReq.Device.Ua = req.Device.UA
+				beachfrontReq.Device.IP = req.Device.IP
+				beachfrontReq.Device.UA = req.Device.UA
 			}
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
@@ -386,16 +381,18 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
-	var bidtype openrtb_ext.BidType = getBidType(internalRequest)
-	var errors = make([]error, 0)
+	var bidtype = getBidType(internalRequest)
+	// Silly name to avoid a collision which will probably never amount to more than annoying highlighting
+	// in my IDE...
+	var errorz = make([]error, 0)
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
 	if len(errs) != 0 {
-		errors = append(errors, errs...)
+		errorz = append(errorz, errs...)
 		bfmMessage := "Failed to process the beachfront response"
 
-		if(len(response.Body) == 0) {
+		if len(response.Body) == 0 {
 			bfmMessage = "Received a null response from beachfront"
 		}
 
@@ -403,8 +400,8 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 			Message: bfmMessage,
 		}
 
-		errors = append(errors, err)
-		return nil, errors
+		errorz = append(errorz, err)
+		return nil, errorz
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
@@ -416,7 +413,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		})
 	}
 
-	return bidResponse, errors
+	return bidResponse, errorz
 }
 
 func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, bidtype openrtb_ext.BidType) ([]openrtb.Bid, []error) {
@@ -441,7 +438,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 }
 
 func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, []error) {
-	var bids []openrtb.Bid = make([]openrtb.Bid, len(beachfrontResp))
+	var bids = make([]openrtb.Bid, len(beachfrontResp))
 	var errs = make([]error, 0)
 
 	for i := range beachfrontResp {
