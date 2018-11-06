@@ -62,11 +62,12 @@ type BeachfrontVideoDevice struct {
 	Ip 			string `json:"ip"`
 }
 
+// Soooo close, but not quite openRTB
 type BeachfrontVideoImp struct {
 	Video    BeachfrontSize `json:"video"`
 	Bidfloor float64        `json:"bidfloor"`
-	Id       int            `json:"id"`
-	ImpId    string         `json:"impid"`
+	Id       int            `json:"id"`			// A sequential count of which imp on the page this is
+	ImpId    string         `json:"impid"`		// DNE in openRTB, would be "ID"
 	Secure	 int8			`json:"secure"`
 }
 
@@ -226,8 +227,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.Slots[bannerImpsIndex].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
-			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = imp.BidFloor
-
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 				// possible banner error 2
@@ -252,6 +251,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				}
 			}
 
+			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = beachfrontExt.BidFloor
 			beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
 			beachfrontReq.Slots[bannerImpsIndex].Id = beachfrontExt.AppId
 		}
