@@ -36,9 +36,9 @@
             "USD"
           ],
           "device": {
-            "deviceType": 0,
             "ip": "",
-            "ua": ""
+            "ua": "",
+            "js": ""
           },
           "id": "some_test_ad",
           "imp": [

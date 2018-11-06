@@ -141,8 +141,8 @@
           },
           "device": {
             "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "deviceType": 0,
-            "ip": "127.0.0.1"
+            "ip": "127.0.0.1",
+            "js": "1"
           },
           "cur": [
             "USD"
