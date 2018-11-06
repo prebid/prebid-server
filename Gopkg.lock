@@ -401,12 +401,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:33b9d71d1dde2106309484a388eb7ba53cd1f67014e34a71f7b3dbc20bd186e5"
+  digest = "1:302869097fc293e4260ac0256a1d71901759f8f685eb8c1f5720cd294ead9215"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
     "idna",
+    "netutil",
     "publicsuffix",
   ]
   pruneopts = "UT"
@@ -488,6 +489,7 @@
     "github.com/yudai/gojsondiff",
     "github.com/yudai/gojsondiff/formatter",
     "golang.org/x/net/context/ctxhttp",
+    "golang.org/x/net/netutil",
     "golang.org/x/net/publicsuffix",
     "golang.org/x/text/currency",
     "gopkg.in/yaml.v2",

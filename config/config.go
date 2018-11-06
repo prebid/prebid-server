@@ -14,11 +14,14 @@ import (
 
 // Configuration
 type Configuration struct {
-	ExternalURL string     `mapstructure:"external_url"`
-	Host        string     `mapstructure:"host"`
-	Port        int        `mapstructure:"port"`
-	Client      HTTPClient `mapstructure:"http_client"`
-	AdminPort   int        `mapstructure:"admin_port"`
+	ExternalURL string `mapstructure:"external_url"`
+	// TODO: In a separate breaking-config-change PR, move Host & Port into the Server object.
+	// Add an AdminServer config for AdminPort.
+	Host       string     `mapstructure:"host"`
+	Port       int        `mapstructure:"port"`
+	Client     HTTPClient `mapstructure:"http_client"`
+	MainServer Server     `mapstructure:"main_server"`
+	AdminPort  int        `mapstructure:"admin_port"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse  string          `mapstructure:"status_response"`
@@ -38,6 +41,19 @@ type Configuration struct {
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
+}
+
+type Server struct {
+	// The number of incoming connections which are allowed concurrently. 0 means no limit.
+	MaxConcurrentConnections int `mapstructure:"max_concurrent_connections"`
+}
+
+func (cfg *Server) validate(prefix string) configErrors {
+	var errs configErrors
+	if cfg.MaxConcurrentConnections < 0 {
+		errs = append(errs, fmt.Errorf("cfg.%s.max_concurrent_connections must be >= 0. Got %d", prefix, cfg.MaxConcurrentConnections))
+	}
+	return errs
 }
 
 type HTTPClient struct {
@@ -65,8 +81,10 @@ func (c configErrors) Error() string {
 
 func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
+	// TODO #741: This is buggy. These should be append(errs, validation...)
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
+	errs = append(errs, cfg.MainServer.validate("main_server")...)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
@@ -301,6 +319,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
+	v.SetDefault("main_server.max_concurrent_connections", 0)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")

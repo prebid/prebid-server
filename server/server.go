@@ -15,6 +15,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsconfig "github.com/prebid/prebid-server/pbsmetrics/config"
+	"golang.org/x/net/netutil"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
@@ -38,6 +39,9 @@ func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.H
 	if err != nil {
 		glog.Errorf("Error listening for TCP connections on %s: %v", mainServer.Addr, err)
 		return
+	}
+	if cfg.MainServer.MaxConcurrentConnections > 0 {
+		mainListener = netutil.LimitListener(mainListener, cfg.MainServer.MaxConcurrentConnections)
 	}
 	adminListener, err := newListener(adminServer.Addr, nil)
 	if err != nil {

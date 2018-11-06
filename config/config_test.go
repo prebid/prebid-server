@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
-
 	"github.com/spf13/viper"
 )
 
@@ -38,6 +37,8 @@ host_cookie:
   domain: cookies.prebid.org
   opt_out_url: http://prebid.org/optout
   opt_in_url: http://prebid.org/optin
+main_server:
+  max_concurrent_connections: 200
 external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
@@ -137,6 +138,7 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
+	cmpInts(t, "main_server.max_concurrent_connections", cfg.MainServer.MaxConcurrentConnections, 200)
 	cmpStrings(t, "metrics.influxdb.host", cfg.Metrics.Influxdb.Host, "upstream:8232")
 	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
