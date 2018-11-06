@@ -23,6 +23,7 @@ const BannerEndpoint = "https://display.bfmio.com/prebid_display"
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 
 // const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
+
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
@@ -43,9 +44,8 @@ type BeachfrontRequests struct {
 type BeachfrontVideoRequest struct {
 	IsPrebid bool   `json:"isPrebid"`
 	AppId    string `json:"appId"`
-	Id       string `json:"id"` // This ID is unique to this client page load and is sent by
-	// prebid.js. There is nowhere to put it on the banner request,
-	// but sure would be nice if there was. @TODO - Alex
+	ID       string `json:"id"` // This ID is unique to this client page load and is sent by
+	// prebid.js. I'm sending it with banner requests as "requestId" for possible future reporting.
 	Imp    []BeachfrontVideoImp  `json:"imp"`
 	Site   openrtb.Site          `json:"site"`
 	Device BeachfrontVideoDevice `json:"device"`
@@ -83,12 +83,13 @@ type BeachfrontBannerRequest struct {
 	DeviceOs       string           `json:"deviceOs"`
 	DeviceModel    string           `json:"deviceModel"`
 	IsMobile       int8             `json:"isMobile"`
-	Ua             string           `json:"ua"`
+	UA             string           `json:"ua"`
 	Dnt            int8             `json:"dnt"`
 	User           openrtb.User     `json:"user"`
 	AdapterName    string           `json:"adapterName"`
 	AdapterVersion string           `json:"adapterVersion"`
-	Ip             string           `json:"ip"`
+	IP             string           `json:"ip"`
+	RequestID      string           `json:"requestId"`
 }
 
 type BeachfrontSlot struct {
@@ -102,6 +103,10 @@ type BeachfrontSize struct {
 	W uint64 `json:"w"`
 	H uint64 `json:"h"`
 }
+
+// ---------------------------------------------------
+// 				Banner response
+// ---------------------------------------------------
 
 type BeachfrontResponseSlot struct {
 	CrID  string  `json:"crid"`
@@ -241,12 +246,12 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 			}
 
 			if req.Device != nil {
-				beachfrontReq.Ip = req.Device.IP
+				beachfrontReq.IP = req.Device.IP
 				beachfrontReq.DeviceModel = req.Device.Model
 				beachfrontReq.DeviceOs = req.Device.OS
 				beachfrontReq.Dnt = req.Device.DNT
 				if req.Device.UA != "" {
-					beachfrontReq.Ua = req.Device.UA // The UA in the header that is sent to bfm is the Go
+					beachfrontReq.UA = req.Device.UA // The UA in the header that is sent to bfm is the Go
 				} // UA. I can set that to the same UA that is used here
 			} // if any logic is based off of that. @TODO - Alex
 
@@ -283,6 +288,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 		beachfrontReq.Domain = strings.Split(domainPage, "/")[0]
 		beachfrontReq.Page = req.Site.Page
 	}
+
+	beachfrontReq.RequestID = req.ID
 
 	return beachfrontReq, errs, imps
 }
@@ -331,7 +338,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 	*/
 	for _, imp := range req.Imp {
 		if imp.Video != nil {
-			beachfrontReq.Id = req.ID
+			beachfrontReq.ID = req.ID
 
 			beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
 			videoImpsIndex = len(beachfrontReq.Imp) - 1

@@ -48,6 +48,7 @@
           "page": "some-mobile-app",
           "referrer": "",
           "search": "",
+          "requestId": "some_test_ad",
           "secure": 0,
           "isMobile": 0,
           "ip": "",

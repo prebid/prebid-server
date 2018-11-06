@@ -45,6 +45,7 @@
             ],
             "domain": "test.opposingviews.com",
             "page": "test.opposingviews.com",
+            "requestId": "some_test_ad",
             "referrer": "",
             "search": "",
             "secure": 0,
