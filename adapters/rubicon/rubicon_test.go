@@ -1065,6 +1065,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		if len(rpRequest.Imp) != len(request.Imp) {
 			t.Fatalf("Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
 		}
+		if rpRequest.Cur != nil {
+			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
+		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
 			var rpExt rubiconBannerExt

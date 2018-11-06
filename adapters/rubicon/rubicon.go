@@ -649,6 +649,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		}
 
 		request.Imp = []openrtb.Imp{thisImp}
+		request.Cur = nil
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
