@@ -21,7 +21,5 @@ func Test33AcrossSyncer(t *testing.T) {
 	syncInfo := ttx.GetUsersyncInfo("", "")
 	assert.Equal(t, "https://ssc-cms.33across.com/ps/?ri=123&ru=localhost%2Fsetuid%3Fbidder%3Dttx%26uid%3D33XUSERID33X", syncInfo.URL)
 	assert.Equal(t, "redirect", syncInfo.Type)
-	if syncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
-	}
+	assert.False(t, syncInfo.SupportCORS)
 }

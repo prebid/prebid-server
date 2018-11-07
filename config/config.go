@@ -407,4 +407,5 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault("adapters."+bidder+".xapi.username", "")
 	v.SetDefault("adapters."+bidder+".xapi.password", "")
 	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
+	v.SetDefault("adapters."+bidder+".partner_id", "")
 }

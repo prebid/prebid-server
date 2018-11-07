@@ -15,6 +15,15 @@ type TtxAdapter struct {
 	endpoint string
 }
 
+type Ext struct {
+	Ttx ext `json:"ttx"`
+}
+
+type ext struct {
+	Prod   string `json:"prod"`
+	Zoneid string `json:"zoneid,omitempty"`
+}
+
 // MakeRequests create the object for TTX Reqeust.
 func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var errs []error
@@ -33,18 +42,6 @@ func (a *TtxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Requ
 // site.id
 func (a *TtxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
-	var validImps []openrtb.Imp
-
-	for _, imp := range request.Imp {
-		validImps = append(validImps, imp)
-	}
-
-	// If all the imps were malformed, don't bother making a server call with no impressions.
-	if len(validImps) == 0 {
-		return nil, errs
-	}
-
-	request.Imp = validImps
 
 	// Make a copy as we don't want to change the original request
 	reqCopy := *request
@@ -75,27 +72,24 @@ func preprocess(request *openrtb.BidRequest) error {
 	var imp = &request.Imp[0]
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		fmt.Println("first error:", err)
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	var ttxExt openrtb_ext.ExtImpTtx
+	var ttxExt openrtb_ext.ExtImp33across
 	if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
 		return &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	impExt := map[string]map[string]string{
-		"ttx": {
-			"prod": ttxExt.ProductId,
-		},
-	}
+	var impExt Ext
+	impExt.Ttx.Prod = ttxExt.ProductId
+
 	// Add zoneid if it's defined
-	if len(ttxExt.ZoneId) != 0 {
-		impExt["ttx"]["zoneid"] = ttxExt.ZoneId
+	if len(ttxExt.ZoneId) > 0 {
+		impExt.Ttx.Zoneid = ttxExt.ZoneId
 	}
 
 	impExtJSON, err := json.Marshal(impExt)
@@ -106,7 +100,9 @@ func preprocess(request *openrtb.BidRequest) error {
 	}
 
 	imp.Ext = impExtJSON
-	request.Site.ID = ttxExt.SiteId
+	siteCopy := *request.Site
+	siteCopy.ID = ttxExt.SiteId
+	request.Site = &siteCopy
 
 	return nil
 }
