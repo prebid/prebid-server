@@ -258,8 +258,13 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
+	impIDs := make(map[string]int, len(req.Imp))
 	for index := range req.Imp {
 		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
 		errs := deps.validateImp(imp, aliases, index)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
