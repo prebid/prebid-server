@@ -258,8 +258,13 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
+	impIDs := make(map[string]int, len(req.Imp))
 	for index := range req.Imp {
 		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
 		errs := deps.validateImp(imp, aliases, index)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
@@ -275,6 +280,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
+		errL = append(errL, err)
+		return errL
+	}
+
+	if err := deps.validateApp(req.App); err != nil {
 		errL = append(errL, err)
 		return errL
 	}
@@ -733,6 +743,21 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if len(site.Ext) > 0 {
 		var s openrtb_ext.ExtSite
 		if err := json.Unmarshal(site.Ext, &s); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (deps *endpointDeps) validateApp(app *openrtb.App) error {
+	if app == nil {
+		return nil
+	}
+
+	if len(app.Ext) > 0 {
+		var a openrtb_ext.ExtApp
+		if err := json.Unmarshal(app.Ext, &a); err != nil {
 			return err
 		}
 	}
