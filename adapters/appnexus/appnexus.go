@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	"github.com/prebid/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -248,8 +249,17 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
+	// AppNexus openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
+	var defaultDisplayManagerVer string
+	if request.App != nil {
+		source, err1 := jsonparser.GetString(request.App.Ext, "prebid", "source")
+		version, err2 := jsonparser.GetString(request.App.Ext, "prebid", "version")
+		if (err1 == nil) && (err2 == nil) {
+			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
+		}
+	}
 	for i := 0; i < len(request.Imp); i++ {
-		memberId, err := preprocess(&request.Imp[i])
+		memberId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
 		if memberId != "" {
 			memberIds[memberId] = true
 		}
@@ -310,7 +320,7 @@ func keys(m map[string]bool) []string {
 // preprocess mutates the imp to get it ready to send to appnexus.
 //
 // It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
-func preprocess(imp *openrtb.Imp) (string, error) {
+func preprocess(imp *openrtb.Imp, defaultDisplayManagerVer string) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", err
@@ -360,6 +370,11 @@ func preprocess(imp *openrtb.Imp) (string, error) {
 			bannerCopy.H = &(firstFormat.H)
 		}
 		imp.Banner = &bannerCopy
+	}
+
+	// Populate imp.displaymanagerver if the SDK failed to do it.
+	if len(imp.DisplayManagerVer) == 0 && len(defaultDisplayManagerVer) > 0 {
+		imp.DisplayManagerVer = defaultDisplayManagerVer
 	}
 
 	impExt := appnexusImpExt{Appnexus: appnexusImpExtAppnexus{

@@ -284,6 +284,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return errL
 	}
 
+	if err := deps.validateApp(req.App); err != nil {
+		errL = append(errL, err)
+		return errL
+	}
+
 	if err := validateUser(req.User, aliases); err != nil {
 		errL = append(errL, err)
 		return errL
@@ -738,6 +743,21 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if len(site.Ext) > 0 {
 		var s openrtb_ext.ExtSite
 		if err := json.Unmarshal(site.Ext, &s); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (deps *endpointDeps) validateApp(app *openrtb.App) error {
+	if app == nil {
+		return nil
+	}
+
+	if len(app.Ext) > 0 {
+		var a openrtb_ext.ExtApp
+		if err := json.Unmarshal(app.Ext, &a); err != nil {
 			return err
 		}
 	}
