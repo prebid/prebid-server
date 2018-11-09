@@ -52,6 +52,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
+	request.AT = 1 //Defaulting to first price auction for all prebid requests
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
