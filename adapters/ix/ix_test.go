@@ -480,6 +480,30 @@ func TestIxInvalidParam(t *testing.T) {
 	}
 }
 
+func TestIxEmptySize(t *testing.T) {
+
+	server := httptest.NewServer(
+		http.HandlerFunc(dummyIXServer),
+	)
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewIxAdapter(&conf, server.URL)
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	adUnit := getAdUnit()
+	adUnit.Params = json.RawMessage("{\"siteId\":\"1111\"}")
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			adUnit,
+		},
+	}
+	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
+		t.Fatalf("Should have gotten error due to no valid bid request generated: %v", err)
+	}
+}
+
 func TestIxSingleSlotSingleValidSize(t *testing.T) {
 
 	server := httptest.NewServer(

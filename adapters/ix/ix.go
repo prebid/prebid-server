@@ -146,7 +146,7 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 
 	if len(requests) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: "Invalid ad unit/imp",
+			Message: "Invalid ad unit/imp/size",
 		}
 	}
 
