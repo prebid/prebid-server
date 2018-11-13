@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "GumGum Adapter Params",
+  "description": "A schema which validates params accepted by the GumGum adapter",
+  "type": "object",
+  "properties": {
+    "zone": {
+      "type": "string",
+      "description": "A tracking id used to identify GumGum zone.",
+      "minLength": 8
+    },
+    "deviceHeight": {
+      "type": "integer",
+      "description": "The height of the device on which the ad will be served.",
+      "minimum": 200
+    },
+    "deviceWidth": {
+      "type": "integer",
+      "description": "The width of the device on which the ad will be served.",
+      "minimum": 250
+    }
+  },
+  "required": ["zone", "deviceHeight", "deviceWidth"]
+}

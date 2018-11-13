@@ -1,0 +1,9 @@
+maintainer:
+  email: "pubtech@gumgum.com"
+capabilities:
+  app:
+    mediaTypes:
+    - banner
+  site:
+    mediaTypes:
+    - banner
