@@ -354,8 +354,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	v.SetDefault("adapters.beachfront.endpoint", "//sync.bfmio.com/syncb?pid=")
-	v.SetDefault("adapters.beachfront.platform_id", "142")
+	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
+	v.SetDefault("adapters.beachfront.usersync_url", "//sync.bfmio.com/syncb?pid=")
+	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")

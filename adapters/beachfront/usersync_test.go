@@ -17,7 +17,7 @@ func TestBeachfrontSyncer(t *testing.T) {
 	}})
 	u := syncer.GetUsersyncInfo("0", "")
 	assert.Equal(t, "localhost", u.URL)
-	assert.Equal(t, "redirect", u.Type)
+	assert.Equal(t, "iframe", u.Type)
 	assert.Equal(t, uint16(0), syncer.GDPRVendorID())
 	assert.Equal(t, false, u.SupportCORS)
 }
@@ -30,7 +30,7 @@ func TestBeachfrontNullSyncer(t *testing.T) {
 	}})
 	u := syncer.GetUsersyncInfo("0", "")
 	assert.Equal(t, "", u.URL)
-	assert.Equal(t, "redirect", u.Type)
+	assert.Equal(t, "iframe", u.Type)
 	assert.Equal(t, uint16(0), syncer.GDPRVendorID())
 	assert.Equal(t, false, u.SupportCORS)
 }
