@@ -37,7 +37,8 @@ func (a *IxAdapter) SkipNoCookies() bool {
 }
 
 type indexParams struct {
-	SiteID string `json:"siteId"`
+	SiteID string    `json:"siteId"`
+	Size   [2]uint64 `json:"size"`
 }
 
 type ixBidResult struct {
@@ -52,6 +53,13 @@ type callOneObject struct {
 	requestJSON bytes.Buffer
 	width       uint64
 	height      uint64
+}
+
+func isValidIXSize(f openrtb.Format, s [2]uint64) bool {
+	if f.W != s[0] || f.H != s[1] {
+		return false
+	}
+	return true
 }
 
 func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -77,18 +85,24 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 			break
 		}
 
-		for sizeIndex, format := range unit.Sizes {
-			var params indexParams
-			err := json.Unmarshal(unit.Params, &params)
-			if err != nil {
-				return nil, &errortypes.BadInput{
-					Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
-				}
+		var params indexParams
+		err := json.Unmarshal(unit.Params, &params)
+		if err != nil {
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("unmarshal params '%s' failed: %v", unit.Params, err),
 			}
-			if params.SiteID == "" {
-				return nil, &errortypes.BadInput{
-					Message: "Missing siteId param",
-				}
+		}
+
+		if params.SiteID == "" {
+			return nil, &errortypes.BadInput{
+				Message: "Missing siteId param",
+			}
+		}
+
+		for sizeIndex, format := range unit.Sizes {
+			// ensure request are sent only for valid size as specified in the params
+			if ok := isValidIXSize(format, params.Size); !ok {
+				continue
 			}
 
 			// Only grab this ad unit
@@ -132,7 +146,7 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 
 	if len(requests) == 0 {
 		return nil, &errortypes.BadInput{
-			Message: "Invalid ad unit/imp",
+			Message: "Invalid ad unit/imp/size",
 		}
 	}
 
