@@ -157,6 +157,7 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
+	PartnerId   string `mapstructure:"partner_id"`  // needed for 33Across
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
@@ -376,6 +377,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.33across.partner_id", "")
+	v.SetDefault("adapters.33across.usersync_url", "https://ssc-cms.33across.com/ps")
+	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
 	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 
@@ -404,4 +408,5 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault("adapters."+bidder+".xapi.username", "")
 	v.SetDefault("adapters."+bidder+".xapi.password", "")
 	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
+	v.SetDefault("adapters."+bidder+".partner_id", "")
 }

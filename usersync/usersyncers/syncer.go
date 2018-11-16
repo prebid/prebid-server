@@ -1,6 +1,7 @@
 package usersyncers
 
 import (
+	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
@@ -47,5 +48,6 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderRubicon:      rubicon.NewRubiconSyncer(cfg),
 		openrtb_ext.BidderSomoaudience: somoaudience.NewSomoaudienceSyncer(cfg),
 		openrtb_ext.BidderSovrn:        sovrn.NewSovrnSyncer(cfg),
+		openrtb_ext.Bidder33Across:     ttx.New33AcrossSyncer(cfg),
 	}
 }
