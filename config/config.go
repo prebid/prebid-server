@@ -162,6 +162,7 @@ type Adapter struct {
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
+	Disabled bool `mapstructure:"disabled"`
 }
 
 type Metrics struct {
@@ -403,4 +404,5 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault("adapters."+bidder+".xapi.username", "")
 	v.SetDefault("adapters."+bidder+".xapi.password", "")
 	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
+	v.SetDefault("adapters."+bidder+".disabled", false)
 }

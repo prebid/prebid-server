@@ -173,6 +173,25 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	disabledBidders := map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
+	bidderList := openrtb_ext.BidderList()
+	bidderMap := make(map[string]openrtb_ext.BidderName)
+	for k, v := range openrtb_ext.BidderMap {
+		bidderMap[k] = v
+	}
+	// Set up error messages for disabled bidders
+	for a, c := range cfg.Adapters {
+		if c.Disabled {
+			disabledBidders[a] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", a)
+			delete(bidderMap, a)
+			// remove this bidder from the bidderList
+			// This could break if an adapter appears on the bidderList more than once, but in that case something else is very broken.
+			for i, b := range bidderList {
+				if string(b) == a {
+					bidderList = append(bidderList[:i], bidderList[i+1:]...)
+				}
+			}
+		}
+	}
 
 	r = &Router{
 		Router: httprouter.New(),
@@ -195,11 +214,11 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 
 	// Hack because of how legacy handles districtm
-	bidderList := openrtb_ext.BidderList()
-	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
+	LegacyBidderList := openrtb_ext.BidderList()
+	LegacyBidderList = append(LegacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, bidderList)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, LegacyBidderList)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
@@ -207,7 +226,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	}
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos(p, bidderList)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
@@ -217,12 +236,12 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}

@@ -67,11 +67,18 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	}
 
 	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(ortbBidders)+len(legacyBidders))
+
 	for name, bidder := range legacyBidders {
-		allBidders[name] = adaptLegacyAdapter(bidder)
+		// Clean out any disabled bidders, or bidders that are otherwise missing infos (Only reason for not having infos should be that they are disabled)
+		if _, ok := infos[string(name)]; ok {
+			allBidders[name] = adaptLegacyAdapter(bidder)
+		}
 	}
 	for name, bidder := range ortbBidders {
-		allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+		// Clean out any disabled bidders, or bidders that are otherwise missing infos (Only reason for not having infos should be that they are disabled)
+		if _, ok := infos[string(name)]; ok {
+			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+		}
 	}
 	return allBidders
 }
