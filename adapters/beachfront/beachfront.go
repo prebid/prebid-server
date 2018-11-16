@@ -16,12 +16,18 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+const BannerEndpoint = "http://display.bfmio.com/prebid_display"
+
+// const BannerEndpoint = "http://qa.bfmio.com/prebid_display"
+
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+
+// const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
+
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.1.1"
+const beachfrontAdapterVersion = "0.2.1"
 
 type BeachfrontAdapter struct {
 }
@@ -36,40 +42,32 @@ type BeachfrontRequests struct {
 // ---------------------------------------------------
 
 type BeachfrontVideoRequest struct {
-	IsPrebid bool                  `json:"isPrebid"`
-	AppId    string                `json:"appId"`
-	Domain   string                `json:"domain"`
-	Id       string                `json:"id"`
-	Imp      []BeachfrontVideoImp  `json:"imp"`
-	Site     BeachfrontSite        `json:"site"`
-	Device   BeachfrontVideoDevice `json:"device"`
-	User     openrtb.User          `json:"user"`
-	Cur      []string              `json:"cur"`
+	IsPrebid bool   `json:"isPrebid"`
+	AppId    string `json:"appId"`
+	ID       string `json:"id"` // This ID is unique to this client page load and is sent by
+	// prebid.js. I'm sending it with banner requests as "requestId" for possible future reporting.
+	Imp    []BeachfrontVideoImp  `json:"imp"`
+	Site   openrtb.Site          `json:"site"`
+	Device BeachfrontVideoDevice `json:"device"`
+	User   openrtb.User          `json:"user"`
+	Cur    []string              `json:"cur"`
 }
 
-type BeachfrontSite struct {
-	Page string `json:"page"`
-}
-
-type BeachfrontPublisher struct {
-	Id string `json:"id"`
-}
-
-type BeachfrontVideoDevice struct {
-	Ua         string             `json:"ua"`
-	Devicetype int                `json:"deviceType"`
-	Geo        BeachfrontVideoGeo `json:"geo"`
-}
-
-type BeachfrontVideoGeo struct {
-	Ip string `json:"ip"`
-}
-
+// Soooo close, but not quite openRTB
 type BeachfrontVideoImp struct {
 	Video    BeachfrontSize `json:"video"`
 	Bidfloor float64        `json:"bidfloor"`
-	Id       int            `json:"id"`
-	ImpId    string         `json:"impid"`
+	Id       int            `json:"id"` // A sequential count of which imp on the page this is. Since the bfm
+	// 	video endpoint only returns one response for one imp, this is
+	//	never going to happen. This will always be 0. @TODO - Alex
+	ImpId  string `json:"impid"` // DNE in openRTB, would be "ID"
+	Secure int8   `json:"secure"`
+}
+
+type BeachfrontVideoDevice struct {
+	UA string `json:"ua"`
+	IP string `json:"ip"`
+	JS string `json:"js"`
 }
 
 // ---------------------------------------------------
@@ -85,17 +83,18 @@ type BeachfrontBannerRequest struct {
 	DeviceOs       string           `json:"deviceOs"`
 	DeviceModel    string           `json:"deviceModel"`
 	IsMobile       int8             `json:"isMobile"`
-	Ua             string           `json:"ua"`
+	UA             string           `json:"ua"`
 	Dnt            int8             `json:"dnt"`
-	User           string           `json:"user"`
+	User           openrtb.User     `json:"user"`
 	AdapterName    string           `json:"adapterName"`
 	AdapterVersion string           `json:"adapterVersion"`
-	Ip             string           `json:"ip"`
+	IP             string           `json:"ip"`
+	RequestID      string           `json:"requestId"`
 }
 
 type BeachfrontSlot struct {
 	Slot     string           `json:"slot"`
-	Id       string           `json:"id"`
+	Id       string           `json:"id"` // This is the AppID, aka, exchange id on platform.beachfront.com
 	Bidfloor float64          `json:"bidfloor"`
 	Sizes    []BeachfrontSize `json:"sizes"`
 }
@@ -104,6 +103,10 @@ type BeachfrontSize struct {
 	W uint64 `json:"w"`
 	H uint64 `json:"h"`
 }
+
+// ---------------------------------------------------
+// 				Banner response
+// ---------------------------------------------------
 
 type BeachfrontResponseSlot struct {
 	CrID  string  `json:"crid"`
@@ -166,7 +169,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	if imps == 0 {
-		errs = append(errs, errors.New("No valid impressions were found"))
+		errs = append(errs, errors.New("no valid impressions were found"))
 		return nil, errs
 	}
 
@@ -179,12 +182,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-
-	if uri == BannerEndpoint {
-		if request.User != nil {
-			headers.Add("Cookie", "UserID="+request.User.ID+"; __io_cid="+request.User.BuyerUID)
-		}
-	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -214,10 +211,10 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, []erro
 }
 
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error, int) {
-	var bannerImpsIndex int = 0
-	var beachfrontReq BeachfrontBannerRequest = NewBeachfrontBannerRequest()
+	var bannerImpsIndex = 0
+	var beachfrontReq = NewBeachfrontBannerRequest()
 	var errs = make([]error, 0, len(req.Imp))
-	var imps int = 0
+	var imps = 0
 
 	// step through the prebid request "imp" and inject into the beachfront request.
 	for _, imp := range req.Imp {
@@ -234,8 +231,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.Slots[bannerImpsIndex].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
-			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = imp.BidFloor
-
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 				// possible banner error 2
@@ -251,15 +246,16 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 			}
 
 			if req.Device != nil {
-				beachfrontReq.Ip = req.Device.IP
+				beachfrontReq.IP = req.Device.IP
 				beachfrontReq.DeviceModel = req.Device.Model
 				beachfrontReq.DeviceOs = req.Device.OS
 				beachfrontReq.Dnt = req.Device.DNT
 				if req.Device.UA != "" {
-					beachfrontReq.Ua = req.Device.UA
-				}
-			}
+					beachfrontReq.UA = req.Device.UA // The UA in the header that is sent to bfm is the Go
+				} // UA. I can set that to the same UA that is used here
+			} // if any logic is based off of that. @TODO - Alex
 
+			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = beachfrontExt.BidFloor
 			beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
 			beachfrontReq.Slots[bannerImpsIndex].Id = beachfrontExt.AppId
 		}
@@ -267,8 +263,14 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 		imps++
 	}
 
+	// Just take the last one... I guess?
+	if req.Imp[bannerImpsIndex].Secure != nil {
+		beachfrontReq.Secure = *req.Imp[bannerImpsIndex].Secure
+	}
+
 	if req.User != nil {
-		beachfrontReq.User = req.User.BuyerUID
+		beachfrontReq.User.ID = req.User.ID
+		beachfrontReq.User.BuyerUID = req.User.BuyerUID
 	}
 
 	if req.App != nil {
@@ -287,6 +289,8 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 		beachfrontReq.Page = req.Site.Page
 	}
 
+	beachfrontReq.RequestID = req.ID
+
 	return beachfrontReq, errs, imps
 }
 
@@ -294,10 +298,33 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 Prepare the request that has been received from Prebid.js, translating it to the beachfront format
 */
 func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, int) {
-	var videoImpsIndex int = 0
-	var beachfrontReq BeachfrontVideoRequest = NewBeachfrontVideoRequest()
+	var videoImpsIndex = 0
+	var beachfrontReq = NewBeachfrontVideoRequest()
 	var errs = make([]error, 0, len(req.Imp))
-	var imps int = 0
+	var imps = 0
+
+	if req.App != nil {
+		if req.App.Domain != "" {
+			beachfrontReq.Site.Domain = req.App.Domain
+			beachfrontReq.Site.Page = req.App.ID
+		}
+	} else {
+		if req.Site.Page != "" {
+			if req.Site.Domain == "" {
+				if strings.Contains(req.Site.Page, "//") {
+					// Remove protocol if exists
+					beachfrontReq.Site.Domain = strings.Split(req.Site.Page, "//")[1]
+				}
+				if strings.Contains(beachfrontReq.Site.Domain, "/") {
+					// Drop everything after the first "/"
+					beachfrontReq.Site.Domain = strings.Split(beachfrontReq.Site.Domain, "/")[0]
+				}
+			} else {
+				beachfrontReq.Site.Domain = req.Site.Domain
+			}
+			beachfrontReq.Site.Page = req.Site.Page
+		}
+	}
 
 	/*
 		The req could contain banner,audio,native and video imps when It arrives here. I am only
@@ -311,7 +338,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 	*/
 	for _, imp := range req.Imp {
 		if imp.Video != nil {
-			beachfrontReq.Id = req.ID
+			beachfrontReq.ID = req.ID
 
 			beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
 			videoImpsIndex = len(beachfrontReq.Imp) - 1
@@ -332,12 +359,19 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 			}
 
 			beachfrontReq.Imp[videoImpsIndex].Bidfloor = beachfrontVideoExt.BidFloor
+			if imp.Secure != nil {
+				beachfrontReq.Imp[videoImpsIndex].Secure = *imp.Secure
+			} else {
+				beachfrontReq.Imp[videoImpsIndex].Secure = 0
+			}
+
 			beachfrontReq.Imp[videoImpsIndex].Id = videoImpsIndex
 			beachfrontReq.Imp[videoImpsIndex].ImpId = imp.ID
 
 			if req.Device != nil {
-				beachfrontReq.Device.Geo.Ip = req.Device.IP
-				beachfrontReq.Device.Ua = req.Device.UA
+				beachfrontReq.Device.IP = req.Device.IP
+				beachfrontReq.Device.UA = req.Device.UA
+				beachfrontReq.Device.JS = "1"
 			}
 
 			beachfrontReq.AppId = beachfrontVideoExt.AppId
@@ -360,47 +394,32 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 
 	}
 
-	if req.App != nil {
-		if req.App.Domain != "" {
-			beachfrontReq.Domain = req.App.Domain
-			beachfrontReq.Site.Page = req.App.ID
-		}
-	} else {
-		if req.Site.Page != "" {
-			if req.Site.Domain == "" {
-				if strings.Contains(req.Site.Page, "//") {
-					// Remove protocol if exists
-					beachfrontReq.Domain = strings.Split(req.Site.Page, "//")[1]
-				}
-				if strings.Contains(beachfrontReq.Domain, "/") {
-					// Drop everything after the first "/"
-					beachfrontReq.Domain = strings.Split(beachfrontReq.Domain, "/")[0]
-				}
-			} else {
-				beachfrontReq.Domain = req.Site.Domain
-			}
-			beachfrontReq.Site.Page = req.Site.Page
-		}
-	}
-
 	return beachfrontReq, errs, imps
 }
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
-	var bidtype openrtb_ext.BidType = getBidType(internalRequest)
-	var errors = make([]error, 0)
+	var bidtype = getBidType(internalRequest)
+	// Silly name to avoid a collision which will probably never amount to more than annoying highlighting
+	// in my IDE...
+	var errorz = make([]error, 0)
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
 	if len(errs) != 0 {
-		errors = append(errors, errs...)
-		err := &errortypes.BadServerResponse{
-			Message: "Failed to process the beachfront response",
+		errorz = append(errorz, errs...)
+		bfmMessage := "Failed to process the beachfront response"
+
+		if len(response.Body) == 0 {
+			bfmMessage = "Received a null response from beachfront"
 		}
 
-		errors = append(errors, err)
-		return nil, errors
+		err := &errortypes.BadServerResponse{
+			Message: bfmMessage,
+		}
+
+		errorz = append(errorz, err)
+		return nil, errorz
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
@@ -412,7 +431,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		})
 	}
 
-	return bidResponse, errors
+	return bidResponse, errorz
 }
 
 func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, bidtype openrtb_ext.BidType) ([]openrtb.Bid, []error) {
@@ -437,7 +456,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 }
 
 func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, []error) {
-	var bids []openrtb.Bid = make([]openrtb.Bid, len(beachfrontResp))
+	var bids = make([]openrtb.Bid, len(beachfrontResp))
 	var errs = make([]error, 0)
 
 	for i := range beachfrontResp {
