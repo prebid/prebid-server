@@ -58,7 +58,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://display.bfmio.com/prebid_display",
+        "uri": "http://display.bfmio.com/prebid_display",
         "body": {
           "slots": [
             {
@@ -86,6 +86,7 @@
           "domain": "test.opposingviews.com",
           "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
           "referrer": "",
+          "requestId": "fail_id",
           "search": "",
           "secure": 0,
           "isMobile": 0,
@@ -95,8 +96,11 @@
           "dnt": 1,
           "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.1.1",
-          "user": "some-buyer"
+          "adapterVersion": "0.2.1",
+          "user": {
+            "buyeruid": "some-buyer",
+            "id": "some-user"
+          }
         }
       },
       "mockResponse": {
