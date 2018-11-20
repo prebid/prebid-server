@@ -41,9 +41,6 @@ func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValid
 	}
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
-	if bidderMap == nil {
-		bidderMap = openrtb_ext.BidderMap
-	}
 
 	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).AmpAuction), nil
 }

@@ -39,9 +39,6 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
-	if bidderMap == nil {
-		bidderMap = openrtb_ext.BidderMap
-	}
 
 	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).Auction), nil
 }

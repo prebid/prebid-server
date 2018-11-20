@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -94,7 +93,7 @@ func TestExplicitUserId(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, cfg, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, nil)
+	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, cfg, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest == nil {
@@ -130,7 +129,7 @@ func TestImplicitUserId(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, cfg, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, nil)
+	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, cfg, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	endpoint(httptest.NewRecorder(), request, nil)
 
 	if ex.lastRequest == nil {
@@ -282,23 +281,8 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 	disabledBidders := map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
-	bidderList := openrtb_ext.BidderList()
-	bidderMap := make(map[string]openrtb_ext.BidderName)
-	for k, v := range openrtb_ext.BidderMap {
-		bidderMap[k] = v
-	}
-	// Set up error messages for disabled bidders
-	for _, b := range gr.disabledBidders {
-		disabledBidders[b] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", b)
-		delete(bidderMap, b)
-		// remove this bidder from the bidderList
-		// This could break if an adapter appears on the bidderList more than once, but in that case something else is very broken.
-		for i, bb := range bidderList {
-			if string(bb) == b {
-				bidderList = append(bidderList[:i], bidderList[i+1:]...)
-			}
-		}
-	}
+	adapterCfg := blankAdapterConfig(openrtb_ext.BidderList(), gr.disabledBidders)
+	_, bidderMap := exchange.DisableBidders(adapterCfg, openrtb_ext.BidderList(), disabledBidders)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
@@ -364,7 +348,7 @@ func TestNilExchange(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	_, err := NewEndpoint(nil, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, nil)
+	_, err := NewEndpoint(nil, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil Exchange.")
 	}
@@ -375,7 +359,7 @@ func TestNilValidator(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, nil)
+	_, err := NewEndpoint(&nobidExchange{}, nil, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	if err == nil {
 		t.Errorf("NewEndpoint should return an error when given a nil BidderParamValidator.")
 	}
@@ -386,7 +370,7 @@ func TestExchangeError(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&brokenExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, nil)
+	endpoint, _ := NewEndpoint(&brokenExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	recorder := httptest.NewRecorder()
 	endpoint(recorder, request, nil)
@@ -444,7 +428,7 @@ func TestImplicitIPs(t *testing.T) {
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, nil)
+	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
 	httpReq := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
 	httpReq.Header.Set("X-Forwarded-For", "123.456.78.90")
 	recorder := httptest.NewRecorder()
@@ -1075,4 +1059,18 @@ func (m *mockExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidR
 			}},
 		}},
 	}, nil
+}
+
+func blankAdapterConfig(bidderList []openrtb_ext.BidderName, disabledBidders []string) map[string]config.Adapter {
+	adapters := make(map[string]config.Adapter)
+	for _, b := range bidderList {
+		adapters[string(b)] = config.Adapter{}
+	}
+	for _, b := range disabledBidders {
+		tmp := adapters[b]
+		tmp.Disabled = true
+		adapters[b] = tmp
+	}
+
+	return adapters
 }
