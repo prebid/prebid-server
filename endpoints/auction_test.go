@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/gdpr"
@@ -19,8 +20,6 @@ import (
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
-
-	"github.com/mxmCherry/openrtb"
 	"github.com/spf13/viper"
 )
 
@@ -149,9 +148,6 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			t.Error("Ad server targeting should not be nil")
 		}
 		if bid.BidderCode == "audienceNetwork" {
-			if bid.AdServerTargeting["hb_creative_loadtype"] != "demand_sdk" {
-				t.Error("Facebook bid should have demand_sdk as hb_creative_loadtype in ad server targeting")
-			}
 			if bid.AdServerTargeting["hb_size"] != "300x250" {
 				t.Error("hb_size key was not parsed correctly")
 			}

@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
@@ -21,10 +24,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/usersync"
-
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
 )
 
 type bidResult struct {
@@ -36,17 +35,10 @@ const defaultPriceGranularity = "med"
 
 // Constant keys for ad server targeting for responses to Prebid Mobile
 const hbpbConstantKey = "hb_pb"
-const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
 const hbBidderConstantKey = "hb_bidder"
 const hbCacheIdConstantKey = "hb_cache_id"
 const hbDealIdConstantKey = "hb_deal"
 const hbSizeConstantKey = "hb_size"
-
-// hb_creative_loadtype key can be one of `demand_sdk` or `html`
-// default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
-// `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
-const hbCreativeLoadMethodHTML = "html"
-const hbCreativeLoadMethodDemandSDK = "demand_sdk"
 
 func min(x, y int) int {
 	if x < y {
@@ -485,11 +477,6 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				}
 				if hbSize != "" {
 					kvs[hbSizeConstantKey] = hbSize
-				}
-				if bid.BidderCode == "audienceNetwork" {
-					kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
-				} else {
-					kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
 				}
 			}
 		}
