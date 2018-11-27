@@ -14,7 +14,7 @@ WORKDIR /usr/local/bin/
 COPY --from=build /go/src/github.com/prebid/prebid-server/prebid-server .
 COPY static static/
 COPY stored_requests/data stored_requests/data
-RUN apk add -U --no-cache ca-certificates
+RUN apk add -U --no-cache ca-certificates mtr
 EXPOSE 8000
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/prebid-server"]

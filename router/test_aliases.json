@@ -1,0 +1,12 @@
+ 
+{ 
+    "ext": {
+        "prebid": {
+            "aliases": {
+                "test1": "appnexus",
+                "test2": "rubicon",
+                "test3": "openx"
+            }
+        }
+    }
+}

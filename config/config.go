@@ -37,6 +37,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 }
 
 type HTTPClient struct {
@@ -156,6 +157,7 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
+	PartnerId   string `mapstructure:"partner_id"`  // needed for 33Across
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
@@ -219,6 +221,18 @@ type DefaultTTLs struct {
 type Cookie struct {
 	Name  string `mapstructure:"name"`
 	Value string `mapstructure:"value"`
+}
+
+// AliasConfig will define the various source(s) or the default aliases
+// Currently only filesystem is supported, but keeping the config structure
+type DefReqConfig struct {
+	Type       string      `mapstructure:"type"`
+	FileSystem DefReqFiles `mapstructure:"file"`
+	AliasInfo  bool        `mapstructure:"alias_info"`
+}
+
+type DefReqFiles struct {
+	FileName string `mapstructure:"name"`
 }
 
 // New uses viper to get our server configurations.
@@ -341,8 +355,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	v.SetDefault("adapters.beachfront.endpoint", "//sync.bfmio.com/syncb?pid=")
-	v.SetDefault("adapters.beachfront.platform_id", "142")
+	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
+	v.SetDefault("adapters.beachfront.usersync_url", "//sync.bfmio.com/syncb?pid=")
+	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
@@ -362,6 +377,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.33across.partner_id", "")
+	v.SetDefault("adapters.33across.usersync_url", "https://ssc-cms.33across.com/ps")
+	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
 	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 
@@ -372,6 +390,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
+	v.SetDefault("default_request.type", "")
+	v.SetDefault("default_request.file.name", "")
+	v.SetDefault("default_request.alias_info", false)
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -387,4 +408,5 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault("adapters."+bidder+".xapi.username", "")
 	v.SetDefault("adapters."+bidder+".xapi.password", "")
 	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
+	v.SetDefault("adapters."+bidder+".partner_id", "")
 }

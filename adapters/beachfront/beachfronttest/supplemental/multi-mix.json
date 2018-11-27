@@ -113,7 +113,6 @@
         "body": {
           "isPrebid": true,
           "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
-          "domain": "test.opposingviews.com",
           "id": "multi-mix-test",
           "imp": [
             {
@@ -123,7 +122,8 @@
               },
               "bidfloor": 0.01,
               "id": 0,
-              "impid": "video1"
+              "impid": "video1",
+              "secure": 0
             }, {
               "video": {
                 "w": 600,
@@ -131,18 +131,18 @@
               },
               "bidfloor": 0.01,
               "id": 1,
-              "impid": "video2"
+              "impid": "video2",
+              "secure": 0
             }
           ],
           "site": {
+            "domain": "test.opposingviews.com",
             "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
           },
           "device": {
             "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "deviceType": 0,
-            "geo": {
-              "ip": "127.0.0.1"
-            }
+            "ip": "127.0.0.1",
+            "js": "1"
           },
           "cur": [
             "USD"

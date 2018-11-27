@@ -90,14 +90,14 @@ func TestParseSimpleRequest(t *testing.T) {
 	}
 
 	// see if our internal representation is intact
-	if len(pbs_req.Bidders) != 3 {
-		t.Fatalf("Should have three bidders (2 for index) not %d", len(pbs_req.Bidders))
+	if len(pbs_req.Bidders) != 2 {
+		t.Fatalf("Should have two bidders not %d", len(pbs_req.Bidders))
 	}
 	if pbs_req.Bidders[0].BidderCode != "ix" {
 		t.Errorf("First bidder not index")
 	}
-	if len(pbs_req.Bidders[0].AdUnits) != 1 {
-		t.Errorf("Index bidder should have 1 ad unit")
+	if len(pbs_req.Bidders[0].AdUnits) != 2 {
+		t.Errorf("Index bidder should have 2 ad unit")
 	}
 	if pbs_req.Bidders[1].BidderCode != "appnexus" {
 		t.Errorf("Second bidder not appnexus")
@@ -105,16 +105,7 @@ func TestParseSimpleRequest(t *testing.T) {
 	if len(pbs_req.Bidders[1].AdUnits) != 2 {
 		t.Errorf("AppNexus bidder should have 2 ad unit")
 	}
-	if pbs_req.Bidders[2].BidderCode != "ix" {
-		t.Errorf("Third bidder not index")
-	}
-	if len(pbs_req.Bidders[2].AdUnits) != 1 {
-		t.Errorf("Index bidder should have 1 ad unit")
-	}
 	if pbs_req.Bidders[1].AdUnits[0].BidID == "" {
-		t.Errorf("ID should have been generated for empty BidID")
-	}
-	if pbs_req.Bidders[2].AdUnits[0].BidID == "" {
 		t.Errorf("ID should have been generated for empty BidID")
 	}
 	if pbs_req.AdUnits[1].MediaTypes[0] != "banner" {
@@ -260,13 +251,13 @@ func TestParseConfig(t *testing.T) {
 	}
 
 	// see if our internal representation is intact
-	if len(pbs_req.Bidders) != 5 {
-		t.Fatalf("Should have 5 bidders (2 for index) not %d", len(pbs_req.Bidders))
+	if len(pbs_req.Bidders) != 4 {
+		t.Fatalf("Should have 4 bidders not %d", len(pbs_req.Bidders))
 	}
 	if pbs_req.Bidders[0].BidderCode != "ix" {
 		t.Errorf("First bidder not index")
 	}
-	if len(pbs_req.Bidders[0].AdUnits) != 1 {
+	if len(pbs_req.Bidders[0].AdUnits) != 2 {
 		t.Errorf("Index bidder should have 1 ad unit")
 	}
 	if pbs_req.Bidders[1].BidderCode != "appnexus" {
@@ -274,12 +265,6 @@ func TestParseConfig(t *testing.T) {
 	}
 	if len(pbs_req.Bidders[1].AdUnits) != 2 {
 		t.Errorf("AppNexus bidder should have 2 ad unit")
-	}
-	if pbs_req.Bidders[2].BidderCode != "ix" {
-		t.Errorf("Third bidder not index")
-	}
-	if len(pbs_req.Bidders[2].AdUnits) != 1 {
-		t.Errorf("Index bidder should have 1 ad unit")
 	}
 }
 

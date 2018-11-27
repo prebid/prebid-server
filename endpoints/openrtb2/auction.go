@@ -34,12 +34,13 @@ import (
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
+	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -50,6 +51,8 @@ type endpointDeps struct {
 	metricsEngine    pbsmetrics.MetricsEngine
 	analytics        analytics.PBSAnalyticsModule
 	disabledBidders  map[string]string
+	defaultRequest   bool
+	defReqJSON       []byte
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -255,8 +258,14 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
-	for index, imp := range req.Imp {
-		errs := deps.validateImp(&imp, aliases, index)
+	impIDs := make(map[string]int, len(req.Imp))
+	for index := range req.Imp {
+		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
+		errs := deps.validateImp(imp, aliases, index)
 		if len(errs) > 0 {
 			errL = append(errL, errs...)
 		}
@@ -271,6 +280,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
+		errL = append(errL, err)
+		return errL
+	}
+
+	if err := deps.validateApp(req.App); err != nil {
 		errL = append(errL, err)
 		return errL
 	}
@@ -692,7 +706,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		return errL
 	}
 
-	return nil
+	return errL
 }
 
 func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
@@ -729,6 +743,21 @@ func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
 	if len(site.Ext) > 0 {
 		var s openrtb_ext.ExtSite
 		if err := json.Unmarshal(site.Ext, &s); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (deps *endpointDeps) validateApp(app *openrtb.App) error {
+	if app == nil {
+		return nil
+	}
+
+	if len(app.Ext) > 0 {
+		var a openrtb_ext.ExtApp
+		if err := json.Unmarshal(app.Ext, &a); err != nil {
 			return err
 		}
 	}
@@ -877,6 +906,15 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 		if err != nil {
 			return nil, []error{err}
 		}
+	}
+
+	// Apply default aliases, if they are provided
+	if deps.defaultRequest {
+		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
+		if err != nil {
+			return nil, []error{err}
+		}
+		resolvedRequest = aliasedRequest
 	}
 
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,

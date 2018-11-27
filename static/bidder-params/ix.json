@@ -6,7 +6,17 @@
   "properties": {
     "siteId": {
       "type": "string",
+      "minLength": 1,
       "description": "An ID which identifies the site selling the impression"
+    },
+    "size": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "An array of two integer containing the dimension"
     }
   },
   "required": ["siteId"]
