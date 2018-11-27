@@ -4,12 +4,15 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAdtelligentSyncer(t *testing.T) {
-	syncer := NewAdtelligentSyncer(&config.Configuration{ExternalURL: "localhost"})
+	syncer := NewAdtelligentSyncer(&config.Configuration{
+		HostCookie: config.HostCookie{
+			BaseSyncURL: "localhost",
+		},
+	})
 	u := syncer.GetUsersyncInfo("0", "")
 	assert.Equal(t, "//sync.adtelligent.com/csync?t=p&ep=0&redir=localhost%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%7Buid%7D", u.URL)
 	assert.Equal(t, "redirect", u.Type)

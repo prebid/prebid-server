@@ -15,6 +15,6 @@ const adkernelGDPRVendorID = uint16(14)
 func NewAdkernelAdnSyncer(cfg *config.Configuration) usersync.Usersyncer {
 	// Fixes #736
 	usersyncURL := cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL
-	externalURL := strings.TrimRight(cfg.ExternalURL, "/") + "/setuid?bidder=adkernelAdn&uid={UID}"
+	externalURL := strings.TrimRight(cfg.HostCookie.BaseSyncURL, "/") + "/setuid?bidder=adkernelAdn&uid={UID}"
 	return adapters.NewSyncer("adkernelAdn", adkernelGDPRVendorID, adapters.ResolveMacros(usersyncURL+url.QueryEscape(externalURL)), adapters.SyncTypeRedirect)
 }

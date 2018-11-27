@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-
 	"github.com/stretchr/testify/assert"
 )
 
 func Test33AcrossSyncer(t *testing.T) {
 	ttx := New33AcrossSyncer(&config.Configuration{
-		ExternalURL: "localhost",
+		HostCookie: config.HostCookie{
+			BaseSyncURL: "localhost",
+		},
 		Adapters: map[string]config.Adapter{
 			"33across": {
 				UserSyncURL: "https://ssc-cms.33across.com/ps",
