@@ -144,6 +144,7 @@ type HostCookie struct {
 	CookieName   string `mapstructure:"cookie_name"`
 	OptOutURL    string `mapstructure:"opt_out_url"`
 	OptInURL     string `mapstructure:"opt_in_url"`
+	BaseSyncURL  string `mapstructure:"base_sync_url"`
 	OptOutCookie Cookie `mapstructure:"optout_cookie"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
@@ -241,6 +242,9 @@ func New(v *viper.Viper) (*Configuration, error) {
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
+	if c.HostCookie.BaseSyncURL == "" {
+		c.HostCookie.BaseSyncURL = c.ExternalURL
+	}
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
@@ -295,6 +299,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.cookie_name", "")
 	v.SetDefault("host_cookie.opt_out_url", "")
 	v.SetDefault("host_cookie.opt_in_url", "")
+	v.SetDefault("host_cookie.base_sync_url", "")
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
