@@ -14,7 +14,7 @@ type ExtBidResponse struct {
 	// RequestTimeoutMillis returns the timeout used in the auction.
 	// This is useful if the timeout is saved in the Stored Request on the server.
 	// Clients can run one auction, and then use this to set better connection timeouts on future auction requests.
-	RequestTimeoutMillis int64 `json:"requesttimeoutmillis,omitempty"`
+	RequestTimeoutMillis int64 `json:"tmaxrequest,omitempty"`
 	// ResponseUserSync defines the contract for bidresponse.ext.usersync
 	Usersync map[BidderName]*ExtResponseSyncData `json:"usersync,omitempty"`
 }

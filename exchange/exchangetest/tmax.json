@@ -61,7 +61,7 @@
     "bids": {
       "id": "some-request-id",
       "ext": {
-        "requesttimeoutmillis": 500,
+        "tmaxrequest": 500,
         "errors": {
           "appnexus": ["appnexus-error"]
         }
