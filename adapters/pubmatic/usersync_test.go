@@ -10,7 +10,7 @@ import (
 func TestPubmaticSyncer(t *testing.T) {
 	syncer := NewPubmaticSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("1", "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw")

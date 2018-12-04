@@ -11,7 +11,7 @@ import (
 func TestBrightrollSyncer(t *testing.T) {
 	syncer := NewBrightrollSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.BidderBrightroll): {

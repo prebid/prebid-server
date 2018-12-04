@@ -11,6 +11,6 @@ import (
 
 func NewOpenxSyncer(cfg *config.Configuration) usersync.Usersyncer {
 	externalURL := strings.TrimRight(cfg.HostCookie.BaseSyncURL, "/")
-	redirectURL := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dopenx%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24%7BUID%7D"
+	redirectURL := url.QueryEscape(externalURL) + "%3Fbidder%3Dopenx%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24%7BUID%7D"
 	return adapters.NewSyncer("openx", 69, adapters.ResolveMacros("https://rtb.openx.net/sync/prebid?r="+redirectURL), adapters.SyncTypeRedirect)
 }

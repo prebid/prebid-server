@@ -12,7 +12,7 @@ import (
 func TestAdkernelAdnSyncer(t *testing.T) {
 	syncer := NewAdkernelAdnSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "https://localhost:8888",
+			BaseSyncURL: "https://localhost:8888/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			// Prevents #736

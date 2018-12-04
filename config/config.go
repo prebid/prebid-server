@@ -243,7 +243,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 	if c.HostCookie.BaseSyncURL == "" {
-		c.HostCookie.BaseSyncURL = c.ExternalURL
+		c.HostCookie.BaseSyncURL = c.ExternalURL + "/setuid"
 	}
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")

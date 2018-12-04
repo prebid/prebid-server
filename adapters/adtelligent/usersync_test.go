@@ -10,7 +10,7 @@ import (
 func TestAdtelligentSyncer(t *testing.T) {
 	syncer := NewAdtelligentSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("0", "")

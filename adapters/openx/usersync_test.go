@@ -10,7 +10,7 @@ import (
 func TestOpenxSyncer(t *testing.T) {
 	syncer := NewOpenxSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("", "")

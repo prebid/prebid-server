@@ -11,7 +11,7 @@ import (
 func TestEPlanningSyncer(t *testing.T) {
 	syncer := NewEPlanningSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.BidderEPlanning): {

@@ -11,6 +11,6 @@ import (
 
 func NewConversantSyncer(cfg *config.Configuration) usersync.Usersyncer {
 	usersyncURL := cfg.Adapters[string(openrtb_ext.BidderConversant)].UserSyncURL
-	redirectURI := url.QueryEscape(cfg.HostCookie.BaseSyncURL) + "%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D"
+	redirectURI := url.QueryEscape(cfg.HostCookie.BaseSyncURL) + "%3Fbidder%3Dconversant%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D"
 	return adapters.NewSyncer("conversant", 24, adapters.ResolveMacros(usersyncURL+redirectURI), adapters.SyncTypeRedirect)
 }

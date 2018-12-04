@@ -10,7 +10,7 @@ import (
 func TestSomoaudienceSyncer(t *testing.T) {
 	syncer := NewSomoaudienceSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("", "")

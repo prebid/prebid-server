@@ -10,7 +10,7 @@ import (
 func TestAppNexusSyncer(t *testing.T) {
 	syncer := NewAppnexusSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "https://prebid.adnxs.com/pbs/v1",
+			BaseSyncURL: "https://prebid.adnxs.com/pbs/v1/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("", "")

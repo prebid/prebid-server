@@ -10,7 +10,7 @@ import (
 func TestPulsepointSyncer(t *testing.T) {
 	syncer := NewPulsepointSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "http://localhost",
+			BaseSyncURL: "http://localhost/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("", "")

@@ -11,7 +11,7 @@ import (
 func TestAdformSyncer(t *testing.T) {
 	syncer := NewAdformSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.BidderAdform): {

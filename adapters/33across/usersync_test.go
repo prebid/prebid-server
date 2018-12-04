@@ -10,7 +10,7 @@ import (
 func Test33AcrossSyncer(t *testing.T) {
 	ttx := New33AcrossSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			"33across": {

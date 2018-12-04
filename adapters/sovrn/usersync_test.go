@@ -11,7 +11,7 @@ import (
 func TestSovrnSyncer(t *testing.T) {
 	syncer := NewSovrnSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "external.com",
+			BaseSyncURL: "external.com/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.BidderSovrn): {

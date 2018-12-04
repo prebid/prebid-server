@@ -11,7 +11,7 @@ import (
 func TestRhythmoneSyncer(t *testing.T) {
 	syncer := NewRhythmoneSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.BidderRhythmone): {

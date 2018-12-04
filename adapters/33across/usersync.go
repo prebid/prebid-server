@@ -13,7 +13,7 @@ import (
 func New33AcrossSyncer(cfg *config.Configuration) usersync.Usersyncer {
 	externalURL := strings.TrimRight(cfg.HostCookie.BaseSyncURL, "/")
 	adapterConfig := cfg.Adapters[string(openrtb_ext.Bidder33Across)]
-	redirectURL := url.QueryEscape(externalURL) + "%2Fsetuid%3Fbidder%3Dttx%26uid%3D33XUSERID33X"
+	redirectURL := url.QueryEscape(externalURL) + "%3Fbidder%3Dttx%26uid%3D33XUSERID33X"
 	syncerURL := adapterConfig.UserSyncURL + "/?ri=" + adapterConfig.PartnerId + "&ru=" + redirectURL
 
 	if adapterConfig.PartnerId == "" {

@@ -10,7 +10,7 @@ import (
 func TestLifestreetSyncer(t *testing.T) {
 	syncer := NewLifestreetSyncer(&config.Configuration{
 		HostCookie: config.HostCookie{
-			BaseSyncURL: "localhost",
+			BaseSyncURL: "localhost/setuid",
 		},
 	})
 	u := syncer.GetUsersyncInfo("0", "")

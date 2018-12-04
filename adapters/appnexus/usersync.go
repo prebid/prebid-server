@@ -9,7 +9,7 @@ import (
 )
 
 func NewAppnexusSyncer(cfg *config.Configuration) usersync.Usersyncer {
-	redirectURI := url.QueryEscape(cfg.HostCookie.BaseSyncURL) + "%2Fsetuid%3Fbidder%3Dadnxs%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24UID"
+	redirectURI := url.QueryEscape(cfg.HostCookie.BaseSyncURL) + "%3Fbidder%3Dadnxs%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24UID"
 	usersyncURL := "//ib.adnxs.com/getuid?"
 	return adapters.NewSyncer("adnxs", 32, adapters.ResolveMacros(usersyncURL+redirectURI), adapters.SyncTypeRedirect)
 }
