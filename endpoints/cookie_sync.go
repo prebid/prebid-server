@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -108,6 +109,9 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
 	parsedReq.filterForGDPR(deps.syncPermissions)
+	if parsedReq.Limit > 0 {
+		parsedReq.filterToLimit()
+	}
 
 	csResp := cookieSyncResponse{
 		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
@@ -162,6 +166,7 @@ type cookieSyncRequest struct {
 	Bidders []string `json:"bidders"`
 	GDPR    *int     `json:"gdpr"`
 	Consent string   `json:"gdpr_consent"`
+	Limit   int      `json:"limit"`
 }
 
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie) {
@@ -190,6 +195,18 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 			i--
 		}
 	}
+}
+
+// filterToLimit will enforce a max limit on cookiesyncs supplied, picking a random subset of syncs to get to the limit if over.
+func (req *cookieSyncRequest) filterToLimit() {
+	if req.Limit <= 0 {
+		return
+	}
+	for len(req.Bidders) > req.Limit {
+		cut := rand.Intn(len(req.Bidders))
+		req.Bidders = append(req.Bidders[:cut], req.Bidders[cut+1:]...)
+	}
+	return
 }
 
 type cookieSyncResponse struct {

@@ -94,6 +94,13 @@ func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
 
+func TestCookieSyncWithLimit(t *testing.T) {
+	rr := doPost(`{"limit":2}`, nil, true, syncersForTest())
+	assertIntsMatch(t, http.StatusOK, rr.Code)
+	assertSyncsLen(t, rr.Body.Bytes(), 2)
+	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+}
+
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
 	return doConfigurablePost(body, existingSyncs, gdprHostConsent, gdprBidders, config.GDPR{})
 }
@@ -183,6 +190,14 @@ func assertSameElements(t *testing.T, expected []string, actual []string) {
 		if !seen {
 			t.Errorf("Expected sync from %s, but it wasn't in the response.", expectedVal)
 		}
+	}
+}
+
+func assertSyncsLen(t *testing.T, responseBody []byte, limit int) {
+	t.Helper()
+	found := len(parseSyncs(t, responseBody))
+	if found != limit {
+		t.Errorf("Expected %d usersyncs, but got %d.", limit, found)
 	}
 }
 
