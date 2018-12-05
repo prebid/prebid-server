@@ -38,6 +38,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 }
 
@@ -73,6 +74,7 @@ func (cfg *Configuration) validate() configErrors {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
 	errs = cfg.GDPR.validate(errs)
+	errs = cfg.CurrencyConverter.validate(errs)
 	return errs
 }
 
@@ -135,7 +137,19 @@ type Analytics struct {
 	File FileLogs `mapstructure:"file"`
 }
 
-//Corresponding config for FileLogger as a PBS Analytics Module
+type CurrencyConverter struct {
+	FetchURL             string `mapstructure:"fetch_url"`
+	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
+}
+
+func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
+	if cfg.FetchIntervalSeconds < 0 {
+		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
+	}
+	return errs
+}
+
+// FileLogs Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
 }
@@ -452,6 +466,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
+	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	v.SetDefault("currency_converter.fetch_interval_seconds", 0) // #280 Not activated for the time being
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)

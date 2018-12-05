@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"golang.org/x/text/currency"
 )
 
 // Rates holds data as represented on https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json
@@ -46,11 +48,24 @@ func (r *Rates) UnmarshalJSON(b []byte) error {
 // GetRate returns the conversion rate between two currencies
 // returns an error in case the conversion rate between the two given currencies is not in the currencies rates map
 func (r *Rates) GetRate(from string, to string) (float64, error) {
+	var err error
+	fromUnit, err := currency.ParseISO(from)
+	if err != nil {
+		return 0, err
+	}
+	toUnit, err := currency.ParseISO(to)
+	if err != nil {
+		return 0, err
+	}
+	if fromUnit.String() == toUnit.String() {
+		return 1, nil
+	}
 	if r.Conversions != nil {
-		if conversion, present := r.Conversions[from][to]; present == true {
-			return conversion, nil
+		if conversion, present := r.Conversions[fromUnit.String()][toUnit.String()]; present == true {
+			return conversion, err
 		}
-		return 0, fmt.Errorf("conversion %s->%s not present in rates dictionary", from, to)
+
+		return 0, fmt.Errorf("Currency conversion rate not found: '%s' => '%s'", fromUnit.String(), toUnit.String())
 	}
 	return 0, errors.New("rates are nil")
 }
