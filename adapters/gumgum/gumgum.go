@@ -17,15 +17,13 @@ type GumGumAdapter struct {
 func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var validImps []openrtb.Imp
 	var trackingId string
-	var deviceHeight uint64
-	var deviceWidth uint64
 
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, numRequests)
 
 	for i := 0; i < numRequests; i++ {
 		imp := request.Imp[i]
-		zone, devH, devW, err := preprocess(&imp)
+		zone, err := preprocess(&imp)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -39,8 +37,6 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 				request.Imp[i].Banner = &bannerCopy
 				validImps = append(validImps, request.Imp[i])
 				trackingId = zone
-				deviceHeight = devH
-				deviceWidth = devW
 			}
 		}
 	}
@@ -50,10 +46,6 @@ func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 	}
 
 	request.Imp = validImps
-	request.Device = &openrtb.Device{
-		H: deviceHeight,
-		W: deviceWidth,
-	}
 
 	if request.Site != nil {
 		siteCopy := *request.Site
@@ -115,13 +107,13 @@ func (g *GumGumAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	return bidResponse, errs
 }
 
-func preprocess(imp *openrtb.Imp) (string, uint64, uint64, error) {
+func preprocess(imp *openrtb.Imp) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		err = &errortypes.BadInput{
 			Message: err.Error(),
 		}
-		return "", 0, 0, err
+		return "", err
 	}
 
 	var gumgumExt openrtb_ext.ExtImpGumGum
@@ -129,13 +121,11 @@ func preprocess(imp *openrtb.Imp) (string, uint64, uint64, error) {
 		err = &errortypes.BadInput{
 			Message: err.Error(),
 		}
-		return "", 0, 0, err
+		return "", err
 	}
 
 	zone := gumgumExt.Zone
-	deviceHeight := gumgumExt.DeviceHeight
-	deviceWidth := gumgumExt.DeviceWidth
-	return zone, deviceHeight, deviceWidth, nil
+	return zone, nil
 }
 
 func NewGumGumBidder(endpoint string) *GumGumAdapter {

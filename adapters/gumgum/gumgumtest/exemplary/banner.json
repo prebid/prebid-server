@@ -1,9 +1,5 @@
 {
   "mockBidRequest": {
-    "device": {
-      "h": 300,
-      "w": 400
-    },
     "id": "test-request-id",
     "imp": [
       {
@@ -24,9 +20,7 @@
         },
         "ext": {
           "bidder": {
-            "zone": "dc9d6be1",
-            "deviceHeight": 300,
-            "deviceWidth": 400
+            "zone": "dc9d6be1"
           }
         }
       }
@@ -38,10 +32,6 @@
       "expectedRequest": {
         "uri": "https://g2.gumgum.com/providers/prbds2s/bid",
         "body":{
-          "device": {
-            "h": 300,
-            "w": 400
-          },
           "id": "test-request-id",
           "imp": [{
             "id": "test-imp-id",
@@ -58,9 +48,7 @@
             },
             "ext": {
               "bidder": {
-                "zone": "dc9d6be1",
-                "deviceHeight": 300,
-                "deviceWidth": 400
+                "zone": "dc9d6be1"
               }
             }
           }]

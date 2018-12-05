@@ -33,7 +33,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"zone":"dc9d6be1", "deviceHeight":240, "deviceWidth":400}`,
+	`{"zone":"dc9d6be1"}`,
 }
 
 var invalidParams = []string{
@@ -44,11 +44,9 @@ var invalidParams = []string{
 	`[]`,
 	`true`,
 	`2`,
-	`{"zone":"12345678", "deviceHeight":100}`,
 	`{"zone":12345678}`,
 	`{"zone":""}`,
 	`{"placementId": 1}`,
 	`{"zone": true}`,
 	`{"placementId": 1, "zone":"1234567"}`,
-	`{"zone":"12345678", "deviceHeight":"200", "deviceWidth":"400"}`,
 }
