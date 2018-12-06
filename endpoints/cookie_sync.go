@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -129,6 +128,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		co.BidderStatus = append(co.BidderStatus, csResp.BidderStatus...)
 	}
 
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(csResp)
