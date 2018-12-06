@@ -109,9 +109,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
 	parsedReq.filterForGDPR(deps.syncPermissions)
-	if parsedReq.Limit > 0 {
-		parsedReq.filterToLimit()
-	}
+	parsedReq.filterToLimit()
 
 	csResp := cookieSyncResponse{
 		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
