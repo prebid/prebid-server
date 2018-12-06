@@ -18,6 +18,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/buger/jsonparser"
 	"github.com/julienschmidt/httprouter"
@@ -97,7 +98,7 @@ func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 func TestCookieSyncWithLimit(t *testing.T) {
 	rr := doPost(`{"limit":2}`, nil, true, syncersForTest())
 	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsLen(t, rr.Body.Bytes(), 2)
+	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), 2, "usersyncs")
 	assertStatus(t, rr.Body.Bytes(), "no_cookie")
 }
 
@@ -190,14 +191,6 @@ func assertSameElements(t *testing.T, expected []string, actual []string) {
 		if !seen {
 			t.Errorf("Expected sync from %s, but it wasn't in the response.", expectedVal)
 		}
-	}
-}
-
-func assertSyncsLen(t *testing.T, responseBody []byte, limit int) {
-	t.Helper()
-	found := len(parseSyncs(t, responseBody))
-	if found != limit {
-		t.Errorf("Expected %d usersyncs, but got %d.", limit, found)
 	}
 }
 

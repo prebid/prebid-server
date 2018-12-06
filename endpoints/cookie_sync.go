@@ -202,10 +202,17 @@ func (req *cookieSyncRequest) filterToLimit() {
 	if req.Limit <= 0 {
 		return
 	}
-	for len(req.Bidders) > req.Limit {
-		cut := rand.Intn(len(req.Bidders))
-		req.Bidders = append(req.Bidders[:cut], req.Bidders[cut+1:]...)
+
+	// Modified Fisher and Yates' shuffle. We don't need the bidder list shuffled, so we stop shuffling once the final values beyond limit have been set.
+	// We also don't bother saving the values that should go into the entries beyond limit, as they will be discarded.
+	for i := len(req.Bidders) - 1; i >= req.Limit; i-- {
+		j := rand.Intn(i + 1)
+		if i != j {
+			req.Bidders[j] = req.Bidders[i]
+			// Don't complete the swap as the new value for req.Bidders[i] will be discarded below, and will never again be accessed as part of the swapping.
+		}
 	}
+	req.Bidders = req.Bidders[:req.Limit]
 	return
 }
 
