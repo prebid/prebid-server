@@ -8,7 +8,34 @@ import (
 )
 
 func TestNewSyncerMap(t *testing.T) {
-	cfg := configForSyncerTests()
+	syncConfig := config.Adapter{
+		UserSyncURL: "some-sync-url",
+	}
+	cfg := &config.Configuration{
+		Adapters: map[string]config.Adapter{
+			string(openrtb_ext.BidderAdform):       syncConfig,
+			string(openrtb_ext.BidderAdkernelAdn):  syncConfig,
+			string(openrtb_ext.BidderAdtelligent):  syncConfig,
+			string(openrtb_ext.BidderAppnexus):     syncConfig,
+			string(openrtb_ext.BidderBeachfront):   syncConfig,
+			string(openrtb_ext.BidderFacebook):     syncConfig,
+			string(openrtb_ext.BidderBrightroll):   syncConfig,
+			string(openrtb_ext.BidderConversant):   syncConfig,
+			string(openrtb_ext.BidderEPlanning):    syncConfig,
+			string(openrtb_ext.BidderGumGum):       syncConfig,
+			string(openrtb_ext.BidderIx):           syncConfig,
+			string(openrtb_ext.BidderLifestreet):   syncConfig,
+			string(openrtb_ext.BidderOpenx):        syncConfig,
+			string(openrtb_ext.BidderPubmatic):     syncConfig,
+			string(openrtb_ext.BidderPulsepoint):   syncConfig,
+			string(openrtb_ext.BidderRhythmone):    syncConfig,
+			string(openrtb_ext.BidderRubicon):      syncConfig,
+			string(openrtb_ext.BidderSomoaudience): syncConfig,
+			string(openrtb_ext.BidderSovrn):        syncConfig,
+			string(openrtb_ext.Bidder33Across):     syncConfig,
+		},
+	}
+
 	syncers := NewSyncerMap(cfg)
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if _, ok := syncers[bidderName]; !ok {
@@ -42,35 +69,5 @@ func assertStringsMatch(t *testing.T, expected string, actual string) {
 	t.Helper()
 	if expected != actual {
 		t.Errorf("Expected %s, got %s", expected, actual)
-	}
-}
-
-func configForSyncerTests() *config.Configuration {
-	syncConfig := config.Adapter{
-		UserSyncURL: "some-sync-url",
-	}
-	return &config.Configuration{
-		Adapters: map[string]config.Adapter{
-			string(openrtb_ext.BidderAdform):       syncConfig,
-			string(openrtb_ext.BidderAdkernelAdn):  syncConfig,
-			string(openrtb_ext.BidderAdtelligent):  syncConfig,
-			string(openrtb_ext.BidderAppnexus):     syncConfig,
-			string(openrtb_ext.BidderBeachfront):   syncConfig,
-			string(openrtb_ext.BidderFacebook):     syncConfig,
-			string(openrtb_ext.BidderBrightroll):   syncConfig,
-			string(openrtb_ext.BidderConversant):   syncConfig,
-			string(openrtb_ext.BidderEPlanning):    syncConfig,
-			string(openrtb_ext.BidderGumGum):       syncConfig,
-			string(openrtb_ext.BidderIx):           syncConfig,
-			string(openrtb_ext.BidderLifestreet):   syncConfig,
-			string(openrtb_ext.BidderOpenx):        syncConfig,
-			string(openrtb_ext.BidderPubmatic):     syncConfig,
-			string(openrtb_ext.BidderPulsepoint):   syncConfig,
-			string(openrtb_ext.BidderRhythmone):    syncConfig,
-			string(openrtb_ext.BidderRubicon):      syncConfig,
-			string(openrtb_ext.BidderSomoaudience): syncConfig,
-			string(openrtb_ext.BidderSovrn):        syncConfig,
-			string(openrtb_ext.Bidder33Across):     syncConfig,
-		},
 	}
 }
