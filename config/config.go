@@ -347,7 +347,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.cookie_name", "")
 	v.SetDefault("host_cookie.opt_out_url", "")
 	v.SetDefault("host_cookie.opt_in_url", "")
-	v.SetDefault("host_cookie.base_sync_url", "")
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
