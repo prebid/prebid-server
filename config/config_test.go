@@ -25,7 +25,6 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
-	cmpStrings(t, "host_cookie.base_sync_url", cfg.HostCookie.BaseSyncURL, "http://localhost:8000")
 }
 
 var fullConfig = []byte(`
@@ -38,7 +37,6 @@ host_cookie:
   domain: cookies.prebid.org
   opt_out_url: http://prebid.org/optout
   opt_in_url: http://prebid.org/optin
-  base_sync_url: http://sync.prebid.com
 external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
@@ -123,7 +121,6 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cookie family", cfg.HostCookie.Family, "prebid")
 	cmpStrings(t, "opt out", cfg.HostCookie.OptOutURL, "http://prebid.org/optout")
 	cmpStrings(t, "opt in", cfg.HostCookie.OptInURL, "http://prebid.org/optin")
-	cmpStrings(t, "base sync url", cfg.HostCookie.BaseSyncURL, "http://sync.prebid.com")
 	cmpStrings(t, "external url", cfg.ExternalURL, "http://prebid-server.prebid.org/")
 	cmpStrings(t, "host", cfg.Host, "prebid-server.prebid.org")
 	cmpInts(t, "port", cfg.Port, 1234)

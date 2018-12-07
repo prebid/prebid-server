@@ -144,7 +144,6 @@ type HostCookie struct {
 	CookieName   string `mapstructure:"cookie_name"`
 	OptOutURL    string `mapstructure:"opt_out_url"`
 	OptInURL     string `mapstructure:"opt_in_url"`
-	BaseSyncURL  string `mapstructure:"base_sync_url"`
 	OptOutCookie Cookie `mapstructure:"optout_cookie"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
@@ -155,10 +154,23 @@ func (cfg *HostCookie) TTLDuration() time.Duration {
 }
 
 type Adapter struct {
-	Endpoint    string `mapstructure:"endpoint"` // Required
+	Endpoint string `mapstructure:"endpoint"` // Required
+	// UserSyncURL is the URL returned by /cookie_sync for this Bidder. It is _usually_ optional.
+	// If not defined, sensible defaults will be derved based on the config.external_url.
+	// Note that some Bidders don't have sensible defaults, because their APIs require an ID that will vary
+	// from one PBS host to another.
+	//
+	// For these bidders, there will be a warning logged on startup that usersyncs will not work if you have not
+	// defined one in the app config. Check your app logs for more info.
+	//
+	// This value will be interpreted as a Golang Template. At runtime, the following Template variables will be replaced.
+	//
+	//   {{.GDPR}} -- This will be replaced with the "gdpr" property sent to /cookie_sync
+	//   {{.Consent}} -- This will be replaced with the "consent" property sent to /cookie_sync
+	//
+	// For more info on templates, see: https://golang.org/pkg/text/template/
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
-	PartnerId   string `mapstructure:"partner_id"`  // needed for 33Across
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
@@ -242,9 +254,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 	if err := v.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
-	if c.HostCookie.BaseSyncURL == "" {
-		c.HostCookie.BaseSyncURL = c.ExternalURL
-	}
+	c.setDerivedDefaults()
 	glog.Info("Logging the resolved configuration:")
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
@@ -267,6 +277,42 @@ func (cfg *Cache) GetBaseURL() string {
 
 func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 	return fmt.Sprintf("%s/cache?%s", cfg.CacheURL.GetBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
+}
+
+// Initialize any default config values which have sensible defaults, but those defaults depend on other config values.
+//
+// For example, the typical Bidder's usersync URL includes the PBS config.external_url, because it redirects to the `external_url/setuid` endpoint.
+//
+func (cfg *Configuration) setDerivedDefaults() {
+	externalURL := cfg.ExternalURL
+	// openrtb_ext.Bidder33Across doesn't have a good default.
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdkernelAdn, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3DadkernelAdn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BUID%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtelligent, "https://sync.adtelligent.com/csync?t=p&ep=0&redir=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdform, "https://cm.adform.net/cookie?redirect_url=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAppnexus, "https://ib.adnxs.com/getuid?https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dadnxs%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+	// openrtb_ext.BidderBeachfront doesn't have a good default.
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBrightroll, "https://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dbrightroll%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderConversant, "https://prebid-match.dotomi.com/prebid/match?rurl=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderEPlanning, "https://sync.e-planning.net/um?uidhttps%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Deplanning%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+	// openrtb_ext.BidderFacebook doesn't have a good default.
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderIx, "https://ssum.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dix%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderLifestreet, "https://ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dlifestreet%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%24visitor_cookie%24%24")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderOpenx, "https://rtb.openx.net/sync/prebid?r=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dopenx%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderPubmatic, "https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dpubmatic%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderPulsepoint, "https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dpulsepoint%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%25%25VGUID%25%25")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderRhythmone, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
+	// openrtb_ext.BidderRubicon doesn't have a good default.
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSomoaudience, "https://publisher-east.mobileadtrading.com/usersync?ru=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dsomoaudience%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSovrn, "https://ap.lijit.com/pixel?redir=https%3A%2F%2F"+externalURL+"%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+}
+
+func setDefaultUsersync(m map[string]Adapter, bidder openrtb_ext.BidderName, defaultValue string) {
+	if m[string(bidder)].UserSyncURL == "" {
+		// Go doesnt let us edit the properties of a value inside a map directly.
+		editable := m[string(bidder)]
+		editable.UserSyncURL = defaultValue
+		m[string(bidder)] = editable
+	}
 }
 
 // Set the default config values for the viper object we are using.
@@ -358,36 +404,26 @@ func SetupViper(v *viper.Viper, filename string) {
 	}
 
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
-	v.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
-	v.SetDefault("adapters.beachfront.usersync_url", "//sync.bfmio.com/syncb?pid=")
 	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
-	v.SetDefault("adapters.conversant.usersync_url", "//prebid-match.dotomi.com/prebid/match?rurl=")
 	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
-	v.SetDefault("adapters.eplanning.usersync_url", "http://sync.e-planning.net/um?uid")
-	v.SetDefault("adapters.ix.usersync_url", "http://ssum.casalemedia.com/usermatchredir?s=184932&cb=https%3A%2F%2Fprebid.adnxs.com%2Fpbs%2Fv1%2Fsetuid%3Fbidder%3Dix%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D")
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
 	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
 	v.SetDefault("adapters.rubicon.endpoint", "http://exapi-us-east.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid&gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}")
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
-	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
-	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
 	v.SetDefault("adapters.33across.partner_id", "")
-	v.SetDefault("adapters.33across.usersync_url", "https://ssc-cms.33across.com/ps")
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
-	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
+	// TODO: update GumGum
 	v.SetDefault("adapters.gumgum.usersync_url", "https://rtb.gumgum.com/usync/prbds2s?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 
 	v.SetDefault("max_request_size", 1024*256)

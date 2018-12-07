@@ -114,10 +114,11 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
+		syncInfo, _ := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent) // TODO: Handle error
 		newSync := &usersync.CookieSyncBidders{
 			BidderCode:   bidder,
 			NoCookie:     true,
-			UsersyncInfo: deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent),
+			UsersyncInfo: syncInfo,
 		}
 		if len(newSync.UsersyncInfo.URL) > 0 {
 			csResp.BidderStatus = append(csResp.BidderStatus, newSync)

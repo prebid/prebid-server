@@ -8,7 +8,7 @@ type Usersyncer interface {
 	// consent should be an empty string or a raw base64 url-encoded IAB Vendor Consent String.
 	//
 	// For more information about user syncs, see http://clearcode.cc/2015/12/cookie-syncing/
-	GetUsersyncInfo(gdpr string, consent string) *UsersyncInfo
+	GetUsersyncInfo(gdpr string, consent string) (*UsersyncInfo, error)
 	// FamilyName should be the same as the `BidderName` for this Usersyncer.
 	// This function only exists for legacy reasons.
 	// TODO #362: when the appnexus usersyncer is consistent, delete this and use the key

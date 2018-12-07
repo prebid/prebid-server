@@ -185,7 +185,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					gdprApplies := req.ParseGDPR()
 					consent := req.ParseConsent()
 					if a.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
-						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
+						bidder.UsersyncInfo, _ = syncer.GetUsersyncInfo(gdprApplies, consent) // TODO: Handle error
 					}
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
