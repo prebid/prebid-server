@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
-
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 )
 
 var gaugeValueRegexp = regexp.MustCompile("gauge:<value:([0-9]+) >")
@@ -184,10 +183,10 @@ func TestAdapterBidsMetrics(t *testing.T) {
 	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[2], openrtb_ext.BidTypeVideo, true)).Write(&metrics2)
 	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[3], openrtb_ext.BidTypeNative, false)).Write(&metrics3)
 
-	assertCounterValue(t, "adapter_bids_recieved[0]", &metrics0, 3)
-	assertCounterValue(t, "adapter_bids_recieved[1]", &metrics1, 1)
-	assertCounterValue(t, "adapter_bids_recieved[2]", &metrics2, 2)
-	assertCounterValue(t, "adapter_bids_recieved[3]", &metrics3, 0)
+	assertCounterValue(t, "adapter_bids_received[0]", &metrics0, 3)
+	assertCounterValue(t, "adapter_bids_received[1]", &metrics1, 1)
+	assertCounterValue(t, "adapter_bids_received[2]", &metrics2, 2)
+	assertCounterValue(t, "adapter_bids_received[3]", &metrics3, 0)
 }
 
 func TestAdapterPriceMetrics(t *testing.T) {

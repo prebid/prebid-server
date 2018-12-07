@@ -272,7 +272,7 @@ func SetupViper(v *viper.Viper, filename string) {
 		v.AddConfigPath(".")
 		v.AddConfigPath("/etc/config")
 	}
-	// Fixes #475: Some defaults will be set just so they are accessable via environment variables
+	// Fixes #475: Some defaults will be set just so they are accessible via environment variables
 	// (basically so viper knows they exist)
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")

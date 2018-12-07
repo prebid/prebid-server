@@ -135,21 +135,21 @@ func TestCurrencyBids(t *testing.T) {
 		expectedValidBid bool
 	}{
 		// Case bid request and bid response don't specify any currencies.
-		// Expected to be valid since both bid request / response will be overriden with default currency (USD).
+		// Expected to be valid since both bid request / response will be overridden with default currency (USD).
 		{
 			brqCur:           []string{},
 			brpCur:           "",
 			expectedValidBid: true,
 		},
 		// Case bid request specifies a currency (default one) but bid response doesn't.
-		// Expected to be valid since bid response will be overriden with default currency (USD).
+		// Expected to be valid since bid response will be overridden with default currency (USD).
 		{
 			brqCur:           []string{"USD"},
 			brpCur:           "",
 			expectedValidBid: true,
 		},
 		// Case bid request specifies more than 1 currency (default one and another one) but bid response doesn't.
-		// Expected to be valid since bid response will be overriden with default currency (USD).
+		// Expected to be valid since bid response will be overridden with default currency (USD).
 		{
 			brqCur:           []string{"USD", "EUR"},
 			brpCur:           "",
