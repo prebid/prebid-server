@@ -303,7 +303,7 @@ func TestConversantResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -526,7 +526,7 @@ func TestConversantVideoResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")

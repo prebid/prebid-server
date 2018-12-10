@@ -10,7 +10,7 @@ import (
 	"github.com/golang/glog"
 )
 
-// RateConverter holds the currencies conversion rates dictionnary
+// RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient       httpClient
 	done             chan bool
