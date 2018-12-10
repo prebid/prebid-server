@@ -48,7 +48,7 @@ type regsExt struct {
 	GDPR *int `json:"gdpr,omitempty"`
 }
 
-// cleanPI removes IP address last byte, device ID, buyer ID, and rounds off lattitude/longitude
+// cleanPI removes IP address last byte, device ID, buyer ID, and rounds off latitude/longitude
 func cleanPI(bidRequest *openrtb.BidRequest, isAMP bool) {
 	if bidRequest.User != nil {
 		// Need to duplicate pointer objects

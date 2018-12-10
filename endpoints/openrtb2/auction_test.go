@@ -411,7 +411,7 @@ func TestStoredRequests(t *testing.T) {
 				if err != nil {
 					t.Errorf("processStoredRequests Error: %s", err.Error())
 				} else {
-					t.Error("processStoredRequests Error: recieved nil error")
+					t.Error("processStoredRequests Error: received nil error")
 				}
 			}
 		}

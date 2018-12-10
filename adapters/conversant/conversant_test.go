@@ -3,16 +3,13 @@ package conversant
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"testing"
-	"time"
-
 	"io/ioutil"
-
 	"net/http"
 	"net/http/httptest"
-
-	"encoding/json"
+	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -171,7 +168,7 @@ func TestConversantNoBid(t *testing.T) {
 
 	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if resp != nil || err != nil {
-		t.Fatal("Failed to handle emtpy bid", err)
+		t.Fatal("Failed to handle empty bid", err)
 	}
 }
 
