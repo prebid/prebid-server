@@ -101,6 +101,13 @@ func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
+func TestCookieSyncWithLimit(t *testing.T) {
+	rr := doPost(`{"limit":2}`, nil, true, syncersForTest())
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), 2, "usersyncs")
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
+}
+
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
 	return doConfigurablePost(body, existingSyncs, gdprHostConsent, gdprBidders, config.GDPR{})
 }

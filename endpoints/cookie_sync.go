@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -107,6 +108,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
 	parsedReq.filterForGDPR(deps.syncPermissions)
+	parsedReq.filterToLimit()
 
 	csResp := cookieSyncResponse{
 		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
@@ -162,6 +164,7 @@ type cookieSyncRequest struct {
 	Bidders []string `json:"bidders"`
 	GDPR    *int     `json:"gdpr"`
 	Consent string   `json:"gdpr_consent"`
+	Limit   int      `json:"limit"`
 }
 
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie) {
@@ -190,6 +193,25 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 			i--
 		}
 	}
+}
+
+// filterToLimit will enforce a max limit on cookiesyncs supplied, picking a random subset of syncs to get to the limit if over.
+func (req *cookieSyncRequest) filterToLimit() {
+	if req.Limit <= 0 {
+		return
+	}
+
+	// Modified Fisher and Yates' shuffle. We don't need the bidder list shuffled, so we stop shuffling once the final values beyond limit have been set.
+	// We also don't bother saving the values that should go into the entries beyond limit, as they will be discarded.
+	for i := len(req.Bidders) - 1; i >= req.Limit; i-- {
+		j := rand.Intn(i + 1)
+		if i != j {
+			req.Bidders[j] = req.Bidders[i]
+			// Don't complete the swap as the new value for req.Bidders[i] will be discarded below, and will never again be accessed as part of the swapping.
+		}
+	}
+	req.Bidders = req.Bidders[:req.Limit]
+	return
 }
 
 type cookieSyncResponse struct {

@@ -13,7 +13,8 @@ must supply a JSON object to define the list of bidders that may need to be sync
 {
     "bidders": ["appnexus", "rubicon"],
     "gdpr": 1,
-    "gdpr_consent": "BONV8oqONXwgmADACHENAO7pqzAAppY"
+    "gdpr_consent": "BONV8oqONXwgmADACHENAO7pqzAAppY",
+    "limit": 2
 }
 ```
 
@@ -26,6 +27,9 @@ must supply a JSON object to define the list of bidders that may need to be sync
 If `gdpr` is  omitted, callers are still encouraged to send `gdpr_consent` if they have it.
 Depending on how the Prebid Server host company has configured their servers, they may or may not require it for cookie syncs.
 
+`limit` is optional. If present and greater than zero, it will limit the number of syncs returned to `limit`, dropping some syncs to
+get the count down to limit if more would otherwise have been returned. This is to facilitate clients not overloading a user with syncs
+the first time they are encountered.
 
 If the `bidders` field is an empty list, it will not supply any syncs. If the `bidders` field is omitted completely, it will attempt
 to sync all bidders.
