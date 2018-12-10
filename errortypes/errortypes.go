@@ -20,7 +20,7 @@ type Coder interface {
 }
 
 // Timeout should be used to flag that a bidder failed to return a response because the PBS timeout timer
-// expired before a result was recieved.
+// expired before a result was received.
 //
 // Timeouts will not be written to the app log, since it's not an actionable item for the Prebid Server hosts.
 type Timeout struct {

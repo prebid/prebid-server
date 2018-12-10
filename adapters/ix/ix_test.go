@@ -3,6 +3,7 @@ package ix
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -10,12 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/pbs"
-
-	"fmt"
-
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 const url string = "http://appnexus-us-east.lb.indexww.com/bidder?p=184932"
@@ -241,7 +239,7 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 
 	bid := findBidByAdUnitCode(bids, adUnit1.Code)
 	if adUnit1.Sizes[0].H != bid.Height || adUnit1.Sizes[0].W != bid.Width {
-		t.Fatalf("Recieved the wrong size")
+		t.Fatalf("Received the wrong size")
 	}
 }
 
@@ -596,12 +594,12 @@ func TestIxTwoSlotValidSize(t *testing.T) {
 
 	bid := findBidByAdUnitCode(bids, adUnit1.Code)
 	if adUnit1.Sizes[0].H != bid.Height || adUnit1.Sizes[0].W != bid.Width {
-		t.Fatalf("Recieved the wrong size")
+		t.Fatalf("Received the wrong size")
 	}
 
 	bid = findBidByAdUnitCode(bids, adUnit2.Code)
 	if adUnit2.Sizes[0].H != bid.Height || adUnit2.Sizes[0].W != bid.Width {
-		t.Fatalf("Recieved the wrong size")
+		t.Fatalf("Received the wrong size")
 	}
 }
 

@@ -11,7 +11,7 @@ type versionModel struct {
 	Revision string `json:"revision"`
 }
 
-// NewVersionEndpoint returns the latest commit sha1 from wich the binary was built
+// NewVersionEndpoint returns the latest commit sha1 from which the binary was built
 func NewVersionEndpoint(version string) func(w http.ResponseWriter, r *http.Request) {
 	if version == "" {
 		version = "not-set"
