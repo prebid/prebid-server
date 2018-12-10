@@ -34,13 +34,13 @@ import (
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -53,6 +53,7 @@ type endpointDeps struct {
 	disabledBidders  map[string]string
 	defaultRequest   bool
 	defReqJSON       []byte
+	bidderMap        map[string]openrtb_ext.BidderName
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -673,7 +674,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
 			}
-			if bidderName, isValid := openrtb_ext.BidderMap[coreBidder]; isValid {
+			if bidderName, isValid := deps.bidderMap[coreBidder]; isValid {
 				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 					return []error{fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)}
 				}
@@ -722,7 +723,7 @@ func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequ
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 	for thisAlias, coreBidder := range aliases {
-		if _, isCoreBidder := openrtb_ext.BidderMap[coreBidder]; !isCoreBidder {
+		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
 			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
 		}
 		if thisAlias == coreBidder {

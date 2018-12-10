@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -73,11 +74,47 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	}
 
 	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(ortbBidders)+len(legacyBidders))
+
 	for name, bidder := range legacyBidders {
-		allBidders[name] = adaptLegacyAdapter(bidder)
+		// Clean out any disabled bidders
+		if isEnabledBidder(cfg.Adapters, string(name)) {
+			allBidders[name] = adaptLegacyAdapter(bidder)
+		}
 	}
 	for name, bidder := range ortbBidders {
-		allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+		// Clean out any disabled bidders
+		if isEnabledBidder(cfg.Adapters, string(name)) {
+			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+		}
 	}
 	return allBidders
+}
+
+// isEnabledBidder Checks that a bidder config exists and is not disabled
+func isEnabledBidder(cfg map[string]config.Adapter, bidder string) bool {
+	a, ok := cfg[bidder]
+	return ok && !a.Disabled
+}
+
+func DisableBidders(cfg map[string]config.Adapter, origBidderList []openrtb_ext.BidderName, disabledBidders map[string]string) (bidderList []openrtb_ext.BidderName, bidderMap map[string]openrtb_ext.BidderName) {
+	bidderMap = make(map[string]openrtb_ext.BidderName)
+	bidderList = origBidderList
+	for k, v := range openrtb_ext.BidderMap {
+		bidderMap[k] = v
+	}
+	// Set up error messages for disabled bidders
+	for a, c := range cfg {
+		if c.Disabled {
+			disabledBidders[a] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", a)
+			delete(bidderMap, a)
+			// remove this bidder from the bidderList
+			// This could break if an adapter appears on the bidderList more than once, but in that case something else is very broken.
+			for i, b := range bidderList {
+				if string(b) == a {
+					bidderList = append(bidderList[:i], bidderList[i+1:]...)
+				}
+			}
+		}
+	}
+	return bidderList, bidderMap
 }
