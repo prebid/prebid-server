@@ -107,7 +107,7 @@ func preprocess(request *openrtb.BidRequest) error {
 	return nil
 }
 
-// MakeBids make the bids for the bid reponse.
+// MakeBids make the bids for the bid response.
 func (a *TtxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil

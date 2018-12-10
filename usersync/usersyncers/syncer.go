@@ -11,6 +11,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/grid"
+	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/openx"
@@ -39,6 +41,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollSyncer(cfg),
 		openrtb_ext.BidderConversant:   conversant.NewConversantSyncer(cfg),
 		openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningSyncer(cfg),
+		openrtb_ext.BidderGumGum:       gumgum.NewGumGumSyncer(cfg),
 		openrtb_ext.BidderIx:           ix.NewIxSyncer(cfg),
 		openrtb_ext.BidderLifestreet:   lifestreet.NewLifestreetSyncer(cfg),
 		openrtb_ext.BidderOpenx:        openx.NewOpenxSyncer(cfg),
@@ -49,5 +52,6 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderSomoaudience: somoaudience.NewSomoaudienceSyncer(cfg),
 		openrtb_ext.BidderSovrn:        sovrn.NewSovrnSyncer(cfg),
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossSyncer(cfg),
+		openrtb_ext.BidderGrid:         grid.NewGridSyncer(cfg),
 	}
 }

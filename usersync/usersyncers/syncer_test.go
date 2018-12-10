@@ -19,6 +19,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderBrightroll):   {},
 			string(openrtb_ext.BidderConversant):   {},
 			string(openrtb_ext.BidderEPlanning):    {},
+			string(openrtb_ext.BidderGumGum):       {},
 			string(openrtb_ext.BidderIx):           {},
 			string(openrtb_ext.BidderLifestreet):   {},
 			string(openrtb_ext.BidderOpenx):        {},
@@ -29,6 +30,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSomoaudience): {},
 			string(openrtb_ext.BidderSovrn):        {},
 			string(openrtb_ext.Bidder33Across):     {},
+			string(openrtb_ext.BidderGrid):         {},
 		},
 	}
 	m := NewSyncerMap(cfg)

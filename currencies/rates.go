@@ -50,7 +50,7 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 		if conversion, present := r.Conversions[from][to]; present == true {
 			return conversion, nil
 		}
-		return 0, fmt.Errorf("conversion %s->%s not present in rates dictionnary", from, to)
+		return 0, fmt.Errorf("conversion %s->%s not present in rates dictionary", from, to)
 	}
 	return 0, errors.New("rates are nil")
 }
