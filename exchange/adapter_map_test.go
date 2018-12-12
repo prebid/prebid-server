@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -62,7 +63,7 @@ func inList(list []openrtb_ext.BidderName, name openrtb_ext.BidderName) bool {
 func blankAdapterConfig(bidderList []openrtb_ext.BidderName) map[string]config.Adapter {
 	adapters := make(map[string]config.Adapter)
 	for _, b := range bidderList {
-		adapters[string(b)] = config.Adapter{}
+		adapters[strings.ToLower(string(b))] = config.Adapter{}
 	}
 	return adapters
 }
