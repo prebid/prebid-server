@@ -108,6 +108,14 @@ func TestCookieSyncWithLimit(t *testing.T) {
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
+func TestCookieSyncWithLargeLimit(t *testing.T) {
+	syncers := syncersForTest()
+	rr := doPost(`{"limit":1000}`, nil, true, syncers)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), len(syncers), "usersyncs")
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
+}
+
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
 	return doConfigurablePost(body, existingSyncs, gdprHostConsent, gdprBidders, config.GDPR{})
 }

@@ -200,6 +200,9 @@ func (req *cookieSyncRequest) filterToLimit() {
 	if req.Limit <= 0 {
 		return
 	}
+	if req.Limit >= len(req.Bidders) {
+		return
+	}
 
 	// Modified Fisher and Yates' shuffle. We don't need the bidder list shuffled, so we stop shuffling once the final values beyond limit have been set.
 	// We also don't bother saving the values that should go into the entries beyond limit, as they will be discarded.
