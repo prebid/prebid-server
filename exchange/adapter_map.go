@@ -92,7 +92,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 
 // isEnabledBidder Checks that a bidder config exists and is not disabled
 func isEnabledBidder(cfg map[string]config.Adapter, bidder string) bool {
-	a, ok := cfg[bidder]
+	a, ok := cfg[strings.ToLower(bidder)]
 	return ok && !a.Disabled
 }
 
@@ -103,8 +103,8 @@ func DisableBidders(cfg map[string]config.Adapter, origBidderList []openrtb_ext.
 		bidderMap[k] = v
 	}
 	// Set up error messages for disabled bidders
-	for a, c := range cfg {
-		if c.Disabled {
+	for a := range openrtb_ext.BidderMap {
+		if !isEnabledBidder(cfg, a) {
 			disabledBidders[a] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", a)
 			delete(bidderMap, a)
 			// remove this bidder from the bidderList
