@@ -1,6 +1,7 @@
 package usersyncers
 
 import (
+	"strings"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -62,10 +63,11 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 }
 
 func insertIntoMap(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, bidder openrtb_ext.BidderName, syncerFactory func(temp *template.Template) usersync.Usersyncer) {
-	urlString := cfg.Adapters[string(bidder)].UserSyncURL
+	lowercased := strings.ToLower(string(bidder))
+	urlString := cfg.Adapters[lowercased].UserSyncURL
 	if urlString == "" {
 		glog.Warningf("adapters." + string(bidder) + ".usersync_url was not defined, and their usersync API isn't flexible enough for Prebid Server to choose a good default. No usersyncs will be performed with " + string(bidder))
 		return
 	}
-	syncers[bidder] = syncerFactory(template.Must(template.New(string(bidder) + "_usersync_url").Parse(urlString)))
+	syncers[bidder] = syncerFactory(template.Must(template.New(lowercased + "_usersync_url").Parse(urlString)))
 }

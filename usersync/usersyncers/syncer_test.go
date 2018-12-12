@@ -1,6 +1,7 @@
 package usersyncers
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -35,6 +36,10 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSovrn):        syncConfig,
 			string(openrtb_ext.Bidder33Across):     syncConfig,
 		},
+	}
+	for bidder, config := range cfg.Adapters {
+		delete(cfg.Adapters, bidder)
+		cfg.Adapters[strings.ToLower(string(bidder))] = config
 	}
 
 	syncers := NewSyncerMap(cfg)
