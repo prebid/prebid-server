@@ -204,7 +204,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			ae.Errors = serr
 			brw.adapterExtra = ae
 			if bids != nil {
-				for _, bid := range bids.bids {
+				for _, bid := range brw.adapterBids.bids {
 					var cpm = float64(bid.bid.Price * 1000)
 					e.me.RecordAdapterPrice(*bidlabels, cpm)
 					e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
