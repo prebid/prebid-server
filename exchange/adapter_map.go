@@ -75,6 +75,8 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 
 	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(ortbBidders)+len(legacyBidders))
 
+	// Wrap legacy and openrtb Bidders behind a common interface, so that the Exchange doesn't need to concern
+	// itself with the differences.
 	for name, bidder := range legacyBidders {
 		// Clean out any disabled bidders
 		if isEnabledBidder(cfg.Adapters, string(name)) {
@@ -87,6 +89,12 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
 		}
 	}
+
+	// Apply any middleware used for global Bidder logic.
+	for name, bidder := range allBidders {
+		allBidders[name] = ensureValidBids(bidder)
+	}
+
 	return allBidders
 }
 
