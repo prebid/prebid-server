@@ -4,6 +4,8 @@ go:
   - '1.10'
   - '1.11.1'
 
+go_import_path: github.com/prebid/prebid-server
+
 env:
   - DEP_VERSION="0.5.0"
 
