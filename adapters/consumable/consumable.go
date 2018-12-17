@@ -14,3 +14,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 func (a *ConsumableAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	return nil, nil
 }
+
+func NewConsumableBidder() *ConsumableAdapter {
+	return &ConsumableAdapter{}
+}
