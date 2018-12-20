@@ -1,6 +1,7 @@
 package consumable
 
 import (
+	"encoding/json"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"net/http"
@@ -64,16 +65,20 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		}
 	}
 
+	body := bidRequest{}
+
+	bodyBytes, err := json.Marshal(body)
+
 	requests := []*adapters.RequestData{
 		{
 			Method:  "POST",
 			Uri:     "https://e.serverbid.com/api/v2",
-			Body:    nil, // TODO
+			Body:    bodyBytes,
 			Headers: headers,
 		},
 	}
 
-	return requests, nil
+	return requests, []error{err}
 }
 
 func (a *ConsumableAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
