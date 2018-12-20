@@ -4,6 +4,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"net/http"
+	"net/url"
 )
 
 type ConsumableAdapter struct{}
@@ -27,6 +28,17 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	if request.Site != nil && request.Site.Page != "" {
 		headers.Set("Referer", request.Site.Page)
+
+		pageUrl, err := url.Parse(request.Site.Page)
+		if err == nil {
+			origin := url.URL{
+				Scheme: pageUrl.Scheme,
+				Opaque: pageUrl.Opaque,
+				Host:   pageUrl.Host,
+			}
+
+			headers.Set("Origin", origin.String())
+		}
 	}
 
 	requests := []*adapters.RequestData{
