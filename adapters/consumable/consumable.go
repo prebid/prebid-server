@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type ConsumableAdapter struct{}
@@ -65,7 +66,9 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		}
 	}
 
-	body := bidRequest{}
+	body := bidRequest{
+		Time: time.Now().Unix(),
+	}
 
 	bodyBytes, err := json.Marshal(body)
 
