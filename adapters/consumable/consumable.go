@@ -14,8 +14,15 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		"Accept":       {"application/json"},
 	}
 
-	if request.Device != nil && request.Device.UA != "" {
-		headers.Set("User-Agent", request.Device.UA)
+	if request.Device != nil {
+		if request.Device.UA != "" {
+			headers.Set("User-Agent", request.Device.UA)
+		}
+
+		if request.Device.IP != "" {
+			headers.Set("Forwarded", "for="+request.Device.IP)
+			headers.Set("X-Forwarded-For", request.Device.IP)
+		}
 	}
 
 	requests := []*adapters.RequestData{
