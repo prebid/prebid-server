@@ -9,6 +9,17 @@ import (
 
 type ConsumableAdapter struct{}
 
+type bidRequest struct {
+	Placements         []placement `json:"placements"`
+	Time               int64       `json:"time"`
+	IncludePricingData bool        `json:"includePricingData"`
+	User               user        `json:"user,omitempty"`
+	Referrer           string      `json:"referrer,omitempty"`
+	Ip                 string      `json:"ip,omitempty"`
+	Url                string      `json:"url,omitempty"`
+	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
+}
+
 type placement struct {
 	DivName   string `json:"divName"`
 	NetworkId int    `json:"networkId"`
