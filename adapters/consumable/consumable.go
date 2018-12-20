@@ -17,6 +17,10 @@ type placement struct {
 	ZoneIds   []int  `json:"zoneIds,omitempty"`
 }
 
+type user struct {
+	Key string `json:"key,omitempty"`
+}
+
 func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	headers := http.Header{
 		"Content-Type": {"application/json"},
