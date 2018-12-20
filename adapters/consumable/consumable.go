@@ -25,6 +25,10 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		}
 	}
 
+	if request.Site != nil && request.Site.Page != "" {
+		headers.Set("Referer", request.Site.Page)
+	}
+
 	requests := []*adapters.RequestData{
 		{
 			Method:  "POST",
