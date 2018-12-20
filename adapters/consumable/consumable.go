@@ -14,6 +14,10 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		"Accept":       {"application/json"},
 	}
 
+	if request.Device != nil && request.Device.UA != "" {
+		headers.Set("User-Agent", request.Device.UA)
+	}
+
 	requests := []*adapters.RequestData{
 		{
 			Method:  "POST",
