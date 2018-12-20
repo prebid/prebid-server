@@ -67,7 +67,11 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	body := bidRequest{
-		Time: time.Now().Unix(),
+		Time:               time.Now().Unix(),
+		IncludePricingData: true,
+		Referrer:           request.Site.Ref,
+		Url:                request.Site.Page,
+		EnableBotFiltering: true,
 	}
 
 	bodyBytes, err := json.Marshal(body)
