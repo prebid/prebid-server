@@ -9,6 +9,14 @@ import (
 
 type ConsumableAdapter struct{}
 
+type placement struct {
+	DivName   string `json:"divName"`
+	NetworkId int    `json:"networkId"`
+	SiteId    int    `json:"siteId"`
+	AdTypes   []int  `json:"adTypes"`
+	ZoneIds   []int  `json:"zoneIds,omitempty"`
+}
+
 func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	headers := http.Header{
 		"Content-Type": {"application/json"},
