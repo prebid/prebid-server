@@ -1,10 +1,12 @@
 package exchange
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/prebid/prebid-server/adapters"
+	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
@@ -14,6 +16,8 @@ import (
 	"github.com/prebid/prebid-server/adapters/brightroll"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/grid"
+	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
 	"github.com/prebid/prebid-server/adapters/openx"
@@ -40,6 +44,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderBeachfront: beachfront.NewBeachfrontBidder(),
 		openrtb_ext.BidderBrightroll: brightroll.NewBrightrollBidder(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint),
 		openrtb_ext.BidderEPlanning:  eplanning.NewEPlanningBidder(client, cfg.Adapters[string(openrtb_ext.BidderEPlanning)].Endpoint),
+		openrtb_ext.BidderGumGum:     gumgum.NewGumGumBidder(cfg.Adapters[string(openrtb_ext.BidderGumGum)].Endpoint),
 		openrtb_ext.BidderOpenx:      openx.NewOpenxBidder(cfg.Adapters[string(openrtb_ext.BidderOpenx)].Endpoint),
 		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticBidder(client, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		openrtb_ext.BidderRhythmone:  rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint),
@@ -51,6 +56,8 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 		openrtb_ext.BidderSomoaudience: somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint),
 		openrtb_ext.BidderSovrn:        sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
+		openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
+		openrtb_ext.BidderGrid:         grid.NewGridBidder(cfg.Adapters[string(openrtb_ext.BidderGrid)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
@@ -67,11 +74,55 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	}
 
 	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(ortbBidders)+len(legacyBidders))
+
+	// Wrap legacy and openrtb Bidders behind a common interface, so that the Exchange doesn't need to concern
+	// itself with the differences.
 	for name, bidder := range legacyBidders {
-		allBidders[name] = adaptLegacyAdapter(bidder)
+		// Clean out any disabled bidders
+		if isEnabledBidder(cfg.Adapters, string(name)) {
+			allBidders[name] = adaptLegacyAdapter(bidder)
+		}
 	}
 	for name, bidder := range ortbBidders {
-		allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+		// Clean out any disabled bidders
+		if isEnabledBidder(cfg.Adapters, string(name)) {
+			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
+		}
 	}
+
+	// Apply any middleware used for global Bidder logic.
+	for name, bidder := range allBidders {
+		allBidders[name] = ensureValidBids(bidder)
+	}
+
 	return allBidders
+}
+
+// isEnabledBidder Checks that a bidder config exists and is not disabled
+func isEnabledBidder(cfg map[string]config.Adapter, bidder string) bool {
+	a, ok := cfg[strings.ToLower(bidder)]
+	return ok && !a.Disabled
+}
+
+func DisableBidders(cfg map[string]config.Adapter, origBidderList []openrtb_ext.BidderName, disabledBidders map[string]string) (bidderList []openrtb_ext.BidderName, bidderMap map[string]openrtb_ext.BidderName) {
+	bidderMap = make(map[string]openrtb_ext.BidderName)
+	bidderList = origBidderList
+	for k, v := range openrtb_ext.BidderMap {
+		bidderMap[k] = v
+	}
+	// Set up error messages for disabled bidders
+	for a := range openrtb_ext.BidderMap {
+		if !isEnabledBidder(cfg, a) {
+			disabledBidders[a] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", a)
+			delete(bidderMap, a)
+			// remove this bidder from the bidderList
+			// This could break if an adapter appears on the bidderList more than once, but in that case something else is very broken.
+			for i, b := range bidderList {
+				if string(b) == a {
+					bidderList = append(bidderList[:i], bidderList[i+1:]...)
+				}
+			}
+		}
+	}
+	return bidderList, bidderMap
 }

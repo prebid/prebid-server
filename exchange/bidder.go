@@ -58,7 +58,7 @@ type pbsOrtbSeatBid struct {
 	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
 	// currency is the currency in which the bids are made.
-	// Should be a valid curreny ISO code.
+	// Should be a valid currency ISO code.
 	currency string
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.

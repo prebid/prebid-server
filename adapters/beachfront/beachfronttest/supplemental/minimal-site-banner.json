@@ -28,7 +28,7 @@
     "httpCalls": [
       {
         "expectedRequest": {
-          "uri": "https://display.bfmio.com/prebid_display",
+          "uri": "http://display.bfmio.com/prebid_display",
           "body": {
             "slots": [
               {
@@ -45,6 +45,7 @@
             ],
             "domain": "test.opposingviews.com",
             "page": "test.opposingviews.com",
+            "requestId": "some_test_ad",
             "referrer": "",
             "search": "",
             "secure": 0,
@@ -55,8 +56,9 @@
             "dnt": 0,
             "ua": "",
             "adapterName": "BF_PREBID_S2S",
-            "adapterVersion": "0.1.1",
-            "user": ""
+            "adapterVersion": "0.2.1",
+            "user": {
+            }
           }
         },
         "mockResponse": {

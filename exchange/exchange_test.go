@@ -40,6 +40,7 @@ func TestNewExchange(t *testing.T) {
 		CacheURL: config.Cache{
 			ExpectedTimeMillis: 20,
 		},
+		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
 	}
 
 	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), knownAdapters), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}).(*exchange)

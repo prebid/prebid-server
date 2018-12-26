@@ -3,6 +3,7 @@ package ix
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -10,12 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/pbs"
-
-	"fmt"
-
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/pbs"
 )
 
 const url string = "http://appnexus-us-east.lb.indexww.com/bidder?p=184932"
@@ -31,7 +29,7 @@ func getAdUnit() pbs.PBSAdUnit {
 				H: 12,
 			},
 		},
-		Params: json.RawMessage("{\"siteId\": \"12\"}"),
+		Params: json.RawMessage("{\"siteId\":\"12\",\"size\":[10,12]}"),
 	}
 }
 
@@ -90,7 +88,7 @@ func TestIxInvalidCall(t *testing.T) {
 	pbBidder := pbs.PBSBidder{}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error recived for invalid request")
+		t.Fatalf("No error received for invalid request")
 	}
 }
 
@@ -108,7 +106,7 @@ func TestIxInvalidCallReqAppNil(t *testing.T) {
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 
 	if err == nil {
-		t.Fatalf("No error recived for invalid request")
+		t.Fatalf("No error received for invalid request")
 	}
 }
 
@@ -241,7 +239,7 @@ func TestIxTimeoutMultipleSlots(t *testing.T) {
 
 	bid := findBidByAdUnitCode(bids, adUnit1.Code)
 	if adUnit1.Sizes[0].H != bid.Height || adUnit1.Sizes[0].W != bid.Width {
-		t.Fatalf("Recieved the wrong size")
+		t.Fatalf("Received the wrong size")
 	}
 }
 
@@ -480,7 +478,31 @@ func TestIxInvalidParam(t *testing.T) {
 	}
 }
 
-func TestIxBasicResponse(t *testing.T) {
+func TestIxEmptySize(t *testing.T) {
+
+	server := httptest.NewServer(
+		http.HandlerFunc(dummyIXServer),
+	)
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewIxAdapter(&conf, server.URL)
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	adUnit := getAdUnit()
+	adUnit.Params = json.RawMessage("{\"siteId\":\"1111\"}")
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			adUnit,
+		},
+	}
+	if _, err := an.Call(ctx, &pbReq, &pbBidder); err == nil {
+		t.Fatalf("Should have gotten error due to no valid bid request generated: %v", err)
+	}
+}
+
+func TestIxSingleSlotSingleValidSize(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(dummyIXServer),
@@ -507,7 +529,32 @@ func TestIxBasicResponse(t *testing.T) {
 	}
 }
 
-func TestIxTwoSlotResponse(t *testing.T) {
+func TestIxSingleSlotSingleInvalidSize(t *testing.T) {
+
+	server := httptest.NewServer(
+		http.HandlerFunc(dummyIXServer),
+	)
+	defer server.Close()
+
+	conf := *adapters.DefaultHTTPAdapterConfig
+	an := NewIxAdapter(&conf, server.URL)
+	ctx := context.TODO()
+	pbReq := pbs.PBSRequest{}
+	adUnit := getAdUnit()
+	adUnit.Params = json.RawMessage("{\"siteId\":\"1111\",\"size\":[8,10]}")
+	pbBidder := pbs.PBSBidder{
+		BidderCode: "bannerCode",
+		AdUnits: []pbs.PBSAdUnit{
+			adUnit,
+		},
+	}
+	_, err := an.Call(ctx, &pbReq, &pbBidder)
+	if err == nil {
+		t.Fatalf("Should have gotten an error: %v", err)
+	}
+}
+
+func TestIxTwoSlotValidSize(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(dummyIXServer),
@@ -527,6 +574,8 @@ func TestIxTwoSlotResponse(t *testing.T) {
 			H: 10,
 		},
 	}
+	adUnit2.Params = json.RawMessage("{\"siteId\":\"1111\",\"size\":[8,10]}")
+
 	pbBidder := pbs.PBSBidder{
 		BidderCode: "bannerCode",
 		AdUnits: []pbs.PBSAdUnit{
@@ -545,16 +594,16 @@ func TestIxTwoSlotResponse(t *testing.T) {
 
 	bid := findBidByAdUnitCode(bids, adUnit1.Code)
 	if adUnit1.Sizes[0].H != bid.Height || adUnit1.Sizes[0].W != bid.Width {
-		t.Fatalf("Recieved the wrong size")
+		t.Fatalf("Received the wrong size")
 	}
 
 	bid = findBidByAdUnitCode(bids, adUnit2.Code)
 	if adUnit2.Sizes[0].H != bid.Height || adUnit2.Sizes[0].W != bid.Width {
-		t.Fatalf("Recieved the wrong size")
+		t.Fatalf("Received the wrong size")
 	}
 }
 
-func TestIxMultiSizeResponse(t *testing.T) {
+func TestIxTwoSlotMultiSizeOnlyValidIXSizeResponse(t *testing.T) {
 
 	server := httptest.NewServer(
 		http.HandlerFunc(dummyIXServer),
@@ -580,14 +629,13 @@ func TestIxMultiSizeResponse(t *testing.T) {
 		t.Fatalf("Should not have gotten an error: %v", err)
 	}
 
-	if len(bids) != 2 {
-		t.Fatalf("Should have received 2 bids")
+	if len(bids) != 1 {
+		t.Fatalf("Should have received only 1 bids")
 	}
 
-	for _, v := range adUnit.Sizes {
-		if !bidResponseForSizeExist(bids, v.H, v.W) {
-			t.Fatalf("Missing bid for specified size %d and %d", v.W, v.H)
-		}
+	v := adUnit.Sizes[0]
+	if !bidResponseForSizeExist(bids, v.H, v.W) {
+		t.Fatalf("Missing bid for specified size %d and %d", v.W, v.H)
 	}
 }
 

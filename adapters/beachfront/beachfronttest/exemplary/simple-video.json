@@ -48,7 +48,6 @@
         "body": {
           "isPrebid": true,
           "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
-          "domain": "test.opposingviews.com",
           "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
           "imp": [
             {
@@ -57,19 +56,19 @@
                 "h": 250
               },
               "bidfloor": 0.01,
+              "secure" : 0,
               "id": 0,
               "impid": "video1"
             }
           ],
           "site": {
-            "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+            "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
+            "domain": "test.opposingviews.com"
           },
           "device": {
+            "js": "1",
             "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "deviceType": 0,
-            "geo": {
-              "ip": "127.0.0.1"
-            }
+            "ip": "127.0.0.1"
           },
           "cur": [
             "USD"

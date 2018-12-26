@@ -157,11 +157,13 @@ type Adapter struct {
 	Endpoint    string `mapstructure:"endpoint"` // Required
 	UserSyncURL string `mapstructure:"usersync_url"`
 	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
+	PartnerId   string `mapstructure:"partner_id"`  // needed for 33Across
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
+	Disabled bool `mapstructure:"disabled"`
 }
 
 type Metrics struct {
@@ -271,7 +273,7 @@ func SetupViper(v *viper.Viper, filename string) {
 		v.AddConfigPath(".")
 		v.AddConfigPath("/etc/config")
 	}
-	// Fixes #475: Some defaults will be set just so they are accessable via environment variables
+	// Fixes #475: Some defaults will be set just so they are accessible via environment variables
 	// (basically so viper knows they exist)
 	v.SetDefault("external_url", "http://localhost:8000")
 	v.SetDefault("host", "")
@@ -354,8 +356,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.adform.usersync_url", "//cm.adform.net/cookie?redirect_url=")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	v.SetDefault("adapters.beachfront.endpoint", "//sync.bfmio.com/syncb?pid=")
-	v.SetDefault("adapters.beachfront.platform_id", "142")
+	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
+	v.SetDefault("adapters.beachfront.usersync_url", "//sync.bfmio.com/syncb?pid=")
+	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.brightroll.usersync_url", "http://pr-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
@@ -375,8 +378,15 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sovrn.usersync_url", "//ap.lijit.com/pixel?")
 	v.SetDefault("adapters.adkerneladn.usersync_url", "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
+	v.SetDefault("adapters.33across.partner_id", "")
+	v.SetDefault("adapters.33across.usersync_url", "https://ssc-cms.33across.com/ps")
+	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
 	v.SetDefault("adapters.rhythmone.usersync_url", "//sync.1rx.io/usersync2/rmphb?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&redir=")
+	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
+	v.SetDefault("adapters.gumgum.usersync_url", "https://rtb.gumgum.com/usync/prbds2s?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
+	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
+	v.SetDefault("adapters.grid.usersync_url", "http://grid.bidswitch.net/sp_sync?sp_id=prebid&redir=")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -403,4 +413,6 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault("adapters."+bidder+".xapi.username", "")
 	v.SetDefault("adapters."+bidder+".xapi.password", "")
 	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
+	v.SetDefault("adapters."+bidder+".disabled", false)
+	v.SetDefault("adapters."+bidder+".partner_id", "")
 }

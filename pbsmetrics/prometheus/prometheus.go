@@ -74,8 +74,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		adapterLabelNames, timerBuckets,
 	)
 	metrics.Registry.MustRegister(metrics.adaptTimer)
-	metrics.adaptBids = newCounter(cfg, "adapter_bids_recieved_total",
-		"Number of bids recieved from each bidder.",
+	metrics.adaptBids = newCounter(cfg, "adapter_bids_received_total",
+		"Number of bids received from each bidder.",
 		bidLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.adaptBids)
@@ -117,7 +117,7 @@ func newCookieSync(cfg config.PrometheusMetrics) prometheus.Counter {
 		Namespace: cfg.Namespace,
 		Subsystem: cfg.Subsystem,
 		Name:      "cookie_sync_requests_total",
-		Help:      "Number of cookie sync requests recieved.",
+		Help:      "Number of cookie sync requests received.",
 	}
 	return prometheus.NewCounter(opts)
 }
