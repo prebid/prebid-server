@@ -338,6 +338,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		}
 	}
 
+	//adding hack to support DNT, since hbopenbid does not support lmt
+	if request.Device != nil && request.Device.Lmt != 0 {
+		request.Device.DNT = request.Device.Lmt
+	}
 	thisURI := a.URI
 
 	// If all the requests are invalid, Call to adaptor is skipped
