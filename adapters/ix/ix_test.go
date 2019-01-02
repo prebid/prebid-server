@@ -88,7 +88,7 @@ func TestIxInvalidCall(t *testing.T) {
 	pbBidder := pbs.PBSBidder{}
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 	if err == nil {
-		t.Fatalf("No error recived for invalid request")
+		t.Fatalf("No error received for invalid request")
 	}
 }
 
@@ -106,7 +106,7 @@ func TestIxInvalidCallReqAppNil(t *testing.T) {
 	_, err := an.Call(ctx, &pbReq, &pbBidder)
 
 	if err == nil {
-		t.Fatalf("No error recived for invalid request")
+		t.Fatalf("No error received for invalid request")
 	}
 }
 

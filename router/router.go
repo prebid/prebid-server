@@ -170,9 +170,6 @@ type Router struct {
 func New(cfg *config.Configuration) (r *Router, err error) {
 	const schemaDirectory = "./static/bidder-params"
 	const infoDirectory = "./static/bidder-info"
-	disabledBidders := map[string]string{
-		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
-	}
 
 	r = &Router{
 		Router: httprouter.New(),
@@ -195,19 +192,24 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
 
 	// Hack because of how legacy handles districtm
-	bidderList := openrtb_ext.BidderList()
-	bidderList = append(bidderList, openrtb_ext.BidderName("districtm"))
+	legacyBidderList := openrtb_ext.BidderList()
+	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, bidderList)
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
 		glog.Fatalf("Failed to create the bidder params validator. %v", err)
 	}
 
+	disabledBidders := map[string]string{
+		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
+	}
+	bidderList, bidderMap := exchange.DisableBidders(cfg.Adapters, openrtb_ext.BidderList(), disabledBidders)
+
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(p, openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos(p, bidderList)
 
 	defaultAliases, defReqJSON := readDefaultRequest(cfg.DefReqConfig)
 
@@ -217,12 +219,12 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
