@@ -72,7 +72,8 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	body := bidRequest{
-		Time:               time.Now().Unix(),
+		Placements:         make([]placement, len(request.Imp)),
+		Time:               a.clock.Now().Unix(),
 		IncludePricingData: true,
 		EnableBotFiltering: true,
 	}
@@ -80,6 +81,16 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	if request.Site != nil {
 		body.Referrer = request.Site.Ref
 		body.Url = request.Site.Page
+	}
+
+	for i, impression := range request.Imp {
+		body.Placements[i] = placement{
+			DivName: impression.ID,
+			//NetworkId int    `json:"networkId"`
+			//SiteId    int    `json:"siteId"`
+			//AdTypes   []int  `json:"adTypes"`
+			//ZoneIds   []int  `json:"zoneIds,omitempty"`
+		}
 	}
 
 	bodyBytes, err := json.Marshal(body)
