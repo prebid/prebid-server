@@ -6,6 +6,14 @@
         "id": "test-imp-id",
         "banner": {
           "format": [{"w": 728, "h": 90}]
+        },
+        "ext": {
+          "bidder": {
+            "networkId": 11,
+            "siteId": 32,
+            "unitId": 42,
+            "unitName": "The answer"
+          }
         }
       }
     ],
@@ -17,11 +25,21 @@
       "expectedRequest": {
         "uri": "https://e.serverbid.com/api/v2",
         "body": {
-          "placements": null,
+          "placements": [
+            {
+              "adTypes": null,
+              "divName": "test-imp-id",
+              "networkId": 11,
+              "siteId": 32,
+              "unitId": 42,
+              "unitName": "The answer"
+            }
+          ],
           "time": 1451651415,
           "includePricingData": true,
           "user":{},
-          "enableBotFiltering":true
+          "enableBotFiltering": true,
+          "parallel": true
         }
       },
       "mockResponse": {

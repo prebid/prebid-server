@@ -25,14 +25,16 @@ type bidRequest struct {
 	Ip                 string      `json:"ip,omitempty"`
 	Url                string      `json:"url,omitempty"`
 	EnableBotFiltering bool        `json:"enableBotFiltering,omitempty"`
+	Parallel           bool        `json:"parallel"`
 }
 
 type placement struct {
 	DivName   string `json:"divName"`
 	NetworkId int    `json:"networkId"`
 	SiteId    int    `json:"siteId"`
+	UnitId    int    `json:"unitId"`
+	UnitName  string `json:"unitName"`
 	AdTypes   []int  `json:"adTypes"`
-	ZoneIds   []int  `json:"zoneIds,omitempty"`
 }
 
 type user struct {
@@ -89,6 +91,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		Time:               a.clock.Now().Unix(),
 		IncludePricingData: true,
 		EnableBotFiltering: true,
+		Parallel:           true,
 	}
 
 	if request.Site != nil {
@@ -97,12 +100,30 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	for i, impression := range request.Imp {
+
+		var bidderExt adapters.ExtImpBidder
+		if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
+			fmt.Printf("err: %s", err) // TODO: DELETE
+			return nil, []error{&errortypes.BadInput{
+				Message: err.Error(),
+			}}
+		}
+
+		var consumableExt openrtb_ext.ExtImpConsumable
+		if err := json.Unmarshal(bidderExt.Bidder, &consumableExt); err != nil {
+			fmt.Printf("err: %s", err) // TODO: DELETE
+			return nil, []error{&errortypes.BadInput{
+				Message: err.Error(),
+			}}
+		}
+
 		body.Placements[i] = placement{
-			DivName: impression.ID,
-			//NetworkId int    `json:"networkId"`
-			//SiteId    int    `json:"siteId"`
-			//AdTypes   []int  `json:"adTypes"`
-			//ZoneIds   []int  `json:"zoneIds,omitempty"`
+			DivName:   impression.ID,
+			NetworkId: consumableExt.NetworkId,
+			SiteId:    consumableExt.SiteId,
+			UnitId:    consumableExt.UnitId,
+			UnitName:  consumableExt.UnitName,
+			AdTypes:   nil, // TODO
 		}
 	}
 
@@ -158,7 +179,7 @@ func (a *ConsumableAdapter) MakeBids(
 	bidderResponse := adapters.NewBidderResponse()
 	var errors []error
 
-	for impID, decision := range serverResponse.Decisions { // TODO: I don't think this is by impId impID
+	for impID, decision := range serverResponse.Decisions {
 		println("ImpID: ", impID, " Decision: ", *decision.Pricing.ClearPrice)
 		imp := getImp(impID, internalRequest.Imp)
 		if imp == nil {
@@ -195,20 +216,12 @@ func (a *ConsumableAdapter) MakeBids(
 		bidObj = bids[i];
 		bidId = bidObj.bidId;
 
-		const decision = serverResponse.decisions && serverResponse.decisions[bidId];
-		const price = decision && decision.pricing && decision.pricing.clearPrice;
 
 		if (decision && price) {
 			bid.requestId = bidId;
 			bid.cpm = price;
-			bid.width = decision.width;
-			bid.height = decision.height;
-			bid.unitId = bidObj.params.unitId;  // not used when sending to consumable end (but will get from
-			bid.unitName = bidObj.params.unitName;
 			bid.ad = retrieveAd(decision, bid.unitId, bid.unitName);
 			bid.currency = 'USD';
-			bid.creativeId = decision.adId;
-			bid.ttl = 30;
 			bid.netRevenue = true;
 			bid.referrer = utils.getTopWindowUrl();
 
