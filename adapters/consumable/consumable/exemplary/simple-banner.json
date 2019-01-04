@@ -27,6 +27,14 @@
       "mockResponse": {
         "status": 200,
         "body": {
+          "decisions": {
+            "test-imp-id": {
+              "adId": "crid-consumable",
+              "pricing": {
+                "clearPrice": 0.5
+              }
+            }
+          }
         }
       }
     }
@@ -41,8 +49,9 @@
             "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
             "impid": "test-imp-id",
             "price": 0.5,
-            "adm": "some-test-ad",
-            "crid": "crid_10",
+            "adm": "the ad markup",
+            "crid": "crid-consumable",
+            "exp": 30,
             "w": 728,
             "h": 90
           },

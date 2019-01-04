@@ -39,6 +39,19 @@ type user struct {
 	Key string `json:"key,omitempty"`
 }
 
+type bidResponse struct {
+	Decisions map[string]decision `json:"decisions"` // map by bidId
+}
+
+type decision struct {
+	Pricing *pricing `json:"pricing"`
+	AdID    *string  `json:"adId"`
+}
+
+type pricing struct {
+	ClearPrice *float64 `json:"clearPrice"`
+}
+
 func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	headers := http.Header{
 		"Content-Type": {"application/json"},
@@ -135,7 +148,7 @@ func (a *ConsumableAdapter) MakeBids(
 		}}
 	}
 
-	var serverResponse openrtb.BidResponse // response from Consumable
+	var serverResponse bidResponse // response from Consumable
 	if err := json.Unmarshal(response.Body, &serverResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("error while decoding response, err: %s", err),
@@ -145,23 +158,32 @@ func (a *ConsumableAdapter) MakeBids(
 	bidderResponse := adapters.NewBidderResponse()
 	var errors []error
 
-	for _, sb := range serverResponse.SeatBid {
-		for _, bid := range sb.Bid {
+	for impID, decision := range serverResponse.Decisions { // TODO: I don't think this is by impId impID
+		println("ImpID: ", impID, " Decision: ", *decision.Pricing.ClearPrice)
+		imp := getImp(impID, internalRequest.Imp)
+		if imp == nil {
+			errors = append(errors, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", "TODO: bid.ID", impID),
+			})
+			fmt.Printf("%s", errors[0])
+			continue
+		}
 
-			imp := getImp(bid.ImpID, internalRequest.Imp)
-			if imp == nil {
-				errors = append(errors, &errortypes.BadServerResponse{
-					Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", bid.ID, bid.ImpID),
-				})
-				continue
-			}
+		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
 
-			if bid.Price != 0 {
-				bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: getMediaTypeForImp(getImp(bid.ImpID, internalRequest.Imp)),
-				})
-			}
+			bid := openrtb.Bid{}
+			bid.ImpID = impID
+			bid.Price = *decision.Pricing.ClearPrice
+			bid.AdM = "the ad markup"
+			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
+			bid.H = imp.Banner.Format[0].H
+			bid.CrID = *decision.AdID // creative id ... to assist with quality checking
+			bid.Exp = 30              // TODO: Check this is intention of TTL
+
+			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(getImp(bid.ImpID, internalRequest.Imp)),
+			})
 		}
 	}
 
