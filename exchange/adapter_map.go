@@ -75,6 +75,8 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 
 	allBidders := make(map[openrtb_ext.BidderName]adaptedBidder, len(ortbBidders)+len(legacyBidders))
 
+	// Wrap legacy and openrtb Bidders behind a common interface, so that the Exchange doesn't need to concern
+	// itself with the differences.
 	for name, bidder := range legacyBidders {
 		// Clean out any disabled bidders
 		if isEnabledBidder(cfg.Adapters, string(name)) {
@@ -87,12 +89,18 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
 		}
 	}
+
+	// Apply any middleware used for global Bidder logic.
+	for name, bidder := range allBidders {
+		allBidders[name] = ensureValidBids(bidder)
+	}
+
 	return allBidders
 }
 
 // isEnabledBidder Checks that a bidder config exists and is not disabled
 func isEnabledBidder(cfg map[string]config.Adapter, bidder string) bool {
-	a, ok := cfg[bidder]
+	a, ok := cfg[strings.ToLower(bidder)]
 	return ok && !a.Disabled
 }
 
@@ -103,8 +111,8 @@ func DisableBidders(cfg map[string]config.Adapter, origBidderList []openrtb_ext.
 		bidderMap[k] = v
 	}
 	// Set up error messages for disabled bidders
-	for a, c := range cfg {
-		if c.Disabled {
+	for a := range openrtb_ext.BidderMap {
+		if !isEnabledBidder(cfg, a) {
 			disabledBidders[a] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", a)
 			delete(bidderMap, a)
 			// remove this bidder from the bidderList
