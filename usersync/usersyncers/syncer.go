@@ -22,6 +22,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sovrn"
+	"github.com/prebid/prebid-server/adapters/yieldmo"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
@@ -53,5 +54,6 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 		openrtb_ext.BidderSovrn:        sovrn.NewSovrnSyncer(cfg),
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossSyncer(cfg),
 		openrtb_ext.BidderGrid:         grid.NewGridSyncer(cfg),
+		openrtb_ext.BidderYieldmo:      yieldmo.NewYieldmoSyncer(cfg),
 	}
 }

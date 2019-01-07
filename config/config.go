@@ -387,6 +387,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.gumgum.usersync_url", "https://rtb.gumgum.com/usync/prbds2s?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
 	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.grid.usersync_url", "http://grid.bidswitch.net/sp_sync?sp_id=prebid&redir=")
+	v.SetDefault("adapters.yieldmo.endpoint", "http://ads.yieldmo.com/exchange/prebid-server")
+	v.SetDefault("adapters.yieldmo.usersync_url", "https://ads.yieldmo.com/pbsync?")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")

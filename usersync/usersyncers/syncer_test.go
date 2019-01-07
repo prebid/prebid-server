@@ -31,6 +31,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSovrn):        {},
 			string(openrtb_ext.Bidder33Across):     {},
 			string(openrtb_ext.BidderGrid):         {},
+			string(openrtb_ext.BidderYieldmo):      {},
 		},
 	}
 	m := NewSyncerMap(cfg)
