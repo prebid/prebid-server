@@ -88,7 +88,7 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 		return false, nil
 	}
 
-	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
+	if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) || vendor.LegitimateInterest(consentconstants.AdSelectionDeliveryReporting)) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
 		return true, nil
 	}
 
