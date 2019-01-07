@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -116,13 +117,16 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		newSync := &usersync.CookieSyncBidders{
-			BidderCode:   bidder,
-			NoCookie:     true,
-			UsersyncInfo: deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent),
-		}
-		if len(newSync.UsersyncInfo.URL) > 0 {
+		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
+		if err == nil {
+			newSync := &usersync.CookieSyncBidders{
+				BidderCode:   bidder,
+				NoCookie:     true,
+				UsersyncInfo: syncInfo,
+			}
 			csResp.BidderStatus = append(csResp.BidderStatus, newSync)
+		} else {
+			glog.Errorf("Failed to get usersync info for %s: %v", bidder, err)
 		}
 	}
 

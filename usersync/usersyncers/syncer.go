@@ -1,6 +1,10 @@
 package usersyncers
 
 import (
+	"strings"
+	"text/template"
+
+	"github.com/golang/glog"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
@@ -31,27 +35,39 @@ import (
 // The same keys should exist in this map as in the exchanges map.
 // Static syncer map will be removed when adapter isolation is complete.
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync.Usersyncer {
-	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAdform:       adform.NewAdformSyncer(cfg),
-		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.NewAdkernelAdnSyncer(cfg),
-		openrtb_ext.BidderAdtelligent:  adtelligent.NewAdtelligentSyncer(cfg),
-		openrtb_ext.BidderAppnexus:     appnexus.NewAppnexusSyncer(cfg),
-		openrtb_ext.BidderBeachfront:   beachfront.NewBeachfrontSyncer(cfg),
-		openrtb_ext.BidderFacebook:     audienceNetwork.NewFacebookSyncer(cfg),
-		openrtb_ext.BidderBrightroll:   brightroll.NewBrightrollSyncer(cfg),
-		openrtb_ext.BidderConversant:   conversant.NewConversantSyncer(cfg),
-		openrtb_ext.BidderEPlanning:    eplanning.NewEPlanningSyncer(cfg),
-		openrtb_ext.BidderGumGum:       gumgum.NewGumGumSyncer(cfg),
-		openrtb_ext.BidderIx:           ix.NewIxSyncer(cfg),
-		openrtb_ext.BidderLifestreet:   lifestreet.NewLifestreetSyncer(cfg),
-		openrtb_ext.BidderOpenx:        openx.NewOpenxSyncer(cfg),
-		openrtb_ext.BidderPubmatic:     pubmatic.NewPubmaticSyncer(cfg),
-		openrtb_ext.BidderPulsepoint:   pulsepoint.NewPulsepointSyncer(cfg),
-		openrtb_ext.BidderRhythmone:    rhythmone.NewRhythmoneSyncer(cfg),
-		openrtb_ext.BidderRubicon:      rubicon.NewRubiconSyncer(cfg),
-		openrtb_ext.BidderSomoaudience: somoaudience.NewSomoaudienceSyncer(cfg),
-		openrtb_ext.BidderSovrn:        sovrn.NewSovrnSyncer(cfg),
-		openrtb_ext.Bidder33Across:     ttx.New33AcrossSyncer(cfg),
-		openrtb_ext.BidderGrid:         grid.NewGridSyncer(cfg),
+	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer, len(cfg.Adapters))
+
+	insertIntoMap(cfg, syncers, openrtb_ext.Bidder33Across, ttx.New33AcrossSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdform, adform.NewAdformSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernelAdn, adkernelAdn.NewAdkernelAdnSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdtelligent, adtelligent.NewAdtelligentSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAppnexus, appnexus.NewAppnexusSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBeachfront, beachfront.NewBeachfrontSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBrightroll, brightroll.NewBrightrollSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderConversant, conversant.NewConversantSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderEPlanning, eplanning.NewEPlanningSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderFacebook, audienceNetwork.NewFacebookSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderGrid, grid.NewGridSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderGumGum, gumgum.NewGumGumSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderIx, ix.NewIxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderLifestreet, lifestreet.NewLifestreetSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenx, openx.NewOpenxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderPubmatic, pubmatic.NewPubmaticSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderPulsepoint, pulsepoint.NewPulsepointSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderRhythmone, rhythmone.NewRhythmoneSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderRubicon, rubicon.NewRubiconSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSomoaudience, somoaudience.NewSomoaudienceSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSovrn, sovrn.NewSovrnSyncer)
+
+	return syncers
+}
+
+func insertIntoMap(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, bidder openrtb_ext.BidderName, syncerFactory func(temp *template.Template) usersync.Usersyncer) {
+	lowercased := strings.ToLower(string(bidder))
+	urlString := cfg.Adapters[lowercased].UserSyncURL
+	if urlString == "" {
+		glog.Warningf("adapters." + string(bidder) + ".usersync_url was not defined, and their usersync API isn't flexible enough for Prebid Server to choose a good default. No usersyncs will be performed with " + string(bidder))
+		return
 	}
+	syncers[bidder] = syncerFactory(template.Must(template.New(lowercased + "_usersync_url").Parse(urlString)))
 }

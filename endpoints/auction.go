@@ -185,7 +185,12 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					gdprApplies := req.ParseGDPR()
 					consent := req.ParseConsent()
 					if a.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
-						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
+						syncInfo, err := syncer.GetUsersyncInfo(gdprApplies, consent)
+						if err == nil {
+							bidder.UsersyncInfo = syncInfo
+						} else {
+							glog.Errorf("Failed to get usersync info for %s: %v", syncerCode, err)
+						}
 					}
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {

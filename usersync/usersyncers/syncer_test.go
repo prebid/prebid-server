@@ -1,6 +1,7 @@
 package usersyncers
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -8,39 +9,39 @@ import (
 )
 
 func TestNewSyncerMap(t *testing.T) {
+	syncConfig := config.Adapter{
+		UserSyncURL: "some-sync-url",
+	}
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
-			string(openrtb_ext.BidderAdform):       {},
-			string(openrtb_ext.BidderAdkernelAdn):  {},
-			string(openrtb_ext.BidderAdtelligent):  {},
-			string(openrtb_ext.BidderAppnexus):     {},
-			string(openrtb_ext.BidderBeachfront):   {},
-			string(openrtb_ext.BidderFacebook):     {},
-			string(openrtb_ext.BidderBrightroll):   {},
-			string(openrtb_ext.BidderConversant):   {},
-			string(openrtb_ext.BidderEPlanning):    {},
-			string(openrtb_ext.BidderGumGum):       {},
-			string(openrtb_ext.BidderIx):           {},
-			string(openrtb_ext.BidderLifestreet):   {},
-			string(openrtb_ext.BidderOpenx):        {},
-			string(openrtb_ext.BidderPubmatic):     {},
-			string(openrtb_ext.BidderPulsepoint):   {},
-			string(openrtb_ext.BidderRhythmone):    {},
-			string(openrtb_ext.BidderRubicon):      {},
-			string(openrtb_ext.BidderSomoaudience): {},
-			string(openrtb_ext.BidderSovrn):        {},
-			string(openrtb_ext.Bidder33Across):     {},
-			string(openrtb_ext.BidderGrid):         {},
+			string(openrtb_ext.BidderAdform):       syncConfig,
+			string(openrtb_ext.BidderAdkernelAdn):  syncConfig,
+			string(openrtb_ext.BidderAdtelligent):  syncConfig,
+			string(openrtb_ext.BidderAppnexus):     syncConfig,
+			string(openrtb_ext.BidderBeachfront):   syncConfig,
+			string(openrtb_ext.BidderFacebook):     syncConfig,
+			string(openrtb_ext.BidderBrightroll):   syncConfig,
+			string(openrtb_ext.BidderConversant):   syncConfig,
+			string(openrtb_ext.BidderEPlanning):    syncConfig,
+			string(openrtb_ext.BidderGrid):         syncConfig,
+			string(openrtb_ext.BidderGumGum):       syncConfig,
+			string(openrtb_ext.BidderIx):           syncConfig,
+			string(openrtb_ext.BidderLifestreet):   syncConfig,
+			string(openrtb_ext.BidderOpenx):        syncConfig,
+			string(openrtb_ext.BidderPubmatic):     syncConfig,
+			string(openrtb_ext.BidderPulsepoint):   syncConfig,
+			string(openrtb_ext.BidderRhythmone):    syncConfig,
+			string(openrtb_ext.BidderRubicon):      syncConfig,
+			string(openrtb_ext.BidderSomoaudience): syncConfig,
+			string(openrtb_ext.BidderSovrn):        syncConfig,
+			string(openrtb_ext.Bidder33Across):     syncConfig,
 		},
 	}
-	m := NewSyncerMap(cfg)
-	if len(m) != len(cfg.Adapters) {
-		t.Errorf("length mismatch: expected: %d got: %d", len(m), len(cfg.Adapters))
+	for bidder, config := range cfg.Adapters {
+		delete(cfg.Adapters, bidder)
+		cfg.Adapters[strings.ToLower(string(bidder))] = config
 	}
-}
 
-func TestSyncers(t *testing.T) {
-	cfg := &config.Configuration{}
 	syncers := NewSyncerMap(cfg)
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if _, ok := syncers[bidderName]; !ok {
