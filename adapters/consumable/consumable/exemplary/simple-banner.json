@@ -5,7 +5,7 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [{"w": 728, "h": 90}]
+          "format": [{"w": 728, "h": 250}]
         },
         "ext": {
           "bidder": {
@@ -27,7 +27,7 @@
         "body": {
           "placements": [
             {
-              "adTypes": null,
+              "adTypes": [2730],
               "divName": "test-imp-id",
               "networkId": 11,
               "siteId": 32,
@@ -50,7 +50,9 @@
               "adId": "crid-consumable",
               "pricing": {
                 "clearPrice": 0.5
-              }
+              },
+              "width": 728,
+              "height": 250
             }
           }
         }
@@ -71,7 +73,7 @@
             "crid": "crid-consumable",
             "exp": 30,
             "w": 728,
-            "h": 90
+            "h": 250
           },
           "type": "banner"
         }

@@ -9,7 +9,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 type ConsumableAdapter struct {
@@ -123,7 +122,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 			SiteId:    consumableExt.SiteId,
 			UnitId:    consumableExt.UnitId,
 			UnitName:  consumableExt.UnitName,
-			AdTypes:   nil, // TODO
+			AdTypes:   getSizeCodes(impression.Banner.Format),
 		}
 	}
 
