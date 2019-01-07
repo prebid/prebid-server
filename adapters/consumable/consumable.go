@@ -29,7 +29,7 @@ type bidRequest struct {
 
 type placement struct {
 	DivName   string `json:"divName"`
-	NetworkId int    `json:"networkId"`
+	NetworkId int    `json:"networkId,omitempty"`
 	SiteId    int    `json:"siteId"`
 	UnitId    int    `json:"unitId"`
 	UnitName  string `json:"unitName"`
@@ -45,8 +45,14 @@ type bidResponse struct {
 }
 
 type decision struct {
-	Pricing *pricing `json:"pricing"`
-	AdID    *string  `json:"adId"`
+	Pricing       *pricing   `json:"pricing"`
+	AdID          *string    `json:"adId"`
+	Contents      []contents `json:"contents"`
+	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
+}
+
+type contents struct {
+	Body string `json:"body"`
 }
 
 type pricing struct {
@@ -100,20 +106,10 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	for i, impression := range request.Imp {
 
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
-			fmt.Printf("err: %s", err) // TODO: DELETE
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
-		}
+		_, consumableExt, err := extractExtensions(impression)
 
-		var consumableExt openrtb_ext.ExtImpConsumable
-		if err := json.Unmarshal(bidderExt.Bidder, &consumableExt); err != nil {
-			fmt.Printf("err: %s", err) // TODO: DELETE
-			return nil, []error{&errortypes.BadInput{
-				Message: err.Error(),
-			}}
+		if err != nil {
+			return nil, err
 		}
 
 		body.Placements[i] = placement{
@@ -190,11 +186,12 @@ func (a *ConsumableAdapter) MakeBids(
 		}
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
+			_, consumableExt, _ := extractExtensions(*imp)
 
 			bid := openrtb.Bid{}
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
-			bid.AdM = "the ad markup"
+			bid.AdM = retrieveAd(decision, consumableExt.UnitId, consumableExt.UnitName, a.clock.Now())
 			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
 			bid.H = imp.Banner.Format[0].H
 			bid.CrID = *decision.AdID // creative id ... to assist with quality checking
@@ -238,6 +235,26 @@ func getImp(impId string, imps []openrtb.Imp) *openrtb.Imp {
 		}
 	}
 	return nil
+}
+
+func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
+		fmt.Printf("err: %s", err) // TODO: DELETE
+		return nil, nil, []error{&errortypes.BadInput{
+			Message: err.Error(),
+		}}
+	}
+
+	var consumableExt openrtb_ext.ExtImpConsumable
+	if err := json.Unmarshal(bidderExt.Bidder, &consumableExt); err != nil {
+		fmt.Printf("err: %s", err) // TODO: DELETE
+		return nil, nil, []error{&errortypes.BadInput{
+			Message: err.Error(),
+		}}
+	}
+
+	return &bidderExt, &consumableExt, nil
 }
 
 func getMediaTypeForImp(imp *openrtb.Imp) openrtb_ext.BidType {
