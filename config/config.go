@@ -193,9 +193,14 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Port      int    `mapstructure:"port"`
-	Namespace string `mapstructure:"namespace"`
-	Subsystem string `mapstructure:"subsystem"`
+	Port             int    `mapstructure:"port"`
+	Namespace        string `mapstructure:"namespace"`
+	Subsystem        string `mapstructure:"subsystem"`
+	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
+}
+
+func (m *PrometheusMetrics) Timeout() time.Duration {
+	return time.Duration(m.TimeoutMillisRaw) * time.Millisecond
 }
 
 type DataCache struct {
@@ -363,6 +368,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
+	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)
