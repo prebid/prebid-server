@@ -26,9 +26,9 @@ const sec = "ROS"
 const dfpClientID = "1"
 
 var cleanNameRegexps = map[*regexp.Regexp]string{
-	regexp.MustCompile(`_|\.|-|\/`):  "",
+	regexp.MustCompile(`_|\.|-|\/`):    "",
 	regexp.MustCompile(`\)\(|\(|\)|:`): "_",
-	regexp.MustCompile(`^_+|_+$`):    "",
+	regexp.MustCompile(`^_+|_+$`):      "",
 }
 
 type EPlanningAdapter struct {
