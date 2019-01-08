@@ -7,24 +7,24 @@
   "properties": {
     "siteId": {
       "type": "number",
-      "description": "An ID which identifies the site selling the impression",
+      "description": "The site ID from Consumable",
       "pattern": "^[0-9]+$"
     },
     "networkId": {
       "type": "number",
-      "description": "The network id",
+      "description": "The network ID from Consumable",
       "pattern": "^[0-9]+$"
     },
     "unitId": {
       "type": "number",
-      "description": "The unit id",
+      "description": "The unit ID from Consumable",
       "pattern": "^[0-9]+$"
     },
     "unitName": {
       "type": "string",
-      "description": "The unit name (expected to be a valid CSS class name)",
+      "description": "The unit name from Consumable (expected to be a valid CSS class name)",
       "pattern": "^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$"
     }
   },
-  "required": ["siteId", "unitId", "unitName"]
+  "required": ["siteId", "networkId","unitId", "unitName"]
 }
