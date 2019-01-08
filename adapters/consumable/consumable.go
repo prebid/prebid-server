@@ -118,7 +118,7 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 			SiteId:    consumableExt.SiteId,
 			UnitId:    consumableExt.UnitId,
 			UnitName:  consumableExt.UnitName,
-			AdTypes:   getSizeCodes(impression.Banner.Format),
+			AdTypes:   getSizeCodes(impression.Banner.Format), // was adTypes: bid.adTypes || getSize(bid.sizes) in prebid.js
 		}
 	}
 
@@ -197,34 +197,18 @@ func (a *ConsumableAdapter) MakeBids(
 			bid.CrID = *decision.AdID // creative id ... to assist with quality checking
 			bid.Exp = 30              // TODO: Check this is intention of TTL
 
+			// not yet ported from prebid.js adapter
+			//bid.requestId = bidId;
+			//bid.currency = 'USD';
+			//bid.netRevenue = true;
+			//bid.referrer = utils.getTopWindowUrl();
+
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: getMediaTypeForImp(getImp(bid.ImpID, internalRequest.Imp)),
 			})
 		}
 	}
-
-	/* This is what we're working towards.
-	bids = bidRequest.bidRequest;
-
-	for (let i = 0; i < bids.length; i++) {
-		bid = {};
-		bidObj = bids[i];
-		bidId = bidObj.bidId;
-
-
-		if (decision && price) {
-			bid.requestId = bidId;
-			bid.cpm = price;
-			bid.ad = retrieveAd(decision, bid.unitId, bid.unitName);
-			bid.currency = 'USD';
-			bid.netRevenue = true;
-			bid.referrer = utils.getTopWindowUrl();
-
-			bidResponses.push(bid);
-		}
-	}
-	*/
 	return bidderResponse, errors
 }
 
