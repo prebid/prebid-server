@@ -193,7 +193,6 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Endpoint  string `mapstructure:"endpoint"`
 	Port      int    `mapstructure:"port"`
 	Namespace string `mapstructure:"namespace"`
 	Subsystem string `mapstructure:"subsystem"`
@@ -361,7 +360,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
-	v.SetDefault("metrics.prometheus.endpoint", "")
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")

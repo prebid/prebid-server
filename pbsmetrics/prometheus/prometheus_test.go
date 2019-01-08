@@ -309,7 +309,6 @@ func TestMetricsExist(t *testing.T) {
 
 func newTestMetricsEngine() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
-		Endpoint:  "/metrics",
 		Port:      8080,
 		Namespace: "prebid",
 		Subsystem: "",
