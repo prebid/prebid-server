@@ -206,7 +206,7 @@ type PrometheusMetrics struct {
 
 func (cfg *PrometheusMetrics) validate(errs configErrors) configErrors {
 	if cfg.Port > 0 && cfg.TimeoutMillisRaw <= 0 {
-		errs = append(errs, fmt.Errorf("metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got %d", cfg.Port))
+		errs = append(errs, fmt.Errorf("metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=%d and port=%d", cfg.TimeoutMillisRaw, cfg.Port))
 	}
 	return errs
 }

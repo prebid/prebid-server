@@ -194,7 +194,7 @@ func TestNegativePrometheusTimeout(t *testing.T) {
 	cfg := newDefaultConfig(t)
 	cfg.Metrics.Prometheus.Port = 8001
 	cfg.Metrics.Prometheus.TimeoutMillisRaw = 0
-	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got 8001")
+	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
 }
 
 func TestOverflowedVendorID(t *testing.T) {
