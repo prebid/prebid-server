@@ -287,7 +287,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), disabledBidders, aliasJSON, bidderMap)
+	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), disabledBidders, aliasJSON, bidderMap)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
 	recorder := httptest.NewRecorder()
@@ -506,7 +506,7 @@ func TestStoredRequests(t *testing.T) {
 
 // TestOversizedRequest makes sure we behave properly when the request size exceeds the configured max.
 func TestOversizedRequest(t *testing.T) {
-	reqBody := `{"id":"request-id"}`
+	reqBody := validRequest(t, "site.json")
 	deps := &endpointDeps{
 		&nobidExchange{},
 		newParamsValidator(t),
@@ -754,6 +754,10 @@ func getMessage(t *testing.T, example []byte) []byte {
 // StoredRequest testing
 
 // Test stored request data
+
+// Stored Requests
+// first below is valid JSON
+// second below is identical to first but with extra '{' for invalid JSON
 var testStoredRequestData = map[string]json.RawMessage{
 	"2": json.RawMessage(`{
 		"tmax": 500,
@@ -765,8 +769,22 @@ var testStoredRequestData = map[string]json.RawMessage{
 			}
 		}
 	}`),
+	"3": json.RawMessage(`{
+                "tmax": 500,
+                "ext": {
+                        "prebid": {
+                                "targeting": {
+                                        "pricegranularity": "low"
+                                }
+                        }
+                }}
+        }`),
 }
 
+// Stored Imp Requests
+// first below has valid JSON but doesn't match schema
+// second below has invalid JSON (missing comma) but otherwise matches schema
+// third below has valid JSON and matches schema
 var testStoredImpData = map[string]json.RawMessage{
 	"1": json.RawMessage(`{
 		"id": "adUnit1",
@@ -778,6 +796,36 @@ var testStoredImpData = map[string]json.RawMessage{
 				},
 				"rubicon": {
 					"accountId": "abc"
+				}
+			}
+		}`),
+	"2": json.RawMessage(`{
+		"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": 12345678,
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": 23456789
+					"siteId": 113932,
+					"zoneId": 535510
+				}
+			}
+		}`),
+	"3": json.RawMessage(`{
+		"id": "adUnit1",
+			"ext": {
+				"appnexus": {
+					"placementId": 12345678,
+					"position": "above",
+					"reserve": 0.35
+				},
+				"rubicon": {
+					"accountId": 23456789,
+					"siteId": 113932,
+					"zoneId": 535510
 				}
 			}
 		}`),

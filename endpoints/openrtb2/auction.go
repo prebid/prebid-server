@@ -879,6 +879,12 @@ func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	}
 }
 
+var errBadIncomingRequest = fmt.Errorf("Invalid JSON in Incoming Request")
+var errBadStoredRequest = fmt.Errorf("Invalid JSON in Stored Request")
+var errBadIncomingImp = fmt.Errorf("Invalid JSON in Incoming Imp Request")
+var errBadStoredImp = fmt.Errorf("Invalid JSON in Stored Imp Request")
+var errBadDefaultRequest = fmt.Errorf("Invalid Default Request")
+
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
@@ -905,6 +911,12 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if hasStoredBidRequest {
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 		if err != nil {
+			if !json.Valid(requestJson) {
+				err = errBadIncomingRequest
+			} else if !json.Valid(storedRequests[storedBidRequestId]) {
+				err = errBadStoredRequest
+			}
+
 			return nil, []error{err}
 		}
 	}
@@ -913,6 +925,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if deps.defaultRequest {
 		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
 		if err != nil {
+			if !json.Valid(resolvedRequest) {
+				err = errBadIncomingRequest
+			} else if !json.Valid(deps.defReqJSON) {
+				err = errBadDefaultRequest
+			}
 			return nil, []error{err}
 		}
 		resolvedRequest = aliasedRequest
@@ -924,6 +941,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
+			if !json.Valid(imps[idIndices[i]]) {
+				err = errBadIncomingImp
+			} else if !json.Valid(storedImps[impIds[i]]) {
+				err = errBadStoredImp
+			}
 			return nil, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp
