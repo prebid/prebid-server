@@ -68,6 +68,7 @@ func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
@@ -185,6 +186,10 @@ type Metrics struct {
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
 }
 
+func (cfg *Metrics) validate(errs configErrors) configErrors {
+	return cfg.Prometheus.validate(errs)
+}
+
 type InfluxMetrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
@@ -193,9 +198,21 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Port      int    `mapstructure:"port"`
-	Namespace string `mapstructure:"namespace"`
-	Subsystem string `mapstructure:"subsystem"`
+	Port             int    `mapstructure:"port"`
+	Namespace        string `mapstructure:"namespace"`
+	Subsystem        string `mapstructure:"subsystem"`
+	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
+}
+
+func (cfg *PrometheusMetrics) validate(errs configErrors) configErrors {
+	if cfg.Port > 0 && cfg.TimeoutMillisRaw <= 0 {
+		errs = append(errs, fmt.Errorf("metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=%d and port=%d", cfg.TimeoutMillisRaw, cfg.Port))
+	}
+	return errs
+}
+
+func (m *PrometheusMetrics) Timeout() time.Duration {
+	return time.Duration(m.TimeoutMillisRaw) * time.Millisecond
 }
 
 type DataCache struct {
@@ -363,6 +380,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
+	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)

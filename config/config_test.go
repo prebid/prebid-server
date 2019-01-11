@@ -8,6 +8,7 @@ import (
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaults(t *testing.T) {
@@ -178,37 +179,28 @@ func TestValidConfig(t *testing.T) {
 }
 
 func TestNegativeRequestSize(t *testing.T) {
-	cfg := Configuration{
-		MaxRequestSize: -1,
-	}
-
-	if err := cfg.validate(); err == nil {
-		t.Error("cfg.max_request_size should prevent negative values, but it doesn't")
-	}
+	cfg := newDefaultConfig(t)
+	cfg.MaxRequestSize = -1
+	assertOneError(t, cfg.validate(), "cfg.max_request_size must be >= 0. Got -1")
 }
 
 func TestNegativeVendorID(t *testing.T) {
-	cfg := Configuration{
-		GDPR: GDPR{
-			HostVendorID: -1,
-		},
-	}
+	cfg := newDefaultConfig(t)
+	cfg.GDPR.HostVendorID = -1
+	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got -1")
+}
 
-	if err := cfg.validate(); err == nil {
-		t.Error("cfg.gdpr.host_vendor_id should prevent negative values, but it doesn't")
-	}
+func TestNegativePrometheusTimeout(t *testing.T) {
+	cfg := newDefaultConfig(t)
+	cfg.Metrics.Prometheus.Port = 8001
+	cfg.Metrics.Prometheus.TimeoutMillisRaw = 0
+	assertOneError(t, cfg.validate(), "metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=0 and port=8001")
 }
 
 func TestOverflowedVendorID(t *testing.T) {
-	cfg := Configuration{
-		GDPR: GDPR{
-			HostVendorID: (0xffff) + 1,
-		},
-	}
-
-	if err := cfg.validate(); err == nil {
-		t.Errorf("cfg.gdpr.host_vendor_id should prevent values over %d, but it doesn't", 0xffff)
-	}
+	cfg := newDefaultConfig(t)
+	cfg.GDPR.HostVendorID = (0xffff) + 1
+	assertOneError(t, cfg.validate(), "gdpr.host_vendor_id must be in the range [0, 65535]. Got 65536")
 }
 
 func TestLimitTimeout(t *testing.T) {
@@ -217,7 +209,22 @@ func TestLimitTimeout(t *testing.T) {
 	doTimeoutTest(t, 5, 5, 10, 0)
 	doTimeoutTest(t, 15, 15, 0, 0)
 	doTimeoutTest(t, 15, 0, 20, 15)
+}
 
+func newDefaultConfig(t *testing.T) *Configuration {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	cfg, err := New(v)
+	assert.NoError(t, err)
+	return cfg
+}
+
+func assertOneError(t *testing.T, errs configErrors, message string) {
+	if !assert.Len(t, errs, 1) {
+		return
+	}
+	assert.EqualError(t, errs[0], message)
 }
 
 func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def uint64) {
