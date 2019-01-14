@@ -18,8 +18,6 @@ import (
 	"strconv"
 )
 
-var spaceNameToImpID map[string]string
-
 const nullSize = "1x1"
 const defaultPageURL = "FILE"
 const sec = "ROS"
@@ -61,7 +59,6 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 	totalImps := len(request.Imp)
 	spacesStrings := make([]string, 0, totalImps)
 	totalRequests := 0
-	spaceNameToImpID = make(map[string]string)
 	clientID := ""
 
 	for i := 0; i < totalImps; i++ {
@@ -80,7 +77,6 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		// Save valid imp
 		name := cleanName(extImp.AdUnitCode)
 		spacesStrings = append(spacesStrings, name+":"+extImp.SizeString)
-		spaceNameToImpID[name] = imp.ID
 	}
 
 	if totalRequests == 0 {
@@ -235,6 +231,18 @@ func (adapter *EPlanningAdapter) MakeBids(internalRequest *openrtb.BidRequest, e
 	}
 
 	bidResponse := adapters.NewBidderResponse()
+
+	spaceNameToImpID := make(map[string]string)
+
+	for _, imp := range internalRequest.Imp {
+		extImp, err := verifyImp(&imp)
+		if err != nil {
+			continue
+		}
+
+		name := cleanName(extImp.AdUnitCode)
+		spaceNameToImpID[name] = imp.ID
+	}
 
 	for _, space := range parsedResponse.Spaces {
 		for _, ad := range space.Ads {
