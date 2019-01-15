@@ -108,7 +108,19 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
+	adapterSyncs := make(map[openrtb_ext.BidderName]bool)
+	for _, b := range parsedReq.Bidders {
+		// assume all bidders will be GDPR blocked
+		adapterSyncs[openrtb_ext.BidderName(b)] = true
+	}
 	parsedReq.filterForGDPR(deps.syncPermissions)
+	for _, b := range parsedReq.Bidders {
+		// surviving bidders are not GDPR blocked
+		adapterSyncs[openrtb_ext.BidderName(b)] = false
+	}
+	for b, g := range adapterSyncs {
+		deps.metrics.RecordAdapterCookieSync(b, g)
+	}
 	parsedReq.filterToLimit()
 
 	csResp := cookieSyncResponse{
