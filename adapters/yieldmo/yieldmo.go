@@ -35,14 +35,12 @@ func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 func (a *YieldmoAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 
-	// Make a copy as we don't want to change the original request
-	reqCopy := *request
-	if err := preprocess(&reqCopy); err != nil {
+	if err := preprocess(request); err != nil {
 		errs = append(errs, err)
 	}
 
 	// Last Step
-	reqJSON, err := json.Marshal(reqCopy)
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -89,8 +87,7 @@ func preprocess(request *openrtb.BidRequest) error {
 			}
 		}
 
-		imp.Ext = impExtJSON
-		request.Imp[i] = imp
+		request.Imp[i].Ext = impExtJSON
 	}
 
 	return nil
