@@ -1,4 +1,12 @@
 {
-  "publisherId": "156209",
-  "adSlot": "pubmatic_test2@300x250"
+	"publisherId": "156209",
+	"adSlot": "pubmatic_test2@300x250",
+	"keywords": {
+		"pmZoneID": "Zone1,Zone2",
+		"preference": "sports,movies"
+	},
+	"wrapper": {
+		"version": 2,
+		"profile": 595
+	}
 }

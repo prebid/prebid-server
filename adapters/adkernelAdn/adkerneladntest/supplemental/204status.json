@@ -1,0 +1,54 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "imp": [
+      {
+        "id": "adunit-1",
+        "banner": {
+          "format": [{"w": 300,"h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "pubId": 101,
+            "host": "tag.test.com"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com/test.html",
+      "publisher": {
+        "id": "1"
+      }
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://tag.test.com/rtbpub?account=101",
+        "body": {
+          "id": "0000000000001",
+          "imp": [
+            {
+              "id": "adunit-1",
+              "tagid": "adunit-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com/test.html"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

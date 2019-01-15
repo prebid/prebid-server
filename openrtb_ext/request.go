@@ -60,7 +60,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	// define seperate type to prevent infinite recursive calls to UnmarshalJSON
+	// define separate type to prevent infinite recursive calls to UnmarshalJSON
 	type extRequestTargetingDefaults ExtRequestTargeting
 	defaults := &extRequestTargetingDefaults{
 		PriceGranularity:  priceGranularityMed,

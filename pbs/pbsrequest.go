@@ -6,23 +6,21 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
-
+	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
-
-	"github.com/golang/glog"
-	"golang.org/x/net/publicsuffix"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/blang/semver"
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/prebid"
-	"github.com/prebid/prebid-server/usersync"
-	"strconv"
+	"golang.org/x/net/publicsuffix"
 )
 
 const MAX_BIDDERS = 8
@@ -321,19 +319,14 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 		mtypes := ParseMediaTypes(unit.MediaTypes)
 		for _, b := range bidders {
 			var bidder *PBSBidder
-			// index requires a different request for each ad unit
-			if b.BidderCode != "indexExchange" {
-				for _, pb := range pbsReq.Bidders {
-					if pb.BidderCode == b.BidderCode {
-						bidder = pb
-					}
+			for _, pb := range pbsReq.Bidders {
+				if pb.BidderCode == b.BidderCode {
+					bidder = pb
 				}
 			}
+
 			if bidder == nil {
 				bidder = &PBSBidder{BidderCode: b.BidderCode}
-				if b.BidderCode == "indexExchange" {
-					bidder.AdUnitCode = unit.Code
-				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
 			if b.BidID == "" {

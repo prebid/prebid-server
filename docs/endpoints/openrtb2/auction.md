@@ -80,7 +80,12 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
-Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
+Exceptions are made for extensions with "standard" recommendations:
+
+- `request.user.ext.digitrust` -- To support Digitrust support
+- `request.regs.ext.gdpr` and `request.user.ext.consent` -- To support GDPR
+- `request.site.ext.amp` -- To identify AMP as the request source
+- `request.app.ext.source` and `request.app.ext.version` -- To support identifying the displaymanager/SDK in mobile apps. If given, we expect these to be strings.
 
 #### Bid Adjustments
 
@@ -254,7 +259,7 @@ For example, a request may return this in `response.ext`
     ],
     "rubicon": [
       {
-        "code": 1, 
+        "code": 1,
         "message": "The request exceeded the timeout allocated"
       }
     ]

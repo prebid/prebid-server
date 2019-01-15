@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -42,14 +41,6 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 			validImpExists = true
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
-		} else {
-			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("Brightroll only supports banner and video imps. Ignoring imp id=%s", request.Imp[i].ID),
-			}
-			glog.Warning("Brightroll CAPABILITY VIOLATION: only banner and video Imps supported")
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
 		}
 	}
 
@@ -61,6 +52,7 @@ func (a *BrightrollAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, errs
 	}
 
+	request.AT = 1 //Defaulting to first price auction for all prebid requests
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)

@@ -3,6 +3,7 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -57,7 +58,7 @@ type pbsOrtbSeatBid struct {
 	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
 	// currency is the currency in which the bids are made.
-	// Should be a valid curreny ISO code.
+	// Should be a valid currency ISO code.
 	currency string
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
@@ -65,7 +66,7 @@ type pbsOrtbSeatBid struct {
 	// ext contains the extension for this seatbid.
 	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
 	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
-	ext openrtb.RawJSON
+	ext json.RawMessage
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.

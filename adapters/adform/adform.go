@@ -7,18 +7,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
-
 	"net/url"
 	"strconv"
+	"strings"
 
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
+
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -392,14 +391,6 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	errors := make([]error, 0, len(request.Imp))
 	secure := false
 	for _, imp := range request.Imp {
-		if imp.Banner == nil {
-			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID),
-			})
-			glog.Warning("Adform CAPABILITY VIOLATION: no banner present")
-			continue
-		}
-
 		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
 		if err != nil {
 			errors = append(errors, &errortypes.BadInput{

@@ -5,19 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 type SovrnAdapter struct {
@@ -266,14 +266,6 @@ func (s *SovrnAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 }
 
 func preprocess(imp *openrtb.Imp) (string, error) {
-	// We currently only support banner impressions
-	if imp.Native != nil || imp.Audio != nil || imp.Video != nil {
-		glog.Warning("Sovrn CAPABILITY VIOLATION: no banner present")
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("Sovrn doesn't support audio, video, or native Imps. Ignoring Imp ID=%s", imp.ID),
-		}
-	}
-
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return "", &errortypes.BadInput{

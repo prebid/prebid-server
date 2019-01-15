@@ -1,9 +1,10 @@
 package beachfront
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"encoding/json"
 	"testing"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestValidParams(t *testing.T) {
@@ -13,7 +14,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderBeachfront, openrtb.RawJSON(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderBeachfront, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected beachfront params: %s", validParam)
 		}
 	}
@@ -26,7 +27,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderBeachfront, openrtb.RawJSON(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderBeachfront, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}

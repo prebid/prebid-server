@@ -2,7 +2,30 @@ package usersyncers
 
 import (
 	"strings"
+	"text/template"
 
+	"github.com/golang/glog"
+	ttx "github.com/prebid/prebid-server/adapters/33across"
+	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adkernelAdn"
+	"github.com/prebid/prebid-server/adapters/adtelligent"
+	"github.com/prebid/prebid-server/adapters/appnexus"
+	"github.com/prebid/prebid-server/adapters/audienceNetwork"
+	"github.com/prebid/prebid-server/adapters/beachfront"
+	"github.com/prebid/prebid-server/adapters/brightroll"
+	"github.com/prebid/prebid-server/adapters/conversant"
+	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/grid"
+	"github.com/prebid/prebid-server/adapters/gumgum"
+	"github.com/prebid/prebid-server/adapters/ix"
+	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/openx"
+	"github.com/prebid/prebid-server/adapters/pubmatic"
+	"github.com/prebid/prebid-server/adapters/pulsepoint"
+	"github.com/prebid/prebid-server/adapters/rhythmone"
+	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/somoaudience"
+	"github.com/prebid/prebid-server/adapters/sovrn"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
@@ -10,83 +33,42 @@ import (
 
 // NewSyncerMap returns a map of all the usersyncer objects.
 // The same keys should exist in this map as in the exchanges map.
+// Static syncer map will be removed when adapter isolation is complete.
 func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync.Usersyncer {
-	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAdform:       NewAdformSyncer(cfg.Adapters[string(openrtb_ext.BidderAdform)].UserSyncURL, cfg.ExternalURL),
-		openrtb_ext.BidderAdtelligent:  NewAdtelligentSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderAppnexus:     NewAppnexusSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderBeachfront:   NewBeachfrontSyncer(cfg.Adapters[string(openrtb_ext.BidderBeachfront)].UserSyncURL, cfg.Adapters[string(openrtb_ext.BidderBeachfront)].PlatformID),
-		openrtb_ext.BidderFacebook:     NewFacebookSyncer(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL),
-		openrtb_ext.BidderBrightroll:   NewBrightrollSyncer(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, cfg.ExternalURL),
-		openrtb_ext.BidderConversant:   NewConversantSyncer(cfg.Adapters[string(openrtb_ext.BidderConversant)].UserSyncURL, cfg.ExternalURL),
-		openrtb_ext.BidderEPlanning:    NewEPlanningSyncer(cfg.Adapters[string(openrtb_ext.BidderEPlanning)].UserSyncURL, cfg.ExternalURL),
-		openrtb_ext.BidderIndex:        NewIndexSyncer(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].UserSyncURL),
-		openrtb_ext.BidderLifestreet:   NewLifestreetSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderOpenx:        NewOpenxSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderPubmatic:     NewPubmaticSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderPulsepoint:   NewPulsepointSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderRubicon:      NewRubiconSyncer(cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL),
-		openrtb_ext.BidderSomoaudience: NewSomoaudienceSyncer(cfg.ExternalURL),
-		openrtb_ext.BidderSovrn:        NewSovrnSyncer(cfg.ExternalURL, cfg.Adapters[string(openrtb_ext.BidderSovrn)].UserSyncURL),
-		openrtb_ext.BidderSonobi:       NewSonobiSyncer(cfg.ExternalURL),
+	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer, len(cfg.Adapters))
+
+	insertIntoMap(cfg, syncers, openrtb_ext.Bidder33Across, ttx.New33AcrossSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdform, adform.NewAdformSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdkernelAdn, adkernelAdn.NewAdkernelAdnSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAdtelligent, adtelligent.NewAdtelligentSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderAppnexus, appnexus.NewAppnexusSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBeachfront, beachfront.NewBeachfrontSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderBrightroll, brightroll.NewBrightrollSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderConversant, conversant.NewConversantSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderEPlanning, eplanning.NewEPlanningSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderFacebook, audienceNetwork.NewFacebookSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderGrid, grid.NewGridSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderGumGum, gumgum.NewGumGumSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderIx, ix.NewIxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderLifestreet, lifestreet.NewLifestreetSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderOpenx, openx.NewOpenxSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderPubmatic, pubmatic.NewPubmaticSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderPulsepoint, pulsepoint.NewPulsepointSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderRhythmone, rhythmone.NewRhythmoneSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderRubicon, rubicon.NewRubiconSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSomoaudience, somoaudience.NewSomoaudienceSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSovrn, sovrn.NewSovrnSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSonobi, sovrn.NewSonobiSyncer)
+
+	return syncers
+}
+
+func insertIntoMap(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, bidder openrtb_ext.BidderName, syncerFactory func(temp *template.Template) usersync.Usersyncer) {
+	lowercased := strings.ToLower(string(bidder))
+	urlString := cfg.Adapters[lowercased].UserSyncURL
+	if urlString == "" {
+		glog.Warningf("adapters." + string(bidder) + ".usersync_url was not defined, and their usersync API isn't flexible enough for Prebid Server to choose a good default. No usersyncs will be performed with " + string(bidder))
+		return
 	}
-}
-
-func GDPRAwareSyncerIDs(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) map[openrtb_ext.BidderName]uint16 {
-	gdprAwareSyncers := make(map[openrtb_ext.BidderName]uint16, len(syncers))
-	for bidderName, syncer := range syncers {
-		if syncer.GDPRVendorID() != 0 {
-			gdprAwareSyncers[bidderName] = syncer.GDPRVendorID()
-		}
-	}
-	return gdprAwareSyncers
-}
-
-type syncer struct {
-	familyName          string
-	gdprVendorID        uint16
-	syncEndpointBuilder func(gdpr string, consent string) string
-	syncType            SyncType
-}
-
-type SyncType string
-
-const (
-	SyncTypeRedirect SyncType = "redirect"
-	SyncTypeIframe   SyncType = "iframe"
-)
-
-func (s *syncer) GetUsersyncInfo(gdpr string, consent string) *usersync.UsersyncInfo {
-	return &usersync.UsersyncInfo{
-		URL:         s.syncEndpointBuilder(gdpr, consent),
-		Type:        string(s.syncType),
-		SupportCORS: false,
-	}
-}
-
-func (s *syncer) FamilyName() string {
-	return s.familyName
-}
-
-func (s *syncer) GDPRVendorID() uint16 {
-	return s.gdprVendorID
-}
-
-// This function replaces macros in a sync endpoint template. It will replace:
-//
-//   {{gdpr}} -- with the "gdpr" string (should be either "0", "1", or "")
-//   {{gdpr_consent}} -- with the Raw base64 URL-encoded GDPR Vendor Consent string.
-//
-// For example, the template:
-//   //some-domain.com/getuid?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&callback=prebid-server-domain.com%2Fsetuid%3Fbidder%3Dadnxs%26gdpr={{gdpr}}%26gdpr_consent={{gdpr_consent}}%26uid%3D%24UID
-//
-// would evaluate to:
-//   //some-domain.com/getuid?gdpr=&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw&callback=prebid-server-domain.com%2Fsetuid%3Fbidder%3Dadnxs%26gdpr=%26gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%24UID
-//
-// if the "gdpr" arg was empty, and the consent arg was "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw"
-func resolveMacros(template string) func(gdpr string, consent string) string {
-	return func(gdpr string, consent string) string {
-		replacer := strings.NewReplacer("{{gdpr}}", gdpr, "{{gdpr_consent}}", consent)
-		return replacer.Replace(template)
-	}
+	syncers[bidder] = syncerFactory(template.Must(template.New(lowercased + "_usersync_url").Parse(urlString)))
 }

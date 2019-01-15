@@ -63,7 +63,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	// and response parsing.
 
 	impMap := make(map[string]*openrtb.Imp, len(cnvrReq.Imp))
-	for idx, _ := range cnvrReq.Imp {
+	for idx := range cnvrReq.Imp {
 		impMap[cnvrReq.Imp[idx].ID] = &cnvrReq.Imp[idx]
 	}
 
@@ -121,7 +121,7 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 			// Include protocols, mimes, and max duration if specified
 			// These properties can also be specified in ad unit's video object,
-			// but are overriden if the custom params object also contains them.
+			// but are overridden if the custom params object also contains them.
 
 			if len(params.Protocols) > 0 {
 				imp.Video.Protocols = make([]openrtb.Protocol, 0, len(params.Protocols))

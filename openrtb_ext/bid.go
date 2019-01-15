@@ -1,15 +1,14 @@
 package openrtb_ext
 
 import (
+	"encoding/json"
 	"fmt"
-
-	"github.com/mxmCherry/openrtb"
 )
 
 // ExtBid defines the contract for bidresponse.seatbid.bid[i].ext
 type ExtBid struct {
 	Prebid *ExtBidPrebid   `json:"prebid,omitempty"`
-	Bidder openrtb.RawJSON `json:"bidder,omitempty"`
+	Bidder json.RawMessage `json:"bidder,omitempty"`
 }
 
 // ExtBidPrebid defines the contract for bidresponse.seatbid.bid[i].ext.prebid
@@ -81,12 +80,7 @@ const (
 	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"
-
-	// HbCreativeLoadMethodConstantKey is used exclusively by Prebid Mobile to accomodate Facebook.
-	// Facebook requires that ads from their network be loaded using their own SDK.
-	// Other demand sources are happy to let Prebid Mobile use a Webview.
-	HbCreativeLoadMethodConstantKey TargetingKey = "hb_creative_loadtype"
-	HbDealIdConstantKey             TargetingKey = "hb_deal"
+	HbDealIdConstantKey TargetingKey = "hb_deal"
 
 	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.
@@ -95,10 +89,6 @@ const (
 	// HbVastCacheKey will only ever exist for Video bids.
 	HbCacheKey     TargetingKey = "hb_cache_id"
 	HbVastCacheKey TargetingKey = "hb_uuid"
-
-	// These are not keys, but values used by hbCreativeLoadMethodConstantKey
-	HbCreativeLoadMethodHTML      string = "html"
-	HbCreativeLoadMethodDemandSDK string = "demand_sdk"
 
 	// This is not a key, but values used by the HbEnvKey
 	HbEnvKeyApp string = "mobile-app"

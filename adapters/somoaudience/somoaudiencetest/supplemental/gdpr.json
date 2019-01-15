@@ -60,6 +60,9 @@
         "uri": "http://publisher-east.mobileadtrading.com/rtb/bid?s=22a58cfb0c9b656bff713d1236e930e8",
         "body": {
           "id": "test-request-id",
+          "ext":{
+            "prebid": "hb_pbs_1.0.0"
+          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -74,12 +77,7 @@
                     "h": 600
                   }
                 ]
-              },
-              "ext": {
-                "bidder": {
-                  "placement_hash": "22a58cfb0c9b656bff713d1236e930e8"
               }
-            }
             }
           ],
           "site": {

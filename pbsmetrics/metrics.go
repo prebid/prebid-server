@@ -128,7 +128,7 @@ func RequestStatuses() []RequestStatus {
 	}
 }
 
-// Adapter bid repsonse status.
+// Adapter bid response status.
 const (
 	AdapterBidPresent AdapterBid = "bid"
 	AdapterBidNone    AdapterBid = "nobid"
