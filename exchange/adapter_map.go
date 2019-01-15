@@ -59,7 +59,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderSovrn:        sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 		openrtb_ext.Bidder33Across:     ttx.New33AcrossBidder(cfg.Adapters[string(openrtb_ext.Bidder33Across)].Endpoint),
 		openrtb_ext.BidderGrid:         grid.NewGridBidder(cfg.Adapters[string(openrtb_ext.BidderGrid)].Endpoint),
-		openrtb_ext.BidderSonobi:       adaptBidder(adapters.EnforceBidderInfo(sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint), infos[string(openrtb_ext.BidderSonobi)]), client),
+		openrtb_ext.BidderSonobi:       sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
