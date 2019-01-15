@@ -173,48 +173,46 @@ func (a *SonobiAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *p
 func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var sonobiExt openrtb_ext.ExtImpSonobi
-	var bannerImps []openrtb.Imp
-	var videoImps []openrtb.Imp
 	var err error
 	// NOTE: sonobi only supports 1 impression. Only the first will be considered until Sonobi supports more than 1.
+
+	var adapterRequests []*adapters.RequestData
+
 	for _, imp := range request.Imp {
 		// Sonobi doesn't allow multi-type imp. Banner takes priority over video.
 		if imp.Banner != nil {
-			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
-			videoImps = append(videoImps, imp)
 		} else {
 			err := fmt.Errorf("Sonobi only supports banner and video imps. Ignoring imp id=%s", imp.ID)
 			errs = append(errs, err)
 		}
-	}
 
-	var adapterRequests []*adapters.RequestData
-	// Make a copy as we don't want to change the original request
-	reqCopy := *request
-	reqCopy.Imp = bannerImps
-	reqCopy.Imp = append(reqCopy.Imp, videoImps...)
+		// Make a copy as we don't want to change the original request
+		reqCopy := *request
+		reqCopy.Imp = append(make([]openrtb.Imp, 0), imp)
 
-	for i := range reqCopy.Imp {
-		var bidderExt adapters.ExtImpBidder
-		if err = json.Unmarshal(reqCopy.Imp[i].Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
-			continue
+		for i := range reqCopy.Imp {
+			var bidderExt adapters.ExtImpBidder
+			if err = json.Unmarshal(reqCopy.Imp[i].Ext, &bidderExt); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+
+			if err = json.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
+
+				errs = append(errs, err)
+				continue
+			}
+			reqCopy.Imp[i].TagID = sonobiExt.TagID
 		}
 
-		if err = json.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
-
-			errs = append(errs, err)
-			continue
+		adapterReq, errors := a.makeRequest(&reqCopy)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
 		}
-		reqCopy.Imp[i].TagID = sonobiExt.TagID
-	}
+		errs = append(errs, errors...)
 
-	adapterReq, errors := a.makeRequest(&reqCopy)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
 	}
-	errs = append(errs, errors...)
 
 	return adapterRequests, errs
 
