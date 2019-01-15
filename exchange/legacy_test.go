@@ -485,8 +485,8 @@ func (a *mockLegacyAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *mockLegacyAdapter) GetUsersyncInfo() *usersync.UsersyncInfo {
-	return nil
+func (a *mockLegacyAdapter) GetUsersyncInfo() (*usersync.UsersyncInfo, error) {
+	return nil, nil
 }
 
 func (a *mockLegacyAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {

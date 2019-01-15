@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"strings"
+	"text/template"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
@@ -18,18 +19,18 @@ func GDPRAwareSyncerIDs(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) 
 }
 
 type Syncer struct {
-	familyName          string
-	gdprVendorID        uint16
-	syncEndpointBuilder func(gdpr string, consent string) string
-	syncType            SyncType
+	familyName   string
+	gdprVendorID uint16
+	urlTemplate  *template.Template
+	syncType     SyncType
 }
 
-func NewSyncer(familyName string, vendorID uint16, endpointBulder func(gdpr string, consent string) string, syncType SyncType) *Syncer {
+func NewSyncer(familyName string, vendorID uint16, urlTemplate *template.Template, syncType SyncType) *Syncer {
 	return &Syncer{
-		familyName:          familyName,
-		gdprVendorID:        vendorID,
-		syncEndpointBuilder: endpointBulder,
-		syncType:            syncType,
+		familyName:   familyName,
+		gdprVendorID: vendorID,
+		urlTemplate:  urlTemplate,
+		syncType:     syncType,
 	}
 }
 
@@ -40,12 +41,26 @@ const (
 	SyncTypeIframe   SyncType = "iframe"
 )
 
-func (s *Syncer) GetUsersyncInfo(gdpr string, consent string) *usersync.UsersyncInfo {
+func (s *Syncer) GetUsersyncInfo(gdpr string, consent string) (*usersync.UsersyncInfo, error) {
+	sb := strings.Builder{}
+	err := s.urlTemplate.Execute(&sb, TemplateValues{
+		GDPR:        gdpr,
+		GDPRConsent: consent,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &usersync.UsersyncInfo{
-		URL:         s.syncEndpointBuilder(gdpr, consent),
+		URL:         sb.String(),
 		Type:        string(s.syncType),
 		SupportCORS: false,
-	}
+	}, err
+}
+
+type TemplateValues struct {
+	GDPR        string
+	GDPRConsent string
 }
 
 func (s *Syncer) FamilyName() string {
@@ -54,23 +69,4 @@ func (s *Syncer) FamilyName() string {
 
 func (s *Syncer) GDPRVendorID() uint16 {
 	return s.gdprVendorID
-}
-
-// This function replaces macros in a sync endpoint template. It will replace:
-//
-//   {{gdpr}} -- with the "gdpr" string (should be either "0", "1", or "")
-//   {{gdpr_consent}} -- with the Raw base64 URL-encoded GDPR Vendor Consent string.
-//
-// For example, the template:
-//   //some-domain.com/getuid?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&callback=prebid-server-domain.com%2Fsetuid%3Fbidder%3Dadnxs%26gdpr={{gdpr}}%26gdpr_consent={{gdpr_consent}}%26uid%3D%24UID
-//
-// would evaluate to:
-//   //some-domain.com/getuid?gdpr=&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw&callback=prebid-server-domain.com%2Fsetuid%3Fbidder%3Dadnxs%26gdpr=%26gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw%26uid%3D%24UID
-//
-// if the "gdpr" arg was empty, and the consent arg was "BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw"
-func ResolveMacros(template string) func(gdpr string, consent string) string {
-	return func(gdpr string, consent string) string {
-		replacer := strings.NewReplacer("{{gdpr}}", gdpr, "{{gdpr_consent}}", consent)
-		return replacer.Replace(template)
-	}
 }
