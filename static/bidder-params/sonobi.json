@@ -14,6 +14,6 @@
         "description": "An ID which identifies publisher in Sonobi's ecosystem"
       }
     },
-    "required": ["TagID"]
+    "required": ["TagID", "PubID"]
   }
   
