@@ -174,7 +174,6 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 	var errs []error
 	var sonobiExt openrtb_ext.ExtImpSonobi
 	var err error
-	// NOTE: sonobi only supports 1 impression. Only the first will be considered until Sonobi supports more than 1.
 
 	var adapterRequests []*adapters.RequestData
 
@@ -207,15 +206,10 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
-		if len(sonobiExt.PubID) > 0 {
-			if adapterReq != nil {
-				adapterRequests = append(adapterRequests, adapterReq)
-			}
-			adapterReq.Uri = adapterReq.Uri + "=" + sonobiExt.PubID // Add the sonobi pub id to the request uri
-		} else {
-			err := fmt.Errorf("Missing PubID for imp id=%s", imp.ID)
-			errs = append(errs, err)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
 		}
+		adapterReq.Uri = adapterReq.Uri + "=" + sonobiExt.PubID // Add the sonobi pub id to the request uri
 		errs = append(errs, errors...)
 	}
 
