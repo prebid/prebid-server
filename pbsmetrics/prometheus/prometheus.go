@@ -92,12 +92,12 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.adaptErrors)
 	metrics.cookieSync = newCookieSync(cfg)
 	metrics.Registry.MustRegister(metrics.cookieSync)
-	metrics.adaptCookieSync = newCounter(cfg, "adapter_cookie_sync",
+	metrics.adaptCookieSync = newCounter(cfg, "cookie_sync_returns",
 		"Number of syncs generated for a bidder, and if they were subsequently blocked.",
 		[]string{"adapter", "gdpr_blocked"},
 	)
 	metrics.Registry.MustRegister(metrics.adaptCookieSync)
-	metrics.userID = newCounter(cfg, "usersync_total",
+	metrics.userID = newCounter(cfg, "setuid_calls",
 		"Number of user ID syncs performed",
 		[]string{"action", "bidder"},
 	)
