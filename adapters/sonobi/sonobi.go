@@ -207,11 +207,16 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 		}
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
+		if len(sonobiExt.PubID) > 0 {
+			if adapterReq != nil {
+				adapterRequests = append(adapterRequests, adapterReq)
+			}
+			adapterReq.Uri = adapterReq.Uri + "=" + sonobiExt.PubID
+		} else {
+			err := fmt.Errorf("Missing PubID for imp id=%s", imp.ID)
+			errs = append(errs, err)
 		}
 		errs = append(errs, errors...)
-
 	}
 
 	return adapterRequests, errs
@@ -220,9 +225,11 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 
 // makeRequest helper method to crete the http request data
 func (a *SonobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
+
 	var errs []error
 
 	reqJSON, err := json.Marshal(request)
+
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
