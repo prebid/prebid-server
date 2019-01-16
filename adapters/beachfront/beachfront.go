@@ -37,14 +37,14 @@ type BeachfrontRequests struct {
 // ---------------------------------------------------
 
 type BeachfrontVideoRequest struct {
-	IsPrebid bool   `json:"isPrebid"`
-	AppId    string `json:"appId"`
-	ID       string `json:"id"`
-	Imp    []BeachfrontVideoImp  `json:"imp"`
-	Site   openrtb.Site          `json:"site"`
-	Device BeachfrontVideoDevice `json:"device"`
-	User   openrtb.User          `json:"user"`
-	Cur    []string              `json:"cur"`
+	IsPrebid bool                  `json:"isPrebid"`
+	AppId    string                `json:"appId"`
+	ID       string                `json:"id"`
+	Imp      []BeachfrontVideoImp  `json:"imp"`
+	Site     openrtb.Site          `json:"site"`
+	Device   BeachfrontVideoDevice `json:"device"`
+	User     openrtb.User          `json:"user"`
+	Cur      []string              `json:"cur"`
 }
 
 // Soooo close, but not quite openRTB
@@ -52,8 +52,8 @@ type BeachfrontVideoImp struct {
 	Video    BeachfrontSize `json:"video"`
 	Bidfloor float64        `json:"bidfloor"`
 	Id       int            `json:"id"`
-	ImpId  string `json:"impid"`
-	Secure int8   `json:"secure"`
+	ImpId    string         `json:"impid"`
+	Secure   int8           `json:"secure"`
 }
 
 type BeachfrontVideoDevice struct {
