@@ -69,6 +69,10 @@
               "unitName": "the-answer"
             }
           ],
+          "networkId": 11,
+          "siteId": 32,
+          "unitId": 42,
+          "unitName": "the-answer",
           "time": 1451651415,
           "includePricingData": true,
           "user":{},

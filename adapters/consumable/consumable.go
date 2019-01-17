@@ -18,6 +18,10 @@ type ConsumableAdapter struct {
 type bidRequest struct {
 	Placements         []placement `json:"placements"`
 	Time               int64       `json:"time"`
+	NetworkId          int         `json:"networkId,omitempty"`
+	SiteId             int         `json:"siteId"`
+	UnitId             int         `json:"unitId"`
+	UnitName           string      `json:"unitName,omitempty"`
 	IncludePricingData bool        `json:"includePricingData"`
 	User               user        `json:"user,omitempty"`
 	Referrer           string      `json:"referrer,omitempty"`
@@ -116,6 +120,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 			return nil, err
 		}
 
+		// These get set on the first one in observed working requests
+		if i == 0 {
+			body.NetworkId = consumableExt.NetworkId
+			body.SiteId = consumableExt.SiteId
+			body.UnitId = consumableExt.UnitId
+			body.UnitName = consumableExt.UnitName
+		}
+
 		body.Placements[i] = placement{
 			DivName:   impression.ID,
 			NetworkId: consumableExt.NetworkId,
@@ -131,6 +143,10 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, []error{err}
 	}
 
+	println("== header ==")
+	println("X-Forwarded-For: ", headers.Get("X-Forwarded-For"))
+	println("== body ==")
+	fmt.Printf("%s", bodyBytes)
 	requests := []*adapters.RequestData{
 		{
 			Method:  "POST",
