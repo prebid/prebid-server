@@ -32,7 +32,7 @@ type placement struct {
 	NetworkId int    `json:"networkId,omitempty"`
 	SiteId    int    `json:"siteId"`
 	UnitId    int    `json:"unitId"`
-	UnitName  string `json:"unitName"`
+	UnitName  string `json:"unitName,omitempty"`
 	AdTypes   []int  `json:"adTypes"`
 }
 
@@ -104,8 +104,8 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	}
 
 	if request.Site != nil {
-		body.Referrer = request.Site.Ref
-		body.Url = request.Site.Page
+		body.Referrer = request.Site.Ref // Effectively the previous page to the page where the ad will be shown
+		body.Url = request.Site.Page     // where the impression will be made
 	}
 
 	for i, impression := range request.Imp {

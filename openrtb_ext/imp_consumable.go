@@ -6,5 +6,5 @@ type ExtImpConsumable struct {
 	SiteId    int `json:"siteId,omitempty"`
 	UnitId    int `json:"unitId,omitempty"`
 	/* UnitName gets used as a classname and in the URL when building the ad markup */
-	UnitName string `json:"unitName"`
+	UnitName string `json:"unitName,omitempty"`
 }

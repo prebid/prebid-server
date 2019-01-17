@@ -26,5 +26,5 @@
       "pattern": "^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$"
     }
   },
-  "required": ["siteId", "networkId","unitId", "unitName"]
+  "required": ["siteId", "networkId","unitId"]
 }
