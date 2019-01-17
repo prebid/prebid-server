@@ -1,0 +1,29 @@
+{
+  "id": "some-request-id",
+  "site": {
+    "page": "test.somepage.com"
+  },
+  "imp": [
+    {
+      "id": "my-imp-id",
+      "video": {
+        "mimes": [
+            "video/mp4"
+        ]
+      },
+      "ext": {
+        "appnexus": {
+          "placementId": 10433394
+        }
+      }
+    }
+  ],
+  "ext": {
+    "prebid": {
+      "cache": {
+        "bids": {}
+      },
+      "targeting": {}
+    }
+  }
+}

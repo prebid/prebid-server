@@ -39,16 +39,16 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"publisherName": "testpublisher"}`,
-	`{"publisherName": "123"}`,
-	`{"publisherName": "cafemedia"}`,
-	`{"publisherName": "test", "headerbidding": false}`,
+	`{"publisher": "testpublisher"}`,
+	`{"publisher": "123"}`,
+	`{"publisher": "cafemedia"}`,
+	`{"publisher": "test", "headerbidding": false}`,
 }
 
 var invalidParams = []string{
-	`{"publisherName": 100}`,
+	`{"publisher": 100}`,
 	`{"headerbidding": false}`,
-	`{"publisherName": true}`,
+	`{"publisher": true}`,
 	`{"publisherId": 123, "headerbidding": true}`,
 	`{"publisherID": "1"}`,
 	``,

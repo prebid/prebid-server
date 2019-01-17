@@ -26,11 +26,12 @@ import (
 const defaultAmpRequestTimeoutMillis = 900
 
 type AmpResponse struct {
-	Targeting map[string]string             `json:"targeting"`
-	Debug     *openrtb_ext.ExtResponseDebug `json:"debug,omitempty"`
+	Targeting map[string]string                                       `json:"targeting"`
+	Debug     *openrtb_ext.ExtResponseDebug                           `json:"debug,omitempty"`
+	Errors    map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError `json:"errors,omitempty"`
 }
 
-// We need to modify the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
+// NewAmpEndpoint modifies the OpenRTB endpoint to handle AMP requests. This will basically modify the parsing
 // of the request, and the return value, using the OpenRTB machinery to handle everything inbetween.
 func NewAmpEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -98,7 +99,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		ao.Errors = append(ao.Errors, errL...)
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
@@ -111,7 +112,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 	} else {
@@ -162,17 +163,24 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			}
 		}
 	}
+	// Extract any errors
+	var extResponse openrtb_ext.ExtBidResponse
+	eRErr := json.Unmarshal(response.Ext, &extResponse)
+	if eRErr != nil {
+		ao.Errors = append(ao.Errors, fmt.Errorf("AMP response: failed to unpack OpenRTB response.ext, debug info cannot be forwarded: %v", eRErr))
+	}
+
 	// Now JSONify the targets for the AMP response.
 	ampResponse := AmpResponse{
 		Targeting: targets,
+		Errors:    extResponse.Errors,
 	}
 
 	ao.AmpTargetingValues = targets
 
 	// add debug information if requested
-	if req.Test == 1 {
-		var extResponse openrtb_ext.ExtBidResponse
-		if err := json.Unmarshal(response.Ext, &extResponse); err == nil && extResponse.Debug != nil {
+	if req.Test == 1 && eRErr == nil {
+		if extResponse.Debug != nil {
 			ampResponse.Debug = extResponse.Debug
 		} else {
 			glog.Errorf("Test set on request but debug not present in response: %v", err)
@@ -188,8 +196,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(ampResponse); err != nil {
-		glog.Errorf("/openrtb2/amp Error encoding response: %v", err)
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Error encoding response: %v", err))
+		glog.Warningf("/openrtb2/amp Failed to send response: %v", err)
+		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/amp Failed to send response: %v", err))
 	}
 }
 
@@ -413,15 +422,19 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 		setDefaults = true
 		extRequest.Prebid.Targeting = &openrtb_ext.ExtRequestTargeting{
 			// Fixes #452
-			IncludeWinners:   true,
-			PriceGranularity: openrtb_ext.PriceGranularityFromString("med"),
+			IncludeWinners:    true,
+			IncludeBidderKeys: true,
+			PriceGranularity:  openrtb_ext.PriceGranularityFromString("med"),
 		}
 	}
-	if extRequest.Prebid.Cache == nil || extRequest.Prebid.Cache.Bids == nil {
+	if extRequest.Prebid.Cache == nil {
 		setDefaults = true
 		extRequest.Prebid.Cache = &openrtb_ext.ExtRequestPrebidCache{
 			Bids: &openrtb_ext.ExtRequestPrebidCacheBids{},
 		}
+	} else if extRequest.Prebid.Cache.Bids == nil {
+		setDefaults = true
+		extRequest.Prebid.Cache.Bids = &openrtb_ext.ExtRequestPrebidCacheBids{}
 	}
 	if setDefaults {
 		newExt, err := json.Marshal(extRequest)

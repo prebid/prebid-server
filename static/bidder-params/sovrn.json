@@ -9,10 +9,17 @@
       "type": "string",
       "description": "An ID which identifies the sovrn ad tag"
     },
+    "tagId": {
+      "type": "string",
+      "description": "An ID which identifies the sovrn ad tag (DEPRECATED, use \"tagid\" instead)"
+    },
     "bidfloor": {
       "type": "number",
       "description": "The minimium acceptable bid, in CPM, using US Dollars"
     }
   },
-  "required": ["tagId"]
+  "oneOf": [
+    { "required" : [ "tagid" ] },
+    { "required" : [ "tagId" ] }
+  ]
 }

@@ -12,7 +12,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       },
@@ -25,7 +25,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       }
@@ -48,20 +48,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherName": "cafemom"
-                }
-              }
-            },
-            {
-              "id": "unsupported-audio-imp",
-              "audio": {
-                "mimes": [
-                  "video/mp4"
-                ]
-              },
-              "ext": {
-                "bidder": {
-                  "publisherName": "cafemom"
+                  "publisher": "cafemom"
                 }
               }
             }

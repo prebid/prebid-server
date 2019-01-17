@@ -2,24 +2,30 @@ package config
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	"github.com/spf13/viper"
 )
 
 func TestDefaults(t *testing.T) {
-	cfg, err := New(newViperWithDefaults())
+	v := viper.New()
+	SetupViper(v, "")
+	cfg, err := New(v)
 	if err != nil {
 		t.Error(err.Error())
 	}
 
 	cmpInts(t, "port", cfg.Port, 8000)
 	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
-	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 250)
-	cmpInts(t, "auction_timeouts_ms.default", int(cfg.AuctionTimeouts.Default), 100)
+	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
+	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
+	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
-	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters["pubmatic"].Endpoint, "http://openbid-useast.pubmatic.com/translator?")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 }
 
 var fullConfig = []byte(`
@@ -58,6 +64,10 @@ datacache:
 adapters:
   appnexus:
     endpoint: http://ib.adnxs.com/some/endpoint
+  audienceNetwork:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
   indexExchange:
     endpoint: http://ixtest.com/api
   rubicon:
@@ -66,12 +76,8 @@ adapters:
     xapi:
       username: rubiuser
       password: rubipw23
-  facebook:
-    endpoint: http://facebook.com/pbs
-    usersync_url: http://facebook.com/ortb/prebid-s2s
-    platform_id: abcdefgh1234
   brightroll:
-    usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s
+    usersync_url: http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s
     endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
 `)
 
@@ -97,7 +103,8 @@ func cmpBools(t *testing.T, key string, a bool, b bool) {
 }
 
 func TestFullConfig(t *testing.T) {
-	v := newViperWithDefaults()
+	v := viper.New()
+	SetupViper(v, "")
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)
@@ -131,45 +138,26 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "datacache.ttl_seconds", cfg.DataCache.TTLSeconds, 3600)
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
-	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters["appnexus"].Endpoint, "http://ib.adnxs.com/some/endpoint")
-	cmpStrings(t, "adapters.indexExchange.endpoint", cfg.Adapters["indexexchange"].Endpoint, "http://ixtest.com/api")
-	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters["rubicon"].Endpoint, "http://rubitest.com/api")
-	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters["rubicon"].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
-	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters["rubicon"].XAPI.Username, "rubiuser")
-	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters["rubicon"].XAPI.Password, "rubipw23")
-	cmpStrings(t, "adapters.facebook.endpoint", cfg.Adapters["facebook"].Endpoint, "http://facebook.com/pbs")
-	cmpStrings(t, "adapters.facebook.usersync_url", cfg.Adapters["facebook"].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
-	cmpStrings(t, "adapters.facebook.platform_id", cfg.Adapters["facebook"].PlatformID, "abcdefgh1234")
-	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters["brightroll"].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters["brightroll"].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
-}
-
-func newViperWithDefaults() *viper.Viper {
-	v := viper.New()
-	v.SetConfigName("pbs")
-	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/config")
-
-	v.SetDefault("external_url", "http://localhost:8000")
-	v.SetDefault("port", 8000)
-	v.SetDefault("admin_port", 6060)
-	v.SetDefault("auction_timeouts_ms.max", 250)
-	v.SetDefault("auction_timeouts_ms.default", 100)
-	v.SetDefault("datacache.type", "dummy")
-
-	v.SetDefault("adapters.pubmatic.endpoint", "http://openbid-useast.pubmatic.com/translator?")
-	v.SetDefault("adapters.rubicon.endpoint", "http://staged-by.rubiconproject.com/a/api/exchange.json")
-	v.SetDefault("adapters.rubicon.usersync_url", "https://pixel.rubiconproject.com/exchange/sync.php?p=prebid")
-	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
-	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
-	v.SetDefault("adapters.brightroll.usersync_url", "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?url=%s")
-	return v
+	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
+	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].Endpoint, "http://facebook.com/pbs")
+	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
+	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.indexexchange.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIndex))].Endpoint, "http://ixtest.com/api")
+	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint, "http://rubitest.com/api")
+	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
+	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, "rubiuser")
+	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
+	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://east-bid.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
 }
 
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
 			Files: true,
+			InMemoryCache: InMemoryCache{
+				Type: "none",
+			},
 		},
 	}
 

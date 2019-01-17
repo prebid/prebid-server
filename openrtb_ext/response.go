@@ -8,7 +8,7 @@ import (
 type ExtBidResponse struct {
 	Debug *ExtResponseDebug `json:"debug,omitempty"`
 	// ExtResponseErrors defines the contract for bidresponse.ext.errors
-	Errors map[BidderName][]string `json:"errors,omitempty"`
+	Errors map[BidderName][]ExtBidderError `json:"errors,omitempty"`
 	// ExtResponseTimeMillis defines the contract for bidresponse.ext.responsetimemillis
 	ResponseTimeMillis map[BidderName]int `json:"responsetimemillis,omitempty"`
 	// ExtResponseUserSync defines the contract for bidresponse.ext.usersync
@@ -34,6 +34,12 @@ type ExtResponseSyncData struct {
 type ExtUserSync struct {
 	Url  string       `json:"url"`
 	Type UserSyncType `json:"type"`
+}
+
+// ExtBidderError defines an error object to be returned, consiting of a machine readable error code, and a human readable error message string.
+type ExtBidderError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 // ExtHttpCall defines the contract for a bidresponse.ext.debug.httpcalls.{bidder}[i]

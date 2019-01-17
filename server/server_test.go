@@ -14,7 +14,7 @@ func TestNewAdminServer(t *testing.T) {
 		AdminPort: 6060,
 		Port:      8000,
 	}
-	server := newAdminServer(cfg)
+	server := newAdminServer(cfg, http.HandlerFunc(handler))
 	if server.Addr != "prebid.com:6060" {
 		t.Errorf("Admin server address should be %s. Got %s", "prebid.com:6060", server.Addr)
 	}

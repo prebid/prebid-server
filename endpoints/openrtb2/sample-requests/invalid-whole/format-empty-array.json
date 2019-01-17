@@ -1,11 +1,14 @@
 {
+  "message": "Invalid request: request.imp[0].ext is required\n",
+  "requestPayload": {
     "id":"req-id",
     "imp": [
-        {
-            "id":"imp-id",
-            "banner":{
-                "format":[]
-            }
+      {
+        "id":"imp-id",
+        "banner":{
+          "format":[]
         }
+      }
     ]
+  }
 }

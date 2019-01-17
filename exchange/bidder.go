@@ -9,6 +9,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -84,6 +85,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
+		// If the adapter failed to generate both requests and errors, this is an error.
+		if len(errs) == 0 {
+			errs = append(errs, &errortypes.FailedToRequestBids{Message: "The adapter failed to generate any bid requests, but also failed to generate an error explaining why"})
+		}
 		return nil, errs
 	}
 
@@ -170,6 +175,9 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 
 	httpResp, err := ctxhttp.Do(ctx, bidder.Client, httpReq)
 	if err != nil {
+		if err == context.DeadlineExceeded {
+			err = &errortypes.Timeout{Message: err.Error()}
+		}
 		return &httpCallInfo{
 			request: req,
 			err:     err,
@@ -186,7 +194,9 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 400 {
-		err = fmt.Errorf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode)
+		err = &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Server responded with failure status: %d. Set request.test = 1 for debugging info.", httpResp.StatusCode),
+		}
 	}
 
 	return &httpCallInfo{

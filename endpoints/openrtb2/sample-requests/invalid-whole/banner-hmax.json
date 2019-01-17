@@ -1,11 +1,14 @@
 {
+  "message": "Invalid request: request.imp[0].banner uses unsupported property: \"hmax\". Use the \"format\" array instead.\n",
+  "requestPayload": {
     "id":"req-id",
     "imp": [
-        {
-            "id":"imp-id",
-            "banner": {
-                "hmax":50
-            }
+      {
+        "id":"imp-id",
+        "banner": {
+          "hmax":50
         }
+      }
     ]
+  }
 }

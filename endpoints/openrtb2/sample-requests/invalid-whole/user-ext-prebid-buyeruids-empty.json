@@ -1,29 +1,34 @@
 {
-  "id": "request-without-user-ext-obj",
-  "site": {
+  "message": "Invalid request: request.user.ext.prebid requires a \"buyeruids\" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.\n",
+  "requestPayload": {
+    "id": "request-without-user-ext-obj",
+    "site": {
       "page": "test.somepage.com"
-  },
-  "imp": [
+    },
+    "imp": [
       {
-          "id": "my-imp-id",
-          "banner": {
-              "format": [
-                  {
-                      "w": 300,
-                      "h": 600
-                  }
-              ]
-          },
-          "ext": {
-              "appnexus": "good"
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
           }
+        }
       }
-  ],
-  "user": {
+    ],
+    "user": {
       "ext": {
         "prebid": {
           "buyeruids": {}
         }
       }
+    }
   }
 }

@@ -45,20 +45,29 @@ type uidWithExpiry struct {
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParsePBSCookieFromRequest(r *http.Request, configuredOptoutCookie *config.Cookie) *PBSCookie {
-	if configuredOptoutCookie.Name != "" {
-		optOutCookie, err1 := r.Cookie(configuredOptoutCookie.Name)
-		if err1 == nil && optOutCookie.Value == configuredOptoutCookie.Value {
+func ParsePBSCookieFromRequest(r *http.Request, cookie *config.HostCookie) *PBSCookie {
+	if cookie.OptOutCookie.Name != "" {
+		optOutCookie, err1 := r.Cookie(cookie.OptOutCookie.Name)
+		if err1 == nil && optOutCookie.Value == cookie.OptOutCookie.Value {
 			pc := NewPBSCookie()
 			pc.SetPreference(false)
 			return pc
 		}
 	}
+	var parsed *PBSCookie
 	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
-	if err2 != nil {
-		return NewPBSCookie()
+	if err2 == nil {
+		parsed = ParsePBSCookie(uidCookie)
+	} else {
+		parsed = NewPBSCookie()
 	}
-	return ParsePBSCookie(uidCookie)
+	// Fixes #582
+	if uid, _, _ := parsed.GetUID(cookie.Family); uid == "" && cookie.CookieName != "" {
+		if hostCookie, err := r.Cookie(cookie.CookieName); err == nil {
+			parsed.TrySync(cookie.Family, hostCookie.Value)
+		}
+	}
+	return parsed
 }
 
 // ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.

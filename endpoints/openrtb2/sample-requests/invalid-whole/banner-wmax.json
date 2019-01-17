@@ -1,11 +1,14 @@
 {
-    "id":"req-id",
+  "message": "Invalid request: request.imp[0].banner uses unsupported property: \"wmax\". Use the \"format\" array instead.\n",
+  "requestPayload": {
+    "id": "req-id",
     "imp": [
-        {
-            "id":"imp-id",
-            "banner": {
-                "wmax":50
-            }
+      {
+        "id": "imp-id",
+        "banner": {
+          "wmax": 50
         }
+      }
     ]
+  }
 }

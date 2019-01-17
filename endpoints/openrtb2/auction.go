@@ -68,6 +68,7 @@ func OrtbAuctionEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParam
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
 	ao := analytics.AuctionObject{
 		Status: http.StatusOK,
 		Errors: make([]error, 0),
@@ -82,7 +83,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	start := time.Now()
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2,
+		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
@@ -100,17 +101,22 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if isSafari {
 		labels.Browser = pbsmetrics.BrowserSafari
 	}
+
 	req, errL := deps.parseRequest(r)
+
 	if writeError(errL, w) {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
 	if req.Site != nil && req.Site.Publisher != nil {
 		labels.PubID = req.Site.Publisher.ID
 	}
-	if req.App != nil && req.App.Publisher != nil {
-		labels.PubID = req.App.Publisher.ID
+	if req.App != nil {
+		labels.RType = pbsmetrics.ReqTypeORTB2App
+		if req.App.Publisher != nil {
+			labels.PubID = req.App.Publisher.ID
+		}
 	}
 
 	ctx := context.Background()
@@ -121,7 +127,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 	defer cancel()
 
-	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie.OptOutCookie))
+	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 	} else {
@@ -135,7 +141,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	numImps = len(req.Imp)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
-
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
@@ -147,6 +152,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		ao.Errors = append(ao.Errors, err)
 		return
 	}
+
 	// Fixes #231
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
@@ -158,8 +164,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		glog.Errorf("/openrtb2/auction Error encoding response: %v", err)
-		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Error encoding response: %v", err))
+		glog.Warningf("/openrtb2/auction Failed to send response: %v", err)
+		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
+		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
 }
 
@@ -308,11 +315,11 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 	}
 
 	if len(imp.Metric) != 0 {
-		return errors.New("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future.")
+		return fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)
 	}
 
 	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
-		return errors.New("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"")
+		return fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)
 	}
 
 	if err := validateBanner(imp.Banner, index); err != nil {
@@ -380,6 +387,9 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return nil
 	}
 
+	if len(n.Request) == 0 {
+		return fmt.Errorf("request.imp[%d].native missing required property \"request\"", impIndex)
+	}
 	var nativePayload nativeRequests.Request
 	if err := json.Unmarshal(json.RawMessage(n.Request), &nativePayload); err != nil {
 		return err
@@ -579,6 +589,9 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 }
 
 func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+	if len(ext) == 0 {
+		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
+	}
 	var bidderExts map[string]openrtb.RawJSON
 	if err := json.Unmarshal(ext, &bidderExts); err != nil {
 		return err
@@ -695,6 +708,7 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	if bidReq.App == nil {
 		setSiteImplicitly(httpReq, bidReq)
 	}
+	setImpsImplicitly(httpReq, bidReq.Imp)
 
 	deps.setUserImplicitly(httpReq, bidReq)
 	setAuctionTypeImplicitly(bidReq)
@@ -734,6 +748,15 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 					bidReq.Site.Page = referrerCandidate
 				}
 			}
+		}
+	}
+}
+
+func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
+	secure := int8(1)
+	for i := 0; i < len(imps); i++ {
+		if imps[i].Secure == nil && prebid.IsSecure(httpReq) {
+			imps[i].Secure = &secure
 		}
 	}
 }

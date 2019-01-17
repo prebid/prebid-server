@@ -68,6 +68,9 @@ func TestGoodAmpRequests(t *testing.T) {
 		if response.Debug != nil {
 			t.Errorf("Debug present but not requested")
 		}
+		if _, ok := response.Errors[openrtb_ext.BidderOpenx]; !ok {
+			t.Errorf("OpenX error message is not present. (%v)", response.Errors)
+		}
 	}
 }
 
@@ -150,6 +153,9 @@ func TestAmpTargetingDefaults(t *testing.T) {
 	}
 	if !extRequest.Prebid.Targeting.IncludeWinners {
 		t.Error("AMP defaults should set request.ext.targeting.includewinners to true")
+	}
+	if !extRequest.Prebid.Targeting.IncludeBidderKeys {
+		t.Error("AMP defaults should set request.ext.targeting.includebidderkeys to true")
 	}
 	if !reflect.DeepEqual(extRequest.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med")) {
 		t.Error("AMP defaults should set request.ext.targeting.pricegranularity to medium")
@@ -330,6 +336,7 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 				Ext: openrtb.RawJSON(`{ "prebid": {"targeting": { "hb_pb": "1.20", "hb_appnexus_pb": "1.20", "hb_cache_id": "some_id"}}}`),
 			}},
 		}},
+		Ext: openrtb.RawJSON(`{ "errors": {"openx":[ { "code": 1, "message": "The request exceeded the timeout allocated" } ] } }`),
 	}
 
 	if bidRequest.Test == 1 {

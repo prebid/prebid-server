@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       },
@@ -31,7 +31,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       }
@@ -56,24 +56,13 @@
                     "w": 300,
                     "h": 600
                   }
-                ]
-              },
+                ],
+                "w": 300,
+                "h": 250
+               },
               "ext": {
                 "bidder": {
-                  "publisherName": "cafemom"
-                }
-              }
-            },
-            {
-              "id": "unsupported-audio-imp",
-              "audio": {
-                "mimes": [
-                  "video/mp4"
-                ]
-              },
-              "ext": {
-                "bidder": {
-                  "publisherName": "cafemom"
+                  "publisher": "cafemom"
                 }
               }
             }

@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": {
+              "value": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
+            }
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "json: cannot unmarshal object into Go struct field ExtImpBeachfront.appId of type string",
+    "No valid impressions were found"
+  ]
+}

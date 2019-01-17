@@ -7,12 +7,12 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
-const uri = "http://publisher-east.mobileadtrading.com/rtb/bid"
-
 type SomoaudienceAdapter struct {
+	endpoint string
 }
 
 func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -67,7 +67,7 @@ func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adap
 
 		reqs = append(reqs, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     uri + fmt.Sprintf("?s=%s", placementHash),
+			Uri:     a.endpoint + fmt.Sprintf("?s=%s", placementHash),
 			Body:    body,
 			Headers: headers,
 		})
@@ -88,13 +88,13 @@ func (a *SomoaudienceAdapter) MakeBids(bidReq *openrtb.BidRequest, unused *adapt
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
@@ -141,13 +141,13 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 func validateImpression(imp *openrtb.Imp) (string, error) {
 
 	if imp.Audio != nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, Somoaudience doesn't support Audio", imp.ID),
 		}
 	}
 
 	if 0 == len(imp.Ext) {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, extImpBidder is empty", imp.ID),
 		}
 	}
@@ -155,7 +155,7 @@ func validateImpression(imp *openrtb.Imp) (string, error) {
 	var bidderExt adapters.ExtImpBidder
 
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 		}
 	}
@@ -163,7 +163,7 @@ func validateImpression(imp *openrtb.Imp) (string, error) {
 	impExt := openrtb_ext.ExtImpSomoaudience{}
 	err := json.Unmarshal(bidderExt.Bidder, &impExt)
 	if err != nil {
-		return "", &adapters.BadInputError{
+		return "", &errortypes.BadInput{
 			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
 		}
 	}
@@ -171,6 +171,8 @@ func validateImpression(imp *openrtb.Imp) (string, error) {
 	return impExt.PlacementHash, nil
 }
 
-func NewSomoaudienceBidder() *SomoaudienceAdapter {
-	return &SomoaudienceAdapter{}
+func NewSomoaudienceBidder(endpoint string) *SomoaudienceAdapter {
+	return &SomoaudienceAdapter{
+		endpoint: endpoint,
+	}
 }

@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       }

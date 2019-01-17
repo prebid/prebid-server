@@ -56,17 +56,31 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 	var bids []openrtb.Bid
 
 	for i, imp := range breq.Imp {
-		bids = append(bids, openrtb.Bid{
-			ID:     fmt.Sprintf("SeatID_%d", i),
-			ImpID:  imp.ID,
-			Price:  float64(int(rand.Float64()*1000)) / 100,
-			AdID:   fmt.Sprintf("adID-%d", i),
-			AdM:    "AdContent",
-			CrID:   fmt.Sprintf("creative-%d", i),
-			W:      *imp.Banner.W,
-			H:      *imp.Banner.H,
-			DealID: fmt.Sprintf("DealID_%d", i),
-		})
+		if imp.Banner != nil {
+			bids = append(bids, openrtb.Bid{
+				ID:     fmt.Sprintf("SeatID_%d", i),
+				ImpID:  imp.ID,
+				Price:  float64(int(rand.Float64()*1000)) / 100,
+				AdID:   fmt.Sprintf("adID-%d", i),
+				AdM:    "AdContent",
+				CrID:   fmt.Sprintf("creative-%d", i),
+				W:      *imp.Banner.W,
+				H:      *imp.Banner.H,
+				DealID: fmt.Sprintf("DealID_%d", i),
+			})
+		} else {
+			bids = append(bids, openrtb.Bid{
+				ID:     fmt.Sprintf("SeatID_%d", i),
+				ImpID:  imp.ID,
+				Price:  float64(int(rand.Float64()*1000)) / 100,
+				AdID:   fmt.Sprintf("adID-%d", i),
+				AdM:    "AdContent",
+				CrID:   fmt.Sprintf("creative-%d", i),
+				W:      imp.Video.W,
+				H:      imp.Video.H,
+				DealID: fmt.Sprintf("DealID_%d", i),
+			})
+		}
 	}
 	resp.SeatBid[0].Bid = bids
 
@@ -644,19 +658,19 @@ func TestPubmaticSampleRequest(t *testing.T) {
 
 	httpReq := httptest.NewRequest("POST", server.URL, body)
 	httpReq.Header.Add("Referer", "http://test.com/sports")
-	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.HostCookie{})
 	pc.TrySync("pubmatic", "12345")
 	fakewriter := httptest.NewRecorder()
 	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	_, err = pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, cacheClient, &hcs)
+	}, cacheClient, &hcc)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
 	}
@@ -686,12 +700,14 @@ func TestOpenRTBBidRequest(t *testing.T) {
 							}}`),
 		}, {
 			ID: "456",
-			Banner: &openrtb.Banner{
-				Format: []openrtb.Format{{
-					W: 200,
-					H: 350,
-				}},
+			Video: &openrtb.Video{
+				W:           640,
+				H:           480,
+				MIMEs:       []string{"video"},
+				MinDuration: 5,
+				MaxDuration: 10,
 			},
+
 			Ext: openrtb.RawJSON(`{"bidder": {
 				"adSlot": "AdTag_Div2@200x350",
 				"publisherId": "1234",
@@ -756,22 +772,26 @@ func TestOpenRTBBidRequest(t *testing.T) {
 		if ortbRequest.Imp[0].Ext == nil {
 			t.Fatalf("Failed to add imp.Ext into outgoing request.")
 		}
-
 	}
 	if ortbRequest.Imp[1].ID == "456" {
 
-		if ortbRequest.Imp[1].Banner.Format[0].W != 200 {
-			t.Fatalf("Banner width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[1].Banner.Format[0].W)
+		if ortbRequest.Imp[1].Video.W != 640 {
+			t.Fatalf("Video width does not match. Expected %d, Got %d", 200, ortbRequest.Imp[1].Video.W)
 		}
-
-		if ortbRequest.Imp[1].Banner.Format[0].H != 350 {
-			t.Fatalf("Banner height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[1].Banner.Format[0].H)
+		if ortbRequest.Imp[1].Video.H != 480 {
+			t.Fatalf("Video height does not match. Expected %d, Got %d", 350, ortbRequest.Imp[1].Video.H)
+		}
+		if ortbRequest.Imp[1].Video.MIMEs[0] != "video" {
+			t.Fatalf("Video MIMEs do not match. Expected %s, Got %s", "video/mp4", ortbRequest.Imp[1].Video.MIMEs[0])
+		}
+		if ortbRequest.Imp[1].Video.MinDuration != 5 {
+			t.Fatalf("Video min duration does not match. Expected %d, Got %d", 15, ortbRequest.Imp[1].Video.MinDuration)
+		}
+		if ortbRequest.Imp[1].Video.MaxDuration != 10 {
+			t.Fatalf("Video max duration does not match. Expected %d, Got %d", 30, ortbRequest.Imp[1].Video.MaxDuration)
 		}
 		if ortbRequest.Imp[1].TagID != "AdTag_Div2" {
 			t.Fatalf("Failed to Set TagID. Expected %s, Got %s", "AdTag_Div2", ortbRequest.Imp[1].TagID)
-		}
-		if ortbRequest.Imp[1].Ext == nil {
-			t.Fatalf("Failed to add imp.Ext into outgoing request.")
 		}
 	}
 	if ortbRequest.Site.Publisher.ID != "1234" {
@@ -902,6 +922,9 @@ func TestOpenRTBBidRequest_App(t *testing.T) {
 			t.Fatalf("Failed to add imp.Ext into outgoing request.")
 		}
 
+		if string(ortbRequest.Imp[0].Ext) != "\"keywords\":{\"pmZoneID\": \"Zone1,Zone2\",\"preference\": \"sports,movies\"}" {
+			t.Fatalf("Failed to set  ortbRequest.Imp.Ext. Expected %s Actual %s ", "{\"wrapper\":{\"version\":1,\"profile\":5123}}", string(ortbRequest.Ext))
+		}
 	}
 
 	if ortbRequest.App.Publisher.ID != "1234" {
@@ -967,4 +990,84 @@ func TestOpenRTBBidRequest_InvalidParams(t *testing.T) {
 		}
 	}
 
+}
+
+func TestOpenRTBBidRequest_UnsupportedMediaType(t *testing.T) {
+	bidder := new(PubmaticAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "12345",
+		Imp: []openrtb.Imp{{
+			ID: "234",
+			Audio: &openrtb.Audio{
+				MinDuration: 100,
+				MaxDuration: 200,
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+								"adSlot": "AdTag_Div1@300x250",
+								"publisherId": "1234"
+							}}`),
+		}},
+		Device: &openrtb.Device{
+			UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+		},
+		User: &openrtb.User{
+			ID: "testID",
+		},
+		Site: &openrtb.Site{
+			ID: "siteID",
+		},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) == 0 {
+		t.Fatalf("Should get errors while Making HTTP requests for audio: %v", errs)
+	}
+	if len(reqs) != 0 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+
+}
+func TestOpenRTBBidRequest_UnsupportedMediaTypeWithValidMediaType(t *testing.T) {
+	bidder := new(PubmaticAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "12345",
+		Imp: []openrtb.Imp{{
+			ID: "234",
+			Audio: &openrtb.Audio{
+				MinDuration: 100,
+				MaxDuration: 200,
+			},
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}},
+			},
+			Ext: openrtb.RawJSON(`{"bidder": {
+								"adSlot": "AdTag_Div1@300x250",
+								"publisherId": "1234"
+							}}`),
+		}},
+		Device: &openrtb.Device{
+			UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+		},
+		User: &openrtb.User{
+			ID: "testID",
+		},
+		Site: &openrtb.Site{
+			ID: "siteID",
+		},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) != 0 {
+		t.Fatalf("Should not get errors while Making HTTP requests for audio: %v", errs)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
 }

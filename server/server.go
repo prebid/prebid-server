@@ -11,23 +11,24 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
-
 	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	metricsconfig "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 )
 
 // Listen blocks forever, serving PBS requests on the given port. This will block forever, until the process is shut down.
-func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.MetricsEngine) {
+func Listen(cfg *config.Configuration, handler http.Handler, adminHandler http.Handler, metrics *metricsconfig.DetailedMetricsEngine) {
 	stopSignals := make(chan os.Signal)
 	signal.Notify(stopSignals, syscall.SIGTERM, syscall.SIGINT)
 
 	// Run the servers. Fan any process-stopper signals out to each server for graceful shutdowns.
 	stopAdmin := make(chan os.Signal)
 	stopMain := make(chan os.Signal)
+	stopPrometheus := make(chan os.Signal)
 	done := make(chan struct{})
 
-	adminServer := newAdminServer(cfg)
+	adminServer := newAdminServer(cfg, adminHandler)
 	go shutdownAfterSignals(adminServer, stopAdmin, done)
 
 	mainServer := newMainServer(cfg, handler)
@@ -46,13 +47,27 @@ func Listen(cfg *config.Configuration, handler http.Handler, metrics pbsmetrics.
 	go runServer(mainServer, "Main", mainListener)
 	go runServer(adminServer, "Admin", adminListener)
 
-	wait(stopSignals, done, stopMain, stopAdmin)
+	if cfg.Metrics.Prometheus.Port != 0 {
+		prometheusServer := newPrometheusServer(cfg, metrics)
+		go shutdownAfterSignals(prometheusServer, stopPrometheus, done)
+		prometheusListener, err := newListener(prometheusServer.Addr, nil)
+		if err != nil {
+			glog.Errorf("Error listening for TCP connections on %s: %v", adminServer.Addr, err)
+			return
+		}
+		go runServer(prometheusServer, "Prometheus", prometheusListener)
+
+		wait(stopSignals, done, stopMain, stopAdmin, stopPrometheus)
+	} else {
+		wait(stopSignals, done, stopMain, stopAdmin)
+	}
 	return
 }
 
-func newAdminServer(cfg *config.Configuration) *http.Server {
+func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Server {
 	return &http.Server{
-		Addr: cfg.Host + ":" + strconv.Itoa(cfg.AdminPort),
+		Addr:    cfg.Host + ":" + strconv.Itoa(cfg.AdminPort),
+		Handler: handler,
 	}
 }
 

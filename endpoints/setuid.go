@@ -24,7 +24,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 
 		defer pbsanalytics.LogSetUIDObject(&so)
 
-		pc := usersync.ParsePBSCookieFromRequest(r, &cfg.OptOutCookie)
+		pc := usersync.ParsePBSCookieFromRequest(r, &cfg)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
 			metrics.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})

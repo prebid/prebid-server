@@ -13,10 +13,9 @@ import (
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
-
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 )
 
 func TestNormalSet(t *testing.T) {
@@ -127,7 +126,7 @@ func doRequest(req *http.Request, gdprAllowsHostCookies bool, gdprReturnsError b
 		errorHost: gdprReturnsError,
 	}
 	cfg := config.Configuration{}
-	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), pbsmetrics.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
+	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), metricsConf.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response

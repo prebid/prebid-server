@@ -33,7 +33,7 @@ func TestNewEmptyFetcher(t *testing.T) {
 
 func TestNewHTTPFetcher(t *testing.T) {
 	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
-		HTTP: &config.HTTPFetcherConfig{
+		HTTP: config.HTTPFetcherConfig{
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "stored-requests.prebid.com?type=amp",
 		},
@@ -62,7 +62,7 @@ func TestNewHTTPEvents(t *testing.T) {
 	server2 := httptest.NewServer(http.HandlerFunc(handler))
 
 	cfg := &config.StoredRequests{
-		HTTPEvents: &config.HTTPEventsConfig{
+		HTTPEvents: config.HTTPEventsConfig{
 			Endpoint:    server1.URL,
 			AmpEndpoint: server2.URL,
 			RefreshRate: 100,
@@ -77,7 +77,7 @@ func TestNewHTTPEvents(t *testing.T) {
 }
 
 func TestNewEmptyCache(t *testing.T) {
-	cache := newCache(&config.StoredRequests{})
+	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
 	reqs, _ := cache.Get(context.Background(), []string{"foo"}, nil)
 	if len(reqs) != 0 {
@@ -87,7 +87,7 @@ func TestNewEmptyCache(t *testing.T) {
 
 func TestNewInMemoryCache(t *testing.T) {
 	cache := newCache(&config.StoredRequests{
-		InMemoryCache: &config.InMemoryCache{
+		InMemoryCache: config.InMemoryCache{
 			TTL:              60,
 			RequestCacheSize: 100,
 			ImpCacheSize:     100,
@@ -102,13 +102,13 @@ func TestNewInMemoryCache(t *testing.T) {
 
 func TestNewPostgresEventProducers(t *testing.T) {
 	cfg := &config.StoredRequests{
-		Postgres: &config.PostgresConfig{
-			CacheInitialization: &config.PostgresCacheInitializer{
+		Postgres: config.PostgresConfig{
+			CacheInitialization: config.PostgresCacheInitializer{
 				Timeout:  50,
 				Query:    "SELECT id, requestData, type FROM stored_data",
 				AmpQuery: "SELECT id, requestData, type FROM stored_amp_data",
 			},
-			PollUpdates: &config.PostgresUpdatePolling{
+			PollUpdates: config.PostgresUpdatePolling{
 				RefreshRate: 20,
 				Timeout:     50,
 				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",

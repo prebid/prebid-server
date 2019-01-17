@@ -1,70 +1,61 @@
-# Pubmatic-Adaptor 
-Pubmatic adaptor in Prebid Server  
+[![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
+
+# Prebid Server
+
+Prebid Server is an open source implementation of Server-Side Header Bidding.
+It is managed by [Prebid.org](http://prebid.org/overview/what-is-prebid-org.html),
+and upholds the principles from the [Prebid Code of Conduct](http://prebid.org/wrapper_code_of_conduct.html).
+
+This project does not support the same set of Bidders as Prebid.js, although there is overlap.
+The current set can be found in the [adapters](./adapters) package. If you don't see the one you want, feel free to [contribute it](docs/developers/add-new-bidder.md).
+
+For more information, see:
+
+- [What is Prebid?](http://prebid.org/overview/intro.html)
+- [Getting started with Prebid Server](http://prebid.org/dev-docs/get-started-with-prebid-server.html)
+- [Current Bidders](http://prebid.org/dev-docs/prebid-server-bidders.html)
+
+## Installation
+
+First install [Go 1.9.1](https://golang.org/doc/install) or later and [dep](https://golang.github.io/dep/docs/installation.html). Note that dep requires an explicit GOPATH to be set.
+
+```bash
+export GOPATH=$(go env GOPATH)
+mkdir -p $GOPATH
+```
+
+Then download and prepare Prebid Server:
+
+```bash
+cd $GOPATH
+git clone https://github.com/PubMatic-OpenWrap/prebid-server src/github.com/PubMatic-OpenWrap/prebid-server
+cd src/github.com/PubMatic-OpenWrap/prebid-server
+dep ensure
+```
+
+Run the automated tests:
+
+```bash
+./validate.sh
+```
+
+Or just run the server locally:
+
+```bash
+go build .
+./prebid-server
+```
+
+Load the landing page in your browser at `http://localhost:8000/`.
+For the full API reference, see [docs/endpoints](docs/endpoints)
 
 
-## Sample Request for legacy /auction endpoint 
+## Contributing
 
-pbBidder := pbs.PBSBidder{
-        BidderCode: "bannerCode",
-        AdUnits: []pbs.PBSAdUnit{
-            {
-                Code:       "unitCode",
-                BidID:      "bidid",
-                MediaTypes: []pbs.MediaType{pbs.MEDIA_TYPE_BANNER},
-                Sizes: []openrtb.Format{
-                    {
-                        W: 336,
-                        H: 280,
-                    },
-                },
-                Params: json.RawMessage(`{"publisherId": "640", 
-                            "adSlot": "slot1@336x280", 
-                            "kadpageurl": "www.test.com", 
-                            "gender": "M",
-                            "lat":40.1,
-                            "lon":50.2,
-                            "yob":1982,
-                            "kadfloor":0.5,
-                            "keywords":{
-                                    "pmZoneId": "Zone1,Zone2"
-                                    },  
-                            "wrapper":
-                                    {"version":2,
-                                    "profile":595}
-                                    }`),
-            },
-        },
-    }
-        
-## Sample Request for /openrtb2/auction endpoint 
+Want to [add an adapter](docs/developers/add-new-bidder.md)? Found a bug? Great!
+This project is in its infancy, and many things can be improved.
 
-    request := &openrtb.BidRequest{
-        ID: "12345",
-        Imp: []openrtb.Imp{{
-            ID: "234",
-            Banner: &openrtb.Banner{
-                Format: []openrtb.Format{{
-                    W: 300,
-                    H: 250,
-                }},
-            },
-            Ext: openrtb.RawJSON(`{"bidder": {
-                                "adSlot": "AdTag_Div1@300x250",
-                                "publisherId": "1234",
-                                "keywords":{
-                                            "pmZoneID": "Zone1,Zone2",
-                                            "preference": "sports,movies"
-                                            },
-                                "wrapper":{"version":1,"profile":5123}
-                            }}`),
-        }},
-        Device: &openrtb.Device{
-            UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
-        },
-        User: &openrtb.User{
-            ID: "testID",
-        },
-        Site: &openrtb.Site{
-            ID: "siteID",
-        },
-    }
+
+Report bugs, request features, and suggest improvements [on Github](https://github.com/PubMatic-OpenWrap/prebid-server/issues).
+
+Or better yet, [open a pull request](https://github.com/PubMatic-OpenWrap/prebid-server/compare) with the changes you'd like to see.

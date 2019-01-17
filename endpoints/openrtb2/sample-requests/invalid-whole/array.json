@@ -1,1 +1,4 @@
-[]
+{
+  "message": "Invalid request: json: cannot unmarshal array into Go value of type openrtb.BidRequest\n",
+  "requestPayload": []
+}
