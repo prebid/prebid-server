@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -54,8 +55,9 @@ type bidResponse struct {
  */
 type decision struct {
 	Pricing       *pricing   `json:"pricing"`
-	AdID          string     `json:"adId"`
-	CreativeID    string     `json:"creativeId"`
+	AdID          int64      `json:"adId"`
+	BidderName    string     `json:"bidderName,omitempty"`
+	CreativeID    string     `json:"creativeId,omitempty"`
 	Contents      []contents `json:"contents"`
 	ImpressionUrl *string    `json:"impressionUrl,omitempty"`
 }
@@ -218,14 +220,14 @@ func (a *ConsumableAdapter) MakeBids(
 			_, consumableExt, _ := extractExtensions(*imp)
 
 			bid := openrtb.Bid{}
-			bid.ID = decision.AdID
+			bid.ID = internalRequest.ID
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
 			bid.AdM = retrieveAd(decision, consumableExt.UnitId, consumableExt.UnitName, a.clock.Now())
 			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
 			bid.H = imp.Banner.Format[0].H
-			bid.CrID = decision.CreativeID // to assist with quality checking
-			bid.Exp = 30                   // TODO: Check this is intention of TTL
+			bid.CrID = strconv.FormatInt(decision.AdID, 10)
+			bid.Exp = 30 // TODO: Check this is intention of TTL
 
 			// not yet ported from prebid.js adapter
 			//bid.requestId = bidId;

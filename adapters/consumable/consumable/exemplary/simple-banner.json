@@ -78,8 +78,7 @@
         "body": {
           "decisions": {
             "test-imp-id": {
-              "adId": "adid-consumable",
-              "creativeId": "crid-consumable",
+              "adId": 1234567890,
               "pricing": {
                 "clearPrice": 0.5
               },
@@ -103,11 +102,11 @@
       "bids": [
         {
           "bid": {
-            "id": "adid-consumable",
+            "id": "test-request-id",
             "impid": "test-imp-id",
             "price": 0.5,
             "adm": "<script type=\"text/javascript\">document.write(\"<div id=\"fakeName42-42\">\");</script><blink>Remember this: https://www.google.com/search?q=blink+tag ?</blink><div style=\"position:absolute;left:0px;top:0px;visibility:hidden;\"><img src=\"http%3A%2F%2Flocalhost%3A8080%2Fshown\"></div><script type=\"text/javascript\">document.write(\"</div>\");</script><script type=\"text/javascript\">document.write(\"<div class=\"fakeName42\"></div>\");</script><script type=\"text/javascript\">document.write(\"<scr\"+\"ipt type=\"text/javascript\" src=\"https://yummy.consumable.com/42/fakeName42/widget/unit.js?cb=1451651415\" charset=\"utf-8\" async></scr\"+\"ipt>\");</script>",
-            "crid": "crid-consumable",
+            "crid": "1234567890",
             "exp": 30,
             "w": 728,
             "h": 250
