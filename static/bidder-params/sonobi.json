@@ -8,12 +8,8 @@
       "TagID": {
         "type": "string",
         "description": "An ID which identifies /ad/unit/code or the sonobi placement_id"
-      },
-      "PubID": {
-        "type": "string",
-        "description": "An ID which identifies publisher in Sonobi's ecosystem"
       }
     },
-    "required": ["TagID", "PubID"]
+    "required": ["TagID"]
   }
   

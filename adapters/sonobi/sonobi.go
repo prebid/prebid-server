@@ -209,7 +209,6 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 		if adapterReq != nil {
 			adapterRequests = append(adapterRequests, adapterReq)
 		}
-		adapterReq.Uri = adapterReq.Uri + "=" + sonobiExt.PubID // Add the sonobi pub id to the request uri
 		errs = append(errs, errors...)
 	}
 
