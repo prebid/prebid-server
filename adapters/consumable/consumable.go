@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type ConsumableAdapter struct {
@@ -81,6 +82,14 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		if request.Device.IP != "" {
 			headers.Set("Forwarded", "for="+request.Device.IP)
 			headers.Set("X-Forwarded-For", request.Device.IP)
+		}
+	}
+
+	// Set azk cookie to one we got via sync
+	if request.User != nil {
+		userID := strings.TrimSpace(request.User.BuyerUID)
+		if len(userID) > 0 {
+			headers.Add("Cookie", fmt.Sprintf("%s=%s", "azk", userID))
 		}
 	}
 
