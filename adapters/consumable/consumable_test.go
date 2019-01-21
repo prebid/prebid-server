@@ -9,5 +9,5 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	clock := knownInstant(time.Date(2016, 1, 1, 12, 30, 15, 0, time.UTC))
-	adapterstest.RunJSONBidderTest(t, "consumable", testConsumableBidder(clock))
+	adapterstest.RunJSONBidderTest(t, "consumable", testConsumableBidder(clock, "http://serverbid/api/v2"))
 }

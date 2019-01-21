@@ -14,7 +14,8 @@ import (
 )
 
 type ConsumableAdapter struct {
-	clock instant
+	clock    instant
+	endpoint string
 }
 
 type bidRequest struct {
@@ -283,10 +284,10 @@ func getMediaTypeForImp(imp *openrtb.Imp) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeVideo
 }
 
-func testConsumableBidder(testClock instant) *ConsumableAdapter {
-	return &ConsumableAdapter{testClock}
+func testConsumableBidder(testClock instant, endpoint string) *ConsumableAdapter {
+	return &ConsumableAdapter{testClock, endpoint}
 }
 
-func NewConsumableBidder() *ConsumableAdapter {
-	return &ConsumableAdapter{realInstant{}}
+func NewConsumableBidder(endpoint string) *ConsumableAdapter {
+	return &ConsumableAdapter{realInstant{}, endpoint}
 }

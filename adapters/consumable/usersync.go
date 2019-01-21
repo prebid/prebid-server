@@ -1,6 +1,7 @@
 package consumable
 
 import (
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/url"
 	"strings"
 
@@ -12,8 +13,7 @@ import (
 var VENDOR_ID uint16 = 65535 // TODO: What is the correct value
 
 func NewConsumableSyncer(cfg *config.Configuration) usersync.Usersyncer {
-	userSyncURL := "//e.serverbid.com/udb/9969/match?redir="
-	// TODO: Above could be from config: userSyncURL := cfg.Adapters[string(openrtb_ext.BidderConsumable)].UserSyncURL
+	userSyncURL := cfg.Adapters[string(openrtb_ext.BidderConsumable)].UserSyncURL
 
 	externalURL := strings.TrimRight(cfg.ExternalURL, "/")
 	redirectURL := url.QueryEscape(externalURL) +
