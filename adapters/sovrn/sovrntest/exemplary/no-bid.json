@@ -41,6 +41,9 @@
     {
       "expectedRequest":
       {
+        "Accept": [
+          "application/json"
+        ],
         "headers": {
           "Content-Type": [
             "application/json"
