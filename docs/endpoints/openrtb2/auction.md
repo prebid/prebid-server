@@ -343,6 +343,13 @@ This adds two optional properties:
 
 These fields will be forwarded to each Bidder, so they can decide how to process them.
 
+### OpenRTB Ambiguities
+
+This section describes the ways in which Prebid Server **implements** OpenRTB spec ambiguous parts.
+
+- `request.cur`: If `request.cur` is not specified in the bid request, Prebid Server will consider it as being `USD` whereas OpenRTB spec doesn't mention any default currency for bid request.
+```request.cur: ['USD'] // Default value if not set```
+
 ### OpenRTB Differences
 
 This section describes the ways in which Prebid Server **breaks** the OpenRTB spec.
