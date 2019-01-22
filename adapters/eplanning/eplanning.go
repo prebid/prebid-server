@@ -23,10 +23,15 @@ const defaultPageURL = "FILE"
 const sec = "ROS"
 const dfpClientID = "1"
 
-var cleanNameRegexps = map[*regexp.Regexp]string{
-	regexp.MustCompile(`_|\.|-|\/`):    "",
-	regexp.MustCompile(`\)\(|\(|\)|:`): "_",
-	regexp.MustCompile(`^_+|_+$`):      "",
+var cleanNameSteps = []cleanNameStep{
+	{regexp.MustCompile(`_|\.|-|\/`), ""},
+	{regexp.MustCompile(`\)\(|\(|\)|:`), "_"},
+	{regexp.MustCompile(`^_+|_+$`), ""},
+}
+
+type cleanNameStep struct {
+	expression        *regexp.Regexp
+	replacementString string
 }
 
 type EPlanningAdapter struct {
@@ -140,8 +145,8 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 }
 
 func cleanName(name string) string {
-	for regexp, replacementString := range cleanNameRegexps {
-		name = regexp.ReplaceAllString(name, replacementString)
+	for _, step := range cleanNameSteps {
+		name = step.expression.ReplaceAllString(name, step.replacementString)
 	}
 	return name
 }

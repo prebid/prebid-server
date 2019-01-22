@@ -11,7 +11,7 @@
         "ext": {
           "bidder": {
             "ci": "12345",
-            "adunit_code": "test_adunitcode"
+            "adunit_code": "test_ad.-un(itco:de:"
           }
         }
       }
@@ -30,7 +30,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=testadunitcode:600x300&uid=43215&ip=123.123.123.123",
+        "uri": "http://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=testadun_itco_de:600x300&uid=43215&ip=123.123.123.123",
         "body": {}
       },
       "mockResponse": {
@@ -48,7 +48,7 @@
           "sec": "ROS",
           "sp": [
             {
-              "k": "testadunitcode",
+              "k": "testadun_itco_de",
               "a": [{
                 "i": "123456789abcdef",
                 "pr": "0.5",
