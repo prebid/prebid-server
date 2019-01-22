@@ -17,17 +17,12 @@ const Seat = "beachfront"
 const BidCapacity = 5
 
 const BannerEndpoint = "http://display.bfmio.com/prebid_display"
-
-// const BannerEndpoint = "http://qa.bfmio.com/prebid_display"
-
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
-
-// const VideoEndpoint = "https://qa.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.2.1"
+const beachfrontAdapterVersion = "0.2.2"
 
 type BeachfrontAdapter struct {
 }
@@ -42,26 +37,23 @@ type BeachfrontRequests struct {
 // ---------------------------------------------------
 
 type BeachfrontVideoRequest struct {
-	IsPrebid bool   `json:"isPrebid"`
-	AppId    string `json:"appId"`
-	ID       string `json:"id"` // This ID is unique to this client page load and is sent by
-	// prebid.js. I'm sending it with banner requests as "requestId" for possible future reporting.
-	Imp    []BeachfrontVideoImp  `json:"imp"`
-	Site   openrtb.Site          `json:"site"`
-	Device BeachfrontVideoDevice `json:"device"`
-	User   openrtb.User          `json:"user"`
-	Cur    []string              `json:"cur"`
+	IsPrebid bool                  `json:"isPrebid"`
+	AppId    string                `json:"appId"`
+	ID       string                `json:"id"`
+	Imp      []BeachfrontVideoImp  `json:"imp"`
+	Site     openrtb.Site          `json:"site"`
+	Device   BeachfrontVideoDevice `json:"device"`
+	User     openrtb.User          `json:"user"`
+	Cur      []string              `json:"cur"`
 }
 
 // Soooo close, but not quite openRTB
 type BeachfrontVideoImp struct {
 	Video    BeachfrontSize `json:"video"`
 	Bidfloor float64        `json:"bidfloor"`
-	Id       int            `json:"id"` // A sequential count of which imp on the page this is. Since the bfm
-	// 	video endpoint only returns one response for one imp, this is
-	//	never going to happen. This will always be 0. @TODO - Alex
-	ImpId  string `json:"impid"` // DNE in openRTB, would be "ID"
-	Secure int8   `json:"secure"`
+	Id       int            `json:"id"`
+	ImpId    string         `json:"impid"`
+	Secure   int8           `json:"secure"`
 }
 
 type BeachfrontVideoDevice struct {
@@ -94,7 +86,7 @@ type BeachfrontBannerRequest struct {
 
 type BeachfrontSlot struct {
 	Slot     string           `json:"slot"`
-	Id       string           `json:"id"` // This is the AppID, aka, exchange id on platform.beachfront.com
+	Id       string           `json:"id"`
 	Bidfloor float64          `json:"bidfloor"`
 	Sizes    []BeachfrontSize `json:"sizes"`
 }
@@ -251,9 +243,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.DeviceOs = req.Device.OS
 				beachfrontReq.Dnt = req.Device.DNT
 				if req.Device.UA != "" {
-					beachfrontReq.UA = req.Device.UA // The UA in the header that is sent to bfm is the Go
-				} // UA. I can set that to the same UA that is used here
-			} // if any logic is based off of that. @TODO - Alex
+					beachfrontReq.UA = req.Device.UA
+				}
+			}
 
 			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = beachfrontExt.BidFloor
 			beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
