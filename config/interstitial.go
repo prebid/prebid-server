@@ -13,6 +13,9 @@ type InterstitialSize struct {
 
 type InterstitialSizes []InterstitialSize
 
+// This list was sourced from delivery statistics from Appnexus. A list of sizes sorted by
+// size (larger first) and frequency(more common sizes first) with what seemed to be a good
+// weighting factor balancing the two factors.
 var ResolvedInterstitialSizes = InterstitialSizes{
 	InterstitialSize{300, 250},
 	InterstitialSize{728, 90},
