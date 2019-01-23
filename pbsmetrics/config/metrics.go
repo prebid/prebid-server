@@ -6,9 +6,9 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/pbsmetrics/prometheus"
-	"github.com/rcrowley/go-metrics"
-	"github.com/vrischmann/go-metrics-influxdb"
+	prometheusmetrics "github.com/prebid/prebid-server/pbsmetrics/prometheus"
+	metrics "github.com/rcrowley/go-metrics"
+	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
@@ -132,6 +132,13 @@ func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
 	}
 }
 
+// RecordAdapterCookieSync across all engines
+func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterCookieSync(adapter, gdprBlocked)
+	}
+}
+
 // RecordUserIDSet across all engines
 func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 	for _, thisME := range *me {
@@ -189,6 +196,11 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels,
 
 // RecordCookieSync as a noop
 func (me *DummyMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
+	return
+}
+
+// RecordAdapterCookieSync as a noop
+func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
 	return
 }
 
