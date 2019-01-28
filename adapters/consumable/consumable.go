@@ -218,13 +218,12 @@ func (a *ConsumableAdapter) MakeBids(
 		}
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
-			_, consumableExt, _ := extractExtensions(*imp)
 
 			bid := openrtb.Bid{}
 			bid.ID = internalRequest.ID
 			bid.ImpID = impID
 			bid.Price = *decision.Pricing.ClearPrice
-			bid.AdM = retrieveAd(decision, consumableExt.UnitId, consumableExt.UnitName, a.clock.Now())
+			bid.AdM = retrieveAd(decision)
 			bid.W = imp.Banner.Format[0].W // TODO: Review to check if this is correct behaviour
 			bid.H = imp.Banner.Format[0].H
 			bid.CrID = strconv.FormatInt(decision.AdID, 10)
