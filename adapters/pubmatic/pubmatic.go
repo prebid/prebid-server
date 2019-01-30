@@ -148,10 +148,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					if pbReq.Imp[i].Banner != nil {
-						pbReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
-						pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
-					}
+					pbReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
+					pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -325,17 +323,25 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}
 
 	if request.Site != nil {
-		if request.Site.Publisher != nil {
-			request.Site.Publisher.ID = pubID
+		siteCopy := *request.Site
+		if siteCopy.Publisher != nil {
+			publisherCopy := *siteCopy.Publisher
+			publisherCopy.ID = pubID
+			siteCopy.Publisher = &publisherCopy
 		} else {
-			request.Site.Publisher = &openrtb.Publisher{ID: pubID}
+			siteCopy.Publisher = &openrtb.Publisher{ID: pubID}
 		}
-	} else {
-		if request.App.Publisher != nil {
-			request.App.Publisher.ID = pubID
+		request.Site = &siteCopy
+	} else if request.App != nil {
+		appCopy := *request.App
+		if appCopy.Publisher != nil {
+			publisherCopy := *appCopy.Publisher
+			publisherCopy.ID = pubID
+			appCopy.Publisher = &publisherCopy
 		} else {
-			request.App.Publisher = &openrtb.Publisher{ID: pubID}
+			appCopy.Publisher = &openrtb.Publisher{ID: pubID}
 		}
+		request.App = &appCopy
 	}
 
 	//adding hack to support DNT, since hbopenbid does not support lmt
@@ -366,11 +372,11 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}}, errs
 }
 
-// parseImpressionObject parase  the imp to get it ready to send to pubmatic
+// parseImpressionObject parse the imp to get it ready to send to pubmatic
 func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
-	// PubMatic supports native, banner and video impressions.
-	if imp.Audio != nil && imp.Banner == nil && imp.Video == nil {
-		return fmt.Errorf("PubMatic doesn't support audio. Ignoring ImpID = %s", imp.ID)
+	// PubMatic supports banner and video impressions.
+	if imp.Banner == nil && imp.Video == nil {
+		return fmt.Errorf("Invalid MediaType. PubMatic only supports Banner and Video. Ignoring ImpID=%s", imp.ID)
 	}
 
 	if imp.Audio != nil {
@@ -387,20 +393,12 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		return err
 	}
 
-	if pubmaticExt.AdSlot == "" {
-		return errors.New("No AdSlot  parameter provided")
-	}
-
-	if pubmaticExt.PublisherId == "" {
-		return errors.New("No PublisherId parameter provided")
-	}
-
 	if *pubID == "" {
 		*pubID = pubmaticExt.PublisherId
 	}
 
 	// Parse Wrapper Extension only once per request
-	if *wrapExt == "" && len(string(pubmaticExt.WrapExt)) != 0 {
+	if *wrapExt == "" && len(pubmaticExt.WrapExt) != 0 {
 		var wrapExtMap map[string]int
 		err := json.Unmarshal([]byte(pubmaticExt.WrapExt), &wrapExtMap)
 		if err != nil {
@@ -410,45 +408,41 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 	}
 
 	adSlotStr := strings.TrimSpace(pubmaticExt.AdSlot)
-	if imp.Banner != nil || imp.Video != nil {
 
-		adSlot := strings.Split(adSlotStr, "@")
-		if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
-			imp.TagID = strings.TrimSpace(adSlot[0])
+	adSlot := strings.Split(adSlotStr, "@")
+	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
+		imp.TagID = strings.TrimSpace(adSlot[0])
 
-			adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
-			if len(adSize) == 2 {
-				width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
-				if err != nil {
-					return errors.New("Invalid Width Provided ")
-				}
-
-				heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
-				height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
-				if err != nil {
-					return errors.New("Invalid Height Provided ")
-				}
-				if imp.Banner != nil {
-					imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
-					imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
-				} /* In case of video, params.adSlot would always be adunit@0x0,
-				so we are not replacing video.W and video.H with size passed in params.adSlot
-					else {
-					imp.Video.H = uint64(height)
-					imp.Video.W = uint64(width)
-				}*/
-			} else {
-				return errors.New("Invalid adSizes Provided ")
+		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
+		if len(adSize) == 2 {
+			width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
+			if err != nil {
+				return errors.New("Invalid width provided in adSlot")
 			}
+
+			heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
+			height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
+			if err != nil {
+				return errors.New("Invalid height provided in adSlot")
+			}
+			if imp.Banner != nil {
+				imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
+				imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+			} /* In case of video, params.adSlot would always be in the format adunit@0x0,
+			so we are not replacing video.W and video.H with size passed in params.adSlot
+				else {
+				imp.Video.H = uint64(height)
+				imp.Video.W = uint64(width)
+			}*/
 		} else {
-			return errors.New("Invalid adSlot  Provided ")
+			return errors.New("Invalid size provided in adSlot")
 		}
 	} else {
-		imp.TagID = strings.TrimSpace(adSlotStr)
+		return errors.New("Invalid adSlot provided")
 	}
 
-	if len(pubmaticExt.Keywords) != 0 {
-		kvstr := prepareImpressionExt(pubmaticExt.Keywords)
+	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
+		kvstr := makeKeywordStr(pubmaticExt.Keywords)
 		imp.Ext = openrtb.RawJSON([]byte(kvstr))
 	} else {
 		imp.Ext = nil
@@ -456,6 +450,21 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 
 	return nil
 
+}
+
+func makeKeywordStr(keywords []*openrtb_ext.ExtImpPubmaticKeyVal) string {
+	eachKv := make([]string, 0, len(keywords))
+	for _, keyVal := range keywords {
+		if len(keyVal.Values) == 0 {
+			logf("No values present for key = %s", keyVal.Key)
+			continue
+		} else {
+			eachKv = append(eachKv, fmt.Sprintf("\"%s\":\"%s\"", keyVal.Key, strings.Join(keyVal.Values[:], ",")))
+		}
+	}
+
+	kvStr := "{" + strings.Join(eachKv, ",") + "}"
+	return kvStr
 }
 
 func prepareImpressionExt(keywords map[string]string) string {
@@ -530,7 +539,7 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 
 func logf(msg string, args ...interface{}) {
 	if glog.V(2) {
-		glog.Infof(msg, args)
+		glog.Infof(msg, args...)
 	}
 }
 
