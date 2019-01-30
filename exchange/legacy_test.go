@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/buger/jsonparser"
+	"github.com/evanphx/json-patch"
+	"github.com/mxmCherry/openrtb"
 )
 
 func TestSiteVideo(t *testing.T) {
@@ -83,7 +83,7 @@ func TestAppBanner(t *testing.T) {
 		ID:       "host-id",
 		BuyerUID: "bidder-id",
 	}
-	ortbRequest.Test = 1
+	//ortbRequest.Test = 1
 
 	mockAdapter := mockLegacyAdapter{}
 

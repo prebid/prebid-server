@@ -11,9 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
@@ -21,6 +18,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mxmCherry/openrtb"
 )
 
 const defaultAmpRequestTimeoutMillis = 900
@@ -85,6 +85,9 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		origin = r.Header.Get("Origin")
 		ao.Origin = origin
 	}
+
+	debugParam := r.FormValue("debug")
+	debug := debugParam == "1"
 
 	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
 	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
@@ -179,7 +182,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ao.AmpTargetingValues = targets
 
 	// add debug information if requested
-	if req.Test == 1 && eRErr == nil {
+	if debug && eRErr == nil {
 		if extResponse.Debug != nil {
 			ampResponse.Debug = extResponse.Debug
 		} else {
@@ -219,7 +222,9 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	errs = defaultRequestExt(req)
+	debugParam := httpRequest.FormValue("debug")
+	debug := debugParam == "1"
+	errs = defaultRequestExt(req, debug)
 	if len(errs) > 0 {
 		return
 	}
@@ -244,9 +249,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
-	debugParam := httpRequest.FormValue("debug")
-	debug := debugParam == "1"
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
@@ -264,10 +266,6 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	if err := json.Unmarshal(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
-	}
-
-	if debug {
-		req.Test = 1
 	}
 
 	// Two checks so users know which way the Imp check failed.
@@ -406,7 +404,7 @@ func parseIntErrorless(value string, defaultTo uint64) uint64 {
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
 // If the user didn't include them, default those here.
-func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
+func defaultRequestExt(req *openrtb.BidRequest, debug bool) (errs []error) {
 	errs = nil
 	extRequest := &openrtb_ext.ExtRequest{}
 	if req.Ext != nil && len(req.Ext) > 0 {
@@ -417,6 +415,9 @@ func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	}
 
 	setDefaults := false
+	if debug {
+		extRequest.Prebid.Debug = 1
+	}
 	// Ensure Targeting and caching is on
 	if extRequest.Prebid.Targeting == nil {
 		setDefaults = true
