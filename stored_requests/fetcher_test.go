@@ -205,6 +205,10 @@ func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, im
 	return f.mockGetReqs, f.mockGetImps, f.returnErrs
 }
 
+func (f *mockFetcher) FetchCategories() (categories map[string]map[string]json.RawMessage) {
+	return nil
+}
+
 type mockCache struct {
 	gotGetReqs []string
 	gotGetImps []string
