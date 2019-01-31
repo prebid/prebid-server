@@ -16,27 +16,33 @@ import (
 // This expects each file in the directory to be named "{config_id}.json".
 // For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
 func NewFileFetcher(directory string) (stored_requests.Fetcher, error) {
-	storedReqData, err := collectStoredData(directory + "/stored_requests")
-	if err != nil {
-		return nil, err
+	storedData := make(map[string]map[string]json.RawMessage)
+	fileInfos, err := ioutil.ReadDir(directory)
+	for _, fileInfo := range fileInfos {
+		if fileInfo.IsDir() {
+			fmt.Print(fileInfo.Name())
+			data, err := collectStoredData(directory + "/" + fileInfo.Name())
+			storedData[fileInfo.Name()] = data
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	storedImpData, err := collectStoredData(directory + "/stored_imps")
-	if err != nil {
-		return nil, err
-	}
-
-	return &eagerFetcher{storedReqData, storedImpData}, nil
+	return &eagerFetcher{storedData}, err
 }
 
 type eagerFetcher struct {
-	storedReqs map[string]json.RawMessage
-	storedImps map[string]json.RawMessage
+	storedData map[string]map[string]json.RawMessage
 }
 
 func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
-	errs := appendErrors("Request", requestIDs, fetcher.storedReqs, nil)
-	errs = appendErrors("Imp", impIDs, fetcher.storedImps, errs)
-	return fetcher.storedReqs, fetcher.storedImps, errs
+	errs := appendErrors("Request", requestIDs, fetcher.storedData["stored_requests"], nil)
+	errs = appendErrors("Imp", impIDs, fetcher.storedData["stored_imps"], errs)
+	return fetcher.storedData["stored_requests"], fetcher.storedData["stored_imps"], errs
+}
+
+func (fetcher *eagerFetcher) FetchCategories() map[string]map[string]json.RawMessage {
+	return fetcher.storedData
 }
 
 func collectStoredData(directory string) (map[string]json.RawMessage, error) {

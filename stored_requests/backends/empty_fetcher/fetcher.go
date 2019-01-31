@@ -27,3 +27,7 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	}
 	return
 }
+
+func (fetcher EmptyFetcher) FetchCategories() map[string]map[string]json.RawMessage {
+	return nil
+}

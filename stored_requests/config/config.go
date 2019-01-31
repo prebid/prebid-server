@@ -34,7 +34,7 @@ import (
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
+func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.Fetcher) {
 	if cfg.Postgres.ConnectionInfo.Database != "" {
 		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username)
 		db = newPostgresDB(cfg.Postgres.ConnectionInfo)
@@ -42,7 +42,8 @@ func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *
 	eventProducers, ampEventProducers := newEventProducers(cfg, client, db, router)
 	cache := newCache(cfg)
 	ampCache := newCache(cfg)
-	fetcher, ampFetcher = newFetchers(cfg, client, db)
+	fetcher, ampFetcher = newFetchers(cfg, client, db, requestConfigPath)
+	categoriesFetcher, _ = newFetchers(cfg, client, db, categoryMappingConfigPath)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
@@ -77,12 +78,12 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
+func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, configPath string) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files {
-		fFetcher := newFilesystem()
+		fFetcher := newFilesystem(configPath)
 		idList = append(idList, fFetcher)
 		ampIDList = append(ampIDList, fFetcher)
 	}
@@ -173,9 +174,9 @@ func newHttpEvents(client *http.Client, timeout time.Duration, refreshRate time.
 	return httpEvents.NewHTTPEvents(client, endpoint, ctxProducer, refreshRate)
 }
 
-func newFilesystem() stored_requests.Fetcher {
-	glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
-	fetcher, err := file_fetcher.NewFileFetcher(requestConfigPath)
+func newFilesystem(configPath string) stored_requests.Fetcher {
+	glog.Infof("Loading Stored Requests from filesystem at path %s", configPath)
+	fetcher, err := file_fetcher.NewFileFetcher(configPath)
 	if err != nil {
 		glog.Fatalf("Failed to create a FileFetcher: %v", err)
 	}
@@ -208,3 +209,4 @@ func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
 }
 
 const requestConfigPath = "./stored_requests/data/by_id"
+const categoryMappingConfigPath = "./static/category-mapping"
