@@ -19,7 +19,7 @@ import (
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{}, nil, nil)
+	fetcher, ampFetcher := newFetchers(&config.StoredRequests{}, nil, nil, "")
 	if fetcher == nil || ampFetcher == nil {
 		t.Errorf("The fetchers should be non-nil, even with an empty config.")
 	}
@@ -37,7 +37,7 @@ func TestNewHTTPFetcher(t *testing.T) {
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "stored-requests.prebid.com?type=amp",
 		},
-	}, nil, nil)
+	}, nil, nil, "")
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
@@ -60,7 +60,7 @@ func TestNewHTTPFetcherNoAmp(t *testing.T) {
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "",
 		},
-	}, nil, nil)
+	}, nil, nil, "")
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)

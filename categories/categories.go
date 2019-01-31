@@ -7,7 +7,7 @@ import (
 )
 
 type Categories struct {
-	categories map[string]map[string]map[string]string
+	Categories map[string]map[string]map[string]string
 }
 
 func NewCategories(categoriesFetcher stored_requests.Fetcher) (categories Categories, err error) {
@@ -20,7 +20,7 @@ func NewCategories(categoriesFetcher stored_requests.Fetcher) (categories Catego
 
 			if err := json.Unmarshal(value, &tmp); err != nil {
 				return Categories{
-					categories: nil,
+					Categories: nil,
 				}, fmt.Errorf("Unable to unmarshal category for: '%s'", key)
 			}
 			cat[key] = tmp
@@ -28,13 +28,13 @@ func NewCategories(categoriesFetcher stored_requests.Fetcher) (categories Catego
 		categoriesdData[k] = cat
 	}
 	return Categories{
-		categories: categoriesdData,
+		Categories: categoriesdData,
 	}, nil
 }
 
-func (c *Categories) GetCategory(primaryAdServer string, publisherId string, iabCategory string) (string, error) {
+func (c *Categories) GetCategory(primaryAdServer, publisherId, iabCategory string) (string, error) {
 
-	if primaryAdServerMapping, present := c.categories[primaryAdServer]; present == true {
+	if primaryAdServerMapping, present := c.Categories[primaryAdServer]; present == true {
 		if len(publisherId) > 0 {
 			if publisherMapping, present1 := primaryAdServerMapping[primaryAdServer+"_"+publisherId]; present1 == true {
 				return publisherMapping[iabCategory], nil
