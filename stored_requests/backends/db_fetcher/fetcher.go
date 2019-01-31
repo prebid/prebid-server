@@ -93,6 +93,10 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
+func (fetcher *dbFetcher) FetchCategories() map[string]map[string]json.RawMessage {
+	return nil
+}
+
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
 	for _, id := range ids {
 		if _, ok := data[id]; !ok {

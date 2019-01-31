@@ -21,6 +21,8 @@ type Fetcher interface {
 	//
 	// The returned objects can only be read from. They may not be written to.
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+
+	FetchCategories() (categories map[string]map[string]json.RawMessage)
 }
 
 // NotFoundError is an error type to flag that an ID was not found by the Fetcher.
@@ -152,6 +154,10 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	}
 
 	return
+}
+
+func (fetcher *fetcherWithCache) FetchCategories() map[string]map[string]json.RawMessage {
+	return nil
 }
 
 func findLeftovers(ids []string, data map[string]json.RawMessage) (leftovers []string) {
