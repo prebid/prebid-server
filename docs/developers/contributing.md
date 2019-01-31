@@ -29,7 +29,7 @@ Bugfixes should include a regression test which prevents that bug from being re-
 
 ## Update Documentation
 
-Documentation for the project is stored in the [docs](..) directory. If your feature requires docs updates,
+Documentation for the project is stored in the [docs](..) directory. Prebid Server documentation can also be found at [Prebid.org](http://prebid.org/prebid-server/prebid-server-overview.html). If your feature requires docs updates,
 those updates must be submitted in the same Pull Request as the code changes.
 
 - [docs/endpoints](../endpoints) describes the Prebid Server API. For example, the endpoint `host:port/openrtb2/auction` is described by [docs/endpoints/openrtb2/auction.md](../endpoints/openrtb2/auction.md)
