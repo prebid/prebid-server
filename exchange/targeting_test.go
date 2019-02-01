@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/currencies"
+
 	"github.com/prebid/prebid-server/gdpr"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -74,6 +76,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
 		gDPR:                gdpr.AlwaysAllow{},
+		currencyConverter:   currencies.NewRateConverterDefault(),
 		UsersyncIfAmbiguous: false,
 	}
 

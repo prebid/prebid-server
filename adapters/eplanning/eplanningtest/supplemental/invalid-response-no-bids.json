@@ -1,0 +1,48 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "w": 600,
+            "h": 300
+          },
+          "ext": {
+            "bidder": {
+              "ci": "12345",
+              "adunit_code": "test_adunitcode"
+            }
+          }
+        }
+      ]
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=testadunitcode:600x300",
+          "body": {}
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "sI": { "k": "12345" },
+            "sec": "ROS",
+            "sp": [
+              {
+                "k": "testadunitcode",
+                "a": [{
+                  "crid": "abcdef123456789",
+                  "id": "adid12345",
+                  "w": 600,
+                  "h": 300
+                }]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+  

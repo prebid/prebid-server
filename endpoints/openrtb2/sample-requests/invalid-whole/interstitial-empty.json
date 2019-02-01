@@ -1,0 +1,43 @@
+{
+    "message": "Invalid request: Unable to set interstitial size list for Imp id=my-imp-id (No valid sizes between 0x0 and 0x0)\n",
+    "requestPayload": {
+        "id": "some-request-id",
+        "site": {
+        "page": "test.somepage.com"
+        },
+        "imp": [
+        {
+            "id": "my-imp-id",
+            "banner": {
+                "id": "some-imp-id"
+            },
+            "instl": 1,
+            "ext": {
+            "appnexus": {
+                "placementId": 10433394
+            }
+            }
+        }
+        ],
+        "device": {
+            "ext": {
+                "prebid": {
+                    "interstitial": {
+                        "minwidthperc": 60,
+                        "minheightperc": 60
+                    }
+                }
+            }
+        },
+        "ext": {
+        "prebid": {
+            "targeting": {
+            "pricegranularity": "low"
+            },
+            "cache": {
+            "bids": {}
+            }
+        }
+        }
+    }
+}
