@@ -16,51 +16,68 @@ import (
 // This expects each file in the directory to be named "{config_id}.json".
 // For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
 func NewFileFetcher(directory string) (stored_requests.Fetcher, error) {
-	storedData := make(map[string]map[string]json.RawMessage)
-	fileInfos, err := ioutil.ReadDir(directory)
-	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-			fmt.Print(fileInfo.Name())
-			data, err := collectStoredData(directory + "/" + fileInfo.Name())
-			storedData[fileInfo.Name()] = data
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
+	storedData, err := collectStoredData(directory, FileSystem{make(map[string]FileSystem), make(map[string]json.RawMessage)}, nil)
 	return &eagerFetcher{storedData}, err
 }
 
 type eagerFetcher struct {
-	storedData map[string]map[string]json.RawMessage
+	FileSystem FileSystem
 }
 
 func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
-	errs := appendErrors("Request", requestIDs, fetcher.storedData["stored_requests"], nil)
-	errs = appendErrors("Imp", impIDs, fetcher.storedData["stored_imps"], errs)
-	return fetcher.storedData["stored_requests"], fetcher.storedData["stored_imps"], errs
+	storedRequests := fetcher.FileSystem.Directories["stored_requests"].Files
+	storedImpressions := fetcher.FileSystem.Directories["stored_imps"].Files
+	errs := appendErrors("Request", requestIDs, storedRequests, nil)
+	errs = appendErrors("Imp", impIDs, storedImpressions, errs)
+	return storedRequests, storedImpressions, nil
 }
 
 func (fetcher *eagerFetcher) FetchCategories() map[string]map[string]json.RawMessage {
-	return fetcher.storedData
+	res := make(map[string]map[string]json.RawMessage)
+	for k, v := range fetcher.FileSystem.Directories {
+		if len(v.Files) > 0 {
+			res[k] = v.Files
+		}
+	}
+	return res
 }
 
-func collectStoredData(directory string) (map[string]json.RawMessage, error) {
+type FileSystem struct {
+	Directories map[string]FileSystem
+	Files       map[string]json.RawMessage
+}
+
+func collectStoredData(directory string, fileSystem FileSystem, err error) (FileSystem, error) {
+	if err != nil {
+		return FileSystem{nil, nil}, err
+	}
 	fileInfos, err := ioutil.ReadDir(directory)
 	if err != nil {
-		return nil, err
+		return FileSystem{nil, nil}, err
 	}
-	data := make(map[string]json.RawMessage, len(fileInfos))
+	data := make(map[string]json.RawMessage)
+
 	for _, fileInfo := range fileInfos {
-		fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
-		if err != nil {
-			return nil, err
+		if fileInfo.IsDir() {
+
+			fs := FileSystem{make(map[string]FileSystem), make(map[string]json.RawMessage)}
+			fileSys, _ := collectStoredData(directory+"/"+fileInfo.Name(), fs, err)
+			fileSystem.Directories[fileInfo.Name()] = fileSys
+
+		} else {
+			fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
+			if err != nil {
+				return FileSystem{nil, nil}, err
+			}
+			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
+				data[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
+
+			}
 		}
-		if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
-			data[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
-		}
+
 	}
-	return data, nil
+	fileSystem.Files = data
+	return fileSystem, err
 }
 
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {
