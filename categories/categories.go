@@ -3,6 +3,7 @@ package categories
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
@@ -19,9 +20,8 @@ func NewCategories(categoriesFetcher stored_requests.Fetcher) (categories Catego
 			tmp := make(map[string]string)
 
 			if err := json.Unmarshal(value, &tmp); err != nil {
-				return Categories{
-					Categories: nil,
-				}, fmt.Errorf("Unable to unmarshal category for: '%s'", key)
+				glog.Warning("Unable to unmarshal category for: '%s'", key)
+				continue
 			}
 			cat[key] = tmp
 		}
