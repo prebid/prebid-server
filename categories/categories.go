@@ -20,7 +20,7 @@ func NewCategories(categoriesFetcher stored_requests.Fetcher) (categories Catego
 			tmp := make(map[string]string)
 
 			if err := json.Unmarshal(value, &tmp); err != nil {
-				glog.Warning("Unable to unmarshal category for: '%s'", key)
+				glog.Warning("Unable to unmarshal category for: ", key)
 				continue
 			}
 			cat[key] = tmp
@@ -34,17 +34,15 @@ func NewCategories(categoriesFetcher stored_requests.Fetcher) (categories Catego
 
 func (c *Categories) GetCategory(primaryAdServer, publisherId, iabCategory string) (string, error) {
 
-	if primaryAdServerMapping, present := c.Categories[primaryAdServer]; present == true {
+	if primaryAdServerMapping, primaryMappingPresent := c.Categories[primaryAdServer]; primaryMappingPresent == true {
 		if len(publisherId) > 0 {
-			if publisherMapping, present1 := primaryAdServerMapping[primaryAdServer+"_"+publisherId]; present1 == true {
+			if publisherMapping, publisherMappingpresent := primaryAdServerMapping[primaryAdServer+"_"+publisherId]; publisherMappingpresent == true {
 				return publisherMapping[iabCategory], nil
 			}
-
 		} else {
 			return primaryAdServerMapping[primaryAdServer][iabCategory], nil
 		}
 	}
-
 	return "", fmt.Errorf("Category '%s' not found for server: '%s', publisherId: '%s'",
 		iabCategory, primaryAdServer, publisherId)
 }
