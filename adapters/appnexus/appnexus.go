@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -68,11 +69,14 @@ type appnexusBidExt struct {
 
 type appnexusBidExtAppnexus struct {
 	BidType int `json:"bid_ad_type"`
+	BrandId int `json:"brand_id"`
 }
 
 type appnexusImpExt struct {
 	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
 }
+
+var appnexusToIabCategoryMap map[string]string
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
@@ -235,9 +239,12 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				NURL:        bid.NURL,
 			}
 
-			if mediaType, err := getMediaTypeForBid(&bid); err == nil {
-				pbid.CreativeMediaType = string(mediaType)
-				bids = append(bids, &pbid)
+			var impExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &impExt); err == nil {
+				if mediaType, err := getMediaTypeForBid(&impExt); err == nil {
+					pbid.CreativeMediaType = string(mediaType)
+					bids = append(bids, &pbid)
+				}
 			}
 		}
 	}
@@ -433,13 +440,24 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			if bidType, err := getMediaTypeForBid(&bid); err == nil {
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
-				})
-			} else {
+			var impExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
 				errs = append(errs, err)
+			} else {
+				if bidType, err := getMediaTypeForBid(&impExt); err == nil {
+					if len(bid.Cat) == 0 {
+						if iabCategory, err := getIabCategoryForBid(&impExt); err == nil {
+							bid.Cat = []string{iabCategory}
+						}
+					}
+
+					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+						Bid:     &bid,
+						BidType: bidType,
+					})
+				} else {
+					errs = append(errs, err)
+				}
 			}
 		}
 	}
@@ -447,12 +465,8 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
-	var impExt appnexusBidExt
-	if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
-		return "", err
-	}
-	switch impExt.Appnexus.BidType {
+func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
+	switch bid.Appnexus.BidType {
 	case 0:
 		return openrtb_ext.BidTypeBanner, nil
 	case 1:
@@ -462,7 +476,28 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	case 3:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", impExt.Appnexus.BidType)
+		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", bid.Appnexus.BidType)
+	}
+}
+
+// getIabCategoryForBid maps an appnexus brand id to an IAB category.
+func getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
+	if appnexusToIabCategoryMap == nil {
+		data, err := ioutil.ReadFile("./appnexus_categorymap.json")
+		if err != nil {
+			return "", fmt.Errorf("unable to load appnexus category mapping file")
+		}
+		err = json.Unmarshal(data, &appnexusToIabCategoryMap)
+		if err != nil {
+			return "", fmt.Errorf("error parsing appnexus category mapping file")
+		}
+	}
+	// TODO: Change from BrandId to a CategoryId once that is returned from impbus
+	brandIDString := strconv.Itoa(bid.Appnexus.BrandId)
+	if iabCategory, ok := appnexusToIabCategoryMap[brandIDString]; ok {
+		return iabCategory, nil
+	} else {
+		return "", fmt.Errorf("category not in map: %s", brandIDString)
 	}
 }
 
