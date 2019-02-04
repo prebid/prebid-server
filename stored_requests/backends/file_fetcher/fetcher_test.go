@@ -3,6 +3,7 @@ package file_fetcher
 import (
 	"context"
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -25,6 +26,15 @@ func TestInvalidDirectory(t *testing.T) {
 	if err == nil {
 		t.Errorf("There should be an error if we use a directory which doesn't exist.")
 	}
+}
+
+func TestCategoriesFetcher(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+	categories := fetcher.FetchCategories()
+	assert.Equal(t, 110, len(categories["test"]["test_categories"]), "Categories were loaded incorrectly")
 }
 
 func validateStoredReqOne(t *testing.T, storedRequests map[string]json.RawMessage) {
