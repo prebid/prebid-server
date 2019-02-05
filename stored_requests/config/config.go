@@ -34,16 +34,20 @@ import (
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.Fetcher) {
-	if cfg.Postgres.ConnectionInfo.Database != "" {
-		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username)
-		db = newPostgresDB(cfg.Postgres.ConnectionInfo)
+func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.Fetcher) {
+	if cfg.StoredRequests.Postgres.ConnectionInfo.Database != "" {
+		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s",
+			cfg.StoredRequests.Postgres.ConnectionInfo.Database,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Host,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Port,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Username)
+		db = newPostgresDB(cfg.StoredRequests.Postgres.ConnectionInfo)
 	}
-	eventProducers, ampEventProducers := newEventProducers(cfg, client, db, router)
-	cache := newCache(cfg)
-	ampCache := newCache(cfg)
-	fetcher, ampFetcher = newFetchers(cfg, client, db, requestConfigPath)
-	categoriesFetcher, _ = newFetchers(cfg, client, db, categoryMappingConfigPath)
+	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, client, db, router)
+	cache := newCache(&cfg.StoredRequests)
+	ampCache := newCache(&cfg.StoredRequests)
+	fetcher, ampFetcher = newFetchers(&cfg.StoredRequests, client, db, requestConfigPath)
+	categoriesFetcher, _ = newFetchers(&cfg.CategoryMapping, client, db, categoryMappingConfigPath)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
