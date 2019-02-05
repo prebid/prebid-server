@@ -233,6 +233,8 @@ func (a *SonobiAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.Requ
 
 // MakeBids makes the bids
 func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var errs []error
+
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -259,30 +261,36 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			b := &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				b := &adapters.TypedBid{
+					Bid:     &sb.Bid[i],
+					BidType: bidType,
+				}
+				bidResponse.Bids = append(bidResponse.Bids, b)
 			}
-
-			// TODO macro replace AUCTIOIN_PRICE with b.price
-
-			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
-func getMediaTypeForImp(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner == nil && imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
 			}
-			return mediaType
+			return mediaType, nil
 		}
 	}
-	return mediaType
+
+	// This shouldnt happen. Lets handle it just incase by returning an error.
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+	}
 }
 
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
