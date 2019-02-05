@@ -184,7 +184,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	fetcher, ampFetcher, db, shutdown, categoriesFetcher := storedRequestsConf.NewStoredRequests(&cfg.StoredRequests, theClient, r.Router)
+	fetcher, ampFetcher, db, shutdown, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
