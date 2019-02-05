@@ -29,7 +29,7 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	storedImpressions := fetcher.FileSystem.Directories["stored_imps"].Files
 	errs := appendErrors("Request", requestIDs, storedRequests, nil)
 	errs = appendErrors("Imp", impIDs, storedImpressions, errs)
-	return storedRequests, storedImpressions, nil
+	return storedRequests, storedImpressions, errs
 }
 
 func (fetcher *eagerFetcher) FetchCategories() map[string]map[string]json.RawMessage {
@@ -61,15 +61,18 @@ func collectStoredData(directory string, fileSystem FileSystem, err error) (File
 		if fileInfo.IsDir() {
 
 			fs := FileSystem{make(map[string]FileSystem), make(map[string]json.RawMessage)}
-			fileSys, _ := collectStoredData(directory+"/"+fileInfo.Name(), fs, err)
+			fileSys, innerErr := collectStoredData(directory+"/"+fileInfo.Name(), fs, err)
+			if innerErr != nil {
+				return FileSystem{nil, nil}, innerErr
+			}
 			fileSystem.Directories[fileInfo.Name()] = fileSys
 
 		} else {
-			fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
-			if err != nil {
-				return FileSystem{nil, nil}, err
-			}
 			if strings.HasSuffix(fileInfo.Name(), ".json") { // Skip the .gitignore
+				fileData, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", directory, fileInfo.Name()))
+				if err != nil {
+					return FileSystem{nil, nil}, err
+				}
 				data[strings.TrimSuffix(fileInfo.Name(), ".json")] = json.RawMessage(fileData)
 
 			}
