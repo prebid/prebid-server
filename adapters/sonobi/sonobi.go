@@ -178,14 +178,6 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 	var adapterRequests []*adapters.RequestData
 
 	for _, imp := range request.Imp {
-		// Sonobi doesn't allow multi-type imp. Banner takes priority over video.
-		if imp.Banner != nil {
-		} else if imp.Video != nil {
-		} else {
-			err := fmt.Errorf("Sonobi only supports banner and video imps. Ignoring imp id=%s", imp.ID)
-			errs = append(errs, err)
-		}
-
 		// Make a copy as we don't want to change the original request
 		reqCopy := *request
 		reqCopy.Imp = append(make([]openrtb.Imp, 0), imp)
@@ -267,10 +259,14 @@ func (a *SonobiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			b := &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
 				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
-			})
+			}
+
+			// TODO macro replace AUCTIOIN_PRICE with b.price
+
+			bidResponse.Bids = append(bidResponse.Bids, b)
 		}
 	}
 	return bidResponse, nil
