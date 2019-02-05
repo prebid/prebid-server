@@ -22,8 +22,9 @@ import (
 )
 
 type AppNexusAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	http           *adapters.HTTPAdapter
+	URI            string
+	iabCategoryMap map[string]string
 }
 
 // used for cookies and such
@@ -75,8 +76,6 @@ type appnexusBidExtAppnexus struct {
 type appnexusImpExt struct {
 	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
 }
-
-var appnexusToIabCategoryMap map[string]string
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
@@ -446,7 +445,7 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			} else {
 				if bidType, err := getMediaTypeForBid(&impExt); err == nil {
 					if len(bid.Cat) == 0 {
-						if iabCategory, err := getIabCategoryForBid(&impExt); err == nil {
+						if iabCategory, err := a.getIabCategoryForBid(&impExt); err == nil {
 							bid.Cat = []string{iabCategory}
 						}
 					}
@@ -481,20 +480,10 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 }
 
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
-func getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
-	if appnexusToIabCategoryMap == nil {
-		data, err := ioutil.ReadFile("./appnexus_categorymap.json")
-		if err != nil {
-			return "", fmt.Errorf("unable to load appnexus category mapping file")
-		}
-		err = json.Unmarshal(data, &appnexusToIabCategoryMap)
-		if err != nil {
-			return "", fmt.Errorf("error parsing appnexus category mapping file")
-		}
-	}
+func (a *AppNexusAdapter) getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
 	// TODO: Change from BrandId to a CategoryId once that is returned from impbus
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandId)
-	if iabCategory, ok := appnexusToIabCategoryMap[brandIDString]; ok {
+	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {
 		return iabCategory, nil
 	} else {
 		return "", fmt.Errorf("category not in map: %s", brandIDString)
@@ -515,8 +504,19 @@ func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *Ap
 
 func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
+	catmap := make(map[string]string)
+	data, err := ioutil.ReadFile("./appnexus_categorymap.json")
+	if err == nil {
+		err = json.Unmarshal(data, &catmap)
+		if err != nil {
+			catmap = nil
+		}
+	} else {
+		catmap = nil
+	}
 	return &AppNexusAdapter{
-		http: a,
-		URI:  endpoint,
+		http:           a,
+		URI:            endpoint,
+		iabCategoryMap: catmap,
 	}
 }
