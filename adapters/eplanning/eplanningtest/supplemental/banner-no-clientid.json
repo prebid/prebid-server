@@ -1,0 +1,20 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+              "w": 300,
+              "h": 250
+          },
+          "ext": {
+            "bidder": {
+              "adunit_code": "test_adunit"
+            }
+          }
+        }
+      ]
+    },
+    "expectedMakeRequestsErrors": ["Ignoring imp id=test-imp-id, no ClientID present"]
+}
