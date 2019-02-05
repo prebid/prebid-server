@@ -177,25 +177,25 @@ func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 
 	var adapterRequests []*adapters.RequestData
 
+	// Sonobi currently only supports 1 imp per request to sonobi.
+	// Loop over the imps from the initial bid request to form many adapter requests to sonobi with only 1 imp.
 	for _, imp := range request.Imp {
 		// Make a copy as we don't want to change the original request
 		reqCopy := *request
 		reqCopy.Imp = append(make([]openrtb.Imp, 0), imp)
 
-		for i := range reqCopy.Imp {
-			var bidderExt adapters.ExtImpBidder
-			if err = json.Unmarshal(reqCopy.Imp[i].Ext, &bidderExt); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			if err = json.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
-
-				errs = append(errs, err)
-				continue
-			}
-			reqCopy.Imp[i].TagID = sonobiExt.TagID
+		var bidderExt adapters.ExtImpBidder
+		if err = json.Unmarshal(reqCopy.Imp[0].Ext, &bidderExt); err != nil {
+			errs = append(errs, err)
+			continue
 		}
+
+		if err = json.Unmarshal(bidderExt.Bidder, &sonobiExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		reqCopy.Imp[0].TagID = sonobiExt.TagID
 
 		adapterReq, errors := a.makeRequest(&reqCopy)
 		if adapterReq != nil {
