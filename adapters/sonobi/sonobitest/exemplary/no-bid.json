@@ -43,7 +43,7 @@
             "application/json"
           ],
           "Content-Type": [
-            "appplication/json;charset=utf-8"
+            "application/json;charset=utf-8"
           ],
           "User-Agent": [
             "test-user-agent"
