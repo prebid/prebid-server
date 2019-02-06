@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/categories"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -440,8 +441,8 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 	return cf.data, nil, nil
 }
 
-func (cf *mockAmpStoredReqFetcher) FetchCategories() (categories map[string]map[string]json.RawMessage) {
-	return nil
+func (cf *mockAmpStoredReqFetcher) FetchCategories() (cat categories.Categories, err error) {
+	return categories.Categories{}, nil
 }
 
 type mockAmpExchange struct {

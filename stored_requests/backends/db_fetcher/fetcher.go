@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"github.com/prebid/prebid-server/categories"
 
 	"github.com/lib/pq"
 
@@ -93,8 +94,8 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
-func (fetcher *dbFetcher) FetchCategories() map[string]map[string]json.RawMessage {
-	return nil
+func (fetcher *dbFetcher) FetchCategories() (cat categories.Categories, err error) {
+	return categories.Categories{}, nil
 }
 
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {

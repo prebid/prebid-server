@@ -3,6 +3,7 @@ package empty_fetcher
 import (
 	"context"
 	"encoding/json"
+	"github.com/prebid/prebid-server/categories"
 
 	"github.com/prebid/prebid-server/stored_requests"
 )
@@ -28,6 +29,6 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher EmptyFetcher) FetchCategories() map[string]map[string]json.RawMessage {
-	return nil
+func (fetcher EmptyFetcher) FetchCategories() (cat categories.Categories, err error) {
+	return categories.Categories{}, nil
 }
