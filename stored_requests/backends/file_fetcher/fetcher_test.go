@@ -33,8 +33,8 @@ func TestCategoriesFetcher(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	categories := fetcher.FetchCategories()
-	assert.Equal(t, 110, len(categories["test"]["test_categories"]), "Categories were loaded incorrectly")
+	categories, _ := fetcher.FetchCategories()
+	assert.Equal(t, "404", categories.Categories["test"]["test_categories"]["IAB1-1"], "Categories were loaded incorrectly")
 }
 
 func validateStoredReqOne(t *testing.T, storedRequests map[string]json.RawMessage) {

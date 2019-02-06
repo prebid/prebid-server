@@ -1,49 +1,20 @@
 package categories_test
 
 import (
-	"context"
-	"encoding/json"
 	"github.com/prebid/prebid-server/categories"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-type MockCategoriesFetcher struct {
-	Categories map[string]map[string]json.RawMessage
-}
+func TestCategoriesCorrectJson(t *testing.T) {
+	categoriesData := setUpCategoryData()
 
-func (f *MockCategoriesFetcher) FetchCategories() (categories map[string]map[string]json.RawMessage) {
-	return f.Categories
-}
-
-func (f *MockCategoriesFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
-	return nil, nil, nil
-}
-
-func TestCategoriesWithCorrectJson(t *testing.T) {
-	categoriesData, catErr := setUpCategoryData()
-	if catErr != nil {
-		assert.Fail(t, "Categories creation error")
-	}
 	assert.Equal(t, "value1", categoriesData.Categories["appnexus"]["appnexus_disney"]["cat1"], "Categories don't match for appnexus")
 	assert.Equal(t, "value4", categoriesData.Categories["freewheel"]["freewheel_espn"]["cat4"], "Categories don't match for freewheel")
 }
 
-func TestCategoriesWithInvalidJson(t *testing.T) {
-	categoriesData, catErr := setUpCategoryData()
-	if catErr != nil {
-		assert.Fail(t, "Categories creation error")
-	}
-
-	assert.Equal(t, "value1", categoriesData.Categories["appnexus"]["appnexus_disney"]["cat1"], "Categories don't match for appnexus")
-	assert.Equal(t, 0, len(categoriesData.Categories["broken"]), "Categories don't match. Invalid json should be skipped")
-}
-
 func TestGetCategoryWithPublisherId(t *testing.T) {
-	categoriesData, catErr := setUpCategoryData()
-	if catErr != nil {
-		assert.Fail(t, "Categories creation error")
-	}
+	categoriesData := setUpCategoryData()
 
 	cat, _ := categoriesData.GetCategory("appnexus", "disney", "cat1")
 	_, err := categoriesData.GetCategory("freewheel", "espn1", "cat1")
@@ -53,10 +24,8 @@ func TestGetCategoryWithPublisherId(t *testing.T) {
 }
 
 func TestGetCategoryWithoutPublisherId(t *testing.T) {
-	categoriesData, catErr := setUpCategoryData()
-	if catErr != nil {
-		assert.Fail(t, "Categories creation error")
-	}
+	categoriesData := setUpCategoryData()
+
 	cat, _ := categoriesData.GetCategory("nopublisher", "", "cat5")
 
 	assert.Equal(t, "value5", cat, "Category with publisherId doesn't match")
@@ -64,34 +33,39 @@ func TestGetCategoryWithoutPublisherId(t *testing.T) {
 
 func TestGetCategoryWithoutPrimaryAdServer(t *testing.T) {
 
-	categoriesData, catErr := setUpCategoryData()
-	if catErr != nil {
-		assert.Fail(t, "Categories creation error")
-	}
+	categoriesData := setUpCategoryData()
 
 	_, err := categoriesData.GetCategory("", "disney", "cat1")
 
 	assert.Equal(t, false, err == nil, "Category cannot be returned without primary ad server")
 }
 
-func setUpCategoryData() (cat categories.Categories, err error) {
+func setUpCategoryData() (cat categories.Categories) {
 
-	catData := make(map[string]map[string]json.RawMessage)
-	testAPNCatData := make(map[string]json.RawMessage)
-	testFWCatData := make(map[string]json.RawMessage)
-	testNoPublissherCatData := make(map[string]json.RawMessage)
-	testBrokenCatData := make(map[string]json.RawMessage)
+	catData := make(map[string]map[string]map[string]string)
+	testAPNCatData := make(map[string]map[string]string)
+	testFWCatData := make(map[string]map[string]string)
+	testNoPublissherCatData := make(map[string]map[string]string)
 
-	testAPNCatData["appnexus_disney"] = []byte(`{"cat1":"value1", "cat2":"value2"}`)
-	testFWCatData["freewheel_espn"] = []byte(`{"cat3":"value3", "cat4":"value4"}`)
-	testNoPublissherCatData["nopublisher"] = []byte(`{"cat5":"value5", "cat6":"value6"}`)
-	testBrokenCatData["broken"] = []byte(`{invalid_json_text]}`)
+	appnDisney := make(map[string]string)
+	appnDisney["cat1"] = "value1"
+	appnDisney["cat2"] = "value2"
+
+	fwEspn := make(map[string]string)
+	fwEspn["cat3"] = "value3"
+	fwEspn["cat4"] = "value4"
+
+	noPub := make(map[string]string)
+	noPub["cat5"] = "value5"
+	noPub["cat6"] = "value6"
+
+	testAPNCatData["appnexus_disney"] = appnDisney
+	testFWCatData["freewheel_espn"] = fwEspn
+	testNoPublissherCatData["nopublisher"] = noPub
 
 	catData["appnexus"] = testAPNCatData
 	catData["freewheel"] = testFWCatData
 	catData["nopublisher"] = testNoPublissherCatData
-	catData["broken"] = testBrokenCatData
 
-	fileFetcher := MockCategoriesFetcher{catData}
-	return categories.NewCategories(&fileFetcher)
+	return categories.Categories{Categories: catData}
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/categories"
 	"io/ioutil"
 	"strings"
 
@@ -32,14 +34,32 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
-func (fetcher *eagerFetcher) FetchCategories() map[string]map[string]json.RawMessage {
-	res := make(map[string]map[string]json.RawMessage)
+func (fetcher *eagerFetcher) FetchCategories() (cat categories.Categories, err error) {
+	rawCategories := make(map[string]map[string]json.RawMessage)
 	for k, v := range fetcher.FileSystem.Directories {
 		if len(v.Files) > 0 {
-			res[k] = v.Files
+			rawCategories[k] = v.Files
 		}
 	}
-	return res
+	categoriesdData := make(map[string]map[string]map[string]string)
+	for k, v := range rawCategories {
+
+		cat := make(map[string]map[string]string)
+		for key, value := range v {
+			tmp := make(map[string]string)
+
+			if err := json.Unmarshal(value, &tmp); err != nil {
+				glog.Warning("Unable to unmarshal category for: ", key)
+				continue
+			}
+			cat[key] = tmp
+		}
+		categoriesdData[k] = cat
+	}
+	return categories.Categories{
+		Categories: categoriesdData,
+	}, nil
+
 }
 
 type FileSystem struct {

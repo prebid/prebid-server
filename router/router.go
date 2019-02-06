@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	categories "github.com/prebid/prebid-server/categories"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -223,7 +222,7 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, currencyConverter)
 
 	//unmarshal categories
-	categoryMapping, err := categories.NewCategories(categoriesFetcher)
+	categoryMapping, err := categoriesFetcher.FetchCategories()
 	if err != nil {
 		glog.Fatalf("Failed to load category mapping. %v", err)
 	}
