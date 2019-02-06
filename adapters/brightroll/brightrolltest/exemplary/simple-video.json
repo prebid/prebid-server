@@ -22,7 +22,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://east-bid.ybp.yahoo.com/bid/appnexuspbs?publisher=cafemom",
+        "uri": "http://test-bid.ybp.yahoo.com/bid/appnexuspbs?publisher=cafemom",
         "body": {
           "id": "test-request-id",
           "at":1,

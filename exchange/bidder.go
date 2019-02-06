@@ -10,6 +10,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/net/context/ctxhttp"
@@ -37,7 +38,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -85,7 +86,7 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
@@ -109,13 +110,12 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 	}
 
+	defaultCurrency := "USD"
 	seatBid := &pbsOrtbSeatBid{
 		bids:      make([]*pbsOrtbBid, 0, len(reqData)),
-		currency:  "USD",
+		currency:  defaultCurrency,
 		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
-
-	firstHTTPCallCurrency := ""
 
 	// If the bidder made multiple requests, we still want them to enter as many bids as possible...
 	// even if the timeout occurs sometime halfway through.
@@ -134,24 +134,17 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 			if bidResponse != nil {
 
 				if bidResponse.Currency == "" {
-					bidResponse.Currency = "USD"
+					// Empty currency means default currency `USD`
+					bidResponse.Currency = defaultCurrency
 				}
 
-				// Related to #281 - currency support
-				// Prebid can't make sure that each HTTP call returns bids with the same currency as the others.
-				// If a Bidder makes two HTTP calls, and their servers respond with different currencies,
-				// we will consider the first call currency as standard currency and then reject others which contradict it.
-				if firstHTTPCallCurrency == "" { // First HTTP call
-					firstHTTPCallCurrency = bidResponse.Currency
-				}
-
-				// TODO: #281 - Once currencies rate conversion is out, this shouldn't be an issue anymore, we will only
-				// need to convert the bid price based on the currency.
-				if firstHTTPCallCurrency == bidResponse.Currency {
+				// Try to get a conversion rate
+				// TODO(#280): try to convert every to element of request.cur, and use the first one which succeeds
+				if conversionRate, err := conversions.GetRate(bidResponse.Currency, "USD"); err == nil {
+					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if bidResponse.Bids[i].Bid != nil {
-							// TODO #280: Convert the bid price
-							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment
+							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
 							bid:     bidResponse.Bids[i].Bid,
@@ -159,11 +152,8 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 						})
 					}
 				} else {
-					errs = append(errs, fmt.Errorf(
-						"Bid currencies mistmatch found. Expected all bids to have the same currencies. Expected '%s', was: '%s'",
-						firstHTTPCallCurrency,
-						bidResponse.Currency,
-					))
+					// If no conversions found, do not handle the bid
+					errs = append(errs, err)
 				}
 			}
 		} else {

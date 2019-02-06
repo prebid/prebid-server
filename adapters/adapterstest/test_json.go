@@ -222,6 +222,11 @@ func diffHttpRequests(t *testing.T, description string, actual *adapters.Request
 	}
 
 	diffStrings(t, fmt.Sprintf("%s.uri", description), actual.Uri, expected.Uri)
+	if expected.Headers != nil {
+		actualHeader, _ := json.Marshal(actual.Headers)
+		expectedHeader, _ := json.Marshal(expected.Headers)
+		diffJson(t, description, actualHeader, expectedHeader)
+	}
 	diffJson(t, description, actual.Body, expected.Body)
 }
 

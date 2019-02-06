@@ -38,6 +38,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 }
 
@@ -68,10 +69,12 @@ func (cfg *Configuration) validate() configErrors {
 	var errs configErrors
 	errs = cfg.AuctionTimeouts.validate(errs)
 	errs = cfg.StoredRequests.validate(errs)
+	errs = cfg.Metrics.validate(errs)
 	if cfg.MaxRequestSize < 0 {
 		errs = append(errs, fmt.Errorf("cfg.max_request_size must be >= 0. Got %d", cfg.MaxRequestSize))
 	}
 	errs = cfg.GDPR.validate(errs)
+	errs = cfg.CurrencyConverter.validate(errs)
 	return errs
 }
 
@@ -134,7 +137,19 @@ type Analytics struct {
 	File FileLogs `mapstructure:"file"`
 }
 
-//Corresponding config for FileLogger as a PBS Analytics Module
+type CurrencyConverter struct {
+	FetchURL             string `mapstructure:"fetch_url"`
+	FetchIntervalSeconds int    `mapstructure:"fetch_interval_seconds"`
+}
+
+func (cfg *CurrencyConverter) validate(errs configErrors) configErrors {
+	if cfg.FetchIntervalSeconds < 0 {
+		errs = append(errs, fmt.Errorf("currency_converter.fetch_interval_seconds must be in the range [0, %d]. Got %d", 0xffff, cfg.FetchIntervalSeconds))
+	}
+	return errs
+}
+
+// FileLogs Corresponding config for FileLogger as a PBS Analytics Module
 type FileLogs struct {
 	Filename string `mapstructure:"filename"`
 }
@@ -185,6 +200,10 @@ type Metrics struct {
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
 }
 
+func (cfg *Metrics) validate(errs configErrors) configErrors {
+	return cfg.Prometheus.validate(errs)
+}
+
 type InfluxMetrics struct {
 	Host     string `mapstructure:"host"`
 	Database string `mapstructure:"database"`
@@ -193,9 +212,21 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Port      int    `mapstructure:"port"`
-	Namespace string `mapstructure:"namespace"`
-	Subsystem string `mapstructure:"subsystem"`
+	Port             int    `mapstructure:"port"`
+	Namespace        string `mapstructure:"namespace"`
+	Subsystem        string `mapstructure:"subsystem"`
+	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
+}
+
+func (cfg *PrometheusMetrics) validate(errs configErrors) configErrors {
+	if cfg.Port > 0 && cfg.TimeoutMillisRaw <= 0 {
+		errs = append(errs, fmt.Errorf("metrics.prometheus.timeout_ms must be positive if metrics.prometheus.port is defined. Got timeout=%d and port=%d", cfg.TimeoutMillisRaw, cfg.Port))
+	}
+	return errs
+}
+
+func (m *PrometheusMetrics) Timeout() time.Duration {
+	return time.Duration(m.TimeoutMillisRaw) * time.Millisecond
 }
 
 type DataCache struct {
@@ -291,7 +322,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtelligent, "https://sync.adtelligent.com/csync?t=p&ep=0&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdform, "https://cm.adform.net/cookie?redirect_url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAppnexus, "https://ib.adnxs.com/getuid?"+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadnxs%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
-	// openrtb_ext.BidderBeachfront doesn't have a good default.
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBeachfront, "https://sync.bfmio.com/syncb?pid=155&gdpr={{.GDPR}}&gc={{.GDPRConsent}}&gce=1&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bio_cid%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBrightroll, "https://pr-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbrightroll%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderConversant, "https://prebid-match.dotomi.com/prebid/match?rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderEPlanning, "https://sync.e-planning.net/um?uid"+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Deplanning%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
@@ -307,6 +338,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	// openrtb_ext.BidderRubicon doesn't have a good default.
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSomoaudience, "https://publisher-east.mobileadtrading.com/usersync?ru="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsomoaudience%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSovrn, "https://ap.lijit.com/pixel?redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderYieldmo, "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dyieldmo%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 }
 
 func setDefaultUsersync(m map[string]Adapter, bidder openrtb_ext.BidderName, defaultValue string) {
@@ -363,6 +395,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
+	v.SetDefault("metrics.prometheus.timeout_ms", 10000)
 	v.SetDefault("datacache.type", "dummy")
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)
@@ -411,7 +444,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
-	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/dsp/obr/1")
+	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/hb/1")
 	v.SetDefault("adapters.ix.endpoint", "http://appnexus-us-east.lb.indexww.com/transbidder?p=184932")
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
@@ -426,6 +459,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
+	v.SetDefault("adapters.yieldmo.endpoint", "http://ads.yieldmo.com/exchange/prebid-server")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -434,6 +468,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
+	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	v.SetDefault("currency_converter.fetch_interval_seconds", 0) // #280 Not activated for the time being
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
