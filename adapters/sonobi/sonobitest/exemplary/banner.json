@@ -44,18 +44,7 @@
                     ],
                     "Content-Type": [
                         "application/json;charset=utf-8"
-                    ],
-                    "User-Agent": [
-                        "test-user-agent"
-                    ],
-                    "X-Forwarded-For": [
-                        "123.123.123.123"
-                    ],
-                    "Accept-Language": [
-                        "en"
-                    ],
-                    "Dnt": [],
-                    "Cookie": []
+                    ]
                 },
                 "uri": "https://apex.go.sonobi.com/bid?partnerid=71d9d3d8af",
                 "body": {
