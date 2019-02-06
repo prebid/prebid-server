@@ -34,7 +34,7 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
-func (fetcher *eagerFetcher) FetchCategories() (cat categories.Categories, err error) {
+func (fetcher *eagerFetcher) FetchCategories() (cat categories.Categories) {
 	rawCategories := make(map[string]map[string]json.RawMessage)
 	for k, v := range fetcher.FileSystem.Directories {
 		if len(v.Files) > 0 {
@@ -58,7 +58,7 @@ func (fetcher *eagerFetcher) FetchCategories() (cat categories.Categories, err e
 	}
 	return categories.Categories{
 		Categories: categoriesdData,
-	}, nil
+	}
 
 }
 

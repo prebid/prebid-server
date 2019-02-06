@@ -206,8 +206,8 @@ func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, im
 	return f.mockGetReqs, f.mockGetImps, f.returnErrs
 }
 
-func (f *mockFetcher) FetchCategories() (cat categories.Categories, err error) {
-	return categories.Categories{}, nil
+func (f *mockFetcher) FetchCategories() (cat categories.Categories) {
+	return categories.Categories{}
 }
 
 type mockCache struct {

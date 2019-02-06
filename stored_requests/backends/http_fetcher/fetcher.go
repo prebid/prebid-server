@@ -81,8 +81,8 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher *HttpFetcher) FetchCategories() (cat categories.Categories, err error) {
-	return categories.Categories{}, nil
+func (fetcher *HttpFetcher) FetchCategories() (cat categories.Categories) {
+	return categories.Categories{}
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {

@@ -29,6 +29,6 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher EmptyFetcher) FetchCategories() (cat categories.Categories, err error) {
-	return categories.Categories{}, nil
+func (fetcher EmptyFetcher) FetchCategories() (cat categories.Categories) {
+	return categories.Categories{}
 }
