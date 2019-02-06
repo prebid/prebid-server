@@ -36,8 +36,8 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	return
 }
 
-func (mf MultiFetcher) FetchCategories() (cat categories.Categories, err error) {
-	return categories.Categories{}, nil
+func (mf MultiFetcher) FetchCategories() (cat categories.Categories) {
+	return categories.Categories{}
 }
 
 func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {

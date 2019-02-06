@@ -222,10 +222,8 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, currencyConverter)
 
 	//unmarshal categories
-	categoryMapping, err := categoriesFetcher.FetchCategories()
-	if err != nil {
-		glog.Fatalf("Failed to load category mapping. %v", err)
-	}
+	categoryMapping := categoriesFetcher.FetchCategories()
+
 	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, &categoryMapping)
 
 	if err != nil {

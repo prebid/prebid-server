@@ -33,7 +33,7 @@ func TestCategoriesFetcher(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
-	categories, _ := fetcher.FetchCategories()
+	categories := fetcher.FetchCategories()
 	assert.Equal(t, "404", categories.Categories["test"]["test_categories"]["IAB1-1"], "Categories were loaded incorrectly")
 }
 

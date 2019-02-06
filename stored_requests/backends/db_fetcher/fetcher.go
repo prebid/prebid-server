@@ -94,8 +94,8 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
-func (fetcher *dbFetcher) FetchCategories() (cat categories.Categories, err error) {
-	return categories.Categories{}, nil
+func (fetcher *dbFetcher) FetchCategories() (cat categories.Categories) {
+	return categories.Categories{}
 }
 
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {

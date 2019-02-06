@@ -1056,8 +1056,8 @@ func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []s
 	return testStoredRequestData, testStoredImpData, nil
 }
 
-func (cf mockStoredReqFetcher) FetchCategories() (cat categories.Categories, err error) {
-	return categories.Categories{}, nil
+func (cf mockStoredReqFetcher) FetchCategories() (cat categories.Categories) {
+	return categories.Categories{}
 }
 
 type mockExchange struct {
