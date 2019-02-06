@@ -50,12 +50,13 @@
     {
       "expectedRequest": {
         "headers": {
-          "Content-Type": ["application/json"],
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"],
           "User-Agent": ["test-user-agent"],
           "X-Forwarded-For": ["123.123.123.123"],
           "Accept-Language": ["en"],
           "Dnt": ["0"],
-          "Cookie": ["ljt_reader=test_reader_id"]
+          "X-Openrtb-Version": ["2.5"]
         },
         "uri": "http://publisher-east.mobileadtrading.com/rtb/bid?s=22a58cfb0c9b656bff713d1236e930e8",
         "body": {
