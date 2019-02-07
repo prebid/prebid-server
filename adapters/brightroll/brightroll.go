@@ -17,7 +17,8 @@ type BrightrollAdapter struct {
 }
 
 func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-    request := *requestIn
+
+	request := *requestIn
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
@@ -31,7 +32,6 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adap
 
 	var bidderExt adapters.ExtImpBidder
 	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
-
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: "ext.bidder not provided",
@@ -48,7 +48,6 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adap
 		errors = append(errors, err)
 		return nil, errors
 	}
-
 	if brightrollExt.Publisher == "" {
 		err = &errortypes.BadInput{
 			Message: "publisher is empty",
@@ -81,7 +80,6 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adap
 			}
 		}
 	}
-
 	if !validImpExists {
 		err := &errortypes.BadInput{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
