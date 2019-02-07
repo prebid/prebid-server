@@ -3,16 +3,13 @@ package conversant
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"testing"
-	"time"
-
 	"io/ioutil"
-
 	"net/http"
 	"net/http/httptest"
-
-	"encoding/json"
+	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -171,7 +168,7 @@ func TestConversantNoBid(t *testing.T) {
 
 	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if resp != nil || err != nil {
-		t.Fatal("Failed to handle emtpy bid", err)
+		t.Fatal("Failed to handle empty bid", err)
 	}
 }
 
@@ -303,7 +300,7 @@ func TestConversantResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -526,7 +523,7 @@ func TestConversantVideoResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -613,12 +610,12 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
 	cache, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
 		Default: 2000,
 		Max:     2000,
-	}, cache, &hcs)
+	}, cache, &hcc)
 
 	return parsedReq, err
 }
@@ -729,7 +726,7 @@ func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrt
 	prices2 := make([]float64, 0)
 	imps2 := make([]openrtb.Imp, 0)
 
-	for i, _ := range prices {
+	for i := range prices {
 		if prices[i] > 0 {
 			prices2 = append(prices2, prices[i])
 			imps2 = append(imps2, imps[i])

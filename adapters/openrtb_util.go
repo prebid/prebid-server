@@ -1,6 +1,9 @@
 package adapters
 
 import (
+	"encoding/json"
+
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/mxmCherry/openrtb"
@@ -74,7 +77,7 @@ func makeVideo(unit pbs.PBSAdUnit) *openrtb.Video {
 //
 // Any objects pointed to by the returned BidRequest *must not be mutated*, or we will get race conditions.
 // The only exception is the Imp property, whose objects will be created new by this method and can be mutated freely.
-func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType, singleMediaTypeImp bool) (openrtb.BidRequest, error) {
+func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily string, allowedMediatypes []pbs.MediaType) (openrtb.BidRequest, error) {
 	imps := make([]openrtb.Imp, 0, len(bidder.AdUnits)*len(allowedMediatypes))
 	for _, unit := range bidder.AdUnits {
 		if len(unit.Sizes) <= 0 {
@@ -85,53 +88,32 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 			continue
 		}
 
-		if singleMediaTypeImp {
-			for _, mType := range unitMediaTypes {
-				newImp := openrtb.Imp{
-					ID:     unit.Code,
-					Secure: &req.Secure,
-					Instl:  unit.Instl,
-				}
-				switch mType {
-				case pbs.MEDIA_TYPE_BANNER:
-					newImp.Banner = makeBanner(unit)
-				case pbs.MEDIA_TYPE_VIDEO:
-					video := makeVideo(unit)
-					if video == nil {
-						return openrtb.BidRequest{}, &BadInputError{
-							Message: "Invalid AdUnit: VIDEO media type with no video data",
-						}
+		newImp := openrtb.Imp{
+			ID:     unit.Code,
+			Secure: &req.Secure,
+			Instl:  unit.Instl,
+		}
+		for _, mType := range unitMediaTypes {
+			switch mType {
+			case pbs.MEDIA_TYPE_BANNER:
+				newImp.Banner = makeBanner(unit)
+			case pbs.MEDIA_TYPE_VIDEO:
+				newImp.Video = makeVideo(unit)
+				// It's strange to error here... but preserves legacy behavior in legacy code. See #603.
+				if newImp.Video == nil {
+					return openrtb.BidRequest{}, &errortypes.BadInput{
+						Message: "Invalid AdUnit: VIDEO media type with no video data",
 					}
-					newImp.Video = video
-				default:
-					// Error - unknown media type
-					continue
-				}
-				imps = append(imps, newImp)
-			}
-		} else {
-			newImp := openrtb.Imp{
-				ID:     unit.Code,
-				Secure: &req.Secure,
-				Instl:  unit.Instl,
-			}
-			for _, mType := range unitMediaTypes {
-				switch mType {
-				case pbs.MEDIA_TYPE_BANNER:
-					newImp.Banner = makeBanner(unit)
-				case pbs.MEDIA_TYPE_VIDEO:
-					newImp.Video = makeVideo(unit)
-				default:
-					// Error - unknown media type
-					continue
 				}
 			}
+		}
+		if newImp.Banner != nil || newImp.Video != nil {
 			imps = append(imps, newImp)
 		}
 	}
 
 	if len(imps) < 1 {
-		return openrtb.BidRequest{}, &BadInputError{
+		return openrtb.BidRequest{}, &errortypes.BadInput{
 			Message: "openRTB bids need at least one Imp",
 		}
 	}
@@ -155,7 +137,7 @@ func MakeOpenRTBGeneric(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bidderFamily
 	buyerUID, _, _ := req.Cookie.GetUID(bidderFamily)
 	id, _, _ := req.Cookie.GetUID("adnxs")
 
-	var userExt openrtb.RawJSON
+	var userExt json.RawMessage
 	if req.User != nil {
 		userExt = req.User.Ext
 	}

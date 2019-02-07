@@ -1,26 +1,31 @@
 {
+  "message": "Invalid request: ext.prebid.storedrequest.id must be a string\n",
+  "requestPayload": {
     "id": "some-request-id",
     "site": {
-        "page": "test.somepage.com"
+      "page": "test.somepage.com"
     },
     "imp": [
-        {
-            "id": "imp-id",
-            "video": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "ext": {
-                "appnexus": "good"
-            }
+      {
+        "id": "imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
         }
+      }
     ],
     "ext": {
-        "prebid": {
-            "storedrequest": {
-                "id": 13
-            }
+      "prebid": {
+        "storedrequest": {
+          "id": 13
         }
+      }
     }
+  }
 }

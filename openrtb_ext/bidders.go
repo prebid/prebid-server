@@ -2,13 +2,13 @@ package openrtb_ext
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -20,40 +20,54 @@ type BidderName string
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
+	Bidder33Across     BidderName = "33across"
+	BidderAdkernelAdn  BidderName = "adkernelAdn"
 	BidderAdtelligent  BidderName = "adtelligent"
 	BidderAdform       BidderName = "adform"
 	BidderAppnexus     BidderName = "appnexus"
+	BidderBeachfront   BidderName = "beachfront"
 	BidderBrightroll   BidderName = "brightroll"
 	BidderConversant   BidderName = "conversant"
 	BidderEPlanning    BidderName = "eplanning"
 	BidderFacebook     BidderName = "audienceNetwork"
-	BidderIndex        BidderName = "indexExchange"
+	BidderGrid         BidderName = "grid"
+	BidderGumGum       BidderName = "gumgum"
+	BidderIx           BidderName = "ix"
 	BidderLifestreet   BidderName = "lifestreet"
 	BidderOpenx        BidderName = "openx"
 	BidderPubmatic     BidderName = "pubmatic"
 	BidderPulsepoint   BidderName = "pulsepoint"
+	BidderRhythmone    BidderName = "rhythmone"
 	BidderRubicon      BidderName = "rubicon"
 	BidderSomoaudience BidderName = "somoaudience"
 	BidderSovrn        BidderName = "sovrn"
+	BidderYieldmo      BidderName = "yieldmo"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
+	"33across":        Bidder33Across,
+	"adkernelAdn":     BidderAdkernelAdn,
 	"adtelligent":     BidderAdtelligent,
 	"adform":          BidderAdform,
 	"appnexus":        BidderAppnexus,
+	"beachfront":      BidderBeachfront,
 	"audienceNetwork": BidderFacebook,
 	"brightroll":      BidderBrightroll,
 	"conversant":      BidderConversant,
 	"eplanning":       BidderEPlanning,
-	"indexExchange":   BidderIndex,
+	"grid":            BidderGrid,
+	"gumgum":          BidderGumGum,
+	"ix":              BidderIx,
 	"lifestreet":      BidderLifestreet,
 	"openx":           BidderOpenx,
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
+	"rhythmone":       BidderRhythmone,
 	"rubicon":         BidderRubicon,
 	"somoaudience":    BidderSomoaudience,
 	"sovrn":           BidderSovrn,
+	"yieldmo":         BidderYieldmo,
 }
 
 // BidderList returns the values of the BidderMap
@@ -81,7 +95,7 @@ func (name *BidderName) String() string {
 //
 // This is treated differently from the other types because we rely on JSON-schemas to validate bidder params.
 type BidderParamValidator interface {
-	Validate(name BidderName, ext openrtb.RawJSON) error
+	Validate(name BidderName, ext json.RawMessage) error
 	// Schema returns the JSON schema used to perform validation.
 	Schema(name BidderName) string
 }
@@ -105,7 +119,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 		if err != nil {
 			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
 		}
-		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + toOpen)
+		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + filepath.ToSlash(toOpen))
 		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
@@ -131,7 +145,7 @@ type bidderParamValidator struct {
 	parsedSchemas  map[BidderName]*gojsonschema.Schema
 }
 
-func (validator *bidderParamValidator) Validate(name BidderName, ext openrtb.RawJSON) error {
+func (validator *bidderParamValidator) Validate(name BidderName, ext json.RawMessage) error {
 	result, err := validator.parsedSchemas[name].Validate(gojsonschema.NewBytesLoader(ext))
 	if err != nil {
 		return err

@@ -6,7 +6,6 @@ import (
 
 	"github.com/coocood/freecache"
 	"github.com/erikstmartin/go-testdb"
-	"github.com/golang/glog"
 )
 
 type StubCache struct {
@@ -54,7 +53,7 @@ func TestPostgresDbPriceGranularity(t *testing.T) {
 
 	account, err := dataCache.Accounts().Get("bdc928ef-f725-4688-8171-c104cc715bdf")
 	if err != nil {
-		glog.Errorf("test postgres db errored: %v", err)
+		t.Fatalf("test postgres db errored: %v", err)
 	}
 
 	if account.ID != "bdc928ef-f725-4688-8171-c104cc715bdf" {
@@ -83,7 +82,7 @@ func TestPostgresDbNullPriceGranularity(t *testing.T) {
 
 	account, err := dataCache.Accounts().Get("bdc928ef-f725-4688-8171-c104cc715bdf")
 	if err != nil {
-		glog.Errorf("test postgres db errored: %v", err)
+		t.Fatalf("test postgres db errored: %v", err)
 	}
 
 	if account.ID != "bdc928ef-f725-4688-8171-c104cc715bdf" {

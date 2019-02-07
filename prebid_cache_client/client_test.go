@@ -1,6 +1,7 @@
 package prebid_cache_client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -21,9 +22,9 @@ func TestEmptyPut(t *testing.T) {
 		httpClient: server.Client(),
 		putUrl:     server.URL,
 	}
-	ids := client.PutJson(context.Background(), nil)
+	ids, _ := client.PutJson(context.Background(), nil)
 	assertIntEqual(t, len(ids), 0)
-	ids = client.PutJson(context.Background(), []json.RawMessage{})
+	ids, _ = client.PutJson(context.Background(), []Cacheable{})
 	assertIntEqual(t, len(ids), 0)
 }
 
@@ -38,7 +39,15 @@ func TestBadResponse(t *testing.T) {
 		httpClient: server.Client(),
 		putUrl:     server.URL,
 	}
-	ids := client.PutJson(context.Background(), []json.RawMessage{json.RawMessage("true"), json.RawMessage("false")})
+	ids, _ := client.PutJson(context.Background(), []Cacheable{
+		{
+			Type: TypeJSON,
+			Data: json.RawMessage("true"),
+		}, {
+			Type: TypeJSON,
+			Data: json.RawMessage("false"),
+		},
+	})
 	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "")
 	assertStringEqual(t, ids[1], "")
@@ -58,7 +67,11 @@ func TestCancelledContext(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	ids := client.PutJson(ctx, []json.RawMessage{json.RawMessage("true")})
+	ids, _ := client.PutJson(ctx, []Cacheable{{
+		Type: TypeJSON,
+		Data: json.RawMessage("true"),
+	},
+	})
 	assertIntEqual(t, len(ids), 1)
 	assertStringEqual(t, ids[0], "")
 }
@@ -72,10 +85,32 @@ func TestSuccessfulPut(t *testing.T) {
 		putUrl:     server.URL,
 	}
 
-	ids := client.PutJson(context.Background(), []json.RawMessage{json.RawMessage("true"), json.RawMessage("false")})
+	ids, _ := client.PutJson(context.Background(), []Cacheable{
+		{
+			Type:       TypeJSON,
+			Data:       json.RawMessage("true"),
+			TTLSeconds: 300,
+		}, {
+			Type: TypeJSON,
+			Data: json.RawMessage("false"),
+		},
+	})
 	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "0")
 	assertStringEqual(t, ids[1], "1")
+}
+
+func TestEncodeValueToBuffer(t *testing.T) {
+	buf := new(bytes.Buffer)
+	testCache := Cacheable{
+		Type:       TypeJSON,
+		Data:       json.RawMessage(`{}`),
+		TTLSeconds: 300,
+	}
+	expected := string(`{"type":"json","ttlseconds":300,"value":{}}`)
+	_ = encodeValueToBuffer(testCache, false, buf)
+	actual := buf.String()
+	assertStringEqual(t, expected, actual)
 }
 
 func assertIntEqual(t *testing.T, expected, actual int) {

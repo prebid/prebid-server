@@ -7,19 +7,23 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 type AdformAdapter struct {
 	http    *adapters.HTTPAdapter
-	URI     string
+	URL     *url.URL
 	version string
 }
 
@@ -33,6 +37,20 @@ type adformRequest struct {
 	referer       string
 	userId        string
 	adUnits       []*adformAdUnit
+	gdprApplies   string
+	consent       string
+	digitrust     *adformDigitrust
+}
+
+type adformDigitrust struct {
+	Id      string                 `json:"id"`
+	Version int                    `json:"version"`
+	Keyv    int                    `json:"keyv"`
+	Privacy adformDigitrustPrivacy `json:"privacy"`
+}
+
+type adformDigitrustPrivacy struct {
+	Optout bool `json:"optout"`
 }
 
 type adformAdUnit struct {
@@ -118,13 +136,13 @@ func (a *AdformAdapter) Call(ctx context.Context, request *pbs.PBSRequest, bidde
 	responseBody := string(body)
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
 		}
 	}
 
 	if response.StatusCode != 200 {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", response.StatusCode, responseBody),
 		}
 	}
@@ -152,12 +170,12 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		}
 		mid, err := adformAdUnit.MasterTagId.Int64()
 		if err != nil {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 		if mid <= 0 {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: fmt.Sprintf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId),
 			}
 		}
@@ -167,6 +185,30 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 	}
 
 	userId, _, _ := request.Cookie.GetUID(a.Name())
+
+	gdprApplies := request.ParseGDPR()
+	if gdprApplies != "0" && gdprApplies != "1" {
+		gdprApplies = ""
+	}
+	consent := request.ParseConsent()
+	var digitrustData *openrtb_ext.ExtUserDigiTrust
+	if request.User != nil {
+		var extUser *openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			digitrustData = extUser.DigiTrust
+		}
+	}
+
+	var digitrust *adformDigitrust = nil
+	if digitrustData != nil {
+		digitrust = new(adformDigitrust)
+		digitrust.Id = digitrustData.ID
+		digitrust.Keyv = digitrustData.KeyV
+		digitrust.Version = 1
+		digitrust.Privacy = adformDigitrustPrivacy{
+			Optout: digitrustData.Pref != 0,
+		}
+	}
 
 	return &adformRequest{
 		adUnits:       adUnits,
@@ -178,6 +220,9 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		referer:       request.Url,
 		userId:        userId,
 		tid:           request.Tid,
+		gdprApplies:   gdprApplies,
+		consent:       consent,
+		digitrust:     digitrust,
 	}, nil
 }
 
@@ -210,21 +255,40 @@ func toPBSBidSlice(adformBids []*adformBid, r *adformRequest) pbs.PBSBidSlice {
 // COMMON
 
 func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
+	parameters := url.Values{}
+
+	if r.advertisingId != "" {
+		parameters.Add("adid", r.advertisingId)
+	}
+	parameters.Add("CC", "1")
+	parameters.Add("rp", "4")
+	parameters.Add("fd", "1")
+	parameters.Add("stid", r.tid)
+	parameters.Add("ip", r.ip)
+
+	priceType := getValidPriceTypeParameter(r.adUnits)
+	if priceType != "" {
+		parameters.Add("pt", priceType)
+	}
+
+	parameters.Add("gdpr", r.gdprApplies)
+	parameters.Add("gdpr_consent", r.consent)
+
+	URL := *a.URL
+	URL.RawQuery = parameters.Encode()
+
+	uri := URL.String()
+	if r.isSecure {
+		uri = strings.Replace(uri, "http://", "https://", 1)
+	}
+
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
 		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
 		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
 	}
-	uri := a.URI
-	if r.isSecure {
-		uri = strings.Replace(uri, "http://", "https://", 1)
-	}
-	adid := ""
-	if r.advertisingId != "" {
-		adid = fmt.Sprintf("&adid=%s", r.advertisingId)
-	}
-	pt := getValidPriceTypeParameter(r.adUnits)
-	return fmt.Sprintf("%s/?CC=1&rp=4&fd=1&stid=%s&ip=%s%s%s&%s", uri, r.tid, r.ip, adid, pt, strings.Join(adUnitsParams, "&"))
+
+	return fmt.Sprintf("%s&%s", uri, strings.Join(adUnitsParams, "&"))
 }
 
 func getValidPriceTypeParameter(adUnits []*adformAdUnit) string {
@@ -243,7 +307,7 @@ func getValidPriceTypeParameter(adUnits []*adformAdUnit) string {
 	}
 
 	if valid {
-		priceTypeParameter = fmt.Sprintf("&pt=%s", priceType)
+		priceTypeParameter = priceType
 	}
 	return priceTypeParameter
 }
@@ -259,9 +323,19 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 	if r.referer != "" {
 		header.Set("Referer", r.referer)
 	}
+
+	cookie := make([]string, 0, 2)
 	if r.userId != "" {
-		header.Set("Cookie", fmt.Sprintf("uid=%s", r.userId))
+		cookie = append(cookie, fmt.Sprintf("uid=%s", r.userId))
 	}
+	if r.digitrust != nil {
+		if digitrustBytes, err := json.Marshal(r.digitrust); err == nil {
+			digitrust := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(digitrustBytes)
+			// Cookie name and structure are described here: https://github.com/digi-trust/dt-cdn/wiki/Cookies-for-Platforms
+			cookie = append(cookie, fmt.Sprintf("DigiTrust.v1.identity=%s", digitrust))
+		}
+	}
+	header.Set("Cookie", strings.Join(cookie, ";"))
 
 	return header
 }
@@ -269,7 +343,7 @@ func (r *adformRequest) buildAdformHeaders(a *AdformAdapter) http.Header {
 func parseAdformBids(response []byte) ([]*adformBid, error) {
 	var bids []*adformBid
 	if err := json.Unmarshal(response, &bids); err != nil {
-		return nil, &adapters.BadServerResponseError{
+		return nil, &errortypes.BadServerResponse{
 			Message: err.Error(),
 		}
 	}
@@ -281,11 +355,16 @@ func parseAdformBids(response []byte) ([]*adformBid, error) {
 
 func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
+	var uriObj *url.URL
+	uriObj, err := url.Parse(endpointURL)
+	if err != nil {
+		panic(fmt.Sprintf("Incorrect Adform request url %s, check the configuration, please.", endpointURL))
+	}
 
 	return &AdformAdapter{
 		http:    a,
-		URI:     endpointURL,
-		version: "0.1.1",
+		URL:     uriObj,
+		version: "0.1.2",
 	}
 }
 
@@ -312,23 +391,16 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 	errors := make([]error, 0, len(request.Imp))
 	secure := false
 	for _, imp := range request.Imp {
-		if imp.Banner == nil {
-			errors = append(errors, &adapters.BadInputError{
-				Message: fmt.Sprintf("Adform adapter supports only banner Imps for now. Ignoring Imp ID=%s", imp.ID),
-			})
-			continue
-		}
-
 		params, _, _, err := jsonparser.Get(imp.Ext, "bidder")
 		if err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		var adformAdUnit adformAdUnit
 		if err := json.Unmarshal(params, &adformAdUnit); err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
@@ -336,13 +408,13 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 
 		mid, err := adformAdUnit.MasterTagId.Int64()
 		if err != nil {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
 		}
 		if mid <= 0 {
-			errors = append(errors, &adapters.BadInputError{
+			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("master tag(placement) id is invalid=%s", adformAdUnit.MasterTagId),
 			})
 			continue
@@ -367,6 +439,40 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		tid = request.Source.TID
 	}
 
+	gdprApplies := ""
+	var extRegs openrtb_ext.ExtRegs
+	if request.Regs != nil {
+		if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: err.Error(),
+			})
+		}
+		if extRegs.GDPR != nil && (*extRegs.GDPR == 0 || *extRegs.GDPR == 1) {
+			gdprApplies = strconv.Itoa(int(*extRegs.GDPR))
+		}
+	}
+
+	consent := ""
+	var digitrustData *openrtb_ext.ExtUserDigiTrust
+	if request.User != nil {
+		var extUser openrtb_ext.ExtUser
+		if err := json.Unmarshal(request.User.Ext, &extUser); err == nil {
+			consent = extUser.Consent
+			digitrustData = extUser.DigiTrust
+		}
+	}
+
+	var digitrust *adformDigitrust = nil
+	if digitrustData != nil {
+		digitrust = new(adformDigitrust)
+		digitrust.Id = digitrustData.ID
+		digitrust.Keyv = digitrustData.KeyV
+		digitrust.Version = 1
+		digitrust.Privacy = adformDigitrustPrivacy{
+			Optout: digitrustData.Pref != 0,
+		}
+	}
+
 	return &adformRequest{
 		adUnits:       adUnits,
 		ip:            getIPSafely(request.Device),
@@ -376,6 +482,9 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		referer:       referer,
 		userId:        getBuyerUIDSafely(request.User),
 		tid:           tid,
+		gdprApplies:   gdprApplies,
+		consent:       consent,
+		digitrust:     digitrust,
 	}, errors
 }
 
@@ -413,13 +522,13 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}

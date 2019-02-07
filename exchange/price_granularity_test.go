@@ -1,8 +1,9 @@
 package exchange
 
 import (
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"testing"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 func TestGetPriceBucketString(t *testing.T) {

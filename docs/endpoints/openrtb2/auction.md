@@ -80,7 +80,12 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 `ext.{anyBidderCode}` and `ext.bidder` extensions are defined by bidders.
 `ext.prebid` extensions are defined by Prebid Server.
 
-Exceptions are made for DigiTrust and GDPR, so that we define `ext` according to the official recommendations.
+Exceptions are made for extensions with "standard" recommendations:
+
+- `request.user.ext.digitrust` -- To support Digitrust support
+- `request.regs.ext.gdpr` and `request.user.ext.consent` -- To support GDPR
+- `request.site.ext.amp` -- To identify AMP as the request source
+- `request.app.ext.source` and `request.app.ext.version` -- To support identifying the displaymanager/SDK in mobile apps. If given, we expect these to be strings.
 
 #### Bid Adjustments
 
@@ -232,12 +237,45 @@ It will become impossible to fetch bids from Appnexus within that Request.
 `response.ext.responsetimemillis.{bidderName}` tells how long each bidder took to respond.
 These can help quantify the performance impact of "the slowest bidder."
 
+#### Bidder Errors
+
 `response.ext.errors.{bidderName}` contains messages which describe why a request may be "suboptimal".
 For example, suppose a `banner` and a `video` impression are offered to a bidder
 which only supports `banner`.
 
 In cases like these, the bidder can ignore the `video` impression and bid on the `banner` one.
 However, the publisher can improve performance by only offering impressions which the bidder supports.
+
+For example, a request may return this in `response.ext`
+
+```
+{
+  "errors": {
+    "appnexus": [
+      {
+        "code": 2,
+        "message": "A hybrid Banner/Audio Imp was offered, but Appnexus doesn't support Audio."
+      }
+    ],
+    "rubicon": [
+      {
+        "code": 1,
+        "message": "The request exceeded the timeout allocated"
+      }
+    ]
+  }
+}
+```
+
+The codes currently defined are:
+
+```
+0   NoErrorCode
+1   TimeoutCode
+2   BadInputCode
+3   BadServerResponseCode
+999 UnknownErrorCode
+```
 
 #### Debugging
 
@@ -270,12 +308,16 @@ Bids can be temporarily cached on the server by sending the following data as `r
 
 ```
 {
-  "bids": {}
+  "bids": {},
+  "vastxml": {}
 }
 ```
 
-This property has no effect unless `request.ext.prebid.targeting` is also set in the request.
-If present, Prebid Server will make a _best effort_ to include these extra `bid.ext.prebid.targeting` keys:
+Both `bids` and `vastxml` are optional, but one of the two is required. Thils property will have no effect
+unless `request.ext.prebid.targeting` is also set in the request.
+
+If `bids` is present, Prebid Server will make a _best effort_ to include these extra
+`bid.ext.prebid.targeting` keys:
 
 - `hb_cache_id`: On the highest overall Bid in each Imp.
 - `hb_cache_id_{bidderName}`: On the highest Bid from {bidderName} in each Imp.
@@ -284,7 +326,11 @@ Clients _should not assume_ that these keys will exist, just because they were r
 If they exist, the value will be a UUID which can be used to fetch Bid JSON from [Prebid Cache](https://github.com/prebid/prebid-cache).
 They may not exist if the host company's cache is full, having connection problems, or other issues like that.
 
-This is mainly intended for certain limited Prebid Mobile setups, where bids cannot be cached client-side.
+If `vastxml` is present, PBS will try to add analogous keys `hb_uuid` and `hb_uuid_{bidderName}`.
+In addition to the caveats above, these will exist _only if the relevant Bids are for Video_.
+If they exist, the values can be used to fetch the bid's VAST XML from Prebid Cache directly.
+
+These options are mainly intended for certain limited Prebid Mobile setups, where bids cannot be cached client-side.
 
 #### GDPR
 
@@ -296,6 +342,51 @@ This adds two optional properties:
 - `request.regs.ext.gdpr`: Is 0 if the caller believes that the user is *not* under GDPR, 1 if the user *is* under GDPR, and undefined if we're not certain.
 
 These fields will be forwarded to each Bidder, so they can decide how to process them.
+
+#### Interstitial support
+Additional support for interstitials is enabled through the addition of two fields to the request:
+device.ext.prebid.interstitial.minwidthperc and device.ext.interstial.minheightperc
+The values will be numbers that indicate the minimum allowed size for the ad, as a percentage of the base side. For example, a width of 600 and "minwidthperc": 60 would allow ads with widths from 360 to 600 pixels inclusive.
+
+Example:
+```
+{
+  "imp": [
+    {
+      ...
+      "banner": {
+        ...
+      }
+      "instl": 1,
+      ...
+    }
+  ]
+  "device": {
+    ...
+    "h": 640,
+    "w": 320,
+    "ext": {
+      "prebid": {
+        "interstitial": {
+          "minwidthperc": 60,
+          "minheightperc": 60
+        }
+      }
+    }
+  }
+}
+```
+
+PBS receiving a request for an interstitial imp and these parameters set, it will rewrite the format object within the interstitial imp. If the format array's first object is a size, PBS will take it as the max size for the interstitial. If that size is 1x1, it will look up the device's size and use that as the max size. If the format is not present, it will also use the device size as the max size. (1x1 support so that you don't have to omit the format object to use the device size)
+PBS with interstitial support will come preconfigured with a list of common ad sizes. Preferentially organized by weighing the larger and more common sizes first. But no guarantees to the ordering will be made. PBS will generate a new format list for the interstitial imp by traversing this list and picking the first 10 sizes that fall within the imp's max size and minimum percentage size. There will be no attempt to favor aspect ratios closer to the original size's aspect ratio. The limit of 10 is enforced to ensure we don't overload bidders with an overlong list. All the interstitial parameters will still be passed to the bidders, so they may recognize them and use their own size matching algorithms if they prefer.
+
+### OpenRTB Ambiguities
+
+This section describes the ways in which Prebid Server **implements** OpenRTB spec ambiguous parts.
+
+- `request.cur`: If `request.cur` is not specified in the bid request, Prebid Server will consider it as being `USD` whereas OpenRTB spec doesn't mention any default currency for bid request.
+```request.cur: ['USD'] // Default value if not set```
+
 
 ### OpenRTB Differences
 
@@ -318,6 +409,16 @@ The error message in the response should describe how to "fix" the request to ma
 If the message is unclear, please [log an issue](https://github.com/prebid/prebid-server/issues)
 or [submit a pull request](https://github.com/prebid/prebid-server/pulls) to improve it.
 
+#### Determining Bid Security (http/https)
+
+In the OpenRTB spec, `request.imp[i].secure` says:
+
+> Flag to indicate if the impression requires secure HTTPS URL creative assets and markup,
+> where 0 = non-secure, 1 = secure. If omitted, the secure state is unknown, but non-secure
+> HTTP support can be assumed.
+
+In Prebid Server, an `https` request which does not define `secure` will be forwarded to Bidders with a `1`.
+Publishers who run `https` sites and want insecure ads can still set this to `0` explicitly.
 
 ### See also
 

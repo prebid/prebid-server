@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
+[![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
 
 # Prebid Server
 
@@ -13,6 +14,7 @@ For more information, see:
 
 - [What is Prebid?](http://prebid.org/overview/intro.html)
 - [Getting started with Prebid Server](http://prebid.org/dev-docs/get-started-with-prebid-server.html)
+- [Current Bidders](http://prebid.org/dev-docs/prebid-server-bidders.html)
 
 ## Installation
 

@@ -1,0 +1,123 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "banner": {
+            "w": 600,
+            "h": 300
+          },
+          "ext": {
+            "bidder": {
+              "ci": "12345",
+              "adunit_code": "test_adunitcode"
+            }
+          }
+        },
+        {
+            "id": "test-imp-id2",
+            "banner": {
+                "w": 300,
+                "h": 250
+            },
+            "ext": {
+                "bidder": {
+                    "ci": "12345"
+                }
+            }
+        }
+      ],
+      "device": {
+        "ua": "test-user-agent",
+        "ip": "123.123.123.123",
+        "language": "en",
+        "dnt": 1
+      }
+    },
+  
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://ads.us.e-planning.net/hb/1/12345/1/FILE/ROS?r=pbs&ncb=1&ur=FILE&e=testadunitcode:600x300+300x250:300x250&ip=123.123.123.123",
+          "body": {}
+        },
+        "mockResponse": {
+          "status": 200,
+          "headers": {
+            "Content-Type": ["application/json"],
+            "Accept": ["application/json"],
+            "User-Agent": ["test-user-agent"],
+            "X-Forwarded-For": ["123.123.123.123"],
+            "Accept-Language": ["en"],
+            "Dnt": ["1"]
+          },
+          "body": {
+            "sI": { "k": "12345" },
+            "sec": "ROS",
+            "sp": [
+              {
+                "k": "testadunitcode",
+                "a": [{
+                  "i": "123456789abcdef",
+                  "pr": "0.5",
+                  "adm": "<div>test</div>",
+                  "crid": "abcdef123456789",
+                  "id": "adid12345",
+                  "w": 600,
+                  "h": 300
+                }]
+              },
+              {
+                "k": "300x250",
+                "a": [{
+                  "i": "123456789abcdef2",
+                  "pr": "0.7",
+                  "adm": "<div>test2</div>",
+                  "crid": "abcdef1234567892",
+                  "id": "adid123452",
+                  "w": 300,
+                  "h": 250
+                }]
+              }
+            ]
+          }
+        }
+      }
+    ],
+  
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "123456789abcdef",
+              "impid": "test-imp-id",
+              "price": 0.5,
+              "adm": "<div>test</div>",
+              "adid": "adid12345",
+              "crid": "abcdef123456789",
+              "w": 600,
+              "h": 300
+            },
+            "type": "banner"
+          },
+          {
+            "bid": {
+              "id": "123456789abcdef2",
+              "impid": "test-imp-id2",
+              "price": 0.7,
+              "adm": "<div>test2</div>",
+              "adid": "adid123452",
+              "crid": "abcdef1234567892",
+              "w": 300,
+              "h": 250
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
+  }
+  

@@ -1,0 +1,31 @@
+{
+  "message": "Invalid request: request.ext.prebid.aliases.test1 refers to unknown bidder: appnexus\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "test1": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "aliases": {
+          "test1": "appnexus"
+        }
+      }
+    }
+  }
+}

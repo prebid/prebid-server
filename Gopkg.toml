@@ -47,6 +47,10 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/buger/jsonparser"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/golang/glog"
 
 [[constraint]]
@@ -55,7 +59,7 @@
 
 [[constraint]]
   name = "github.com/mxmCherry/openrtb"
-  version = "~9.2.0"
+  version = "~10.0.0"
 
 [[constraint]]
   name = "github.com/rs/cors"
@@ -83,8 +87,12 @@
 
 [[constraint]]
   name = "github.com/prebid/go-gdpr"
-  version = "0.6.0"
+  version = "^0.6.1"
 
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"

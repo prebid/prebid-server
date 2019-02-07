@@ -1,4 +1,4 @@
-package info
+package info_test
 
 import (
 	"encoding/json"
@@ -13,12 +13,27 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func TestGetBidders(t *testing.T) {
-	endpoint := NewBiddersEndpoint()
+func TestGetBiddersNoAliases(t *testing.T) {
+	testGetBidders(t, map[string]string{})
+}
+
+func TestGetBiddersWithAliases(t *testing.T) {
+	aliases := map[string]string{
+		"test1": "appnexus",
+		"test2": "rubicon",
+		"test3": "openx",
+	}
+	testGetBidders(t, aliases)
+}
+
+func testGetBidders(t *testing.T, aliases map[string]string) {
+	endpoint := info.NewBiddersEndpoint(aliases)
 
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders", strings.NewReader(""))
 	if err != nil {
@@ -34,25 +49,28 @@ func TestGetBidders(t *testing.T) {
 		t.Errorf("Bad /info/bidders content type. Expected application/json. Got %s", r.Header().Get("Content-Type"))
 	}
 	bodyBytes := r.Body.Bytes()
-	bidderSlice := make([]string, 0, len(openrtb_ext.BidderMap))
+	bidderSlice := make([]string, 0, len(openrtb_ext.BidderMap)+len(aliases))
 	if err := json.Unmarshal(bodyBytes, &bidderSlice); err != nil {
 		t.Errorf("Failed to unmarshal /info/bidders response: %v", err)
 	}
 	for _, bidderName := range bidderSlice {
 		if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
-			t.Errorf("Response from /info/bidders contained unexpected BidderName: %s", bidderName)
+			if _, aok := aliases[bidderName]; !aok {
+				t.Errorf("Response from /info/bidders contained unexpected BidderName: %s", bidderName)
+			}
 		}
 	}
-	if len(bidderSlice) != len(openrtb_ext.BidderMap) {
+	if len(bidderSlice) != len(openrtb_ext.BidderMap)+len(aliases) {
 		t.Errorf("Response from /info/bidders did not match BidderMap. Expected %d elements. Got %d", len(openrtb_ext.BidderMap), len(bidderSlice))
 	}
 }
 
 // TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
 func TestGetSpecificBidders(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("../../static/bidder-info", openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos("../../static/bidder-info", openrtb_ext.BidderList())
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 
-	for bidderName, _ := range openrtb_ext.BidderMap {
+	for bidderName := range openrtb_ext.BidderMap {
 		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
 		if err != nil {
 			t.Errorf("Failed to create a GET /info/bidders request: %v", err)
@@ -75,22 +93,39 @@ func TestGetSpecificBidders(t *testing.T) {
 	}
 }
 
-// TestGetBidderAccuracy validates the output for a known file.
-func TestGetBidderAccuracy(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("./sample", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
-	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someBidder", strings.NewReader(""))
+func TestGetBidderAccuracyNoAliases(t *testing.T) {
+	testGetBidderAccuracy(t, "")
+}
+
+func TestGetBidderAccuracyAliases(t *testing.T) {
+	testGetBidderAccuracy(t, "aliasedBidder")
+}
+
+// TestGetBidderAccuracyAlias validates the output for an alias of a known file.
+func testGetBidderAccuracy(t *testing.T, alias string) {
+	bidderInfos := adapters.ParseBidderInfos("../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
+
+	aliases := map[string]string{}
+	bidder := "someBidder"
+	if len(alias) > 0 {
+		aliases[alias] = bidder
+		bidder = alias
+	}
+
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, aliases)
+	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidder, strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders request: %v", err)
 	}
 	params := []httprouter.Param{{
 		Key:   "bidderName",
-		Value: "someBidder",
+		Value: bidder,
 	}}
 
 	r := httptest.NewRecorder()
 	endpoint(r, req, params)
 
-	var fileData infoFile
+	var fileData adapters.BidderInfo
 	if err := json.Unmarshal(r.Body.Bytes(), &fileData); err != nil {
 		t.Fatalf("Failed to unmarshal JSON from endpoints/info/sample/someBidder.yaml: %v", err)
 	}
@@ -121,10 +156,20 @@ func TestGetBidderAccuracy(t *testing.T) {
 	if fileData.Capabilities.Site.MediaTypes[2] != "native" {
 		t.Errorf("capabilities.app.mediaTypes[2] should be native. Got %s", fileData.Capabilities.Site.MediaTypes[2])
 	}
+	if len(alias) > 0 {
+		if fileData.AliasOf != "someBidder" {
+			t.Errorf("aliasOf should be \"someBidder\". Got \"%s\"", fileData.AliasOf)
+		}
+	} else {
+		if len(fileData.AliasOf) != 0 {
+			t.Errorf("aliasOf should be empty. Got \"%s\"", fileData.AliasOf)
+		}
+	}
 }
 
 func TestGetUnknownBidder(t *testing.T) {
-	endpoint := NewBidderDetailsEndpoint("./sample", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
+	bidderInfos := adapters.BidderInfos(make(map[string]adapters.BidderInfo))
+	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/someUnknownBidder", strings.NewReader(""))
 	if err != nil {
 		t.Fatalf("Failed to create a GET /info/bidders/someUnknownBidder request: %v", err)
@@ -150,7 +195,7 @@ func TestInfoFiles(t *testing.T) {
 	}
 
 	// Make sure that files exist for each BidderName
-	for bidderName, _ := range openrtb_ext.BidderMap {
+	for bidderName := range openrtb_ext.BidderMap {
 		if _, err := os.Stat(fmt.Sprintf("../../static/bidder-info/%s.yaml", bidderName)); os.IsNotExist(err) {
 			t.Errorf("static/bidder-info/%s.yaml not found. Did you forget to create it?", bidderName)
 		}
@@ -173,7 +218,7 @@ func TestInfoFiles(t *testing.T) {
 			t.Errorf("Failed to read static/bidder-info/%s: %v", fileInfo.Name(), err)
 			continue
 		}
-		var fileInfoContent infoFile
+		var fileInfoContent adapters.BidderInfo
 		if err := yaml.Unmarshal(content, &fileInfoContent); err != nil {
 			t.Errorf("Error interpreting content from static/bidder-info/%s: %v", fileInfo.Name(), err)
 			continue
@@ -184,7 +229,7 @@ func TestInfoFiles(t *testing.T) {
 	}
 }
 
-func validateInfo(info *infoFile) error {
+func validateInfo(info *adapters.BidderInfo) error {
 	if err := validateMaintainer(info.Maintainer); err != nil {
 		return err
 	}
@@ -196,7 +241,7 @@ func validateInfo(info *infoFile) error {
 	return nil
 }
 
-func validateCapabilities(info *capabilitiesInfo) error {
+func validateCapabilities(info *adapters.CapabilitiesInfo) error {
 	if info == nil {
 		return errors.New("missing required field: capabilities")
 
@@ -217,7 +262,7 @@ func validateCapabilities(info *capabilitiesInfo) error {
 	return nil
 }
 
-func validatePlatformInfo(info *platformInfo) error {
+func validatePlatformInfo(info *adapters.PlatformInfo) error {
 	if info == nil {
 		return errors.New("we can't validate a nil platformInfo")
 	}
@@ -234,7 +279,7 @@ func validatePlatformInfo(info *platformInfo) error {
 	return nil
 }
 
-func validateMaintainer(info *maintainerInfo) error {
+func validateMaintainer(info *adapters.MaintainerInfo) error {
 	if info == nil || info.Email == "" {
 		return errors.New("missing required field: maintainer.email")
 	}

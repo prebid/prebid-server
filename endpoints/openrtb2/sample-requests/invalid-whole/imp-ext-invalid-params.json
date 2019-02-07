@@ -1,16 +1,19 @@
 {
+  "message": "Invalid request: request.imp[0].ext.appnexus failed validation.\n(root): Invalid type. Expected: object, given: string\n",
+  "requestPayload": {
     "id": "req-id",
     "imp": [
-        {
-            "id": "imp-id",
-            "audio": {
-                "mimes": [
-                    "video/mp4"
-                ]
-            },
-            "ext": {
-                "appnexus": "invalidParams"
-            }
+      {
+        "id": "imp-id",
+        "audio": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": "invalidParams"
         }
+      }
     ]
+  }
 }

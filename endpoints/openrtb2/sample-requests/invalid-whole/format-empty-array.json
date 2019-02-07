@@ -1,11 +1,22 @@
 {
+  "message": "Invalid request: request.imp[0].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.\n",
+  "requestPayload": {
     "id":"req-id",
+    "site": {
+      "id": "some-site"
+    },
     "imp": [
-        {
-            "id":"imp-id",
-            "banner":{
-                "format":[]
-            }
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": []
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
         }
+      }
     ]
+  }
 }

@@ -1,9 +1,10 @@
 package brightroll
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"encoding/json"
 	"testing"
+
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // This file actually intends to test static/bidder-params/brightroll.json
@@ -18,7 +19,7 @@ func TestValidParams(t *testing.T) {
 	}
 
 	for _, validParam := range validParams {
-		if err := validator.Validate(openrtb_ext.BidderBrightroll, openrtb.RawJSON(validParam)); err != nil {
+		if err := validator.Validate(openrtb_ext.BidderBrightroll, json.RawMessage(validParam)); err != nil {
 			t.Errorf("Schema rejected Brightroll params: %s", validParam)
 		}
 	}
@@ -32,23 +33,23 @@ func TestInvalidParams(t *testing.T) {
 	}
 
 	for _, invalidParam := range invalidParams {
-		if err := validator.Validate(openrtb_ext.BidderBrightroll, openrtb.RawJSON(invalidParam)); err == nil {
+		if err := validator.Validate(openrtb_ext.BidderBrightroll, json.RawMessage(invalidParam)); err == nil {
 			t.Errorf("Schema allowed unexpected params: %s", invalidParam)
 		}
 	}
 }
 
 var validParams = []string{
-	`{"publisherName": "testpublisher"}`,
-	`{"publisherName": "123"}`,
-	`{"publisherName": "cafemedia"}`,
-	`{"publisherName": "test", "headerbidding": false}`,
+	`{"publisher": "testpublisher"}`,
+	`{"publisher": "123"}`,
+	`{"publisher": "cafemedia"}`,
+	`{"publisher": "test", "headerbidding": false}`,
 }
 
 var invalidParams = []string{
-	`{"publisherName": 100}`,
+	`{"publisher": 100}`,
 	`{"headerbidding": false}`,
-	`{"publisherName": true}`,
+	`{"publisher": true}`,
 	`{"publisherId": 123, "headerbidding": true}`,
 	`{"publisherID": "1"}`,
 	``,

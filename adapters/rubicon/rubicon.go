@@ -17,6 +17,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -147,49 +148,50 @@ type rubiSize struct {
 }
 
 var rubiSizeMap = map[rubiSize]int{
-	rubiSize{w: 468, h: 60}:    1,
-	rubiSize{w: 728, h: 90}:    2,
-	rubiSize{w: 728, h: 91}:    2,
-	rubiSize{w: 120, h: 600}:   8,
-	rubiSize{w: 160, h: 600}:   9,
-	rubiSize{w: 300, h: 600}:   10,
-	rubiSize{w: 300, h: 250}:   15,
-	rubiSize{w: 300, h: 251}:   15,
-	rubiSize{w: 336, h: 280}:   16,
-	rubiSize{w: 300, h: 100}:   19,
-	rubiSize{w: 980, h: 120}:   31,
-	rubiSize{w: 250, h: 360}:   32,
-	rubiSize{w: 180, h: 500}:   33,
-	rubiSize{w: 980, h: 150}:   35,
-	rubiSize{w: 468, h: 400}:   37,
-	rubiSize{w: 930, h: 180}:   38,
-	rubiSize{w: 320, h: 50}:    43,
-	rubiSize{w: 300, h: 50}:    44,
-	rubiSize{w: 300, h: 300}:   48,
-	rubiSize{w: 300, h: 1050}:  54,
-	rubiSize{w: 970, h: 90}:    55,
-	rubiSize{w: 970, h: 250}:   57,
-	rubiSize{w: 1000, h: 90}:   58,
-	rubiSize{w: 320, h: 80}:    59,
-	rubiSize{w: 1000, h: 1000}: 61,
-	rubiSize{w: 640, h: 480}:   65,
-	rubiSize{w: 320, h: 480}:   67,
-	rubiSize{w: 1800, h: 1000}: 68,
-	rubiSize{w: 320, h: 320}:   72,
-	rubiSize{w: 320, h: 160}:   73,
-	rubiSize{w: 980, h: 240}:   78,
-	rubiSize{w: 980, h: 300}:   79,
-	rubiSize{w: 980, h: 400}:   80,
-	rubiSize{w: 480, h: 300}:   83,
-	rubiSize{w: 970, h: 310}:   94,
-	rubiSize{w: 970, h: 210}:   96,
-	rubiSize{w: 480, h: 320}:   101,
-	rubiSize{w: 768, h: 1024}:  102,
-	rubiSize{w: 480, h: 280}:   103,
-	rubiSize{w: 1000, h: 300}:  113,
-	rubiSize{w: 320, h: 100}:   117,
-	rubiSize{w: 800, h: 250}:   125,
-	rubiSize{w: 200, h: 600}:   126,
+	{w: 468, h: 60}:    1,
+	{w: 728, h: 90}:    2,
+	{w: 728, h: 91}:    2,
+	{w: 120, h: 600}:   8,
+	{w: 160, h: 600}:   9,
+	{w: 300, h: 600}:   10,
+	{w: 300, h: 250}:   15,
+	{w: 300, h: 251}:   15,
+	{w: 336, h: 280}:   16,
+	{w: 300, h: 100}:   19,
+	{w: 980, h: 120}:   31,
+	{w: 250, h: 360}:   32,
+	{w: 180, h: 500}:   33,
+	{w: 980, h: 150}:   35,
+	{w: 468, h: 400}:   37,
+	{w: 930, h: 180}:   38,
+	{w: 320, h: 50}:    43,
+	{w: 300, h: 50}:    44,
+	{w: 300, h: 300}:   48,
+	{w: 300, h: 1050}:  54,
+	{w: 970, h: 90}:    55,
+	{w: 970, h: 250}:   57,
+	{w: 1000, h: 90}:   58,
+	{w: 320, h: 80}:    59,
+	{w: 1000, h: 1000}: 61,
+	{w: 640, h: 480}:   65,
+	{w: 320, h: 480}:   67,
+	{w: 1800, h: 1000}: 68,
+	{w: 320, h: 320}:   72,
+	{w: 320, h: 160}:   73,
+	{w: 980, h: 240}:   78,
+	{w: 980, h: 300}:   79,
+	{w: 980, h: 400}:   80,
+	{w: 480, h: 300}:   83,
+	{w: 970, h: 310}:   94,
+	{w: 970, h: 210}:   96,
+	{w: 480, h: 320}:   101,
+	{w: 768, h: 1024}:  102,
+	{w: 480, h: 280}:   103,
+	{w: 320, h: 240}:   108,
+	{w: 1000, h: 300}:  113,
+	{w: 320, h: 100}:   117,
+	{w: 800, h: 250}:   125,
+	{w: 200, h: 600}:   126,
 }
 
 //MAS algorithm
@@ -222,7 +224,7 @@ func findPrimary(alt []int) (int, []int) {
 func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err error) {
 	// Fixes #317
 	if len(sizes) < 1 {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: "rubicon imps must have at least one imp.format element",
 		}
 		return
@@ -235,7 +237,7 @@ func parseRubiconSizes(sizes []openrtb.Format) (primary int, alt []int, err erro
 	if len(alt) > 0 {
 		primary, alt = findPrimary(alt)
 	} else {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: "No primary size found",
 		}
 	}
@@ -266,13 +268,13 @@ func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (res
 	}
 
 	if rubiResp.StatusCode == http.StatusBadRequest {
-		err = &adapters.BadInputError{
+		err = &errortypes.BadInput{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", rubiResp.StatusCode, result.ResponseBody),
 		}
 	}
 
 	if rubiResp.StatusCode != http.StatusOK {
-		err = &adapters.BadServerResponseError{
+		err = &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("HTTP status %d; body: %s", rubiResp.StatusCode, result.ResponseBody),
 		}
 		return
@@ -281,7 +283,7 @@ func (a *RubiconAdapter) callOne(ctx context.Context, reqJSON bytes.Buffer) (res
 	var bidResp openrtb.BidResponse
 	err = json.Unmarshal(body, &bidResp)
 	if err != nil {
-		err = &adapters.BadServerResponseError{
+		err = &errortypes.BadServerResponse{
 			Message: err.Error(),
 		}
 		return
@@ -332,7 +334,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 	callOneObjects := make([]callOneObject, 0, len(bidder.AdUnits))
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 
-	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes, true)
+	rubiReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +354,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		var params rubiconParams
 		err = json.Unmarshal(unit.Params, &params)
 		if err != nil {
-			return nil, &adapters.BadInputError{
+			return nil, &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
@@ -435,7 +437,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 		callOneObjects = append(callOneObjects, callOneObject{reqBuffer, unit.MediaTypes[0]})
 	}
 	if len(callOneObjects) == 0 {
-		return nil, &adapters.BadInputError{
+		return nil, &errortypes.BadInput{
 			Message: "Invalid ad unit/imp",
 		}
 	}
@@ -449,7 +451,7 @@ func (a *RubiconAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *
 				result.Bid.BidderCode = bidder.BidderCode
 				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
 				if result.Bid.BidID == "" {
-					result.Error = &adapters.BadServerResponseError{
+					result.Error = &errortypes.BadServerResponse{
 						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
 					}
 					result.Bid = nil
@@ -548,7 +550,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		var bidderExt adapters.ExtImpBidder
 		if err = json.Unmarshal(thisImp.Ext, &bidderExt); err != nil {
-			errs = append(errs, &adapters.BadInputError{
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
@@ -556,7 +558,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		var rubiconExt openrtb_ext.ExtImpRubicon
 		if err = json.Unmarshal(bidderExt.Bidder, &rubiconExt); err != nil {
-			errs = append(errs, &adapters.BadInputError{
+			errs = append(errs, &errortypes.BadInput{
 				Message: err.Error(),
 			})
 			continue
@@ -582,7 +584,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			if request.User.Ext != nil {
 				var userExt *openrtb_ext.ExtUser
 				if err = json.Unmarshal(userCopy.Ext, &userExt); err != nil {
-					errs = append(errs, &adapters.BadInputError{
+					errs = append(errs, &errortypes.BadInput{
 						Message: err.Error(),
 					})
 					continue
@@ -609,8 +611,10 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		}
 
 		if thisImp.Video != nil {
+			videoCopy := *thisImp.Video
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
-			thisImp.Video.Ext, err = json.Marshal(&videoExt)
+			videoCopy.Ext, err = json.Marshal(&videoExt)
+			thisImp.Video = &videoCopy
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
 			if err != nil {
@@ -646,6 +650,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 		}
 
 		request.Imp = []openrtb.Imp{thisImp}
+		request.Cur = nil
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
@@ -672,20 +677,20 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&adapters.BadServerResponseError{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}
 	}

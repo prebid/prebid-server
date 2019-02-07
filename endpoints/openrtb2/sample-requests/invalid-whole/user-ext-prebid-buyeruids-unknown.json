@@ -1,31 +1,36 @@
 {
+  "message": "Invalid request: request.user.ext.unknown is neither a known bidder name nor an alias in request.ext.prebid.aliases.\n",
+  "requestPayload": {
     "id": "request-without-user-ext-obj",
     "site": {
-        "page": "test.somepage.com"
+      "page": "test.somepage.com"
     },
     "imp": [
-        {
-            "id": "my-imp-id",
-            "banner": {
-                "format": [
-                    {
-                        "w": 300,
-                        "h": 600
-                    }
-                ]
-            },
-            "ext": {
-                "appnexus": "good"
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
             }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
         }
+      }
     ],
     "user": {
-        "ext": {
-            "prebid": {
-                "buyeruids": {
-                    "unknown": "123"
-                }
-            }
+      "ext": {
+        "prebid": {
+          "buyeruids": {
+            "unknown": "123"
+          }
         }
+      }
     }
+  }
 }

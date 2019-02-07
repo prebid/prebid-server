@@ -6,22 +6,21 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/buger/jsonparser"
-
+	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
-
-	"github.com/golang/glog"
-	"golang.org/x/net/publicsuffix"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/blang/semver"
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/cache"
-	"github.com/prebid/prebid-server/prebid"
-	"github.com/prebid/prebid-server/usersync"
+	"golang.org/x/net/publicsuffix"
 )
 
 const MAX_BIDDERS = 8
@@ -217,7 +216,7 @@ func ParseMediaTypes(types []string) []MediaType {
 	return mtypes
 }
 
-func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieSettings *HostCookieSettings) (*PBSRequest, error) {
+func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.Cache, hostCookieConfig *config.HostCookie) (*PBSRequest, error) {
 	defer r.Body.Close()
 
 	pbsReq := &PBSRequest{}
@@ -262,14 +261,7 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 
 	// use client-side data for web requests
 	if pbsReq.App == nil {
-		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, &(hostCookieSettings.OptOutCookie))
-
-		// Host has right to leverage private cookie store for user ID
-		if uid, _, _ := pbsReq.Cookie.GetUID(hostCookieSettings.Family); uid == "" && hostCookieSettings.CookieName != "" {
-			if hostCookie, err := r.Cookie(hostCookieSettings.CookieName); err == nil {
-				pbsReq.Cookie.TrySync(hostCookieSettings.Family, hostCookie.Value)
-			}
-		}
+		pbsReq.Cookie = usersync.ParsePBSCookieFromRequest(r, hostCookieConfig)
 
 		pbsReq.Device.UA = r.Header.Get("User-Agent")
 
@@ -327,19 +319,14 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 		mtypes := ParseMediaTypes(unit.MediaTypes)
 		for _, b := range bidders {
 			var bidder *PBSBidder
-			// index requires a different request for each ad unit
-			if b.BidderCode != "indexExchange" {
-				for _, pb := range pbsReq.Bidders {
-					if pb.BidderCode == b.BidderCode {
-						bidder = pb
-					}
+			for _, pb := range pbsReq.Bidders {
+				if pb.BidderCode == b.BidderCode {
+					bidder = pb
 				}
 			}
+
 			if bidder == nil {
 				bidder = &PBSBidder{BidderCode: b.BidderCode}
-				if b.BidderCode == "indexExchange" {
-					bidder.AdUnitCode = unit.Code
-				}
 				pbsReq.Bidders = append(pbsReq.Bidders, bidder)
 			}
 			if b.BidID == "" {
@@ -375,10 +362,16 @@ func (p PBSRequest) String() string {
 
 // parses the "Regs.ext.gdpr" from the request, if it exists. Otherwise returns an empty string.
 func (req *PBSRequest) ParseGDPR() string {
-	if req == nil || req.Regs == nil {
+	if req == nil || req.Regs == nil || len(req.Regs.Ext) == 0 {
 		return ""
 	}
-	return parseString(req.Regs.Ext, "gdpr")
+	val, err := jsonparser.GetInt(req.Regs.Ext, "gdpr")
+	if err != nil {
+		return ""
+	}
+	gdpr := strconv.Itoa(int(val))
+
+	return gdpr
 }
 
 // parses the "User.ext.consent" from the request, if it exists. Otherwise returns an empty string.

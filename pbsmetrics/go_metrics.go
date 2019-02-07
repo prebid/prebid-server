@@ -7,12 +7,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
-	metricsRegistry            metrics.Registry
+	MetricsRegistry            metrics.Registry
 	ConnectionCounter          metrics.Counter
 	ConnectionAcceptErrorMeter metrics.Meter
 	ConnectionCloseErrorMeter  metrics.Meter
@@ -24,13 +24,15 @@ type Metrics struct {
 	RequestTimer               metrics.Timer
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	RequestStatuses     map[RequestType]map[RequestStatus]metrics.Meter
-	AmpNoCookieMeter    metrics.Meter
-	CookieSyncMeter     metrics.Meter
-	userSyncOptout      metrics.Meter
-	userSyncBadRequest  metrics.Meter
-	userSyncSet         map[openrtb_ext.BidderName]metrics.Meter
-	userSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
+	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
+	AmpNoCookieMeter      metrics.Meter
+	CookieSyncMeter       metrics.Meter
+	CookieSyncGen         map[openrtb_ext.BidderName]metrics.Meter
+	CookieSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
+	userSyncOptout        metrics.Meter
+	userSyncBadRequest    metrics.Meter
+	userSyncSet           map[openrtb_ext.BidderName]metrics.Meter
+	userSyncGDPRPrevent   map[openrtb_ext.BidderName]metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -44,10 +46,9 @@ type Metrics struct {
 // AdapterMetrics houses the metrics for a particular adapter
 type AdapterMetrics struct {
 	NoCookieMeter     metrics.Meter
-	ErrorMeter        metrics.Meter
+	ErrorMeters       map[AdapterError]metrics.Meter
 	NoBidMeter        metrics.Meter
-	TimeoutMeter      metrics.Meter
-	RequestMeter      metrics.Meter
+	GotBidsMeter      metrics.Meter
 	RequestTimer      metrics.Timer
 	PriceHistogram    metrics.Histogram
 	BidsReceivedMeter metrics.Meter
@@ -80,7 +81,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
-		metricsRegistry:            registry,
+		MetricsRegistry:            registry,
 		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
 		ConnectionCounter:          metrics.NilCounter{},
 		ConnectionAcceptErrorMeter: blankMeter,
@@ -93,6 +94,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		RequestTimer:               &metrics.NilTimer{},
 		AmpNoCookieMeter:           blankMeter,
 		CookieSyncMeter:            blankMeter,
+		CookieSyncGen:              make(map[openrtb_ext.BidderName]metrics.Meter),
+		CookieSyncGDPRPrevent:      make(map[openrtb_ext.BidderName]metrics.Meter),
 		userSyncOptout:             blankMeter,
 		userSyncBadRequest:         blankMeter,
 		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
@@ -107,9 +110,9 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
 
-	for _, t := range requestTypes() {
+	for _, t := range RequestTypes() {
 		newMetrics.RequestStatuses[t] = make(map[RequestStatus]metrics.Meter)
-		for _, s := range requestStatuses() {
+		for _, s := range RequestStatuses() {
 			newMetrics.RequestStatuses[t][s] = blankMeter
 		}
 	}
@@ -138,6 +141,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
 	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
 	for _, a := range exchanges {
+		newMetrics.CookieSyncGen[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gen", string(a)), registry)
+		newMetrics.CookieSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gdpr_prevent", string(a)), registry)
 		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
 		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
@@ -157,14 +162,16 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 	blankMeter := &metrics.NilMeter{}
 	newAdapter := &AdapterMetrics{
 		NoCookieMeter:     blankMeter,
-		ErrorMeter:        blankMeter,
+		ErrorMeters:       make(map[AdapterError]metrics.Meter),
 		NoBidMeter:        blankMeter,
-		TimeoutMeter:      blankMeter,
-		RequestMeter:      blankMeter,
+		GotBidsMeter:      blankMeter,
 		RequestTimer:      &metrics.NilTimer{},
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
+	}
+	for _, err := range AdapterErrors() {
+		newAdapter.ErrorMeters[err] = blankMeter
 	}
 	return newAdapter
 }
@@ -187,10 +194,8 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 
 func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
 	am.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), registry)
-	am.ErrorMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.error_requests", adapterOrAccount, exchange), registry)
-	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_bid_requests", adapterOrAccount, exchange), registry)
-	am.TimeoutMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.timeout_requests", adapterOrAccount, exchange), registry)
-	am.RequestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests", adapterOrAccount, exchange), registry)
+	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
+	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
 	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
 	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
 	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
@@ -198,6 +203,9 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
 		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
 		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
+	}
+	for err := range am.ErrorMeters {
+		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
@@ -235,13 +243,13 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 		return am
 	}
 	am = &accountMetrics{}
-	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.metricsRegistry)
-	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.metricsRegistry)
-	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.metricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
+	am.requestMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.requests", id), me.MetricsRegistry)
+	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
+	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
 	for _, a := range me.exchanges {
 		am.adapterMetrics[a] = makeBlankAdapterMetrics()
-		registerAdapterMetrics(me.metricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
+		registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
 	}
 
 	me.accountMetrics[id] = am
@@ -312,48 +320,41 @@ func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
-	// Adapter metrics
-	am.RequestMeter.Mark(1)
-	// Account-Adapter metrics
-	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
-	aam.RequestMeter.Mark(1)
 
-	switch labels.AdapterStatus {
-	case AdapterStatusErr:
-		am.ErrorMeter.Mark(1)
-	case AdapterStatusNoBid:
+	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	switch labels.AdapterBids {
+	case AdapterBidNone:
 		am.NoBidMeter.Mark(1)
-	case AdapterStatusTimeout:
-		am.TimeoutMeter.Mark(1)
+		aam.NoBidMeter.Mark(1)
+	case AdapterBidPresent:
+		am.GotBidsMeter.Mark(1)
+		aam.GotBidsMeter.Mark(1)
+	default:
+		glog.Warningf("No go-metrics logged for AdapterBids value: %s", labels.AdapterBids)
 	}
+	for errType := range labels.AdapterErrors {
+		am.ErrorMeters[errType].Mark(1)
+	}
+
 	if labels.CookieFlag == CookieFlagNo {
 		am.NoCookieMeter.Mark(1)
 	}
 }
 
-// RecordAdapterBidsReceived implements a part of the MetricsEngine interface. This tracks the number of bids received
-// from a bidder.
-func (me *Metrics) RecordAdapterBidsReceived(labels AdapterLabels, bids int64) {
+// RecordAdapterBidReceived implements a part of the MetricsEngine interface.
+// This tracks how many bids from each Bidder use `adm` vs. `nurl.
+func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
 	if !ok {
 		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
+
 	// Adapter metrics
-	am.BidsReceivedMeter.Mark(bids)
+	am.BidsReceivedMeter.Mark(1)
 	// Account-Adapter metrics
 	aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
-	aam.BidsReceivedMeter.Mark(bids)
-}
-
-// RecordAdapterBidAdm implements a part of the MetricsEngine interface.
-// This tracks how many bids from each Bidder use `adm` vs. `nurl.
-func (me *Metrics) RecordAdapterBidAdm(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	am, ok := me.AdapterMetrics[labels.Adapter]
-	if !ok {
-		glog.Errorf("Trying to run adapter bid metrics on %s: adapter metrics not found", string(labels.Adapter))
-		return
-	}
+	aam.BidsReceivedMeter.Mark(1)
 
 	if metricsForType, ok := am.MarkupMetrics[bidType]; ok {
 		if hasAdm {
@@ -398,6 +399,14 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 // RecordCookieSync implements a part of the MetricsEngine interface. Records a cookie sync request
 func (me *Metrics) RecordCookieSync(labels Labels) {
 	me.CookieSyncMeter.Mark(1)
+}
+
+// RecordAdapterCookieSync implements a part of the MetricsEngine interface. Records a cookie sync adpter sync request and gdpr status
+func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	me.CookieSyncGen[adapter].Mark(1)
+	if gdprBlocked {
+		me.CookieSyncGDPRPrevent[adapter].Mark(1)
+	}
 }
 
 // RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request

@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       },
@@ -30,7 +30,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       },
@@ -44,7 +44,7 @@
         },
         "ext": {
           "bidder": {
-            "publisherName": "cafemom"
+            "publisher": "cafemom"
           }
         }
       }
@@ -53,9 +53,10 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://east-bid.ybp.yahoo.com/bid/appnexuspbs?publisher=cafemom",
+        "uri": "http://test-bid.ybp.yahoo.com/bid/appnexuspbs?publisher=cafemom",
         "body": {
           "id": "test-request-id",
+          "at":1,
           "imp": [
             {
               "id": "test-imp-id",
@@ -69,11 +70,13 @@
                     "w": 300,
                     "h": 600
                   }
-                ]
+                ],
+                "w": 300,
+                "h": 250
               },
               "ext": {
                 "bidder": {
-                  "publisherName": "cafemom"
+                  "publisher": "cafemom"
                 }
               }
             },
@@ -85,7 +88,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherName": "cafemom"
+                  "publisher": "cafemom"
                 }
               }
             },
@@ -99,7 +102,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisherName": "cafemom"
+                  "publisher": "cafemom"
                 }
               }
             }

@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 
 	"github.com/buger/jsonparser"
-
+	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
@@ -20,10 +21,11 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, optOutCookie *config.Cookie, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
+func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
 	deps := &cookieSyncDeps{
 		syncers:         syncers,
-		optOutCookie:    optOutCookie,
+		hostCookie:      &cfg.HostCookie,
+		gDPR:            &cfg.GDPR,
 		syncPermissions: syncPermissions,
 		metrics:         metrics,
 		pbsAnalytics:    pbsAnalytics,
@@ -33,7 +35,8 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 
 type cookieSyncDeps struct {
 	syncers         map[openrtb_ext.BidderName]usersync.Usersyncer
-	optOutCookie    *config.Cookie
+	hostCookie      *config.HostCookie
+	gDPR            *config.GDPR
 	syncPermissions gdpr.Permissions
 	metrics         pbsmetrics.MetricsEngine
 	pbsAnalytics    analytics.PBSAnalyticsModule
@@ -50,7 +53,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
 	deps.metrics.RecordCookieSync(pbsmetrics.Labels{})
-	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.optOutCookie)
+	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.hostCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
 		co.Status = http.StatusUnauthorized
@@ -88,6 +91,14 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		http.Error(w, "gdpr_consent is required if gdpr=1", http.StatusBadRequest)
 		return
 	}
+	// If GDPR is ambiguous, lets untangle it here.
+	if parsedReq.GDPR == nil {
+		var gdpr = 1
+		if deps.gDPR.UsersyncIfAmbiguous {
+			gdpr = 0
+		}
+		parsedReq.GDPR = &gdpr
+	}
 
 	if len(biddersJSON) == 0 {
 		parsedReq.Bidders = make([]string, 0, len(deps.syncers))
@@ -97,18 +108,37 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
+	adapterSyncs := make(map[openrtb_ext.BidderName]bool)
+	for _, b := range parsedReq.Bidders {
+		// assume all bidders will be GDPR blocked
+		adapterSyncs[openrtb_ext.BidderName(b)] = true
+	}
 	parsedReq.filterForGDPR(deps.syncPermissions)
+	for _, b := range parsedReq.Bidders {
+		// surviving bidders are not GDPR blocked
+		adapterSyncs[openrtb_ext.BidderName(b)] = false
+	}
+	for b, g := range adapterSyncs {
+		deps.metrics.RecordAdapterCookieSync(b, g)
+	}
+	parsedReq.filterToLimit()
 
 	csResp := cookieSyncResponse{
 		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
-		BidderStatus: make([]*usersync.CookieSyncBidders, len(parsedReq.Bidders)),
+		BidderStatus: make([]*usersync.CookieSyncBidders, 0, len(parsedReq.Bidders)),
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		csResp.BidderStatus[i] = &usersync.CookieSyncBidders{
-			BidderCode:   bidder,
-			NoCookie:     true,
-			UsersyncInfo: deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent),
+		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
+		if err == nil {
+			newSync := &usersync.CookieSyncBidders{
+				BidderCode:   bidder,
+				NoCookie:     true,
+				UsersyncInfo: syncInfo,
+			}
+			csResp.BidderStatus = append(csResp.BidderStatus, newSync)
+		} else {
+			glog.Errorf("Failed to get usersync info for %s: %v", bidder, err)
 		}
 	}
 
@@ -116,6 +146,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		co.BidderStatus = append(co.BidderStatus, csResp.BidderStatus...)
 	}
 
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(csResp)
@@ -149,6 +180,7 @@ type cookieSyncRequest struct {
 	Bidders []string `json:"bidders"`
 	GDPR    *int     `json:"gdpr"`
 	Consent string   `json:"gdpr_consent"`
+	Limit   int      `json:"limit"`
 }
 
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie) {
@@ -177,6 +209,28 @@ func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
 			i--
 		}
 	}
+}
+
+// filterToLimit will enforce a max limit on cookiesyncs supplied, picking a random subset of syncs to get to the limit if over.
+func (req *cookieSyncRequest) filterToLimit() {
+	if req.Limit <= 0 {
+		return
+	}
+	if req.Limit >= len(req.Bidders) {
+		return
+	}
+
+	// Modified Fisher and Yates' shuffle. We don't need the bidder list shuffled, so we stop shuffling once the final values beyond limit have been set.
+	// We also don't bother saving the values that should go into the entries beyond limit, as they will be discarded.
+	for i := len(req.Bidders) - 1; i >= req.Limit; i-- {
+		j := rand.Intn(i + 1)
+		if i != j {
+			req.Bidders[j] = req.Bidders[i]
+			// Don't complete the swap as the new value for req.Bidders[i] will be discarded below, and will never again be accessed as part of the swapping.
+		}
+	}
+	req.Bidders = req.Bidders[:req.Limit]
+	return
 }
 
 type cookieSyncResponse struct {

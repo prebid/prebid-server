@@ -40,7 +40,7 @@ func (m *pbsSyncMap) Delete(id string) {
 	m.Map.Delete(id)
 }
 
-// lruCache wrapper whcih implements the interface
+// lruCache wrapper which implements the interface
 type pbsLRUCache struct {
 	*freecache.Cache
 	ttlSeconds int
