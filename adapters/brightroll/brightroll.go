@@ -89,6 +89,7 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adap
 	}
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
+
 	if brightrollExt.Publisher == "adthrive" {
 		request.BCat = getBlockedCategoriesForAdthrive()
 	}
