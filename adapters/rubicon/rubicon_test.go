@@ -1202,6 +1202,29 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	}
 }
 
+func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{Body: requestJson}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","bidid":"1234567890","seatbid":[{"bid":[{"id":"0","price": 1}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, _ := bidder.MakeBids(request, reqData, httpResp)
+
+	theBid := bidResponse.Bids[0].Bid
+	if theBid.ID != "1234567890" {
+		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
+	}
+}
+
 func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
 }
