@@ -42,3 +42,6 @@ inventory_url.yaml
 # static/version.txt
 
 .idea/
+
+# Mac .ds_store file
+.ds_store
