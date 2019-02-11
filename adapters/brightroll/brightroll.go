@@ -73,8 +73,8 @@ func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adap
 			validImpExists = true
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
-			videoCopy := *request.Imp[i].Video
 			if brightrollExt.Publisher == "adthrive" {
+				videoCopy := *request.Imp[i].Video
 				videoCopy.BAttr = getBlockedCreativetypesForAdThrive()
 				request.Imp[i].Video = &videoCopy
 			}
