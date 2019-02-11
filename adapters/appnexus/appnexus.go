@@ -41,6 +41,10 @@ type KeyVal struct {
 	Values []string `json:"value,omitempty"`
 }
 
+type appnexusAdapterOptions struct {
+	IabCategories map[string]string `json:"iab_categories"`
+}
+
 type appnexusParams struct {
 	LegacyPlacementId       int             `json:"placementId"`
 	LegacyInvCode           string          `json:"invCode"`
@@ -498,22 +502,20 @@ func appendMemberId(uri string, memberId string) string {
 	return uri + "?member_id=" + memberId
 }
 
-func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *AppNexusAdapter {
-	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string, options json.RawMessage) *AppNexusAdapter {
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint, options)
 }
 
-func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
+func NewAppNexusBidder(client *http.Client, endpoint string, options json.RawMessage) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
-	catmap := make(map[string]string)
-	data, err := ioutil.ReadFile("./appnexus_categorymap.json")
-	if err == nil {
-		err = json.Unmarshal(data, &catmap)
-		if err != nil {
-			catmap = nil
-		}
-	} else {
-		catmap = nil
+
+	var adapterOptions appnexusAdapterOptions
+	var catmap map[string]string
+
+	if err := json.Unmarshal(options, &adapterOptions); err == nil {
+		catmap = adapterOptions.IabCategories
 	}
+
 	return &AppNexusAdapter{
 		http:           a,
 		URI:            endpoint,

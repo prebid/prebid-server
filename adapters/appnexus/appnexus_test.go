@@ -23,7 +23,8 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "appnexustest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2"))
+	customOptions := json.RawMessage("{\"iab_categories\": { \"1\": \"IAB20-3\", \"9\": \"IAB5-3\" } }")
+	adapterstest.RunJSONBidderTest(t, "appnexustest", NewAppNexusBidder(nil, "http://ib.adnxs.com/openrtb2", customOptions))
 }
 
 func TestMemberQueryParam(t *testing.T) {
@@ -298,7 +299,7 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewAppNexusAdapter(&conf, server.URL)
+	an := NewAppNexusAdapter(&conf, server.URL, nil)
 
 	pbin := pbs.PBSRequest{
 		AdUnits: make([]pbs.AdUnit, 2),
