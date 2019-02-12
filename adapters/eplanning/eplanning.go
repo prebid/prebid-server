@@ -117,8 +117,8 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 
 	uri := adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, pageDomain, sec, url.QueryEscape(pageURL), strings.Join(spacesStrings, "+"))
 
-	if request.User != nil && request.User.ID != "" {
-		uri = uri + fmt.Sprintf("&uid=%s", request.User.ID)
+	if request.User != nil && request.User.BuyerUID != "" {
+		uri = uri + fmt.Sprintf("&uid=%s", request.User.BuyerUID)
 	}
 
 	if ip != "" {
