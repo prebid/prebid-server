@@ -2,7 +2,6 @@ package exchange
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/adapters/consumable"
 	"net/http"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/beachfront"
 	"github.com/prebid/prebid-server/adapters/brightroll"
+	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
 	"github.com/prebid/prebid-server/adapters/grid"
