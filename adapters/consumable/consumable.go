@@ -155,9 +155,6 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, []error{err}
 	}
 
-	println("== header ==")
-	println("X-Forwarded-For: ", headers.Get("X-Forwarded-For"))
-	println("== body ==")
 	fmt.Printf("%s", bodyBytes)
 	requests := []*adapters.RequestData{
 		{
@@ -207,7 +204,6 @@ func (a *ConsumableAdapter) MakeBids(
 	var errors []error
 
 	for impID, decision := range serverResponse.Decisions {
-		println("ImpID: ", impID, " Decision: ", *decision.Pricing.ClearPrice)
 		imp := getImp(impID, internalRequest.Imp)
 		if imp == nil {
 			errors = append(errors, &errortypes.BadServerResponse{
