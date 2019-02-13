@@ -155,7 +155,6 @@ func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 		return nil, []error{err}
 	}
 
-	fmt.Printf("%s", bodyBytes)
 	requests := []*adapters.RequestData{
 		{
 			Method:  "POST",
@@ -209,7 +208,6 @@ func (a *ConsumableAdapter) MakeBids(
 			errors = append(errors, &errortypes.BadServerResponse{
 				Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", "TODO: bid.ID", impID),
 			})
-			fmt.Printf("%s", errors[0])
 			continue
 		}
 
@@ -252,7 +250,6 @@ func getImp(impId string, imps []openrtb.Imp) *openrtb.Imp {
 func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb_ext.ExtImpConsumable, []error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(impression.Ext, &bidderExt); err != nil {
-		fmt.Printf("err: %s", err) // TODO: DELETE
 		return nil, nil, []error{&errortypes.BadInput{
 			Message: err.Error(),
 		}}
@@ -260,7 +257,6 @@ func extractExtensions(impression openrtb.Imp) (*adapters.ExtImpBidder, *openrtb
 
 	var consumableExt openrtb_ext.ExtImpConsumable
 	if err := json.Unmarshal(bidderExt.Bidder, &consumableExt); err != nil {
-		fmt.Printf("err: %s", err) // TODO: DELETE
 		return nil, nil, []error{&errortypes.BadInput{
 			Message: err.Error(),
 		}}
