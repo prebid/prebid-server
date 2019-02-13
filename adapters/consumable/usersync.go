@@ -7,7 +7,7 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
-var VENDOR_ID uint16 = 65535 // TODO: What is the correct value
+var VENDOR_ID uint16 = 65535 // TODO: Insert consumable value when one is assigned
 
 func NewConsumableSyncer(temp *template.Template) usersync.Usersyncer {
 
