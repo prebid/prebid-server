@@ -566,6 +566,10 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
 
+	if len(adformBids) > 0 {
+		bidResponse.Currency = adformBids[0].Currency
+	}
+
 	for i, bid := range adformBids {
 		if bid.Banner == "" || bid.ResponseType != "banner" {
 			continue
