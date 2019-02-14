@@ -712,6 +712,11 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			if bid.Price != 0 {
+				// Since Rubicon XAPI returns only one bid per response
+				// copy response.bidid to openrtb_response.seatbid.bid.bidid
+				if bid.ID == "0" {
+					bid.ID = bidResp.BidID
+				}
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,
