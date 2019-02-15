@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/categories"
 	"io/ioutil"
 	"strings"
 
@@ -34,31 +32,35 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
-func (fetcher *eagerFetcher) FetchCategories() (cat categories.Categories) {
-	rawCategories := make(map[string]map[string]json.RawMessage)
+func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
 	for k, v := range fetcher.FileSystem.Directories {
-		if len(v.Files) > 0 {
-			rawCategories[k] = v.Files
-		}
-	}
-	categoriesdData := make(map[string]map[string]map[string]string)
-	for k, v := range rawCategories {
+		if k == primaryAdServer {
+			for key, value := range v.Files {
+				fileName := key
+				if len(publisherId) != 0 {
+					fileName = primaryAdServer + "_" + publisherId
+				}
+				if key == fileName {
+					tmp := make(map[string]string)
 
-		cat := make(map[string]map[string]string)
-		for key, value := range v {
-			tmp := make(map[string]string)
+					if err := json.Unmarshal(value, &tmp); err != nil {
+						return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
 
-			if err := json.Unmarshal(value, &tmp); err != nil {
-				glog.Warning("Unable to unmarshal category for: ", key)
-				continue
+					}
+					resultCategory := tmp[iabCategory]
+					if len(resultCategory) == 0 {
+						return "", fmt.Errorf("Unable to find category for adserver '%s', publisherId: '%s', iab category: '%s'", primaryAdServer, publisherId, iabCategory)
+
+					}
+					return resultCategory, nil
+				}
 			}
-			cat[key] = tmp
+
 		}
-		categoriesdData[k] = cat
 	}
-	return categories.Categories{
-		Categories: categoriesdData,
-	}
+
+	return "", fmt.Errorf("Category '%s' not found for server: '%s', publisherId: '%s'",
+		iabCategory, primaryAdServer, publisherId)
 
 }
 

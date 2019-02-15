@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/prebid/prebid-server/categories"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -1056,8 +1055,8 @@ func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []s
 	return testStoredRequestData, testStoredImpData, nil
 }
 
-func (cf mockStoredReqFetcher) FetchCategories() (cat categories.Categories) {
-	return categories.Categories{}
+func (cf mockStoredReqFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 type mockExchange struct {

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/categories"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -81,8 +80,8 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher *HttpFetcher) FetchCategories() (cat categories.Categories) {
-	return categories.Categories{}
+func (fetcher *HttpFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/categories"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -50,6 +49,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	for requestID := range goodRequests {
@@ -103,6 +103,7 @@ func TestAMPPageInfo(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -134,6 +135,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		nil,
 		openrtb_ext.BidderMap,
+		nil,
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -204,6 +206,7 @@ func TestAmpDebug(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	for requestID := range requests {
@@ -276,6 +279,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	requestID := "1"
@@ -403,6 +407,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize)
@@ -441,8 +446,8 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 	return cf.data, nil, nil
 }
 
-func (cf *mockAmpStoredReqFetcher) FetchCategories() (cat categories.Categories) {
-	return categories.Categories{}
+func (cf *mockAmpStoredReqFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 type mockAmpExchange struct {
