@@ -21,7 +21,10 @@ type Fetcher interface {
 	//
 	// The returned objects can only be read from. They may not be written to.
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+}
 
+type CategoryFetcher interface {
+	// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
 	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
 }
 

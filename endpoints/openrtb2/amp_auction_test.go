@@ -446,10 +446,6 @@ func (cf *mockAmpStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs
 	return cf.data, nil, nil
 }
 
-func (cf *mockAmpStoredReqFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
-	return "", nil
-}
-
 type mockAmpExchange struct {
 	lastRequest *openrtb.BidRequest
 }

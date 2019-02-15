@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileFetcher(t *testing.T) {
@@ -95,8 +97,20 @@ func assertErrorCount(t *testing.T, num int, errs []error) {
 	}
 }
 
+func newCategoryFetcher(directory string) (stored_requests.CategoryFetcher, error) {
+	fetcher, err := NewFileFetcher(directory)
+	if err != nil {
+		return nil, err
+	}
+	catfetcher, ok := fetcher.(stored_requests.CategoryFetcher)
+	if !ok {
+		return nil, fmt.Errorf("Failed to type cast fetcher to CategoryFetcher")
+	}
+	return catfetcher, nil
+}
+
 func TestCategoriesFetcherWithPublisher(t *testing.T) {
-	fetcher, err := NewFileFetcher("./test/category-mapping")
+	fetcher, err := newCategoryFetcher("./test/category-mapping")
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
@@ -106,7 +120,7 @@ func TestCategoriesFetcherWithPublisher(t *testing.T) {
 }
 
 func TestCategoriesFetcherWithoutPublisher(t *testing.T) {
-	fetcher, err := NewFileFetcher("./test/category-mapping")
+	fetcher, err := newCategoryFetcher("./test/category-mapping")
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
@@ -116,7 +130,7 @@ func TestCategoriesFetcherWithoutPublisher(t *testing.T) {
 }
 
 func TestCategoriesFetcherNoCategory(t *testing.T) {
-	fetcher, err := NewFileFetcher("./test/category-mapping")
+	fetcher, err := newCategoryFetcher("./test/category-mapping")
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
@@ -126,7 +140,7 @@ func TestCategoriesFetcherNoCategory(t *testing.T) {
 }
 
 func TestCategoriesFetcherBrokenJson(t *testing.T) {
-	fetcher, err := NewFileFetcher("./test/category-mapping")
+	fetcher, err := newCategoryFetcher("./test/category-mapping")
 	if err != nil {
 		t.Errorf("Failed to create a category Fetcher: %v", err)
 	}
