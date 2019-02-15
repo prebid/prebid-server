@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -1053,10 +1053,6 @@ type mockStoredReqFetcher struct {
 
 func (cf mockStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
 	return testStoredRequestData, testStoredImpData, nil
-}
-
-func (cf mockStoredReqFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
-	return "", nil
 }
 
 type mockExchange struct {

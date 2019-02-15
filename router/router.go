@@ -40,6 +40,7 @@ import (
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/ssl"
+	"github.com/prebid/prebid-server/stored_requests"
 	storedRequestsConf "github.com/prebid/prebid-server/stored_requests/config"
 	"github.com/prebid/prebid-server/usersync/usersyncers"
 
@@ -184,6 +185,8 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 		},
 	}
 	fetcher, ampFetcher, db, shutdown, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
+	catFetcher, _ := categoriesFetcher.(stored_requests.CategoryFetcher)
+
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
@@ -221,13 +224,13 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, currencyConverter)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, catFetcher)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, catFetcher)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
