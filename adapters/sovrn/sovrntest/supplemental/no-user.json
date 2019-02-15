@@ -39,8 +39,11 @@
     {
       "expectedRequest": {
         "headers": {
+          "Accept-Language": ["en"],
           "Content-Type": ["application/json"],
-          "Cookie": ["ljt_reader=test_reader_id"]
+          "Dnt": ["0"],
+          "User-Agent": ["test-user-agent"],
+          "X-Forwarded-For": ["123.123.123.123"]
         },
         "uri": "http://sovrn.com/test/endpoint",
         "body": {
