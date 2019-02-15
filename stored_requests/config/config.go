@@ -46,8 +46,8 @@ func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *h
 	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, client, db, router)
 	cache := newCache(&cfg.StoredRequests)
 	ampCache := newCache(&cfg.StoredRequests)
-	fetcher, ampFetcher = newFetchers(&cfg.StoredRequests, client, db, requestConfigPath)
-	categoriesFetcher, _ = newFetchers(&cfg.CategoryMapping, client, db, categoryMappingConfigPath)
+	fetcher, ampFetcher = newFetchers(&cfg.StoredRequests, client, db)
+	categoriesFetcher, _ = newFetchers(&cfg.CategoryMapping, client, db)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
@@ -82,12 +82,12 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB, configPath string) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
+func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files {
-		fFetcher := newFilesystem(configPath)
+		fFetcher := newFilesystem(cfg.Path)
 		idList = append(idList, fFetcher)
 		ampIDList = append(ampIDList, fFetcher)
 	}
@@ -211,6 +211,3 @@ func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
 		return stored_requests.MultiFetcher(fetchers)
 	}
 }
-
-const requestConfigPath = "./stored_requests/data/by_id"
-const categoryMappingConfigPath = "./static/category-mapping"

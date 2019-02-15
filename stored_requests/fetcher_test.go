@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/prebid/prebid-server/categories"
 	"reflect"
 	"testing"
 )
@@ -206,8 +205,8 @@ func (f *mockFetcher) FetchRequests(ctx context.Context, requestIDs []string, im
 	return f.mockGetReqs, f.mockGetImps, f.returnErrs
 }
 
-func (f *mockFetcher) FetchCategories() (cat categories.Categories) {
-	return categories.Categories{}
+func (f *mockFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 type mockCache struct {

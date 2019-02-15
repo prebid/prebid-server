@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/prebid/prebid-server/categories"
-
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
@@ -94,8 +92,8 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
-func (fetcher *dbFetcher) FetchCategories() (cat categories.Categories) {
-	return categories.Categories{}
+func (fetcher *dbFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {

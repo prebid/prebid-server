@@ -3,7 +3,6 @@ package stored_requests
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/categories"
 )
 
 // MultiFetcher is a Fetcher composed of multiple sub-Fetchers that are all polled for results.
@@ -36,8 +35,8 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	return
 }
 
-func (mf MultiFetcher) FetchCategories() (cat categories.Categories) {
-	return categories.Categories{}
+func (mf MultiFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {

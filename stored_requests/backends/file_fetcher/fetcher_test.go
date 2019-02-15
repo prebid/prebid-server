@@ -3,6 +3,7 @@ package file_fetcher
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -26,15 +27,6 @@ func TestInvalidDirectory(t *testing.T) {
 	if err == nil {
 		t.Errorf("There should be an error if we use a directory which doesn't exist.")
 	}
-}
-
-func TestCategoriesFetcher(t *testing.T) {
-	fetcher, err := NewFileFetcher("./test/category-mapping")
-	if err != nil {
-		t.Errorf("Failed to create a category Fetcher: %v", err)
-	}
-	categories := fetcher.FetchCategories()
-	assert.Equal(t, "404", categories.Categories["test"]["test_categories"]["IAB1-1"], "Categories were loaded incorrectly")
 }
 
 func validateStoredReqOne(t *testing.T, storedRequests map[string]json.RawMessage) {
@@ -101,4 +93,44 @@ func assertErrorCount(t *testing.T, num int, errs []error) {
 	if len(errs) != num {
 		t.Errorf("Wrong number of errors. Expected %d. Got %d. Errors are %v", num, len(errs), errs)
 	}
+}
+
+func TestCategoriesFetcherWithPublisher(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+	category, err := fetcher.FetchCategories("test", "categories", "IAB1-1")
+	assert.Equal(t, nil, err, "Categories were loaded incorrectly")
+	assert.Equal(t, "Beverages", category, "Categories were loaded incorrectly")
+}
+
+func TestCategoriesFetcherWithoutPublisher(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+	category, err := fetcher.FetchCategories("test", "", "IAB1-1")
+	assert.Equal(t, nil, err, "Categories were loaded incorrectly")
+	assert.Equal(t, "VideoGames", category, "Categories were loaded incorrectly")
+}
+
+func TestCategoriesFetcherNoCategory(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+	_, fetchingErr := fetcher.FetchCategories("test", "", "IAB1-100")
+	assert.Equal(t, fmt.Errorf("Unable to find category for adserver 'test', publisherId: '', iab category: 'IAB1-100'"),
+		fetchingErr, "Categories were loaded incorrectly")
+}
+
+func TestCategoriesFetcherBrokenJson(t *testing.T) {
+	fetcher, err := NewFileFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+	_, fetchingErr := fetcher.FetchCategories("test", "broken", "IAB1-100")
+	assert.Equal(t, fmt.Errorf("Unable to unmarshal categories for adserver: 'test', publisherId: 'broken'"),
+		fetchingErr, "Categories were loaded incorrectly")
 }
