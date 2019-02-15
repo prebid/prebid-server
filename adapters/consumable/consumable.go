@@ -203,15 +203,17 @@ func (a *ConsumableAdapter) MakeBids(
 	var errors []error
 
 	for impID, decision := range serverResponse.Decisions {
-		imp := getImp(impID, internalRequest.Imp)
-		if imp == nil {
-			errors = append(errors, &errortypes.BadServerResponse{
-				Message: fmt.Sprintf("ignoring bid id=%s, request doesn't contain any impression with id=%s", "TODO: bid.ID", impID),
-			})
-			continue
-		}
 
 		if decision.Pricing != nil && decision.Pricing.ClearPrice != nil {
+
+			imp := getImp(impID, internalRequest.Imp)
+			if imp == nil {
+				errors = append(errors, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf(
+						"ignoring bid id=%s, request doesn't contain any impression with id=%s", internalRequest.ID, impID),
+				})
+				continue
+			}
 
 			bid := openrtb.Bid{}
 			bid.ID = internalRequest.ID
