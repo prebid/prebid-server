@@ -41,7 +41,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderAdform:      adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
 		openrtb_ext.BidderAdkernelAdn: adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint),
 		openrtb_ext.BidderAdtelligent: adtelligent.NewAdtelligentBidder(cfg.Adapters[string(openrtb_ext.BidderAdtelligent)].Endpoint),
-		openrtb_ext.BidderAppnexus:    appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].CustomOptions),
+		openrtb_ext.BidderAppnexus:    appnexus.NewAppNexusBidder(client, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
 		// TODO #615: Update the config setup so that the Beachfront URLs can be configured, and use those in TestRaceIntegration in exchange_test.go
 		openrtb_ext.BidderBeachfront: beachfront.NewBeachfrontBidder(),
 		openrtb_ext.BidderBrightroll: brightroll.NewBrightrollBidder(cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint),

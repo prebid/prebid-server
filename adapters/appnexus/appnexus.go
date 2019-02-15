@@ -502,18 +502,22 @@ func appendMemberId(uri string, memberId string) string {
 	return uri + "?member_id=" + memberId
 }
 
-func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string, options json.RawMessage) *AppNexusAdapter {
-	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint, options)
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *AppNexusAdapter {
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
 }
 
-func NewAppNexusBidder(client *http.Client, endpoint string, options json.RawMessage) *AppNexusAdapter {
+func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
-	var adapterOptions appnexusAdapterOptions
+	// Load custom options for our adapter (currently just a lookup table to convert appnexus => iab categories)
 	var catmap map[string]string
+	opts, err := ioutil.ReadFile("./static/adapter/appnexus/opts.json")
+	if err == nil {
+		var adapterOptions appnexusAdapterOptions
 
-	if err := json.Unmarshal(options, &adapterOptions); err == nil {
-		catmap = adapterOptions.IabCategories
+		if err := json.Unmarshal(opts, &adapterOptions); err == nil {
+			catmap = adapterOptions.IabCategories
+		}
 	}
 
 	return &AppNexusAdapter{

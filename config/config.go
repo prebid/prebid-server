@@ -2,9 +2,7 @@ package config
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"reflect"
 	"strings"
@@ -195,8 +193,7 @@ type Adapter struct {
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
-	Disabled      bool `mapstructure:"disabled"`
-	CustomOptions json.RawMessage
+	Disabled bool `mapstructure:"disabled"`
 }
 
 type Metrics struct {
@@ -344,18 +341,6 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSovrn, "https://ap.lijit.com/pixel?redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSonobi, "https://sync.go.sonobi.com/us.gif?loc="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsonobi%26consent_string%3D{{.GDPR}}%26gdpr%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderYieldmo, "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dyieldmo%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
-
-	// load custom config from ./static/adapter_options/{bidderName}.json
-	bidderNames := openrtb_ext.BidderList()
-	for _, name := range bidderNames {
-		lowercased := strings.ToLower(string(name))
-		msg, err := ioutil.ReadFile(fmt.Sprintf("./static/adapter-options/%s.json", lowercased))
-		if err == nil {
-			adapter := cfg.Adapters[lowercased]
-			adapter.CustomOptions = msg
-			cfg.Adapters[lowercased] = adapter
-		}
-	}
 }
 
 func setDefaultUsersync(m map[string]Adapter, bidder openrtb_ext.BidderName, defaultValue string) {
