@@ -148,3 +148,13 @@ func TestCategoriesFetcherBrokenJson(t *testing.T) {
 	assert.Equal(t, fmt.Errorf("Unable to unmarshal categories for adserver: 'test', publisherId: 'broken'"),
 		fetchingErr, "Categories were loaded incorrectly")
 }
+
+func TestCategoriesFetcherNoCategoriesFile(t *testing.T) {
+	fetcher, err := newCategoryFetcher("./test/category-mapping")
+	if err != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", err)
+	}
+	_, fetchingErr := fetcher.FetchCategories("test", "not_exists", "IAB1-100")
+	assert.Equal(t, fmt.Errorf("Unable to find mapping file for adserver: 'test', publisherId: 'not_exists'"),
+		fetchingErr, "Categories were loaded incorrectly")
+}

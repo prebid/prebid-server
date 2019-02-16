@@ -39,17 +39,23 @@ func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCa
 		if len(publisherId) != 0 {
 			fileName = primaryAdServer + "_" + publisherId
 		}
-		file := primaryAdServerDir.Files[fileName]
-		tmp := make(map[string]string)
 
-		if err := json.Unmarshal(file, &tmp); err != nil {
-			return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+		if file, ok := primaryAdServerDir.Files[fileName]; ok {
+
+			tmp := make(map[string]string)
+
+			if err := json.Unmarshal(file, &tmp); err != nil {
+				return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+			}
+			resultCategory := tmp[iabCategory]
+			if len(resultCategory) == 0 {
+				return "", fmt.Errorf("Unable to find category for adserver '%s', publisherId: '%s', iab category: '%s'", primaryAdServer, publisherId, iabCategory)
+			}
+			return resultCategory, nil
+		} else {
+			return "", fmt.Errorf("Unable to find mapping file for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+
 		}
-		resultCategory := tmp[iabCategory]
-		if len(resultCategory) == 0 {
-			return "", fmt.Errorf("Unable to find category for adserver '%s', publisherId: '%s', iab category: '%s'", primaryAdServer, publisherId, iabCategory)
-		}
-		return resultCategory, nil
 
 	}
 
