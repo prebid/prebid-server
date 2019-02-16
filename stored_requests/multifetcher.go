@@ -35,6 +35,10 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	return
 }
 
+func (mf MultiFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
+}
+
 func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {
 	for k, v := range toAdd {
 		base[k] = v

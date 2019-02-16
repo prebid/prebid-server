@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
@@ -91,6 +90,10 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	errs = appendErrors("Imp", impIDs, storedImpData, errs)
 
 	return storedRequestData, storedImpData, errs
+}
+
+func (fetcher *dbFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 func appendErrors(dataType string, ids []string, data map[string]json.RawMessage, errs []error) []error {

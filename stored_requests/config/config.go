@@ -34,15 +34,20 @@ import (
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
-	if cfg.Postgres.ConnectionInfo.Database != "" {
-		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username)
-		db = newPostgresDB(cfg.Postgres.ConnectionInfo)
+func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.Fetcher) {
+	if cfg.StoredRequests.Postgres.ConnectionInfo.Database != "" {
+		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s",
+			cfg.StoredRequests.Postgres.ConnectionInfo.Database,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Host,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Port,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Username)
+		db = newPostgresDB(cfg.StoredRequests.Postgres.ConnectionInfo)
 	}
-	eventProducers, ampEventProducers := newEventProducers(cfg, client, db, router)
-	cache := newCache(cfg)
-	ampCache := newCache(cfg)
-	fetcher, ampFetcher = newFetchers(cfg, client, db)
+	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, client, db, router)
+	cache := newCache(&cfg.StoredRequests)
+	ampCache := newCache(&cfg.StoredRequests)
+	fetcher, ampFetcher = newFetchers(&cfg.StoredRequests, client, db)
+	categoriesFetcher, _ = newFetchers(&cfg.CategoryMapping, client, db)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
@@ -82,7 +87,7 @@ func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (f
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files {
-		fFetcher := newFilesystem()
+		fFetcher := newFilesystem(cfg.Path)
 		idList = append(idList, fFetcher)
 		ampIDList = append(ampIDList, fFetcher)
 	}
@@ -173,9 +178,9 @@ func newHttpEvents(client *http.Client, timeout time.Duration, refreshRate time.
 	return httpEvents.NewHTTPEvents(client, endpoint, ctxProducer, refreshRate)
 }
 
-func newFilesystem() stored_requests.Fetcher {
-	glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
-	fetcher, err := file_fetcher.NewFileFetcher(requestConfigPath)
+func newFilesystem(configPath string) stored_requests.Fetcher {
+	glog.Infof("Loading Stored Requests from filesystem at path %s", configPath)
+	fetcher, err := file_fetcher.NewFileFetcher(configPath)
 	if err != nil {
 		glog.Fatalf("Failed to create a FileFetcher: %v", err)
 	}
@@ -206,5 +211,3 @@ func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
 		return stored_requests.MultiFetcher(fetchers)
 	}
 }
-
-const requestConfigPath = "./stored_requests/data/by_id"
