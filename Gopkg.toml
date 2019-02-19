@@ -89,6 +89,10 @@
   name = "github.com/prebid/go-gdpr"
   version = "^0.6.1"
 
+[[constraint]]
+  name = "github.com/NYTimes/gziphandler"
+  version = "~1.1.0"  
+
 [prune]
   go-tests = true
   unused-packages = true
