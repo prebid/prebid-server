@@ -300,7 +300,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 // processes aliases before it processes stored imps.  Changing that order
 // would probably cause this test to fail.
 func TestBadAliasRequests(t *testing.T) {
-	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Alias: invalid character '\"' after object key:value pair at offset 51\n")
+	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_stored_imp.json", "Invalid request: Invalid JSON in Default Request Settings: invalid character '\"' after object key:value pair at offset 51\n")
 	doBadAliasRequest(t, "sample-requests/invalid-stored/bad_incoming_imp.json", "Invalid request: Invalid JSON in Incoming Request: invalid character '\"' after object key:value pair at offset 230\n")
 }
 

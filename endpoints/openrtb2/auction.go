@@ -885,7 +885,7 @@ func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	}
 }
 
-func getJsonSyntaxError(testJSON []byte) (bool, string, []error) {
+func getJsonSyntaxError(testJSON []byte) (bool, string) {
 	type JsonNode struct {
 		raw   *json.RawMessage
 		doc   map[string]*JsonNode
@@ -897,9 +897,9 @@ func getJsonSyntaxError(testJSON []byte) (bool, string, []error) {
 	docErr := json.Unmarshal(testJSON, docErrdoc)
 	if uerror, ok := docErr.(*json.SyntaxError); ok {
 		err := fmt.Sprintf("%s at offset %v", uerror.Error(), uerror.Offset)
-		return true, err, nil
+		return true, err
 	}
-	return false, "", nil
+	return false, ""
 }
 
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
@@ -928,11 +928,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if hasStoredBidRequest {
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 		if err != nil {
-			hasErr, Err, _ := getJsonSyntaxError(requestJson)
+			hasErr, Err := getJsonSyntaxError(requestJson)
 			if hasErr {
 				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
 			} else {
-				hasErr, Err, _ = getJsonSyntaxError(storedRequests[storedBidRequestId])
+				hasErr, Err = getJsonSyntaxError(storedRequests[storedBidRequestId])
 				if hasErr {
 					err = fmt.Errorf("Invalid JSON in Stored Request with ID %s: %s", storedBidRequestId, Err)
 					err = fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, Err)
@@ -946,13 +946,13 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if deps.defaultRequest {
 		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
 		if err != nil {
-			hasErr, Err, _ := getJsonSyntaxError(resolvedRequest)
+			hasErr, Err := getJsonSyntaxError(resolvedRequest)
 			if hasErr {
 				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
 			} else {
-				hasErr, Err, _ = getJsonSyntaxError(deps.defReqJSON)
+				hasErr, Err = getJsonSyntaxError(deps.defReqJSON)
 				if hasErr {
-					err = fmt.Errorf("Invalid JSON in Default Alias: %s", Err)
+					err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
 				}
 			}
 			return nil, []error{err}
@@ -966,11 +966,11 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
-			hasErr, Err, _ := getJsonSyntaxError(imps[idIndices[i]])
+			hasErr, Err := getJsonSyntaxError(imps[idIndices[i]])
 			if hasErr {
 				err = fmt.Errorf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, Err)
 			} else {
-				hasErr, Err, _ = getJsonSyntaxError(storedImps[impIds[i]])
+				hasErr, Err = getJsonSyntaxError(storedImps[impIds[i]])
 				if hasErr {
 					err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impIds[i], Err)
 				}
