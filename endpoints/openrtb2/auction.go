@@ -795,6 +795,20 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 					}
 				}
 			}
+			// Check Universal User ID
+			if userExt.TpID != nil {
+				if len(userExt.TpID) == 0 {
+					return fmt.Errorf("request.user.ext.tpid must contain at least one element or be undefined")
+				}
+				for tpidIndex, tpid := range userExt.TpID {
+					if tpid.Source == "" {
+						return fmt.Errorf("request.user.ext.tpid[%d] missing required field: \"source\"", tpidIndex)
+					}
+					if tpid.UID == "" {
+						return fmt.Errorf("request.user.ext.tpid[%d] missing required field: \"uid\"", tpidIndex)
+					}
+				}
+			}
 		} else {
 			// Return error.
 			return fmt.Errorf("request.user.ext object is not valid: %v", err)
