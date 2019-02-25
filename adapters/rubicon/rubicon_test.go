@@ -1031,11 +1031,18 @@ func TestOpenRTBRequest(t *testing.T) {
 		},
 		User: &openrtb.User{
 			Ext: json.RawMessage(`{"digitrust": {
-				"id": "some-digitrust-id",
-				"keyv": 1,
-				"pref": 0
-
-			}}`),
+                    "id": "some-digitrust-id",
+                    "keyv": 1,
+                    "pref": 0
+                },
+                "tpid": [{
+                    "source": "tdid",
+                    "uid": "3d50a262-bd8e-4be3-90b8-246291523907"
+                },{
+                    "source": "pubcid",
+                    "uid": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+                }]
+            }`),
 		},
 	}
 
@@ -1117,6 +1124,9 @@ func TestOpenRTBRequest(t *testing.T) {
 			}
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
+			}
+			if userExt.TpID == nil || len(userExt.TpID) != 2 {
+				t.Fatal("TpID values are not as expected!")
 			}
 		} else {
 			t.Fatalf("User.Ext object should not be nil since it contains a valid digitrust object.")

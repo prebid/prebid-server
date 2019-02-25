@@ -40,6 +40,7 @@ type adformRequest struct {
 	gdprApplies   string
 	consent       string
 	digitrust     *adformDigitrust
+	cur           string
 }
 
 type adformDigitrust struct {
@@ -223,6 +224,7 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		gdprApplies:   gdprApplies,
 		consent:       consent,
 		digitrust:     digitrust,
+		cur:           "USD",
 	}, nil
 }
 
@@ -284,7 +286,7 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
+		str := fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.cur)
 		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
 	}
 
@@ -473,6 +475,23 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		}
 	}
 
+	cur := "USD"
+	if request.Cur != nil && len(request.Cur) > 0 {
+		/* If USD is one of the supported currencies, then we should send that to the adserver */
+		usdSupported := false
+		for _, c := range request.Cur {
+			if c == "USD" {
+				usdSupported = true
+				break
+			}
+		}
+
+		/* If USD is not a supported currency, then we'll just choose the top level currency */
+		if usdSupported == false {
+			cur = request.Cur[0]
+		}
+	}
+
 	return &adformRequest{
 		adUnits:       adUnits,
 		ip:            getIPSafely(request.Device),
@@ -485,6 +504,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		gdprApplies:   gdprApplies,
 		consent:       consent,
 		digitrust:     digitrust,
+		cur:           cur,
 	}, errors
 }
 
@@ -545,6 +565,10 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
+
+	if len(adformBids) > 0 {
+		bidResponse.Currency = adformBids[0].Currency
+	}
 
 	for i, bid := range adformBids {
 		if bid.Banner == "" || bid.ResponseType != "banner" {
