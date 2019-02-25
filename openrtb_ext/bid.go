@@ -92,6 +92,8 @@ const (
 
 	// This is not a key, but values used by the HbEnvKey
 	HbEnvKeyApp string = "mobile-app"
+
+	HbCategoryDurationKey TargetingKey = "hb_pb_cat_dur"
 )
 
 func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {
