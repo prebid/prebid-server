@@ -233,8 +233,14 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
+	simplifiedOpenrtbEndpoint, err := openrtb2.NewSimplifiedEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, catFetcher)
+	if err != nil {
+		glog.Fatalf("Failed to create the simplified openrtb endpoint handler. %v", err)
+	}
+
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
+	r.POST("/openrtb2/video", simplifiedOpenrtbEndpoint)
 	r.GET("/openrtb2/amp", ampEndpoint)
 	r.GET("/info/bidders", infoEndpoints.NewBiddersEndpoint(defaultAliases))
 	r.GET("/info/bidders/:bidderName", infoEndpoints.NewBidderDetailsEndpoint(bidderInfos, defaultAliases))
