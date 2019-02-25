@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/util"
 	"github.com/spf13/viper"
 )
 
@@ -75,6 +76,7 @@ func (cfg *Configuration) validate() configErrors {
 	}
 	errs = cfg.GDPR.validate(errs)
 	errs = cfg.CurrencyConverter.validate(errs)
+	errs = validateAdapters(cfg.Adapters, errs)
 	return errs
 }
 
@@ -169,6 +171,13 @@ func (cfg *HostCookie) TTLDuration() time.Duration {
 	return time.Duration(cfg.TTL) * time.Hour * 24
 }
 
+const (
+	dummyHost        string = "dummyhost.com"
+	dummyPublisherID int    = 12
+	dummyGDPR        string = "0"
+	dummyGDPRConsent string = "some gdpr consent string"
+)
+
 type Adapter struct {
 	Endpoint string `mapstructure:"endpoint"` // Required
 	// UserSyncURL is the URL returned by /cookie_sync for this Bidder. It is _usually_ optional.
@@ -193,6 +202,74 @@ type Adapter struct {
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
 	Disabled bool `mapstructure:"disabled"`
+}
+
+// validateAdapterEndpoint validates to make sure that an adapter has a valid endpoint
+// associated with it
+func validateAdapterEndpoint(endpoint string, adapterName string, errs configErrors) configErrors {
+	if endpoint == "" {
+		errs = append(errs, fmt.Errorf("There's no default endpoint available for %s. Calls to this bidder/exchange will fail. "+
+			"Please set adapters.%s.endpoint in your app config", adapterName, adapterName))
+	} else {
+		// Check if endpoint has macros. If it does then resolve with dummy values
+		// for validation
+		if util.ContainsMacro(endpoint) {
+			endpointTemplate, err := util.BuildTemplate(endpoint)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("Invalid endpoint template: %s. %s", endpoint, err.Error()))
+				return errs
+			} else {
+				if endpoint, err = util.ResolveMacros(*endpointTemplate, util.EndpointTemplateParams{Host: dummyHost, PublisherID: dummyPublisherID}); err != nil {
+					errs = append(errs, fmt.Errorf("Unable to resolve endpoint: %s. %s", endpoint, err.Error()))
+					return errs
+				}
+			}
+		}
+
+		if _, err := url.ParseRequestURI(endpoint); err != nil {
+			errs = append(errs, fmt.Errorf("The endpoint specified for %s is invalid. %s", adapterName, err.Error()))
+		}
+	}
+	return errs
+}
+
+// validateAdapterUserSyncURL validates an adapter's user sync URL if it is set
+func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs configErrors) configErrors {
+	if userSyncURL != "" {
+		// Check if usersync URL has macros. If it does then resolve with dummy values
+		// for validation
+		if util.ContainsMacro(userSyncURL) {
+			userSyncTemplate, err := util.BuildTemplate(userSyncURL)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("Invalid user sync URL template: %s. %s", userSyncURL, err.Error()))
+				return errs
+			} else {
+				if userSyncURL, err = util.ResolveMacros(*userSyncTemplate, util.UserSyncTemplateParams{GDPR: dummyGDPR, GDPRConsent: dummyGDPRConsent}); err != nil {
+					errs = append(errs, fmt.Errorf("Unable to resolve user sync URL: %s. %s", userSyncURL, err.Error()))
+					return errs
+				}
+			}
+		}
+
+		if _, err := url.ParseRequestURI(userSyncURL); err != nil {
+			errs = append(errs, fmt.Errorf("The user_sync URL specified for %s is invalid. %s", adapterName, err.Error()))
+		}
+	}
+	return errs
+}
+
+// validateAdapters validates adapter's endpoint and user sync URL
+func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configErrors {
+	for adapterName, adapter := range adapterMap {
+		if !adapter.Disabled {
+			// Verify that every adapter has a valid endpoint associated with it
+			errs = validateAdapterEndpoint(adapter.Endpoint, adapterName, errs)
+
+			// Verify that valid user_sync URLs are specified in the config
+			errs = validateAdapterUserSyncURL(adapter.UserSyncURL, adapterName, errs)
+		}
+	}
+	return errs
 }
 
 type Metrics struct {
@@ -427,17 +504,17 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
 
-	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
-	v.SetDefault("adapters.adtelligent.usersync_url", "")
-	v.SetDefault("adapters.adtelligent.platform_id", "")
-	v.SetDefault("adapters.adtelligent.xapi.username", "")
-	v.SetDefault("adapters.adtelligent.xapi.password", "")
-	v.SetDefault("adapters.adtelligent.xapi.tracker", "")
-
 	for _, bidder := range openrtb_ext.BidderMap {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
 	}
 
+	// Disabling adapters by default that require some specific config params.
+	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
+	// for them and specify all the parameters they need for them to work correctly.
+	v.SetDefault("adapters.audiencenetwork.disabled", true)
+	v.SetDefault("adapters.rubicon.disabled", true)
+
+	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
