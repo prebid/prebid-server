@@ -10,8 +10,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util"
 )
 
 const defaultDomain string = "tag.adkernel.com"
@@ -190,8 +190,8 @@ func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAd
 	if params.Host != "" {
 		reqHost = params.Host
 	}
-	endpointParams := util.EndpointTemplateParams{Host: reqHost, PublisherID: params.PublisherID}
-	return util.ResolveMacros(adapter.EndpointTemplate, endpointParams)
+	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: params.PublisherID}
+	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
 //MakeBids translates adkernel bid response to prebid-server specific format
@@ -253,7 +253,7 @@ func newBadServerResponseError(message string) error {
 
 // NewAdkernelAdnAdapter to be called in prebid-server core to create AdkernelAdn adapter instance
 func NewAdkernelAdnAdapter(endpointTemplate string) adapters.Bidder {
-	template, err := util.BuildTemplate(endpointTemplate)
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
 		glog.Fatal("Unable to parse endpoint url template")
 		return nil

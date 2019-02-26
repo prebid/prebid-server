@@ -6,12 +6,15 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/util"
 	"github.com/spf13/viper"
+
+	validator "github.com/asaskevich/govalidator"
 )
 
 // Configuration
@@ -175,7 +178,7 @@ const (
 	dummyHost        string = "dummyhost.com"
 	dummyPublisherID int    = 12
 	dummyGDPR        string = "0"
-	dummyGDPRConsent string = "some gdpr consent string"
+	dummyGDPRConsent string = "someGDPRConsentString"
 )
 
 type Adapter struct {
@@ -204,31 +207,34 @@ type Adapter struct {
 	Disabled bool `mapstructure:"disabled"`
 }
 
-// validateAdapterEndpoint validates to make sure that an adapter has a valid endpoint
+// validateAdapterEndpoint makes sure that an adapter has a valid endpoint
 // associated with it
 func validateAdapterEndpoint(endpoint string, adapterName string, errs configErrors) configErrors {
 	if endpoint == "" {
-		errs = append(errs, fmt.Errorf("There's no default endpoint available for %s. Calls to this bidder/exchange will fail. "+
+		return append(errs, fmt.Errorf("There's no default endpoint available for %s. Calls to this bidder/exchange will fail. "+
 			"Please set adapters.%s.endpoint in your app config", adapterName, adapterName))
-	} else {
-		// Check if endpoint has macros. If it does then resolve with dummy values
-		// for validation
-		if util.ContainsMacro(endpoint) {
-			endpointTemplate, err := util.BuildTemplate(endpoint)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("Invalid endpoint template: %s. %s", endpoint, err.Error()))
-				return errs
-			} else {
-				if endpoint, err = util.ResolveMacros(*endpointTemplate, util.EndpointTemplateParams{Host: dummyHost, PublisherID: dummyPublisherID}); err != nil {
-					errs = append(errs, fmt.Errorf("Unable to resolve endpoint: %s. %s", endpoint, err.Error()))
-					return errs
-				}
-			}
-		}
+	}
 
-		if _, err := url.ParseRequestURI(endpoint); err != nil {
-			errs = append(errs, fmt.Errorf("The endpoint specified for %s is invalid. %s", adapterName, err.Error()))
-		}
+	// Create endpoint template
+	endpointTemplate, err := template.New("endpointTemplate").Parse(endpoint)
+	if err != nil {
+		return append(errs, fmt.Errorf("Invalid endpoint template: %s for adapter: %s. %v", endpoint, adapterName, err))
+	}
+	// Resolve macros (if any) in the endpoint URL
+	resolvedEndpoint, err := macros.ResolveMacros(*endpointTemplate, macros.EndpointTemplateParams{Host: dummyHost, PublisherID: dummyPublisherID})
+	if err != nil {
+		return append(errs, fmt.Errorf("Unable to resolve endpoint: %s for adapter: %s. %v", endpoint, adapterName, err))
+	}
+	// Validate the resolved endpoint
+	//
+	// Validating using both IsURL and IsRequestURL because IsURL allows relative paths
+	// whereas IsRequestURL requires absolute path but fails to check other valid URL
+	// format constraints.
+	//
+	// For example: IsURL will allow "abcd.com" but IsRequestURL won't
+	// IsRequestURL will allow "http://http://abcd.com" but IsURL won't
+	if !validator.IsURL(resolvedEndpoint) || !validator.IsRequestURL(resolvedEndpoint) {
+		errs = append(errs, fmt.Errorf("The endpoint: %s for %s is not a valid URL", resolvedEndpoint, adapterName))
 	}
 	return errs
 }
@@ -236,23 +242,26 @@ func validateAdapterEndpoint(endpoint string, adapterName string, errs configErr
 // validateAdapterUserSyncURL validates an adapter's user sync URL if it is set
 func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs configErrors) configErrors {
 	if userSyncURL != "" {
-		// Check if usersync URL has macros. If it does then resolve with dummy values
-		// for validation
-		if util.ContainsMacro(userSyncURL) {
-			userSyncTemplate, err := util.BuildTemplate(userSyncURL)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("Invalid user sync URL template: %s. %s", userSyncURL, err.Error()))
-				return errs
-			} else {
-				if userSyncURL, err = util.ResolveMacros(*userSyncTemplate, util.UserSyncTemplateParams{GDPR: dummyGDPR, GDPRConsent: dummyGDPRConsent}); err != nil {
-					errs = append(errs, fmt.Errorf("Unable to resolve user sync URL: %s. %s", userSyncURL, err.Error()))
-					return errs
-				}
-			}
+		// Create user_sync URL template
+		userSyncTemplate, err := template.New("userSyncTemplate").Parse(userSyncURL)
+		if err != nil {
+			return append(errs, fmt.Errorf("Invalid user sync URL template: %s for adapter: %s. %v", userSyncURL, adapterName, err))
 		}
-
-		if _, err := url.ParseRequestURI(userSyncURL); err != nil {
-			errs = append(errs, fmt.Errorf("The user_sync URL specified for %s is invalid. %s", adapterName, err.Error()))
+		// Resolve macros (if any) in the user_sync URL
+		resolvedUserSyncURL, err := macros.ResolveMacros(*userSyncTemplate, macros.UserSyncTemplateParams{GDPR: dummyGDPR, GDPRConsent: dummyGDPRConsent})
+		if err != nil {
+			return append(errs, fmt.Errorf("Unable to resolve user sync URL: %s for adapter: %s. %v", userSyncURL, adapterName, err))
+		}
+		// Validate the resolved user sync URL
+		//
+		// Validating using both IsURL and IsRequestURL because IsURL allows relative paths
+		// whereas IsRequestURL requires absolute path but fails to check other valid URL
+		// format constraints.
+		//
+		// For example: IsURL will allow "abcd.com" but IsRequestURL won't
+		// IsRequestURL will allow "http://http://abcd.com" but IsURL won't
+		if !validator.IsURL(resolvedUserSyncURL) || !validator.IsRequestURL(resolvedUserSyncURL) {
+			errs = append(errs, fmt.Errorf("The user_sync URL: %s for %s is invalid", resolvedUserSyncURL, adapterName))
 		}
 	}
 	return errs

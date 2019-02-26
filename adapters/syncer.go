@@ -3,9 +3,9 @@ package adapters
 import (
 	"text/template"
 
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
-	"github.com/prebid/prebid-server/util"
 )
 
 func GDPRAwareSyncerIDs(syncers map[openrtb_ext.BidderName]usersync.Usersyncer) map[openrtb_ext.BidderName]uint16 {
@@ -42,7 +42,7 @@ const (
 )
 
 func (s *Syncer) GetUsersyncInfo(gdpr string, consent string) (*usersync.UsersyncInfo, error) {
-	userSyncURL, err := util.ResolveMacros(*s.urlTemplate, util.UserSyncTemplateParams{
+	userSyncURL, err := macros.ResolveMacros(*s.urlTemplate, macros.UserSyncTemplateParams{
 		GDPR:        gdpr,
 		GDPRConsent: consent,
 	})
