@@ -374,7 +374,7 @@ func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 		return nil, errors
 	}
 
-	reqJSON, err := json.Marshal(request)
+	reqBytes, err := json.Marshal(request)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -383,7 +383,7 @@ func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 	requestData := adapters.RequestData{
 		Method:  "GET",
 		Uri:     adformRequest.buildAdformUrl(a),
-		Body:    reqJSON,
+		Body:    reqBytes,
 		Headers: adformRequest.buildAdformHeaders(a),
 	}
 
