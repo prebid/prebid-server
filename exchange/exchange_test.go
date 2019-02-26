@@ -437,7 +437,7 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 	data1 := []byte(`{"appnexus":{"brand_id":1,"auction_id":4797544351646081865,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}`)
-	data2 := []byte(`{"prebid": {"duration": 50, "targeting": {"hb_bidder": "appnexus","hb_pb": "20.00","hb_pb_cat_dur": "Sports","hb_size": "1x1"},"type": "video"},"bidder": {"appnexus":{"brand_id":1,"auction_id":4797544351646081865,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}} }}`)
+	data2 := []byte(`{"prebid": {"duration": 50, "targeting": {"hb_bidder": "appnexus","hb_pb": "20.00","hb_pb_cat_dur": "Sports","hb_size": "1x1"},"type": "video"},"bidder": {"appnexus":{"brand_id":1,"auction_id":4797544351646081865,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":50,"mimes":["video\/mp4"]}}} }}`)
 
 	cats1 := append(make([]string, 0, 1), "IAB1-3")
 	cats2 := append(make([]string, 0, 1), "IAB1-4")

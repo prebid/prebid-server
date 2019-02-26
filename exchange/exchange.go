@@ -342,7 +342,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 			bid := seatBid.bids[bidInd].bid
 			var duration int
 			var category string
-			var tempRespBidExt ResponseBidExt
+			var tempRespBidExt openrtb_ext.ExtBid
 			if len(bid.Ext) > 0 {
 				if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
 					return res, err
@@ -356,44 +356,34 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 					adapterExt = bid.Ext
 				}
 
-				//if the bid already consists bid.ext.prebid.category then it implies that adapter has returned the final Ad sever category
-				//if not then look at the bid.cat[0] and translate it to the mapped Ad server category
-				if len(tempRespBidExt.Prebid.Targeting.PrimaryCategory) != 0 {
-					category = tempRespBidExt.Prebid.Targeting.PrimaryCategory
+				//unmarshal bid extension to get video duration
+				var objmap map[string]*json.RawMessage
+				if err := json.Unmarshal(adapterExt, &objmap); err != nil {
+					return res, err
 				}
-				if tempRespBidExt.Prebid.Duration != 0 {
-					duration = tempRespBidExt.Prebid.Duration
-				} else {
-					//unmarshal bid extension to get video duration
-					var objmap map[string]*json.RawMessage
-					if err := json.Unmarshal(adapterExt, &objmap); err != nil {
-						return res, err
-					}
-					var bidderExt BidderExt
-					extData := objmap[bidderName.String()]
-					if err := json.Unmarshal(*extData, &bidderExt); err != nil {
-						return res, err
-					}
-					duration = bidderExt.CreativeInfo.Video.Duration
+				var bidderExt openrtb_ext.BidderExt
+				extData := objmap[bidderName.String()]
+				if err := json.Unmarshal(*extData, &bidderExt); err != nil {
+					return res, err
 				}
+				duration = bidderExt.CreativeInfo.Video.Duration
 
 			}
-			if category == "" {
-				bidIabCat := bid.Cat
-				if len(bidIabCat) != 1 {
+
+			bidIabCat := bid.Cat
+			if len(bidIabCat) != 1 {
+				//TODO: add metrics
+				//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
+				bidsToRemove = append(bidsToRemove, bidInd)
+				continue
+			} else {
+				//if unique IAB category is present then translate it to the adserver category based on mapping file
+				category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
+				if err != nil || category == "" {
 					//TODO: add metrics
-					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
+					//if mapping required but no mapping file is found then discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
-				} else {
-					//if unique IAB category is present then translate it to the adserver category based on mapping file
-					category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
-					if err != nil || category == "" {
-						//TODO: add metrics
-						//if mapping required but no mapping file is found then discard the bid
-						bidsToRemove = append(bidsToRemove, bidInd)
-						continue
-					}
 				}
 			}
 			categoryDuration := fmt.Sprintf("%s_%ds", category, duration)
@@ -428,41 +418,6 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 	}
 
 	return res, nil
-}
-
-type ResponseBidExt struct {
-	Prebid ResponsePrebidExt `json:"prebid"`
-	Bidder json.RawMessage   `json:"bidder"`
-}
-
-type ResponsePrebidExt struct {
-	Targeting Targeting `json:"targeting"`
-	Duration  int       `json:"duration"`
-	//Type      string    `json:"type"`
-}
-
-type Targeting struct {
-	//HbBidder   string `json:"hb_bidder"`
-	//HbPb       string `json:"hb_pb"`
-	//HbSize     string `json:"hb_size"`
-	PrimaryCategory string `json:"hb_pb_cat_dur"`
-
-	//HbDeal string `json:"hb_deal"`
-	//HbCacheId string `json:"hb_cache_id"`
-	//HbUUID string `json:"hb_uuid"`
-	//MobileApp string `json:"mobile-app"`
-}
-
-type BidderExt struct {
-	CreativeInfo CreativeInfo `json:"creative_info"`
-}
-
-type CreativeInfo struct {
-	Video Video `json:"video"`
-}
-
-type Video struct {
-	Duration int `json:"duration"`
 }
 
 func getPrimaryAdServer(adServerId int) (string, error) {
