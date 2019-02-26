@@ -101,11 +101,11 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 	if len(thisURI) == 0 {
 		thisURI = "https://rtb.gamoshi.io"
 	}
-	thisURI = thisURI + "/r/" + gamoshiExt.SupplyPartnerId + "/bidr"
+	thisURI = thisURI + "/r/" + gamoshiExt.SupplyPartnerId + "/bidr?reqformat=RTB_JSON"
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("x-openrtb-version", "2.4")
 
 	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
