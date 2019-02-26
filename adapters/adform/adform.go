@@ -12,12 +12,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -374,10 +374,16 @@ func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 		return nil, errors
 	}
 
+	reqJSON, err := json.Marshal(request)
+	if err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
+
 	requestData := adapters.RequestData{
 		Method:  "GET",
 		Uri:     adformRequest.buildAdformUrl(a),
-		Body:    nil,
+		Body:    reqJSON,
 		Headers: adformRequest.buildAdformHeaders(a),
 	}
 
