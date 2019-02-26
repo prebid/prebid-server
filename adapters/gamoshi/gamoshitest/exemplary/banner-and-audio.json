@@ -40,7 +40,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.gamoshi.io/r/1707/bidr",
+        "uri": "https://rtb.gamoshi.io/r/1707/bidr?reqformat=RTB_JSON",
         "body": {
           "id": "test-request-id",
           "imp": [
