@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/mxmCherry/openrtb"
@@ -30,7 +31,7 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func (targData *targetData) setTargeting(auc *auction, isApp bool) {
+func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string) {
 	for impId, topBidsPerImp := range auc.winningBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for bidderName, topBidPerBidder := range topBidsPerImp {
@@ -56,6 +57,10 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool) {
 
 			if isApp {
 				targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner)
+			}
+			if len(categoryMapping) > 0 {
+				finalCategory := fmt.Sprintf("%s_%s", targets[string(openrtb_ext.HbpbConstantKey)], categoryMapping[topBidPerBidder.bid.ID])
+				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, finalCategory, bidderName, isOverallWinner)
 			}
 
 			topBidPerBidder.bidTargets = targets
