@@ -466,7 +466,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/bid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.yieldmo.endpoint", "http://ads.yieldmo.com/exchange/prebid-server")
-	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io/r/{{.supplyPartnerId}}/bidr?reqformat=RTB_JSON")
+	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
