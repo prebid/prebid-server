@@ -31,18 +31,6 @@ type ExtBidPrebidVideo struct {
 	PrimaryCategory string `json:"primary_category"`
 }
 
-type BidderExt struct {
-	CreativeInfo CreativeInfo `json:"creative_info"`
-}
-
-type CreativeInfo struct {
-	Video Video `json:"video"`
-}
-
-type Video struct {
-	Duration int `json:"duration"`
-}
-
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type
 type BidType string
 

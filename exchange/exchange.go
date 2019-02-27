@@ -341,55 +341,38 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 	for bidderName, seatBid := range *seatBids {
 		bidsToRemove := make([]int, 0)
 		for bidInd := range seatBid.bids {
-			bid := seatBid.bids[bidInd].bid
+			bid := seatBid.bids[bidInd]
 			var duration int
 			var category string
-			var tempRespBidExt openrtb_ext.ExtBid
-			if len(bid.Ext) > 0 {
-				if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
-					return res, err
-				}
 
-				//handler for different extension formats
-				var adapterExt json.RawMessage
-				if tempRespBidExt.Bidder != nil {
-					adapterExt = tempRespBidExt.Bidder
-				} else {
-					adapterExt = bid.Ext
-				}
-
-				//unmarshal bid extension to get video duration
-				var objmap map[string]*json.RawMessage
-				if err := json.Unmarshal(adapterExt, &objmap); err != nil {
-					return res, err
-				}
-				var bidderExt openrtb_ext.BidderExt
-				extData := objmap[bidderName.String()]
-				if err := json.Unmarshal(*extData, &bidderExt); err != nil {
-					return res, err
-				}
-				duration = bidderExt.CreativeInfo.Video.Duration
-
+			if bid.bidVideo != nil {
+				duration = bid.bidVideo.Duration
+				category = bid.bidVideo.PrimaryCategory
 			}
 
-			bidIabCat := bid.Cat
-			if len(bidIabCat) != 1 {
-				//TODO: add metrics
-				//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
-				bidsToRemove = append(bidsToRemove, bidInd)
-				continue
-			} else {
-				//if unique IAB category is present then translate it to the adserver category based on mapping file
-				category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
-				if err != nil || category == "" {
+			if category == "" {
+				bidIabCat := bid.bid.Cat
+				if len(bidIabCat) != 1 {
 					//TODO: add metrics
-					//if mapping required but no mapping file is found then discard the bid
+					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
+				} else {
+					//if unique IAB category is present then translate it to the adserver category based on mapping file
+					category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
+					if err != nil || category == "" {
+						//TODO: add metrics
+						//if mapping required but no mapping file is found then discard the bid
+						bidsToRemove = append(bidsToRemove, bidInd)
+						continue
+					}
 				}
 			}
+
+			// TODO: consider should we remove bids with zero duration here?
+
 			categoryDuration := fmt.Sprintf("%s_%ds", category, duration)
-			res[bid.ID] = categoryDuration
+			res[bid.bid.ID] = categoryDuration
 		}
 
 		if len(bidsToRemove) > 0 {

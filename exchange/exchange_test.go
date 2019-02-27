@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
@@ -466,10 +467,10 @@ func TestCategoryMapping(t *testing.T) {
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, ADomain: make([]string, 0, 0), Cat: cats3, W: 1, H: 1, Ext: data1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, ADomain: make([]string, 0, 0), Cat: cats4, W: 1, H: 1, Ext: data1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil}
-	bid1_4 := pbsOrtbBid{&bid4, "video", nil}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
 
 	innerBids := make([]*pbsOrtbBid, 0, 4)
 	innerBids = append(innerBids, &bid1_1)
@@ -491,8 +492,9 @@ func TestCategoryMapping(t *testing.T) {
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, "Electronics_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
 	assert.Equal(t, "Sports_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
-	assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
-	assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
+	assert.Equal(t, "AdapterOverride_30s", bidCategory["bid_id3"], "Category mapping override from adapter didn't take")
+	assert.Equal(t, 3, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
+	assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
 }
 
 type exchangeSpec struct {
