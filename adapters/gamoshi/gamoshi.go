@@ -143,7 +143,7 @@ func (a *GamoshiAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bad server response: %d. ", err),
+			Message: fmt.Sprintf("bad server response: %v. ", err),
 		}}
 	}
 
