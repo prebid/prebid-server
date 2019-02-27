@@ -16,12 +16,19 @@ type ExtBidPrebid struct {
 	Cache     *ExtBidPrebidCache `json:"cache,omitempty"`
 	Targeting map[string]string  `json:"targeting,omitempty"`
 	Type      BidType            `json:"type"`
+	Video     *ExtBidPrebidVideo `json:"video,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
 type ExtBidPrebidCache struct {
 	Key string `json:"key"`
 	Url string `json:"url"`
+}
+
+// ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
+type ExtBidPrebidVideo struct {
+	Duration        int    `json:"duration"`
+	PrimaryCategory string `json:"primary_category"`
 }
 
 type BidderExt struct {

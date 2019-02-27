@@ -68,17 +68,26 @@ type appnexusImpExtAppnexus struct {
 	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
 }
 
-type appnexusBidExt struct {
-	Appnexus appnexusBidExtAppnexus `json:"appnexus"`
+type appnexusImpExt struct {
+	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
+}
+
+type appnexusBidExtVideo struct {
+	Duration int `json:"duration"`
+}
+
+type appnexusBidExtCreative struct {
+	Video appnexusBidExtVideo `json:"video"`
 }
 
 type appnexusBidExtAppnexus struct {
-	BidType int `json:"bid_ad_type"`
-	BrandId int `json:"brand_id"`
+	BidType      int                    `json:"bid_ad_type"`
+	BrandId      int                    `json:"brand_id"`
+	CreativeInfo appnexusBidExtCreative `json:"creative_info"`
 }
 
-type appnexusImpExt struct {
-	Appnexus appnexusImpExtAppnexus `json:"appnexus"`
+type appnexusBidExt struct {
+	Appnexus appnexusBidExtAppnexus `json:"appnexus"`
 }
 
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -443,20 +452,25 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			var impExt appnexusBidExt
-			if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
+			var bidExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
 			} else {
-				if bidType, err := getMediaTypeForBid(&impExt); err == nil {
+				if bidType, err := getMediaTypeForBid(&bidExt); err == nil {
 					if len(bid.Cat) == 0 {
-						if iabCategory, err := a.getIabCategoryForBid(&impExt); err == nil {
+						if iabCategory, err := a.getIabCategoryForBid(&bidExt); err == nil {
 							bid.Cat = []string{iabCategory}
 						}
 					}
 
+					impVideo := &openrtb_ext.ExtBidPrebidVideo{
+						Duration: bidExt.Appnexus.CreativeInfo.Video.Duration,
+					}
+
 					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-						Bid:     &bid,
-						BidType: bidType,
+						Bid:      &bid,
+						BidType:  bidType,
+						BidVideo: impVideo,
 					})
 				} else {
 					errs = append(errs, err)

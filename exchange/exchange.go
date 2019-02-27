@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_requests"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -512,6 +513,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 			Prebid: &openrtb_ext.ExtBidPrebid{
 				Targeting: thisBid.bidTargets,
 				Type:      thisBid.bidType,
+				Video:     thisBid.bidVideo,
 			},
 		}
 
