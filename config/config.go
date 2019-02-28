@@ -20,6 +20,7 @@ type Configuration struct {
 	Port        int        `mapstructure:"port"`
 	Client      HTTPClient `mapstructure:"http_client"`
 	AdminPort   int        `mapstructure:"admin_port"`
+	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse  string          `mapstructure:"status_response"`
@@ -366,6 +367,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
 	v.SetDefault("admin_port", 6060)
+	v.SetDefault("enable_gzip", false)
 	v.SetDefault("status_response", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
