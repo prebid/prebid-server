@@ -44,16 +44,6 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).Auction), nil
 }
 
-func NewSimplifiedEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
-
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
-		return nil, errors.New("NewSimplifiedEndpoint requires non-nil arguments.")
-	}
-	defRequest := defReqJSON != nil && len(defReqJSON) > 0
-
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).SimplifiedAuctionEndpoint), nil
-}
-
 type endpointDeps struct {
 	ex               exchange.Exchange
 	paramsValidator  openrtb_ext.BidderParamValidator
@@ -168,10 +158,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
-}
-
-func (deps *endpointDeps) SimplifiedAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	w.Write([]byte("Stub endpoint"))
 }
 
 // parseRequest turns the HTTP request into an OpenRTB request. This is guaranteed to return:

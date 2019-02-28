@@ -233,7 +233,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	simplifiedOpenrtbEndpoint, err := openrtb2.NewSimplifiedEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, catFetcher)
+	simplifiedOpenrtbEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, catFetcher)
 	if err != nil {
 		glog.Fatalf("Failed to create the simplified openrtb endpoint handler. %v", err)
 	}
