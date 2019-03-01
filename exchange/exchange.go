@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"runtime/debug"
 	"time"
@@ -137,7 +138,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
-	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, *categoriesFetcher)
+	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, *categoriesFetcher, targData)
 	if err != nil {
 		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 	}
@@ -314,8 +315,16 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher) (map[string]string, error) {
+func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, error) {
 	res := make(map[string]string)
+
+	type bidDedupe struct {
+		bidderName openrtb_ext.BidderName
+		bidIndex   int
+		bidID      string
+	}
+
+	dedupe := make(map[string]bidDedupe)
 
 	//If includebrandcategory is present in ext then CE feature is on.
 	if requestExt.Prebid.Targeting == nil {
@@ -344,6 +353,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 			bid := seatBid.bids[bidInd]
 			var duration int
 			var category string
+			var pb string
 
 			if bid.bidVideo != nil {
 				duration = bid.bidVideo.Duration
@@ -371,8 +381,34 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			categoryDuration := fmt.Sprintf("%s_%ds", category, duration)
+			pb, err = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
+
+			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, duration)
+
+			if dupe, ok := dedupe[categoryDuration]; ok {
+				// 50% chance for either bid with duplicate categoryDuration values to be kept
+				if rand.Intn(100) < 50 {
+					if dupe.bidderName == bidderName {
+						// An older bid from the current bidder
+						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
+					} else {
+						// An older bid from a different seatBid we've already finished with
+						oldSeatBid := (*seatBids)[dupe.bidderName]
+						if len(oldSeatBid.bids) == 1 {
+							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+						} else {
+							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+						}
+					}
+					delete(res, dupe.bidID)
+				} else {
+					// Remove this bid
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				}
+			}
 			res[bid.bid.ID] = categoryDuration
+			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bid.bid.ID}
 		}
 
 		if len(bidsToRemove) > 0 {
