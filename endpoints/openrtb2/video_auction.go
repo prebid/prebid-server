@@ -103,7 +103,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	bidReq.Test = 1
 	ctx, labels, usersyncs := deps.createCtxLabelsUsersyncs(r, start, &bidReq)
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, &bidReq, usersyncs, labels, &deps.categories)
