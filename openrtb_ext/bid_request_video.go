@@ -154,7 +154,7 @@ type IncludeBrandCategory struct {
 	// Type:
 	//   string; optional
 	//  Identifier for the Publisher
-	Publisher int `json:"publisher"`
+	Publisher string `json:"publisher"`
 }
 
 type Cacheconfig struct {

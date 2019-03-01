@@ -1,6 +1,7 @@
 package openrtb2
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,9 +14,11 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/usersync"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
@@ -51,7 +54,7 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 10. Build response in proper format
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
+	start := time.Now()
 	lr := &io.LimitedReader{
 		R: r.Body,
 		N: deps.cfg.MaxRequestSize,
@@ -72,7 +75,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	//merge incoming req with stored video req
-	resolvedRequest, err := jsonpatch.MergePatch(requestJson, storedRequest)
+	resolvedRequest, err := jsonpatch.MergePatch(storedRequest, requestJson)
 
 	//unmarshal and validate combined result
 	videoBidReq, errl := deps.parseVideoRequest(resolvedRequest)
@@ -82,15 +85,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	var bidReq = openrtb.BidRequest{}
 
-	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, &bidReq)
-
 	//create full open rtb req from full video request
 	mergeData(&videoBidReq, &bidReq)
+	fmt.Println(string(bidReq.Ext))
 
 	//create impressions array
 	imps, errl := createImpressions(videoBidReq)
 	bidReq.Imp = imps
+	bidReq.ID = "bid_id" //look at auction
+
+	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
+	deps.setFieldsImplicitly(r, &bidReq) // move after merge
 
 	errL := deps.validateRequest(&bidReq)
 	if len(errL) > 0 {
@@ -98,16 +103,24 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	labels := pbsmetrics.Labels{}
+	bidReq.Test = 1
+	ctx, labels, usersyncs := deps.createCtxLabelsUsersyncs(r, start, &bidReq)
 	//execute auction logic
-	response, err := deps.ex.HoldAuction(nil, &bidReq, nil, labels, &deps.categories)
+	response, err := deps.ex.HoldAuction(ctx, &bidReq, usersyncs, labels, &deps.categories)
 	if err != nil {
 		//handle error
 	}
 
 	//build simplified response
-	var bidResp = openrtb_ext.BidResponseVideo{}
-	buildVideoResponse(response, &bidResp)
+	//var bidResp = openrtb_ext.BidResponseVideo{}
+	//buildVideoResponse(response, &bidResp)
+	resp, err := json.Marshal(response)
+	if err != nil {
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+
+	w.Write(resp)
 
 }
 
@@ -124,20 +137,23 @@ func createImpressions(videoReq openrtb_ext.BidRequestVideo) (imps []openrtb.Imp
 		storedImpressionId := string(pod.ConfigId)
 		storedImp := loadStoredImp(storedImpressionId)
 
-		impTemplate := createImpressionTemplate(storedImp, videoData)
 		numImps := pod.AdPodDurationSec / minDuration
 
 		impDivNumber := numImps / len(videoDur)
 
 		impsArray := make([]openrtb.Imp, numImps)
 		for impInd := range impsArray {
-			impsArray[impInd] = impTemplate
+			newImp := createImpressionTemplate(storedImp, videoData)
+			impsArray[impInd] = newImp
 			if reqExactDur {
 				//floor := int(math.Floor(ind/impDivNumber))
-				floor := impInd / impDivNumber
-				impsArray[impInd].Video.MaxDuration = int64(videoDur[floor])
-				impsArray[impInd].Video.MinDuration = int64(videoDur[floor])
-				fmt.Println(podIndex, "  ", impInd, "duration ", videoDur[floor])
+				durationIndex := impInd / impDivNumber
+				if durationIndex > len(videoDur)-1 {
+					durationIndex = len(videoDur) - 1
+				}
+				impsArray[impInd].Video.MaxDuration = int64(videoDur[durationIndex])
+				impsArray[impInd].Video.MinDuration = int64(videoDur[durationIndex])
+				fmt.Println(podIndex, "  ", impInd, "duration ", videoDur[durationIndex])
 			} else {
 				impsArray[impInd].Video.MaxDuration = int64(maxDuration)
 			}
@@ -151,35 +167,7 @@ func createImpressions(videoReq openrtb_ext.BidRequestVideo) (imps []openrtb.Imp
 }
 
 func createImpressionTemplate(imp openrtb.Imp, video openrtb_ext.SimplifiedVideo) openrtb.Imp {
-	imp.Video = &openrtb.Video{
-		nil,
-		0,
-		0,
-		nil,
-		0,
-		0,
-		0,
-		nil,
-		0,
-		0,
-		nil,
-		0,
-		0,
-		0,
-		nil,
-		0,
-		0,
-		0,
-		0,
-		nil,
-		0,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-	}
+	imp.Video = &openrtb.Video{}
 	imp.Video.W = video.W
 	imp.Video.H = video.H
 	imp.Video.Protocols = video.Protocols
@@ -231,8 +219,45 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 
 }
 
-func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) {
+func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
 
+	bidRequest.Site = &videoRequest.Site
+	if bidRequest.Site == nil {
+		bidRequest.App = &videoRequest.App
+	}
+	bidRequest.Device = &videoRequest.Device
+	bidExt, err := createBidExtension(videoRequest)
+	if err != nil {
+		return err
+	}
+	if len(bidExt) > 0 {
+		bidRequest.Ext = bidExt
+	}
+	return nil
+}
+
+func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, error) {
+
+	inclBrandCat := openrtb_ext.ExtIncludeBrandCategory{
+		videoRequest.IncludeBrandCategory.PrimaryAdserver,
+		videoRequest.IncludeBrandCategory.Publisher,
+	}
+	targeting := openrtb_ext.ExtRequestTargeting{
+		openrtb_ext.PriceGranularityFromString("med"),
+		true,
+		false,
+		inclBrandCat}
+
+	prebid := openrtb_ext.ExtRequestPrebid{
+		Targeting: &targeting,
+	}
+	extReq := openrtb_ext.ExtRequest{prebid}
+
+	reqJSON, err := json.Marshal(extReq)
+	if err != nil {
+		return nil, err
+	}
+	return reqJSON, nil
 }
 
 func (deps *endpointDeps) parseVideoRequest(request []byte) (req openrtb_ext.BidRequestVideo, errs []error) {
@@ -296,4 +321,36 @@ func (deps *endpointDeps) validateVideoRequest(req openrtb_ext.BidRequestVideo) 
 	}
 
 	return errL
+}
+
+func (deps *endpointDeps) createCtxLabelsUsersyncs(r *http.Request, start time.Time, req *openrtb.BidRequest) (ctx context.Context, labels pbsmetrics.Labels, usersyncs *usersync.PBSCookie) {
+	labels = pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeORTB2Web,
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+
+	ctx = context.Background()
+	cancel := func() {}
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
+	if timeout > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+	}
+	defer cancel()
+
+	usersyncs = usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
+	if req.App != nil {
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if usersyncs.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
+		}
+	}
+	return ctx, labels, usersyncs
 }
