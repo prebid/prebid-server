@@ -128,7 +128,7 @@ func RequestStatuses() []RequestStatus {
 	}
 }
 
-// Adapter bid repsonse status.
+// Adapter bid response status.
 const (
 	AdapterBidPresent AdapterBid = "bid"
 	AdapterBidNone    AdapterBid = "nobid"
@@ -195,6 +195,7 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels)        // May ignore all labels
+	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 }

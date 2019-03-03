@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
-	"golang.org/x/text/currency"
-
 	"github.com/mxmCherry/openrtb"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -41,6 +38,7 @@ type exchange struct {
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
 	gDPR                gdpr.Permissions
+	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
 }
@@ -57,7 +55,7 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg, infos)
@@ -65,6 +63,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
 	e.me = metricsEngine
 	e.gDPR = gDPR
+	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
 	return e
@@ -131,7 +130,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids)
 	defer cancel()
 
-	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels)
+	// Get currency rates conversions for the auction
+	conversions := e.currencyConverter.Rates()
+
+	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if targData != nil {
 		auc.setRoundedPrices(targData.priceGranularity)
@@ -157,7 +159,7 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
+func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(cleanRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(cleanRequests))
@@ -166,7 +168,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
 		coreBidder := resolveBidder(string(bidderName), aliases)
-		bidderRunner := recoverSafely(func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+		bidderRunner := recoverSafely(func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 			// Passing in aName so a doesn't change out from under the go routine
 			if bidlabels.Adapter == "" {
 				glog.Errorf("Exchange: bidlables for %s (%s) missing adapter string", aName, coreBidder)
@@ -184,16 +186,11 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if givenAdjustment, ok := bidAdjustments[string(aName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
-			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor)
+			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
 			brw.adapterBids = bids
-			// validate bids ASAP, so we don't waste time on invalid bids.
-			err2 := brw.validateBids(request)
-			if len(err2) > 0 {
-				err = append(err, err2...)
-			}
 			// Structure to record extra tracking data generated during bidding
 			ae := new(seatResponseExtra)
 			ae.ResponseTimeMillis = int(elapsed / time.Millisecond)
@@ -214,7 +211,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			}
 			chBids <- brw
 		}, chBids)
-		go bidderRunner(bidderName, coreBidder, req, blabels[coreBidder])
+		go bidderRunner(bidderName, coreBidder, req, blabels[coreBidder], conversions)
 	}
 	// Wait for the bidders to do their thing
 	for i := 0; i < len(cleanRequests); i++ {
@@ -226,8 +223,8 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 	return adapterBids, adapterExtra
 }
 
-func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels), chBids chan *bidResponseWrapper) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels) {
-	return func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels) {
+func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions), chBids chan *bidResponseWrapper) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions) {
+	return func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		defer func() {
 			if r := recover(); r != nil {
 				glog.Errorf("OpenRTB auction recovered panic from Bidder %s: %v. Stack trace is: %v", coreBidder, r, string(debug.Stack()))
@@ -237,7 +234,7 @@ func recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *o
 				chBids <- brw
 			}
 		}()
-		inner(aName, coreBidder, request, bidlabels)
+		inner(aName, coreBidder, request, bidlabels, conversions)
 	}
 }
 
@@ -311,8 +308,9 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 // Extract all the data from the SeatBids and build the ExtBidResponse
 func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, req *openrtb.BidRequest, resolvedRequest json.RawMessage, errList []error) *openrtb_ext.ExtBidResponse {
 	bidResponseExt := &openrtb_ext.ExtBidResponse{
-		Errors:             make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
-		ResponseTimeMillis: make(map[openrtb_ext.BidderName]int, len(adapterBids)),
+		Errors:               make(map[openrtb_ext.BidderName][]openrtb_ext.ExtBidderError, len(adapterBids)),
+		ResponseTimeMillis:   make(map[openrtb_ext.BidderName]int, len(adapterBids)),
+		RequestTimeoutMillis: req.TMax,
 	}
 	if req.Test == 1 {
 		bidResponseExt.Debug = &openrtb_ext.ExtResponseDebug{
@@ -399,93 +397,4 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
-}
-
-// validateBids will run some validation checks on the returned bids and excise any invalid bids
-func (brw *bidResponseWrapper) validateBids(request *openrtb.BidRequest) (err []error) {
-	// Exit early if there is nothing to do.
-	if brw.adapterBids == nil || len(brw.adapterBids.bids) == 0 {
-		return
-	}
-
-	err = make([]error, 0, len(brw.adapterBids.bids))
-
-	// By design, default currency is USD.
-	if cerr := validateCurrency(request.Cur, brw.adapterBids.currency); cerr != nil {
-		brw.adapterBids.bids = nil
-		err = append(err, cerr)
-		return
-	}
-
-	validBids := make([]*pbsOrtbBid, 0, len(brw.adapterBids.bids))
-	for _, bid := range brw.adapterBids.bids {
-		if ok, berr := validateBid(bid); ok {
-			validBids = append(validBids, bid)
-		} else {
-			err = append(err, berr)
-		}
-	}
-	if len(validBids) != len(brw.adapterBids.bids) {
-		// If all bids are valid, the two slices should be equal. Otherwise replace the list of bids with the valid bids.
-		brw.adapterBids.bids = validBids
-	}
-	return err
-}
-
-// validateCurrency will run currency validation checks and return true if it passes, false otherwise.
-func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) error {
-	// Default currency is `USD` by design.
-	defaultCurrency := "USD"
-	// Make sure bid currency is a valid ISO currency code
-	if bidCurrency == "" {
-		// If bid currency is not set, then consider it's default currency.
-		bidCurrency = defaultCurrency
-	}
-	currencyUnit, cerr := currency.ParseISO(bidCurrency)
-	if cerr != nil {
-		return cerr
-	}
-	// Make sure the bid currency is allowed from bid request via `cur` field.
-	// If `cur` field array from bid request is empty, then consider it accepts the default currency.
-	currencyAllowed := false
-	if len(requestAllowedCurrencies) == 0 {
-		requestAllowedCurrencies = []string{defaultCurrency}
-	}
-	for _, allowedCurrency := range requestAllowedCurrencies {
-		if strings.ToUpper(allowedCurrency) == currencyUnit.String() {
-			currencyAllowed = true
-			break
-		}
-	}
-	if currencyAllowed == false {
-		return fmt.Errorf(
-			"Bid currency is not allowed. Was '%s', wants: ['%s']",
-			currencyUnit.String(),
-			strings.Join(requestAllowedCurrencies, "', '"),
-		)
-	}
-
-	return nil
-}
-
-// validateBid will run the supplied bid through validation checks and return true if it passes, false otherwise.
-func validateBid(bid *pbsOrtbBid) (bool, error) {
-	if bid.bid == nil {
-		return false, fmt.Errorf("Empty bid object submitted.")
-	}
-	// These are the three required fields for bids
-	if bid.bid.ID == "" {
-		return false, fmt.Errorf("Bid missing required field 'id'")
-	}
-	if bid.bid.ImpID == "" {
-		return false, fmt.Errorf("Bid \"%s\" missing required field 'impid'", bid.bid.ID)
-	}
-	if bid.bid.Price <= 0.0 {
-		return false, fmt.Errorf("Bid \"%s\" does not contain a positive 'price'", bid.bid.ID)
-	}
-	if bid.bid.CrID == "" {
-		return false, fmt.Errorf("Bid \"%s\" missing creative ID", bid.bid.ID)
-	}
-
-	return true, nil
 }

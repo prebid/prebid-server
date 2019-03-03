@@ -6,8 +6,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
+	"github.com/buger/jsonparser"
+	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/adapters/appnexus"
 	"github.com/prebid/prebid-server/adapters/audienceNetwork"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
@@ -18,47 +21,48 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 	"github.com/prebid/prebid-server/usersync"
-
-	"github.com/buger/jsonparser"
-	"github.com/julienschmidt/httprouter"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil, true, syncersForTest())
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork")
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestGDPRPreventsCookie(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "pubmatic"]}`, nil, false, syncersForTest())
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-
-	assertSyncsExist(t, rr.Body.Bytes())
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestGDPRPreventsBidders(t *testing.T) {
 	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(&config.Configuration{ExternalURL: "someurl.com"}),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
 	})
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsExist(t, rr.Body.Bytes(), "lifestreet")
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.ElementsMatch(t, []string{"lifestreet"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestGDPRIgnoredIfZero(t *testing.T) {
 	rr := doPost(`{"gdpr":0,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-
-	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "pubmatic")
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.ElementsMatch(t, []string{"appnexus", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestGDPRConsentRequired(t *testing.T) {
 	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
-	assertIntsMatch(t, http.StatusBadRequest, rr.Code)
-	assertStringsMatch(t, "gdpr_consent is required if gdpr=1\n", rr.Body.String())
+	assert.Equal(t, rr.Header().Get("Content-Type"), "text/plain; charset=utf-8")
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, "gdpr_consent is required if gdpr=1\n", rr.Body.String())
 }
 
 func TestCookieSyncHasCookies(t *testing.T) {
@@ -66,32 +70,51 @@ func TestCookieSyncHasCookies(t *testing.T) {
 		"adnxs":           "1234",
 		"audienceNetwork": "2345",
 	}, true, syncersForTest())
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsExist(t, rr.Body.Bytes())
-	assertStatus(t, rr.Body.Bytes(), "ok")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "ok", parseStatus(t, rr.Body.Bytes()))
 }
 
 // Make sure that an empty bidders array returns no syncs
 func TestCookieSyncEmptyBidders(t *testing.T) {
 	rr := doPost(`{"bidders": []}`, nil, true, syncersForTest())
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsExist(t, rr.Body.Bytes())
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 // Make sure that all syncs are returned if "bidders" isn't a key
 func TestCookieSyncNoBidders(t *testing.T) {
 	rr := doPost("{}", nil, true, syncersForTest())
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork", "lifestreet", "pubmatic")
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork", "lifestreet", "pubmatic"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true})
-	assertIntsMatch(t, http.StatusOK, rr.Code)
-	assertSyncsExist(t, rr.Body.Bytes(), "appnexus", "audienceNetwork")
-	assertStatus(t, rr.Body.Bytes(), "no_cookie")
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.ElementsMatch(t, []string{"appnexus", "audienceNetwork"}, parseSyncs(t, rr.Body.Bytes()))
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
+}
+
+func TestCookieSyncWithLimit(t *testing.T) {
+	rr := doPost(`{"limit":2}`, nil, true, syncersForTest())
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), 2, "usersyncs")
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
+}
+
+func TestCookieSyncWithLargeLimit(t *testing.T) {
+	syncers := syncersForTest()
+	rr := doPost(`{"limit":1000}`, nil, true, syncers)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), len(syncers), "usersyncs")
+	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
@@ -122,32 +145,20 @@ func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR) httprouter.Ha
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAppnexus: appnexus.NewAppnexusSyncer(&config.Configuration{ExternalURL: "someurl.com"}),
-		openrtb_ext.BidderFacebook: audienceNetwork.NewFacebookSyncer(&config.Configuration{Adapters: map[string]config.Adapter{
-			strings.ToLower(string(openrtb_ext.BidderFacebook)): {
-				UserSyncURL: "https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{gdpr}}%26gdpr_consent%3D{{gdpr_consent}}%26uid%3D%24UID",
-			},
-		}}),
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(&config.Configuration{ExternalURL: "anotherurl.com"}),
-		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(&config.Configuration{ExternalURL: "thaturl.com"}),
+		openrtb_ext.BidderAppnexus:   appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
+		openrtb_ext.BidderFacebook:   audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com"))),
+		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com"))),
 	}
 }
 
-func assertSyncsExist(t *testing.T, responseBody []byte, expectedBidders ...string) {
-	t.Helper()
-	assertSameElements(t, expectedBidders, parseSyncs(t, responseBody))
-}
-
-func assertStatus(t *testing.T, responseBody []byte, expected string) {
+func parseStatus(t *testing.T, responseBody []byte) string {
 	t.Helper()
 	val, err := jsonparser.GetString(responseBody, "status")
 	if err != nil {
-		t.Errorf("response.status was not a string. Error was %v", err)
-		return
+		t.Fatalf("response.status was not a string. Error was %v", err)
 	}
-	if val != expected {
-		t.Errorf("response.status was %s, but expected %s", val, expected)
-	}
+	return val
 }
 
 func parseSyncs(t *testing.T, response []byte) []string {
@@ -164,26 +175,6 @@ func parseSyncs(t *testing.T, response []byte) []string {
 		}
 	}, "bidder_status")
 	return syncs
-}
-
-func assertSameElements(t *testing.T, expected []string, actual []string) {
-	t.Helper()
-	if len(expected) != len(actual) {
-		t.Errorf("expected %v, but got %v.", expected, actual)
-		return
-	}
-	for _, expectedVal := range expected {
-		seen := false
-		for _, actualVal := range actual {
-			if expectedVal == actualVal {
-				seen = true
-				break
-			}
-		}
-		if !seen {
-			t.Errorf("Expected sync from %s, but it wasn't in the response.", expectedVal)
-		}
-	}
 }
 
 func mockPermissions(allowHost bool, allowedBidders map[openrtb_ext.BidderName]usersync.Usersyncer) gdpr.Permissions {

@@ -49,7 +49,7 @@ func BadInput(msg string) *errortypes.BadInput {
 //
 // Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
-// The currency is the same accross all bids.
+// The currency is the same across all bids.
 type BidderResponse struct {
 	Currency string
 	Bids     []*TypedBid

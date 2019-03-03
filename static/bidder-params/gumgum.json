@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "GumGum Adapter Params",
+  "description": "A schema which validates params accepted by the GumGum adapter",
+  "type": "object",
+  "properties": {
+    "zone": {
+      "type": "string",
+      "description": "A tracking id used to identify GumGum zone.",
+      "minLength": 8
+    }
+  },
+  "required": ["zone"]
+}

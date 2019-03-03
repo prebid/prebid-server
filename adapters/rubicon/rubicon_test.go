@@ -1031,11 +1031,18 @@ func TestOpenRTBRequest(t *testing.T) {
 		},
 		User: &openrtb.User{
 			Ext: json.RawMessage(`{"digitrust": {
-				"id": "some-digitrust-id",
-				"keyv": 1,
-				"pref": 0
-
-			}}`),
+                    "id": "some-digitrust-id",
+                    "keyv": 1,
+                    "pref": 0
+                },
+                "tpid": [{
+                    "source": "tdid",
+                    "uid": "3d50a262-bd8e-4be3-90b8-246291523907"
+                },{
+                    "source": "pubcid",
+                    "uid": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+                }]
+            }`),
 		},
 	}
 
@@ -1118,6 +1125,9 @@ func TestOpenRTBRequest(t *testing.T) {
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
 			}
+			if userExt.TpID == nil || len(userExt.TpID) != 2 {
+				t.Fatal("TpID values are not as expected!")
+			}
 		} else {
 			t.Fatalf("User.Ext object should not be nil since it contains a valid digitrust object.")
 		}
@@ -1196,6 +1206,29 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	if bidResponse.Bids[0].BidType != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected a banner bid. Got: %s", bidResponse.Bids[0].BidType)
 	}
+	theBid := bidResponse.Bids[0].Bid
+	if theBid.ID != "1234567890" {
+		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
+	}
+}
+
+func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{Body: requestJson}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","bidid":"1234567890","seatbid":[{"bid":[{"id":"0","price": 1}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, _ := bidder.MakeBids(request, reqData, httpResp)
+
 	theBid := bidResponse.Bids[0].Bid
 	if theBid.ID != "1234567890" {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)

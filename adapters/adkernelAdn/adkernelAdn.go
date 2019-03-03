@@ -114,7 +114,7 @@ func compatImpression(imp *openrtb.Imp) error {
 }
 
 func compatBanerImpression(banner *openrtb.Banner) error {
-	//As banner.w/h are required fields for adkernel adn platform - take the first format entry
+	//As banner.w/h are required fields for adkernelAdn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry or explicit w/h"))

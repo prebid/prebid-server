@@ -12,19 +12,20 @@ import (
 
 // Defines the actual Prometheus metrics we will be using. Satisfies interface MetricsEngine
 type Metrics struct {
-	Registry      *prometheus.Registry
-	connCounter   prometheus.Gauge
-	connError     *prometheus.CounterVec
-	imps          *prometheus.CounterVec
-	requests      *prometheus.CounterVec
-	reqTimer      *prometheus.HistogramVec
-	adaptRequests *prometheus.CounterVec
-	adaptTimer    *prometheus.HistogramVec
-	adaptBids     *prometheus.CounterVec
-	adaptPrices   *prometheus.HistogramVec
-	adaptErrors   *prometheus.CounterVec
-	cookieSync    prometheus.Counter
-	userID        *prometheus.CounterVec
+	Registry        *prometheus.Registry
+	connCounter     prometheus.Gauge
+	connError       *prometheus.CounterVec
+	imps            *prometheus.CounterVec
+	requests        *prometheus.CounterVec
+	reqTimer        *prometheus.HistogramVec
+	adaptRequests   *prometheus.CounterVec
+	adaptTimer      *prometheus.HistogramVec
+	adaptBids       *prometheus.CounterVec
+	adaptPrices     *prometheus.HistogramVec
+	adaptErrors     *prometheus.CounterVec
+	cookieSync      prometheus.Counter
+	adaptCookieSync *prometheus.CounterVec
+	userID          *prometheus.CounterVec
 }
 
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
@@ -74,8 +75,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		adapterLabelNames, timerBuckets,
 	)
 	metrics.Registry.MustRegister(metrics.adaptTimer)
-	metrics.adaptBids = newCounter(cfg, "adapter_bids_recieved_total",
-		"Number of bids recieved from each bidder.",
+	metrics.adaptBids = newCounter(cfg, "adapter_bids_received_total",
+		"Number of bids received from each bidder.",
 		bidLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.adaptBids)
@@ -91,7 +92,12 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.adaptErrors)
 	metrics.cookieSync = newCookieSync(cfg)
 	metrics.Registry.MustRegister(metrics.cookieSync)
-	metrics.userID = newCounter(cfg, "usersync_total",
+	metrics.adaptCookieSync = newCounter(cfg, "cookie_sync_returns",
+		"Number of syncs generated for a bidder, and if they were subsequently blocked.",
+		[]string{"adapter", "gdpr_blocked"},
+	)
+	metrics.Registry.MustRegister(metrics.adaptCookieSync)
+	metrics.userID = newCounter(cfg, "setuid_calls",
 		"Number of user ID syncs performed",
 		[]string{"action", "bidder"},
 	)
@@ -117,7 +123,7 @@ func newCookieSync(cfg config.PrometheusMetrics) prometheus.Counter {
 		Namespace: cfg.Namespace,
 		Subsystem: cfg.Subsystem,
 		Name:      "cookie_sync_requests_total",
-		Help:      "Number of cookie sync requests recieved.",
+		Help:      "Number of cookie sync requests received.",
 	}
 	return prometheus.NewCounter(opts)
 }
@@ -195,6 +201,18 @@ func (me *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length tim
 
 func (me *Metrics) RecordCookieSync(labels pbsmetrics.Labels) {
 	me.cookieSync.Inc()
+}
+
+func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	labels := prometheus.Labels{
+		"adapter": string(adapter),
+	}
+	if gdprBlocked {
+		labels["gdpr_blocked"] = "true"
+	} else {
+		labels["gdpr_blocked"] = "false"
+	}
+	me.adaptCookieSync.With(labels).Inc()
 }
 
 func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
@@ -300,6 +318,11 @@ func initializeTimeSeries(m *Metrics) {
 	labels = addDimension(errorLabels, "adapter_error", adapterErrorsAsString())
 	for _, l := range labels {
 		_ = m.adaptErrors.With(l)
+	}
+	cookieLabels := addDimension([]prometheus.Labels{}, "adapter", adaptersAsString())
+	cookieLabels = addDimension(cookieLabels, "gdpr_blocked", []string{"true", "false"})
+	for _, l := range cookieLabels {
+		_ = m.adaptCookieSync.With(l)
 	}
 }
 
