@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/evanphx/json-patch"
+	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
@@ -18,6 +19,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -37,24 +40,52 @@ func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamVal
 3. Load the stored request JSON for the given storedrequestid, if the id was invalid then error out here.
 4. Use "json-patch" 3rd party library to merge the request body JSON data into the stored request JSON data.
 5. Unmarshal the merged JSON data into a Go structure.
-6. Call setFieldsImplicitly from auction.go to get basic data from the HTTP request into an OpenRTB bid request to start building the OpenRTB bid request.
-7. Add fields from merged JSON data that correspond to an OpenRTB request into the OpenRTB bid request we are building.
+6. Add fields from merged JSON data that correspond to an OpenRTB request into the OpenRTB bid request we are building.
 	a. Unmarshal certain OpenRTB defined structs directly into the OpenRTB bid request.
 	b. In cases where customized logic is needed just copy/fill the fields in directly.
+7. Call setFieldsImplicitly from auction.go to get basic data from the HTTP request into an OpenRTB bid request to start building the OpenRTB bid request.
 8. Loop through ad pods to build array of Imps into OpenRTB request, for each pod:
 	a. Load the stored impression to use as the basis for impressions generated for this pod from the configid field.
 	b. NumImps = adpoddurationsec / MIN_VALUE(allowedDurations)
 	c. Build impression array for this pod:
-		i. Create array of NumImps entries initialized to the base impression loaded from the configid.
+		I.Create array of NumImps entries initialized to the base impression loaded from the configid.
 			1. If requireexactdurations = true, iterate over allowdDurations and for (NumImps / len(allowedDurations)) number of Imps set minduration = maxduration = allowedDurations[i]
 			2. If requireexactdurations = false, set maxduration = MAX_VALUE(allowedDurations)
-		ii. Set Imp.id field to "podX_Y" where X is the pod index and Y is the impression index within this pod.
+		II. Set Imp.id field to "podX_Y" where X is the pod index and Y is the impression index within this pod.
 	d. Append impressions for this pod to the overall list of impressions in the OpenRTB bid request.
 9. Call validateRequest() function from auction.go to validate the generated request.
-10. Build response in proper format
+10. Call HoldAuction() function to run the auction for the OpenRTB bid request that was built in the previous step.
+11. Build proper response format.
 */
 func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	ao := analytics.AuctionObject{
+		Status: http.StatusOK,
+		Errors: make([]error, 0),
+	}
+
 	start := time.Now()
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeORTB2Web,
+		PubID:         "",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	numImps := 0
+	defer func() {
+		deps.metricsEngine.RecordRequest(labels)
+		deps.metricsEngine.RecordImps(labels, numImps)
+		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
+		deps.analytics.LogAuctionObject(&ao)
+	}()
+
+	isSafari := checkSafari(r)
+	if isSafari {
+		labels.Browser = pbsmetrics.BrowserSafari
+	}
+
 	lr := &io.LimitedReader{
 		R: r.Body,
 		N: deps.cfg.MaxRequestSize,
@@ -83,11 +114,10 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var bidReq = openrtb.BidRequest{}
+	var bidReq = &openrtb.BidRequest{}
 
 	//create full open rtb req from full video request
-	mergeData(&videoBidReq, &bidReq)
-	fmt.Println(string(bidReq.Ext))
+	mergeData(videoBidReq, bidReq)
 
 	//create impressions array
 	imps, errl := createImpressions(videoBidReq)
@@ -95,24 +125,57 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidReq.ID = "bid_id" //look at auction
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
-	deps.setFieldsImplicitly(r, &bidReq) // move after merge
+	deps.setFieldsImplicitly(r, bidReq) // move after merge
 
-	errL := deps.validateRequest(&bidReq)
+	errL := deps.validateRequest(bidReq)
 	if len(errL) > 0 {
 		//handle errors
 		return
 	}
 
-	ctx, labels, usersyncs := deps.createCtxLabelsUsersyncs(r, start, &bidReq)
+	ctx := context.Background()
+	cancel := func() {}
+	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReq.TMax) * time.Millisecond)
+	if timeout > 0 {
+		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+	}
+	defer cancel()
+
+	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
+	if bidReq.App != nil {
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if usersyncs.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
+		}
+	}
+
+	numImps = len(bidReq.Imp)
+
 	//execute auction logic
-	response, err := deps.ex.HoldAuction(ctx, &bidReq, usersyncs, labels, &deps.categories)
+	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
+	ao.Request = bidReq
+	ao.Response = response
 	if err != nil {
-		//handle error
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
+		glog.Errorf("/openrtb2/auction Critical error: %v", err)
+		ao.Status = http.StatusInternalServerError
+		ao.Errors = append(ao.Errors, err)
+		return
 	}
 
 	//build simplified response
-	//var bidResp = openrtb_ext.BidResponseVideo{}
-	//buildVideoResponse(response, &bidResp)
+	//bidResp, err := buildVideoResponse(response)
+
+	if err != nil {
+		return
+	}
+
 	resp, err := json.Marshal(response)
 	if err != nil {
 		return
@@ -123,7 +186,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 }
 
-func createImpressions(videoReq openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, errs []error) {
+func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, errs []error) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
@@ -152,12 +215,12 @@ func createImpressions(videoReq openrtb_ext.BidRequestVideo) (imps []openrtb.Imp
 				}
 				impsArray[impInd].Video.MaxDuration = int64(videoDur[durationIndex])
 				impsArray[impInd].Video.MinDuration = int64(videoDur[durationIndex])
-				fmt.Println(podIndex, "  ", impInd, "duration ", videoDur[durationIndex])
+				//fmt.Println(podIndex, "  ", impInd, "duration ", videoDur[durationIndex])
 			} else {
 				impsArray[impInd].Video.MaxDuration = int64(maxDuration)
 			}
 
-			impsArray[impInd].ID = fmt.Sprintf("pod%d_%d", podIndex, impInd)
+			impsArray[impInd].ID = fmt.Sprintf("%d_%d", podIndex, impInd)
 		}
 		finalImpsArray = append(finalImpsArray, impsArray...)
 
@@ -199,12 +262,57 @@ func minMax(array []int) (int, int) {
 	return min, max
 }
 
-func buildVideoResponse(bidresponse *openrtb.BidResponse, videoResponse *openrtb_ext.BidResponseVideo) { //should be video response
-	return
+func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidResponseVideo, error) { //should be video response
+
+	adPods := []openrtb_ext.AdPod{}
+	for _, seatBid := range bidresponse.SeatBid {
+		for _, bid := range seatBid.Bid {
+
+			var tempRespBidExt openrtb_ext.ExtBid
+			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
+				return nil, err
+			}
+
+			impId := bid.ImpID
+			podNum := strings.Split(impId, "_")[0]
+			podInd, _ := strconv.ParseInt(podNum, 0, 64)
+
+			videoTargeting := openrtb_ext.VideoTargeting{
+				tempRespBidExt.Prebid.Targeting["hb_pb"],
+				tempRespBidExt.Prebid.Targeting["hb_pb_cat_dur"],
+				"",
+			}
+
+			adPod := findAdPod(podInd, adPods)
+			if adPod == nil {
+				adPod = &openrtb_ext.AdPod{
+					podInd,
+					make([]openrtb_ext.VideoTargeting, 0, 0),
+					openrtb_ext.VideoErrors{},
+				}
+				adPods = append(adPods, *adPod)
+			}
+			adPod.Targeting = append(adPod.Targeting, videoTargeting)
+
+		}
+	}
+	videoResponse := openrtb_ext.BidResponseVideo{}
+	videoResponse.AdPods = adPods
+
+	return &videoResponse, nil
+}
+
+func findAdPod(podInd int64, pods []openrtb_ext.AdPod) *openrtb_ext.AdPod {
+	for _, pod := range pods {
+		if pod.PodId == podInd {
+			return &pod
+		}
+	}
+	return nil
 }
 
 func loadStoredVideoRequest(storedRequestId string) ([]byte, error) {
-	jsonString := []byte(`{"accountid": "11223344", "app": {"domain": "mygame.foo.com"}}`)
+	jsonString := []byte(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`)
 	return jsonString, nil
 }
 
@@ -220,11 +328,33 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 
 func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
 
-	bidRequest.Site = &videoRequest.Site
-	if bidRequest.Site == nil {
-		bidRequest.App = &videoRequest.App
+	if videoRequest.Site.Page != "" {
+		bidRequest.Site = &videoRequest.Site
+		if &videoRequest.Content != nil {
+			bidRequest.Site.Content = &videoRequest.Content
+		}
 	}
-	bidRequest.Device = &videoRequest.Device
+
+	if videoRequest.App.Domain != "" {
+		bidRequest.App = &videoRequest.App
+		if &videoRequest.Content != nil {
+			bidRequest.App.Content = &videoRequest.Content
+		}
+	}
+
+	if &videoRequest.Device != nil {
+		bidRequest.Device = &videoRequest.Device
+	}
+
+	if &videoRequest.User != nil {
+		bidRequest.User = &openrtb.User{
+			BuyerUID: videoRequest.User.Buyeruids["appnexus"], //TODO: map to string merging
+			Yob:      videoRequest.User.Yob,
+			Gender:   videoRequest.User.Gender,
+			Keywords: videoRequest.User.Keywords,
+		}
+	}
+
 	bidExt, err := createBidExtension(videoRequest)
 	if err != nil {
 		return err
@@ -232,6 +362,8 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 	if len(bidExt) > 0 {
 		bidRequest.Ext = bidExt
 	}
+
+	bidRequest.TMax = 5000
 	return nil
 }
 
@@ -259,8 +391,8 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 	return reqJSON, nil
 }
 
-func (deps *endpointDeps) parseVideoRequest(request []byte) (req openrtb_ext.BidRequestVideo, errs []error) {
-	req = openrtb_ext.BidRequestVideo{}
+func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.BidRequestVideo, errs []error) {
+	req = &openrtb_ext.BidRequestVideo{}
 
 	if err := json.Unmarshal(request, &req); err != nil {
 		errs = []error{err}
@@ -274,7 +406,7 @@ func (deps *endpointDeps) parseVideoRequest(request []byte) (req openrtb_ext.Bid
 	return
 }
 
-func (deps *endpointDeps) validateVideoRequest(req openrtb_ext.BidRequestVideo) []error {
+func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) []error {
 	errL := []error{}
 	if req.AccountId == "" {
 		err := errors.New("request missing required field: accountid")
@@ -306,7 +438,7 @@ func (deps *endpointDeps) validateVideoRequest(req openrtb_ext.BidRequestVideo) 
 			errL = append(errL, err)
 		}
 	}
-	if req.App.Domain == "" || req.Site.Page == "" {
+	if req.App.Domain == "" && req.Site.Page == "" {
 		err := errors.New("request missing required field: site or app")
 		errL = append(errL, err)
 	}
@@ -320,36 +452,4 @@ func (deps *endpointDeps) validateVideoRequest(req openrtb_ext.BidRequestVideo) 
 	}
 
 	return errL
-}
-
-func (deps *endpointDeps) createCtxLabelsUsersyncs(r *http.Request, start time.Time, req *openrtb.BidRequest) (ctx context.Context, labels pbsmetrics.Labels, usersyncs *usersync.PBSCookie) {
-	labels = pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2Web,
-		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
-
-	ctx = context.Background()
-	cancel := func() {}
-	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
-	if timeout > 0 {
-		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
-	}
-	defer cancel()
-
-	usersyncs = usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-	} else {
-		labels.Source = pbsmetrics.DemandWeb
-		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
-		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
-		}
-	}
-	return ctx, labels, usersyncs
 }

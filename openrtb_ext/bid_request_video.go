@@ -35,7 +35,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Application where the impression will be shown
-	App openrtb.App `json:"app,omitempty"`
+	App openrtb.App `json:"app"`
 
 	// Attribute:
 	//   site
@@ -43,7 +43,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Site where the impression will be shown
-	Site openrtb.Site `json:"site,omitempty"`
+	Site openrtb.Site `json:"site"`
 
 	// Attribute:
 	//   user
@@ -202,7 +202,7 @@ type SimplifiedUser struct {
 	// Type:
 	//   int; optional
 	//  Year of birth as a 4-digit integer
-	Yob int `json:"yob"`
+	Yob int64 `json:"yob"`
 
 	// Attribute:
 	//   gender
