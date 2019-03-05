@@ -1,7 +1,7 @@
 package openrtb_ext
 
 type BidResponseVideo struct {
-	AdPods []AdPod `json:"adPods"`
+	AdPods []*AdPod `json:"adPods"`
 }
 
 type AdPod struct {

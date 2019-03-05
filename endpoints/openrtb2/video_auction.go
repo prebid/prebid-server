@@ -170,13 +170,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	//build simplified response
-	//bidResp, err := buildVideoResponse(response)
-
+	bidResp, err := buildVideoResponse(response)
 	if err != nil {
 		return
 	}
 
-	resp, err := json.Marshal(response)
+	resp, err := json.Marshal(bidResp)
+	//resp, err := json.Marshal(response)
 	if err != nil {
 		return
 	}
@@ -193,7 +193,7 @@ func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Im
 	videoData := videoReq.Video
 
 	finalImpsArray := make([]openrtb.Imp, 0)
-	for podIndex, pod := range videoReq.PodConfig.Pods {
+	for _, pod := range videoReq.PodConfig.Pods {
 
 		//load stored impression
 		storedImpressionId := string(pod.ConfigId)
@@ -220,7 +220,7 @@ func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Im
 				impsArray[impInd].Video.MaxDuration = int64(maxDuration)
 			}
 
-			impsArray[impInd].ID = fmt.Sprintf("%d_%d", podIndex, impInd)
+			impsArray[impInd].ID = fmt.Sprintf("%d_%d", pod.PodId, impInd)
 		}
 		finalImpsArray = append(finalImpsArray, impsArray...)
 
@@ -264,7 +264,7 @@ func minMax(array []int) (int, int) {
 
 func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidResponseVideo, error) { //should be video response
 
-	adPods := []openrtb_ext.AdPod{}
+	adPods := make([]*openrtb_ext.AdPod, 0)
 	for _, seatBid := range bidresponse.SeatBid {
 		for _, bid := range seatBid.Bid {
 
@@ -290,7 +290,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 					make([]openrtb_ext.VideoTargeting, 0, 0),
 					openrtb_ext.VideoErrors{},
 				}
-				adPods = append(adPods, *adPod)
+				adPods = append(adPods, adPod)
 			}
 			adPod.Targeting = append(adPod.Targeting, videoTargeting)
 
@@ -302,10 +302,10 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 	return &videoResponse, nil
 }
 
-func findAdPod(podInd int64, pods []openrtb_ext.AdPod) *openrtb_ext.AdPod {
+func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {
 	for _, pod := range pods {
 		if pod.PodId == podInd {
-			return &pod
+			return pod
 		}
 	}
 	return nil
