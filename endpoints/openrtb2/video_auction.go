@@ -92,16 +92,22 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
 		return
 	}
 
 	//load additional data - stored simplified req
 	storedRequestId, err := getVideoStoredRequestId(requestJson)
 	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
 		return
 	}
 	storedRequest, err := loadStoredVideoRequest(storedRequestId)
 	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
 		return
 	}
 
@@ -109,8 +115,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	resolvedRequest, err := jsonpatch.MergePatch(storedRequest, requestJson)
 
 	//unmarshal and validate combined result
-	videoBidReq, errl := deps.parseVideoRequest(resolvedRequest)
-	if len(errl) > 0 {
+	videoBidReq, errL := deps.parseVideoRequest(resolvedRequest)
+	if len(errL) > 0 {
+		handleError(labels, w, errL, ao)
 		return
 	}
 
@@ -120,16 +127,21 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	mergeData(videoBidReq, bidReq)
 
 	//create impressions array
-	imps, errl := createImpressions(videoBidReq)
+	imps, err := createImpressions(videoBidReq)
+	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
+		return
+	}
 	bidReq.Imp = imps
-	bidReq.ID = "bid_id" //look at auction
+	bidReq.ID = "bid_id" //TODO: look at auction
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(r, bidReq) // move after merge
 
-	errL := deps.validateRequest(bidReq)
+	errL = deps.validateRequest(bidReq)
 	if len(errL) > 0 {
-		//handle errors
+		handleError(labels, w, errL, ao)
 		return
 	}
 
@@ -160,33 +172,46 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	ao.Request = bidReq
 	ao.Response = response
 	if err != nil {
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Critical error while running the auction: %v", err)
-		glog.Errorf("/openrtb2/auction Critical error: %v", err)
-		ao.Status = http.StatusInternalServerError
-		ao.Errors = append(ao.Errors, err)
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
 		return
 	}
 
 	//build simplified response
 	bidResp, err := buildVideoResponse(response)
 	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
 		return
 	}
 
 	resp, err := json.Marshal(bidResp)
 	//resp, err := json.Marshal(response)
 	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 
 }
 
-func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, errs []error) {
+func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
+	labels.RequestStatus = pbsmetrics.RequestStatusErr
+	w.WriteHeader(http.StatusInternalServerError)
+	var errors string
+	for _, er := range errL {
+		errors = fmt.Sprintf("%s %s", errors, er.Error())
+	}
+	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
+	glog.Errorf("/openrtb2/video Critical error: %v", errors)
+	ao.Status = http.StatusInternalServerError
+	ao.Errors = append(ao.Errors, errL...)
+}
+
+func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, err error) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
