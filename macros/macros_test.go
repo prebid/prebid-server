@@ -8,7 +8,6 @@ import (
 )
 
 const validEndpointTemplate = "http://{{.Host}}/publisher/{{.PublisherID}}"
-const invalidEndpointTemplate = "http://{{Host}}/publisher/{{PublisherID}}"
 
 func TestResolveMacros(t *testing.T) {
 	endpointTemplate, _ := template.New("endpointTemplate").Parse(validEndpointTemplate)
