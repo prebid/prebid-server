@@ -34,20 +34,20 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 }
 
 func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	fileName := primaryAdServer
+
+	if len(publisherId) != 0 {
+		fileName = primaryAdServer + "_" + publisherId
+	}
+
+	if fetcher.Categories == nil {
+		fetcher.Categories = make(map[string]map[string]string)
+	}
+	if data, ok := fetcher.Categories[fileName]; ok {
+		return data[iabCategory], nil
+	}
+
 	if primaryAdServerDir, found := fetcher.FileSystem.Directories[primaryAdServer]; found {
-
-		fileName := primaryAdServer
-		if len(publisherId) != 0 {
-			fileName = primaryAdServer + "_" + publisherId
-		}
-
-		if fetcher.Categories == nil {
-			fetcher.Categories = make(map[string]map[string]string)
-		}
-
-		if data, ok := fetcher.Categories[fileName]; ok {
-			return data[iabCategory], nil
-		}
 
 		if file, ok := primaryAdServerDir.Files[fileName]; ok {
 
@@ -58,6 +58,8 @@ func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCa
 			}
 			fetcher.Categories[fileName] = tmp
 			resultCategory := tmp[iabCategory]
+			primaryAdServerDir.Files[fileName] = nil
+
 			if len(resultCategory) == 0 {
 				return "", fmt.Errorf("Unable to find category for adserver '%s', publisherId: '%s', iab category: '%s'", primaryAdServer, publisherId, iabCategory)
 			}
