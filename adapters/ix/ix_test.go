@@ -639,7 +639,7 @@ func TestIxTwoSlotMultiSizeOnlyValidIXSizeResponse(t *testing.T) {
 	}
 }
 
-func bidResponseForSizeExist(bids pbs.PBSBidSlice, h uint64, w uint64) bool {
+func bidResponseForSizeExist(bids pbs.PBSBidSlice, h int64, w int64) bool {
 	for _, v := range bids {
 		if v.Height == h && v.Width == w {
 			return true

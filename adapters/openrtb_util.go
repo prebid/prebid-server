@@ -39,8 +39,8 @@ func commonMediaTypes(l1 []pbs.MediaType, l2 []pbs.MediaType) []pbs.MediaType {
 
 func makeBanner(unit pbs.PBSAdUnit) *openrtb.Banner {
 	return &openrtb.Banner{
-		W:        openrtb.Uint64Ptr(unit.Sizes[0].W),
-		H:        openrtb.Uint64Ptr(unit.Sizes[0].H),
+		W:        openrtb.Int64Ptr(unit.Sizes[0].W),
+		H:        openrtb.Int64Ptr(unit.Sizes[0].H),
 		Format:   copyFormats(unit.Sizes), // defensive copy because adapters may mutate Imps, and this is shared data
 		TopFrame: unit.TopFrame,
 	}

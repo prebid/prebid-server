@@ -148,8 +148,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 					}
 
 					pbReq.Imp[i].TagID = strings.TrimSpace(adSlot[0])
-					pbReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
-					pbReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
+					pbReq.Imp[i].Banner.H = openrtb.Int64Ptr(int64(height))
+					pbReq.Imp[i].Banner.W = openrtb.Int64Ptr(int64(width))
 
 					if len(params.Keywords) != 0 {
 						kvstr := prepareImpressionExt(params.Keywords)
@@ -422,8 +422,8 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 				return errors.New("Invalid height provided in adSlot")
 			}
 			if imp.Banner != nil {
-				imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
-				imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+				imp.Banner.H = openrtb.Int64Ptr(int64(height))
+				imp.Banner.W = openrtb.Int64Ptr(int64(width))
 			} /* In case of video, params.adSlot would always be in the format adunit@0x0,
 			so we are not replacing video.W and video.H with size passed in params.adSlot
 				else {

@@ -7,8 +7,8 @@ package config
 // configurable solution once the need develops and the use cases can be defined.
 
 type InterstitialSize struct {
-	Width  uint64
-	Height uint64
+	Width  int64
+	Height int64
 }
 
 type InterstitialSizes []InterstitialSize

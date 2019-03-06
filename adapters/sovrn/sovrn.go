@@ -86,7 +86,9 @@ func (s *SovrnAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pb
 		addHeaderIfNonEmpty(httpReq.Header, "User-Agent", sReq.Device.UA)
 		addHeaderIfNonEmpty(httpReq.Header, "X-Forwarded-For", sReq.Device.IP)
 		addHeaderIfNonEmpty(httpReq.Header, "Accept-Language", sReq.Device.Language)
-		addHeaderIfNonEmpty(httpReq.Header, "DNT", strconv.Itoa(int(sReq.Device.DNT)))
+		if sReq.Device.DNT != nil {
+			addHeaderIfNonEmpty(httpReq.Header, "DNT", strconv.Itoa(int(*sReq.Device.DNT)))
+		}
 	}
 	if sReq.User != nil {
 		userID := strings.TrimSpace(sReq.User.BuyerUID)
@@ -199,7 +201,9 @@ func (s *SovrnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
 	}
 
 	if request.User != nil {

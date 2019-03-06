@@ -74,7 +74,7 @@ func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.Targ
 
 func makeHbSize(bid *openrtb.Bid) string {
 	if bid.W != 0 && bid.H != 0 {
-		return strconv.FormatUint(bid.W, 10) + "x" + strconv.FormatUint(bid.H, 10)
+		return strconv.FormatInt(bid.W, 10) + "x" + strconv.FormatInt(bid.H, 10)
 	}
 	return ""
 }

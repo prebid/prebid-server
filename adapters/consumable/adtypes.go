@@ -11,7 +11,7 @@ func getSizeCodes(Formats []openrtb.Format) []int {
 
 	codes := make([]int, 0)
 	for _, format := range Formats {
-		str := strconv.FormatUint(format.W, 10) + "x" + strconv.FormatUint(format.H, 10)
+		str := strconv.FormatInt(format.W, 10) + "x" + strconv.FormatInt(format.H, 10)
 		if code, ok := sizeMap[str]; ok {
 			codes = append(codes, code)
 		}

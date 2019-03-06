@@ -90,7 +90,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			if len(size) == 2 {
 				width, err := strconv.Atoi(size[0])
 				if err == nil {
-					ppReq.Imp[i].Banner.W = openrtb.Uint64Ptr(uint64(width))
+					ppReq.Imp[i].Banner.W = openrtb.Int64Ptr(int64(width))
 				} else {
 					return nil, &errortypes.BadInput{
 						Message: fmt.Sprintf("Invalid Width param %s", size[0]),
@@ -98,7 +98,7 @@ func (a *PulsePointAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				}
 				height, err := strconv.Atoi(size[1])
 				if err == nil {
-					ppReq.Imp[i].Banner.H = openrtb.Uint64Ptr(uint64(height))
+					ppReq.Imp[i].Banner.H = openrtb.Int64Ptr(int64(height))
 				} else {
 					return nil, &errortypes.BadInput{
 						Message: fmt.Sprintf("Invalid Height param %s", size[1]),

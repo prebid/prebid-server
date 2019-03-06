@@ -27,8 +27,8 @@ type tagInfo struct {
 	bid         float64
 	content     string
 	delay       time.Duration
-	W           uint64
-	H           uint64
+	W           int64
+	H           int64
 	Instl       int8
 }
 
@@ -113,7 +113,7 @@ func DummyFacebookServer(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if breq.Imp[0].Instl == 0 {
-			supportedHeight := map[uint64]bool{
+			supportedHeight := map[int64]bool{
 				50:  true,
 				90:  true,
 				250: true,

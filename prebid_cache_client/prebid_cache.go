@@ -22,8 +22,8 @@ type CacheObject struct {
 type BidCache struct {
 	Adm    string `json:"adm,omitempty"`
 	NURL   string `json:"nurl,omitempty"`
-	Width  uint64 `json:"width,omitempty"`
-	Height uint64 `json:"height,omitempty"`
+	Width  int64  `json:"width,omitempty"`
+	Height int64  `json:"height,omitempty"`
 }
 
 // internal protocol objects

@@ -30,7 +30,7 @@ func BidOnTags(tags string) map[string]bool {
 }
 
 // SampleBid Produces a sample bid based on params given.
-func SampleBid(width *uint64, height *uint64, impId string, index int) openrtb.Bid {
+func SampleBid(width *int64, height *int64, impId string, index int) openrtb.Bid {
 	return openrtb.Bid{
 		ID:    "Bid-123",
 		ImpID: fmt.Sprintf("div-adunit-%d", index),

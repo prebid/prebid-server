@@ -92,8 +92,8 @@ type BeachfrontSlot struct {
 }
 
 type BeachfrontSize struct {
-	W uint64 `json:"w"`
-	H uint64 `json:"h"`
+	W int64 `json:"w"`
+	H int64 `json:"h"`
 }
 
 // ---------------------------------------------------
@@ -103,8 +103,8 @@ type BeachfrontSize struct {
 type BeachfrontResponseSlot struct {
 	CrID  string  `json:"crid"`
 	Price float64 `json:"price"`
-	W     uint64  `json:"w"`
-	H     uint64  `json:"h"`
+	W     int64   `json:"w"`
+	H     int64   `json:"h"`
 	Slot  string  `json:"slot"`
 	Adm   string  `json:"adm"`
 }
@@ -241,7 +241,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.IP = req.Device.IP
 				beachfrontReq.DeviceModel = req.Device.Model
 				beachfrontReq.DeviceOs = req.Device.OS
-				beachfrontReq.Dnt = req.Device.DNT
+				if req.Device.DNT != nil {
+					beachfrontReq.Dnt = *req.Device.DNT
+				}
 				if req.Device.UA != "" {
 					beachfrontReq.UA = req.Device.UA
 				}

@@ -67,8 +67,8 @@ type adformBid struct {
 	Banner       string  `json:"banner,omitempty"`
 	Price        float64 `json:"win_bid,omitempty"`
 	Currency     string  `json:"win_cur,omitempty"`
-	Width        uint64  `json:"width,omitempty"`
-	Height       uint64  `json:"height,omitempty"`
+	Width        int64   `json:"width,omitempty"`
+	Height       int64   `json:"height,omitempty"`
 	DealId       string  `json:"deal_id,omitempty"`
 	CreativeId   string  `json:"win_crid,omitempty"`
 }

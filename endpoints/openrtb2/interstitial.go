@@ -39,7 +39,7 @@ func processInterstitials(req *openrtb.BidRequest) error {
 }
 
 func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice, device *openrtb.Device) error {
-	var maxWidth, maxHeight, minWidth, minHeight uint64
+	var maxWidth, maxHeight, minWidth, minHeight int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.
 		return nil
@@ -65,7 +65,7 @@ func processInterstitialsForImp(imp *openrtb.Imp, devExt *openrtb_ext.ExtDevice,
 	return nil
 }
 
-func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight uint64) []openrtb.Format {
+func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight int64) []openrtb.Format {
 	sizes := make(config.InterstitialSizes, 0, 10)
 	for _, size := range config.ResolvedInterstitialSizes {
 		if size.Width >= minWidth && size.Width <= maxWidth && size.Height >= minHeight && size.Height <= maxHeight {

@@ -358,7 +358,7 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	}
 }
 
-func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
+func makeFormatReplacement(overrideWidth int64, overrideHeight int64, width int64, height int64, multisize string) []openrtb.Format {
 	if overrideWidth != 0 && overrideHeight != 0 {
 		return []openrtb.Format{{
 			W: overrideWidth,
@@ -386,13 +386,13 @@ func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width ui
 	return nil
 }
 
-func setWidths(formats []openrtb.Format, width uint64) {
+func setWidths(formats []openrtb.Format, width int64) {
 	for i := 0; i < len(formats); i++ {
 		formats[i].W = width
 	}
 }
 
-func setHeights(formats []openrtb.Format, height uint64) {
+func setHeights(formats []openrtb.Format, height int64) {
 	for i := 0; i < len(formats); i++ {
 		formats[i].H = height
 	}
@@ -423,12 +423,12 @@ func parseMultisize(multisize string) []openrtb.Format {
 	return sizes
 }
 
-func parseFormInt(req *http.Request, value string, defaultTo uint64) uint64 {
+func parseFormInt(req *http.Request, value string, defaultTo int64) int64 {
 	return parseIntErrorless(req.FormValue(value), defaultTo)
 }
 
-func parseIntErrorless(value string, defaultTo uint64) uint64 {
-	if parsed, err := strconv.ParseUint(value, 10, 64); err == nil {
+func parseIntErrorless(value string, defaultTo int64) int64 {
+	if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
 		return parsed
 	}
 	return defaultTo

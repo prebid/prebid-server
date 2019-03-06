@@ -56,8 +56,8 @@ type hbResponseAd struct {
 	Price        string `json:"pr"`
 	AdM          string `json:"adm"`
 	CrID         string `json:"crid"`
-	Width        uint64 `json:"w,omitempty"`
-	Height       uint64 `json:"h,omitempty"`
+	Width        int64  `json:"w,omitempty"`
+	Height       int64  `json:"h,omitempty"`
 }
 
 func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -98,7 +98,9 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", ip)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
 	}
 
 	var pageURL string
@@ -190,7 +192,7 @@ func verifyImp(imp *openrtb.Imp) (*openrtb_ext.ExtImpEPlanning, error) {
 	return &impExt, nil
 }
 
-func getSizeFromImp(imp *openrtb.Imp) (uint64, uint64) {
+func getSizeFromImp(imp *openrtb.Imp) (int64, int64) {
 	if imp.Banner.W != nil && imp.Banner.H != nil {
 		return *imp.Banner.W, *imp.Banner.H
 	}

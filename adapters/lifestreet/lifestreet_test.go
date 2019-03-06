@@ -38,8 +38,8 @@ type lsBidInfo struct {
 	deviceIfa            string
 	tags                 []lsTagInfo
 	referrer             string
-	width                uint64
-	height               uint64
+	width                int64
+	height               int64
 	delay                time.Duration
 }
 

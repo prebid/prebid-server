@@ -26,7 +26,7 @@ type FacebookAdapter struct {
 	platformJSON json.RawMessage
 }
 
-var supportedHeight = map[uint64]bool{
+var supportedHeight = map[int64]bool{
 	50:  true,
 	90:  true,
 	250: true,
@@ -147,8 +147,8 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 
 		// if instl = 1 sent in, pass size (0,0) to facebook
 		if fbReq.Imp[0].Instl == 1 && fbReq.Imp[0].Banner != nil {
-			fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
-			fbReq.Imp[0].Banner.H = openrtb.Uint64Ptr(0)
+			fbReq.Imp[0].Banner.W = openrtb.Int64Ptr(0)
+			fbReq.Imp[0].Banner.H = openrtb.Int64Ptr(0)
 		}
 		// if instl = 0 and type is banner, do not send non supported size
 		if fbReq.Imp[0].Instl == 0 && fbReq.Imp[0].Banner != nil {
@@ -159,7 +159,7 @@ func (a *FacebookAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs
 			}
 			// do not send legacy 320x50 size to facebook, instead use 0x50
 			if *fbReq.Imp[0].Banner.W == 320 && *fbReq.Imp[0].Banner.H == 50 {
-				fbReq.Imp[0].Banner.W = openrtb.Uint64Ptr(0)
+				fbReq.Imp[0].Banner.W = openrtb.Int64Ptr(0)
 			}
 		}
 		return fbReq, nil

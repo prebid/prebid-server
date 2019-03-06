@@ -37,8 +37,8 @@ func (a *IxAdapter) SkipNoCookies() bool {
 }
 
 type indexParams struct {
-	SiteID string    `json:"siteId"`
-	Size   [2]uint64 `json:"size"`
+	SiteID string   `json:"siteId"`
+	Size   [2]int64 `json:"size"`
 }
 
 type ixBidResult struct {
@@ -51,11 +51,11 @@ type ixBidResult struct {
 
 type callOneObject struct {
 	requestJSON bytes.Buffer
-	width       uint64
-	height      uint64
+	width       int64
+	height      int64
 }
 
-func isValidIXSize(f openrtb.Format, s [2]uint64) bool {
+func isValidIXSize(f openrtb.Format, s [2]int64) bool {
 	if f.W != s[0] || f.H != s[1] {
 		return false
 	}

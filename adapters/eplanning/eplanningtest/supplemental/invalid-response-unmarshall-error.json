@@ -45,6 +45,6 @@
       }
     ],
 
-    "expectedMakeBidsErrors": ["Error unmarshaling HB response: json: cannot unmarshal string into Go struct field hbResponseAd.w of type uint64"]
+    "expectedMakeBidsErrors": ["Error unmarshaling HB response: json: cannot unmarshal string into Go struct field hbResponseAd.w of type int64"]
   }
   

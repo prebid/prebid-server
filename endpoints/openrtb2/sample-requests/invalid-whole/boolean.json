@@ -1,4 +1,4 @@
 {
-  "message": "Invalid request: json: cannot unmarshal bool into Go value of type openrtb.BidRequest\n",
+  "message": "Invalid request: json: cannot unmarshal bool into Go value of type openrtb2.BidRequest\n",
   "requestPayload": false
 }

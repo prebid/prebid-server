@@ -584,6 +584,12 @@ func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetInde
 	if image.H == 0 && image.HMin == 0 {
 		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "h" or "hmin"`, impIndex, assetIndex)
 	}
+	if image.W < 0 || image.WMin < 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contains nonnegative "w" or "wmin"`, impIndex, assetIndex)
+	}
+	if image.H < 0 || image.HMin < 0 {
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contains nonnegative "h" or "hmin"`, impIndex, assetIndex)
+	}
 
 	return nil
 }

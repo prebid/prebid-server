@@ -44,8 +44,8 @@ type aBidInfo struct {
 	deviceIFA string
 	tags      []aTagInfo
 	referrer  string
-	width     uint64
-	height    uint64
+	width     int64
+	height    int64
 	tid       string
 	buyerUID  string
 	secure    bool
