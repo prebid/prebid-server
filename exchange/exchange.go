@@ -427,7 +427,7 @@ func getPrimaryAdServer(adServerId int) (string, error) {
 	case 2:
 		return "dfp", nil
 	default:
-		return "", fmt.Errorf("Primary ad server is incorrect")
+		return "", fmt.Errorf("Primary ad server %d not recognized", adServerId)
 	}
 }
 
