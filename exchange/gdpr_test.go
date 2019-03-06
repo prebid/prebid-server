@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 

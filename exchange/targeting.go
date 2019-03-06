@@ -3,7 +3,7 @@ package exchange
 import (
 	"strconv"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 

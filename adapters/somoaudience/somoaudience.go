@@ -10,7 +10,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 )
 
 const hbconfig = "hb_pbs_1.0.0"

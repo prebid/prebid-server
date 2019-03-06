@@ -19,7 +19,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"golang.org/x/net/publicsuffix"
 )
 

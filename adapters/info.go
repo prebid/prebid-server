@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
 )

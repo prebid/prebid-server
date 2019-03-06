@@ -9,7 +9,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"

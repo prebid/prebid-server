@@ -13,7 +13,7 @@ import (
 	"github.com/prebid/prebid-server/prebid_cache_client"
 
 	"github.com/evanphx/json-patch"
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/stretchr/testify/assert"
 )
 

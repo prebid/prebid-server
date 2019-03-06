@@ -3,11 +3,12 @@ package gumgum
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type GumGumAdapter struct {

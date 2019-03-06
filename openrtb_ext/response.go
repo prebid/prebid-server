@@ -1,7 +1,7 @@
 package openrtb_ext
 
 import (
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 )
 
 // ExtBidResponse defines the contract for bidresponse.ext

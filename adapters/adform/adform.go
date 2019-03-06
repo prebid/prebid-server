@@ -17,7 +17,7 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 
 	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"golang.org/x/net/context/ctxhttp"
 )
 

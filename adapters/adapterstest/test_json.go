@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
+	openrtb "github.com/mxmCherry/openrtb/openrtb2"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/yudai/gojsondiff"
 	"github.com/yudai/gojsondiff/formatter"
