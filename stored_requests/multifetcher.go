@@ -3,6 +3,7 @@ package stored_requests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // MultiFetcher is a Fetcher composed of multiple sub-Fetchers that are all polled for results.
@@ -36,7 +37,18 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 }
 
 func (mf MultiFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
-	return "", nil
+	for _, f := range mf {
+		if cf, ok := f.(CategoryFetcher); ok {
+			iabCategory, _ := cf.FetchCategories(primaryAdServer, publisherId, iabCategory)
+			if iabCategory != "" {
+				return iabCategory, nil
+			}
+		}
+	}
+
+	// For now just return a NotFoundError if we didn't find it for some reason
+	errtype := fmt.Sprintf("%s_%s.%s", primaryAdServer, publisherId, iabCategory)
+	return "", NotFoundError{errtype, "Category"}
 }
 
 func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {
