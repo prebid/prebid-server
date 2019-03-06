@@ -11,6 +11,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:5264e1bb1289de58fd25724e060fe45524a9c2b39bad8562a6fd9d6a62d7a3b6"
+  name = "github.com/asaskevich/govalidator"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f9ffefc3facfbe0caee3fea233cbb6e8208f4541"
+
+[[projects]]
+  branch = "master"
   digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
@@ -459,6 +467,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/DATA-DOG/go-sqlmock",
+    "github.com/asaskevich/govalidator",
     "github.com/blang/semver",
     "github.com/buger/jsonparser",
     "github.com/chasex/glog",
