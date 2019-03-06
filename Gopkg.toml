@@ -89,6 +89,10 @@
   name = "github.com/prebid/go-gdpr"
   version = "^0.6.1"
 
+[[constraint]]
+  name = "github.com/NYTimes/gziphandler"
+  version = "~1.1.0"  
+
 [prune]
   go-tests = true
   unused-packages = true
@@ -96,3 +100,7 @@
 [[constraint]]
   name = "github.com/prometheus/client_golang"
   revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/asaskevich/govalidator"

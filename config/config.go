@@ -6,11 +6,15 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
+
+	validator "github.com/asaskevich/govalidator"
 )
 
 // Configuration
@@ -20,6 +24,7 @@ type Configuration struct {
 	Port        int        `mapstructure:"port"`
 	Client      HTTPClient `mapstructure:"http_client"`
 	AdminPort   int        `mapstructure:"admin_port"`
+	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
 	StatusResponse  string          `mapstructure:"status_response"`
@@ -76,6 +81,7 @@ func (cfg *Configuration) validate() configErrors {
 	}
 	errs = cfg.GDPR.validate(errs)
 	errs = cfg.CurrencyConverter.validate(errs)
+	errs = validateAdapters(cfg.Adapters, errs)
 	return errs
 }
 
@@ -170,6 +176,13 @@ func (cfg *HostCookie) TTLDuration() time.Duration {
 	return time.Duration(cfg.TTL) * time.Hour * 24
 }
 
+const (
+	dummyHost        string = "dummyhost.com"
+	dummyPublisherID int    = 12
+	dummyGDPR        string = "0"
+	dummyGDPRConsent string = "someGDPRConsentString"
+)
+
 type Adapter struct {
 	Endpoint string `mapstructure:"endpoint"` // Required
 	// UserSyncURL is the URL returned by /cookie_sync for this Bidder. It is _usually_ optional.
@@ -194,6 +207,80 @@ type Adapter struct {
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
 	Disabled bool `mapstructure:"disabled"`
+}
+
+// validateAdapterEndpoint makes sure that an adapter has a valid endpoint
+// associated with it
+func validateAdapterEndpoint(endpoint string, adapterName string, errs configErrors) configErrors {
+	if endpoint == "" {
+		return append(errs, fmt.Errorf("There's no default endpoint available for %s. Calls to this bidder/exchange will fail. "+
+			"Please set adapters.%s.endpoint in your app config", adapterName, adapterName))
+	}
+
+	// Create endpoint template
+	endpointTemplate, err := template.New("endpointTemplate").Parse(endpoint)
+	if err != nil {
+		return append(errs, fmt.Errorf("Invalid endpoint template: %s for adapter: %s. %v", endpoint, adapterName, err))
+	}
+	// Resolve macros (if any) in the endpoint URL
+	resolvedEndpoint, err := macros.ResolveMacros(*endpointTemplate, macros.EndpointTemplateParams{Host: dummyHost, PublisherID: dummyPublisherID})
+	if err != nil {
+		return append(errs, fmt.Errorf("Unable to resolve endpoint: %s for adapter: %s. %v", endpoint, adapterName, err))
+	}
+	// Validate the resolved endpoint
+	//
+	// Validating using both IsURL and IsRequestURL because IsURL allows relative paths
+	// whereas IsRequestURL requires absolute path but fails to check other valid URL
+	// format constraints.
+	//
+	// For example: IsURL will allow "abcd.com" but IsRequestURL won't
+	// IsRequestURL will allow "http://http://abcd.com" but IsURL won't
+	if !validator.IsURL(resolvedEndpoint) || !validator.IsRequestURL(resolvedEndpoint) {
+		errs = append(errs, fmt.Errorf("The endpoint: %s for %s is not a valid URL", resolvedEndpoint, adapterName))
+	}
+	return errs
+}
+
+// validateAdapterUserSyncURL validates an adapter's user sync URL if it is set
+func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs configErrors) configErrors {
+	if userSyncURL != "" {
+		// Create user_sync URL template
+		userSyncTemplate, err := template.New("userSyncTemplate").Parse(userSyncURL)
+		if err != nil {
+			return append(errs, fmt.Errorf("Invalid user sync URL template: %s for adapter: %s. %v", userSyncURL, adapterName, err))
+		}
+		// Resolve macros (if any) in the user_sync URL
+		resolvedUserSyncURL, err := macros.ResolveMacros(*userSyncTemplate, macros.UserSyncTemplateParams{GDPR: dummyGDPR, GDPRConsent: dummyGDPRConsent})
+		if err != nil {
+			return append(errs, fmt.Errorf("Unable to resolve user sync URL: %s for adapter: %s. %v", userSyncURL, adapterName, err))
+		}
+		// Validate the resolved user sync URL
+		//
+		// Validating using both IsURL and IsRequestURL because IsURL allows relative paths
+		// whereas IsRequestURL requires absolute path but fails to check other valid URL
+		// format constraints.
+		//
+		// For example: IsURL will allow "abcd.com" but IsRequestURL won't
+		// IsRequestURL will allow "http://http://abcd.com" but IsURL won't
+		if !validator.IsURL(resolvedUserSyncURL) || !validator.IsRequestURL(resolvedUserSyncURL) {
+			errs = append(errs, fmt.Errorf("The user_sync URL: %s for %s is invalid", resolvedUserSyncURL, adapterName))
+		}
+	}
+	return errs
+}
+
+// validateAdapters validates adapter's endpoint and user sync URL
+func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configErrors {
+	for adapterName, adapter := range adapterMap {
+		if !adapter.Disabled {
+			// Verify that every adapter has a valid endpoint associated with it
+			errs = validateAdapterEndpoint(adapter.Endpoint, adapterName, errs)
+
+			// Verify that valid user_sync URLs are specified in the config
+			errs = validateAdapterUserSyncURL(adapter.UserSyncURL, adapterName, errs)
+		}
+	}
+	return errs
 }
 
 type Metrics struct {
@@ -323,8 +410,8 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtelligent, "https://sync.adtelligent.com/csync?t=p&ep=0&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdform, "https://cm.adform.net/cookie?redirect_url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAppnexus, "https://ib.adnxs.com/getuid?"+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadnxs%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
-	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBeachfront, "https://sync.bfmio.com/syncb?pid=155&gdpr={{.GDPR}}&gc={{.GDPRConsent}}&gce=1&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bio_cid%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBrightroll, "https://pr-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbrightroll%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBeachfront, "https://sync.bfmio.com/sync_s2s?gdpr={{.GDPR}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bio_cid%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderConsumable, "https://e.serverbid.com/udb/9969/match?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dconsumable%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderConversant, "https://prebid-match.dotomi.com/prebid/match?rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderEPlanning, "https://ads.us.e-planning.net/getuid/1/5a1ad71d2d53a0f5?"+externalURL+"/setuid?bidder=eplanning&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&uid=$UID")
@@ -367,6 +454,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host", "")
 	v.SetDefault("port", 8000)
 	v.SetDefault("admin_port", 6060)
+	v.SetDefault("enable_gzip", false)
 	v.SetDefault("status_response", "")
 	v.SetDefault("auction_timeouts_ms.default", 0)
 	v.SetDefault("auction_timeouts_ms.max", 0)
@@ -433,17 +521,17 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
 
-	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
-	v.SetDefault("adapters.adtelligent.usersync_url", "")
-	v.SetDefault("adapters.adtelligent.platform_id", "")
-	v.SetDefault("adapters.adtelligent.xapi.username", "")
-	v.SetDefault("adapters.adtelligent.xapi.password", "")
-	v.SetDefault("adapters.adtelligent.xapi.tracker", "")
-
 	for _, bidder := range openrtb_ext.BidderMap {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
 	}
 
+	// Disabling adapters by default that require some specific config params.
+	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
+	// for them and specify all the parameters they need for them to work correctly.
+	v.SetDefault("adapters.audiencenetwork.disabled", true)
+	v.SetDefault("adapters.rubicon.disabled", true)
+
+	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")

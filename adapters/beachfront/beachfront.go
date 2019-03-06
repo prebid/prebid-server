@@ -16,7 +16,7 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const BannerEndpoint = "http://display.bfmio.com/prebid_display"
+const BannerEndpoint = "https://display.bfmio.com/prebid_display"
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
@@ -392,26 +392,12 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 	var bidtype = getBidType(internalRequest)
-	// Silly name to avoid a collision which will probably never amount to more than annoying highlighting
-	// in my IDE...
-	var errorz = make([]error, 0)
-
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
 	if len(errs) != 0 {
-		errorz = append(errorz, errs...)
-		bfmMessage := "Failed to process the beachfront response"
-
-		if len(response.Body) == 0 {
-			bfmMessage = "Received a null response from beachfront"
-		}
-
-		err := &errortypes.BadServerResponse{
-			Message: bfmMessage,
-		}
-
-		errorz = append(errorz, err)
-		return nil, errorz
+		return nil, append(errs, &errortypes.BadServerResponse{
+			Message: "Failed to process the beachfront response",
+		})
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
@@ -423,7 +409,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		})
 	}
 
-	return bidResponse, errorz
+	return bidResponse, errs
 }
 
 func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string, bidtype openrtb_ext.BidType) ([]openrtb.Bid, []error) {
