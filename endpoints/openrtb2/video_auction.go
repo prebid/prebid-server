@@ -263,13 +263,12 @@ func createImpressionTemplate(imp openrtb.Imp, video openrtb_ext.SimplifiedVideo
 }
 
 func loadStoredImp(storedImpId string) openrtb.Imp {
+	//temporary stub to test endpoint: placement id in place of pod config id
+	ext := fmt.Sprintf(`{"appnexus":{"placementId": %s}}`, storedImpId) //12971250
+
 	return openrtb.Imp{
-		ID: "stored_imp_id",
-		Ext: []byte(`{  
-            "appnexus":{  
-               "placementId":12971250
-            }
-         }`)}
+		ID:  "stored_imp_id",
+		Ext: []byte(ext)}
 
 }
 
