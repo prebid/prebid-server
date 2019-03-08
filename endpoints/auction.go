@@ -199,16 +199,16 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 				}
 			}
 			sentBids++
-			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, adapterlabels pbsmetrics.AdapterLabels) {
+			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, alabels pbsmetrics.AdapterLabels) {
 				start := time.Now()
 				bidList, err := ex.Call(ctx, req, bidder)
-				a.metricsEngine.RecordAdapterTime(adapterlabels, time.Since(start))
+				a.metricsEngine.RecordAdapterTime(alabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
 					var s struct{}
 					switch err {
 					case context.DeadlineExceeded:
-						adapterlabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
+						alabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
@@ -216,12 +216,12 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 						bidder.Error = err.Error()
 						switch err.(type) {
 						case *errortypes.BadInput:
-							adapterlabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
+							alabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
 						case *errortypes.BadServerResponse:
-							adapterlabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
+							alabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
 						default:
 							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-							adapterlabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
+							alabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
 						}
 					}
 				} else if bidList != nil {
@@ -229,18 +229,18 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					bidder.NumBids = len(bidList)
 					for _, bid := range bidList {
 						var cpm = float64(bid.Price * 1000)
-						a.metricsEngine.RecordAdapterPrice(adapterlabels, cpm)
+						a.metricsEngine.RecordAdapterPrice(alabels, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							a.metricsEngine.RecordAdapterBidReceived(adapterlabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(alabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							a.metricsEngine.RecordAdapterBidReceived(adapterlabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(alabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
-					adapterlabels.AdapterBids = pbsmetrics.AdapterBidNone
+					alabels.AdapterBids = pbsmetrics.AdapterBidNone
 				}
 
 				ch <- bidResult{
@@ -248,7 +248,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					bidList: bidList,
 					// Bidder done, record bidder metrics
 				}
-				a.metricsEngine.RecordAdapterRequest(adapterlabels)
+				a.metricsEngine.RecordAdapterRequest(alabels)
 			})
 
 			go bidderRunner(bidder, blabels)
