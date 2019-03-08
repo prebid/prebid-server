@@ -302,17 +302,15 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 			podInd, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				tempRespBidExt.Prebid.Targeting["hb_pb"],
-				tempRespBidExt.Prebid.Targeting["hb_pb_cat_dur"],
-				"",
+				Hb_pb:         tempRespBidExt.Prebid.Targeting["hb_pb"],
+				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting["hb_pb_cat_dur"],
 			}
 
 			adPod := findAdPod(podInd, adPods)
 			if adPod == nil {
 				adPod = &openrtb_ext.AdPod{
-					podInd,
-					make([]openrtb_ext.VideoTargeting, 0, 0),
-					openrtb_ext.VideoErrors{},
+					PodId:     podInd,
+					Targeting: make([]openrtb_ext.VideoTargeting, 0, 0),
 				}
 				adPods = append(adPods, adPod)
 			}
@@ -394,19 +392,18 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, error) {
 
 	inclBrandCat := openrtb_ext.ExtIncludeBrandCategory{
-		videoRequest.IncludeBrandCategory.PrimaryAdserver,
-		videoRequest.IncludeBrandCategory.Publisher,
+		PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
+		Publisher:       videoRequest.IncludeBrandCategory.Publisher,
 	}
 	targeting := openrtb_ext.ExtRequestTargeting{
-		openrtb_ext.PriceGranularityFromString("med"),
-		true,
-		false,
-		inclBrandCat}
+		PriceGranularity:     openrtb_ext.PriceGranularityFromString("med"),
+		IncludeWinners:       true,
+		IncludeBrandCategory: inclBrandCat}
 
 	prebid := openrtb_ext.ExtRequestPrebid{
 		Targeting: &targeting,
 	}
-	extReq := openrtb_ext.ExtRequest{prebid}
+	extReq := openrtb_ext.ExtRequest{Prebid: prebid}
 
 	reqJSON, err := json.Marshal(extReq)
 	if err != nil {
