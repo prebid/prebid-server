@@ -13,7 +13,7 @@ import (
 
 // permissionsMock mocks the Permissions interface for tests
 //
-// It always disallows BrightRoll for GDPR consent
+// It only allows appnexus for GDPR consent
 type permissionsMock struct{}
 
 func (p *permissionsMock) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -25,10 +25,10 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
-	if bidder == "brightroll" {
-		return false, nil
+	if bidder == "appnexus" {
+		return true, nil
 	}
-	return true, nil
+	return false, nil
 }
 
 func assertReqWithoutAliases(t *testing.T, reqByBidders map[openrtb_ext.BidderName]*openrtb.BidRequest) {
@@ -36,9 +36,14 @@ func assertReqWithoutAliases(t *testing.T, reqByBidders map[openrtb_ext.BidderNa
 	assert.NotEqual(t, len(reqByBidders), 0, "cleanOpenRTBRequest should split request into individual bidder requests")
 
 	// assert for PI data
-	assert.Equal(t, reqByBidders["brightroll"].User.BuyerUID, "", "cleanOpenRTBRequest should clean PI data for a non-consented vendor")
-	assert.Equal(t, reqByBidders["brightroll"].Device.DIDMD5, "", "cleanOpenRTBRequest should clean PI data for a non-consented vendor")
-	assert.NotEqual(t, reqByBidders["appnexus"].User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
+	// Only appnexus should be allowed
+	for bidderName, bidder := range reqByBidders {
+		if bidderName == "appnexus" {
+			assert.NotEqual(t, bidder.User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
+		} else {
+			assert.Equal(t, bidder.User.BuyerUID, "", "cleanOpenRTBRequest should clean PI data for a non-consented vendor")
+		}
+	}
 }
 
 func assertReqWithAliases(t *testing.T, reqByBidders map[openrtb_ext.BidderName]*openrtb.BidRequest) {
@@ -46,9 +51,17 @@ func assertReqWithAliases(t *testing.T, reqByBidders map[openrtb_ext.BidderName]
 	assert.NotEqual(t, reqByBidders, 0, "cleanOpenRTBRequest should split request into individual bidder requests")
 
 	// assert for PI data
-	assert.NotEqual(t, reqByBidders["brightroll"].User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
-	assert.NotEqual(t, reqByBidders["brightroll"].Device.DIDMD5, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
-	assert.NotEqual(t, reqByBidders["appnexus"].User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
+	// Both appnexus and brightroll should be allowed since brightroll
+	// is used as an alias for appnexus in the test request
+	for bidderName, bidder := range reqByBidders {
+		if bidderName == "appnexus" || bidderName == "brightroll" {
+			assert.NotEqual(t, bidder.User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
+			assert.NotEqual(t, bidder.Device.DIDMD5, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
+		} else {
+			assert.Equal(t, bidder.User.BuyerUID, "", "cleanOpenRTBRequest should clean PI data for a non-consented vendor")
+			assert.Equal(t, bidder.Device.DIDMD5, "", "cleanOpenRTBRequest shouldn't clean PI data for a consented vendor")
+		}
+	}
 }
 
 func TestCleanOpenRTBRequests(t *testing.T) {
