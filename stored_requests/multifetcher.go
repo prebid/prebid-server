@@ -7,7 +7,7 @@ import (
 )
 
 // MultiFetcher is a Fetcher composed of multiple sub-Fetchers that are all polled for results.
-type MultiFetcher []Fetcher
+type MultiFetcher []AllFetcher
 
 // FetchRequests implements the Fetcher interface for MultiFetcher
 func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {

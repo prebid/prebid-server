@@ -34,7 +34,7 @@ import (
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.Fetcher) {
+func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.CategoryFetcher) {
 	if cfg.StoredRequests.Postgres.ConnectionInfo.Database != "" {
 		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s",
 			cfg.StoredRequests.Postgres.ConnectionInfo.Database,
@@ -82,7 +82,7 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
+func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.AllFetcher, ampFetcher stored_requests.AllFetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
@@ -178,7 +178,7 @@ func newHttpEvents(client *http.Client, timeout time.Duration, refreshRate time.
 	return httpEvents.NewHTTPEvents(client, endpoint, ctxProducer, refreshRate)
 }
 
-func newFilesystem(configPath string) stored_requests.Fetcher {
+func newFilesystem(configPath string) stored_requests.AllFetcher {
 	glog.Infof("Loading Stored Requests from filesystem at path %s", configPath)
 	fetcher, err := file_fetcher.NewFileFetcher(configPath)
 	if err != nil {
@@ -201,7 +201,7 @@ func newPostgresDB(cfg config.PostgresConnection) *sql.DB {
 }
 
 // consolidate returns a single Fetcher from an array of fetchers of any size.
-func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
+func consolidate(fetchers []stored_requests.AllFetcher) stored_requests.AllFetcher {
 	if len(fetchers) == 0 {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		return empty_fetcher.EmptyFetcher{}

@@ -28,6 +28,12 @@ type CategoryFetcher interface {
 	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
 }
 
+// AllFetcher is an iterface that encapsulates both the original Fetcher and the CategoryFetcher
+type AllFetcher interface {
+	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
+}
+
 // NotFoundError is an error type to flag that an ID was not found by the Fetcher.
 // This was added to support Multifetcher and any other case where we might expect
 // that all IDs would not be found, and want to disentangle those errors from the others.
@@ -159,7 +165,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	return
 }
 
-func (fetcher *fetcherWithCache) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (f *fetcherWithCache) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }
 
