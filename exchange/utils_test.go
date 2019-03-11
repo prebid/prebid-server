@@ -64,6 +64,7 @@ func assertReqWithAliases(t *testing.T, reqByBidders map[openrtb_ext.BidderName]
 	}
 }
 
+// Prevents #820
 func TestCleanOpenRTBRequests(t *testing.T) {
 	testCases := []struct {
 		req              *openrtb.BidRequest
