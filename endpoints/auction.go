@@ -200,6 +200,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			}
 			sentBids++
 			bidderRunner := a.recoverSafely(func(bidder *pbs.PBSBidder, aLabels pbsmetrics.AdapterLabels) {
+
 				start := time.Now()
 				bidList, err := ex.Call(ctx, req, bidder)
 				a.metricsEngine.RecordAdapterTime(aLabels, time.Since(start))

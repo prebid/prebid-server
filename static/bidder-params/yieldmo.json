@@ -6,10 +6,10 @@
   
     "type": "object",
     "properties": {
-      "placementid": {
+      "placementId": {
         "type": "string",
         "description": "Internal Yieldmo Placement ID"
       }
     },
-    "required": ["placementid"]
+    "required": ["placementId"]
   }

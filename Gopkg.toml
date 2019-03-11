@@ -100,3 +100,7 @@
 [[constraint]]
   name = "github.com/prometheus/client_golang"
   revision = "77e8f2ddcfed59ece3a8151879efb2304b5cbbcf"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/asaskevich/govalidator"
