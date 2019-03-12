@@ -5,7 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/evanphx/json-patch"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
@@ -16,12 +23,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
@@ -135,6 +136,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at auction
+	bidReq.Test = 1
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(r, bidReq) // move after merge
@@ -258,7 +260,7 @@ func createImpressionTemplate(imp openrtb.Imp, video openrtb_ext.SimplifiedVideo
 	imp.Video.W = video.W
 	imp.Video.H = video.H
 	imp.Video.Protocols = video.Protocols
-	imp.Video.MIMEs = video.Mime
+	imp.Video.MIMEs = video.Mimes
 	return imp
 }
 
@@ -463,8 +465,8 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		err := errors.New("request missing required field: site or app")
 		errL = append(errL, err)
 	}
-	if len(req.Video.Mime) == 0 {
-		err := errors.New("request missing required field: Video.Mime")
+	if len(req.Video.Mimes) == 0 {
+		err := errors.New("request missing required field: Video.Mimes")
 		errL = append(errL, err)
 	}
 	if len(req.Video.Protocols) == 0 {

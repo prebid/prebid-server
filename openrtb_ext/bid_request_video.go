@@ -235,11 +235,11 @@ type SimplifiedVideo struct {
 	H uint64 `json:"h"`
 
 	// Attribute:
-	//   mime
+	//   mimes
 	// Type:
 	//   array of strings; optional
 	//  Video mime types
-	Mime []string `json:"mime"`
+	Mimes []string `json:"mimes"`
 
 	// Attribute:
 	//   protocols
