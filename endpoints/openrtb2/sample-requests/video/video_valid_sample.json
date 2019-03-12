@@ -63,7 +63,7 @@
   "video": {
     "w": 640,
     "h": 480,
-    "mime": [
+    "mimes": [
       "video/mp4"
     ],
     "protocols": [
