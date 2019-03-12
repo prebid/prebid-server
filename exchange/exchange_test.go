@@ -146,12 +146,30 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 }
 
 func TestPanicRecovery(t *testing.T) {
+	cfg := &config.Configuration{
+		CacheURL: config.Cache{
+			ExpectedTimeMillis: 20,
+		},
+		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	e := NewExchange(&http.Client{}, nil, cfg, theMetrics, adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 	chBids := make(chan *bidResponseWrapper, 1)
 	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
 		panic("panic!")
 	}
-	recovered := recoverSafely(panicker, chBids)
-	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, nil, nil)
+	recovered := e.recoverSafely(panicker, chBids)
+	apnLabels := pbsmetrics.AdapterLabels{
+		Source:      pbsmetrics.DemandWeb,
+		RType:       pbsmetrics.ReqTypeORTB2Web,
+		Adapter:     openrtb_ext.BidderAppnexus,
+		PubID:       "test1",
+		Browser:     pbsmetrics.BrowserSafari,
+		CookieFlag:  pbsmetrics.CookieFlagYes,
+		AdapterBids: pbsmetrics.AdapterBidNone,
+	}
+	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
 }
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {

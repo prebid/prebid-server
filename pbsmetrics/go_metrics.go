@@ -52,6 +52,7 @@ type AdapterMetrics struct {
 	RequestTimer      metrics.Timer
 	PriceHistogram    metrics.Histogram
 	BidsReceivedMeter metrics.Meter
+	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
 }
 
@@ -168,6 +169,7 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		RequestTimer:      &metrics.NilTimer{},
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
+		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
 	}
 	for _, err := range AdapterErrors() {
@@ -210,6 +212,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
+	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 }
 
 func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
@@ -311,6 +314,16 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 	if labels.RequestStatus == RequestStatusOK {
 		me.RequestTimer.Update(length)
 	}
+}
+
+// RecordAdapterPanic implements a part of the MetricsEngine interface
+func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	am.PanicMeter.Mark(1)
 }
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface
