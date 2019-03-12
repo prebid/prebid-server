@@ -485,19 +485,19 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			var impExt appnexusBidExt
-			if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
+			var bidExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
 			} else {
-				if bidType, err := getMediaTypeForBid(&impExt); err == nil {
-					if iabCategory, err := a.getIabCategoryForBid(&impExt); err == nil {
+				if bidType, err := getMediaTypeForBid(&bidExt); err == nil {
+					if iabCategory, err := a.getIabCategoryForBid(&bidExt); err == nil {
 						bid.Cat = []string{iabCategory}
 					} else if len(bid.Cat) > 1 {
 						bid.Cat = bid.Cat[:1]
 					}
 
 					impVideo := &openrtb_ext.ExtBidPrebidVideo{
-						Duration: impExt.Appnexus.CreativeInfo.Video.Duration,
+						Duration: bidExt.Appnexus.CreativeInfo.Video.Duration,
 					}
 
 					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
