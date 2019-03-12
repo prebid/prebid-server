@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Gamoshi Adapter Params",
+  "description": "A schema which validates params accepted by Gamoshi adapter",
+  "type": "object",
+  "properties": {
+      "supplyPartnerId": {
+        "type": "string",
+        "description": "Supply partner id to use."
+    },
+    "favoredMediaType": {
+      "type": "string",
+      "description": "favored media type"
+    }
+  },
+  "required": ["supplyPartnerId"]
+}
