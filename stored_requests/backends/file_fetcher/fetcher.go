@@ -15,7 +15,7 @@ import (
 //
 // This expects each file in the directory to be named "{config_id}.json".
 // For example, when asked to fetch the request with ID == "23", it will return the data from "directory/23.json".
-func NewFileFetcher(directory string) (stored_requests.Fetcher, error) {
+func NewFileFetcher(directory string) (stored_requests.AllFetcher, error) {
 	storedData, err := collectStoredData(directory, FileSystem{make(map[string]FileSystem), make(map[string]json.RawMessage)}, nil)
 	return &eagerFetcher{storedData, nil}, err
 }

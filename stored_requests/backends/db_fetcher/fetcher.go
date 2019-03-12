@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+
 	"github.com/lib/pq"
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
-func NewFetcher(db *sql.DB, queryMaker func(int, int) string) stored_requests.Fetcher {
+func NewFetcher(db *sql.DB, queryMaker func(int, int) string) stored_requests.AllFetcher {
 	if db == nil {
 		glog.Fatalf("The Postgres Stored Request Fetcher requires a database connection. Please report this as a bug.")
 	}
