@@ -28,6 +28,7 @@ import (
 // 2. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
 // 3. A DB connection, if one was created. This may be nil.
 // 4. A function which should be called on shutdown for graceful cleanups.
+// 5. A Fetcher which can be used to get Category mapping for any /openrtb2 endpoint
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
