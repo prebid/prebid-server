@@ -207,7 +207,7 @@
   version = "v0.4.1"
 
 [[projects]]
-  digest = "1:201a3deb0bbd1b035114a920ad932d656e6e9133825118902f6264914d72286c"
+  digest = "1:46119a7cf1745644cc6871b4d037e6ad453001fe74b067b7e50c43058af05fc9"
   name = "github.com/mxmCherry/openrtb"
   packages = [
     ".",
@@ -215,8 +215,8 @@
     "native/request",
   ]
   pruneopts = "UT"
-  revision = "e642f66bd4f9b51c99b0c7b51188b751969465cb"
-  version = "v10.0.0"
+  revision = "39d0e974b2f73eedac8ea9799c6625df7735a47d"
+  version = "v11.0.0"
 
 [[projects]]
   digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
