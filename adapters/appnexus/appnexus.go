@@ -81,10 +81,10 @@ type appnexusBidExtCreative struct {
 }
 
 type appnexusBidExtAppnexus struct {
-	BidType int `json:"bid_ad_type"`
-	BrandId int `json:"brand_id"`
-	BrandCategory int `json:"brand_category_id"`
-	CreativeInfo appnexusBidExtCreative `json:"creative_info"`
+	BidType       int                    `json:"bid_ad_type"`
+	BrandId       int                    `json:"brand_id"`
+	BrandCategory int                    `json:"brand_category_id"`
+	CreativeInfo  appnexusBidExtCreative `json:"creative_info"`
 }
 
 type appnexusBidExt struct {
