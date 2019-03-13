@@ -55,6 +55,93 @@ func TestNewExchange(t *testing.T) {
 	}
 }
 
+//From exchange_test.go func TestPanicRecoveryHighLevel(t *testing.T) {
+//but remember we don't need to create everything in therek, we'll just create the request and use makeBidResponse to test
+func TestCharacterEscape(t *testing.T) {
+	/* The objective is to get to execute e.buildBidResponse(ctx.Background(), liveA... ) (*openrtb.BidResponse, error) to do so we first
+	   create all the parameters it needs. Such as:
+	*/
+	//Instantiate object passed to the bidResponse function
+	//ctx context.Context,
+	//ctx
+
+	//liveAdapters []openrtb_ext.BidderName,
+	// List of bidders we have requests for.
+	liveAdapters := make([]openrtb_ext.BidderName, 1)
+	//liveAdapters.append("appnexus")
+	liveAdapters[0] = "appnexus"
+
+	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 1)
+	adapterBids["appnexus"] = &pbsOrtbSeatBid{
+		currency: "USD",
+	}
+
+	//Build a openrtb.BidRequest. The following lines substitute func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.BidRequest, errs []error)
+	bidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "some-impression-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{{
+					W: 300,
+					H: 250,
+				}, {
+					W: 300,
+					H: 600,
+				}},
+			},
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+		}},
+		Site: &openrtb.Site{
+			Page: "prebid.org",
+			//Domain: "domain.com",
+			//Publisher: &openrtb.Publisher{
+			//ID: "some-publisher-id",
+			//},
+			Ext: json.RawMessage(`{"amp":0}`),
+		},
+		Device: &openrtb.Device{
+			UA: "curl/7.54.0",
+			IP: "::1",
+		},
+		AT:   1,
+		TMax: 500,
+	}
+
+	//resolvedRequest json.RawMessage
+	var resolvedRequest json.RawMessage
+
+	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
+	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
+	//adapterExtra["appnexus"].ResponseTimeMillis = 5
+	adapterExtra["appnexus"] = &seatResponseExtra{
+		ResponseTimeMillis: 5,
+	}
+
+	//errList []error
+	var errList []error
+
+	/* build bid response
+	 */
+	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
+	}
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+	bid_resp, _ := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errList)
+
+	/* Assert we have no '&' characters anymore
+	 */
+	fmt.Println("[DEBUG] bid_resp.Ext = ", string(bid_resp.Ext))
+}
+
 // TestRaceIntegration runs an integration test using all the sample params from
 // adapters/{bidder}/{bidder}test/params/race/*.json files.
 //
