@@ -332,14 +332,14 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
-	//If includebrandcategory is present in ext then CE feature is on.
+	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
 		return res, nil //if not present continue the existing processing without CE.
 	}
 
-	//if includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
+	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
 	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
-	if err != nil || primaryAdServer == "" {
+	if err != nil {
 		return res, err
 	}
 
