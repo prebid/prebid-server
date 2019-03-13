@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -55,8 +56,16 @@ func TestNewExchange(t *testing.T) {
 	}
 }
 
-//From exchange_test.go func TestPanicRecoveryHighLevel(t *testing.T) {
-//but remember we don't need to create everything in therek, we'll just create the request and use makeBidResponse to test
+// The objective is to get to execute e.buildBidResponse(ctx.Background(), liveA... ) (*openrtb.BidResponse, error)
+// and check whether the returned request successfully prints any '&' characters as it should
+// To do so, we:
+// 	1) Write the endpoint adapter URL with an '&' character into a new config,Configuration struct
+// 	   as specified in https://github.com/prebid/prebid-server/issues/465
+// 	2) Initialize a new exchange with said configuration
+// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs including the
+// 	   sample request as specified in https://github.com/prebid/prebid-server/issues/465
+// 	4) Build a BidResponse struct using exchange.buildBidResponse(ctx.Background(), liveA... )
+// 	5) Assert we have no '&' characters in the response that exchange.buildBidResponse returns
 func TestCharacterEscape(t *testing.T) {
 	/* 1) Adapter with a '& char in its endpoint property 		*/
 	/*    https://github.com/prebid/prebid-server/issues/465	*/
@@ -124,6 +133,12 @@ func TestCharacterEscape(t *testing.T) {
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
 	adapterExtra["appnexus"] = &seatResponseExtra{
 		ResponseTimeMillis: 5,
+		Errors: []openrtb_ext.ExtBidderError{
+			{
+				Code:    999,
+				Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\"",
+			},
+		},
 	}
 
 	//errList []error
@@ -140,7 +155,7 @@ func TestCharacterEscape(t *testing.T) {
 		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
 	}
 
-	if !bytes.Contains(bid_resp.Ext, []byte("&")) {
+	if bytes.Contains(bid_resp.Ext, []byte("&")) {
 		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
 	}
 }
