@@ -22,7 +22,7 @@ import (
 	postgresEvents "github.com/prebid/prebid-server/stored_requests/events/postgres"
 )
 
-// NewStoredRequests returns four things:
+// NewStoredRequests returns five things:
 //
 // 1. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
 // 2. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
