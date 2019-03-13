@@ -10,6 +10,14 @@
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:af6e785bedb62fc2abb81977c58a7a44e5cf9f7e41b8d3c8dd4d872edea0ce08"
+  name = "github.com/NYTimes/gziphandler"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "dd0439581c7657cb652dfe5c71d7d48baf39541d"
+  version = "v1.1.1"
+
+[[projects]]
   branch = "master"
   digest = "1:5264e1bb1289de58fd25724e060fe45524a9c2b39bad8562a6fd9d6a62d7a3b6"
   name = "github.com/asaskevich/govalidator"
@@ -467,6 +475,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/DATA-DOG/go-sqlmock",
+    "github.com/NYTimes/gziphandler",
     "github.com/asaskevich/govalidator",
     "github.com/blang/semver",
     "github.com/buger/jsonparser",
