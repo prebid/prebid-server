@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"time"
 
@@ -316,32 +317,36 @@ func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases 
 }
 
 func (deps *endpointDeps) validateImps(req *openrtb.BidRequest, aliases map[string]string) error {
-	var invalidImps []int
 	imps := req.Imp
+	impCount := len(imps)
+	invalidImpIndexes := make([]int, 0, impCount)
 	for index, imp := range imps {
 		if err := deps.validateImp(&imp, aliases, index); err != nil {
-			invalidImps = append(invalidImps, index)
+			invalidImpIndexes = append(invalidImpIndexes, index)
 			glog.Errorf("Error encuntered while parsing request.imp[%d] for request '%s'. %v", index, req.ID, err)
 		}
 	}
 
-	invalidImpCount := len(invalidImps)
+	invalidImpCount := len(invalidImpIndexes)
 	if invalidImpCount == 0 {
 		return nil
 	}
 
-	impCount := len(imps)
 	if invalidImpCount == impCount {
 		return errors.New("All impressions in request.imp[] failed validation")
 	}
 
-	for index, _ := range invalidImps {
-		i := impCount - index - 1
-		tmpImp := imps[index]
-		imps[index] = imps[i]
-		imps[i] = tmpImp
-		// ???? seperate logs for removing each impression or one log entry for all removals
-		glog.Errorf("Removing request.imp[%d] from the request %s.", index, req.ID)
+	//deleting individual elements inserted at random location from a slice causes performance impact
+	//better approach is to move all the valid imps to front of the slice and then truncate the slice
+	sort.Sort(sort.Reverse(sort.IntSlice(invalidImpIndexes)))
+	index := impCount - 1
+	for _, invalidImpIdx := range invalidImpIndexes {
+
+		if invalidImpIdx != index {
+			imps[invalidImpIdx] = imps[index]
+		}
+		index--
+		glog.Errorf("Removing request.imp[%d] from the request %s.", invalidImpIdx, req.ID)
 	}
 
 	req.Imp = imps[:impCount-invalidImpCount]
