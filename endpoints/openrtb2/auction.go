@@ -21,7 +21,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
@@ -39,6 +39,14 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 
 	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
+
+// type ImpExtValidationError struct {
+// 	msg string
+// }
+
+// func (e *ImpExtValidationError) Error() string {
+// 	return e.msg
+// }
 
 type endpointDeps struct {
 	ex               exchange.Exchange
@@ -270,10 +278,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		}
 	}
 
-	for index, imp := range req.Imp {
-		if err := deps.validateImp(&imp, aliases, index); err != nil {
-			return err
-		}
+	if err := deps.validateImps(req, aliases); err != nil {
+		return err
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -306,6 +312,39 @@ func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases 
 			}
 		}
 	}
+	return nil
+}
+
+func (deps *endpointDeps) validateImps(req *openrtb.BidRequest, aliases map[string]string) error {
+	var invalidImps []int
+	imps := req.Imp
+	for index, imp := range imps {
+		if err := deps.validateImp(&imp, aliases, index); err != nil {
+			invalidImps = append(invalidImps, index)
+			glog.Errorf("Error encuntered while parsing request.imp[%d] for request '%s'. %v", index, req.ID, err)
+		}
+	}
+
+	invalidImpCount := len(invalidImps)
+	if invalidImpCount == 0 {
+		return nil
+	}
+
+	impCount := len(imps)
+	if invalidImpCount == impCount {
+		return errors.New("All impressions in request.imp[] failed validation")
+	}
+
+	for index, _ := range invalidImps {
+		i := impCount - index - 1
+		tmpImp := imps[index]
+		imps[index] = imps[i]
+		imps[i] = tmpImp
+		// ???? seperate logs for removing each impression or one log entry for all removals
+		glog.Errorf("Removing request.imp[%d] from the request %s.", index, req.ID)
+	}
+
+	req.Imp = imps[:impCount-invalidImpCount]
 	return nil
 }
 
@@ -346,7 +385,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return err
 	}
 
-	if err := deps.validateImpExt(imp.Ext, aliases, index); err != nil {
+	if err := deps.validateImpExt(&imp.Ext, aliases, index); err != nil {
 		return err
 	}
 
@@ -588,7 +627,8 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+func (deps *endpointDeps) validateImpExt(impExt *openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+	ext := *impExt
 	if len(ext) == 0 {
 		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
 	}
@@ -601,22 +641,45 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string
 		return fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex)
 	}
 
+	valFailedBidders := make(map[string]string, len(bidderExts))
 	for bidder, ext := range bidderExts {
 		if bidder != "prebid" {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
 			}
-			if bidderName, isValid := openrtb_ext.BidderMap[coreBidder]; isValid {
-				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-					return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+
+			bidder, isValid := openrtb_ext.BidderMap[coreBidder]
+			bidderName := string(bidder)
+			if isValid {
+				if err := deps.paramsValidator.Validate(bidder, ext); err != nil {
+					if _, isPresent := valFailedBidders[bidderName]; !isPresent {
+						valFailedBidders[bidderName] = err.Error()
+						glog.Errorf("BidderParamsSchemaError: request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+					}
 				}
 			} else {
-				return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
+				if _, isPresent := valFailedBidders[bidderName]; !isPresent {
+					valFailedBidders[bidderName] = "Unknown Bidder"
+					glog.Errorf("UnknownBidderError: request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
+				}
 			}
 		}
 	}
 
+	if len(valFailedBidders) != 0 {
+
+		if len(valFailedBidders) == len(bidderExts) {
+			//return &ImpExtValidationError{msg: fmt.Sprintf("request.imp[%d].ext failed validation for all bidders", impIndex)}
+			return fmt.Errorf("request.imp[%d].ext failed validation for all bidders", impIndex)
+		}
+
+		for bidder, _ := range valFailedBidders {
+			delete(bidderExts, bidder)
+		}
+
+		*impExt, _ = json.Marshal(bidderExts)
+	}
 	return nil
 }
 
