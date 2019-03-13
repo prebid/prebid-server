@@ -591,9 +591,18 @@ func TestWriteAuctionError(t *testing.T) {
 }
 
 func TestPanicRecovery(t *testing.T) {
+	dummy := auction{
+		cfg:     nil,
+		syncers: nil,
+		gdprPerms: &auctionMockPermissions{
+			allowBidderSync:  false,
+			allowHostCookies: false,
+		},
+		metricsEngine: &metricsConf.DummyMetricsEngine{},
+	}
 	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 		panic("panic!")
 	}
-	recovered := recoverSafely(panicker)
+	recovered := dummy.recoverSafely(panicker)
 	recovered(nil, pbsmetrics.AdapterLabels{})
 }
