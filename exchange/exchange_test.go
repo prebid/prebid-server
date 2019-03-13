@@ -58,12 +58,26 @@ func TestNewExchange(t *testing.T) {
 //From exchange_test.go func TestPanicRecoveryHighLevel(t *testing.T) {
 //but remember we don't need to create everything in therek, we'll just create the request and use makeBidResponse to test
 func TestCharacterEscape(t *testing.T) {
-	/* The objective is to get to execute e.buildBidResponse(ctx.Background(), liveA... ) (*openrtb.BidResponse, error)
-	   To do so, we first build all the parameters it needs.
-	*/
-	//Instantiate object passed to the bidResponse function
-	//ctx context.Context,
+	/* 1) Adapter with a '& char in its endpoint property 		*/
+	/*    https://github.com/prebid/prebid-server/issues/465	*/
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, 1),
+	}
+	cfg.Adapters["appnexus"] = config.Adapter{
+		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
+	}
 
+	/* 	2) Init new exchange with said configuration			*/
+	//Other parameters also needed to create exchange
+	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(204)
+	}
+	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
+	defer server.Close()
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+
+	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
 	//liveAdapters []openrtb_ext.BidderName,
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
@@ -74,7 +88,7 @@ func TestCharacterEscape(t *testing.T) {
 		currency: "USD",
 	}
 
-	//Build a openrtb.BidRequest to mimic the
+	//An openrtb.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
 	bidRequest := &openrtb.BidRequest{
 		ID: "some-request-id",
 		Imp: []openrtb.Imp{{
@@ -100,10 +114,11 @@ func TestCharacterEscape(t *testing.T) {
 		},
 		AT:   1,
 		TMax: 500,
+		Ext:  json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
 	}
 
 	//resolvedRequest json.RawMessage
-	var resolvedRequest json.RawMessage
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
 
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
@@ -114,27 +129,10 @@ func TestCharacterEscape(t *testing.T) {
 	//errList []error
 	var errList []error
 
-	/* build exchange
-	 */
-	//Parameters needed to create exchange
-	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(204)
-	}
-	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
-	defer server.Close()
-
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, len(openrtb_ext.BidderMap)),
-	}
-
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
-
-	/* build bid response
-	 */
+	/* 	4) Build bid response 									*/
 	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errList)
 
-	/* Assert we have no errors so far
-	 */
+	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
 	if err != nil {
 		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
 	}
@@ -142,10 +140,8 @@ func TestCharacterEscape(t *testing.T) {
 		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
 	}
 
-	/* Assert we have no '&' characters anymore
-	 */
-	if !bytes.Contains(bidResponse.Ext, []byte("&")) {
-		t.Errorf("exchange.buildBidResponse did not correctly print a '&' characters")
+	if !bytes.Contains(bid_resp.Ext, []byte("&")) {
+		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
 	}
 }
 
