@@ -1,7 +1,10 @@
 package openrtb_ext
 
+import "encoding/json"
+
 type BidResponseVideo struct {
-	AdPods []*AdPod `json:"adPods"`
+	AdPods []*AdPod        `json:"adPods"`
+	Ext    json.RawMessage `json:"ext"`
 }
 
 type AdPod struct {

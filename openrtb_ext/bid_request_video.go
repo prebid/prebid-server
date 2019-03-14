@@ -92,6 +92,15 @@ type BidRequestVideo struct {
 	// Description:
 	//  Container object for all Prebid Cache configs
 	Cacheconfig Cacheconfig `json:"cacheconfig,omitempty"`
+
+	// Attribute:
+	//   test
+	// Type:
+	//   integer; default 0
+	// Description:
+	//    Indicator of test mode in which auctions are not billable,
+	//    where 0 = live mode, 1 = test mode.
+	Test int8 `json:"test,omitempty"`
 }
 
 type PodConfig struct {
