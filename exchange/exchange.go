@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"runtime/debug"
+	"sort"
 	"time"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -412,6 +413,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 		}
 
 		if len(bidsToRemove) > 0 {
+			sort.Ints(bidsToRemove)
 			if len(bidsToRemove) == len(seatBid.bids) {
 				//if all bids are invalid - remove entire seat bid
 				seatBidsToRemove = append(seatBidsToRemove, bidderName)
