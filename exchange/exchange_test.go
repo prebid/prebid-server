@@ -155,7 +155,8 @@ func TestCharacterEscape(t *testing.T) {
 		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
 	}
 
-	if bytes.Contains(bid_resp.Ext, []byte("&")) {
+	//if bytes.Contains(bid_resp.Ext, []byte("&")) && !bytes.Contains(bid_resp.Ext, []byte("u0026")) {
+	if bytes.Contains(bid_resp.Ext, []byte("u0026")) {
 		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
 	}
 }
