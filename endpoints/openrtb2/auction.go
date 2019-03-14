@@ -41,14 +41,6 @@ func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidato
 	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
 }
 
-// type ImpExtValidationError struct {
-// 	msg string
-// }
-
-// func (e *ImpExtValidationError) Error() string {
-// 	return e.msg
-// }
-
 type endpointDeps struct {
 	ex               exchange.Exchange
 	paramsValidator  openrtb_ext.BidderParamValidator
@@ -675,7 +667,6 @@ func (deps *endpointDeps) validateImpExt(impExt *openrtb.RawJSON, aliases map[st
 	if len(valFailedBidders) != 0 {
 
 		if len(valFailedBidders) == len(bidderExts) {
-			//return &ImpExtValidationError{msg: fmt.Sprintf("request.imp[%d].ext failed validation for all bidders", impIndex)}
 			return fmt.Errorf("request.imp[%d].ext failed validation for all bidders", impIndex)
 		}
 
