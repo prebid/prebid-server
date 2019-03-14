@@ -674,7 +674,11 @@ func (deps *endpointDeps) validateImpExt(impExt *openrtb.RawJSON, aliases map[st
 			delete(bidderExts, bidder)
 		}
 
-		*impExt, _ = json.Marshal(bidderExts)
+		bidderExtBytes, err := json.Marshal(bidderExts)
+		if err != nil {
+			return err
+		}
+		*impExt = bidderExtBytes
 	}
 	return nil
 }
