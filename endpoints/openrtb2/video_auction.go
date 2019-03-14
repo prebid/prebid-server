@@ -136,7 +136,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at auction
-	bidReq.Test = 1
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(r, bidReq) // move after merge
@@ -185,6 +184,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		errL := []error{err}
 		handleError(labels, w, errL, ao)
 		return
+	}
+	if bidReq.Test == 1 {
+		bidResp.Ext = response.Ext
 	}
 
 	resp, err := json.Marshal(bidResp)
@@ -386,6 +388,8 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 	if len(bidExt) > 0 {
 		bidRequest.Ext = bidExt
 	}
+
+	bidRequest.Test = videoRequest.Test
 
 	bidRequest.TMax = 5000
 	return nil
