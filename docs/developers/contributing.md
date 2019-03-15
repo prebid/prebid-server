@@ -35,6 +35,8 @@ those updates must be submitted in the same Pull Request as the code changes. Do
 - [docs/endpoints](../endpoints) describes the Prebid Server API. For example, the endpoint `host:port/openrtb2/auction` is described by [docs/endpoints/openrtb2/auction.md](../endpoints/openrtb2/auction.md)
 - [docs/developers](../developers) contains docs intended for Developers. These assume that the reader is technical, and describe the mechanics of features.
 
+Current Prebid Server documentation can be viewed on [Prebid.org](http://prebid.org/prebid-server/prebid-server-overview.html)
+
 ## Open a Pull Request
 
 When you're ready, [submit a Pull Request](https://help.github.com/articles/creating-a-pull-request/)
