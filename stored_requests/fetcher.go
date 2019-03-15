@@ -23,6 +23,17 @@ type Fetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
 }
 
+type CategoryFetcher interface {
+	// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
+	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
+}
+
+// AllFetcher is an iterface that encapsulates both the original Fetcher and the CategoryFetcher
+type AllFetcher interface {
+	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
+	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
+}
+
 // NotFoundError is an error type to flag that an ID was not found by the Fetcher.
 // This was added to support Multifetcher and any other case where we might expect
 // that all IDs would not be found, and want to disentangle those errors from the others.
@@ -152,6 +163,10 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	}
 
 	return
+}
+
+func (f *fetcherWithCache) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	return "", nil
 }
 
 func findLeftovers(ids []string, data map[string]json.RawMessage) (leftovers []string) {

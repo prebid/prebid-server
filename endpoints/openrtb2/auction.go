@@ -34,14 +34,14 @@ import (
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -55,6 +55,7 @@ type endpointDeps struct {
 	defaultRequest   bool
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
+	categories       stored_requests.CategoryFetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -130,7 +131,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	numImps = len(req.Imp)
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
