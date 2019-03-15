@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -55,6 +56,86 @@ func TestNewExchange(t *testing.T) {
 	}
 	if e.cacheTime != time.Duration(cfg.CacheURL.ExpectedTimeMillis)*time.Millisecond {
 		t.Errorf("Bad cacheTime. Expected 20 ms, got %s", e.cacheTime.String())
+	}
+}
+
+// The objective is to get to execute e.buildBidResponse(ctx.Background(), liveA... ) (*openrtb.BidResponse, error)
+// and check whether the returned request successfully prints any '&' characters as it should
+// To do so, we:
+// 	1) Write the endpoint adapter URL with an '&' character into a new config,Configuration struct
+// 	   as specified in https://github.com/prebid/prebid-server/issues/465
+// 	2) Initialize a new exchange with said configuration
+// 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs including the
+// 	   sample request as specified in https://github.com/prebid/prebid-server/issues/465
+// 	4) Build a BidResponse struct using exchange.buildBidResponse(ctx.Background(), liveA... )
+// 	5) Assert we have no '&' characters in the response that exchange.buildBidResponse returns
+func TestCharacterEscape(t *testing.T) {
+	/* 1) Adapter with a '& char in its endpoint property 		*/
+	/*    https://github.com/prebid/prebid-server/issues/465	*/
+	cfg := &config.Configuration{
+		Adapters: make(map[string]config.Adapter, 1),
+	}
+	cfg.Adapters["appnexus"] = config.Adapter{
+		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
+	}
+
+	/* 	2) Init new exchange with said configuration			*/
+	//Other parameters also needed to create exchange
+	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
+	defer server.Close()
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()), adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+
+	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
+	//liveAdapters []openrtb_ext.BidderName,
+	liveAdapters := make([]openrtb_ext.BidderName, 1)
+	liveAdapters[0] = "appnexus"
+
+	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 1)
+	adapterBids["appnexus"] = &pbsOrtbSeatBid{currency: "USD"}
+
+	//An openrtb.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
+	bidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+		}},
+		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+		AT:     1,
+		TMax:   500,
+		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
+	}
+
+	//resolvedRequest json.RawMessage
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
+
+	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
+	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
+	adapterExtra["appnexus"] = &seatResponseExtra{
+		ResponseTimeMillis: 5,
+		Errors:             []openrtb_ext.ExtBidderError{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
+	}
+
+	//errList []error
+	var errList []error
+
+	/* 	4) Build bid response 									*/
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errList)
+
+	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
+	if err != nil {
+		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
+	}
+	if len(errList) > 0 {
+		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
+	}
+	if bytes.Contains(bid_resp.Ext, []byte("u0026")) {
+		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
 	}
 }
 
