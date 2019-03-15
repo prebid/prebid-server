@@ -1,7 +1,6 @@
 package adkernelAdn
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -184,26 +184,14 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 	return &bidRequest
 }
 
-// EndpointVars contains
-type EndpointVars struct {
-	Host        string
-	PublisherID int
-}
-
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdkernelAdn) (string, error) {
 	reqHost := defaultDomain
 	if params.Host != "" {
 		reqHost = params.Host
 	}
-	endpointParams := EndpointVars{Host: reqHost, PublisherID: params.PublisherID}
-	buf := new(bytes.Buffer)
-	err := adapter.EndpointTemplate.Execute(buf, endpointParams)
-	if err != nil {
-		return "", err
-	}
-	res := buf.String()
-	return res, nil
+	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: params.PublisherID}
+	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
 //MakeBids translates adkernel bid response to prebid-server specific format

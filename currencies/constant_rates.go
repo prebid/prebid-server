@@ -34,3 +34,8 @@ func (r *ConstantRates) GetRate(from string, to string) (float64, error) {
 
 	return 1, nil
 }
+
+// GetRates returns current rates
+func (r *ConstantRates) GetRates() *map[string]map[string]float64 {
+	return nil
+}

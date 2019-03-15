@@ -199,16 +199,17 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 				}
 			}
 			sentBids++
-			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+			bidderRunner := a.recoverSafely(func(bidder *pbs.PBSBidder, aLabels pbsmetrics.AdapterLabels) {
+
 				start := time.Now()
 				bidList, err := ex.Call(ctx, req, bidder)
-				a.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
+				a.metricsEngine.RecordAdapterTime(aLabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
 					var s struct{}
 					switch err {
 					case context.DeadlineExceeded:
-						blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
+						aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
@@ -216,12 +217,12 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 						bidder.Error = err.Error()
 						switch err.(type) {
 						case *errortypes.BadInput:
-							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
+							aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
 						case *errortypes.BadServerResponse:
-							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
+							aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
 						default:
 							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
+							aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
 						}
 					}
 				} else if bidList != nil {
@@ -229,18 +230,18 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					bidder.NumBids = len(bidList)
 					for _, bid := range bidList {
 						var cpm = float64(bid.Price * 1000)
-						a.metricsEngine.RecordAdapterPrice(blables, cpm)
+						a.metricsEngine.RecordAdapterPrice(aLabels, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							a.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(aLabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							a.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(aLabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
-					blabels.AdapterBids = pbsmetrics.AdapterBidNone
+					aLabels.AdapterBids = pbsmetrics.AdapterBidNone
 				}
 
 				ch <- bidResult{
@@ -248,7 +249,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					bidList: bidList,
 					// Bidder done, record bidder metrics
 				}
-				a.metricsEngine.RecordAdapterRequest(blabels)
+				a.metricsEngine.RecordAdapterRequest(aLabels)
 			})
 
 			go bidderRunner(bidder, blabels)
@@ -309,7 +310,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	enc.Encode(resp)
 }
 
-func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
+func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
 	return func(bidder *pbs.PBSBidder, labels pbsmetrics.AdapterLabels) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -318,6 +319,7 @@ func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*p
 				} else {
 					glog.Errorf("Legacy auction recovered panic from Bidder %s: %v. Stack trace is: %v", bidder.BidderCode, r, string(debug.Stack()))
 				}
+				a.metricsEngine.RecordAdapterPanic(labels)
 			}
 		}()
 		inner(bidder, labels)

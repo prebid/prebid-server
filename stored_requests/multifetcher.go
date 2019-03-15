@@ -3,10 +3,11 @@ package stored_requests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 // MultiFetcher is a Fetcher composed of multiple sub-Fetchers that are all polled for results.
-type MultiFetcher []Fetcher
+type MultiFetcher []AllFetcher
 
 // FetchRequests implements the Fetcher interface for MultiFetcher
 func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
@@ -33,6 +34,21 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	errs = appendNotFoundErrors("Request", requestIDs, requestData, errs)
 	errs = appendNotFoundErrors("Imp", impIDs, impData, errs)
 	return
+}
+
+func (mf MultiFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+	for _, f := range mf {
+		if cf, ok := f.(CategoryFetcher); ok {
+			iabCategory, _ := cf.FetchCategories(primaryAdServer, publisherId, iabCategory)
+			if iabCategory != "" {
+				return iabCategory, nil
+			}
+		}
+	}
+
+	// For now just return a NotFoundError if we didn't find it for some reason
+	errtype := fmt.Sprintf("%s_%s.%s", primaryAdServer, publisherId, iabCategory)
+	return "", NotFoundError{errtype, "Category"}
 }
 
 func addAll(base map[string]json.RawMessage, toAdd map[string]json.RawMessage) {

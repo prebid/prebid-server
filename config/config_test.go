@@ -15,9 +15,7 @@ func TestDefaults(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
 	cfg, err := New(v)
-	if err != nil {
-		t.Error(err.Error())
-	}
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
 
 	cmpInts(t, "port", cfg.Port, 8000)
 	cmpInts(t, "admin_port", cfg.AdminPort, 6060)
@@ -84,31 +82,53 @@ adapters:
       username: rubiuser
       password: rubipw23
   brightroll:
-    usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s
+    usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
   adkerneladn:
-     usersync_url: https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=
+     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+`)
+
+var invalidAdapterEndpointConfig = []byte(`
+adapters:
+  appnexus:
+    endpoint: ib.adnxs.com/some/endpoint
+  audienceNetwork:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
+  brightroll:
+    usersync_url: http://http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
+  adkerneladn:
+     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+`)
+
+var invalidUserSyncURLConfig = []byte(`
+adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
+  audienceNetwork:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
+  brightroll:
+    usersync_url: http//test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
+  adkerneladn:
+     usersync_url: http:\\tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 `)
 
 func cmpStrings(t *testing.T, key string, a string, b string) {
 	t.Helper()
-	if a != b {
-		t.Errorf("%s: %s != %s", key, a, b)
-	}
+	assert.Equal(t, a, b, "%s: %s != %s", key, a, b)
 }
 
 func cmpInts(t *testing.T, key string, a int, b int) {
 	t.Helper()
-	if a != b {
-		t.Errorf("%s: %d != %d", key, a, b)
-	}
+	assert.Equal(t, a, b, "%s: %d != %d", key, a, b)
 }
 
 func cmpBools(t *testing.T, key string, a bool, b bool) {
 	t.Helper()
-	if a != b {
-		t.Errorf("%s: %t != %t", key, a, b)
-	}
+	assert.Equal(t, a, b, "%s: %t != %t", key, a, b)
 }
 
 func TestFullConfig(t *testing.T) {
@@ -117,9 +137,7 @@ func TestFullConfig(t *testing.T) {
 	v.SetConfigType("yaml")
 	v.ReadConfig(bytes.NewBuffer(fullConfig))
 	cfg, err := New(v)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
 	cmpStrings(t, "cookie domain", cfg.HostCookie.Domain, "cookies.prebid.org")
 	cmpStrings(t, "cookie name", cfg.HostCookie.CookieName, "userid")
 	cmpStrings(t, "cookie family", cfg.HostCookie.Family, "prebid")
@@ -162,8 +180,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, "rubiuser")
 	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://test-bid.ybp.yahoo.com/bid/appnexuspbs")
-	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{gdpr}}&euconsent={{gdpr_consent}}&url=%s")
-	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{gdpr}}&gdpr_consent={{gdpr_consent}}&r=")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s")
+	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 }
@@ -178,9 +196,26 @@ func TestValidConfig(t *testing.T) {
 		},
 	}
 
-	if err := cfg.validate(); err != nil {
-		t.Errorf("OpenRTB filesystem config should work. %v", err)
-	}
+	err := cfg.validate()
+	assert.Nil(t, err, "OpenRTB filesystem config should work. %v", err)
+}
+
+func TestInvalidAdapterEndpointConfig(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(invalidAdapterEndpointConfig))
+	_, err := New(v)
+	assert.Error(t, err, "invalid endpoint in config should return an error")
+}
+
+func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(invalidUserSyncURLConfig))
+	_, err := New(v)
+	assert.Error(t, err, "invalid user_sync URL in config should return an error")
 }
 
 func TestNegativeRequestSize(t *testing.T) {
@@ -214,10 +249,8 @@ func TestNegativeCurrencyConverterFetchInterval(t *testing.T) {
 			FetchIntervalSeconds: -1,
 		},
 	}
-
-	if err := cfg.validate(); err == nil {
-		t.Error("cfg.currency_converter.fetch_interval_seconds should prevent negative values, but it doesn't")
-	}
+	err := cfg.validate()
+	assert.NotNil(t, err, "cfg.currency_converter.fetch_interval_seconds should prevent negative values, but it doesn't")
 }
 
 func TestOverflowedCurrencyConverterFetchInterval(t *testing.T) {
@@ -226,10 +259,8 @@ func TestOverflowedCurrencyConverterFetchInterval(t *testing.T) {
 			FetchIntervalSeconds: (0xffff) + 1,
 		},
 	}
-
-	if err := cfg.validate(); err == nil {
-		t.Errorf("cfg.currency_converter.fetch_interval_seconds prevent values over %d, but it doesn't", 0xffff)
-	}
+	err := cfg.validate()
+	assert.NotNil(t, err, "cfg.currency_converter.fetch_interval_seconds prevent values over %d, but it doesn't", 0xffff)
 }
 
 func TestLimitTimeout(t *testing.T) {
@@ -264,7 +295,5 @@ func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def ui
 	}
 	expectedDuration := time.Duration(expected) * time.Millisecond
 	limited := cfg.LimitAuctionTimeout(time.Duration(requested) * time.Millisecond)
-	if limited != expectedDuration {
-		t.Errorf("Expected %dms timeout, got %dms", expectedDuration, limited/time.Millisecond)
-	}
+	assert.Equal(t, limited, expectedDuration, "Expected %dms timeout, got %dms", expectedDuration, limited/time.Millisecond)
 }
