@@ -1,16 +1,12 @@
 package onemobile
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs"
-	"golang.org/x/net/context/ctxhttp"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -19,7 +15,6 @@ type OneMobileAdapter struct {
 	URI  string
 }
 
-// used for cookies and such
 func (a *OneMobileAdapter) Name() string {
 	return "onemobile"
 }
@@ -28,127 +23,154 @@ func (a *OneMobileAdapter) SkipNoCookies() bool {
 	return false
 }
 
-type OneMobileParams struct {
-	dcn string `json:"dcn"`
-	pos string `json:"pos"`
-}
+func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 
-func (a *OneMobileAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-	mediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER}
-	ppReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
-
-	if err != nil {
-		return nil, err
+	request := *requestIn
+	errs := make([]error, 0, len(request.Imp))
+	if len(request.Imp) == 0 {
+		err := &errortypes.BadInput{
+			Message: "No impression in the bid request",
+		}
+		errs = append(errs, err)
+		return nil, errs
 	}
 
-	var unit pbs.PBSAdUnit
-	var params OneMobileParams
+	errors := make([]error, 0, 1)
 
-	unit = bidder.AdUnits[0]
-
-	err = json.Unmarshal(unit.Params, &params)
+	var bidderExt adapters.ExtImpBidder
+	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
 	if err != nil {
-		return nil, &errortypes.BadInput{
+		err = &errortypes.BadInput{
+			Message: "ext.bidder not provided",
+		}
+		errors = append(errors, err)
+		return nil, errors
+	}
+	var oneMobileExt openrtb_ext.ExtImpOneMobile
+	err = json.Unmarshal(bidderExt.Bidder, &oneMobileExt)
+	if err != nil {
+		err = &errortypes.BadInput{
 			Message: err.Error(),
 		}
+		errors = append(errors, err)
+		return nil, errors
 	}
 
-	if params.dcn == "" {
-		return nil, &errortypes.BadInput{
+	if oneMobileExt.Dcn == "" {
+		err = &errortypes.BadInput{
 			Message: "Missing param dcn",
 		}
+		errors = append(errors, err)
+		return nil, errors
 	}
 
-	if params.pos == "" {
-		return nil, &errortypes.BadInput{
+	if oneMobileExt.Pos == "" {
+		err = &errortypes.BadInput{
 			Message: "Missing param pos",
 		}
+		errors = append(errors, err)
+		return nil, errors
 	}
 
-	reqJSON, err := json.Marshal(ppReq)
-	debug := &pbs.BidderDebug{
-		RequestURI: a.URI,
-	}
-
-	if req.IsDebug {
-		debug.RequestBody = string(reqJSON)
-		bidder.Debug = append(bidder.Debug, debug)
-	}
-
-	var endpointUrl = a.URI + "/cmd=bid&dcn" + params.dcn + "&pos=" + params.pos
-
-	httpReq, err := http.NewRequest("GET", endpointUrl, nil)
-	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
-	httpReq.Header.Add("Accept", "application/json")
-
-	ppResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
+	//clean-up
+	requestImp := make([]openrtb.Imp, len(requestIn.Imp))
+	copy(requestImp, requestIn.Imp)
+	request.Imp = requestImp
+	changeRequestForBidService(&request, &oneMobileExt)
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		return nil, err
+		errs = append(errs, err)
+		return nil, errs
 	}
 
-	debug.StatusCode = ppResp.StatusCode
+	thisURI := a.URI
 
-	if ppResp.StatusCode == http.StatusNoContent {
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Set("User-Agent", request.Device.UA)
+	headers.Add("x-openrtb-version", "2.5")
+
+	return []*adapters.RequestData{{
+		Method:  "POST",
+		Uri:     thisURI,
+		Body:    reqJSON,
+		Headers: headers,
+	}}, errors
+}
+
+func (a *OneMobileAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+
+	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
-	if ppResp.StatusCode == http.StatusBadRequest {
-		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("HTTP status: %d", ppResp.StatusCode),
-		}
-	}
-
-	if ppResp.StatusCode != http.StatusOK {
-		return nil, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("HTTP status: %d", ppResp.StatusCode),
-		}
-	}
-
-	defer ppResp.Body.Close()
-	body, err := ioutil.ReadAll(ppResp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if req.IsDebug {
-		debug.ResponseBody = string(body)
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse
-	err = json.Unmarshal(body, &bidResp)
-	if err != nil {
-		return nil, &errortypes.BadServerResponse{
-			Message: err.Error(),
-		}
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Bad server response: %d. ", err),
+		}}
 	}
 
-	bids := make(pbs.PBSBidSlice, 0)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			bidID := bidder.LookupBidID(bid.ImpID)
-			if bidID == "" {
-				return nil, &errortypes.BadServerResponse{
+			impID := lookupImpID(bid.ImpID, internalRequest.Imp)
+			if impID == "" {
+				return nil, []error{&errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
-				}
+				}}
 			}
 
-			pbid := pbs.PBSBid{
-				BidID:             bidID,
-				AdUnitCode:        bid.ImpID,
-				BidderCode:        bidder.BidderCode,
-				Price:             bid.Price,
-				Adm:               bid.AdM,
-				Creative_id:       bid.CrID,
-				Width:             bid.W,
-				Height:            bid.H,
-				CreativeMediaType: string(openrtb_ext.BidTypeBanner),
-			}
-			bids = append(bids, &pbid)
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+			})
 		}
 	}
 
-	return bids, nil
+	return bidResponse, nil
+}
+
+func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpOneMobile) {
+	if request.Imp[0].TagID == "" {
+		request.Imp[0].TagID = extension.Pos
+	}
+	if request.Site.ID == "" {
+		request.Site.ID = extension.Dcn
+	}
+	if request.Device.IP == "::1" {
+		request.Device.IP = "1.2.3.4"
+	}
+}
+
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impId {
+			if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			}
+			return mediaType
+		}
+	}
+	return mediaType
+}
+
+func lookupImpID(impId string, imps []openrtb.Imp) string {
+	for _, imp := range imps {
+		if imp.ID == impId {
+			return imp.ID
+		}
+	}
+	return ""
 }
 
 func NewOneMobileAdapter(config *adapters.HTTPAdapterConfig, uri string) *OneMobileAdapter {
@@ -157,5 +179,13 @@ func NewOneMobileAdapter(config *adapters.HTTPAdapterConfig, uri string) *OneMob
 	return &OneMobileAdapter{
 		http: a,
 		URI:  uri,
+	}
+}
+
+func NewOneMobileBidder(client *http.Client, endpoint string) *OneMobileAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+	return &OneMobileAdapter{
+		http: a,
+		URI:  endpoint,
 	}
 }

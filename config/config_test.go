@@ -14,6 +14,8 @@ import (
 func TestDefaults(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(requiredConfig))
 	cfg, err := New(v)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 
@@ -27,6 +29,13 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 }
+
+var requiredConfig = []byte(`
+adapters:
+  onemobile:
+    endpoint: https://hb.nexage.com/admax/bid/partners/prebidtest
+    usersync_url: https://pixel.advertising.com/ups/58207/occ?http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Donemobile%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+`)
 
 var fullConfig = []byte(`
 gdpr:
@@ -89,6 +98,9 @@ adapters:
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
   adkerneladn:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+  onemobile:
+    endpoint: https://hb.nexage.com/admax/bid/partners/prebidtest
+    usersync_url: https://pixel.advertising.com/ups/58207/occ?http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Donemobile%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
@@ -228,6 +240,13 @@ func TestInvalidAdapterEndpointConfig(t *testing.T) {
 	assert.Error(t, err, "invalid endpoint in config should return an error")
 }
 
+func TestRequiredAdapterEndpointConfig(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	_, err := New(v)
+	assert.Error(t, err, "There should be no default endpoint available for onemobile")
+}
+
 func TestInvalidAdapterUserSyncURLConfig(t *testing.T) {
 	v := viper.New()
 	SetupViper(v, "")
@@ -294,6 +313,7 @@ func newDefaultConfig(t *testing.T) *Configuration {
 	v := viper.New()
 	SetupViper(v, "")
 	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(requiredConfig))
 	cfg, err := New(v)
 	assert.NoError(t, err)
 	return cfg
