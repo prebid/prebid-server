@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/mxmCherry/openrtb"

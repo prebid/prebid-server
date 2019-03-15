@@ -532,17 +532,6 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
 func (a *AppNexusAdapter) getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
-	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
-	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {
-		return iabCategory, nil
-	} else {
-		return "", fmt.Errorf("category not in map: %s", brandIDString)
-		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", bid.Appnexus.BidType)
-	}
-}
-
-// getIabCategoryForBid maps an appnexus brand id to an IAB category.
-func (a *AppNexusAdapter) getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
 	// TODO: Change from BrandId to a CategoryId once that is returned from impbus
 	brandIDString := strconv.Itoa(bid.Appnexus.BrandId)
 	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {

@@ -15,9 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
-
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/prebid_cache_client"
