@@ -19,7 +19,8 @@ import (
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{}, nil, nil)
+	fetcher := newFetcher(&config.StoredRequests{}, nil, nil, false)
+	ampFetcher := newFetcher(&config.StoredRequests{}, nil, nil, true)
 	if fetcher == nil || ampFetcher == nil {
 		t.Errorf("The fetchers should be non-nil, even with an empty config.")
 	}
@@ -32,12 +33,18 @@ func TestNewEmptyFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcher(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
+	fetcher := newFetcher(&config.StoredRequests{
 		HTTP: config.HTTPFetcherConfig{
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "stored-requests.prebid.com?type=amp",
 		},
-	}, nil, nil)
+	}, nil, nil, false)
+	ampFetcher := newFetcher(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
+			Endpoint:    "stored-requests.prebid.com",
+			AmpEndpoint: "stored-requests.prebid.com?type=amp",
+		},
+	}, nil, nil, true)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
@@ -55,12 +62,18 @@ func TestNewHTTPFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcherNoAmp(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
+	fetcher := newFetcher(&config.StoredRequests{
 		HTTP: config.HTTPFetcherConfig{
 			Endpoint:    "stored-requests.prebid.com",
 			AmpEndpoint: "",
 		},
-	}, nil, nil)
+	}, nil, nil, false)
+	ampFetcher := newFetcher(&config.StoredRequests{
+		HTTP: config.HTTPFetcherConfig{
+			Endpoint:    "stored-requests.prebid.com",
+			AmpEndpoint: "",
+		},
+	}, nil, nil, true)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
 		if httpFetcher.Endpoint != "stored-requests.prebid.com?" {
 			t.Errorf("The HTTP fetcher is using the wrong endpoint. Expected %s, got %s", "stored-requests.prebid.com?", httpFetcher.Endpoint)
