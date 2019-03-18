@@ -1,394 +1,1178 @@
 {
-    "IAB1": "",
-    "IAB1-1": "404",
-    "IAB1-2": "392",
-    "IAB1-3": "0",
-    "IAB1-4": "0",
-    "IAB1-5": "419",
-    "IAB1-6": "392",
-    "IAB1-7": "392",
-    "IAB2": "",
-    "IAB2-1": "399",
-    "IAB2-2": "399",
-    "IAB2-3": "399",
-    "IAB2-4": "399",
-    "IAB2-5": "399",
-    "IAB2-6": "399",
-    "IAB2-7": "399",
-    "IAB2-8": "399",
-    "IAB2-9": "399",
-    "IAB2-10": "399",
-    "IAB2-11": "399",
-    "IAB2-12": "399",
-    "IAB2-13": "399",
-    "IAB2-14": "399",
-    "IAB2-15": "399",
-    "IAB2-16": "399",
-    "IAB2-17": "399",
-    "IAB2-18": "399",
-    "IAB2-19": "399",
-    "IAB2-20": "399",
-    "IAB2-21": "399",
-    "IAB2-22": "399",
-    "IAB2-23": "399",
-    "IAB3": "",
-    "IAB3-1": "393",
-    "IAB3-2": "393",
-    "IAB3-3": "393",
-    "IAB3-4": "409",
-    "IAB3-5": "393",
-    "IAB3-6": "393",
-    "IAB3-7": "398",
-    "IAB3-8": "393",
-    "IAB3-9": "393",
-    "IAB3-10": "393",
-    "IAB3-11": "393",
-    "IAB3-12": "393",
-    "IAB4": "",
-    "IAB4-1": "393",
-    "IAB4-2": "405",
-    "IAB4-3": "405",
-    "IAB4-4": "393",
-    "IAB4-5": "393",
-    "IAB4-6": "393",
-    "IAB4-7": "406",
-    "IAB4-8": "405",
-    "IAB4-9": "417",
-    "IAB4-10": "429",
-    "IAB4-11": "393",
-    "IAB5": "",
-    "IAB5-1": "405",
-    "IAB5-2": "405",
-    "IAB5-3": "405",
-    "IAB5-4": "405",
-    "IAB5-5": "405",
-    "IAB5-6": "405",
-    "IAB5-7": "405",
-    "IAB5-8": "405",
-    "IAB5-9": "405",
-    "IAB5-10": "405",
-    "IAB5-11": "405",
-    "IAB5-12": "405",
-    "IAB5-13": "405",
-    "IAB5-14": "405",
-    "IAB5-15": "405",
-    "IAB6": "",
-    "IAB6-1": "0",
-    "IAB6-2": "0",
-    "IAB6-3": "0",
-    "IAB6-4": "0",
-    "IAB6-5": "0",
-    "IAB6-6": "0",
-    "IAB6-7": "0",
-    "IAB6-8": "0",
-    "IAB6-9": "0",
-    "IAB7": "",
-    "IAB7-1": "406",
-    "IAB7-2": "406",
-    "IAB7-3": "406",
-    "IAB7-4": "406",
-    "IAB7-5": "406",
-    "IAB7-6": "406",
-    "IAB7-7": "406",
-    "IAB7-8": "406",
-    "IAB7-9": "406",
-    "IAB7-10": "406",
-    "IAB7-11": "406",
-    "IAB7-12": "406",
-    "IAB7-13": "406",
-    "IAB7-14": "406",
-    "IAB7-15": "406",
-    "IAB7-16": "406",
-    "IAB7-17": "406",
-    "IAB7-18": "406",
-    "IAB7-19": "406",
-    "IAB7-20": "406",
-    "IAB7-21": "406",
-    "IAB7-22": "406",
-    "IAB7-23": "406",
-    "IAB7-24": "406",
-    "IAB7-25": "406",
-    "IAB7-26": "406",
-    "IAB7-27": "406",
-    "IAB7-28": "406",
-    "IAB7-29": "406",
-    "IAB7-30": "406",
-    "IAB7-31": "406",
-    "IAB7-32": "406",
-    "IAB7-33": "406",
-    "IAB7-34": "406",
-    "IAB7-35": "406",
-    "IAB7-36": "406",
-    "IAB7-37": "406",
-    "IAB7-38": "406",
-    "IAB7-39": "406",
-    "IAB7-40": "406",
-    "IAB7-41": "406",
-    "IAB7-42": "406",
-    "IAB7-43": "406",
-    "IAB7-44": "406",
-    "IAB7-45": "406",
-    "IAB8": "",
-    "IAB8-1": "394",
-    "IAB8-2": "394",
-    "IAB8-3": "394",
-    "IAB8-4": "394",
-    "IAB8-5": "400",
-    "IAB8-6": "401",
-    "IAB8-7": "394",
-    "IAB8-8": "394",
-    "IAB8-9": "407",
-    "IAB8-10": "394",
-    "IAB8-11": "394",
-    "IAB8-12": "394",
-    "IAB8-13": "394",
-    "IAB8-14": "394",
-    "IAB8-15": "394",
-    "IAB8-16": "394",
-    "IAB8-17": "394",
-    "IAB8-18": "400",
-    "IAB9": "",
-    "IAB9-1": "392",
-    "IAB9-2": "0",
-    "IAB9-3": "418",
-    "IAB9-4": "0",
-    "IAB9-5": "413",
-    "IAB9-6": "412",
-    "IAB9-7": "0",
-    "IAB9-8": "0",
-    "IAB9-9": "426",
-    "IAB9-10": "0",
-    "IAB9-11": "404",
-    "IAB9-12": "0",
-    "IAB9-13": "0",
-    "IAB9-14": "0",
-    "IAB9-15": "404",
-    "IAB9-16": "392",
-    "IAB9-17": "0",
-    "IAB9-18": "393",
-    "IAB9-19": "418",
-    "IAB9-20": "0",
-    "IAB9-21": "0",
-    "IAB9-22": "0",
-    "IAB9-23": "424",
-    "IAB9-24": "392",
-    "IAB9-25": "392",
-    "IAB9-26": "0",
-    "IAB9-27": "0",
-    "IAB9-28": "0",
-    "IAB9-29": "0",
-    "IAB9-30": "392",
-    "IAB9-31": "0",
-    "IAB10": "",
-    "IAB10-1": "415",
-    "IAB10-2": "0",
-    "IAB10-3": "0",
-    "IAB10-4": "0",
-    "IAB10-5": "434",
-    "IAB10-6": "434",
-    "IAB10-7": "434",
-    "IAB10-8": "393",
-    "IAB10-9": "434",
-    "IAB11": "",
-    "IAB11-1": "398",
-    "IAB11-2": "398",
-    "IAB11-3": "398",
-    "IAB11-4": "398",
-    "IAB11-5": "398",
-    "IAB12": "",
-    "IAB12-1": "438",
-    "IAB12-2": "438",
-    "IAB12-3": "438",
-    "IAB13": "",
-    "IAB13-1": "393",
-    "IAB13-2": "393",
-    "IAB13-3": "438",
-    "IAB13-4": "391",
-    "IAB13-5": "393",
-    "IAB13-6": "436",
-    "IAB13-7": "393",
-    "IAB13-8": "393",
-    "IAB13-9": "393",
-    "IAB13-10": "393",
-    "IAB13-11": "393",
-    "IAB13-12": "393",
-    "IAB14": "",
-    "IAB14-1": "0",
-    "IAB14-2": "0",
-    "IAB14-3": "0",
-    "IAB14-4": "0",
-    "IAB14-5": "0",
-    "IAB14-6": "0",
-    "IAB14-7": "0",
-    "IAB14-8": "0",
-    "IAB15": "",
-    "IAB15-1": "0",
-    "IAB15-2": "0",
-    "IAB15-3": "0",
-    "IAB15-4": "0",
-    "IAB15-5": "0",
-    "IAB15-6": "0",
-    "IAB15-7": "0",
-    "IAB15-8": "0",
-    "IAB15-9": "0",
-    "IAB15-10": "0",
-    "IAB16": "",
-    "IAB16-1": "423",
-    "IAB16-2": "423",
-    "IAB16-3": "423",
-    "IAB16-4": "423",
-    "IAB16-5": "423",
-    "IAB16-6": "423",
-    "IAB16-7": "423",
-    "IAB17": "",
-    "IAB17-1": "425",
-    "IAB17-2": "425",
-    "IAB17-3": "425",
-    "IAB17-4": "425",
-    "IAB17-5": "425",
-    "IAB17-6": "425",
-    "IAB17-7": "425",
-    "IAB17-8": "425",
-    "IAB17-9": "425",
-    "IAB17-10": "425",
-    "IAB17-11": "425",
-    "IAB17-12": "425",
-    "IAB17-13": "425",
-    "IAB17-14": "425",
-    "IAB17-15": "425",
-    "IAB17-16": "425",
-    "IAB17-17": "425",
-    "IAB17-18": "425",
-    "IAB17-19": "425",
-    "IAB17-20": "425",
-    "IAB17-21": "425",
-    "IAB17-22": "425",
-    "IAB17-23": "425",
-    "IAB17-24": "425",
-    "IAB17-25": "425",
-    "IAB17-26": "425",
-    "IAB17-27": "425",
-    "IAB17-28": "425",
-    "IAB17-29": "425",
-    "IAB17-30": "425",
-    "IAB17-31": "425",
-    "IAB17-32": "425",
-    "IAB17-33": "425",
-    "IAB17-34": "425",
-    "IAB17-35": "425",
-    "IAB17-36": "425",
-    "IAB17-37": "425",
-    "IAB17-38": "425",
-    "IAB17-39": "425",
-    "IAB17-40": "425",
-    "IAB17-41": "425",
-    "IAB17-42": "425",
-    "IAB17-43": "425",
-    "IAB17-44": "425",
-    "IAB18": "",
-    "IAB18-1": "411",
-    "IAB18-2": "397",
-    "IAB18-3": "397",
-    "IAB18-4": "418",
-    "IAB18-5": "397",
-    "IAB18-6": "397",
-    "IAB19": "",
-    "IAB19-1": "0",
-    "IAB19-2": "409",
-    "IAB19-3": "409",
-    "IAB19-4": "409",
-    "IAB19-5": "424",
-    "IAB19-6": "417",
-    "IAB19-7": "409",
-    "IAB19-8": "409",
-    "IAB19-9": "409",
-    "IAB19-10": "409",
-    "IAB19-11": "409",
-    "IAB19-12": "409",
-    "IAB19-13": "404",
-    "IAB19-14": "409",
-    "IAB19-15": "409",
-    "IAB19-16": "409",
-    "IAB19-17": "419",
-    "IAB19-18": "409",
-    "IAB19-19": "409",
-    "IAB19-20": "409",
-    "IAB19-21": "409",
-    "IAB19-22": "409",
-    "IAB19-23": "409",
-    "IAB19-24": "409",
-    "IAB19-25": "409",
-    "IAB19-26": "409",
-    "IAB19-27": "409",
-    "IAB19-28": "409",
-    "IAB19-29": "392",
-    "IAB19-30": "409",
-    "IAB19-31": "409",
-    "IAB19-32": "409",
-    "IAB19-33": "409",
-    "IAB19-34": "409",
-    "IAB19-35": "409",
-    "IAB19-36": "409",
-    "IAB20": "",
-    "IAB20-1": "395",
-    "IAB20-2": "395",
-    "IAB20-3": "395",
-    "IAB20-4": "395",
-    "IAB20-5": "395",
-    "IAB20-6": "395",
-    "IAB20-7": "395",
-    "IAB20-8": "395",
-    "IAB20-9": "395",
-    "IAB20-10": "395",
-    "IAB20-11": "395",
-    "IAB20-12": "395",
-    "IAB20-13": "395",
-    "IAB20-14": "395",
-    "IAB20-15": "395",
-    "IAB20-16": "395",
-    "IAB20-17": "395",
-    "IAB20-18": "395",
-    "IAB20-19": "395",
-    "IAB20-20": "395",
-    "IAB20-21": "395",
-    "IAB20-22": "395",
-    "IAB20-23": "395",
-    "IAB20-24": "395",
-    "IAB20-25": "395",
-    "IAB20-26": "395",
-    "IAB20-27": "395",
-    "IAB21": "",
-    "IAB21-1": "416",
-    "IAB21-2": "416",
-    "IAB21-3": "416",
-    "IAB22": "",
-    "IAB22-1": "416",
-    "IAB22-2": "416",
-    "IAB22-3": "416",
-    "IAB22-4": "0",
-    "IAB23": "",
-    "IAB23-1": "0",
-    "IAB23-2": "0",
-    "IAB23-3": "0",
-    "IAB23-4": "0",
-    "IAB23-5": "0",
-    "IAB23-6": "0",
-    "IAB23-7": "0",
-    "IAB23-8": "0",
-    "IAB23-9": "0",
-    "IAB23-10": "0",
-    "IAB24": "",
-    "IAB25": "",
-    "IAB25-1": "0",
-    "IAB25-2": "0",
-    "IAB25-3": "0",
-    "IAB25-4": "0",
-    "IAB25-5": "0",
-    "IAB25-6": "0",
-    "IAB25-7": "0",
-    "IAB26": "",
-    "IAB26-1": "0",
-    "IAB26-2": "0",
-    "IAB26-3": "0",
-    "IAB26-4": "0"
+  "IAB1-1": {
+    "id": "404",
+    "name": "Publishing"
+  },
+  "IAB1-2": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB1-5": {
+    "id": "419",
+    "name": "Filmed Entertainment"
+  },
+  "IAB1-6": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB1-7": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB2-1": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-2": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-3": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-4": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-5": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-6": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-7": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-8": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-9": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-10": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-11": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-12": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-13": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-14": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-15": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-16": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-17": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-18": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-19": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-20": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-21": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-22": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB2-23": {
+    "id": "399",
+    "name": "Automotive"
+  },
+  "IAB3-1": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-2": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-3": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-4": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB3-5": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-6": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-7": {
+    "id": "398",
+    "name": "Government/Municipal"
+  },
+  "IAB3-8": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-9": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-10": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-11": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB3-12": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB4-1": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB4-2": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB4-3": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB4-4": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB4-5": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB4-6": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB4-7": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB4-8": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB4-9": {
+    "id": "417",
+    "name": "Telecommunications"
+  },
+  "IAB4-10": {
+    "id": "429",
+    "name": "Military"
+  },
+  "IAB4-11": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB5-1": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-2": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-3": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-4": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-5": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-6": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-7": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-8": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-9": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-10": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-11": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-12": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-13": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-14": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB5-15": {
+    "id": "405",
+    "name": "Educational Services"
+  },
+  "IAB7-1": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-2": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-3": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-4": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-5": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-6": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-7": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-8": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-9": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-10": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-11": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-12": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-13": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-14": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-15": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-16": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-17": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-18": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-19": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-20": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-21": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-22": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-23": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-24": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-25": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-26": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-27": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-28": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-29": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-30": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-31": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-32": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-33": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-34": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-35": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-36": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-37": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-38": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-39": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-40": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-41": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-42": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-43": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-44": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB7-45": {
+    "id": "406",
+    "name": "Health Care Services"
+  },
+  "IAB8-1": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-2": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-3": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-4": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-5": {
+    "id": "400",
+    "name": "Beer/Wine/Liquor"
+  },
+  "IAB8-6": {
+    "id": "401",
+    "name": "Beverages"
+  },
+  "IAB8-7": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-8": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-9": {
+    "id": "407",
+    "name": "Restaurant/Fast Food"
+  },
+  "IAB8-10": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-11": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-12": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-13": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-14": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-15": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-16": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-17": {
+    "id": "394",
+    "name": "Food"
+  },
+  "IAB8-18": {
+    "id": "400",
+    "name": "Beer/Wine/Liquor"
+  },
+  "IAB9-1": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB9-3": {
+    "id": "418",
+    "name": "Jewelry"
+  },
+  "IAB9-5": {
+    "id": "413",
+    "name": "Gaming"
+  },
+  "IAB9-6": {
+    "id": "412",
+    "name": "Household Products"
+  },
+  "IAB9-9": {
+    "id": "426",
+    "name": "Tobacco"
+  },
+  "IAB9-11": {
+    "id": "404",
+    "name": "Publishing"
+  },
+  "IAB9-15": {
+    "id": "404",
+    "name": "Publishing"
+  },
+  "IAB9-16": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB9-18": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB9-19": {
+    "id": "418",
+    "name": "Jewelry"
+  },
+  "IAB9-23": {
+    "id": "424",
+    "name": "Photographic Equipment"
+  },
+  "IAB9-24": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB9-25": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB9-30": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB10-1": {
+    "id": "415",
+    "name": "Appliances"
+  },
+  "IAB10-5": {
+    "id": "434",
+    "name": "Home Furnishings"
+  },
+  "IAB10-6": {
+    "id": "434",
+    "name": "Home Furnishings"
+  },
+  "IAB10-7": {
+    "id": "434",
+    "name": "Home Furnishings"
+  },
+  "IAB10-8": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB10-9": {
+    "id": "434",
+    "name": "Home Furnishings"
+  },
+  "IAB11-1": {
+    "id": "398",
+    "name": "Government/Municipal"
+  },
+  "IAB11-2": {
+    "id": "398",
+    "name": "Government/Municipal"
+  },
+  "IAB11-3": {
+    "id": "398",
+    "name": "Government/Municipal"
+  },
+  "IAB11-4": {
+    "id": "398",
+    "name": "Government/Municipal"
+  },
+  "IAB11-5": {
+    "id": "398",
+    "name": "Government/Municipal"
+  },
+  "IAB12-1": {
+    "id": "438",
+    "name": "News"
+  },
+  "IAB12-2": {
+    "id": "438",
+    "name": "News"
+  },
+  "IAB12-3": {
+    "id": "438",
+    "name": "News"
+  },
+  "IAB13-1": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-2": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-3": {
+    "id": "438",
+    "name": "News"
+  },
+  "IAB13-4": {
+    "id": "391",
+    "name": "Financial Services"
+  },
+  "IAB13-5": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-6": {
+    "id": "436",
+    "name": "Insurance"
+  },
+  "IAB13-7": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-8": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-9": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-10": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-11": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB13-12": {
+    "id": "393",
+    "name": "Business Services"
+  },
+  "IAB16-1": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-2": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-3": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-4": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-5": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-6": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-7": {
+    "id": "423",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB17-1": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-2": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-3": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-4": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-5": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-6": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-7": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-8": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-9": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-10": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-11": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-12": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-13": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-14": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-15": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-16": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-17": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-18": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-19": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-20": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-21": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-22": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-23": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-24": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-25": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-26": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-27": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-28": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-29": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-30": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-31": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-32": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-33": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-34": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-35": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-36": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-37": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-38": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-39": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-40": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-41": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-42": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-43": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB17-44": {
+    "id": "425",
+    "name": "Professional Sports"
+  },
+  "IAB18-1": {
+    "id": "411",
+    "name": "Cosmetics/Toiletries"
+  },
+  "IAB18-2": {
+    "id": "397",
+    "name": "Apparel"
+  },
+  "IAB18-3": {
+    "id": "397",
+    "name": "Apparel"
+  },
+  "IAB18-4": {
+    "id": "418",
+    "name": "Jewelry"
+  },
+  "IAB18-5": {
+    "id": "397",
+    "name": "Apparel"
+  },
+  "IAB18-6": {
+    "id": "397",
+    "name": "Apparel"
+  },
+  "IAB19-2": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-3": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-4": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-5": {
+    "id": "424",
+    "name": "Photographic Equipment"
+  },
+  "IAB19-6": {
+    "id": "417",
+    "name": "Telecommunications"
+  },
+  "IAB19-7": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-8": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-9": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-10": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-11": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-12": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-13": {
+    "id": "404",
+    "name": "Publishing"
+  },
+  "IAB19-14": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-15": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-16": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-17": {
+    "id": "419",
+    "name": "Filmed Entertainment"
+  },
+  "IAB19-18": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-19": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-20": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-21": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-22": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-23": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-24": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-25": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-26": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-27": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-28": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-29": {
+    "id": "392",
+    "name": "Entertainment"
+  },
+  "IAB19-30": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-31": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-32": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-33": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-34": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-35": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB19-36": {
+    "id": "409",
+    "name": "Computing Product"
+  },
+  "IAB20-1": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-2": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-3": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-4": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-5": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-6": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-7": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-8": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-9": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-10": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-11": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-12": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-13": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-14": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-15": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-16": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-17": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-18": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-19": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-20": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-21": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-22": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-23": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-24": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-25": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-26": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-27": {
+    "id": "395",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB21-1": {
+    "id": "416",
+    "name": "Real Estate"
+  },
+  "IAB21-2": {
+    "id": "416",
+    "name": "Real Estate"
+  },
+  "IAB21-3": {
+    "id": "416",
+    "name": "Real Estate"
+  },
+  "IAB22-1": {
+    "id": "416",
+    "name": "Real Estate"
+  },
+  "IAB22-2": {
+    "id": "416",
+    "name": "Real Estate"
+  },
+  "IAB22-3": {
+    "id": "416",
+    "name": "Real Estate"
+  }
 }
