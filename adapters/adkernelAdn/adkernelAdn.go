@@ -108,12 +108,12 @@ func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpAdkerne
 func compatImpression(imp *openrtb.Imp) error {
 	imp.Ext = nil //do not forward ext to adkernel platform
 	if imp.Banner != nil {
-		return compatBanerImpression(imp)
+		return compatBannerImpression(imp)
 	}
 	return nil
 }
 
-func compatBanerImpression(imp *openrtb.Imp) error {
+func compatBannerImpression(imp *openrtb.Imp) error {
 	// Create a copy of the banner, since imp is a shallow copy of the original.
 	bannerCopy := *imp.Banner
 	banner := &bannerCopy
