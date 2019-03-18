@@ -1,0 +1,29 @@
+{
+  "message": "Invalid request: request.ext.prebid.bidadjustmentfactors.unknown is not a known bidder or alias\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes":["video/mp4"]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "bidadjustmentfactors": {
+          "unknown": 2.0
+        }
+      }
+    }
+  }
+}

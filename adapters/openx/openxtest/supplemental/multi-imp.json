@@ -1,0 +1,251 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "banner-imp-1",
+        "banner": {},
+        "ext": {
+          "bidder": {
+            "unit": "banner-unit-1",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "video-imp-1",
+        "video": {"mimes": ["video/mp4"]},
+        "ext": {
+          "bidder": {
+            "unit": "video-unit-1",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "banner-imp-2",
+        "banner": {},
+        "ext": {
+          "bidder": {
+            "unit": "banner-unit-2",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "video-imp-2",
+        "video": {"mimes": ["video/mp4"]},
+        "ext": {
+          "bidder": {
+            "unit": "video-unit-2",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      {
+        "id": "multi-type-imp",
+        "banner": {},
+        "video": {"mimes": ["video/mp4"]},
+        "ext": {
+          "bidder": {
+            "unit": "multi-type-unit",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "banner-imp-1",
+              "banner": {},
+              "tagid": "banner-unit-1"
+            },
+            {
+              "id": "banner-imp-2",
+              "banner": {},
+              "tagid": "banner-unit-2"
+            },
+            {
+              "id": "multi-type-imp",
+              "banner": {},
+              "video": {"mimes": ["video/mp4"]},
+              "tagid": "multi-type-unit"
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "banner-bid-1",
+                  "impid": "banner-imp-1",
+                  "price": 0.1
+                },
+                {
+                  "id": "banner-bid-2",
+                  "impid": "banner-imp-2",
+                  "price": 0.2
+                },
+                {
+                  "id": "multi-type-bid",
+                  "impid": "multi-type-imp",
+                  "price": 0
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "video-imp-1",
+              "video": {"mimes": ["video/mp4"]},
+              "tagid": "video-unit-1"
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "video-bid-1",
+                  "impid": "video-imp-1",
+                  "price": 0.1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://rtb.openx.net/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "video-imp-2",
+              "video": {"mimes": ["video/mp4"]},
+              "tagid": "video-unit-2"
+            }
+          ],
+          "ext": {
+            "bc": "hb_pbs_1.0.0",
+            "delDomain": "se-demo-d.openx.net"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "openx",
+              "bid": [
+                {
+                  "id": "video-bid-2",
+                  "impid": "video-imp-2",
+                  "price": 0.2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "banner-bid-1",
+            "impid": "banner-imp-1",
+            "price": 0.1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "banner-bid-2",
+            "impid": "banner-imp-2",
+            "price": 0.2
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "multi-type-bid",
+            "impid": "multi-type-imp",
+            "price": 0
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-1",
+            "impid": "video-imp-1",
+            "price": 0.1
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-2",
+            "impid": "video-imp-2",
+            "price": 0.2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

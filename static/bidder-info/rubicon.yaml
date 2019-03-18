@@ -1,0 +1,10 @@
+maintainer:
+  email: "header-bidding@rubiconproject.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner
+      - video

@@ -1,0 +1,29 @@
+{
+  "message": "Invalid request: request.ext.prebid.bidadjustmentfactors.appnexus must be a positive number. Got -2.000000\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes":["video/mp4"]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "bidadjustmentfactors": {
+          "appnexus": -2.0
+        }
+      }
+    }
+  }
+}

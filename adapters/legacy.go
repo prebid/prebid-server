@@ -3,10 +3,11 @@ package adapters
 import (
 	"context"
 	"crypto/tls"
-	"github.com/prebid/prebid-server/pbs"
-	"github.com/prebid/prebid-server/ssl"
 	"net/http"
 	"time"
+
+	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/ssl"
 )
 
 // This file contains some deprecated, legacy types.
@@ -18,21 +19,18 @@ import (
 // PBS is currently being rewritten to use Bidder, and this will be removed after.
 // Their primary purpose is to produce bids in response to Auction requests.
 type Adapter interface {
-	// Name uniquely identifies this adapter. This must be identical to the code in Prebid.js,
-	// but cannot overlap with any other adapters in prebid-server.
+	// Name must be identical to the BidderName.
 	Name() string
-	// FamilyName identifies the space of cookies which this adapter accesses. For example, an adapter
-	// using the adnxs.com cookie space should return "adnxs".
-	FamilyName() string
-	// Determines whether this adapter should get callouts if there is not a synched user ID
+	// Determines whether this adapter should get callouts if there is not a synched user ID.
 	SkipNoCookies() bool
-	// GetUsersyncInfo returns the parameters which are needed to do sync users with this bidder.
-	// For more information, see http://clearcode.cc/2015/12/cookie-syncing/
-	GetUsersyncInfo() *pbs.UsersyncInfo
 	// Call produces bids which should be considered, given the auction params.
 	//
 	// In practice, implementations almost always make one call to an external server here.
 	// However, that is not a requirement for satisfying this interface.
+	//
+	// An error here will cause all bids to be ignored. If the error was caused by bad user input,
+	// this should return a BadInputError. If it was caused by bad server behavior
+	// (e.g. 500, unexpected response format, etc), this should return a BadServerResponseError.
 	Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error)
 }
 
@@ -80,4 +78,20 @@ type CallOneResult struct {
 	ResponseBody string
 	Bid          *pbs.PBSBid
 	Error        error
+}
+
+type MisconfiguredAdapter struct {
+	TheName string
+	Err     error
+}
+
+func (b *MisconfiguredAdapter) Name() string {
+	return b.TheName
+}
+func (b *MisconfiguredAdapter) SkipNoCookies() bool {
+	return false
+}
+
+func (b *MisconfiguredAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	return nil, b.Err
 }

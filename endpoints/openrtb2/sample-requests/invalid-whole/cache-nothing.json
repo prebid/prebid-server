@@ -1,0 +1,29 @@
+{
+  "message": "Invalid request: request.ext is invalid: request.ext.prebid.cache requires one of the \"bids\" or \"vastml\" properties\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "cache": {}
+      }
+    }
+  }
+}

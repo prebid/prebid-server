@@ -3,22 +3,20 @@ package conversant
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
-	"testing"
-	"time"
-
 	"io/ioutil"
-
 	"net/http"
 	"net/http/httptest"
-
-	"encoding/json"
+	"testing"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache/dummycache"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 )
 
 // Constants
@@ -35,17 +33,16 @@ const DefaultParam = `{"site_id": "12345"}`
 // Test properties of Adapter interface
 
 func TestConversantProperties(t *testing.T) {
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync", "localhost")
+	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
-	assertNotEqual(t, an.Name(), "", "Missing name")
-	assertNotEqual(t, an.FamilyName(), "", "Missing family name")
+	assertNotEqual(t, an.Name(), "", "Missing family name")
 	assertTrue(t, an.SkipNoCookies(), "SkipNoCookies should be true")
 }
 
 // Test empty bid requests
 
 func TestConversantEmptyBid(t *testing.T) {
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync", "localhost")
+	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl")
 
 	ctx := context.TODO()
 	pbReq := pbs.PBSRequest{}
@@ -64,7 +61,7 @@ func TestConversantRequiredParameters(t *testing.T) {
 	)
 	defer server.Close()
 
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, server.URL)
 	ctx := context.TODO()
 
 	testParams := func(params ...string) (pbs.PBSBidSlice, error) {
@@ -97,7 +94,7 @@ func TestConversantBadStatus(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	ctx := context.TODO()
 	pbReq, err := CreateBannerRequest(DefaultParam)
@@ -124,7 +121,7 @@ func TestConversantTimeout(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	// Create a context that expires before http returns
 
@@ -161,7 +158,7 @@ func TestConversantNoBid(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	ctx := context.TODO()
 	pbReq, err := CreateBannerRequest(DefaultParam)
@@ -171,25 +168,7 @@ func TestConversantNoBid(t *testing.T) {
 
 	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if resp != nil || err != nil {
-		t.Fatal("Failed to handle emtpy bid", err)
-	}
-}
-
-// Check user sync information
-
-func TestConversantUserSyncInfo(t *testing.T) {
-	an := NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, "someUrl", "usersync?rurl=", "localhost")
-
-	if !strings.HasSuffix(an.usersyncInfo.URL, "?rurl=localhost%2Fsetuid%3Fbidder%3Dconversant%26uid%3D") {
-		t.Fatalf("bad user sync url: %s", an.usersyncInfo.URL)
-	}
-
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("user sync type should be redirect: %s", an.usersyncInfo.Type)
-	}
-
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("user sync should not support CORS")
+		t.Fatal("Failed to handle empty bid", err)
 	}
 }
 
@@ -206,7 +185,7 @@ func TestConversantRequestDefault(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	ctx := context.TODO()
 	pbReq, err := CreateBannerRequest(DefaultParam)
@@ -249,7 +228,7 @@ func TestConversantRequest(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		"secure": 1,
@@ -299,7 +278,7 @@ func TestConversantResponse(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "secure": 1,
@@ -321,7 +300,7 @@ func TestConversantResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -350,7 +329,7 @@ func TestConversantBasicVideoRequest(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "tag_id": "bottom left",
@@ -403,12 +382,12 @@ func TestConversantVideoRequestWithParams(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "tag_id": "bottom left",
 		   "position": 3,
-		   "bidfloor": 1.01, 
+		   "bidfloor": 1.01,
 		   "mimes": ["video/x-ms-wmv"],
 		   "protocols": [1, 2],
 		   "api": [1, 2],
@@ -464,7 +443,7 @@ func TestConversantVideoRequestWithParams2(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345" }`
 	videoParam := `{ "mimes": ["video/x-ms-wmv"],
@@ -522,7 +501,7 @@ func TestConversantVideoResponse(t *testing.T) {
 	// Create a adapter to test
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewConversantAdapter(&conf, server.URL, "usersync", "localhost")
+	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "site_id": "12345",
 		   "secure": 1,
@@ -544,7 +523,7 @@ func TestConversantVideoResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -626,14 +605,17 @@ func ParseRequest(req *pbs.PBSRequest) (*pbs.PBSRequest, error) {
 	// Need to pass the conversant user id thru uid cookie
 
 	httpReq := httptest.NewRequest("POST", "/foo", body)
-	cookie := pbs.NewPBSCookie()
+	cookie := usersync.NewPBSCookie()
 	cookie.TrySync("conversant", ExpectedBuyerUID)
-	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie().String())
+	httpReq.Header.Set("Cookie", cookie.ToHTTPCookie(90*24*time.Hour).String())
 	httpReq.Header.Add("Referer", "http://example.com")
 	cache, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	parsedReq, err := pbs.ParsePBSRequest(httpReq, cache, &hcs)
+	parsedReq, err := pbs.ParsePBSRequest(httpReq, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cache, &hcc)
 
 	return parsedReq, err
 }
@@ -744,7 +726,7 @@ func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrt
 	prices2 := make([]float64, 0)
 	imps2 := make([]openrtb.Imp, 0)
 
-	for i, _ := range prices {
+	for i := range prices {
 		if prices[i] > 0 {
 			prices2 = append(prices2, prices[i])
 			imps2 = append(imps2, imps[i])

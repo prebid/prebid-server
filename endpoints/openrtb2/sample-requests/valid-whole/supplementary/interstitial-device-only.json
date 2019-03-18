@@ -1,0 +1,40 @@
+{
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {},
+        "instl": 1,
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ],
+    "device": {
+        "h": 640,
+        "w": 320,
+        "ext": {
+            "prebid": {
+                "interstitial": {
+                    "minwidthperc": 60,
+                    "minheightperc": 60
+                }
+            }
+        }
+    },
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
+    }
+}

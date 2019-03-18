@@ -1,0 +1,7 @@
+maintainer:
+  email: "mediapsr@conversantmedia.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video

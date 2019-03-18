@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SomoAudience Adapter Params",
+  "description": "A schema which validates params accepted by the SomoAudience adapter",
+
+  "type": "object",
+  "properties": {
+    "placement_hash": {
+      "type": "string",
+      "description": "A hash defining the placement selling the impression"
+    },
+    "bid_floor": {
+      "type": "number",
+      "description": "Bid Floor for Impression",
+      "minimum": 0
+    }
+  },
+  "required": ["placement_hash"]
+}

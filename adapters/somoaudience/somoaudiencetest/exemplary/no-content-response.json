@@ -1,0 +1,68 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placement_hash": "22a58cfb0c9b656bff713d1236e930e8"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://publisher-east.mobileadtrading.com/rtb/bid?s=22a58cfb0c9b656bff713d1236e930e8",
+        "body": {
+          "id": "test-request-id",
+          "ext":{
+            "prebid": "hb_pbs_1.0.0"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {
+
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+
+  ]
+}

@@ -1,19 +1,30 @@
 package adapters
 
 import (
-	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 // Bidder describes how to connect to external demand.
 type Bidder interface {
 	// MakeRequests makes the HTTP requests which should be made to fetch bids.
 	//
+	// Bidder implementations can assume that the incoming BidRequest has:
+	//
+	//   1. Only {Imp.Type, Platform} combinations which are valid, as defined by the static/bidder-info.{bidder}.yaml file.
+	//   2. Imp.Ext of the form {"bidder": params}, where "params" has been validated against the static/bidder-params/{bidder}.json JSON Schema.
+	//
 	// nil return values are acceptable, but nil elements *inside* those slices are not.
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
+	//
+	// If the error is caused by bad user input, return an errortypes.BadInput.
 	MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
@@ -22,7 +33,47 @@ type Bidder interface {
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the server response didn't have the expected format.
-	MakeBids(request *openrtb.BidRequest, response *ResponseData) ([]*TypedBid, []error)
+	//
+	// If the error was caused by bad user input, return a errortypes.BadInput.
+	// If the error was caused by a bad server response, return a errortypes.BadServerResponse
+	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
+}
+
+func BadInput(msg string) *errortypes.BadInput {
+	return &errortypes.BadInput{
+		Message: msg,
+	}
+}
+
+// BidderResponse wraps the server's response with the list of bids and the currency used by the bidder.
+//
+// Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
+// From the bid response, the bidder accepts a list of valid currencies for the bid.
+// The currency is the same across all bids.
+type BidderResponse struct {
+	Currency string
+	Bids     []*TypedBid
+}
+
+// NewBidderResponseWithBidsCapacity create a new BidderResponse initialising the bids array capacity and the default currency value
+// to "USD".
+//
+// bidsCapacity allows to set initial Bids array capacity.
+// By default, currency is USD but this behavior might be subject to change.
+func NewBidderResponseWithBidsCapacity(bidsCapacity int) *BidderResponse {
+	return &BidderResponse{
+		Currency: "USD",
+		Bids:     make([]*TypedBid, 0, bidsCapacity),
+	}
+}
+
+// NewBidderResponse create a new BidderResponse initialising the bids array and the default currency value
+// to "USD".
+//
+// By default, Bids capacity will be set to 0.
+// By default, currency is USD but this behavior might be subject to change.
+func NewBidderResponse() *BidderResponse {
+	return NewBidderResponseWithBidsCapacity(0)
 }
 
 // TypedBid packages the openrtb.Bid with any bidder-specific information that PBS needs to populate an
@@ -65,5 +116,9 @@ type ExtImpBidder struct {
 	//
 	// Bidder implementations may safely assume that this JSON has been validated by their
 	// static/bidder-params/{bidder}.json file.
-	Bidder openrtb.RawJSON `json:"bidder"`
+	Bidder json.RawMessage `json:"bidder"`
+}
+
+func (r *RequestData) SetBasicAuth(username string, password string) {
+	r.Headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+password)))
 }

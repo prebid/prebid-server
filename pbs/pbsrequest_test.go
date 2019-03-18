@@ -2,8 +2,10 @@ package pbs
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/magiconair/properties/assert"
@@ -41,7 +43,7 @@ func TestParseSimpleRequest(t *testing.T) {
                 "sizes": [{"w": 300, "h": 250}],
                 "bids": [
                     {
-                        "bidder": "indexExchange"
+                        "bidder": "ix"
                     },
                     {
                         "bidder": "appnexus"
@@ -57,7 +59,7 @@ func TestParseSimpleRequest(t *testing.T) {
 				},
                 "bids": [
                     {
-                        "bidder": "indexExchange"
+                        "bidder": "ix"
                     },
                     {
                         "bidder": "appnexus"
@@ -71,9 +73,12 @@ func TestParseSimpleRequest(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -85,14 +90,14 @@ func TestParseSimpleRequest(t *testing.T) {
 	}
 
 	// see if our internal representation is intact
-	if len(pbs_req.Bidders) != 3 {
-		t.Fatalf("Should have three bidders (2 for index) not %d", len(pbs_req.Bidders))
+	if len(pbs_req.Bidders) != 2 {
+		t.Fatalf("Should have two bidders not %d", len(pbs_req.Bidders))
 	}
-	if pbs_req.Bidders[0].BidderCode != "indexExchange" {
+	if pbs_req.Bidders[0].BidderCode != "ix" {
 		t.Errorf("First bidder not index")
 	}
-	if len(pbs_req.Bidders[0].AdUnits) != 1 {
-		t.Errorf("Index bidder should have 1 ad unit")
+	if len(pbs_req.Bidders[0].AdUnits) != 2 {
+		t.Errorf("Index bidder should have 2 ad unit")
 	}
 	if pbs_req.Bidders[1].BidderCode != "appnexus" {
 		t.Errorf("Second bidder not appnexus")
@@ -100,16 +105,7 @@ func TestParseSimpleRequest(t *testing.T) {
 	if len(pbs_req.Bidders[1].AdUnits) != 2 {
 		t.Errorf("AppNexus bidder should have 2 ad unit")
 	}
-	if pbs_req.Bidders[2].BidderCode != "indexExchange" {
-		t.Errorf("Third bidder not index")
-	}
-	if len(pbs_req.Bidders[2].AdUnits) != 1 {
-		t.Errorf("Index bidder should have 1 ad unit")
-	}
 	if pbs_req.Bidders[1].AdUnits[0].BidID == "" {
-		t.Errorf("ID should have been generated for empty BidID")
-	}
-	if pbs_req.Bidders[2].AdUnits[0].BidID == "" {
 		t.Errorf("ID should have been generated for empty BidID")
 	}
 	if pbs_req.AdUnits[1].MediaTypes[0] != "banner" {
@@ -136,7 +132,7 @@ func TestHeaderParsing(t *testing.T) {
                 "sizes": [{"w": 300, "h": 250}],
                 "bidders": [
                 {
-                    "bidder": "indexExchange",
+                    "bidder": "ix",
                     "params": {
                         "id": "417",
                         "siteID": "test-site"
@@ -151,11 +147,14 @@ func TestHeaderParsing(t *testing.T) {
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	r.Header.Add("User-Agent", "Mozilla/")
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed")
 	}
@@ -173,7 +172,7 @@ func TestHeaderParsing(t *testing.T) {
 var dummyConfig = `
 [
 							{
-									"bidder": "indexExchange",
+									"bidder": "ix",
 									"bid_id": "22222222",
 									"params": {
 											"id": "4",
@@ -215,7 +214,7 @@ func TestParseConfig(t *testing.T) {
                 "sizes": [{"w": 300, "h": 250}],
                 "bids": [
                     {
-                        "bidder": "indexExchange"
+                        "bidder": "ix"
                     },
                     {
                         "bidder": "appnexus"
@@ -233,11 +232,14 @@ func TestParseConfig(t *testing.T) {
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	r.Header.Add("Referer", "http://nytimes.com/cool.html")
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
 	d.Config().Set("dummy", dummyConfig)
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -249,13 +251,13 @@ func TestParseConfig(t *testing.T) {
 	}
 
 	// see if our internal representation is intact
-	if len(pbs_req.Bidders) != 5 {
-		t.Fatalf("Should have 5 bidders (2 for index) not %d", len(pbs_req.Bidders))
+	if len(pbs_req.Bidders) != 4 {
+		t.Fatalf("Should have 4 bidders not %d", len(pbs_req.Bidders))
 	}
-	if pbs_req.Bidders[0].BidderCode != "indexExchange" {
+	if pbs_req.Bidders[0].BidderCode != "ix" {
 		t.Errorf("First bidder not index")
 	}
-	if len(pbs_req.Bidders[0].AdUnits) != 1 {
+	if len(pbs_req.Bidders[0].AdUnits) != 2 {
 		t.Errorf("Index bidder should have 1 ad unit")
 	}
 	if pbs_req.Bidders[1].BidderCode != "appnexus" {
@@ -263,12 +265,6 @@ func TestParseConfig(t *testing.T) {
 	}
 	if len(pbs_req.Bidders[1].AdUnits) != 2 {
 		t.Errorf("AppNexus bidder should have 2 ad unit")
-	}
-	if pbs_req.Bidders[2].BidderCode != "indexExchange" {
-		t.Errorf("Third bidder not index")
-	}
-	if len(pbs_req.Bidders[2].AdUnits) != 1 {
-		t.Errorf("Index bidder should have 1 ad unit")
 	}
 }
 
@@ -316,9 +312,12 @@ func TestParseMobileRequestFirstVersion(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -412,9 +411,12 @@ func TestParseMobileRequest(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -512,9 +514,12 @@ func TestParseMalformedMobileRequest(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -583,7 +588,7 @@ func TestParseRequestWithInstl(t *testing.T) {
 	         ],
 	         "bids": [
                     {
-                        "bidder": "indexExchange"
+                        "bidder": "ix"
                     },
                     {
                         "bidder": "appnexus"
@@ -616,9 +621,12 @@ func TestParseRequestWithInstl(t *testing.T) {
     `)
 	r := httptest.NewRequest("POST", "/auction", bytes.NewBuffer(body))
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{}
+	hcc := config.HostCookie{}
 
-	pbs_req, err := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err != nil {
 		t.Fatalf("Parse simple request failed: %v", err)
 	}
@@ -632,6 +640,50 @@ func TestParseRequestWithInstl(t *testing.T) {
 		t.Errorf("Parse instl failed.")
 	}
 
+}
+
+func TestTimeouts(t *testing.T) {
+	doTimeoutTest(t, 10, 15, 10, 0)
+	doTimeoutTest(t, 10, 0, 10, 0)
+	doTimeoutTest(t, 5, 5, 10, 0)
+	doTimeoutTest(t, 15, 15, 0, 0)
+	doTimeoutTest(t, 15, 0, 20, 15)
+}
+
+func doTimeoutTest(t *testing.T, expected int, requested int, max uint64, def uint64) {
+	t.Helper()
+	cfg := &config.AuctionTimeouts{
+		Default: def,
+		Max:     max,
+	}
+	body := fmt.Sprintf(`{
+		"tid": "abcd",
+		"timeout_millis": %d,
+		"app":{
+			"bundle":"AppNexus.PrebidMobileDemo",
+			"ver":"0.0.2"
+		},
+		"ad_units": [
+				{
+						"code": "first",
+						"sizes": [{"w": 300, "h": 250}],
+						"bids": [
+								{
+										"bidder": "ix"
+								}
+						]
+				}
+		]
+}`, requested)
+	r := httptest.NewRequest("POST", "/auction", strings.NewReader(body))
+	d, _ := dummycache.New()
+	parsed, err := ParsePBSRequest(r, cfg, d, &config.HostCookie{})
+	if err != nil {
+		t.Fatalf("Unexpected err: %v", err)
+	}
+	if parsed.TimeoutMillis != int64(expected) {
+		t.Errorf("Expected %dms timeout, got %dms", expected, parsed.TimeoutMillis)
+	}
 }
 
 func TestParsePBSRequestUsesHostCookie(t *testing.T) {
@@ -661,7 +713,7 @@ func TestParsePBSRequestUsesHostCookie(t *testing.T) {
 	}
 	r.AddCookie(&http.Cookie{Name: "key", Value: "testcookie"})
 	d, _ := dummycache.New()
-	hcs := HostCookieSettings{
+	hcc := config.HostCookie{
 		CookieName: "key",
 		Family:     "family",
 		OptOutCookie: config.Cookie{
@@ -670,7 +722,10 @@ func TestParsePBSRequestUsesHostCookie(t *testing.T) {
 		},
 	}
 
-	pbs_req, err2 := ParsePBSRequest(r, d, &hcs)
+	pbs_req, err2 := ParsePBSRequest(r, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, d, &hcc)
 	if err2 != nil {
 		t.Fatalf("Parse simple request failed %v", err2)
 	}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/pbs"
+	"github.com/prebid/prebid-server/usersync"
 
 	"fmt"
 
@@ -175,7 +176,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	}
 
 	conf := *adapters.DefaultHTTPAdapterConfig
-	an := NewLifestreetAdapter(&conf, server.URL)
+	an := NewLifestreetAdapter(&conf, "https://prebid.s2s.lfstmedia.com/adrequest")
 	an.URI = server.URL
 
 	pbin := pbs.PBSRequest{
@@ -202,7 +203,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 				},
 			},
 			Bids: []pbs.Bids{
-				pbs.Bids{
+				{
 					BidderCode: "lifestreet",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
 					Params:     json.RawMessage(fmt.Sprintf("{\"slot_tag\": \"%s\"}", tag.slotTag)),
@@ -224,14 +225,17 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	req.Header.Add("Referer", lsdata.referrer)
 	req.Header.Add("X-Real-IP", lsdata.deviceIP)
 
-	pc := pbs.ParsePBSCookieFromRequest(req, &config.Cookie{})
+	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "")
+	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
-	hcs := pbs.HostCookieSettings{}
-	pbReq, err := pbs.ParsePBSRequest(req, cacheClient, &hcs)
+	hcc := config.HostCookie{}
+	pbReq, err := pbs.ParsePBSRequest(req, &config.AuctionTimeouts{
+		Default: 2000,
+		Max:     2000,
+	}, cacheClient, &hcc)
 	if err != nil {
 		t.Fatalf("ParsePBSRequest failed: %v", err)
 	}
@@ -282,20 +286,5 @@ func TestLifestreetBasicResponse(t *testing.T) {
 	bids, err = an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if err == nil {
 		t.Fatalf("Should have gotten a timeout error: %v", err)
-	}
-}
-
-func TestLifestreetUserSyncInfo(t *testing.T) {
-	url := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl=localhost%2Fsetuid%3Fbidder%3Dlifestreet%26uid%3D%24%24visitor_cookie%24%24"
-
-	an := NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, "localhost")
-	if an.usersyncInfo.URL != url {
-		t.Fatalf("User Sync Info URL '%s' doesn't match '%s'", an.usersyncInfo.URL, url)
-	}
-	if an.usersyncInfo.Type != "redirect" {
-		t.Fatalf("should be redirect")
-	}
-	if an.usersyncInfo.SupportCORS != false {
-		t.Fatalf("should have been false")
 	}
 }

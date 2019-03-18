@@ -2,46 +2,87 @@ package openrtb_ext
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mxmCherry/openrtb"
-	"github.com/xeipuuv/gojsonschema"
 	"io/ioutil"
-	"net/http"
+	"path/filepath"
 	"strings"
+
+	"github.com/xeipuuv/gojsonschema"
 )
 
 const schemaDirectory = "static/bidder-params"
 
+// BidderName may refer to a bidder ID, or an Alias which is defined in the request.
 type BidderName string
 
+// These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
+// Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
-	BidderAppnexus   BidderName = "appnexus"
-	BidderFacebook   BidderName = "facebook"
-	BidderIndex      BidderName = "index"
-	BidderLifestreet BidderName = "lifestreet"
-	BidderPubmatic   BidderName = "pubmatic"
-	BidderPulsepoint BidderName = "pulsepoint"
-	BidderRubicon    BidderName = "rubicon"
-	BidderConversant BidderName = "conversant"
+	Bidder33Across     BidderName = "33across"
+	BidderAdkernelAdn  BidderName = "adkernelAdn"
+	BidderAdtelligent  BidderName = "adtelligent"
+	BidderAdform       BidderName = "adform"
+	BidderAppnexus     BidderName = "appnexus"
+	BidderBeachfront   BidderName = "beachfront"
+	BidderBrightroll   BidderName = "brightroll"
+	BidderConsumable   BidderName = "consumable"
+	BidderConversant   BidderName = "conversant"
+	BidderEPlanning    BidderName = "eplanning"
+	BidderFacebook     BidderName = "audienceNetwork"
+	BidderGamoshi      BidderName = "gamoshi"
+	BidderGrid         BidderName = "grid"
+	BidderGumGum       BidderName = "gumgum"
+	BidderIx           BidderName = "ix"
+	BidderLifestreet   BidderName = "lifestreet"
+	BidderOpenx        BidderName = "openx"
+	BidderPubmatic     BidderName = "pubmatic"
+	BidderPulsepoint   BidderName = "pulsepoint"
+	BidderRhythmone    BidderName = "rhythmone"
+	BidderRubicon      BidderName = "rubicon"
+	BidderSomoaudience BidderName = "somoaudience"
+	BidderSovrn        BidderName = "sovrn"
+	BidderSonobi       BidderName = "sonobi"
+	BidderYieldmo      BidderName = "yieldmo"
 )
 
-var bidderMap = map[string]BidderName{
-	"appnexus":   BidderAppnexus,
-	"facebook":   BidderFacebook,
-	"index":      BidderIndex,
-	"lifestreet": BidderLifestreet,
-	"pubmatic":   BidderPubmatic,
-	"pulsepoint": BidderPulsepoint,
-	"rubicon":    BidderRubicon,
-	"conversant": BidderConversant,
+// BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
+var BidderMap = map[string]BidderName{
+	"33across":        Bidder33Across,
+	"adkernelAdn":     BidderAdkernelAdn,
+	"adtelligent":     BidderAdtelligent,
+	"adform":          BidderAdform,
+	"appnexus":        BidderAppnexus,
+	"beachfront":      BidderBeachfront,
+	"audienceNetwork": BidderFacebook,
+	"brightroll":      BidderBrightroll,
+	"consumable":      BidderConsumable,
+	"conversant":      BidderConversant,
+	"eplanning":       BidderEPlanning,
+	"gamoshi":         BidderGamoshi,
+	"grid":            BidderGrid,
+	"gumgum":          BidderGumGum,
+	"ix":              BidderIx,
+	"lifestreet":      BidderLifestreet,
+	"openx":           BidderOpenx,
+	"pubmatic":        BidderPubmatic,
+	"pulsepoint":      BidderPulsepoint,
+	"rhythmone":       BidderRhythmone,
+	"rubicon":         BidderRubicon,
+	"somoaudience":    BidderSomoaudience,
+	"sovrn":           BidderSovrn,
+	"sonobi":          BidderSonobi,
+	"yieldmo":         BidderYieldmo,
 }
 
-// GetBidderName returns the BidderName for the given string, if it exists.
-// The second argument is true if the name was valid, and false otherwise.
-func GetBidderName(name string) (BidderName, bool) {
-	bidderName, ok := bidderMap[name]
-	return bidderName, ok
+// BidderList returns the values of the BidderMap
+func BidderList() []BidderName {
+	bidders := make([]BidderName, 0, len(BidderMap))
+	for _, value := range BidderMap {
+		bidders = append(bidders, value)
+	}
+	return bidders
 }
 
 func (name BidderName) MarshalJSON() ([]byte, error) {
@@ -60,7 +101,7 @@ func (name *BidderName) String() string {
 //
 // This is treated differently from the other types because we rely on JSON-schemas to validate bidder params.
 type BidderParamValidator interface {
-	Validate(name BidderName, ext openrtb.RawJSON) error
+	Validate(name BidderName, ext json.RawMessage) error
 	// Schema returns the JSON schema used to perform validation.
 	Schema(name BidderName) string
 }
@@ -68,7 +109,6 @@ type BidderParamValidator interface {
 // NewBidderParamsValidator makes a BidderParamValidator, assuming all the necessary files exist in the filesystem.
 // This will error if, for example, a Bidder gets added but no JSON schema is written for them.
 func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, error) {
-	filesystem := http.Dir(schemaDirectory)
 	fileInfos, err := ioutil.ReadDir(schemaDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read JSON schemas from directory %s. %v", schemaDirectory, err)
@@ -78,14 +118,17 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 	schemas := make(map[BidderName]*gojsonschema.Schema, 50)
 	for _, fileInfo := range fileInfos {
 		bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
-		if _, isValid := GetBidderName(bidderName); !isValid {
+		if _, isValid := BidderMap[bidderName]; !isValid {
 			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
 		}
-
-		schemaLoader := gojsonschema.NewReferenceLoaderFileSystem(fmt.Sprintf("file:///%s", fileInfo.Name()), filesystem)
+		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get an absolute representation of the path: %s, %v", toOpen, err)
+		}
+		schemaLoader := gojsonschema.NewReferenceLoader("file:///" + filepath.ToSlash(toOpen))
 		loadedSchema, err := gojsonschema.NewSchema(schemaLoader)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to load json schema at %s/%s: %v", schemaDirectory, fileInfo.Name(), err)
+			return nil, fmt.Errorf("Failed to load json schema at %s: %v", toOpen, err)
 		}
 
 		fileBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", schemaDirectory, fileInfo.Name()))
@@ -108,7 +151,7 @@ type bidderParamValidator struct {
 	parsedSchemas  map[BidderName]*gojsonschema.Schema
 }
 
-func (validator *bidderParamValidator) Validate(name BidderName, ext openrtb.RawJSON) error {
+func (validator *bidderParamValidator) Validate(name BidderName, ext json.RawMessage) error {
 	result, err := validator.parsedSchemas[name].Validate(gojsonschema.NewBytesLoader(ext))
 	if err != nil {
 		return err

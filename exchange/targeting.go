@@ -1,12 +1,14 @@
 package exchange
 
 import (
-	"encoding/json"
+	"fmt"
+	"strconv"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/prebid/prebid-server/pbs/buckets"
-	"strconv"
 )
+
+const maxKeyLength = 20
 
 // targetData tracks information about the winning Bid in each Imp.
 //
@@ -16,111 +18,68 @@ import (
 // All functions on this struct are all nil-safe.
 // If the value is nil, then no targeting data will be tracked.
 type targetData struct {
-	lengthMax        int
-	priceGranularity openrtb_ext.PriceGranularity
-	// These two dictionaries index on imp.id to identify the winning bid for each imp.
-	winningBids    map[string]*openrtb.Bid
-	winningBidders map[string]openrtb_ext.BidderName
+	priceGranularity  openrtb_ext.PriceGranularity
+	includeWinners    bool
+	includeBidderKeys bool
+	includeCacheBids  bool
+	includeCacheVast  bool
 }
 
-// makePrebidTargets returns the _bidder specific_ targeting keys and values. For example,
-// this map will include "hb_pb_appnexus", but _not_ "hb_pb".
-func (t *targetData) makePrebidTargets(name openrtb_ext.BidderName, bid *openrtb.Bid) (map[string]string, error) {
-	if t == nil {
-		return nil, nil
-	}
-
-	cpm := bid.Price
-	width := bid.W
-	height := bid.H
-	deal := bid.DealID
-	cacheKey := ""
-
-	roundedCpm, err := buckets.GetPriceBucketString(cpm, t.priceGranularity)
-	if err != nil {
-		// set broken cpm to 0
-		roundedCpm = "0.0"
-	}
-
-	hbSize := ""
-	if width != 0 && height != 0 {
-		w := strconv.FormatUint(width, 10)
-		h := strconv.FormatUint(height, 10)
-		hbSize = w + "x" + h
-	}
-
-	hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(name, t.lengthMax)
-	hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(name, t.lengthMax)
-	hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(name, t.lengthMax)
-	hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(name, t.lengthMax)
-	hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(name, t.lengthMax)
-
-	pbs_kvs := map[string]string{
-		hbPbBidderKey:     roundedCpm,
-		hbBidderBidderKey: string(name),
-	}
-
-	if hbSize != "" {
-		pbs_kvs[hbSizeBidderKey] = hbSize
-	}
-	if len(cacheKey) > 0 {
-		pbs_kvs[hbCacheIdBidderKey] = cacheKey
-	}
-	if len(deal) > 0 {
-		pbs_kvs[hbDealIdBidderKey] = deal
-	}
-	return pbs_kvs, err
-}
-
-// addBid should be called for each bid which is "officially" valid for the auction.
+// setTargeting writes all the targeting params into the bids.
+// If any errors occur when setting the targeting params for a particular bid, then that bid will be ejected from the auction.
 //
-// This function must be called for all bids before addWinningTargets() is called.
-func (t *targetData) addBid(name openrtb_ext.BidderName, bid *openrtb.Bid) {
-	if t == nil {
-		return
-	}
-	cpm := bid.Price
-	wbid, ok := t.winningBids[bid.ImpID]
-	if !ok || cpm > wbid.Price {
-		t.winningBidders[bid.ImpID] = name
-		t.winningBids[bid.ImpID] = bid
-	}
-}
+// The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
+// it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
+// In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
+func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string) {
+	for impId, topBidsPerImp := range auc.winningBidsByBidder {
+		overallWinner := auc.winningBids[impId]
+		for bidderName, topBidPerBidder := range topBidsPerImp {
+			isOverallWinner := overallWinner == topBidPerBidder
 
-// addWinningTargets appends targeting keys to the "winning" bids.
-// It should only be called *after* all the calls to addbid().
-func (t *targetData) addWinningTargets() {
-	if t == nil {
-		return
-	}
+			targets := make(map[string]string, 10)
+			if cpm, ok := auc.roundedPrices[topBidPerBidder]; ok {
+				targData.addKeys(targets, openrtb_ext.HbpbConstantKey, cpm, bidderName, isOverallWinner)
+			}
+			targData.addKeys(targets, openrtb_ext.HbBidderConstantKey, string(bidderName), bidderName, isOverallWinner)
+			if hbSize := makeHbSize(topBidPerBidder.bid); hbSize != "" {
+				targData.addKeys(targets, openrtb_ext.HbSizeConstantKey, hbSize, bidderName, isOverallWinner)
+			}
+			if cacheID, ok := auc.cacheIds[topBidPerBidder.bid]; ok {
+				targData.addKeys(targets, openrtb_ext.HbCacheKey, cacheID, bidderName, isOverallWinner)
+			}
+			if vastID, ok := auc.vastCacheIds[topBidPerBidder.bid]; ok {
+				targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner)
+			}
+			if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
+				targData.addKeys(targets, openrtb_ext.HbDealIdConstantKey, deal, bidderName, isOverallWinner)
+			}
 
-	for id, bid := range t.winningBids {
-		bidExt := new(openrtb_ext.ExtBid)
-		err1 := json.Unmarshal(bid.Ext, bidExt)
-		if err1 == nil && bidExt.Prebid.Targeting != nil {
-			hbPbBidderKey := openrtb_ext.HbpbConstantKey.BidderKey(t.winningBidders[id], t.lengthMax)
-			hbBidderBidderKey := openrtb_ext.HbBidderConstantKey.BidderKey(t.winningBidders[id], t.lengthMax)
-			hbSizeBidderKey := openrtb_ext.HbSizeConstantKey.BidderKey(t.winningBidders[id], t.lengthMax)
-			hbDealIdBidderKey := openrtb_ext.HbDealIdConstantKey.BidderKey(t.winningBidders[id], t.lengthMax)
-			hbCacheIdBidderKey := openrtb_ext.HbCacheIdConstantKey.BidderKey(t.winningBidders[id], t.lengthMax)
+			if isApp {
+				targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner)
+			}
+			if len(categoryMapping) > 0 {
+				finalCategory := fmt.Sprintf("%s_%s", targets[string(openrtb_ext.HbpbConstantKey)], categoryMapping[topBidPerBidder.bid.ID])
+				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, finalCategory, bidderName, isOverallWinner)
+			}
 
-			bidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)] = bidExt.Prebid.Targeting[hbPbBidderKey]
-			bidExt.Prebid.Targeting[string(openrtb_ext.HbBidderConstantKey)] = bidExt.Prebid.Targeting[hbBidderBidderKey]
-			if size, ok := bidExt.Prebid.Targeting[hbSizeBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbSizeConstantKey)] = size
-			}
-			if cache, ok := bidExt.Prebid.Targeting[hbCacheIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCacheIdConstantKey)] = cache
-			}
-			if deal, ok := bidExt.Prebid.Targeting[hbDealIdBidderKey]; ok {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbDealIdConstantKey)] = deal
-			}
-			if t.winningBidders[id] == "audienceNetwork" {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodDemandSDK
-			} else {
-				bidExt.Prebid.Targeting[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodHTML
-			}
-			bid.Ext, err1 = json.Marshal(bidExt)
+			topBidPerBidder.bidTargets = targets
 		}
 	}
+}
+
+func (targData *targetData) addKeys(keys map[string]string, key openrtb_ext.TargetingKey, value string, bidderName openrtb_ext.BidderName, overallWinner bool) {
+	if targData.includeBidderKeys {
+		keys[key.BidderKey(bidderName, maxKeyLength)] = value
+	}
+	if targData.includeWinners && overallWinner {
+		keys[string(key)] = value
+	}
+}
+
+func makeHbSize(bid *openrtb.Bid) string {
+	if bid.W != 0 && bid.H != 0 {
+		return strconv.FormatUint(bid.W, 10) + "x" + strconv.FormatUint(bid.H, 10)
+	}
+	return ""
 }

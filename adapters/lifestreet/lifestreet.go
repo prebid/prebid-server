@@ -4,37 +4,26 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/pbs"
 	"golang.org/x/net/context/ctxhttp"
 )
 
 type LifestreetAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	usersyncInfo *pbs.UsersyncInfo
-}
-
-/* Name - export adapter name */
-func (a *LifestreetAdapter) Name() string {
-	return "Lifestreet"
+	http *adapters.HTTPAdapter
+	URI  string
 }
 
 // used for cookies and such
-func (a *LifestreetAdapter) FamilyName() string {
+func (a *LifestreetAdapter) Name() string {
 	return "lifestreet"
-}
-
-func (a *LifestreetAdapter) GetUsersyncInfo() *pbs.UsersyncInfo {
-	return a.usersyncInfo
 }
 
 func (a *LifestreetAdapter) SkipNoCookies() bool {
@@ -96,7 +85,7 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 }
 
 func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *pbs.PBSBidder, slotTag string, mtype pbs.MediaType, unitInd int) (openrtb.BidRequest, error) {
-	lsReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.FamilyName(), []pbs.MediaType{mtype}, true)
+	lsReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), []pbs.MediaType{mtype})
 
 	if err != nil {
 		return openrtb.BidRequest{}, err
@@ -112,7 +101,9 @@ func (a *LifestreetAdapter) MakeOpenRtbBidRequest(req *pbs.PBSRequest, bidder *p
 
 		return lsReq, nil
 	} else {
-		return lsReq, errors.New("No supported impressions")
+		return lsReq, &errortypes.BadInput{
+			Message: "No supported impressions",
+		}
 	}
 }
 
@@ -126,11 +117,15 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 			return nil, err
 		}
 		if params.SlotTag == "" {
-			return nil, errors.New("Missing slot_tag param")
+			return nil, &errortypes.BadInput{
+				Message: "Missing slot_tag param",
+			}
 		}
 		s := strings.Split(params.SlotTag, ".")
 		if len(s) != 2 {
-			return nil, fmt.Errorf("Invalid slot_tag param '%s'", params.SlotTag)
+			return nil, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid slot_tag param '%s'", params.SlotTag),
+			}
 		}
 
 		// BANNER
@@ -155,7 +150,7 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	ch := make(chan adapters.CallOneResult)
-	for i, _ := range bidder.AdUnits {
+	for i := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err
@@ -163,7 +158,9 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 				result.Bid.BidderCode = bidder.BidderCode
 				result.Bid.BidID = bidder.LookupBidID(result.Bid.AdUnitCode)
 				if result.Bid.BidID == "" {
-					result.Error = fmt.Errorf("Unknown ad unit code '%s'", result.Bid.AdUnitCode)
+					result.Error = &errortypes.BadServerResponse{
+						Message: fmt.Sprintf("Unknown ad unit code '%s'", result.Bid.AdUnitCode),
+					}
 					result.Bid = nil
 				}
 			}
@@ -199,21 +196,10 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	return bids, nil
 }
 
-func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig, externalURL string) *LifestreetAdapter {
+func NewLifestreetAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *LifestreetAdapter {
 	a := adapters.NewHTTPAdapter(config)
-
-	redirect_uri := fmt.Sprintf("%s/setuid?bidder=lifestreet&uid=$$visitor_cookie$$", externalURL)
-	usersyncURL := "//ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl="
-
-	info := &pbs.UsersyncInfo{
-		URL:         fmt.Sprintf("%s%s", usersyncURL, url.QueryEscape(redirect_uri)),
-		Type:        "redirect",
-		SupportCORS: false,
-	}
-
 	return &LifestreetAdapter{
-		http:         a,
-		URI:          "https://prebid.s2s.lfstmedia.com/adrequest",
-		usersyncInfo: info,
+		http: a,
+		URI:  endpoint,
 	}
 }

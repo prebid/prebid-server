@@ -1,0 +1,36 @@
+{
+  "id": "some-request-id",
+  "app": {
+    "ext": {
+      "prebid": {
+        "source": "prebid-mobile",
+        "version": "1.0.0"
+      }
+    }
+  },
+  "imp": [
+    {
+      "id": "my-imp-id",
+      "banner": {
+        "format": [
+          {
+            "w": 300,
+            "h": 600
+          }
+        ]
+      },
+      "pmp": {
+        "deals": [
+          {
+            "id": "some-deal-id"
+          }
+        ]
+      },
+      "ext": {
+        "appnexus": {
+          "placementId": 10433394
+        }
+      }
+    }
+  ]
+}

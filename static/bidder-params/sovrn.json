@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Sovrn Adapter Params",
+  "description": "A schema which validates params accepted by the Sovrn adapter",
+
+  "type": "object",
+  "properties": {
+    "tagid": {
+      "type": "string",
+      "description": "An ID which identifies the sovrn ad tag"
+    },
+    "tagId": {
+      "type": "string",
+      "description": "An ID which identifies the sovrn ad tag (DEPRECATED, use \"tagid\" instead)"
+    },
+    "bidfloor": {
+      "type": "number",
+      "description": "The minimium acceptable bid, in CPM, using US Dollars"
+    }
+  },
+  "oneOf": [
+    { "required" : [ "tagid" ] },
+    { "required" : [ "tagId" ] }
+  ]
+}

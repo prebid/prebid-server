@@ -10,9 +10,13 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+// This file is deprecated, and is only used to cache things for the legacy (/auction) endpoint.
+// For /openrtb2/auction cache, see client.go in this package.
+
 type CacheObject struct {
-	Value *BidCache
-	UUID  string
+	Value   interface{}
+	UUID    string
+	IsVideo bool
 }
 
 type BidCache struct {
@@ -24,8 +28,8 @@ type BidCache struct {
 
 // internal protocol objects
 type putObject struct {
-	Type  string    `json:"type"`
-	Value *BidCache `json:"value"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }
 
 type putRequest struct {
@@ -68,7 +72,11 @@ func Put(ctx context.Context, objs []*CacheObject) error {
 	}
 	pr := putRequest{Puts: make([]putObject, len(objs))}
 	for i, obj := range objs {
-		pr.Puts[i].Type = "json"
+		if obj.IsVideo {
+			pr.Puts[i].Type = "xml"
+		} else {
+			pr.Puts[i].Type = "json"
+		}
 		pr.Puts[i].Value = obj.Value
 	}
 	// Don't want to escape the HTML for adm and nurl

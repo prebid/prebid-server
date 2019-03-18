@@ -1,0 +1,9 @@
+maintainer:
+  email: "producto@e-planning.net"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

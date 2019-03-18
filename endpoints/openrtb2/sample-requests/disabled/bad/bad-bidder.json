@@ -1,0 +1,24 @@
+{
+  "message": "Invalid request: Bidder \"appnexus\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.\nInvalid request: request.imp[0].ext must contain at least one bidder\n",
+  "requestPayload": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          }
+        }
+      }
+    ]
+  }
+}

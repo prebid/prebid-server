@@ -1,0 +1,14 @@
+{
+    "context": 1,
+    "plcmttype": 1,
+    "assets": [
+        {
+            "video": {
+                "mimes": [],
+                "minduration": 30,
+                "maxduration": 120,
+                "protocols": [3]
+            }
+        }
+    ]
+}

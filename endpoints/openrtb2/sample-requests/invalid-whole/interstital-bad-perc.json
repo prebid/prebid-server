@@ -1,0 +1,51 @@
+{
+    "message": "Invalid request: request.device.ext.prebid.interstitial.minwidthperc must be a number between 0 and 100\n",
+    "requestPayload": {
+        "id": "some-request-id",
+        "site": {
+        "page": "test.somepage.com"
+        },
+        "imp": [
+        {
+            "id": "my-imp-id",
+            "banner": {
+                "id": "some-imp-id",
+                "format": [
+                    {
+                      "w": 300,
+                      "h": 600
+                    }
+                  ]
+                    },
+            "instl": 1,
+            "ext": {
+            "appnexus": {
+                "placementId": 10433394
+            }
+            }
+        }
+        ],
+        "device": {
+            "h": 640,
+            "w": 320,
+                "ext": {
+                "prebid": {
+                    "interstitial": {
+                        "minwidthperc": 120,
+                        "minheightperc": 60
+                    }
+                }
+            }
+        },
+        "ext": {
+        "prebid": {
+            "targeting": {
+            "pricegranularity": "low"
+            },
+            "cache": {
+            "bids": {}
+            }
+        }
+        }
+    }
+}

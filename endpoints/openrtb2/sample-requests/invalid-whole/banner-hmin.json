@@ -1,0 +1,14 @@
+{
+    "message": "Invalid request: request.imp[0].banner uses unsupported property: \"hmin\". Use the \"format\" array instead.\n",
+    "requestPayload": {
+      "id":"req-id",
+      "imp": [
+        {
+          "id":"imp-id",
+          "banner": {
+            "hmin":50
+          }
+        }
+      ]
+    }
+  }
