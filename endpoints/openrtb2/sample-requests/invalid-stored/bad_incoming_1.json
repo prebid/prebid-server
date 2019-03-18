@@ -1,0 +1,41 @@
+{
+    "description": "Otherwise valid request using stored request; incoming request has a comma after the closing curly brace of the second set of dimensions to yield invalid JSON",
+  
+    "message": "Invalid request: Invalid JSON in Incoming Request: invalid character ']' looking for beginning of value at offset 377\n",
+    "requestPayload": {
+      "id": "some-request-id",
+      "site": {
+        "page": "prebid.org"
+      },
+      "imp": [
+        {
+          "id": "some-impression-id",
+          "banner": {
+            "format": [
+              {
+                "w": 300,
+                "h": 250
+              },
+              {
+                "w": 300,
+                "h": 600
+              },
+            ]
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 10433394
+            }
+          }
+        }
+      ],
+      "tmax": 500,
+      "ext": {
+        "prebid": {
+          "storedrequest": {
+            "id": "2"
+          }
+        }
+      }
+    }
+}

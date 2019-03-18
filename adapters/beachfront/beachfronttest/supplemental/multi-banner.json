@@ -58,7 +58,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://display.bfmio.com/prebid_display",
+        "uri": "https://display.bfmio.com/prebid_display",
         "body": {
           "slots": [
             {

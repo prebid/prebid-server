@@ -34,14 +34,14 @@ import (
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -55,6 +55,7 @@ type endpointDeps struct {
 	defaultRequest   bool
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
+	categories       stored_requests.CategoryFetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -130,7 +131,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	numImps = len(req.Imp)
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
@@ -795,6 +796,20 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 					}
 				}
 			}
+			// Check Universal User ID
+			if userExt.TpID != nil {
+				if len(userExt.TpID) == 0 {
+					return fmt.Errorf("request.user.ext.tpid must contain at least one element or be undefined")
+				}
+				for tpidIndex, tpid := range userExt.TpID {
+					if tpid.Source == "" {
+						return fmt.Errorf("request.user.ext.tpid[%d] missing required field: \"source\"", tpidIndex)
+					}
+					if tpid.UID == "" {
+						return fmt.Errorf("request.user.ext.tpid[%d] missing required field: \"uid\"", tpidIndex)
+					}
+				}
+			}
 		} else {
 			// Return error.
 			return fmt.Errorf("request.user.ext object is not valid: %v", err)
@@ -885,6 +900,23 @@ func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 	}
 }
 
+func getJsonSyntaxError(testJSON []byte) (bool, string) {
+	type JsonNode struct {
+		raw   *json.RawMessage
+		doc   map[string]*JsonNode
+		ary   []*JsonNode
+		which int
+	}
+	type jNode map[string]*JsonNode
+	docErrdoc := &jNode{}
+	docErr := json.Unmarshal(testJSON, docErrdoc)
+	if uerror, ok := docErr.(*json.SyntaxError); ok {
+		err := fmt.Sprintf("%s at offset %v", uerror.Error(), uerror.Offset)
+		return true, err
+	}
+	return false, ""
+}
+
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
 	// Parse the Stored Request IDs from the BidRequest and Imps.
 	storedBidRequestId, hasStoredBidRequest, err := getStoredRequestId(requestJson)
@@ -911,6 +943,16 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if hasStoredBidRequest {
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 		if err != nil {
+			hasErr, Err := getJsonSyntaxError(requestJson)
+			if hasErr {
+				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
+			} else {
+				hasErr, Err = getJsonSyntaxError(storedRequests[storedBidRequestId])
+				if hasErr {
+					err = fmt.Errorf("Invalid JSON in Stored Request with ID %s: %s", storedBidRequestId, Err)
+					err = fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, Err)
+				}
+			}
 			return nil, []error{err}
 		}
 	}
@@ -919,6 +961,15 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if deps.defaultRequest {
 		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
 		if err != nil {
+			hasErr, Err := getJsonSyntaxError(resolvedRequest)
+			if hasErr {
+				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
+			} else {
+				hasErr, Err = getJsonSyntaxError(deps.defReqJSON)
+				if hasErr {
+					err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
+				}
+			}
 			return nil, []error{err}
 		}
 		resolvedRequest = aliasedRequest
@@ -930,6 +981,15 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
+			hasErr, Err := getJsonSyntaxError(imps[idIndices[i]])
+			if hasErr {
+				err = fmt.Errorf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, Err)
+			} else {
+				hasErr, Err = getJsonSyntaxError(storedImps[impIds[i]])
+				if hasErr {
+					err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impIds[i], Err)
+				}
+			}
 			return nil, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp

@@ -69,6 +69,7 @@ type rubiconUserExt struct {
 	RP        rubiconUserExtRP              `json:"rp"`
 	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
 	Consent   string                        `json:"consent,omitempty"`
+	TpID      []openrtb_ext.ExtUserTpID     `json:"tpid,omitempty"`
 }
 
 type rubiconSiteExtRP struct {
@@ -593,6 +594,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 					userExtRP.DigiTrust = userExt.DigiTrust
 				}
 				userExtRP.Consent = userExt.Consent
+				userExtRP.TpID = userExt.TpID
 			}
 
 			userCopy.Ext, err = json.Marshal(&userExtRP)
@@ -712,6 +714,11 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			if bid.Price != 0 {
+				// Since Rubicon XAPI returns only one bid per response
+				// copy response.bidid to openrtb_response.seatbid.bid.bidid
+				if bid.ID == "0" {
+					bid.ID = bidResp.BidID
+				}
 				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 					Bid:     &bid,
 					BidType: bidType,

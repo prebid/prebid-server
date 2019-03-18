@@ -168,7 +168,7 @@ type Router struct {
 	Shutdown        func()
 }
 
-func New(cfg *config.Configuration) (r *Router, err error) {
+func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r *Router, err error) {
 	const schemaDirectory = "./static/bidder-params"
 	const infoDirectory = "./static/bidder-info"
 
@@ -183,7 +183,8 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	fetcher, ampFetcher, db, shutdown := storedRequestsConf.NewStoredRequests(&cfg.StoredRequests, theClient, r.Router)
+	fetcher, ampFetcher, db, shutdown, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
+
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
@@ -216,18 +217,17 @@ func New(cfg *config.Configuration) (r *Router, err error) {
 
 	syncers := usersyncers.NewSyncerMap(cfg)
 	gdprPerms := gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(syncers), theClient)
-	currencyConverter := currencies.NewRateConverter(theClient, cfg.CurrencyConverter.FetchURL, time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds)*time.Second)
 
 	exchanges = newExchangeMap(cfg)
-	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, currencyConverter)
+	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)

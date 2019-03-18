@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "unsupported-audio-request",
+    "imp": [
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": "1707"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "Gamoshi only supports banner and video media types. Ignoring imp id=unsupported-audio-imp",
+    "No valid impression in the bid request"
+  ]
+}

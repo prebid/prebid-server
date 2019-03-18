@@ -22,27 +22,33 @@ import (
 	postgresEvents "github.com/prebid/prebid-server/stored_requests/events/postgres"
 )
 
-// NewStoredRequests returns four things:
+// NewStoredRequests returns five things:
 //
 // 1. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
 // 2. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
 // 3. A DB connection, if one was created. This may be nil.
 // 4. A function which should be called on shutdown for graceful cleanups.
+// 5. A Fetcher which can be used to get Category mapping for any /openrtb2 endpoint
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.StoredRequests, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func()) {
-	if cfg.Postgres.ConnectionInfo.Database != "" {
-		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s", cfg.Postgres.ConnectionInfo.Database, cfg.Postgres.ConnectionInfo.Host, cfg.Postgres.ConnectionInfo.Port, cfg.Postgres.ConnectionInfo.Username)
-		db = newPostgresDB(cfg.Postgres.ConnectionInfo)
+func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, db *sql.DB, shutdown func(), categoriesFetcher stored_requests.CategoryFetcher) {
+	if cfg.StoredRequests.Postgres.ConnectionInfo.Database != "" {
+		glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s",
+			cfg.StoredRequests.Postgres.ConnectionInfo.Database,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Host,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Port,
+			cfg.StoredRequests.Postgres.ConnectionInfo.Username)
+		db = newPostgresDB(cfg.StoredRequests.Postgres.ConnectionInfo)
 	}
-	eventProducers, ampEventProducers := newEventProducers(cfg, client, db, router)
-	cache := newCache(cfg)
-	ampCache := newCache(cfg)
-	fetcher, ampFetcher = newFetchers(cfg, client, db)
+	eventProducers, ampEventProducers := newEventProducers(&cfg.StoredRequests, client, db, router)
+	cache := newCache(&cfg.StoredRequests)
+	ampCache := newCache(&cfg.StoredRequests)
+	fetcher, ampFetcher = newFetchers(&cfg.StoredRequests, client, db)
+	categoriesFetcher, _ = newFetchers(&cfg.CategoryMapping, client, db)
 
 	fetcher = stored_requests.WithCache(fetcher, cache)
 	ampFetcher = stored_requests.WithCache(ampFetcher, ampCache)
@@ -77,12 +83,12 @@ func addListeners(cache stored_requests.Cache, eventProducers []events.EventProd
 	}
 }
 
-func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher) {
+func newFetchers(cfg *config.StoredRequests, client *http.Client, db *sql.DB) (fetcher stored_requests.AllFetcher, ampFetcher stored_requests.AllFetcher) {
 	idList := make(stored_requests.MultiFetcher, 0, 3)
 	ampIDList := make(stored_requests.MultiFetcher, 0, 3)
 
 	if cfg.Files {
-		fFetcher := newFilesystem()
+		fFetcher := newFilesystem(cfg.Path)
 		idList = append(idList, fFetcher)
 		ampIDList = append(ampIDList, fFetcher)
 	}
@@ -173,9 +179,9 @@ func newHttpEvents(client *http.Client, timeout time.Duration, refreshRate time.
 	return httpEvents.NewHTTPEvents(client, endpoint, ctxProducer, refreshRate)
 }
 
-func newFilesystem() stored_requests.Fetcher {
-	glog.Infof("Loading Stored Requests from filesystem at path %s", requestConfigPath)
-	fetcher, err := file_fetcher.NewFileFetcher(requestConfigPath)
+func newFilesystem(configPath string) stored_requests.AllFetcher {
+	glog.Infof("Loading Stored Requests from filesystem at path %s", configPath)
+	fetcher, err := file_fetcher.NewFileFetcher(configPath)
 	if err != nil {
 		glog.Fatalf("Failed to create a FileFetcher: %v", err)
 	}
@@ -196,7 +202,7 @@ func newPostgresDB(cfg config.PostgresConnection) *sql.DB {
 }
 
 // consolidate returns a single Fetcher from an array of fetchers of any size.
-func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
+func consolidate(fetchers []stored_requests.AllFetcher) stored_requests.AllFetcher {
 	if len(fetchers) == 0 {
 		glog.Warning("No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config")
 		return empty_fetcher.EmptyFetcher{}
@@ -206,5 +212,3 @@ func consolidate(fetchers []stored_requests.Fetcher) stored_requests.Fetcher {
 		return stored_requests.MultiFetcher(fetchers)
 	}
 }
-
-const requestConfigPath = "./stored_requests/data/by_id"

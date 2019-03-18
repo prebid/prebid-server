@@ -1,0 +1,11 @@
+maintainer:
+  email: "apex@sonobi.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

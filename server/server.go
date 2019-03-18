@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -72,12 +73,18 @@ func newAdminServer(cfg *config.Configuration, handler http.Handler) *http.Serve
 }
 
 func newMainServer(cfg *config.Configuration, handler http.Handler) *http.Server {
+	var serverHandler = handler
+	if cfg.EnableGzip {
+		serverHandler = gziphandler.GzipHandler(handler)
+	}
+
 	return &http.Server{
 		Addr:         cfg.Host + ":" + strconv.Itoa(cfg.Port),
-		Handler:      handler,
+		Handler:      serverHandler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
+
 }
 
 func runServer(server *http.Server, name string, listener net.Listener) {

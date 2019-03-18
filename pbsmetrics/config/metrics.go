@@ -97,6 +97,13 @@ func (me *MultiMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length
 	}
 }
 
+// RecordAdapterPanic across all engines
+func (me *MultiMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterPanic(labels)
+	}
+}
+
 // RecordAdapterRequest across all engines
 func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	for _, thisME := range *me {
@@ -171,6 +178,11 @@ func (me *DummyMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) 
 
 // RecordRequestTime as a noop
 func (me *DummyMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
+	return
+}
+
+// RecordAdapterPanic as a noop
+func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
 	return
 }
 
