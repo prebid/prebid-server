@@ -36,7 +36,9 @@ func cleanOpenRTBRequests(ctx context.Context, orig *openrtb.BidRequest, usersyn
 	consent := extractConsent(orig)
 	if gdpr == 1 {
 		for bidder, bidReq := range requestsByBidder {
-			if ok, err := gDPR.PersonalInfoAllowed(ctx, bidder, consent); !ok && err == nil {
+			// Fixes #820
+			coreBidder := resolveBidder(bidder.String(), aliases)
+			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, consent); !ok && err == nil {
 				cleanPI(bidReq, labels.RType == pbsmetrics.ReqTypeAMP)
 			}
 		}
