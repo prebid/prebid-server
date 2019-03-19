@@ -92,7 +92,8 @@ type appnexusBidExt struct {
 }
 
 type appnexusReqExtAppnexus struct {
-	IncludeBrandCategory *bool `json:"include_brand_category"`
+	IncludeBrandCategory    *bool `json:"include_brand_category"`
+	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness"`
 }
 
 // Full request extension including appnexus extension object
@@ -330,6 +331,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 				if reqExt.Appnexus == nil {
 					reqExt.Appnexus = &appnexusReqExtAppnexus{}
 				}
+				reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
 				reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
 				request.Ext, err = json.Marshal(reqExt)
 				if err != nil {
@@ -493,7 +495,8 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 					if iabCategory, err := a.getIabCategoryForBid(&bidExt); err == nil {
 						bid.Cat = []string{iabCategory}
 					} else if len(bid.Cat) > 1 {
-						bid.Cat = bid.Cat[:1]
+						//create empty categories array to force bid to be rejected
+						bid.Cat = make([]string, 0, 0)
 					}
 
 					impVideo := &openrtb_ext.ExtBidPrebidVideo{
@@ -532,8 +535,7 @@ func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
 
 // getIabCategoryForBid maps an appnexus brand id to an IAB category.
 func (a *AppNexusAdapter) getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
-	// TODO: Change from BrandId to a CategoryId once that is returned from impbus
-	brandIDString := strconv.Itoa(bid.Appnexus.BrandId)
+	brandIDString := strconv.Itoa(bid.Appnexus.BrandCategory)
 	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {
 		return iabCategory, nil
 	} else {
