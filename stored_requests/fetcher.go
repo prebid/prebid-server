@@ -130,7 +130,7 @@ func (c ComposedCache) Save(ctx context.Context, requestData map[string]json.Raw
 }
 
 type fetcherWithCache struct {
-	fetcher Fetcher
+	fetcher AllFetcher
 	cache   Cache
 }
 
@@ -138,7 +138,7 @@ type fetcherWithCache struct {
 // This can be called multiple times to compose Cache layers onto the backing Fetcher, though
 // it is usually more desirable to first compose caches with Compose, ensuring propagation of updates
 // and invalidations through all cache layers.
-func WithCache(fetcher Fetcher, cache Cache) Fetcher {
+func WithCache(fetcher AllFetcher, cache Cache) AllFetcher {
 	return &fetcherWithCache{
 		cache:   cache,
 		fetcher: fetcher,
