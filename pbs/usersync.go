@@ -44,15 +44,19 @@ type UserSyncDeps struct {
 	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 
-// pbsCookieJson defines the JSON contract for the cookie data's storage format.
-//
-// This exists so that PBSCookie (which is public) can have private fields, and the rest of
-// PBS doesn't have to worry about the cookie data storage format.
-type pbsCookieJson struct {
-	LegacyUIDs map[string]string        `json:"uids,omitempty"`
-	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
-	OptOut     bool                     `json:"optout,omitempty"`
-	Birthday   *time.Time               `json:"bday,omitempty"`
+type userSyncs struct {
+	BuyerUIDs map[string]string
+}
+
+// GetUIDs parses the PBS cookie from the request and returns
+// this user's IDs for all the bidders
+func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// parse PBS cookie
+	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
+	userSyncs := userSyncs{}
+	userSyncs.BuyerUIDs = pc.GetUIDs()
+	json.NewEncoder(w).Encode(userSyncs)
+	return
 }
 
 // Struct for parsing json in google's response

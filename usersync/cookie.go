@@ -137,6 +137,17 @@ func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
 	return "", false, false
 }
 
+// GetUIDs returns this user's ID for all the bidders
+func (cookie *PBSCookie) GetUIDs() map[string]string {
+	uids := make(map[string]string)
+
+	for bidderName, uidWithExpiry := range cookie.uids {
+		uids[bidderName] = uidWithExpiry.UID
+	}
+
+	return uids
+}
+
 // GetId wraps GetUID, letting callers fetch the ID given an OpenRTB BidderName.
 func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, exists bool) {
 	if familyName, ok := bidderToFamilyNames[bidderName]; ok {
