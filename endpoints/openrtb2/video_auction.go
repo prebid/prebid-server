@@ -406,8 +406,13 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 		durationRangeSec = videoRequest.PodConfig.DurationRangeSec
 	}
 
+	priceGranularity := openrtb_ext.PriceGranularityFromString("med")
+	if videoRequest.PriceGranularity.Precision != 0 {
+		priceGranularity = videoRequest.PriceGranularity
+	}
+
 	targeting := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     videoRequest.PriceGranularity,
+		PriceGranularity:     priceGranularity,
 		IncludeWinners:       true,
 		IncludeBrandCategory: inclBrandCat,
 		DurationRangeSec:     durationRangeSec,

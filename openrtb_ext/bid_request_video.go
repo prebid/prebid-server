@@ -109,7 +109,7 @@ type BidRequestVideo struct {
 	// Description:
 	//    Indicator of test mode in which auctions are not billable,
 	//    where 0 = live mode, 1 = test mode.
-	PriceGranularity PriceGranularity `json:"pricegranularity"`
+	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
 }
 
 type PodConfig struct {
