@@ -389,7 +389,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 			pb, err = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
 
-			var newDur int
+			newDur := duration
 			if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
 				durationRange := requestExt.Prebid.Targeting.DurationRangeSec
 				sort.Ints(durationRange)
