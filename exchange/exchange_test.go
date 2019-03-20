@@ -193,6 +193,7 @@ func newCategoryFetcher(directory string) (stored_requests.CategoryFetcher, erro
 // newRaceCheckingRequest builds a BidRequest from all the params in the
 // adapters/{bidder}/{bidder}test/params/race/*.json files
 func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
+	dnt := int8(1)
 	return &openrtb.BidRequest{
 		Site: &openrtb.Site{
 			Page:   "www.some.domain.com",
@@ -205,7 +206,7 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 			UA:       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Safari/537.36",
 			IFA:      "ifa",
 			IP:       "132.173.230.74",
-			DNT:      1,
+			DNT:      &dnt,
 			Language: "EN",
 		},
 		Source: &openrtb.Source{
