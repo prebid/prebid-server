@@ -389,7 +389,24 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 			pb, err = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
 
-			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, duration)
+			var newDur int
+			if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
+				durationRange := requestExt.Prebid.Targeting.DurationRangeSec
+				sort.Ints(durationRange)
+				//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
+				if duration > durationRange[len(durationRange)-1] {
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				}
+				for _, dur := range durationRange {
+					if duration <= dur {
+						newDur = dur
+						break
+					}
+				}
+			}
+
+			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
 
 			if dupe, ok := dedupe[categoryDuration]; ok {
 				// 50% chance for either bid with duplicate categoryDuration values to be kept

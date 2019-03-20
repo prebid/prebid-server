@@ -135,7 +135,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 	bidReq.Imp = imps
-	bidReq.ID = "bid_id" //TODO: look at auction
+	bidReq.ID = "bid_id" //TODO: look at prebid.js
 
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(r, bidReq) // move after merge
@@ -401,10 +401,17 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 		PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
 		Publisher:       videoRequest.IncludeBrandCategory.Publisher,
 	}
+	var durationRangeSec []int
+	if !videoRequest.PodConfig.RequireExactDuration {
+		durationRangeSec = videoRequest.PodConfig.DurationRangeSec
+	}
+
 	targeting := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     openrtb_ext.PriceGranularityFromString("med"),
 		IncludeWinners:       true,
-		IncludeBrandCategory: inclBrandCat}
+		IncludeBrandCategory: inclBrandCat,
+		DurationRangeSec:     durationRangeSec,
+	}
 
 	prebid := openrtb_ext.ExtRequestPrebid{
 		Targeting: &targeting,
