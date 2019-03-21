@@ -92,6 +92,76 @@ func TestVideoEndpointImpressionsDuration(t *testing.T) {
 
 }
 
+func TestCreateBidExtension(t *testing.T) {
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+
+	priceGranRanges := make([]openrtb_ext.GranularityRange, 0)
+	priceGranRanges = append(priceGranRanges, openrtb_ext.GranularityRange{
+		Max:       30,
+		Min:       0,
+		Increment: 0.1,
+	})
+
+	videoRequest := openrtb_ext.BidRequestVideo{
+		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 1,
+			Publisher:       "",
+		},
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     durationRange,
+			RequireExactDuration: false,
+		},
+		PriceGranularity: openrtb_ext.PriceGranularity{
+			Precision: 2,
+			Ranges:    priceGranRanges,
+		},
+	}
+	res, err := createBidExtension(&videoRequest)
+	assert.Equal(t, err, nil, "Error should be nil")
+
+	resExt := &openrtb_ext.ExtRequest{}
+
+	if err := json.Unmarshal(res, &resExt); err != nil {
+		assert.Fail(t, "Unable to unmarshal bid extension")
+	}
+	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, durationRange, "Duration range seconds is incorrect")
+	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity.Ranges, priceGranRanges, "Price granularity is incorrect")
+
+}
+
+func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+
+	videoRequest := openrtb_ext.BidRequestVideo{
+		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 1,
+			Publisher:       "",
+		},
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     durationRange,
+			RequireExactDuration: true,
+		},
+		PriceGranularity: openrtb_ext.PriceGranularity{
+			Precision: 0,
+			Ranges:    nil,
+		},
+	}
+	res, err := createBidExtension(&videoRequest)
+	assert.Equal(t, err, nil, "Error should be nil")
+
+	resExt := &openrtb_ext.ExtRequest{}
+
+	if err := json.Unmarshal(res, &resExt); err != nil {
+		assert.Fail(t, "Unable to unmarshal bid extension")
+	}
+	assert.Equal(t, resExt.Prebid.Targeting.DurationRangeSec, []int(nil), "Duration range seconds is incorrect")
+	assert.Equal(t, resExt.Prebid.Targeting.PriceGranularity, openrtb_ext.PriceGranularityFromString("med"), "Price granularity is incorrect")
+}
+
 func TestVideoEndpointNoPods(t *testing.T) {
 	ex := &mockExchangeVideo{}
 	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")

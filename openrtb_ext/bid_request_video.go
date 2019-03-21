@@ -101,6 +101,15 @@ type BidRequestVideo struct {
 	//    Indicator of test mode in which auctions are not billable,
 	//    where 0 = live mode, 1 = test mode.
 	Test int8 `json:"test,omitempty"`
+
+	// Attribute:
+	//   test
+	// Type:
+	//   integer; default 0
+	// Description:
+	//    Indicator of test mode in which auctions are not billable,
+	//    where 0 = live mode, 1 = test mode.
+	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
 }
 
 type PodConfig struct {
