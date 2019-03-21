@@ -241,7 +241,9 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.IP = req.Device.IP
 				beachfrontReq.DeviceModel = req.Device.Model
 				beachfrontReq.DeviceOs = req.Device.OS
-				beachfrontReq.Dnt = req.Device.DNT
+				if req.Device.DNT != nil {
+					beachfrontReq.Dnt = *req.Device.DNT
+				}
 				if req.Device.UA != "" {
 					beachfrontReq.UA = req.Device.UA
 				}
