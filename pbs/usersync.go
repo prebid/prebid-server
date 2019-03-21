@@ -44,21 +44,6 @@ type UserSyncDeps struct {
 	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 
-type userSyncs struct {
-	BuyerUIDs map[string]string
-}
-
-// GetUIDs parses the PBS cookie from the request and returns
-// this user's IDs for all the bidders
-func (deps *UserSyncDeps) GetUIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// parse PBS cookie
-	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
-	userSyncs := userSyncs{}
-	userSyncs.BuyerUIDs = pc.GetUIDs()
-	json.NewEncoder(w).Encode(userSyncs)
-	return
-}
-
 // Struct for parsing json in google's response
 type googleResponse struct {
 	Success    bool

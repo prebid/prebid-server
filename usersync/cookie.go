@@ -140,11 +140,12 @@ func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
 // GetUIDs returns this user's ID for all the bidders
 func (cookie *PBSCookie) GetUIDs() map[string]string {
 	uids := make(map[string]string)
-
-	for bidderName, uidWithExpiry := range cookie.uids {
-		uids[bidderName] = uidWithExpiry.UID
+	if cookie != nil {
+		// Extract just the uid for each bidder
+		for bidderName, uidWithExpiry := range cookie.uids {
+			uids[bidderName] = uidWithExpiry.UID
+		}
 	}
-
 	return uids
 }
 
