@@ -41,14 +41,7 @@ func TestEmptyCookie(t *testing.T) {
 }
 
 func TestCookieWithData(t *testing.T) {
-	cookie := &PBSCookie{
-		uids: map[string]uidWithExpiry{
-			"adnxs":           newTempId("123"),
-			"audienceNetwork": newTempId("456"),
-		},
-		optOut:   false,
-		birthday: timestamp(),
-	}
+	cookie := newSampleCookie()
 	ensureConsistency(t, cookie)
 }
 
@@ -174,9 +167,9 @@ func TestCookieReadWrite(t *testing.T) {
 	if !exists || !isLive || uid != "123" {
 		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
 	}
-	uid, exists, isLive = received.GetUID("audienceNetwork")
+	uid, exists, isLive = received.GetUID("rubicon")
 	if !exists || !isLive || uid != "456" {
-		t.Errorf("Received cookie should have the audienceNetwork ID=456. Got %s", uid)
+		t.Errorf("Received cookie should have the rubicon ID=456. Got %s", uid)
 	}
 	if received.LiveSyncCount() != 2 {
 		t.Errorf("Expected 2 user syncs. Got %d", received.LiveSyncCount())
@@ -252,7 +245,7 @@ func TestGetUIDs(t *testing.T) {
 
 	assert.Len(t, uids, 2, "GetUIDs should return user IDs for all bidders")
 	assert.Equal(t, "123", uids["adnxs"], "GetUIDs should return the correct user ID for each bidder")
-	assert.Equal(t, "456", uids["audienceNetwork"], "GetUIDs should return the correct user ID for each bidder")
+	assert.Equal(t, "456", uids["rubicon"], "GetUIDs should return the correct user ID for each bidder")
 }
 
 func TestGetUIDsWithEmptyCookie(t *testing.T) {
@@ -350,8 +343,8 @@ func newTempId(uid string) uidWithExpiry {
 func newSampleCookie() *PBSCookie {
 	return &PBSCookie{
 		uids: map[string]uidWithExpiry{
-			"adnxs":           newTempId("123"),
-			"audienceNetwork": newTempId("456"),
+			"adnxs":   newTempId("123"),
+			"rubicon": newTempId("456"),
 		},
 		optOut:   false,
 		birthday: timestamp(),
