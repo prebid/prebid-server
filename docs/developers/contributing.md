@@ -32,8 +32,8 @@ Bugfixes should include a regression test which prevents that bug from being re-
 Documentation for the project is stored in the prebid-server directory on the [Prebid repo](https://github.com/prebid/prebid.github.io/tree/master/prebid-server). If your feature requires docs updates,
 those updates must be submitted in the same Pull Request as the code changes. Documentation can be viewed at 
 
-- [docs/endpoints](../endpoints) describes the Prebid Server API. For example, the endpoint `host:port/openrtb2/auction` is described by [docs/endpoints/openrtb2/auction.md](../endpoints/openrtb2/auction.md)
-- [docs/developers](../developers) contains docs intended for Developers. These assume that the reader is technical, and describe the mechanics of features.
+- [endpoints](prebid.org/prebid-server/endpoints/) describes the Prebid Server API. For example, the endpoint `host:port/openrtb2/auction` is described by [/endpoints/openrtb2/auction.md]([prebid.org/prebid-server/endpoints/openrtb2/auction.md)
+- [developers](prebid.org/prebid-server/developers) contains docs intended for Developers. These assume that the reader is technical, and describe the mechanics of features.
 
 Current Prebid Server documentation can be viewed on [Prebid.org](http://prebid.org/prebid-server/prebid-server-overview.html)
 
