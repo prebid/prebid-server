@@ -1,0 +1,19 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-missing-ext-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 5],
+          "w": 1024,
+          "h": 576
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+  "ext.bidder not provided"
+]
+}

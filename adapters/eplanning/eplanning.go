@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"regexp"
@@ -97,7 +98,9 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", ip)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-		addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(request.Device.DNT)))
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
 	}
 
 	var pageURL string
@@ -114,10 +117,10 @@ func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*a
 		pageDomain = defaultPageURL
 	}
 
-	uri := adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, pageDomain, sec, pageURL, strings.Join(spacesStrings, "+"))
+	uri := adapter.URI + fmt.Sprintf("/%s/%s/%s/%s?r=pbs&ncb=1&ur=%s&e=%s", clientID, dfpClientID, pageDomain, sec, url.QueryEscape(pageURL), strings.Join(spacesStrings, "+"))
 
-	if request.User != nil && request.User.ID != "" {
-		uri = uri + fmt.Sprintf("&uid=%s", request.User.ID)
+	if request.User != nil && request.User.BuyerUID != "" {
+		uri = uri + fmt.Sprintf("&uid=%s", request.User.BuyerUID)
 	}
 
 	if ip != "" {

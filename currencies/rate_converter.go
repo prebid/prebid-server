@@ -170,6 +170,16 @@ func (rc *RateConverter) Rates() Conversions {
 	return nil
 }
 
+// GetInfo returns setup information about the converter
+func (rc *RateConverter) GetInfo() ConverterInfo {
+	return converterInfo{
+		source:           rc.syncSourceURL,
+		fetchingInterval: rc.fetchingInterval,
+		lastUpdated:      rc.LastUpdated(),
+		rates:            rc.Rates().GetRates(),
+	}
+}
+
 type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -179,4 +189,5 @@ type httpClient interface {
 // currencies, then an err is returned and rate is 0.
 type Conversions interface {
 	GetRate(from string, to string) (float64, error)
+	GetRates() *map[string]map[string]float64
 }

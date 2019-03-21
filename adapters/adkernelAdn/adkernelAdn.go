@@ -1,7 +1,6 @@
 package adkernelAdn
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -108,12 +108,15 @@ func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpAdkerne
 func compatImpression(imp *openrtb.Imp) error {
 	imp.Ext = nil //do not forward ext to adkernel platform
 	if imp.Banner != nil {
-		return compatBanerImpression(imp.Banner)
+		return compatBannerImpression(imp)
 	}
 	return nil
 }
 
-func compatBanerImpression(banner *openrtb.Banner) error {
+func compatBannerImpression(imp *openrtb.Imp) error {
+	// Create a copy of the banner, since imp is a shallow copy of the original.
+	bannerCopy := *imp.Banner
+	banner := &bannerCopy
 	//As banner.w/h are required fields for adkernelAdn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
@@ -123,6 +126,7 @@ func compatBanerImpression(banner *openrtb.Banner) error {
 		banner.Format = banner.Format[1:]
 		banner.W = &format.W
 		banner.H = &format.H
+		imp.Banner = banner
 	}
 	return nil
 }
@@ -175,19 +179,19 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 		imp.TagID = imp.ID
 	}
 	if bidRequest.Site != nil {
+		// Need to copy Site as Request is a shallow copy
+		siteCopy := *bidRequest.Site
+		bidRequest.Site = &siteCopy
 		bidRequest.Site.Publisher = nil
 		bidRequest.Site.Domain = ""
 	}
 	if bidRequest.App != nil {
+		// Need to copy App as Request is a shallow copy
+		appCopy := *bidRequest.App
+		bidRequest.App = &appCopy
 		bidRequest.App.Publisher = nil
 	}
 	return &bidRequest
-}
-
-// EndpointVars contains
-type EndpointVars struct {
-	Host        string
-	PublisherID int
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
@@ -196,14 +200,8 @@ func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAd
 	if params.Host != "" {
 		reqHost = params.Host
 	}
-	endpointParams := EndpointVars{Host: reqHost, PublisherID: params.PublisherID}
-	buf := new(bytes.Buffer)
-	err := adapter.EndpointTemplate.Execute(buf, endpointParams)
-	if err != nil {
-		return "", err
-	}
-	res := buf.String()
-	return res, nil
+	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: params.PublisherID}
+	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
 //MakeBids translates adkernel bid response to prebid-server specific format

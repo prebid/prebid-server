@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/stored_requests"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -49,6 +50,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	for requestID := range goodRequests {
@@ -102,6 +104,7 @@ func TestAMPPageInfo(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -133,6 +136,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		nil,
 		openrtb_ext.BidderMap,
+		nil,
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -172,6 +176,7 @@ func TestAmpBadRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -202,6 +207,7 @@ func TestAmpDebug(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	for requestID := range requests {
@@ -274,6 +280,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	requestID := "1"
@@ -401,6 +408,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		nil,
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize)
@@ -443,7 +451,7 @@ type mockAmpExchange struct {
 	lastRequest *openrtb.BidRequest
 }
 
-func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels) (*openrtb.BidResponse, error) {
+func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
 
 	response := &openrtb.BidResponse{

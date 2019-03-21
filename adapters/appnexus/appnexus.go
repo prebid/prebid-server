@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -21,8 +22,9 @@ import (
 )
 
 type AppNexusAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	http           *adapters.HTTPAdapter
+	URI            string
+	iabCategoryMap map[string]string
 }
 
 // used for cookies and such
@@ -37,6 +39,10 @@ func (a *AppNexusAdapter) SkipNoCookies() bool {
 type KeyVal struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"value,omitempty"`
+}
+
+type appnexusAdapterOptions struct {
+	IabCategories map[string]string `json:"iab_categories"`
 }
 
 type appnexusParams struct {
@@ -68,6 +74,7 @@ type appnexusBidExt struct {
 
 type appnexusBidExtAppnexus struct {
 	BidType int `json:"bid_ad_type"`
+	BrandId int `json:"brand_id"`
 }
 
 type appnexusImpExt struct {
@@ -235,9 +242,12 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				NURL:        bid.NURL,
 			}
 
-			if mediaType, err := getMediaTypeForBid(&bid); err == nil {
-				pbid.CreativeMediaType = string(mediaType)
-				bids = append(bids, &pbid)
+			var impExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &impExt); err == nil {
+				if mediaType, err := getMediaTypeForBid(&impExt); err == nil {
+					pbid.CreativeMediaType = string(mediaType)
+					bids = append(bids, &pbid)
+				}
 			}
 		}
 	}
@@ -433,13 +443,24 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			if bidType, err := getMediaTypeForBid(&bid); err == nil {
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
-				})
-			} else {
+			var impExt appnexusBidExt
+			if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
 				errs = append(errs, err)
+			} else {
+				if bidType, err := getMediaTypeForBid(&impExt); err == nil {
+					if len(bid.Cat) == 0 {
+						if iabCategory, err := a.getIabCategoryForBid(&impExt); err == nil {
+							bid.Cat = []string{iabCategory}
+						}
+					}
+
+					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+						Bid:     &bid,
+						BidType: bidType,
+					})
+				} else {
+					errs = append(errs, err)
+				}
 			}
 		}
 	}
@@ -447,12 +468,8 @@ func (a *AppNexusAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 }
 
 // getMediaTypeForBid determines which type of bid.
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
-	var impExt appnexusBidExt
-	if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
-		return "", err
-	}
-	switch impExt.Appnexus.BidType {
+func getMediaTypeForBid(bid *appnexusBidExt) (openrtb_ext.BidType, error) {
+	switch bid.Appnexus.BidType {
 	case 0:
 		return openrtb_ext.BidTypeBanner, nil
 	case 1:
@@ -462,7 +479,18 @@ func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
 	case 3:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", impExt.Appnexus.BidType)
+		return "", fmt.Errorf("Unrecognized bid_ad_type in response from appnexus: %d", bid.Appnexus.BidType)
+	}
+}
+
+// getIabCategoryForBid maps an appnexus brand id to an IAB category.
+func (a *AppNexusAdapter) getIabCategoryForBid(bid *appnexusBidExt) (string, error) {
+	// TODO: Change from BrandId to a CategoryId once that is returned from impbus
+	brandIDString := strconv.Itoa(bid.Appnexus.BrandId)
+	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {
+		return iabCategory, nil
+	} else {
+		return "", fmt.Errorf("category not in map: %s", brandIDString)
 	}
 }
 
@@ -480,8 +508,21 @@ func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *Ap
 
 func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
+
+	// Load custom options for our adapter (currently just a lookup table to convert appnexus => iab categories)
+	var catmap map[string]string
+	opts, err := ioutil.ReadFile("./static/adapter/appnexus/opts.json")
+	if err == nil {
+		var adapterOptions appnexusAdapterOptions
+
+		if err := json.Unmarshal(opts, &adapterOptions); err == nil {
+			catmap = adapterOptions.IabCategories
+		}
+	}
+
 	return &AppNexusAdapter{
-		http: a,
-		URI:  endpoint,
+		http:           a,
+		URI:            endpoint,
+		iabCategoryMap: catmap,
 	}
 }

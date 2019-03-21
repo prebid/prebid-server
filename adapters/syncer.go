@@ -1,9 +1,9 @@
 package adapters
 
 import (
-	"strings"
 	"text/template"
 
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -42,8 +42,7 @@ const (
 )
 
 func (s *Syncer) GetUsersyncInfo(gdpr string, consent string) (*usersync.UsersyncInfo, error) {
-	sb := strings.Builder{}
-	err := s.urlTemplate.Execute(&sb, TemplateValues{
+	userSyncURL, err := macros.ResolveMacros(*s.urlTemplate, macros.UserSyncTemplateParams{
 		GDPR:        gdpr,
 		GDPRConsent: consent,
 	})
@@ -52,15 +51,10 @@ func (s *Syncer) GetUsersyncInfo(gdpr string, consent string) (*usersync.Usersyn
 	}
 
 	return &usersync.UsersyncInfo{
-		URL:         sb.String(),
+		URL:         userSyncURL,
 		Type:        string(s.syncType),
 		SupportCORS: false,
 	}, err
-}
-
-type TemplateValues struct {
-	GDPR        string
-	GDPRConsent string
 }
 
 func (s *Syncer) FamilyName() string {

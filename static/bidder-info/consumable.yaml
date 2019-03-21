@@ -1,0 +1,9 @@
+maintainer:
+  email: "naffis@consumable.com"
+capabilities:
+  app:
+    mediaTypes:
+    - banner
+  site:
+    mediaTypes:
+    - banner

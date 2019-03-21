@@ -15,6 +15,8 @@ import (
 type StoredRequests struct {
 	// Files should be true if Stored Requests should be loaded from the filesystem.
 	Files bool `mapstructure:"filesystem"`
+	//If data should be loaded from file system, path should be specified in configuration
+	Path string `mapstructure:"directorypath"`
 	// Postgres configures Fetchers and EventProducers which read from a Postgres DB.
 	// Fetchers are in stored_requests/backends/db_fetcher/postgres.go
 	// EventProducers are in stored_requests/events/postgres

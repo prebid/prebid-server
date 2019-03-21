@@ -45,6 +45,7 @@ func NewAmpEndpoint(
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
+	categoriesFetcher stored_requests.CategoryFetcher,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -53,7 +54,7 @@ func NewAmpEndpoint(
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).AmpAuction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categoriesFetcher}).AmpAuction), nil
 
 }
 
@@ -139,7 +140,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.AuctionResponse = response
 
 	if err != nil {

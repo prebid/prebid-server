@@ -69,3 +69,8 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 	}
 	return 0, errors.New("rates are nil")
 }
+
+// GetRates returns current rates
+func (r *Rates) GetRates() *map[string]map[string]float64 {
+	return &r.Conversions
+}

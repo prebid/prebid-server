@@ -24,6 +24,18 @@ type ExtBidPrebidCache struct {
 	Url string `json:"url"`
 }
 
+type BidderExt struct {
+	CreativeInfo CreativeInfo `json:"creative_info"`
+}
+
+type CreativeInfo struct {
+	Video Video `json:"video"`
+}
+
+type Video struct {
+	Duration int `json:"duration"`
+}
+
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type
 type BidType string
 
@@ -92,6 +104,8 @@ const (
 
 	// This is not a key, but values used by the HbEnvKey
 	HbEnvKeyApp string = "mobile-app"
+
+	HbCategoryDurationKey TargetingKey = "hb_pb_cat_dur"
 )
 
 func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {
