@@ -406,8 +406,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 				}
 			}
 
-			//categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
-			categoryDuration := fmt.Sprintf("%s_%s_%ds_%d", pb, category, newDur, duration) //TODO: temporary testing
+			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
 
 			if dupe, ok := dedupe[categoryDuration]; ok {
 				// 50% chance for either bid with duplicate categoryDuration values to be kept
