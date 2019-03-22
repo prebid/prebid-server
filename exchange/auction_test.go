@@ -102,9 +102,9 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	cache := &mockCache{}
 
 	testAuction := &auction{
-		winningBids: winningBids,
+		winningBids:         winningBids,
 		winningBidsByBidder: winningBidsByBidder,
-		roundedPrices: roundedPrices,
+		roundedPrices:       roundedPrices,
 	}
 	_ = testAuction.doCache(ctx, cache, true, false, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 	found := 0
