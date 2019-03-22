@@ -72,8 +72,9 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	for _, imp := range bidRequest.Imp {
 		expByImp[imp.ID] = imp.Exp
 	}
-	for impID, topBidsPerImp := range a.winningBidsByBidder {
+	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
+			impID := topBidPerBidder.bid.ImpID
 			if bids {
 				if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
 					toCache = append(toCache, prebid_cache_client.Cacheable{
