@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -111,8 +112,31 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 
 	for _, cExpected := range specData.ExpectedCacheables {
 		for _, cFound := range cache.items {
+			// make sure Data section matches exactly
 			eq := jsonpatch.Equal(cExpected.Data, cFound.Data)
-			if cExpected.TTLSeconds == cFound.TTLSeconds && eq {
+			if !eq {
+				continue
+			}
+
+			// make sure Key value is as expected
+			keymatch := false
+			if len(cExpected.Key) > 0 {
+				// can only verify prefix; remainder is random
+				if strings.HasPrefix(cFound.Key, cExpected.Key) {
+					keymatch = true
+				}
+			} else {
+				if len(cExpected.Key) == 0 {
+					// Key is expected to be empty
+					keymatch = true
+				}
+			}
+			if !keymatch {
+				continue
+			}
+
+			// make sure TTLSeconds section matches exactly
+			if cExpected.TTLSeconds == cFound.TTLSeconds {
 				found++
 			}
 		}
