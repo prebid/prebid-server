@@ -348,9 +348,14 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}
 
 	imps := request.Imp
-	resArr := make([]*adapters.RequestData, 0)
+	initialCapacity := (len(imps) + maxImpsPerReq - 1) / maxImpsPerReq
+	resArr := make([]*adapters.RequestData, 0, initialCapacity)
 	startInd := 0
 	impsLeft := len(imps) > 0
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 
 	for impsLeft {
 
@@ -367,10 +372,6 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 			errs = append(errs, err)
 			return nil, errs
 		}
-
-		headers := http.Header{}
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-		headers.Add("Accept", "application/json")
 
 		resArr = append(resArr, &adapters.RequestData{
 			Method:  "POST",
