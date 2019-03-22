@@ -355,7 +355,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	for impsLeft {
 
 		endInd := startInd + maxImpsPerReq
-		if endInd >= len(request.Imp) {
+		if endInd >= len(imps) {
 			endInd = len(imps)
 			impsLeft = false
 		}
