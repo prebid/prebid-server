@@ -669,6 +669,53 @@ func TestCategoryDedupe(t *testing.T) {
 	assert.NotEqual(t, numIterations, selectedBids["bid_id3"], "Bid 3 made it through every time")
 }
 
+func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequest()
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+	durationRange = append(durationRange, 50)
+	requestExt.Prebid.Targeting.DurationRangeSec = durationRange
+	requestExt.Prebid.Targeting.IncludeBrandCategory = openrtb_ext.ExtIncludeBrandCategory{}
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+	cats1 := []string{"IAB1-3"}
+	cats2 := []string{"IAB1-4"}
+	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
+
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
+
+	innerBids := []*pbsOrtbBid{
+		&bid1_1,
+		&bid1_2,
+	}
+
+	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+	bidderName1 := openrtb_ext.BidderName("appnexus")
+
+	adapterBids[bidderName1] = &seatBid
+
+	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, categoriesFetcher, targData)
+
+	assert.Equal(t, nil, err, "Category mapping error should be empty")
+	assert.Equal(t, "10.00_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
+	assert.Equal(t, "20.00_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
+}
+
 type exchangeSpec struct {
 	IncomingRequest  exchangeRequest        `json:"incomingRequest"`
 	OutgoingRequests map[string]*bidderSpec `json:"outgoingRequests"`

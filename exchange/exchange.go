@@ -338,18 +338,25 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
+	isCategry := true
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
-		return res, nil //if not present continue the existing processing without CE.
+		isCategry = false
 	}
 
-	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
-	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
-	if err != nil {
-		return res, err
-	}
+	var primaryAdServer string
+	var err error
+	var publisher string
 
-	publisher := brandCatExt.Publisher
+	if isCategry {
+		//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
+		primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
+		if err != nil {
+			return res, err
+		}
+
+		publisher = brandCatExt.Publisher
+	}
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
 
@@ -366,7 +373,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 				category = bid.bidVideo.PrimaryCategory
 			}
 
-			if category == "" {
+			if category == "" && isCategry {
 				bidIabCat := bid.bid.Cat
 				if len(bidIabCat) != 1 {
 					//TODO: add metrics
@@ -406,7 +413,11 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 				}
 			}
 
-			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			categoryDuration := fmt.Sprintf("%s_%ds", pb, newDur)
+
+			if isCategry {
+				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			}
 
 			if dupe, ok := dedupe[categoryDuration]; ok {
 				// 50% chance for either bid with duplicate categoryDuration values to be kept
@@ -432,6 +443,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 			}
 			res[bid.bid.ID] = categoryDuration
 			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bid.bid.ID}
+
 		}
 
 		if len(bidsToRemove) > 0 {
