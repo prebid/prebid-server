@@ -73,11 +73,11 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
 	competitiveExclusion := false
-	var hbCacheId string
+	var hbCacheID string
 	if len(bidCategory) > 0 {
 		// assert:  category of winning bids never duplicated
 		if rawUuid, err := uuid.NewV4(); err == nil {
-			hbCacheId = rawUuid.String()
+			hbCacheID = rawUuid.String()
 			competitiveExclusion = true
 		} else {
 			errs = append(errs, errors.New("failed to create custom cache key"))
@@ -101,11 +101,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				if len(catDur) > 0 {
 					pb = a.roundedPrices[topBidPerBidder]
 					if len(pb) > 0 {
-<<<<<<< HEAD
-						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hbCacheId)
-=======
-						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hb_cache_id)
->>>>>>> 8c2b1ac7e912a5d24c3395d5215df75258245617
+						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hbCacheID)
 						useCustomCacheKey = true
 					}
 				}
