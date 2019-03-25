@@ -3,6 +3,7 @@ package exchange
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -63,6 +64,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		return nil
 	}
 
+	var errs []error
 	expectNumBids := valOrZero(bids, len(a.roundedPrices))
 	expectNumVast := valOrZero(vast, len(a.roundedPrices))
 	bidIndices := make(map[int]*openrtb.Bid, expectNumBids)
@@ -70,8 +72,15 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
 	competitiveExclusion := false
+	var hb_cache_id string
 	if len(bidCategory) > 0 {
-		competitiveExclusion = true
+		// assert:  category of winning bids never duplicated
+		hb_cache_id = uuid.NewV4().String()
+		if len(hb_cache_id) > 0 {
+			competitiveExclusion = true
+		} else {
+			errs = append(errs, errors.New("failed to create custom cache key"))
+		}
 	}
 
 	// Grab the imp TTLs
@@ -82,16 +91,16 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		for _, topBidPerBidder := range topBidsPerImp {
 			impID := topBidPerBidder.bid.ImpID
 			var customCacheKey string
-			var cat_dur string
+			var catDur string
 			var pb string
-			var hb_cache_id string
 			useCustomCacheKey := false
 			if competitiveExclusion && topBidPerBidder == a.winningBids[impID] {
 				// set custom cache key for winning bid when competitive exclusion applies
-				cat_dur = bidCategory[topBidPerBidder.bid.ID]
-				if len(cat_dur) > 0 {
+				catDur = bidCategory[topBidPerBidder.bid.ID]
+				if len(catDur) > 0 {
 					pb = a.roundedPrices[topBidPerBidder]
 					if len(pb) > 0 {
+						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hb_cache_id)
 						useCustomCacheKey = true
 					}
 				}
@@ -114,18 +123,6 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				vast := makeVAST(topBidPerBidder.bid)
 				if jsonBytes, err := json.Marshal(vast); err == nil {
 					if useCustomCacheKey {
-						// possible performance enhancement to consider:
-						// if both bids and vast are true, it might be preferable to avoid two calls to uuid.NewV4()
-						// e.g., modify or add a character from previous hb_cache_id value
-						hb_cache_id = uuid.NewV4().String()
-						if len(hb_cache_id) > 0 {
-							customCacheKey = fmt.Sprintf("%s_%s_%s", pb, cat_dur, hb_cache_id)
-						} else {
-							// something failed so use default key
-							useCustomCacheKey = false
-						}
-					}
-					if useCustomCacheKey {
 						toCache = append(toCache, prebid_cache_client.Cacheable{
 							Type:       prebid_cache_client.TypeXML,
 							Data:       jsonBytes,
@@ -145,7 +142,10 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		}
 	}
 
-	ids, errs := cache.PutJson(ctx, toCache)
+	ids, err := cache.PutJson(ctx, toCache)
+	if err != nil {
+		errs = append(errs, err...)
+	}
 
 	if bids {
 		a.cacheIds = make(map[*openrtb.Bid]string, len(bidIndices))

@@ -42,6 +42,7 @@ func TestMakeVASTNurl(t *testing.T) {
 }
 
 // TestCacheJSON executes tests for all the *.json files in cachetest.
+// customcachekey.json test here verifies custom cache key not used for non-vast video
 func TestCacheJSON(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./cachetest"); err == nil {
 		for _, specFile := range specFiles {
@@ -52,7 +53,24 @@ func TestCacheJSON(t *testing.T) {
 				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
 
-			runCacheSpec(t, fileDisplayName, specData)
+			runCacheSpec(t, fileDisplayName, specData, true, false)
+		}
+	}
+}
+
+// TestCacheJSON executes tests for all the *.json files in customcachekeytest.
+// customcachekey.json test here verifies custom cache key is used for vast video
+func TestCustomCacheKeyJSON(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./customcachekeytest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./customcachekeytest/" + specFile.Name()
+			fileDisplayName := "exchange/customcachekeytest/" + specFile.Name()
+			specData, err := loadCacheSpec(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+			}
+
+			runCacheSpec(t, fileDisplayName, specData, false, true)
 		}
 	}
 }
@@ -72,7 +90,7 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 	return &spec, nil
 }
 
-func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
+func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bids bool, vast bool) {
 	// bid := make([]pbsOrtbBid, 5)
 	var bid *pbsOrtbBid
 	winningBids := make(map[string]*pbsOrtbBid)
@@ -107,15 +125,18 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		winningBidsByBidder: winningBidsByBidder,
 		roundedPrices:       roundedPrices,
 	}
-	_ = testAuction.doCache(ctx, cache, true, false, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
+	_ = testAuction.doCache(ctx, cache, bids, vast, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 	found := 0
 
 	for _, cExpected := range specData.ExpectedCacheables {
 		for _, cFound := range cache.items {
 			// make sure Data section matches exactly
-			eq := jsonpatch.Equal(cExpected.Data, cFound.Data)
-			if !eq {
-				continue
+			if !vast {
+				// not testing VAST XML for custom cache key test
+				eq := jsonpatch.Equal(cExpected.Data, cFound.Data)
+				if !eq {
+					continue
+				}
 			}
 
 			// make sure Key value is as expected
@@ -126,7 +147,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 					keymatch = true
 				}
 			} else {
-				if len(cExpected.Key) == 0 {
+				if len(cFound.Key) == 0 {
 					// Key is expected to be empty
 					keymatch = true
 				}
@@ -145,7 +166,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	if found != len(specData.ExpectedCacheables) {
 		fmt.Printf("Expected:\n%v\n\n", specData.ExpectedCacheables)
 		fmt.Printf("Found:\n%v\n\n", cache.items)
-		t.Errorf("All expected cacheables not found. Expected %d, found %d.", len(specData.ExpectedCacheables), found)
+		t.Errorf("%s:  All expected cacheables not found. Expected %d, found %d.", fileDisplayName, len(specData.ExpectedCacheables), found)
 	}
 
 }
