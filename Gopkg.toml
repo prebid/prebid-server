@@ -104,3 +104,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/asaskevich/govalidator"
+
+[[constraint]]
+  name = "github.com/gofrs/uuid"
+  version = "^3.2.0"
