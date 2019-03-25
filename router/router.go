@@ -253,6 +253,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, r.MetricsEngine))
+	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)
 

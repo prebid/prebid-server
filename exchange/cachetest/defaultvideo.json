@@ -1,24 +1,24 @@
 {
     "bidRequest": {
-		"imp": [
-			{
-				"id":  "oneImp",
-                "exp":   600
-            }, {
-				"id":  "twoImp"
-            }
-        ]
+        "imp": [{
+            "id":  "oneImp",
+            "exp":   600
+        }, {
+            "id":  "twoImp"
+        }]
     },
     "pbsBids": [{
         "bid":{
-            "id": "oneImp",
+            "id": "bidOne",
+            "impid": "oneImp",
             "price": 7.64
         },
         "bidType": "video",
         "bidder": "appnexus"
     }, {
         "bid": {
-            "id": "twoImp",
+            "id": "bidTwo",
+            "impid": "twoImp",
             "price": 5.64
         },
         "bidType": "video",
