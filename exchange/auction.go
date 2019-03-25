@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
+	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
-	uuid "github.com/satori/go.uuid"
 )
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
@@ -72,11 +72,11 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
 	competitiveExclusion := false
-	var hb_cache_id string
+	var hbCacheId string
 	if len(bidCategory) > 0 {
 		// assert:  category of winning bids never duplicated
-		hb_cache_id = uuid.NewV4().String()
-		if len(hb_cache_id) > 0 {
+		if rawUuid, err := uuid.NewV4(); err == nil {
+			hbCacheId = rawUuid.String()
 			competitiveExclusion = true
 		} else {
 			errs = append(errs, errors.New("failed to create custom cache key"))
@@ -100,7 +100,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				if len(catDur) > 0 {
 					pb = a.roundedPrices[topBidPerBidder]
 					if len(pb) > 0 {
-						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hb_cache_id)
+						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hbCacheId)
 						useCustomCacheKey = true
 					}
 				}
@@ -117,6 +117,8 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
 					})
 					bidIndices[len(toCache)-1] = topBidPerBidder.bid
+				} else {
+					errs = append(errs, err)
 				}
 			}
 			if vast && topBidPerBidder.bidType == openrtb_ext.BidTypeVideo {
@@ -137,6 +139,8 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 						})
 					}
 					vastIndices[len(toCache)-1] = topBidPerBidder.bid
+				} else {
+					errs = append(errs, err)
 				}
 			}
 		}

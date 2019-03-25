@@ -55,6 +55,8 @@ func TestCacheJSON(t *testing.T) {
 
 			runCacheSpec(t, fileDisplayName, specData, true, false)
 		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/cachetest/: %v", err)
 	}
 }
 
@@ -72,6 +74,8 @@ func TestCustomCacheKeyJSON(t *testing.T) {
 
 			runCacheSpec(t, fileDisplayName, specData, false, true)
 		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
 	}
 }
 
