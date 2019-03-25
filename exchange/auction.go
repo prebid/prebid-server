@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/prebid_cache_client"
+	uuid "github.com/satori/go.uuid"
 )
 
 func newAuction(seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, numImps int) *auction {
@@ -100,7 +101,11 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				if len(catDur) > 0 {
 					pb = a.roundedPrices[topBidPerBidder]
 					if len(pb) > 0 {
+<<<<<<< HEAD
 						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hbCacheId)
+=======
+						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hb_cache_id)
+>>>>>>> 8c2b1ac7e912a5d24c3395d5215df75258245617
 						useCustomCacheKey = true
 					}
 				}
