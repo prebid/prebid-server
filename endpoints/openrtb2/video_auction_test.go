@@ -186,7 +186,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	edep := &endpointDeps{
 		ex,
 		newParamsValidator(t),
-		&mockStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -197,6 +197,13 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		nil}
 
 	return edep
+}
+
+type mockVideoStoredReqFetcher struct {
+}
+
+func (cf mockVideoStoredReqFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
+	return testVideoStoredRequestData, testVideoStoredImpData, nil
 }
 
 type mockExchangeVideo struct {
@@ -228,4 +235,33 @@ func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb
 			},
 		}},
 	}, nil
+}
+
+var testVideoStoredImpData = map[string]json.RawMessage{
+	"fba10607-0c12-43d1-ad07-b8a513bc75d6": json.RawMessage(`{"ext": {"appnexus": {"placementId": 14997137}}}`),
+	"8b452b41-2681-4a20-9086-6f16ffad7773": json.RawMessage(`{"ext": {"appnexus": {"placementId": 15016213}}}`),
+	"87d82a45-35c3-46cc-9315-2e3eeb91d0f2": json.RawMessage(`{"ext": {"appnexus": {"placementId": 15062775}}}`),
+}
+
+var testVideoStoredRequestData = map[string]json.RawMessage{
+	"2": json.RawMessage(`{
+		"tmax": 500,
+		"ext": {
+			"prebid": {
+				"targeting": {
+					"pricegranularity": "low"
+				}
+			}
+		}
+	}`),
+	"3": json.RawMessage(`{
+                "tmax": 500,
+                "ext": {
+                        "prebid": {
+                                "targeting": {
+                                        "pricegranularity": "low"
+                                }
+                        }
+                }}
+        }`),
 }

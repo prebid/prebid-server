@@ -266,14 +266,3 @@ type SimplifiedVideo struct {
 	//  protocols
 	Protocols []openrtb.Protocol `json:"protocols"`
 }
-
-type StoredRequestId struct {
-
-	// Attribute:
-	//   storedrequestid
-	// Type:
-	//   string; required
-	// Description:
-	//   Unique ID of the stored request
-	StoredRequestId string `json:"storedrequestid"`
-}
