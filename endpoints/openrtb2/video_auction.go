@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/errortypes"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -98,23 +100,25 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	//load additional data - stored simplified req
-	storedRequestId, err := getVideoStoredRequestId(requestJson)
-	if err != nil {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
-		return
-	}
-	storedRequest, err := loadStoredVideoRequest(storedRequestId)
-	if err != nil {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
-		return
-	}
+	resolvedRequest := requestJson
+	if deps.cfg.VideoStoredRequestRequired {
+		//load additional data - stored simplified req
+		storedRequestId, err := getVideoStoredRequestId(requestJson)
+		if err != nil {
+			errL := []error{err}
+			handleError(labels, w, errL, ao)
+			return
+		}
+		storedRequest, err := loadStoredVideoRequest(storedRequestId)
+		if err != nil {
+			errL := []error{err}
+			handleError(labels, w, errL, ao)
+			return
+		}
 
-	//merge incoming req with stored video req
-	resolvedRequest, err := jsonpatch.MergePatch(storedRequest, requestJson)
-
+		//merge incoming req with stored video req
+		resolvedRequest, err = jsonpatch.MergePatch(storedRequest, requestJson)
+	}
 	//unmarshal and validate combined result
 	videoBidReq, errL := deps.parseVideoRequest(resolvedRequest)
 	if len(errL) > 0 {
@@ -128,9 +132,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	mergeData(videoBidReq, bidReq)
 
 	//create impressions array
-	imps, err := createImpressions(videoBidReq)
+	imps, errs := deps.createImpressions(videoBidReq)
 	if err != nil {
-		errL := []error{err}
+		errL = append(errL, errs...)
 		handleError(labels, w, errL, ao)
 		return
 	}
@@ -215,7 +219,7 @@ func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, 
 	ao.Errors = append(ao.Errors, errL...)
 }
 
-func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, err error) {
+func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, err []error) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
@@ -226,7 +230,10 @@ func createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Im
 
 		//load stored impression
 		storedImpressionId := string(pod.ConfigId)
-		storedImp := loadStoredImp(storedImpressionId)
+		storedImp, errs := deps.loadStoredImp(storedImpressionId)
+		if errs != nil {
+			return nil, errs
+		}
 
 		numImps := pod.AdPodDurationSec / minDuration
 
@@ -266,14 +273,20 @@ func createImpressionTemplate(imp openrtb.Imp, video openrtb_ext.SimplifiedVideo
 	return imp
 }
 
-func loadStoredImp(storedImpId string) openrtb.Imp {
-	//temporary stub to test endpoint: placement id in place of pod config id
-	ext := fmt.Sprintf(`{"appnexus":{"placementId": %s}}`, storedImpId) //12971250
+func (deps *endpointDeps) loadStoredImp(storedImpId string) (openrtb.Imp, []error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
+	defer cancel()
 
-	return openrtb.Imp{
-		ID:  "stored_imp_id",
-		Ext: []byte(ext)}
+	impr := openrtb.Imp{}
+	_, imp, err := deps.storedReqFetcher.FetchRequests(ctx, []string{}, []string{storedImpId})
+	if err != nil {
+		return impr, err
+	}
 
+	if err := json.Unmarshal(imp[storedImpId], &impr); err != nil {
+		return impr, []error{err}
+	}
+	return impr, nil
 }
 
 func minMax(array []int) (int, int) {
@@ -303,7 +316,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 
 			impId := bid.ImpID
 			podNum := strings.Split(impId, "_")[0]
-			podInd, _ := strconv.ParseInt(podNum, 0, 64)
+			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
 				Hb_pb:         tempRespBidExt.Prebid.Targeting["hb_pb"],
@@ -311,10 +324,10 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 				Hb_cache_id:   tempRespBidExt.Prebid.Targeting["hb_cache_id"],
 			}
 
-			adPod := findAdPod(podInd, adPods)
+			adPod := findAdPod(podId, adPods)
 			if adPod == nil {
 				adPod = &openrtb_ext.AdPod{
-					PodId:     podInd,
+					PodId:     podId,
 					Targeting: make([]openrtb_ext.VideoTargeting, 0, 0),
 				}
 				adPods = append(adPods, adPod)
@@ -344,13 +357,11 @@ func loadStoredVideoRequest(storedRequestId string) ([]byte, error) {
 }
 
 func getVideoStoredRequestId(request []byte) (string, error) {
-	req := openrtb_ext.StoredRequestId{}
-
-	if err := json.Unmarshal(request, &req); err != nil {
-		return "", err
+	value, dataType, _, err := jsonparser.Get(request, "storedrequestid")
+	if dataType != jsonparser.String || err != nil {
+		return "", &errortypes.BadInput{Message: "Unable to find required stored request id"}
 	}
-	return req.StoredRequestId, nil
-
+	return string(value), nil
 }
 
 func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
@@ -448,11 +459,8 @@ func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.Bi
 
 func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) []error {
 	errL := []error{}
-	if req.AccountId == "" {
-		err := errors.New("request missing required field: accountid")
-		errL = append(errL, err)
-	}
-	if req.StoredRequestId == "" {
+
+	if deps.cfg.VideoStoredRequestRequired && req.StoredRequestId == "" {
 		err := errors.New("request missing required field: storedrequestid")
 		errL = append(errL, err)
 	}
