@@ -106,6 +106,14 @@
   version = "v1.4.7"
 
 [[projects]]
+  digest = "1:bed9d72d596f94e65fff37f4d6c01398074a6bb1c3f3ceff963516bd01db6ff5"
+  name = "github.com/gofrs/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6b08a5c5172ba18946672b49749cde22873dd7c2"
+  version = "v3.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:1ba1d79f2810270045c328ae5d674321db34e3aae468eb4233883b473c5c0467"
   name = "github.com/golang/glog"
@@ -483,6 +491,7 @@
     "github.com/coocood/freecache",
     "github.com/erikstmartin/go-testdb",
     "github.com/evanphx/json-patch",
+    "github.com/gofrs/uuid",
     "github.com/golang/glog",
     "github.com/julienschmidt/httprouter",
     "github.com/lib/pq",

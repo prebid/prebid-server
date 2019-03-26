@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -41,6 +42,7 @@ func TestMakeVASTNurl(t *testing.T) {
 }
 
 // TestCacheJSON executes tests for all the *.json files in cachetest.
+// customcachekey.json test here verifies custom cache key not used for non-vast video
 func TestCacheJSON(t *testing.T) {
 	if specFiles, err := ioutil.ReadDir("./cachetest"); err == nil {
 		for _, specFile := range specFiles {
@@ -51,8 +53,29 @@ func TestCacheJSON(t *testing.T) {
 				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
 
-			runCacheSpec(t, fileDisplayName, specData)
+			runCacheSpec(t, fileDisplayName, specData, true, false)
 		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/cachetest/: %v", err)
+	}
+}
+
+// TestCacheJSON executes tests for all the *.json files in customcachekeytest.
+// customcachekey.json test here verifies custom cache key is used for vast video
+func TestCustomCacheKeyJSON(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./customcachekeytest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./customcachekeytest/" + specFile.Name()
+			fileDisplayName := "exchange/customcachekeytest/" + specFile.Name()
+			specData, err := loadCacheSpec(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+			}
+
+			runCacheSpec(t, fileDisplayName, specData, false, true)
+		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
 	}
 }
 
@@ -71,11 +94,13 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 	return &spec, nil
 }
 
-func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
+func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bids bool, vast bool) {
 	// bid := make([]pbsOrtbBid, 5)
 	var bid *pbsOrtbBid
+	winningBids := make(map[string]*pbsOrtbBid)
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
 	roundedPrices := make(map[*pbsOrtbBid]string)
+	bidCategory := make(map[string]string)
 	for i, pbsBid := range specData.PbsBids {
 		if _, ok := winningBidsByBidder[pbsBid.Bid.ID]; !ok {
 			winningBidsByBidder[pbsBid.Bid.ID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
@@ -84,7 +109,13 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 			bid:     pbsBid.Bid,
 			bidType: pbsBid.BidType,
 		}
+		if _, ok := winningBids[pbsBid.Bid.ImpID]; !ok {
+			winningBids[pbsBid.Bid.ImpID] = bid
+		}
 		winningBidsByBidder[pbsBid.Bid.ID][pbsBid.Bidder] = bid
+		if len(pbsBid.Bid.Cat) == 1 {
+			bidCategory[pbsBid.Bid.ID] = pbsBid.Bid.Cat[0]
+		}
 		roundedPrices[bid] = strconv.FormatFloat(bid.bid.Price, 'f', 2, 64)
 		// Marshal the bid for the expected cacheables
 		cjson, _ := json.Marshal(bid.bid)
@@ -94,15 +125,43 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	cache := &mockCache{}
 
 	testAuction := &auction{
+		winningBids:         winningBids,
 		winningBidsByBidder: winningBidsByBidder,
+		roundedPrices:       roundedPrices,
 	}
-	_ = testAuction.doCache(ctx, cache, true, false, &specData.BidRequest, 60, &specData.DefaultTTLs)
+	_ = testAuction.doCache(ctx, cache, bids, vast, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 	found := 0
 
 	for _, cExpected := range specData.ExpectedCacheables {
 		for _, cFound := range cache.items {
-			eq := jsonpatch.Equal(cExpected.Data, cFound.Data)
-			if cExpected.TTLSeconds == cFound.TTLSeconds && eq {
+			// make sure Data section matches exactly
+			if !vast {
+				// not testing VAST XML for custom cache key test
+				eq := jsonpatch.Equal(cExpected.Data, cFound.Data)
+				if !eq {
+					continue
+				}
+			}
+
+			// make sure Key value is as expected
+			keymatch := false
+			if len(cExpected.Key) > 0 {
+				// can only verify prefix; remainder is random
+				if strings.HasPrefix(cFound.Key, cExpected.Key) {
+					keymatch = true
+				}
+			} else {
+				if len(cFound.Key) == 0 {
+					// Key is expected to be empty
+					keymatch = true
+				}
+			}
+			if !keymatch {
+				continue
+			}
+
+			// make sure TTLSeconds section matches exactly
+			if cExpected.TTLSeconds == cFound.TTLSeconds {
 				found++
 			}
 		}
@@ -111,7 +170,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	if found != len(specData.ExpectedCacheables) {
 		fmt.Printf("Expected:\n%v\n\n", specData.ExpectedCacheables)
 		fmt.Printf("Found:\n%v\n\n", cache.items)
-		t.Errorf("All expected cacheables not found. Expected %d, found %d.", len(specData.ExpectedCacheables), found)
+		t.Errorf("%s:  All expected cacheables not found. Expected %d, found %d.", fileDisplayName, len(specData.ExpectedCacheables), found)
 	}
 
 }
