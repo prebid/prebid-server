@@ -10,6 +10,7 @@ import (
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOptOutCookie(t *testing.T) {
@@ -40,26 +41,12 @@ func TestEmptyCookie(t *testing.T) {
 }
 
 func TestCookieWithData(t *testing.T) {
-	cookie := &PBSCookie{
-		uids: map[string]uidWithExpiry{
-			"adnxs":           newTempId("123"),
-			"audienceNetwork": newTempId("456"),
-		},
-		optOut:   false,
-		birthday: timestamp(),
-	}
+	cookie := newSampleCookie()
 	ensureConsistency(t, cookie)
 }
 
 func TestBidderNameGets(t *testing.T) {
-	cookie := &PBSCookie{
-		uids: map[string]uidWithExpiry{
-			"adnxs":   newTempId("123"),
-			"rubicon": newTempId("456"),
-		},
-		optOut:   false,
-		birthday: timestamp(),
-	}
+	cookie := newSampleCookie()
 	id, exists := cookie.GetId(openrtb_ext.BidderAppnexus)
 	if !exists {
 		t.Errorf("Cookie missing expected Appnexus ID")
@@ -100,14 +87,7 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 }
 
 func TestOptOutReset(t *testing.T) {
-	cookie := &PBSCookie{
-		uids: map[string]uidWithExpiry{
-			"adnxs":           newTempId("123"),
-			"audienceNetwork": newTempId("456"),
-		},
-		optOut:   false,
-		birthday: timestamp(),
-	}
+	cookie := newSampleCookie()
 
 	cookie.SetPreference(false)
 	if cookie.AllowSyncs() {
@@ -180,23 +160,16 @@ func TestParseOtherCookie(t *testing.T) {
 }
 
 func TestCookieReadWrite(t *testing.T) {
-	cookie := &PBSCookie{
-		uids: map[string]uidWithExpiry{
-			"adnxs":           newTempId("123"),
-			"audienceNetwork": newTempId("456"),
-		},
-		optOut:   false,
-		birthday: timestamp(),
-	}
+	cookie := newSampleCookie()
 
 	received := writeThenRead(cookie)
 	uid, exists, isLive := received.GetUID("adnxs")
 	if !exists || !isLive || uid != "123" {
 		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
 	}
-	uid, exists, isLive = received.GetUID("audienceNetwork")
+	uid, exists, isLive = received.GetUID("rubicon")
 	if !exists || !isLive || uid != "456" {
-		t.Errorf("Received cookie should have the audienceNetwork ID=456. Got %s", uid)
+		t.Errorf("Received cookie should have the rubicon ID=456. Got %s", uid)
 	}
 	if received.LiveSyncCount() != 2 {
 		t.Errorf("Expected 2 user syncs. Got %d", received.LiveSyncCount())
@@ -230,7 +203,7 @@ func TestEmptyLegacyCookieRead(t *testing.T) {
 }
 
 func TestNilCookie(t *testing.T) {
-	var nilCookie *PBSCookie = nil
+	var nilCookie *PBSCookie
 
 	if nilCookie.HasLiveSync("anything") {
 		t.Error("nil cookies should respond with false when asked if they have a sync")
@@ -264,6 +237,29 @@ func TestNilCookie(t *testing.T) {
 	if hadUID {
 		t.Error("nil cookies shouldn't claim to have a UID mapping.")
 	}
+}
+
+func TestGetUIDs(t *testing.T) {
+	cookie := newSampleCookie()
+	uids := cookie.GetUIDs()
+
+	assert.Len(t, uids, 2, "GetUIDs should return user IDs for all bidders")
+	assert.Equal(t, "123", uids["adnxs"], "GetUIDs should return the correct user ID for each bidder")
+	assert.Equal(t, "456", uids["rubicon"], "GetUIDs should return the correct user ID for each bidder")
+}
+
+func TestGetUIDsWithEmptyCookie(t *testing.T) {
+	cookie := &PBSCookie{}
+	uids := cookie.GetUIDs()
+
+	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for an empty cookie")
+}
+
+func TestGetUIDsWithNilCookie(t *testing.T) {
+	var cookie *PBSCookie
+	uids := cookie.GetUIDs()
+
+	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for a nil cookie")
 }
 
 func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
@@ -341,6 +337,17 @@ func newTempId(uid string) uidWithExpiry {
 	return uidWithExpiry{
 		UID:     uid,
 		Expires: time.Now().Add(10 * time.Minute),
+	}
+}
+
+func newSampleCookie() *PBSCookie {
+	return &PBSCookie{
+		uids: map[string]uidWithExpiry{
+			"adnxs":   newTempId("123"),
+			"rubicon": newTempId("456"),
+		},
+		optOut:   false,
+		birthday: timestamp(),
 	}
 }
 

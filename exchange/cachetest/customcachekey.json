@@ -2,14 +2,13 @@
     "bidRequest": {
         "imp": [{
             "id":  "oneImp",
-            "exp":   600
-        }, {
-            "id":  "twoImp"
+           "exp":   600
         }]
     },
     "pbsBids": [{
         "bid":{
-            "id": "bidOne",
+            "cat": ["sports"],
+            "id": "appbid001",
             "impid": "oneImp",
             "price": 7.64
         },
@@ -17,8 +16,9 @@
         "bidder": "appnexus"
     }, {
         "bid": {
-            "id": "bidTwo",
-            "impid": "twoImp",
+            "cat": ["news"],
+            "id": "pubbid001",
+            "impid": "oneImp",
             "price": 5.64
         },
         "bidType": "video",
@@ -30,7 +30,7 @@
             "TTLSeconds": 660
         }, {
             "Type": "json",
-            "TTLSeconds": 3660
+            "TTLSeconds": 660
         }
     ],
     "defaultTTLs": {
