@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	uuid "github.com/gofrs/uuid"
 	"github.com/golang/glog"
@@ -92,17 +93,13 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 			impID := topBidPerBidder.bid.ImpID
 			var customCacheKey string
 			var catDur string
-			var pb string
 			useCustomCacheKey := false
 			if competitiveExclusion && topBidPerBidder == a.winningBids[impID] {
 				// set custom cache key for winning bid when competitive exclusion applies
 				catDur = bidCategory[topBidPerBidder.bid.ID]
 				if len(catDur) > 0 {
-					pb = a.roundedPrices[topBidPerBidder]
-					if len(pb) > 0 {
-						customCacheKey = fmt.Sprintf("%s_%s_%s", pb, catDur, hbCacheID)
-						useCustomCacheKey = true
-					}
+					customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
+					useCustomCacheKey = true
 				}
 			}
 			if bids {
@@ -163,7 +160,12 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		a.vastCacheIds = make(map[*openrtb.Bid]string, len(vastIndices))
 		for index, bid := range vastIndices {
 			if ids[index] != "" {
-				a.vastCacheIds[bid] = ids[index]
+				if competitiveExclusion && strings.HasSuffix(ids[index], hbCacheID) {
+					// omit the pb_cat_dur_ portion of cache ID
+					a.vastCacheIds[bid] = hbCacheID
+				} else {
+					a.vastCacheIds[bid] = ids[index]
+				}
 			}
 		}
 	}
