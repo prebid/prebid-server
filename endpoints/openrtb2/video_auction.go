@@ -321,7 +321,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 			videoTargeting := openrtb_ext.VideoTargeting{
 				Hb_pb:         tempRespBidExt.Prebid.Targeting["hb_pb"],
 				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting["hb_pb_cat_dur"],
-				Hb_cache_id:   tempRespBidExt.Prebid.Targeting["hb_cache_id"],
+				Hb_cache_id:   tempRespBidExt.Prebid.Targeting["hb_uuid"],
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -430,7 +430,13 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 		DurationRangeSec:     durationRangeSec,
 	}
 
+	vastXml := openrtb_ext.ExtRequestPrebidCacheVAST{}
+	cache := openrtb_ext.ExtRequestPrebidCache{
+		VastXML: &vastXml,
+	}
+
 	prebid := openrtb_ext.ExtRequestPrebid{
+		Cache:     &cache,
 		Targeting: &targeting,
 	}
 	extReq := openrtb_ext.ExtRequest{Prebid: prebid}

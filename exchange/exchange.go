@@ -387,7 +387,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 			// TODO: consider should we remove bids with zero duration here?
 
-			pb, err = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
+			pb, _ = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
 
 			newDur := duration
 			if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
