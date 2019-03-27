@@ -27,15 +27,15 @@ type Configuration struct {
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse  string          `mapstructure:"status_response"`
-	AuctionTimeouts AuctionTimeouts `mapstructure:"auction_timeouts_ms"`
-	CacheURL        Cache           `mapstructure:"cache"`
-	RecaptchaSecret string          `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie      `mapstructure:"host_cookie"`
-	Metrics         Metrics         `mapstructure:"metrics"`
-	DataCache       DataCache       `mapstructure:"datacache"`
-	StoredRequests  StoredRequests  `mapstructure:"stored_requests"`
-	CategoryMapping StoredRequests  `mapstructure:"category_mapping"`
+	StatusResponse  string             `mapstructure:"status_response"`
+	AuctionTimeouts AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
+	CacheURL        Cache              `mapstructure:"cache"`
+	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie         `mapstructure:"host_cookie"`
+	Metrics         Metrics            `mapstructure:"metrics"`
+	DataCache       DataCache          `mapstructure:"datacache"`
+	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
+	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -493,8 +493,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("datacache.filename", "")
 	v.SetDefault("datacache.cache_size", 0)
 	v.SetDefault("datacache.ttl_seconds", 0)
-	v.SetDefault("category_mapping.filesystem", true)
-	v.SetDefault("category_mapping.directorypath", "./static/category-mapping")
+	v.SetDefault("category_mapping.filesystem.enabled", true)
+	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
 	v.SetDefault("stored_requests.filesystem", false)
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.postgres.connection.dbname", "")
