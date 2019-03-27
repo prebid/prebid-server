@@ -102,6 +102,8 @@ type appnexusReqExt struct {
 	Appnexus *appnexusReqExtAppnexus `json:"appnexus,omitempty"`
 }
 
+var maxImpsPerReq = 10
+
 func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
 	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes)
@@ -345,21 +347,41 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		}
 	}
 
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
+	imps := request.Imp
+	initialCapacity := (len(imps) + maxImpsPerReq - 1) / maxImpsPerReq
+	resArr := make([]*adapters.RequestData, 0, initialCapacity)
+	startInd := 0
+	impsLeft := len(imps) > 0
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     thisURI,
-		Body:    reqJSON,
-		Headers: headers,
-	}}, errs
+
+	for impsLeft {
+
+		endInd := startInd + maxImpsPerReq
+		if endInd >= len(imps) {
+			endInd = len(imps)
+			impsLeft = false
+		}
+		impsForReq := imps[startInd:endInd]
+		request.Imp = impsForReq
+
+		reqJSON, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		resArr = append(resArr, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     thisURI,
+			Body:    reqJSON,
+			Headers: headers,
+		})
+		startInd = endInd
+	}
+	return resArr, errs
 }
 
 // get the keys from the map
