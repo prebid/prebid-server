@@ -308,20 +308,20 @@ func getCookiesFromRequest(request *openrtb.BidRequest) []string {
 		return nil
 	}
 
-	if reqExt.BidderParams["Cookie"] == nil {
+	if reqExt.RequestParams["Cookie"] == nil {
 		return nil
 	}
 
-	cbyte, err := json.Marshal(reqExt.BidderParams["Cookie"])
+	cbyte, err := json.Marshal(reqExt.RequestParams["Cookie"])
 	if err != nil {
-		logf("[PUBMATIC] Error retrieving cookies from request.ext.bidderparams: %v.", reqExt.BidderParams)
+		logf("[PUBMATIC] Error retrieving cookies from request.ext.requestparams: %v.", reqExt.RequestParams)
 		return nil
 	}
 
 	var cookies []string
 	err = json.Unmarshal(cbyte, &cookies)
 	if err != nil {
-		logf("[PUBMATIC] Error retrieving cookies from request.ext.bidderparams: %v.", reqExt.BidderParams)
+		logf("[PUBMATIC] Error retrieving cookies from request.ext.requestparams: %v.", reqExt.RequestParams)
 		return nil
 	}
 
@@ -592,4 +592,3 @@ func NewPubmaticBidder(client *http.Client, uri string) *PubmaticAdapter {
 		URI:  uri,
 	}
 }
-
