@@ -183,7 +183,13 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	db, shutdown, fetcher, ampFetcher, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
+	// Hack because of how legacy handles districtm
+	legacyBidderList := openrtb_ext.BidderList()
+	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
+
+	// Metrics engine
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
+	db, shutdown, fetcher, ampFetcher, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, theClient, r.Router)
 
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
@@ -192,13 +198,6 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	pbsAnalytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
-
-	// Hack because of how legacy handles districtm
-	legacyBidderList := openrtb_ext.BidderList()
-	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
-
-	// Metrics engine
-	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
 
 	paramsValidator, err := openrtb_ext.NewBidderParamsValidator(schemaDirectory)
 	if err != nil {
