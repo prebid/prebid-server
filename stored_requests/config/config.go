@@ -59,6 +59,8 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, r
 		// Error out if config is trying to use multiple database connections for different stored requests (not supported yet)
 		if conn != dbConnection.conn {
 			glog.Fatal("Multiple database connection settings found in Stored Requests config, only a single database connection is currently supported.")
+		} else {
+			db = dbConnection.db
 		}
 	}
 
@@ -141,31 +143,36 @@ func resolvedStoredRequestsConfig(cfg *config.Configuration) (auc, amp config.St
 	auc.Files.Enabled = sr.Files
 	auc.Files.Path = sr.Path
 	auc.Postgres.ConnectionInfo = sr.Postgres.ConnectionInfo
-	auc.Postgres.FetcherQueries = sr.Postgres.FetcherQueries.PostgresFetcherQueriesSlim
-	auc.Postgres.CacheInitialization = sr.Postgres.CacheInitialization.PostgresCacheInitializerSlim
-	auc.Postgres.PollUpdates = sr.Postgres.PollUpdates.PostgresUpdatePollingSlim
-	auc.HTTP = sr.HTTP.HTTPFetcherConfigSlim
+	auc.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.QueryTemplate
+	auc.Postgres.CacheInitialization.Timeout = sr.Postgres.CacheInitialization.Timeout
+	auc.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.Query
+	auc.Postgres.PollUpdates.RefreshRate = sr.Postgres.PollUpdates.RefreshRate
+	auc.Postgres.PollUpdates.Timeout = sr.Postgres.PollUpdates.Timeout
+	auc.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.Query
+	auc.HTTP.Endpoint = sr.HTTP.Endpoint
 	auc.InMemoryCache = sr.InMemoryCache
 	auc.CacheEvents.Enabled = sr.CacheEventsAPI
 	auc.CacheEvents.Endpoint = "/storedrequests/openrtb2"
-	auc.HTTPEvents = sr.HTTPEvents.HTTPEventsConfigSlim
+	auc.HTTPEvents.RefreshRate = sr.HTTPEvents.RefreshRate
+	auc.HTTPEvents.Timeout = sr.HTTPEvents.Timeout
+	auc.HTTPEvents.Endpoint = sr.HTTPEvents.Endpoint
 
 	// Amp endpoint uses all the slim data but some fields get replacyed by Amp* version of similar fields
 	amp.Files.Enabled = sr.Files
 	amp.Files.Path = sr.Path
 	amp.Postgres.ConnectionInfo = sr.Postgres.ConnectionInfo
-	amp.Postgres.FetcherQueries = sr.Postgres.FetcherQueries.PostgresFetcherQueriesSlim
 	amp.Postgres.FetcherQueries.QueryTemplate = sr.Postgres.FetcherQueries.AmpQueryTemplate
-	amp.Postgres.CacheInitialization = sr.Postgres.CacheInitialization.PostgresCacheInitializerSlim
+	amp.Postgres.CacheInitialization.Timeout = sr.Postgres.CacheInitialization.Timeout
 	amp.Postgres.CacheInitialization.Query = sr.Postgres.CacheInitialization.AmpQuery
-	amp.Postgres.PollUpdates = sr.Postgres.PollUpdates.PostgresUpdatePollingSlim
+	amp.Postgres.PollUpdates.RefreshRate = sr.Postgres.PollUpdates.RefreshRate
+	amp.Postgres.PollUpdates.Timeout = sr.Postgres.PollUpdates.Timeout
 	amp.Postgres.PollUpdates.Query = sr.Postgres.PollUpdates.AmpQuery
-	amp.HTTP = sr.HTTP.HTTPFetcherConfigSlim
 	amp.HTTP.Endpoint = sr.HTTP.AmpEndpoint
 	amp.InMemoryCache = sr.InMemoryCache
 	amp.CacheEvents.Enabled = sr.CacheEventsAPI
 	amp.CacheEvents.Endpoint = "/storedrequests/amp"
-	amp.HTTPEvents = sr.HTTPEvents.HTTPEventsConfigSlim
+	amp.HTTPEvents.RefreshRate = sr.HTTPEvents.RefreshRate
+	amp.HTTPEvents.Timeout = sr.HTTPEvents.Timeout
 	amp.HTTPEvents.Endpoint = sr.HTTPEvents.AmpEndpoint
 
 	return

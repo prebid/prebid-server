@@ -69,8 +69,18 @@ type HTTPEventsConfigSlim struct {
 
 // HTTPEventsConfig configures stored_requests/events/http/http.go
 type HTTPEventsConfig struct {
-	HTTPEventsConfigSlim
+	Endpoint    string `mapstructure:"endpoint"`
+	RefreshRate int64  `mapstructure:"refresh_rate_seconds"`
+	Timeout     int    `mapstructure:"timeout_ms"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
+}
+
+func (cfg HTTPEventsConfig) TimeoutDuration() time.Duration {
+	return time.Duration(cfg.Timeout) * time.Millisecond
+}
+
+func (cfg HTTPEventsConfig) RefreshRateDuration() time.Duration {
+	return time.Duration(cfg.RefreshRate) * time.Second
 }
 
 func (cfg HTTPEventsConfigSlim) TimeoutDuration() time.Duration {
@@ -104,7 +114,7 @@ type HTTPFetcherConfigSlim struct {
 
 // HTTPFetcherConfig configures a stored_requests/backends/http_fetcher/fetcher.go
 type HTTPFetcherConfig struct {
-	HTTPFetcherConfigSlim
+	Endpoint    string `mapstructure:"endpoint"`
 	AmpEndpoint string `mapstructure:"amp_endpoint"`
 }
 
@@ -204,7 +214,29 @@ func (cfg *PostgresConnection) ConnString() string {
 }
 
 type PostgresFetcherQueries struct {
-	PostgresFetcherQueriesSlim
+	// QueryTemplate is the Postgres Query which can be used to fetch configs from the database.
+	// It is a Template, rather than a full Query, because a single HTTP request may reference multiple Stored Requests.
+	//
+	// In the simplest case, this could be something like:
+	//   SELECT id, requestData, 'request' as type
+	//     FROM stored_requests
+	//     WHERE id in %REQUEST_ID_LIST%
+	//     UNION ALL
+	//   SELECT id, impData, 'imp' as type
+	//     FROM stored_imps
+	//     WHERE id in %IMP_ID_LIST%
+	//
+	// The MakeQuery function will transform this query into:
+	//   SELECT id, requestData, 'request' as type
+	//     FROM stored_requests
+	//     WHERE id in ($1)
+	//     UNION ALL
+	//   SELECT id, impData, 'imp' as type
+	//     FROM stored_imps
+	//     WHERE id in ($2, $3, $4, ...)
+	//
+	// ... where the number of "$x" args depends on how many IDs are nested within the HTTP request.
+	QueryTemplate string `mapstructure:"query"`
 
 	// AmpQueryTemplate is the same as QueryTemplate, but used in the `/openrtb2/amp` endpoint.
 	AmpQueryTemplate string `mapstructure:"amp_query"`
@@ -237,7 +269,17 @@ type PostgresFetcherQueriesSlim struct {
 }
 
 type PostgresCacheInitializer struct {
-	PostgresCacheInitializerSlim
+	Timeout int `mapstructure:"timeout_ms"`
+	// Query should be something like:
+	//
+	// SELECT id, requestData, 'request' AS type FROM stored_requests
+	// UNION ALL
+	// SELECT id, impData, 'imp' AS type FROM stored_imps
+	//
+	// This query will be run once on startup to fetch _all_ known Stored Request data from the database.
+	//
+	// For more details on the expected format of requestData and impData, see stored_requests/events/postgres/polling.go
+	Query string `mapstructure:"query"`
 	// AmpQuery is just like Query, but for AMP Stored Requests
 	AmpQuery string `mapstructure:"amp_query"`
 }
@@ -270,12 +312,15 @@ func (cfg *PostgresCacheInitializerSlim) validate(errs configErrors) configError
 }
 
 func (cfg *PostgresCacheInitializer) validate(errs configErrors) configErrors {
-	if cfg.Query != "" {
-		errs = (&cfg.PostgresCacheInitializerSlim).validate(errs)
-	} else if cfg.AmpQuery != "" {
-		cfg.Query = cfg.AmpQuery
-		errs = (&cfg.PostgresCacheInitializerSlim).validate(errs)
-		cfg.Query = ""
+	if cfg.Query == "" && cfg.AmpQuery == "" {
+		return errs
+	}
+
+	slim := &PostgresCacheInitializerSlim{Timeout: cfg.Timeout, Query: cfg.Query}
+	errs = slim.validate(errs)
+
+	if strings.Contains(cfg.AmpQuery, "$") {
+		errs = append(errs, errors.New("stored_requests.postgres.initialize_caches.amp_query should not contain any wildcards (e.g. $1)"))
 	}
 
 	return errs
@@ -303,7 +348,24 @@ type PostgresUpdatePollingSlim struct {
 }
 
 type PostgresUpdatePolling struct {
-	PostgresUpdatePollingSlim
+	// RefreshRate determines how frequently the Query and AmpQuery are run.
+	RefreshRate int `mapstructure:"refresh_rate_seconds"`
+
+	// Timeout is the amount of time before a call to the database is aborted.
+	Timeout int `mapstructure:"timeout_ms"`
+
+	// An example UpdateQuery is:
+	//
+	// SELECT id, requestData, 'request' AS type
+	//   FROM stored_requests
+	//   WHERE last_updated > $1
+	// UNION ALL
+	// SELECT id, requestData, 'imp' AS type
+	//   FROM stored_imps
+	//   WHERE last_updated > $1
+	//
+	// The code will be run periodically to fetch updates from the database.
+	Query string `mapstructure:"query"`
 	// AmpQuery is the same as Query, but used for the `/openrtb2/amp` endpoint.
 	AmpQuery string `mapstructure:"amp_query"`
 }
@@ -328,12 +390,14 @@ func (cfg *PostgresUpdatePollingSlim) validate(errs configErrors) configErrors {
 }
 
 func (cfg *PostgresUpdatePolling) validate(errs configErrors) configErrors {
-	if cfg.Query != "" {
-		errs = (&cfg.PostgresUpdatePollingSlim).validate(errs)
-	} else if cfg.AmpQuery != "" {
-		cfg.Query = cfg.AmpQuery
-		errs = (&cfg.PostgresUpdatePollingSlim).validate(errs)
-		cfg.Query = ""
+	if cfg.Query == "" && cfg.AmpQuery == "" {
+		return errs
+	}
+	slim := &PostgresUpdatePollingSlim{RefreshRate: cfg.RefreshRate, Timeout: cfg.Timeout, Query: cfg.Query}
+	errs = slim.validate(errs)
+
+	if !strings.Contains(cfg.AmpQuery, "$1") || strings.Contains(cfg.AmpQuery, "$2") {
+		errs = append(errs, errors.New("stored_requests.postgres.poll_for_updates.amp_query must contain exactly one wildcard"))
 	}
 	return errs
 }
