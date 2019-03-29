@@ -18,7 +18,7 @@ type ExtImpSharethroughResponse struct {
 type ExtImpSharethroughCreative struct {
 	AuctionWinID string                             `json:"auctionWinId"`
 	CPM          float64                            `json:"cpm"`
-	Creative     ExtImpSharethroughCreativeMetadata `json:"creative"`
+	Metadata     ExtImpSharethroughCreativeMetadata `json:"creative"`
 	Version      int                                `json:"version"`
 }
 

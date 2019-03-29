@@ -1,33 +1,28 @@
 package sharethrough
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strconv"
-
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"html/template"
+	"net/http"
+	"net/url"
 )
 
 const hbEndpoint = "http://dumb-waiter.sharethrough.com/header-bid/v1"
 
-func NewSharethroughBidder(client *http.Client, endpoint string) *SharethroughAdapter {
-	adapter := &adapters.HTTPAdapter{Client: client}
-
-	return &SharethroughAdapter{
-		http: adapter,
-		URI:  endpoint,
-	}
+func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
+	return &SharethroughAdapter{URI: endpoint}
 }
 
 // SharethroughAdapter converts the Sharethrough Adserver response into a
 // prebid server compatible format
 type SharethroughAdapter struct {
-	http *adapters.HTTPAdapter
-	URI  string
+	URI string
 }
 
 // Name returns the adapter name as a string
@@ -44,6 +39,7 @@ type params struct {
 }
 
 func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	fmt.Println("in sharethrough adapter")
 	pKeys := make([]string, 0, len(request.Imp))
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{}
@@ -66,10 +62,10 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 			continue
 		}
 
-		hbURI := generateHBUri(pKey, "testBidID-"+strconv.Itoa(i))
+		//hbURI := generateHBUri(pKey, "testBidID-"+strconv.Itoa(i))
 		potentialRequests = append(potentialRequests, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     hbURI,
+			Uri:     s.URI + "?pkey=" + pKey,
 			Body:    nil,
 			Headers: headers,
 		})
@@ -79,13 +75,15 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 }
 
 func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	glog.Infof("response code: %d\n", response.StatusCode)
+	fmt.Printf("internal request: %v\n", internalRequest)
+	fmt.Printf("external request: %v\n", externalRequest)
+
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&adapters.BadInputError{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
@@ -95,27 +93,15 @@ func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 	}
 
 	var bidResp openrtb.BidResponse
-	// var strBidResp openrtb_ext.ExtImpSharethroughResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	var strBidResp openrtb_ext.ExtImpSharethroughResponse
+	if err := json.Unmarshal(response.Body, &strBidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	// bidResp.ID = strBidResp.AdServerRequestID
-	// bidResp.BidID = strBidResp.BidID
-	// bidResp.Cur = "USD"
-	// if len(strBidResp.Creatives) > 0 {
-	// 	var bid openrtb.Bid
-	// 	bid.ImpID = strBidResp.Creatives[0].AuctionWinID
-	// 	bid.Price = strBidResp.Creatives[0].CPM
-	// 	if _, ok := strBidResp.Creatives[0].beacons["win-notification"]; ok {
-	// 		bid.NURL = strBidResp.Creatives[0].beacons["win-notification"][0]
-	// 	}
-	// 	bidResp.SeatBid.Bid = append(bidResp.SeatBid.Bid, bid)
-	// }
-
-	glog.Infof("body: %+v\n", bidResp)
 	bidResponse := adapters.NewBidderResponse()
 
+	br, _ := butlerToOpenRTBResponse(externalRequest, strBidResp)
+	fmt.Printf("br code: %v\n", br)
 	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
@@ -131,14 +117,85 @@ func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		}
 	}
 	for _, bid := range bidResponse.Bids {
-		glog.Infof("bidResponse.Bids: %+v\n", bid)
+		fmt.Printf("bidResponse.Bids: %+v\n", bid)
 	}
 	if len(errs) > 0 {
 		for _, err := range errs {
-			glog.Infof("error: %s\n", err)
+			fmt.Printf("error: %s\n", err)
 		}
 	}
 	return bidResponse, errs
+}
+
+func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.ExtImpSharethroughResponse) (*adapters.BidderResponse, []error) {
+	var errs []error
+	bidResponse := adapters.NewBidderResponse()
+
+	bidResponse.Currency = "USD"
+	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
+	creative := strResp.Creatives[0]
+
+	btlrUrl, err := url.Parse(btlrReq.Uri)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
+	}
+	pkey := btlrUrl.Query().Get("pkey")
+
+	bid := &openrtb.Bid{
+		ID:    strResp.BidID,
+		ImpID: strResp.AdServerRequestID, // MAYBE?
+		Price: creative.CPM,
+		// NURL: creative.Beacons.WinNotification[0] // what do we do with other notification URLs ???
+		CID:    creative.Metadata.CampaignKey,
+		CrID:   creative.Metadata.CreativeKey,
+		DealID: creative.Metadata.DealID,
+		AdM:    getAdMarkup(strResp, pkey),
+	}
+
+	typedBid.Bid = bid
+	bidResponse.Bids = append(bidResponse.Bids, typedBid)
+
+	return bidResponse, errs
+}
+
+func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, pkey string) string {
+	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
+	//b64EncodedJson := base64.NewEncoding(json.Mar)
+	//tmpl := `
+	//	<div data-str-native-key="{{pkey}}" data-stx-response-name="{{strRespId}}"></div>
+	//  	<script>var {{strRespId}} = "${b64EncodeUnicode(JSON.stringify(body))}"</script>
+	//`
+	//
+	//let adMarkup = `
+	//  <div data-str-native-key="${req.data.placement_key}" data-stx-response-name="${strRespId}">
+	//  </div>
+	//  <script>var ${strRespId} = "${b64EncodeUnicode(JSON.stringify(body))}"</script>
+	//`
+	//
+	//if (req.strData.stayInIframe) {
+	//	// Don't break out of iframe
+	//	adMarkup = adMarkup + `<script src="//native.sharethrough.com/assets/sfp.js"></script>`
+	//} else {
+	//	// Break out of iframe
+	//	adMarkup = adMarkup + `
+	//    <script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>
+	//    <script>
+	//      (function() {
+	//        if (!(window.STR && window.STR.Tag) && !(window.top.STR && window.top.STR.Tag)) {
+	//          var sfp_js = document.createElement('script');
+	//          sfp_js.src = "//native.sharethrough.com/assets/sfp.js";
+	//          sfp_js.type = 'text/javascript';
+	//          sfp_js.charset = 'utf-8';
+	//          try {
+	//              window.top.document.getElementsByTagName('body')[0].appendChild(sfp_js);
+	//          } catch (e) {
+	//            console.log(e);
+	//          }
+	//        }
+	//      })()
+	//  </script>`
+	//}
 }
 
 func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
