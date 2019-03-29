@@ -30,7 +30,7 @@ import (
 func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
-		return nil, errors.New("NewSimplifiedEndpoint requires non-nil arguments.")
+		return nil, errors.New("NewVideoEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
@@ -120,6 +120,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 		//merge incoming req with stored video req
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequest, requestJson)
+		if err != nil {
+			errL := []error{err}
+			handleError(labels, w, errL, ao)
+			return
+		}
 	}
 	//unmarshal and validate combined result
 	videoBidReq, errL := deps.parseVideoRequest(resolvedRequest)
@@ -130,14 +135,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	var bidReq = &openrtb.BidRequest{}
 	if deps.defaultRequest {
-		hasErr, Err := getJsonSyntaxError(deps.defReqJSON)
-		if hasErr {
-			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
-			errL := []error{err}
-			handleError(labels, w, errL, ao)
-			return
-		}
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
+			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
 			errL = []error{err}
 			return
 		}

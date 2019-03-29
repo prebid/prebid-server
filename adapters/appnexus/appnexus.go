@@ -348,6 +348,10 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}
 
 	imps := request.Imp
+	// Initial capacity for future array of requests, memory optimization.
+	// Let's say there are 35 impressions and limit impressions per request equals to 10.
+	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
+	// With this formula initial capacity=(35+10-1)/10 = 4
 	initialCapacity := (len(imps) + maxImpsPerReq - 1) / maxImpsPerReq
 	resArr := make([]*adapters.RequestData, 0, initialCapacity)
 	startInd := 0

@@ -6,14 +6,6 @@ import (
 
 type BidRequestVideo struct {
 	// Attribute:
-	//   accountid
-	// Type:
-	//   string; required
-	// Description:
-	//   Unique ID of the stored request
-	AccountId string `json:"accountid"`
-
-	// Attribute:
 	//   storedrequestid
 	// Type:
 	//   string; required
@@ -103,12 +95,11 @@ type BidRequestVideo struct {
 	Test int8 `json:"test,omitempty"`
 
 	// Attribute:
-	//   test
+	//   pricegranularity
 	// Type:
-	//   integer; default 0
+	//   object; optional
 	// Description:
-	//    Indicator of test mode in which auctions are not billable,
-	//    where 0 = live mode, 1 = test mode.
+	//    Object to tell ad server how much money the “bidder” demand is worth to you
 	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
 }
 
