@@ -233,7 +233,7 @@ func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, 
 	ao.Errors = append(ao.Errors, errL...)
 }
 
-func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, err []error) {
+func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, errL []error) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
@@ -252,6 +252,11 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 		numImps := pod.AdPodDurationSec / minDuration
 
 		impDivNumber := numImps / len(videoDur)
+		if impDivNumber == 0 && reqExactDur {
+			err := errors.New("Invalid request: unable to build impressions with given duration array size")
+			errL := []error{err}
+			return nil, errL
+		}
 
 		impsArray := make([]openrtb.Imp, numImps)
 		for impInd := range impsArray {
