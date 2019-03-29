@@ -101,14 +101,16 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	resolvedRequest := requestJson
-	if deps.cfg.VideoStoredRequestRequired {
-		//load additional data - stored simplified req
-		storedRequestId, err := getVideoStoredRequestId(requestJson)
-		if err != nil {
-			errL := []error{err}
-			handleError(labels, w, errL, ao)
-			return
-		}
+
+	//load additional data - stored simplified req
+	storedRequestId, err := getVideoStoredRequestId(requestJson)
+
+	if err != nil && deps.cfg.VideoStoredRequestRequired {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
+		return
+	}
+	if err == nil {
 		storedRequest, err := loadStoredVideoRequest(storedRequestId)
 		if err != nil {
 			errL := []error{err}
@@ -127,13 +129,26 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	var bidReq = &openrtb.BidRequest{}
+	if deps.defaultRequest {
+		hasErr, Err := getJsonSyntaxError(deps.defReqJSON)
+		if hasErr {
+			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
+			errL := []error{err}
+			handleError(labels, w, errL, ao)
+			return
+		}
+		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
+			errL = []error{err}
+			return
+		}
+	}
 
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 
 	//create impressions array
 	imps, errs := deps.createImpressions(videoBidReq)
-	if err != nil {
+	if errs != nil {
 		errL = append(errL, errs...)
 		handleError(labels, w, errL, ao)
 		return
