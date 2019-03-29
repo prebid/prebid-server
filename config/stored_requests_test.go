@@ -140,9 +140,9 @@ func assertHasValue(t *testing.T, m map[string]string, key string, val string) {
 }
 
 func buildQuery(template string, numReqs int, numImps int) string {
-	cfg := PostgresFetcherQueries{
-		QueryTemplate: template,
-	}
+	cfg := PostgresFetcherQueries{}
+	cfg.QueryTemplate = template
+
 	return cfg.MakeQuery(numReqs, numImps)
 }
 

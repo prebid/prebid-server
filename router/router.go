@@ -183,7 +183,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
-	fetcher, ampFetcher, db, shutdown, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
+	db, shutdown, fetcher, ampFetcher, categoriesFetcher := storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
 
 	// todo(zachbadgett): better shutdown
 	r.Shutdown = shutdown
