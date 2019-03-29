@@ -54,13 +54,13 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, r
 			db = newPostgresDB(cfg.Postgres.ConnectionInfo)
 			dbConnection.conn = conn
 			dbConnection.db = db
+		} else {
+			db = dbConnection.db
 		}
 
 		// Error out if config is trying to use multiple database connections for different stored requests (not supported yet)
 		if conn != dbConnection.conn {
 			glog.Fatal("Multiple database connection settings found in Stored Requests config, only a single database connection is currently supported.")
-		} else {
-			db = dbConnection.db
 		}
 	}
 
