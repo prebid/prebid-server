@@ -253,9 +253,10 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 
 		impDivNumber := numImps / len(videoDur)
 		if impDivNumber == 0 && reqExactDur {
-			err := errors.New("Invalid request: unable to build impressions with given duration array size")
-			errL := []error{err}
-			return nil, errL
+			// In case of impressions number is less than durations array, we bump up impressions number up to duration array size
+			// with this handler we will have one impression per specified duration
+			numImps = len(videoDur)
+			impDivNumber = 1
 		}
 
 		impsArray := make([]openrtb.Imp, numImps)
