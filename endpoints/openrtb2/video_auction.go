@@ -27,6 +27,8 @@ import (
 	"github.com/prebid/prebid-server/usersync"
 )
 
+var defaultRequestTimeout int64 = 5000
+
 func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -428,7 +430,12 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 
 	bidRequest.Test = videoRequest.Test
 
-	bidRequest.TMax = 5000
+	if videoRequest.TMax == 0 {
+		bidRequest.TMax = defaultRequestTimeout
+	} else {
+		bidRequest.TMax = videoRequest.TMax
+	}
+
 	return nil
 }
 

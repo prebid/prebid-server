@@ -101,6 +101,16 @@ type BidRequestVideo struct {
 	// Description:
 	//    Object to tell ad server how much money the “bidder” demand is worth to you
 	PriceGranularity PriceGranularity `json:"pricegranularity,omitempty"`
+
+	// Attribute:
+	//   tmax
+	// Type:
+	//   integer
+	// Description:
+	//    Maximum time in milliseconds the exchange allows for bids to
+	//    be received including Internet latency to avoid timeout. This
+	//    value supersedes any a priori guidance from the exchange.
+	TMax int64 `json:"tmax,omitempty"`
 }
 
 type PodConfig struct {
