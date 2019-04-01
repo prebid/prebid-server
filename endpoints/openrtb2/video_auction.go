@@ -506,6 +506,10 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		err := errors.New("request missing required field: PodConfig.DurationRangeSec")
 		errL = append(errL, err)
 	}
+	if isZeroOrNegativeDuration(req.PodConfig.DurationRangeSec) {
+		err := errors.New("duration array cannot contain negative or zero values")
+		errL = append(errL, err)
+	}
 	if len(req.PodConfig.Pods) == 0 {
 		err := errors.New("request missing required field: PodConfig.Pods")
 		errL = append(errL, err)
@@ -538,4 +542,13 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 	}
 
 	return errL
+}
+
+func isZeroOrNegativeDuration(duration []int) bool {
+	for _, value := range duration {
+		if value <= 0 {
+			return true
+		}
+	}
+	return false
 }

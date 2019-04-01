@@ -139,7 +139,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	conversions := e.currencyConverter.Rates()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
-	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, *categoriesFetcher, targData)
+	bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, *categoriesFetcher, targData)
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if err != nil {
 		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
@@ -321,7 +321,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, error) {
+func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -334,26 +334,26 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 	//If includebrandcategory is present in ext then CE feature is on.
 	if requestExt.Prebid.Targeting == nil {
-		return res, nil
+		return res, seatBids, nil
 	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
-		return res, nil //if not present continue the existing processing without CE.
+		return res, seatBids, nil //if not present continue the existing processing without CE.
 	}
 
 	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
 	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
 	if err != nil {
-		return res, err
+		return res, seatBids, err
 	}
 
 	publisher := brandCatExt.Publisher
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
 
-	for bidderName, seatBid := range *seatBids {
+	for bidderName, seatBid := range seatBids {
 		bidsToRemove := make([]int, 0)
 		for bidInd := range seatBid.bids {
 			bid := seatBid.bids[bidInd]
@@ -416,7 +416,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
 					} else {
 						// An older bid from a different seatBid we've already finished with
-						oldSeatBid := (*seatBids)[dupe.bidderName]
+						oldSeatBid := (seatBids)[dupe.bidderName]
 						if len(oldSeatBid.bids) == 1 {
 							seatBidsToRemove = append(seatBidsToRemove, bidderName)
 						} else {
@@ -451,18 +451,18 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 	}
 	if len(seatBidsToRemove) > 0 {
-		if len(seatBidsToRemove) == len(*seatBids) {
+		if len(seatBidsToRemove) == len(seatBids) {
 			//delete all seat bids
-			*seatBids = nil
+			seatBids = nil
 		} else {
 			for _, seatBidInd := range seatBidsToRemove {
-				delete(*seatBids, seatBidInd)
+				delete(seatBids, seatBidInd)
 			}
 
 		}
 	}
 
-	return res, nil
+	return res, seatBids, nil
 }
 
 func getPrimaryAdServer(adServerId int) (string, error) {
