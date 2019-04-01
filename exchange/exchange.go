@@ -139,8 +139,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	conversions := e.currencyConverter.Rates()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
-	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, *categoriesFetcher, targData)
+	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if err != nil {
 		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 	}
