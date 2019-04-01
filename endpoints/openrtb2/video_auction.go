@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mxmCherry/openrtb"
@@ -250,14 +250,12 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 		}
 
 		numImps := pod.AdPodDurationSec / minDuration
-
-		impDivNumber := numImps / len(videoDur)
-		if impDivNumber == 0 && reqExactDur {
+		if reqExactDur {
 			// In case of impressions number is less than durations array, we bump up impressions number up to duration array size
 			// with this handler we will have one impression per specified duration
-			numImps = len(videoDur)
-			impDivNumber = 1
+			numImps = max(numImps, len(videoDur))
 		}
+		impDivNumber := numImps / len(videoDur)
 
 		impsArray := make([]openrtb.Imp, numImps)
 		for impInd := range impsArray {
@@ -271,7 +269,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 				}
 				impsArray[impInd].Video.MaxDuration = int64(videoDur[durationIndex])
 				impsArray[impInd].Video.MinDuration = int64(videoDur[durationIndex])
-				//fmt.Println(podIndex, "  ", impInd, "duration ", videoDur[durationIndex])
+				//fmt.Println("Imp ind  ", impInd, "duration ", videoDur[durationIndex])
 			} else {
 				impsArray[impInd].Video.MaxDuration = int64(maxDuration)
 			}
@@ -282,6 +280,13 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 
 	}
 	return finalImpsArray, nil
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func createImpressionTemplate(imp openrtb.Imp, video openrtb_ext.SimplifiedVideo) openrtb.Imp {
