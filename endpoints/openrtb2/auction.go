@@ -669,11 +669,31 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
 	}
+
 	var bidderExts map[string]json.RawMessage
 	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
 		return []error{err}
 	}
 
+	// Also accept bidder exts within imp[...].ext.prebid.bidder
+	// NOTE: This is not part of the official API, we are not expecting clients
+	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
+	// at this time
+	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
+	if rawPrebidExt, ok := bidderExts["prebid"]; ok {
+		var prebidExt openrtb_ext.ExtImpPrebid
+		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
+			for bidder, ext := range prebidExt.Bidder {
+				if ext == nil {
+					continue
+				}
+
+				bidderExts[bidder] = ext
+			}
+		}
+	}
+
+	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
 		if bidder != "prebid" {
