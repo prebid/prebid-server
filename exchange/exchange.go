@@ -5,10 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_requests"
+	"math/rand"
 	"net/http"
 	"runtime/debug"
+	"sort"
 	"time"
+
+	"github.com/prebid/prebid-server/stored_requests"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
@@ -136,8 +139,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	conversions := e.currencyConverter.Rates()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
+	bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, *categoriesFetcher, targData)
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
-	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, *categoriesFetcher)
 	if err != nil {
 		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 	}
@@ -318,84 +321,121 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher) (map[string]string, error) {
+func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
 	res := make(map[string]string)
+
+	type bidDedupe struct {
+		bidderName openrtb_ext.BidderName
+		bidIndex   int
+		bidID      string
+	}
+
+	dedupe := make(map[string]bidDedupe)
 
 	//If includebrandcategory is present in ext then CE feature is on.
 	if requestExt.Prebid.Targeting == nil {
-		return res, nil
+		return res, seatBids, nil
 	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
-		return res, nil //if not present continue the existing processing without CE.
+		return res, seatBids, nil //if not present continue the existing processing without CE.
 	}
 
 	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
 	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
 	if err != nil {
-		return res, err
+		return res, seatBids, err
 	}
 
 	publisher := brandCatExt.Publisher
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
 
-	for bidderName, seatBid := range *seatBids {
+	for bidderName, seatBid := range seatBids {
 		bidsToRemove := make([]int, 0)
 		for bidInd := range seatBid.bids {
-			bid := seatBid.bids[bidInd].bid
+			bid := seatBid.bids[bidInd]
 			var duration int
 			var category string
-			var tempRespBidExt openrtb_ext.ExtBid
-			if len(bid.Ext) > 0 {
-				if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
-					return res, err
-				}
+			var pb string
 
-				//handler for different extension formats
-				var adapterExt json.RawMessage
-				if tempRespBidExt.Bidder != nil {
-					adapterExt = tempRespBidExt.Bidder
-				} else {
-					adapterExt = bid.Ext
-				}
-
-				//unmarshal bid extension to get video duration
-				var objmap map[string]*json.RawMessage
-				if err := json.Unmarshal(adapterExt, &objmap); err != nil {
-					return res, err
-				}
-				var bidderExt openrtb_ext.BidderExt
-				extData := objmap[bidderName.String()]
-				if err := json.Unmarshal(*extData, &bidderExt); err != nil {
-					return res, err
-				}
-				duration = bidderExt.CreativeInfo.Video.Duration
+			if bid.bidVideo != nil {
+				duration = bid.bidVideo.Duration
+				category = bid.bidVideo.PrimaryCategory
 			}
 
-			bidIabCat := bid.Cat
-			if len(bidIabCat) != 1 {
-				//TODO: add metrics
-				//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
-				bidsToRemove = append(bidsToRemove, bidInd)
-				continue
-			} else {
-				//if unique IAB category is present then translate it to the adserver category based on mapping file
-				category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
-				if err != nil || category == "" {
+			if category == "" {
+				bidIabCat := bid.bid.Cat
+				if len(bidIabCat) != 1 {
 					//TODO: add metrics
-					//if mapping required but no mapping file is found then discard the bid
+					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				} else {
+					//if unique IAB category is present then translate it to the adserver category based on mapping file
+					category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
+					if err != nil || category == "" {
+						//TODO: add metrics
+						//if mapping required but no mapping file is found then discard the bid
+						bidsToRemove = append(bidsToRemove, bidInd)
+						continue
+					}
+				}
+			}
+
+			// TODO: consider should we remove bids with zero duration here?
+
+			pb, _ = GetCpmStringValue(bid.bid.Price, targData.priceGranularity)
+
+			newDur := duration
+			if len(requestExt.Prebid.Targeting.DurationRangeSec) > 0 {
+				durationRange := requestExt.Prebid.Targeting.DurationRangeSec
+				sort.Ints(durationRange)
+				//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
+				if duration > durationRange[len(durationRange)-1] {
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				}
+				for _, dur := range durationRange {
+					if duration <= dur {
+						newDur = dur
+						break
+					}
+				}
+			}
+
+			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+
+			if dupe, ok := dedupe[categoryDuration]; ok {
+				// 50% chance for either bid with duplicate categoryDuration values to be kept
+				if rand.Intn(100) < 50 {
+					if dupe.bidderName == bidderName {
+						// An older bid from the current bidder
+						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
+					} else {
+						// An older bid from a different seatBid we've already finished with
+						oldSeatBid := (seatBids)[dupe.bidderName]
+						if len(oldSeatBid.bids) == 1 {
+							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+						} else {
+							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
+						}
+					}
+					delete(res, dupe.bidID)
+				} else {
+					// Remove this bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
 				}
 			}
-			categoryDuration := fmt.Sprintf("%s_%ds", category, duration)
-			res[bid.ID] = categoryDuration
+			res[bid.bid.ID] = categoryDuration
+			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bid.bid.ID}
 		}
 
 		if len(bidsToRemove) > 0 {
+			sort.Ints(bidsToRemove)
 			if len(bidsToRemove) == len(seatBid.bids) {
 				//if all bids are invalid - remove entire seat bid
 				seatBidsToRemove = append(seatBidsToRemove, bidderName)
@@ -411,18 +451,18 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids *map[openr
 
 	}
 	if len(seatBidsToRemove) > 0 {
-		if len(seatBidsToRemove) == len(*seatBids) {
+		if len(seatBidsToRemove) == len(seatBids) {
 			//delete all seat bids
-			*seatBids = nil
+			seatBids = nil
 		} else {
 			for _, seatBidInd := range seatBidsToRemove {
-				delete(*seatBids, seatBidInd)
+				delete(seatBids, seatBidInd)
 			}
 
 		}
 	}
 
-	return res, nil
+	return res, seatBids, nil
 }
 
 func getPrimaryAdServer(adServerId int) (string, error) {
@@ -516,6 +556,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 			Prebid: &openrtb_ext.ExtBidPrebid{
 				Targeting: thisBid.bidTargets,
 				Type:      thisBid.bidType,
+				Video:     thisBid.bidVideo,
 			},
 		}
 

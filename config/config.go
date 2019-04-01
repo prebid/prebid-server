@@ -46,6 +46,8 @@ type Configuration struct {
 	GDPR                 GDPR               `mapstructure:"gdpr"`
 	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
+
+	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 }
 
 type HTTPClient struct {
