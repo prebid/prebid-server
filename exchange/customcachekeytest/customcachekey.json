@@ -7,7 +7,7 @@
     },
     "pbsBids": [{
         "bid":{
-            "cat": ["sports"],
+            "cat": ["11_sports_22"],
             "id": "appbid001",
             "impid": "oneImp",
             "price": 7.64
@@ -16,7 +16,7 @@
         "bidder": "appnexus"
     }, {
         "bid": {
-            "cat": ["news"],
+            "cat": ["33_news_44"],
             "id": "pubbid001",
             "impid": "oneImp",
             "price": 5.64
@@ -28,7 +28,7 @@
         {
             "Type": "json",
             "TTLSeconds": 660,
-            "Key": "7.64_sports_"
+            "Key": "11_sports_22_"
         }, {
             "Type": "json",
             "TTLSeconds": 660
