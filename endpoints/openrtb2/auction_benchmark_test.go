@@ -8,6 +8,7 @@ import (
 
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
+	metrics "github.com/rcrowley/go-metrics"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -16,7 +17,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/rcrowley/go-metrics"
 )
 
 // dummyServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -86,7 +86,6 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{},
 		[]byte{},
-		nil,
 		nil,
 	)
 

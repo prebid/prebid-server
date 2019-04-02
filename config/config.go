@@ -36,6 +36,7 @@ type Configuration struct {
 	DataCache       DataCache          `mapstructure:"datacache"`
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
+	StoredVideo     StoredRequestsSlim `mapstructure:"stored_video"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -524,6 +525,30 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.http_events.amp_endpoint", "")
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
+	v.SetDefault("stored_video.filesystem.enabled", false)
+	v.SetDefault("stored_video.filesystem.path", "")
+	v.SetDefault("stored_video.directorypath", "./stored_requests/data/by_id")
+	v.SetDefault("stored_video.postgres.connection.dbname", "")
+	v.SetDefault("stored_video.postgres.connection.host", "")
+	v.SetDefault("stored_video.postgres.connection.port", 0)
+	v.SetDefault("stored_video.postgres.connection.user", "")
+	v.SetDefault("stored_video.postgres.connection.password", "")
+	v.SetDefault("stored_video.postgres.fetcher.query", "")
+	v.SetDefault("stored_video.postgres.initialize_caches.timeout_ms", 0)
+	v.SetDefault("stored_video.postgres.initialize_caches.query", "")
+	v.SetDefault("stored_video.postgres.poll_for_updates.refresh_rate_seconds", 0)
+	v.SetDefault("stored_video.postgres.poll_for_updates.timeout_ms", 0)
+	v.SetDefault("stored_video.postgres.poll_for_updates.query", "")
+	v.SetDefault("stored_video.http.endpoint", "")
+	v.SetDefault("stored_video.http.amp_endpoint", "")
+	v.SetDefault("stored_video.in_memory_cache.type", "none")
+	v.SetDefault("stored_video.in_memory_cache.ttl_seconds", 0)
+	v.SetDefault("stored_video.in_memory_cache.request_cache_size_bytes", 0)
+	v.SetDefault("stored_video.in_memory_cache.imp_cache_size_bytes", 0)
+	v.SetDefault("stored_video.cache_events_api", false)
+	v.SetDefault("stored_video.http_events.endpoint", "")
+	v.SetDefault("stored_video.http_events.refresh_rate_seconds", 0)
+	v.SetDefault("stored_video.http_events.timeout_ms", 0)
 
 	for _, bidder := range openrtb_ext.BidderMap {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
