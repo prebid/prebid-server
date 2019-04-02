@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Improve Digital Adapter Params",
+  "description": "A schema which validates params accepted by Improve Digital adapter",
+  "type": "object",
+  "properties": {},
+  "required": []
+}
