@@ -368,6 +368,51 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}}, errs
 }
 
+// validateAdslot validate the adslot object
+// valid formats are 'adslot@WxH', 'adslot' and no adslot
+func validateAdSlot(adslot string, imp *openrtb.Imp) error {
+	if len(adslot) == 0 {
+		return nil
+	}
+
+	if !strings.Contains(adslot, "@") {
+		imp.TagID = strings.TrimSpace(adslot)
+		return nil
+	}
+
+	adSlotStr := strings.TrimSpace(adslot)
+	adSlot := strings.Split(adSlotStr, "@")
+	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
+		imp.TagID = strings.TrimSpace(adSlot[0])
+
+		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
+		if len(adSize) != 2 {
+			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v for ImpID = %v", adSlotStr, imp.ID))
+		}
+
+		width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
+		if err != nil {
+			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v for ImpID = %v", adSlotStr, imp.ID))
+		}
+
+		heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
+		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
+		if err != nil {
+			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v for ImpID = %v", adSlotStr, imp.ID))
+		}
+
+		//In case of video, size could be derived from the player size
+		if imp.Banner != nil {
+			imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
+			imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+		}
+	} else {
+		return errors.New(fmt.Sprintf("Invalid adSlot provided %v", adSlot))
+	}
+
+	return nil
+}
+
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
 func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
 	// PubMatic supports banner and video impressions.
@@ -403,38 +448,13 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		*wrapExt = string(pubmaticExt.WrapExt)
 	}
 
-	adSlotStr := strings.TrimSpace(pubmaticExt.AdSlot)
-
-	adSlot := strings.Split(adSlotStr, "@")
-	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
-		imp.TagID = strings.TrimSpace(adSlot[0])
-
-		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
-		if len(adSize) == 2 {
-			width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
-			if err != nil {
-				return errors.New("Invalid width provided in adSlot")
-			}
-
-			heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
-			height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
-			if err != nil {
-				return errors.New("Invalid height provided in adSlot")
-			}
-			if imp.Banner != nil {
-				imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
-				imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
-			} /* In case of video, params.adSlot would always be in the format adunit@0x0,
-			so we are not replacing video.W and video.H with size passed in params.adSlot
-				else {
-				imp.Video.H = uint64(height)
-				imp.Video.W = uint64(width)
-			}*/
-		} else {
-			return errors.New("Invalid size provided in adSlot")
-		}
+	if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil {
+		fmt.Printf("Error __parin1__ %v", err.Error())
+		glog.Info(fmt.Sprintf("Error __parin1__ %v", err.Error()))
+		return err
 	} else {
-		return errors.New("Invalid adSlot provided")
+		fmt.Printf("Valid Adslot __parin2__ %v", pubmaticExt.AdSlot)
+		glog.Info(fmt.Sprintf("Valid Adslot __parin2__ %v", pubmaticExt.AdSlot))
 	}
 
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
