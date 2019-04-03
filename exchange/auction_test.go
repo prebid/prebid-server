@@ -150,16 +150,6 @@ func preTestDoCacheV2(t *testing.T) {
 	}
 	bidder := &pbs.PBSBidder{
 		BidderCode: "appnexus", //string                 `json:"bidder"`
-		//AdUnitCode   //string                 `json:"ad_unit,omitempty"` // for index to dedup responses
-		//ResponseTime //int                    `json:"response_time_ms,omitempty"`
-		//NumBids      //int                    `json:"num_bids,omitempty"`
-		//Error        //string                 `json:"error,omitempty"`
-		//NoCookie     //bool                   `json:"no_cookie,omitempty"`
-		//NoBid        //bool                   `json:"no_bid,omitempty"`
-		//UsersyncInfo //*usersync.UsersyncInfo `json:"usersync,omitempty"`
-		//Debug        //[]*BidderDebug         `json:"debug,omitempty"`
-
-		//AdUnits []PBSAdUnit `json:"-"`
 	}
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
 	blabels["appnexus"] = &pbsmetrics.AdapterLabels{
@@ -171,26 +161,11 @@ func preTestDoCacheV2(t *testing.T) {
 		CookieFlag:  labels.CookieFlag,
 		AdapterBids: pbsmetrics.AdapterBidPresent,
 	}
-	//blabels := pbsmetrics.AdapterLabels{
-	//	Source:      labels.Source,
-	//	RType:       labels.RType,
-	//	Adapter:     openrtb_ext.BidderMap[bidder.BidderCode],
-	//	PubID:       labels.PubID,
-	//	Browser:     labels.Browser,
-	//	CookieFlag:  labels.CookieFlag,
-	//	AdapterBids: pbsmetrics.AdapterBidPresent,
-	//}
+
 	conversions := e.currencyConverter.Rates()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
-	//Finally a test auction can be declared. Is it better to use the functions inside auction?
-	//testAuction := newAuction(adapterBids, len(specData.BidRequest.Imp))
-	//testAuction.winningBidsByBidder = winningBidsByBidder
-	//testAuction := &auction{
-	//	winningBids:         adapterBids,
-	//	winningBidsByBidder: winningBidsByBidder,
-	//}
 	testAuction := &auction{
 		winningBids:         winningBids,
 		winningBidsByBidder: winningBidsByBidder,
@@ -235,20 +210,37 @@ func preTestDoCacheV2(t *testing.T) {
 
 	targData.setTargeting(testAuction, true, bidCategory)
 
-	//Finally, build the bid response with everything we ogt so far
-	//  Context ctx
-	//  liveAdapters
-	//  adapterBids
-	//  bidRequest
-	//  resolvedRequest
-	//  adapterExtra
-	//  errs
-	r, err := json.Marshal(&specData.BidRequest)
-	bidResp, err := e.buildBidResponse(ctx, liveAdapters, adapterBids, &specData.BidRequest, r, adapterExtra, errs)
-	if err != nil {
-	}
+	//traverse targetData object to see if we correctly targeted this data:
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_openx ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_openx ] =
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_openx ] =  2.30
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_openx ] =  openx
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_appnexus ] =  7.64
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_appnexus ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur ] =
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb ] =  7.64
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_appnexus ] =  appnexus
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder ] =  appnexus
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_appnex ] =
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_pubmatic ] =  15.64
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_pubmatic ] =  pubmatic
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_pubmatic ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_pubmat ] =
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_appnexus ] =  1.64
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb ] =  1.64
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_appnexus ] =  appnexus
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_appnexus ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder ] =  appnexus
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_appnex ] =
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur ] =
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_rubicon ] =  rubicon
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_rubicon ] =  mobile-app
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_rubicon ] =  7.64
+	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_rubico ] =
 
-	//traverse bid response
+	//Traverse it like this:
 }
 
 func dummyServer(w http.ResponseWriter, r *http.Request) {
