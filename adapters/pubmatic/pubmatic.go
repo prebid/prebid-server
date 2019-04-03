@@ -368,37 +368,38 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}}, errs
 }
 
-// validateAdslot validate the adslot object
+// validateAdslot validate the optional adslot string
 // valid formats are 'adslot@WxH', 'adslot' and no adslot
 func validateAdSlot(adslot string, imp *openrtb.Imp) error {
-	if len(adslot) == 0 {
-		return nil
-	}
-
-	if !strings.Contains(adslot, "@") {
-		imp.TagID = strings.TrimSpace(adslot)
-		return nil
-	}
-
 	adSlotStr := strings.TrimSpace(adslot)
+
+	if len(adSlotStr) == 0 {
+		return nil
+	}
+
+	if !strings.Contains(adSlotStr, "@") {
+		imp.TagID = adSlotStr
+		return nil
+	}
+
 	adSlot := strings.Split(adSlotStr, "@")
 	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
 		imp.TagID = strings.TrimSpace(adSlot[0])
 
 		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
 		if len(adSize) != 2 {
-			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v for ImpID = %v", adSlotStr, imp.ID))
+			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v for ImpID %v", adSlotStr, imp.ID))
 		}
 
 		width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v for ImpID = %v", adSlotStr, imp.ID))
+			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v for ImpID %v", adSlotStr, imp.ID))
 		}
 
 		heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
 		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v for ImpID = %v", adSlotStr, imp.ID))
+			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v for ImpID %v", adSlotStr, imp.ID))
 		}
 
 		//In case of video, size could be derived from the player size
@@ -407,7 +408,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 			imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
 		}
 	} else {
-		return errors.New(fmt.Sprintf("Invalid adSlot provided %v", adSlot))
+		return errors.New(fmt.Sprintf("Invalid adSlot %v for ImpID %v", adSlotStr, imp.ID))
 	}
 
 	return nil
@@ -449,12 +450,7 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 	}
 
 	if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil {
-		fmt.Printf("Error __parin1__ %v", err.Error())
-		glog.Info(fmt.Sprintf("Error __parin1__ %v", err.Error()))
 		return err
-	} else {
-		fmt.Printf("Valid Adslot __parin2__ %v", pubmaticExt.AdSlot)
-		glog.Info(fmt.Sprintf("Valid Adslot __parin2__ %v", pubmaticExt.AdSlot))
 	}
 
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
