@@ -23,7 +23,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://localhost/hbs",
+        "uri": "http://localhost/pbs",
         "body": {
           "id": "test-request-id",
           "imp": [

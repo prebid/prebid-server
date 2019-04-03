@@ -6,6 +6,7 @@
         },
         "imp": [{
             "id": "test-imp-id",
+            "pid": 123,
             "banner": {
                 "format": [{
                     "w": 300,
@@ -13,14 +14,16 @@
                 }]
             },
             "ext": {
-                "bidder": {}
+                "bidder": {
+                    "placementId": 13245
+                }
             }
         }]
     },
 
     "httpCalls": [{
         "expectedRequest": {
-            "uri": "http://localhost/hbs",
+            "uri": "http://localhost/pbs",
             "body": {
                 "id": "test-request-id",
                 "site": {
@@ -35,7 +38,9 @@
                         }]
                     },
                     "ext": {
-                        "bidder": {}
+                        "bidder": {
+                            "placementId": 13245
+                        }
                     }
                 }]
             }
