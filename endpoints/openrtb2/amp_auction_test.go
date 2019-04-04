@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
@@ -51,6 +52,7 @@ func TestGoodAmpRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	for requestID := range goodRequests {
@@ -104,6 +106,7 @@ func TestAMPPageInfo(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&curl=%s", url.QueryEscape(page)), nil)
 	recorder := httptest.NewRecorder()
@@ -135,6 +138,7 @@ func TestAMPSiteExt(t *testing.T) {
 		nil,
 		nil,
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 	request, err := http.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
 	if !assert.NoError(t, err) {
@@ -174,6 +178,7 @@ func TestAmpBadRequests(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 	for requestID := range badRequests {
 		request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=%s", requestID), nil)
@@ -204,6 +209,7 @@ func TestAmpDebug(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	for requestID := range requests {
@@ -276,6 +282,7 @@ func TestQueryParamOverrides(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	requestID := "1"
@@ -403,6 +410,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 		map[string]string{},
 		[]byte{},
 		openrtb_ext.BidderMap,
+		empty_fetcher.EmptyFetcher{},
 	)
 
 	url := fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&debug=1&w=%d&h=%d&ow=%d&oh=%d&ms=%s", s.width, s.height, s.overrideWidth, s.overrideHeight, s.multisize)
