@@ -92,55 +92,56 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		for _, topBidPerBidder := range topBidsPerImp {
 			impID := topBidPerBidder.bid.ImpID
 			isOverallWinner := a.winningBids[impID] == topBidPerBidder
-			if includeBidderKeys || (includeWinners && isOverallWinner) {
-				var customCacheKey string
-				var catDur string
-				useCustomCacheKey := false
-				if competitiveExclusion && isOverallWinner {
-					// set custom cache key for winning bid when competitive exclusion applies
-					catDur = bidCategory[topBidPerBidder.bid.ID]
-					if len(catDur) > 0 {
-						customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
-						useCustomCacheKey = true
-					}
+			if !includeBidderKeys && !isOverallWinner {
+				continue
+			}
+			var customCacheKey string
+			var catDur string
+			useCustomCacheKey := false
+			if competitiveExclusion && isOverallWinner {
+				// set custom cache key for winning bid when competitive exclusion applies
+				catDur = bidCategory[topBidPerBidder.bid.ID]
+				if len(catDur) > 0 {
+					customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
+					useCustomCacheKey = true
 				}
-				if bids {
-					if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
-						if useCustomCacheKey {
-							// not allowed if bids is true; log error and cache normally
-							errs = append(errs, errors.New("cannot use custom cache key for non-vast bids"))
-						}
+			}
+			if bids {
+				if jsonBytes, err := json.Marshal(topBidPerBidder.bid); err == nil {
+					if useCustomCacheKey {
+						// not allowed if bids is true; log error and cache normally
+						errs = append(errs, errors.New("cannot use custom cache key for non-vast bids"))
+					}
+					toCache = append(toCache, prebid_cache_client.Cacheable{
+						Type:       prebid_cache_client.TypeJSON,
+						Data:       jsonBytes,
+						TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
+					})
+					bidIndices[len(toCache)-1] = topBidPerBidder.bid
+				} else {
+					errs = append(errs, err)
+				}
+			}
+			if vast && topBidPerBidder.bidType == openrtb_ext.BidTypeVideo {
+				vast := makeVAST(topBidPerBidder.bid)
+				if jsonBytes, err := json.Marshal(vast); err == nil {
+					if useCustomCacheKey {
 						toCache = append(toCache, prebid_cache_client.Cacheable{
-							Type:       prebid_cache_client.TypeJSON,
+							Type:       prebid_cache_client.TypeXML,
+							Data:       jsonBytes,
+							TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
+							Key:        customCacheKey,
+						})
+					} else {
+						toCache = append(toCache, prebid_cache_client.Cacheable{
+							Type:       prebid_cache_client.TypeXML,
 							Data:       jsonBytes,
 							TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
 						})
-						bidIndices[len(toCache)-1] = topBidPerBidder.bid
-					} else {
-						errs = append(errs, err)
 					}
-				}
-				if vast && topBidPerBidder.bidType == openrtb_ext.BidTypeVideo {
-					vast := makeVAST(topBidPerBidder.bid)
-					if jsonBytes, err := json.Marshal(vast); err == nil {
-						if useCustomCacheKey {
-							toCache = append(toCache, prebid_cache_client.Cacheable{
-								Type:       prebid_cache_client.TypeXML,
-								Data:       jsonBytes,
-								TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
-								Key:        customCacheKey,
-							})
-						} else {
-							toCache = append(toCache, prebid_cache_client.Cacheable{
-								Type:       prebid_cache_client.TypeXML,
-								Data:       jsonBytes,
-								TTLSeconds: cacheTTL(expByImp[impID], topBidPerBidder.bid.Exp, defTTL(topBidPerBidder.bidType, defaultTTLs), ttlBuffer),
-							})
-						}
-						vastIndices[len(toCache)-1] = topBidPerBidder.bid
-					} else {
-						errs = append(errs, err)
-					}
+					vastIndices[len(toCache)-1] = topBidPerBidder.bid
+				} else {
+					errs = append(errs, err)
 				}
 			}
 		}
