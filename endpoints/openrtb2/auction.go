@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/buger/jsonparser"
-	"github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
@@ -270,10 +271,8 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
 		}
 	}
 
-	for index, imp := range req.Imp {
-		if err := deps.validateImp(&imp, aliases, index); err != nil {
-			return err
-		}
+	if err := deps.validateImps(req, aliases); err != nil {
+		return err
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -306,6 +305,43 @@ func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases 
 			}
 		}
 	}
+	return nil
+}
+
+func (deps *endpointDeps) validateImps(req *openrtb.BidRequest, aliases map[string]string) error {
+	imps := req.Imp
+	impCount := len(imps)
+	invalidImpIndexes := make([]int, 0, impCount)
+	for index, imp := range imps {
+		if err := deps.validateImp(&imp, aliases, index); err != nil {
+			invalidImpIndexes = append(invalidImpIndexes, index)
+			glog.Errorf("Error encuntered while parsing request.imp[%d] for request '%s'. %v", index, req.ID, err)
+		}
+	}
+
+	invalidImpCount := len(invalidImpIndexes)
+	if invalidImpCount == 0 {
+		return nil
+	}
+
+	if invalidImpCount == impCount {
+		return errors.New("All impressions in request.imp[] failed validation")
+	}
+
+	//deleting individual elements inserted at random location from a slice causes performance impact
+	//better approach is to move all the valid imps to front of the slice and then truncate the slice
+	sort.Sort(sort.Reverse(sort.IntSlice(invalidImpIndexes)))
+	index := impCount - 1
+	for _, invalidImpIdx := range invalidImpIndexes {
+
+		if invalidImpIdx != index {
+			imps[invalidImpIdx] = imps[index]
+		}
+		index--
+		glog.Errorf("Removing request.imp[%d] from the request %s.", invalidImpIdx, req.ID)
+	}
+
+	req.Imp = imps[:impCount-invalidImpCount]
 	return nil
 }
 
@@ -346,7 +382,7 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return err
 	}
 
-	if err := deps.validateImpExt(imp.Ext, aliases, index); err != nil {
+	if err := deps.validateImpExt(&imp.Ext, aliases, index); err != nil {
 		return err
 	}
 
@@ -588,7 +624,8 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+func (deps *endpointDeps) validateImpExt(impExt *openrtb.RawJSON, aliases map[string]string, impIndex int) error {
+	ext := *impExt
 	if len(ext) == 0 {
 		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
 	}
@@ -601,22 +638,48 @@ func (deps *endpointDeps) validateImpExt(ext openrtb.RawJSON, aliases map[string
 		return fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex)
 	}
 
+	valFailedBidders := make(map[string]string, len(bidderExts))
 	for bidder, ext := range bidderExts {
 		if bidder != "prebid" {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
 			}
-			if bidderName, isValid := openrtb_ext.BidderMap[coreBidder]; isValid {
-				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-					return fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+
+			bidder, isValid := openrtb_ext.BidderMap[coreBidder]
+			bidderName := string(bidder)
+			if isValid {
+				if err := deps.paramsValidator.Validate(bidder, ext); err != nil {
+					if _, isPresent := valFailedBidders[bidderName]; !isPresent {
+						valFailedBidders[bidderName] = err.Error()
+						glog.Errorf("BidderParamsSchemaError: request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+					}
 				}
 			} else {
-				return fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
+				if _, isPresent := valFailedBidders[bidderName]; !isPresent {
+					valFailedBidders[bidderName] = "Unknown Bidder"
+					glog.Errorf("UnknownBidderError: request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
+				}
 			}
 		}
 	}
 
+	if len(valFailedBidders) != 0 {
+
+		if len(valFailedBidders) == len(bidderExts) {
+			return fmt.Errorf("request.imp[%d].ext failed validation for all bidders", impIndex)
+		}
+
+		for bidder, _ := range valFailedBidders {
+			delete(bidderExts, bidder)
+		}
+
+		bidderExtBytes, err := json.Marshal(bidderExts)
+		if err != nil {
+			return err
+		}
+		*impExt = bidderExtBytes
+	}
 	return nil
 }
 
