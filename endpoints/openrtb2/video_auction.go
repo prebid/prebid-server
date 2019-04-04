@@ -152,6 +152,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		videoBidReq = cleanupVideoBidRequest(videoBidReq, podErrors)
 	}
 
+	if len(videoBidReq.PodConfig.Pods) == 0 {
+		resPodErr := make([]string, 0)
+		for _, podEr := range podErrors {
+			resPodErr = append(resPodErr, strings.Join(podEr.PodErrors, ", "))
+		}
+		err := errors.New(fmt.Sprintf("all pods are incorrect: %s", strings.Join(resPodErr, ", ")))
+		errL = append(errL, err)
+		handleError(labels, w, errL, ao)
+		return
+	}
+
 	//create impressions array
 	imps, podErrors := deps.createImpressions(videoBidReq, podErrors)
 
@@ -256,7 +267,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 		storedImpressionId := string(pod.ConfigId)
 		storedImp, errs := deps.loadStoredImp(storedImpressionId)
 		if errs != nil {
-			err := fmt.Errorf("unable to load configid %s, Pod id: %d", storedImpressionId, pod.PodId)
+			err := fmt.Sprintf("unable to load configid %s, Pod id: %d", storedImpressionId, pod.PodId)
 			podErr := PodError{}
 			podErr.PodId = pod.PodId
 			podErr.PodIndex = ind
@@ -384,7 +395,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 		for _, podEr := range podErrors {
 			pE := make([]string, 0, len(podEr.PodErrors))
 			for _, er := range podEr.PodErrors {
-				pE = append(pE, er.Error())
+				pE = append(pE, er)
 			}
 			adPodEr := &openrtb_ext.AdPod{
 				PodId:  int64(podEr.PodId),
@@ -528,7 +539,7 @@ func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.Bi
 type PodError struct {
 	PodId     int
 	PodIndex  int
-	PodErrors []error
+	PodErrors []string
 }
 
 func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) ([]error, []PodError) {
@@ -556,25 +567,25 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		podErr := PodError{}
 
 		if podIdsSet[pod.PodId] == true {
-			err := fmt.Errorf("request duplicated required field: PodConfig.Pods.PodId, Pod id: %d", pod.PodId)
+			err := fmt.Sprintf("request duplicated required field: PodConfig.Pods.PodId, Pod id: %d", pod.PodId)
 			podErr.PodErrors = append(podErr.PodErrors, err)
 		} else {
 			podIdsSet[pod.PodId] = true
 		}
 		if pod.PodId <= 0 {
-			err := fmt.Errorf("request missing required field: PodConfig.Pods.PodId, Pod index: %d", ind)
+			err := fmt.Sprintf("request missing required field: PodConfig.Pods.PodId, Pod index: %d", ind)
 			podErr.PodErrors = append(podErr.PodErrors, err)
 		}
 		if pod.AdPodDurationSec == 0 {
-			err := fmt.Errorf("request missing required field: PodConfig.Pods.AdPodDurationSec, Pod index: %d", ind)
+			err := fmt.Sprintf("request missing required field: PodConfig.Pods.AdPodDurationSec, Pod index: %d", ind)
 			podErr.PodErrors = append(podErr.PodErrors, err)
 		}
 		if pod.AdPodDurationSec < 0 {
-			err := fmt.Errorf("request incorrect required field: PodConfig.Pods.AdPodDurationSec is negative, Pod index: %d", ind)
+			err := fmt.Sprintf("request incorrect required field: PodConfig.Pods.AdPodDurationSec is negative, Pod index: %d", ind)
 			podErr.PodErrors = append(podErr.PodErrors, err)
 		}
 		if pod.ConfigId == "" {
-			err := fmt.Errorf("request missing required field: PodConfig.Pods.ConfigId, Pod index: %d", ind)
+			err := fmt.Sprintf("request missing required field: PodConfig.Pods.ConfigId, Pod index: %d", ind)
 			podErr.PodErrors = append(podErr.PodErrors, err)
 		}
 		if len(podErr.PodErrors) > 0 {
