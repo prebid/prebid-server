@@ -96,11 +96,11 @@
     },
   
     "expectedMakeRequestsErrors": [
-        "Invalid adSlot AdTag_Div1@ for ImpID test-imp-id-1",
-        "Invalid size provided in adSlot AdTag_Div1@300 for ImpID test-imp-id-2",
-        "Invalid width provided in adSlot AdTag_Div1@valx250 for ImpID test-imp-id-3",
-        "Invalid height provided in adSlot AdTag_Div1@300xval for ImpID test-imp-id-4",
-        "Invalid height provided in adSlot AdTag_Div1@300x for ImpID test-imp-id-5",
-        "Invalid width provided in adSlot AdTag_Div1@x250 for ImpID test-imp-id-6"
+        "Invalid adSlot AdTag_Div1@",
+        "Invalid size provided in adSlot AdTag_Div1@300",
+        "Invalid width provided in adSlot AdTag_Div1@valx250",
+        "Invalid height provided in adSlot AdTag_Div1@300xval",
+        "Invalid height provided in adSlot AdTag_Div1@300x",
+        "Invalid width provided in adSlot AdTag_Div1@x250"
       ]
   }

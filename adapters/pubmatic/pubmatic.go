@@ -388,18 +388,18 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 
 		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
 		if len(adSize) != 2 {
-			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v for ImpID %v", adSlotStr, imp.ID))
+			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v", adSlotStr))
 		}
 
 		width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v for ImpID %v", adSlotStr, imp.ID))
+			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v", adSlotStr))
 		}
 
 		heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
 		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 		if err != nil {
-			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v for ImpID %v", adSlotStr, imp.ID))
+			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v", adSlotStr))
 		}
 
 		//In case of video, size could be derived from the player size
@@ -408,7 +408,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 			imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
 		}
 	} else {
-		return errors.New(fmt.Sprintf("Invalid adSlot %v for ImpID %v", adSlotStr, imp.ID))
+		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
 	}
 
 	return nil
