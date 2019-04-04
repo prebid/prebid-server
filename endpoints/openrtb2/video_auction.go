@@ -72,7 +72,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	start := time.Now()
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeORTB2Web,
+		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
