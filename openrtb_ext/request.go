@@ -6,8 +6,10 @@ import (
 )
 
 // ExtRequest defines the contract for bidrequest.ext
+// ExtRequest.RequestParams should only be used for data common to the request. It should not be used for bidder specific data
 type ExtRequest struct {
-	Prebid ExtRequestPrebid `json:"prebid"`
+	Prebid        ExtRequestPrebid       `json:"prebid"`
+	RequestParams map[string]interface{} `json:"requestparams,omitempty"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
