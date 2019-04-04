@@ -28,14 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDoCacheV2(t *testing.T) {
-	preTestDoCacheV2(t)
-	assert.Equal(t, "a", "a")
-}
-
-func preTestDoCacheV2(t *testing.T) {
+func TestCacheVersusTargets(t *testing.T) {
 	//Load specData from JSON file
-	specData, err := loadCacheSpec("./gusTestBanner.json")
+	specData, err := loadCacheSpec("./cachetest/targetedVersusCachedTest.json")
 	if err != nil {
 	}
 
@@ -64,6 +59,7 @@ func preTestDoCacheV2(t *testing.T) {
 		// Marshal the bid for the expected cacheables
 		cjson, _ := json.Marshal(bid.bid)
 		specData.ExpectedCacheables[i].Data = cjson
+		specData.ExpectedTargets[i].targetKey = cjson
 	}
 
 	//Get a  mock cache
@@ -210,41 +206,18 @@ func preTestDoCacheV2(t *testing.T) {
 
 	targData.setTargeting(testAuction, true, bidCategory)
 
-	//traverse targetData object to see if we correctly targeted this data:
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_openx ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_openx ] =
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_openx ] =  2.30
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_openx ] =  openx
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_appnexus ] =  7.64
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_appnexus ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur ] =
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb ] =  7.64
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_appnexus ] =  appnexus
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder ] =  appnexus
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_appnex ] =
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_pubmatic ] =  15.64
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_pubmatic ] =  pubmatic
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_pubmatic ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_pubmat ] =
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_appnexus ] =  1.64
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb ] =  1.64
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_appnexus ] =  appnexus
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_appnexus ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder ] =  appnexus
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_appnex ] =
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur ] =
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_bidder_rubicon ] =  rubicon
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_env_rubicon ] =  mobile-app
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_rubicon ] =  7.64
-	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_rubico ] =
-
 	//Traverse it like this:
 	for _, topBidsPerImp := range testAuction.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
-			for k, v := range topBidPerBidder.bidTargets {
-				fmt.Println("[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[", k, "] = ", v)
+			var i int = 0
+			for targetKey, target := range topBidPerBidder.bidTargets {
+				if targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target {
+					//testfailed
+					t.Run("Fail because target is not what expected", func(t testing.T) {
+						assertResponseEqual(t, "+", "-")
+					})
+				}
+				i += 1
 			}
 		}
 	}
@@ -503,6 +476,18 @@ type cacheSpec struct {
 	DefaultTTLs        config.DefaultTTLs              `json:"defaultTTLs"`
 }
 
+type TargetSpec struct {
+	BidRequest openrtb.BidRequest `json:"bidRequest"`
+	PbsBids    []pbsBid           `json:"pbsBids"`
+	//ExpectedTargets []prebid_cache_client.Cacheable `json:"expectedCacheables"`
+	//ExpectedTargets map[string]string               `json:"expectedTargets"`
+	ExpectedTargets []mappedBidTargets `json:"expectedTargets"`
+	//DefaultTTLs     config.DefaultTTLs				`json:"defaultTTLs"`
+}
+type mappedBidTargets struct {
+	targetKey string `json:"targetKey"`
+	target    string `json:"target"`
+}
 type pbsBid struct {
 	Bid     *openrtb.Bid           `json:"bid"`
 	BidType openrtb_ext.BidType    `json:"bidType"`
