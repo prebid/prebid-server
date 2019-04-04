@@ -134,10 +134,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(labels, w, errL, ao)
 		return
 	}
-	if len(podErrors) > 0 {
-		//remove incorrect pods
-		videoBidReq = cleanupVideoBidRequest(videoBidReq, podErrors)
-	}
 
 	var bidReq = &openrtb.BidRequest{}
 	if deps.defaultRequest {
@@ -151,13 +147,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 
-	//create impressions array
-	imps, errs := deps.createImpressions(videoBidReq)
-	if errs != nil {
-		errL = append(errL, errs...)
-		handleError(labels, w, errL, ao)
-		return
+	if len(podErrors) > 0 {
+		//remove incorrect pods
+		videoBidReq = cleanupVideoBidRequest(videoBidReq, podErrors)
 	}
+
+	//create impressions array
+	imps, podErrors := deps.createImpressions(videoBidReq, podErrors)
+
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at prebid.js
 
@@ -246,20 +243,26 @@ func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, 
 	ao.Errors = append(ao.Errors, errL...)
 }
 
-func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo) (imps []openrtb.Imp, errL []error) {
+func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) ([]openrtb.Imp, []PodError) {
 	videoDur := videoReq.PodConfig.DurationRangeSec
 	minDuration, maxDuration := minMax(videoDur)
 	reqExactDur := videoReq.PodConfig.RequireExactDuration
 	videoData := videoReq.Video
 
 	finalImpsArray := make([]openrtb.Imp, 0)
-	for _, pod := range videoReq.PodConfig.Pods {
+	for ind, pod := range videoReq.PodConfig.Pods {
 
 		//load stored impression
 		storedImpressionId := string(pod.ConfigId)
 		storedImp, errs := deps.loadStoredImp(storedImpressionId)
 		if errs != nil {
-			return nil, errs
+			err := fmt.Errorf("unable to load configid %s, Pod id: %d", storedImpressionId, pod.PodId)
+			podErr := PodError{}
+			podErr.PodId = pod.PodId
+			podErr.PodIndex = ind
+			podErr.PodErrors = append(podErr.PodErrors, err)
+			podErrors = append(podErrors, podErr)
+			continue
 		}
 
 		numImps := pod.AdPodDurationSec / minDuration
@@ -292,7 +295,7 @@ func (deps *endpointDeps) createImpressions(videoReq *openrtb_ext.BidRequestVide
 		finalImpsArray = append(finalImpsArray, impsArray...)
 
 	}
-	return finalImpsArray, nil
+	return finalImpsArray, podErrors
 }
 
 func max(a, b int) int {
