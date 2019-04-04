@@ -129,10 +129,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 	}
 	//unmarshal and validate combined result
-	videoBidReq, errL := deps.parseVideoRequest(resolvedRequest)
+	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest)
 	if len(errL) > 0 {
 		handleError(labels, w, errL, ao)
 		return
+	}
+	if len(podErrors) > 0 {
+		//remove incorrect pods
+		videoBidReq = cleanupVideoBidRequest(videoBidReq, podErrors)
 	}
 
 	var bidReq = &openrtb.BidRequest{}
@@ -199,7 +203,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	//build simplified response
-	bidResp, err := buildVideoResponse(response)
+	bidResp, err := buildVideoResponse(response, podErrors)
 	if err != nil {
 		errL := []error{err}
 		handleError(labels, w, errL, ao)
@@ -220,6 +224,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 
+}
+
+func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) *openrtb_ext.BidRequestVideo {
+	for i := len(podErrors) - 1; i >= 0; i-- {
+		videoReq.PodConfig.Pods = append(videoReq.PodConfig.Pods[:podErrors[i].PodIndex], videoReq.PodConfig.Pods[podErrors[i].PodIndex+1:]...)
+	}
+	return videoReq
 }
 
 func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
@@ -330,7 +341,7 @@ func minMax(array []int) (int, int) {
 	return min, max
 }
 
-func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidResponseVideo, error) { //should be video response
+func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) { //should be video response
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
 	for _, seatBid := range bidresponse.SeatBid {
@@ -364,6 +375,22 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse) (*openrtb_ext.BidRespo
 		}
 	}
 	videoResponse := openrtb_ext.BidResponseVideo{}
+
+	// If there were incorrect pods, we put them back to response with error message
+	if len(podErrors) > 0 {
+		for _, podEr := range podErrors {
+			pE := make([]string, 0, len(podEr.PodErrors))
+			for _, er := range podEr.PodErrors {
+				pE = append(pE, er.Error())
+			}
+			adPodEr := &openrtb_ext.AdPod{
+				PodId:  int64(podEr.PodId),
+				Errors: pE,
+			}
+			adPods = append(adPods, adPodEr)
+		}
+	}
+
 	videoResponse.AdPods = adPods
 
 	return &videoResponse, nil
@@ -480,7 +507,7 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 	return reqJSON, nil
 }
 
-func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.BidRequestVideo, errs []error) {
+func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.BidRequestVideo, errs []error, podErrors []PodError) {
 	req = &openrtb_ext.BidRequestVideo{}
 
 	if err := json.Unmarshal(request, &req); err != nil {
@@ -488,14 +515,20 @@ func (deps *endpointDeps) parseVideoRequest(request []byte) (req *openrtb_ext.Bi
 		return
 	}
 
-	errL := deps.validateVideoRequest(req)
+	errL, podErrors := deps.validateVideoRequest(req)
 	if len(errL) > 0 {
 		errs = append(errs, errL...)
 	}
 	return
 }
 
-func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) []error {
+type PodError struct {
+	PodId     int
+	PodIndex  int
+	PodErrors []error
+}
+
+func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) ([]error, []PodError) {
 	errL := []error{}
 
 	if deps.cfg.VideoStoredRequestRequired && req.StoredRequestId == "" {
@@ -514,18 +547,37 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 		err := errors.New("request missing required field: PodConfig.Pods")
 		errL = append(errL, err)
 	}
+	podErrors := make([]PodError, 0, 0)
+	podIdsSet := make(map[int]bool)
 	for ind, pod := range req.PodConfig.Pods {
+		podErr := PodError{}
+
+		if podIdsSet[pod.PodId] == true {
+			err := fmt.Errorf("request duplicated required field: PodConfig.Pods.PodId, Pod id: %d", pod.PodId)
+			podErr.PodErrors = append(podErr.PodErrors, err)
+		} else {
+			podIdsSet[pod.PodId] = true
+		}
 		if pod.PodId <= 0 {
 			err := fmt.Errorf("request missing required field: PodConfig.Pods.PodId, Pod index: %d", ind)
-			errL = append(errL, err)
+			podErr.PodErrors = append(podErr.PodErrors, err)
 		}
 		if pod.AdPodDurationSec == 0 {
 			err := fmt.Errorf("request missing required field: PodConfig.Pods.AdPodDurationSec, Pod index: %d", ind)
-			errL = append(errL, err)
+			podErr.PodErrors = append(podErr.PodErrors, err)
+		}
+		if pod.AdPodDurationSec < 0 {
+			err := fmt.Errorf("request incorrect required field: PodConfig.Pods.AdPodDurationSec is negative, Pod index: %d", ind)
+			podErr.PodErrors = append(podErr.PodErrors, err)
 		}
 		if pod.ConfigId == "" {
 			err := fmt.Errorf("request missing required field: PodConfig.Pods.ConfigId, Pod index: %d", ind)
-			errL = append(errL, err)
+			podErr.PodErrors = append(podErr.PodErrors, err)
+		}
+		if len(podErr.PodErrors) > 0 {
+			podErr.PodId = pod.PodId
+			podErr.PodIndex = ind
+			podErrors = append(podErrors, podErr)
 		}
 	}
 	if req.App.Domain == "" && req.Site.Page == "" {
@@ -535,13 +587,28 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 	if len(req.Video.Mimes) == 0 {
 		err := errors.New("request missing required field: Video.Mimes")
 		errL = append(errL, err)
+	} else {
+		mimes := make([]string, 0, 0)
+		for _, mime := range req.Video.Mimes {
+			if mime != "" {
+				mimes = append(mimes, mime)
+			}
+		}
+		if len(mimes) == 0 {
+			err := errors.New("request missing required field: Video.Mimes, mime types contains empty strings only")
+			errL = append(errL, err)
+		}
+		if len(mimes) > 0 {
+			req.Video.Mimes = mimes
+		}
 	}
+
 	if len(req.Video.Protocols) == 0 {
 		err := errors.New("request missing required field: Video.Protocols")
 		errL = append(errL, err)
 	}
 
-	return errL
+	return errL, podErrors
 }
 
 func isZeroOrNegativeDuration(duration []int) bool {
