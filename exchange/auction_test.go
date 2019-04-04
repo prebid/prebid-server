@@ -241,6 +241,13 @@ func preTestDoCacheV2(t *testing.T) {
 	//[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[ hb_pb_cat_dur_rubico ] =
 
 	//Traverse it like this:
+	for _, topBidsPerImp := range testAuction.winningBidsByBidder {
+		for _, topBidPerBidder := range topBidsPerImp {
+			for k, v := range topBidPerBidder.bidTargets {
+				fmt.Println("[exchange/targeting.go] {setTargeting}     targeted element topBidPerBidder.bidTargets[", k, "] = ", v)
+			}
+		}
+	}
 }
 
 func dummyServer(w http.ResponseWriter, r *http.Request) {
