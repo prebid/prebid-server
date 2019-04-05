@@ -34,13 +34,11 @@ func TestCacheVersusTargets(t *testing.T) {
 	if readErr != nil {
 		fmt.Errorf("Failed to read JSON file ./cachetest/targetedVersusCachedTest.json: %v", readErr)
 	}
-	//fmt.Println("testInfo = ", string(testInfo))
 
 	//Unmarshal JSON into TargetSpec struct
 	var specData TargetSpec
 	if unmarshalErr := json.Unmarshal(testInfo, &specData); unmarshalErr != nil {
 		fmt.Errorf("Failed to unmarshal JSON from file: %v", unmarshalErr)
-		//failed test
 	}
 
 	//Put said specData into bid objects
@@ -213,30 +211,13 @@ func TestCacheVersusTargets(t *testing.T) {
 		targData.setTargeting(testAuction, true, bidCategory)
 	}
 
-	//Traverse it like this:
-	//fmt.Println("specData = ", specData)
-	//fmt.Printf("  specData.BidRequest = %v \n", specData.BidRequest)
-	//fmt.Printf("  specData.PbsBids = %v \n", specData.PbsBids)
-	//fmt.Println("  specData.ExpectedTargetKeys = ", specData.ExpectedTargetKeys)
-	//fmt.Println("  specData.ExpectedTargets = ", specData.ExpectedTargets)
-	//fmt.Printf("  specData.DefaultTTLs = %v \n", specData.DefaultTTLs)
-
 	for _, topBidsPerImp := range testAuction.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
 			var i int = 0
 			for _, target := range topBidPerBidder.bidTargets {
 				if specData.ExpectedTargetKeys[i] != target {
-					//if targetKey != specData.ExpectedTargetKeys[i] || target != specData.ExpectedTargets[i].target {
-					//if targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target {
 					t.Errorf("specData.ExpectedTargetKeys[targetKey] != target -->\n  %s  != %s \n", specData.ExpectedTargetKeys[i], target)
-					//t.Errorf("targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target \n [  %s  ] != [  %s  ] || [ %s ] != [ %s ] \n", targetKey, specData.ExpectedTargets[i].targetKey, target, specData.ExpectedTargets[i].target)
-					//t.Run("Fail because target is not what expected", func(b *testing.T) {
-					//	assert.Equal(b, "+", "-")
-					//})
 				}
-				//fmt.Printf("map1[%s] = %s \n", targetKey, target)
-				//fmt.Printf("map2[%s] = %s \n", specData.ExpectedTargetKeys[i], specData.ExpectedTargets[i])
-				//fmt.Printf("specData.ExpectedTargets = %s -> specData.ExpectedTargetKeys = %s \n", specData.ExpectedTargets[i], specData.ExpectedTargetKeys[i])
 				i += 1
 			}
 		}
