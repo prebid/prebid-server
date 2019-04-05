@@ -5,8 +5,23 @@
   "type": "object",
   "properties": {
     "pkey": {
-      "type": ["string"],
+      "type": "string",
       "description": "placement key to use."
+    },
+    "iframe": {
+      "type": "boolean",
+      "description": "whether or not to stay in iframe",
+      "default": false
+    },
+    "iframeSize": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "integer"
+      },
+      "description": "iframe dimensions",
+      "default": [0, 0]
     }
   },
   "required": ["pkey"]

@@ -1,6 +1,7 @@
 package sharethrough
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,9 +12,11 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
-const hbEndpoint = "http://dumb-waiter.sharethrough.com/header-bid/v1"
+const hbSource = "prebid-server"
+const strVersion = "1.0.0"
 
 func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 	return &SharethroughAdapter{URI: endpoint}
@@ -30,17 +33,8 @@ func (s SharethroughAdapter) Name() string {
 	return "sharethrough"
 }
 
-type params struct {
-	BidID        string `json:"bidId"`
-	PlacementKey string `json:"placement_key"`
-	HBVersion    string `json:"hbVersion"`
-	StrVersion   string `json:"strVersion"`
-	HBSource     string `json:"hbSource"`
-}
-
 func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	fmt.Println("in sharethrough adapter")
-	pKeys := make([]string, 0, len(request.Imp))
+	//fmt.Printf("in sharethrough adapter\nrequest: %+v\n", request)
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{}
 	var potentialRequests []*adapters.RequestData
@@ -49,23 +43,42 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 	headers.Add("Accept", "application/json")
 
 	for i := 0; i < len(request.Imp); i++ {
-		pKey, err := preprocess(&request.Imp[i])
-		if pKey != "" {
-			pKeys = append(pKeys, pKey)
+		imp := request.Imp[i]
+
+		fmt.Printf("processing imp")
+
+		var extBtlrParams openrtb_ext.ExtImpSharethroughExt
+		if err := json.Unmarshal(imp.Ext, &extBtlrParams); err != nil {
+			return nil, []error{err}
 		}
 
-		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
-		if err != nil {
-			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
-			continue
+		var extUser struct {
+			Consent string `json:"consent"`
 		}
+		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
+			extUser.Consent = ""
+		}
+		fmt.Println(extUser)
 
-		//hbURI := generateHBUri(pKey, "testBidID-"+strconv.Itoa(i))
+		// todo: get gdpr from Regs
+		//var extRegs struct{ Gdpr int }
+		//if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+		//	extRegs.Gdpr = 0
+		//}
+
+		pKey := extBtlrParams.Bidder.Pkey
+
 		potentialRequests = append(potentialRequests, &adapters.RequestData{
-			Method:  "POST",
-			Uri:     s.URI + "?pkey=" + pKey,
+			Method: "POST",
+			Uri: generateHBUri(s.URI, hbUriParams{
+				Pkey:  pKey,
+				BidID: imp.ID,
+				//ConsentRequired: !(extRegs.Gdpr == 0),
+				ConsentString: extUser.Consent,
+				Iframe:        extBtlrParams.Bidder.Iframe,
+				IframeWidth:   extBtlrParams.Bidder.IframeSize[0],
+				IframeHeight:  extBtlrParams.Bidder.IframeSize[1],
+			}),
 			Body:    nil,
 			Headers: headers,
 		})
@@ -75,9 +88,6 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 }
 
 func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	fmt.Printf("internal request: %v\n", internalRequest)
-	fmt.Printf("external request: %v\n", externalRequest)
-
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -89,42 +99,17 @@ func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	var bidResp openrtb.BidResponse
 	var strBidResp openrtb_ext.ExtImpSharethroughResponse
 	if err := json.Unmarshal(response.Body, &strBidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	bidResponse := adapters.NewBidderResponse()
+	br, bidderResponseErr := butlerToOpenRTBResponse(externalRequest, strBidResp)
 
-	br, _ := butlerToOpenRTBResponse(externalRequest, strBidResp)
-	fmt.Printf("br code: %v\n", br)
-	var errs []error
-	for _, sb := range bidResp.SeatBid {
-		for i := 0; i < len(sb.Bid); i++ {
-			bid := sb.Bid[i]
-			if bidType, err := getMediaTypeForBid(&bid); err == nil {
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
-				})
-			} else {
-				errs = append(errs, err)
-			}
-		}
-	}
-	for _, bid := range bidResponse.Bids {
-		fmt.Printf("bidResponse.Bids: %+v\n", bid)
-	}
-	if len(errs) > 0 {
-		for _, err := range errs {
-			fmt.Printf("error: %s\n", err)
-		}
-	}
-	return bidResponse, errs
+	return br, bidderResponseErr
 }
 
 func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.ExtImpSharethroughResponse) (*adapters.BidderResponse, []error) {
@@ -135,22 +120,18 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
 	creative := strResp.Creatives[0]
 
-	btlrUrl, err := url.Parse(btlrReq.Uri)
-	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
-	}
-	pkey := btlrUrl.Query().Get("pkey")
+	btlrParams, _ := parseHBUri(btlrReq.Uri)
 
 	bid := &openrtb.Bid{
-		ID:    strResp.BidID,
-		ImpID: strResp.AdServerRequestID, // MAYBE?
-		Price: creative.CPM,
-		// NURL: creative.Beacons.WinNotification[0] // what do we do with other notification URLs ???
+		AdID:   strResp.AdServerRequestID,
+		ID:     strResp.BidID,
+		ImpID:  btlrParams.BidID,
+		Price:  creative.CPM,
 		CID:    creative.Metadata.CampaignKey,
 		CrID:   creative.Metadata.CreativeKey,
 		DealID: creative.Metadata.DealID,
-		AdM:    getAdMarkup(strResp, pkey),
+		AdM:    getAdMarkup(strResp, btlrParams),
+		// NURL: creative.Beacons.WinNotification[0] // what do we do with other notification URLs ???
 	}
 
 	typedBid.Bid = bid
@@ -159,43 +140,73 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 	return bidResponse, errs
 }
 
-func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, pkey string) string {
+func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriParams) string {
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
-	//b64EncodedJson := base64.NewEncoding(json.Mar)
-	//tmpl := `
-	//	<div data-str-native-key="{{pkey}}" data-stx-response-name="{{strRespId}}"></div>
-	//  	<script>var {{strRespId}} = "${b64EncodeUnicode(JSON.stringify(body))}"</script>
-	//`
-	//
-	//let adMarkup = `
-	//  <div data-str-native-key="${req.data.placement_key}" data-stx-response-name="${strRespId}">
-	//  </div>
-	//  <script>var ${strRespId} = "${b64EncodeUnicode(JSON.stringify(body))}"</script>
-	//`
-	//
-	//if (req.strData.stayInIframe) {
-	//	// Don't break out of iframe
-	//	adMarkup = adMarkup + `<script src="//native.sharethrough.com/assets/sfp.js"></script>`
-	//} else {
-	//	// Break out of iframe
-	//	adMarkup = adMarkup + `
-	//    <script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>
-	//    <script>
-	//      (function() {
-	//        if (!(window.STR && window.STR.Tag) && !(window.top.STR && window.top.STR.Tag)) {
-	//          var sfp_js = document.createElement('script');
-	//          sfp_js.src = "//native.sharethrough.com/assets/sfp.js";
-	//          sfp_js.type = 'text/javascript';
-	//          sfp_js.charset = 'utf-8';
-	//          try {
-	//              window.top.document.getElementsByTagName('body')[0].appendChild(sfp_js);
-	//          } catch (e) {
-	//            console.log(e);
-	//          }
-	//        }
-	//      })()
-	//  </script>`
-	//}
+	jsonPayload, err := json.Marshal(strResp)
+
+	if err != nil {
+		//handle error
+		fmt.Printf("ERROR: %s\n", err)
+	}
+
+	tmplBody := `
+		<div data-str-native-key="{{.Pkey}}" data-stx-response-name="{{.StrRespId}}"></div>
+	 	<script>var {{.StrRespId}} = "{{.B64EncodedJson}}"</script>
+	`
+
+	if params.Iframe {
+		tmplBody = tmplBody + `
+			<script src="//native.sharethrough.com/assets/sfp.js"></script>
+		`
+	} else {
+		tmplBody = tmplBody + `
+			<script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>
+	    	<script>
+		     (function() {
+		       if (!(window.STR && window.STR.Tag) && !(window.top.STR && window.top.STR.Tag)) {
+		         var sfp_js = document.createElement('script');
+		         sfp_js.src = "//native.sharethrough.com/assets/sfp.js";
+		         sfp_js.type = 'text/javascript';
+		         sfp_js.charset = 'utf-8';
+		         try {
+		             window.top.document.getElementsByTagName('body')[0].appendChild(sfp_js);
+		         } catch (e) {
+		           console.log(e);
+		         }
+		       }
+		     })()
+		   </script>
+	`
+
+	}
+
+	tmpl, err := template.New("sfpjs").Parse(tmplBody)
+	if err != nil {
+		// handle error
+		fmt.Printf("ERROR TEMPLATE: %s\n", err)
+	}
+
+	var buf []byte
+	templatedBuf := bytes.NewBuffer(buf)
+
+	b64EncodedJson := base64.StdEncoding.EncodeToString(jsonPayload)
+	err = tmpl.Execute(templatedBuf, struct {
+		Pkey           string
+		StrRespId      template.JS
+		B64EncodedJson string
+	}{
+		params.Pkey,
+		template.JS(strRespId),
+		b64EncodedJson,
+	})
+
+	if err != nil {
+		// handle error
+		fmt.Printf("ERROR TEMPLATE Execute: %s\n", err)
+
+	}
+
+	return templatedBuf.String()
 }
 
 func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
@@ -234,16 +245,54 @@ func preprocess(imp *openrtb.Imp) (pKey string, err error) {
 	return sharethroughExt.PlacementKey, nil
 }
 
-func generateHBUri(pKey string, bidID string) string {
-	return "http://localhost:8000/bid"
+type hbUriParams struct {
+	Pkey               string
+	BidID              string
+	ConsentRequired    bool
+	ConsentString      string
+	InstantPlayCapable bool
+	Iframe             bool
+	IframeHeight       int
+	IframeWidth        int
 }
 
-// func generateHBUri(pKey string, bidID string) string {
-// 	v := url.Values{}
-// 	v.Set("placement_key", pKey)
-// 	v.Set("bidId", bidID)
-// 	v.Set("hbVersion", "test-version")
-// 	v.Set("hbSource", "prebid-server")
+func generateHBUri(baseUrl string, params hbUriParams) string {
+	v := url.Values{}
+	v.Set("placement_key", params.Pkey)
+	v.Set("bidId", params.BidID)
+	v.Set("consent_required", fmt.Sprintf("%t", params.ConsentRequired))
 
-// 	return hbEndpoint + "?" + v.Encode()
-// }
+	if params.ConsentRequired {
+		v.Set("consent_string", params.ConsentString)
+	}
+
+	v.Set("instant_play_capable", fmt.Sprintf("%t", params.InstantPlayCapable))
+	v.Set("stayInIframe", fmt.Sprintf("%t", params.Iframe))
+	v.Set("iframeHeight", string(params.IframeHeight))
+	v.Set("iframeWidth", string(params.IframeWidth))
+
+	v.Set("hbVersion", "test-version") // todo: figure out the version dynamically
+	v.Set("hbSource", hbSource)
+	v.Set("strVersion", strVersion)
+
+	return baseUrl + "?" + v.Encode()
+}
+
+func parseHBUri(uri string) (*hbUriParams, error) {
+	btlrUrl, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	params := btlrUrl.Query()
+	iframeHeight, _ := strconv.ParseInt(params.Get("iframeHeight"), 10, 64)
+	iframeWidth, _ := strconv.ParseInt(params.Get("iframeWidth"), 10, 64)
+
+	return &hbUriParams{
+		Pkey:         params.Get("placement_key"),
+		BidID:        params.Get("bidId"),
+		Iframe:       params.Get("stayInIframe") == "true",
+		IframeHeight: int(iframeHeight),
+		IframeWidth:  int(iframeWidth),
+	}, nil
+}

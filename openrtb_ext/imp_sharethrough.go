@@ -4,6 +4,7 @@ import "encoding/json"
 
 type ExtImpSharethrough struct {
 	PlacementKey string `json:"pkey"`
+	Iframe       bool   `json:"iframe"`
 }
 
 // ExtImpSharethrough defines the contract for bidrequest.imp[i].ext.sharethrough
@@ -23,7 +24,7 @@ type ExtImpSharethroughCreative struct {
 }
 
 type ExtImpSharethroughCreativeMetadata struct {
-	Action                 string                            `json:"clickout"`
+	Action                 string                            `json:"action"`
 	Advertiser             string                            `json:"advertiser"`
 	AdvertiserKey          string                            `json:"advertiser_key"`
 	Beacons                ExtImpSharethroughCreativeBeacons `json:"beacons"`
@@ -62,7 +63,7 @@ type ExtImpSharethroughPlacement struct {
 	ArticlesBetweenAds    int                                   `json:"articles_between_ads"`
 	Layout                string                                `json:"layout"`
 	Metadata              json.RawMessage                       `json:"metadata"`
-	PlacementAttributes   ExtImpSharethroughPlacementAttributes `json:"placement_attributes"`
+	PlacementAttributes   ExtImpSharethroughPlacementAttributes `json:"placementAttributes"`
 	Status                string                                `json:"status"`
 }
 
@@ -87,4 +88,12 @@ type ExtImpSharethroughPlacementAttributes struct {
 	StrOptOutURL             string          `json:"str_opt_out_url"`
 	Template                 string          `json:"template"`
 	ThirdPartyPartners       []string        `json:"third_party_partners"`
+}
+
+type ExtImpSharethroughExt struct {
+	Bidder struct {
+		Pkey       string `json:"pkey"`
+		Iframe     bool   `json:"iframe"`
+		IframeSize []int  `json:"iframeSize"`
+	} `json:"bidder"`
 }
