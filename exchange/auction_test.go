@@ -33,8 +33,8 @@ func TestCacheVersusTargets(t *testing.T) {
 	testInfo, readErr := ioutil.ReadFile("./cachetest/targetedVersusCachedTest.json")
 	if readErr != nil {
 		fmt.Errorf("Failed to read JSON file ./cachetest/targetedVersusCachedTest.json: %v", readErr)
-		//failed test
 	}
+	//fmt.Println("testInfo = ", string(testInfo))
 
 	//Unmarshal JSON into TargetSpec struct
 	var specData TargetSpec
@@ -214,18 +214,29 @@ func TestCacheVersusTargets(t *testing.T) {
 	}
 
 	//Traverse it like this:
+	//fmt.Println("specData = ", specData)
+	//fmt.Printf("  specData.BidRequest = %v \n", specData.BidRequest)
+	//fmt.Printf("  specData.PbsBids = %v \n", specData.PbsBids)
+	//fmt.Println("  specData.ExpectedTargetKeys = ", specData.ExpectedTargetKeys)
+	//fmt.Println("  specData.ExpectedTargets = ", specData.ExpectedTargets)
+	//fmt.Printf("  specData.DefaultTTLs = %v \n", specData.DefaultTTLs)
+
 	for _, topBidsPerImp := range testAuction.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
 			var i int = 0
-			for targetKey, target := range topBidPerBidder.bidTargets {
-				//if targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target {
-				t.Errorf("targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target \n [  %s  ] != [  %s  ] || [ %s ] != [ %s ] \n", targetKey, specData.ExpectedTargets[i].targetKey, target, specData.ExpectedTargets[i].target)
-				//t.Run("Fail because target is not what expected", func(b *testing.T) {
-				//	assert.Equal(b, "+", "-")
-				//})
-				//}
-				fmt.Printf("topBidPerBidder.bidTargets[%s] = %s \n", targetKey, target)
-				fmt.Printf("specData.ExpectedTargets[i].targetKey = %s -> specData.ExpectedTargets[i].target = %s \n", specData.ExpectedTargets[i].targetKey, specData.ExpectedTargets[i].target)
+			for _, target := range topBidPerBidder.bidTargets {
+				if specData.ExpectedTargetKeys[i] != target {
+					//if targetKey != specData.ExpectedTargetKeys[i] || target != specData.ExpectedTargets[i].target {
+					//if targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target {
+					t.Errorf("specData.ExpectedTargetKeys[targetKey] != target -->\n  %s  != %s \n", specData.ExpectedTargetKeys[i], target)
+					//t.Errorf("targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target \n [  %s  ] != [  %s  ] || [ %s ] != [ %s ] \n", targetKey, specData.ExpectedTargets[i].targetKey, target, specData.ExpectedTargets[i].target)
+					//t.Run("Fail because target is not what expected", func(b *testing.T) {
+					//	assert.Equal(b, "+", "-")
+					//})
+				}
+				//fmt.Printf("map1[%s] = %s \n", targetKey, target)
+				//fmt.Printf("map2[%s] = %s \n", specData.ExpectedTargetKeys[i], specData.ExpectedTargets[i])
+				//fmt.Printf("specData.ExpectedTargets = %s -> specData.ExpectedTargetKeys = %s \n", specData.ExpectedTargets[i], specData.ExpectedTargetKeys[i])
 				i += 1
 			}
 		}
@@ -487,12 +498,11 @@ type cacheSpec struct {
 }
 
 type TargetSpec struct {
-	BidRequest openrtb.BidRequest `json:"bidRequest"`
-	PbsBids    []pbsBid           `json:"pbsBids"`
-	//ExpectedTargets []prebid_cache_client.Cacheable `json:"expectedCacheables"`
-	//ExpectedTargets map[string]string               `json:"expectedTargets"`
-	ExpectedTargets []mappedBidTargets `json:"expectedTargets"`
-	DefaultTTLs     config.DefaultTTLs `json:"defaultTTLs"`
+	BidRequest         openrtb.BidRequest `json:"bidRequest"`
+	PbsBids            []pbsBid           `json:"pbsBids"`
+	ExpectedTargetKeys []string           `json:"expectedTargetKeys"`
+	ExpectedTargets    []string           `json:"expectedTargets"`
+	DefaultTTLs        config.DefaultTTLs `json:"defaultTTLs"`
 }
 type mappedBidTargets struct {
 	targetKey string `json:"targetKey"`
@@ -512,3 +522,96 @@ func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Ca
 	c.items = values
 	return []string{"", "", "", "", ""}, nil
 }
+
+/*
+   {"targetKey": "hb_env_openx", "target":" mobile-app"},
+   {"targetKey": "hb_pb_cat_dur_openx","target":""}
+   {"targetKey": "hb_pb_openx", "target":" 2.30"},
+   {"targetKey": "hb_bidder_openx", "target":" openx"},
+   {"targetKey": "hb_pb_appnexus", "target":" 7.64"},
+   {"targetKey": "hb_env_appnexus", "target":" mobile-app"},
+   {"targetKey": "hb_pb_cat_dur","target":""},
+   {"targetKey": "hb_pb", "target":" 7.64"},
+   {"targetKey": "hb_bidder_appnexus", "target":" appnexus"},
+   {"targetKey": "hb_bidder", "target":" appnexus"},
+   {"targetKey": "hb_env", "target":" mobile-app"},
+   {"targetKey": "hb_pb_cat_dur_appnex","target":""},
+   {"targetKey": "hb_pb_pubmatic", "target":" 15.64"},
+   {"targetKey": "hb_bidder_pubmatic", "target":" pubmatic"},
+   {"targetKey": "hb_env_pubmatic", "target":" mobile-app"},
+   {"targetKey": "hb_pb_cat_dur_pubmat","target":""},
+   {"targetKey": "hb_env", "target":" mobile-app"},
+   {"targetKey": "hb_pb_appnexus", "target":" 1.64"},
+   {"targetKey": "hb_pb", "target":" 1.64"},
+   {"targetKey": "hb_bidder_appnexus", "target":" appnexus"},
+   {"targetKey": "hb_env_appnexus", "target":" mobile-app"},
+   {"targetKey": "hb_bidder", "target":" appnexus"},
+   {"targetKey": "hb_pb_cat_dur_appnex","target":""},
+   {"targetKey": "hb_pb_cat_dur","target":""},
+   {"targetKey": "hb_bidder_rubicon", "target":" rubicon"},
+   {"targetKey": "hb_env_rubicon", "target":" mobile-app"},
+   {"targetKey": "hb_pb_rubicon", "target":" 7.64"},
+   {"targetKey": "hb_pb_cat_dur_rubico","target":""}
+*/
+/*
+"expectedtargetKeys": [
+   "hb_env_openx",
+   "hb_pb_cat_dur_openx",
+   "hb_pb_openx",
+   "hb_bidder_openx",
+   "hb_pb_appnexus",
+   "hb_env_appnexus",
+   "hb_pb_cat_dur",
+   "hb_pb",
+   "hb_bidder_appnexus",
+   "hb_bidder",
+   "hb_env",
+   "hb_pb_cat_dur_appnex",
+   "hb_pb_pubmatic",
+   "hb_bidder_pubmatic",
+   "hb_env_pubmatic",
+   "hb_pb_cat_dur_pubmat",
+   "hb_env",
+   "hb_pb_appnexus",
+   "hb_pb",
+   "hb_bidder_appnexus",
+   "hb_env_appnexus",
+   "hb_bidder",
+   "hb_pb_cat_dur_appnex",
+   "hb_pb_cat_dur",
+   "hb_bidder_rubicon",
+   "hb_env_rubicon",
+   "hb_pb_rubicon",
+   "hb_pb_cat_dur_rubico"
+   ],
+   expectedtargets": [
+" mobile-app",
+"",
+" 2.30",
+" openx",
+" 7.64",
+" mobile-app",
+"",
+" 7.64",
+" appnexus",
+" appnexus",
+" mobile-app",
+"",
+" 15.64",
+" pubmatic",
+" mobile-app"},
+"",
+" mobile-app",
+" 1.64",
+" 1.64",
+" appnexus",
+" mobile-app",
+" appnexus",
+"",
+"",
+" rubicon",
+" mobile-app",
+" 7.64",
+""
+]
+*/
