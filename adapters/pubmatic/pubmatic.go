@@ -414,6 +414,27 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 	return nil
 }
 
+func assignBannerSize(banner *openrtb.Banner) error {
+	if banner == nil {
+		return nil
+	}
+
+	if banner.W != nil && banner.H != nil {
+		return nil
+	}
+
+	if len(banner.Format) == 0 {
+		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+	}
+
+	banner.W = new(uint64)
+	*banner.W = banner.Format[0].W
+	banner.H = new(uint64)
+	*banner.H = banner.Format[0].H
+
+	return nil
+}
+
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
 func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
 	// PubMatic supports banner and video impressions.
@@ -451,6 +472,12 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 
 	if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil {
 		return err
+	}
+
+	if imp.Banner != nil {
+		if err := assignBannerSize(imp.Banner); err != nil {
+			return err
+		}
 	}
 
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
