@@ -29,9 +29,18 @@ import (
 )
 
 func TestCacheVersusTargets(t *testing.T) {
-	//Load specData from JSON file
-	specData, err := loadCacheSpec("./cachetest/targetedVersusCachedTest.json")
-	if err != nil {
+	//Load JSON file
+	testInfo, readErr := ioutil.ReadFile("./cachetest/targetedVersusCachedTest.json")
+	if readErr != nil {
+		fmt.Errorf("Failed to read JSON file ./cachetest/targetedVersusCachedTest.json: %v", readErr)
+		//failed test
+	}
+
+	//Unmarshal JSON into TargetSpec struct
+	var specData TargetSpec
+	if unmarshalErr := json.Unmarshal(testInfo, &specData); unmarshalErr != nil {
+		fmt.Errorf("Failed to unmarshal JSON from file: %v", unmarshalErr)
+		//failed test
 	}
 
 	//Put said specData into bid objects
@@ -40,7 +49,7 @@ func TestCacheVersusTargets(t *testing.T) {
 	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
 	roundedPrices := make(map[*pbsOrtbBid]string)
 	bidCategory := make(map[string]string)
-	for i, pbsBid := range specData.PbsBids {
+	for _, pbsBid := range specData.PbsBids {
 		if _, ok := winningBidsByBidder[pbsBid.Bid.ImpID]; !ok {
 			winningBidsByBidder[pbsBid.Bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
 		}
@@ -56,10 +65,6 @@ func TestCacheVersusTargets(t *testing.T) {
 			bidCategory[pbsBid.Bid.ImpID] = pbsBid.Bid.Cat[0]
 		}
 		roundedPrices[bid] = strconv.FormatFloat(bid.bid.Price, 'f', 2, 64)
-		// Marshal the bid for the expected cacheables
-		cjson, _ := json.Marshal(bid.bid)
-		specData.ExpectedCacheables[i].Data = cjson
-		specData.ExpectedTargets[i].targetKey = cjson
 	}
 
 	//Get a  mock cache
@@ -160,7 +165,7 @@ func TestCacheVersusTargets(t *testing.T) {
 
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
+	adapterBids, _ := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	testAuction := &auction{
 		winningBids:         winningBids,
@@ -196,31 +201,36 @@ func TestCacheVersusTargets(t *testing.T) {
 		includeCacheVast:  false,
 	}
 	//Call doCache()
-	errs := testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
-	if len(errs) > 0 {
-		var all_errors string
-		for _, an_error := range errs {
-			all_errors += an_error.Error() + "|"
+	if adapterBids != nil {
+		errs := testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
+		if len(errs) > 0 {
+			var all_errors string
+			for _, an_error := range errs {
+				all_errors += an_error.Error() + "|"
+			}
 		}
-	}
 
-	targData.setTargeting(testAuction, true, bidCategory)
+		targData.setTargeting(testAuction, true, bidCategory)
+	}
 
 	//Traverse it like this:
 	for _, topBidsPerImp := range testAuction.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
 			var i int = 0
 			for targetKey, target := range topBidPerBidder.bidTargets {
-				if targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target {
-					//testfailed
-					t.Run("Fail because target is not what expected", func(t testing.T) {
-						assertResponseEqual(t, "+", "-")
-					})
-				}
+				//if targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target {
+				t.Errorf("targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target \n [  %s  ] != [  %s  ] || [ %s ] != [ %s ] \n", targetKey, specData.ExpectedTargets[i].targetKey, target, specData.ExpectedTargets[i].target)
+				//t.Run("Fail because target is not what expected", func(b *testing.T) {
+				//	assert.Equal(b, "+", "-")
+				//})
+				//}
+				fmt.Printf("topBidPerBidder.bidTargets[%s] = %s \n", targetKey, target)
+				fmt.Printf("specData.ExpectedTargets[i].targetKey = %s -> specData.ExpectedTargets[i].target = %s \n", specData.ExpectedTargets[i].targetKey, specData.ExpectedTargets[i].target)
 				i += 1
 			}
 		}
 	}
+	assert.Equal(t, "+", "+")
 }
 
 func dummyServer(w http.ResponseWriter, r *http.Request) {
@@ -482,7 +492,7 @@ type TargetSpec struct {
 	//ExpectedTargets []prebid_cache_client.Cacheable `json:"expectedCacheables"`
 	//ExpectedTargets map[string]string               `json:"expectedTargets"`
 	ExpectedTargets []mappedBidTargets `json:"expectedTargets"`
-	//DefaultTTLs     config.DefaultTTLs				`json:"defaultTTLs"`
+	DefaultTTLs     config.DefaultTTLs `json:"defaultTTLs"`
 }
 type mappedBidTargets struct {
 	targetKey string `json:"targetKey"`
