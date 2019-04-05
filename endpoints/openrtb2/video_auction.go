@@ -147,24 +147,25 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//create full open rtb req from full video request
 	mergeData(videoBidReq, bidReq)
 
+	initialPodNumber := len(videoBidReq.PodConfig.Pods)
 	if len(podErrors) > 0 {
 		//remove incorrect pods
 		videoBidReq = cleanupVideoBidRequest(videoBidReq, podErrors)
 	}
 
-	if len(videoBidReq.PodConfig.Pods) == 0 {
+	//create impressions array
+	imps, podErrors := deps.createImpressions(videoBidReq, podErrors)
+
+	if len(podErrors) == initialPodNumber {
 		resPodErr := make([]string, 0)
 		for _, podEr := range podErrors {
 			resPodErr = append(resPodErr, strings.Join(podEr.PodErrors, ", "))
 		}
-		err := errors.New(fmt.Sprintf("all pods are incorrect: %s", strings.Join(resPodErr, ", ")))
+		err := errors.New(fmt.Sprintf("all pods are incorrect: %s", strings.Join(resPodErr, "; ")))
 		errL = append(errL, err)
 		handleError(labels, w, errL, ao)
 		return
 	}
-
-	//create impressions array
-	imps, podErrors := deps.createImpressions(videoBidReq, podErrors)
 
 	bidReq.Imp = imps
 	bidReq.ID = "bid_id" //TODO: look at prebid.js
