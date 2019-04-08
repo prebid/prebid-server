@@ -1,135 +1,79 @@
-E0405 12:43:35.096413   79183 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
-E0405 12:43:35.098531   79183 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
-E0405 12:43:35.101927   79183 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
-topBidPerBidder.bidTargets[hb_bidder] = appnexus 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env_appnexus] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur_appnex] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_appnexus] = 7.64 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb] = 7.64 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_bidder_appnexus] = appnexus 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_pubmatic] = 15.64 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_bidder_pubmatic] = pubmatic 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env_pubmatic] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur_pubmat] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_openx] = 2.30 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_bidder_openx] = openx 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env_openx] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur_openx] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb] = 1.64 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_bidder] = appnexus 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env_appnexus] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur_appnex] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_appnexus] = 1.64 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_bidder_appnexus] = appnexus 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_rubicon] = 7.64 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_env_rubicon] = mobile-app 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_bidder_rubicon] = rubicon 
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
-topBidPerBidder.bidTargets[hb_pb_cat_dur_rubico] =  
-specData.ExpectedTargets[i].targetKey  -> specData.ExpectedTargets[i].target =  
+E0405 16:09:22.757035   45010 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0405 16:09:22.759075   45010 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0405 16:09:22.762373   45010 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
 --- FAIL: TestCacheVersusTargets (0.01s)
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder  ] != [    ] || [ appnexus ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env_appnexus  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur_appnex  ] != [    ] || [  ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur  ] != [    ] || [  ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_appnexus  ] != [    ] || [ 7.64 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb  ] != [    ] || [ 7.64 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder_appnexus  ] != [    ] || [ appnexus ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_pubmatic  ] != [    ] || [ 15.64 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder_pubmatic  ] != [    ] || [ pubmatic ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env_pubmatic  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur_pubmat  ] != [    ] || [  ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_openx  ] != [    ] || [ 2.30 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder_openx  ] != [    ] || [ openx ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env_openx  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur_openx  ] != [    ] || [  ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb  ] != [    ] || [ 1.64 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder  ] != [    ] || [ appnexus ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env_appnexus  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur_appnex  ] != [    ] || [  ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_appnexus  ] != [    ] || [ 1.64 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder_appnexus  ] != [    ] || [ appnexus ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur  ] != [    ] || [  ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_rubicon  ] != [    ] || [ 7.64 ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_env_rubicon  ] != [    ] || [ mobile-app ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_bidder_rubicon  ] != [    ] || [ rubicon ] != [  ] 
-    auction_test.go:222: targetKey != specData.ExpectedTargets[i].targetKey || target != specData.ExpectedTargets[i].target 
-         [  hb_pb_cat_dur_rubico  ] != [    ] || [  ] != [  ] 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_pubmatic  != 7.64 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_pubmatic  != mobile-app 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_pubmatic  != mobile-app 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_pubmat  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_openx  != 7.64 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_openx  != appnexus 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_openx  != appnexus 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_openx  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_pubmatic  != pubmatic 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_pubmatic  != 15.64 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_pubmatic  != mobile-app 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_pubmat  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_pubmatic  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_pubmatic  != openx 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_pubmatic  != mobile-app 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_pubmat  != 2.30 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_pubmatic  != 1.64 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_pubmatic  != appnexus 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_pubmatic  != appnexus 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_pubmat  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_openx  != 1.64 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_openx  != mobile-app 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_openx  != mobile-app 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_openx  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_pubmatic  != 7.64 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_bidder_pubmatic  != rubicon 
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_env_pubmatic  !=  
+    auction_test.go:231: specData.ExpectedTargetKeys[targetKey] != target -->
+          hb_pb_cat_dur_pubmat  != mobile-app 
 --- FAIL: TestCacheJSON (0.00s)
 panic: runtime error: index out of range [recovered]
 	panic: runtime error: index out of range
 
-goroutine 54 [running]:
-testing.tRunner.func1(0xc00049e700)
+goroutine 13 [running]:
+testing.tRunner.func1(0xc00019e900)
 	/usr/local/opt/go/libexec/src/testing/testing.go:792 +0x387
-panic(0x165e300, 0x1c9c600)
+panic(0x165dea0, 0x1c9c600)
 	/usr/local/opt/go/libexec/src/runtime/panic.go:513 +0x1b9
-github.com/prebid/prebid-server/exchange.runCacheSpec(0xc00049e700, 0xc000326720, 0x30, 0xc00009f520, 0x1)
-	/Users/gcarreongutierrez/go/src/github.com/prebid/prebid-server/exchange/auction_test.go:398 +0xd4f
-github.com/prebid/prebid-server/exchange.TestCacheJSON(0xc00049e700)
-	/Users/gcarreongutierrez/go/src/github.com/prebid/prebid-server/exchange/auction_test.go:332 +0x29f
-testing.tRunner(0xc00049e700, 0x1744d20)
+github.com/prebid/prebid-server/exchange.runCacheSpec(0xc00019e900, 0xc00045f770, 0x30, 0xc0002b8ea0, 0x1)
+	/Users/gcarreongutierrez/go/src/github.com/prebid/prebid-server/exchange/auction_test.go:409 +0xd4f
+github.com/prebid/prebid-server/exchange.TestCacheJSON(0xc00019e900)
+	/Users/gcarreongutierrez/go/src/github.com/prebid/prebid-server/exchange/auction_test.go:343 +0x29f
+testing.tRunner(0xc00019e900, 0x1744778)
 	/usr/local/opt/go/libexec/src/testing/testing.go:827 +0xbf
 created by testing.(*T).Run
 	/usr/local/opt/go/libexec/src/testing/testing.go:878 +0x35c
 exit status 2
-FAIL	github.com/prebid/prebid-server/exchange	0.042s
+FAIL	github.com/prebid/prebid-server/exchange	0.041s
