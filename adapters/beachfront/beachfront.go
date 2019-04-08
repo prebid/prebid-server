@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	"github.com/mxmCherry/openrtb"
@@ -140,7 +140,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	var beachfrontRequests BeachfrontRequests
 	var reqJSON []byte
 	var uri string
-	var errs = make([]error, 0)
+	var errs = make([]error, 0, len(request.Imp))
 	var err error
 	var imps int
 
@@ -148,7 +148,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 
 	beachfrontRequests, errs, imps = preprocess(request, uri)
 
-	// These are fatal errors -------------
 	if uri == VideoEndpoint {
 		reqJSON, err = json.Marshal(beachfrontRequests.Video)
 		uri = uri + beachfrontRequests.Video.AppId + VideoEndpointSuffix
@@ -174,6 +173,15 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
+	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -207,6 +215,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 	var beachfrontReq = NewBeachfrontBannerRequest()
 	var errs = make([]error, 0, len(req.Imp))
 	var imps = 0
+
 
 	// step through the prebid request "imp" and inject into the beachfront request.
 	for _, imp := range req.Imp {
@@ -288,9 +297,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 	return beachfrontReq, errs, imps
 }
 
-/*
-Prepare the request that has been received from Prebid.js, translating it to the beachfront format
-*/
 func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, int) {
 	var videoImpsIndex = 0
 	var beachfrontReq = NewBeachfrontVideoRequest()
@@ -324,7 +330,7 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 		The req could contain banner,audio,native and video imps when It arrives here. I am only
 		interested in video
 
-		The beach front video endpoint is only capable of returning a single nurl and price, wrapped in
+		The beachfront video endpoint is only capable of returning a single nurl and price, wrapped in
 		an openrtb format, so even though I'm building a request here that will include multiple video
 		impressions, only a single URL will be returned. Hopefully the beachfront endpoint can be modified
 		in the future to return multiple video ads
@@ -397,9 +403,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
 	if len(errs) != 0 {
-		return nil, append(errs, &errortypes.BadServerResponse{
-			Message: "Failed to process the beachfront response",
-		})
+		return nil, errs
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
@@ -497,6 +501,13 @@ func getBidType(internal *openrtb.BidRequest) openrtb_ext.BidType {
 func extractVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	return strings.TrimSuffix(chunky[2], ":")
+}
+
+// Thank you, brightroll.
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
+	if len(headerValue) > 0 {
+		headers.Add(headerName, headerValue)
+	}
 }
 
 func NewBeachfrontBidder() *BeachfrontAdapter {
