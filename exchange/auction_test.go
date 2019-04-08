@@ -1,15 +1,14 @@
 package exchange
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"strings"
-
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters"
@@ -21,10 +20,9 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid_cache_client"
 
-	"github.com/rcrowley/go-metrics"
-
 	"github.com/evanphx/json-patch"
 	"github.com/mxmCherry/openrtb"
+	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -468,7 +466,6 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 		t.Errorf("%s:  All expected cacheables not found. Expected %d, found %d.", fileDisplayName, len(specData.ExpectedCacheables), found)
 	}
 
-	// bid := make([]pbsOrtbBid, 5)
 }
 
 type cacheSpec struct {
@@ -485,10 +482,6 @@ type TargetSpec struct {
 	ExpectedTargets    []string           `json:"expectedTargets"`
 	DefaultTTLs        config.DefaultTTLs `json:"defaultTTLs"`
 }
-type mappedBidTargets struct {
-	targetKey string `json:"targetKey"`
-	target    string `json:"target"`
-}
 type pbsBid struct {
 	Bid     *openrtb.Bid           `json:"bid"`
 	BidType openrtb_ext.BidType    `json:"bidType"`
@@ -503,96 +496,3 @@ func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Ca
 	c.items = values
 	return []string{"", "", "", "", ""}, nil
 }
-
-/*
-   {"targetKey": "hb_env_openx", "target":" mobile-app"},
-   {"targetKey": "hb_pb_cat_dur_openx","target":""}
-   {"targetKey": "hb_pb_openx", "target":" 2.30"},
-   {"targetKey": "hb_bidder_openx", "target":" openx"},
-   {"targetKey": "hb_pb_appnexus", "target":" 7.64"},
-   {"targetKey": "hb_env_appnexus", "target":" mobile-app"},
-   {"targetKey": "hb_pb_cat_dur","target":""},
-   {"targetKey": "hb_pb", "target":" 7.64"},
-   {"targetKey": "hb_bidder_appnexus", "target":" appnexus"},
-   {"targetKey": "hb_bidder", "target":" appnexus"},
-   {"targetKey": "hb_env", "target":" mobile-app"},
-   {"targetKey": "hb_pb_cat_dur_appnex","target":""},
-   {"targetKey": "hb_pb_pubmatic", "target":" 15.64"},
-   {"targetKey": "hb_bidder_pubmatic", "target":" pubmatic"},
-   {"targetKey": "hb_env_pubmatic", "target":" mobile-app"},
-   {"targetKey": "hb_pb_cat_dur_pubmat","target":""},
-   {"targetKey": "hb_env", "target":" mobile-app"},
-   {"targetKey": "hb_pb_appnexus", "target":" 1.64"},
-   {"targetKey": "hb_pb", "target":" 1.64"},
-   {"targetKey": "hb_bidder_appnexus", "target":" appnexus"},
-   {"targetKey": "hb_env_appnexus", "target":" mobile-app"},
-   {"targetKey": "hb_bidder", "target":" appnexus"},
-   {"targetKey": "hb_pb_cat_dur_appnex","target":""},
-   {"targetKey": "hb_pb_cat_dur","target":""},
-   {"targetKey": "hb_bidder_rubicon", "target":" rubicon"},
-   {"targetKey": "hb_env_rubicon", "target":" mobile-app"},
-   {"targetKey": "hb_pb_rubicon", "target":" 7.64"},
-   {"targetKey": "hb_pb_cat_dur_rubico","target":""}
-*/
-/*
-"expectedtargetKeys": [
-   "hb_env_openx",
-   "hb_pb_cat_dur_openx",
-   "hb_pb_openx",
-   "hb_bidder_openx",
-   "hb_pb_appnexus",
-   "hb_env_appnexus",
-   "hb_pb_cat_dur",
-   "hb_pb",
-   "hb_bidder_appnexus",
-   "hb_bidder",
-   "hb_env",
-   "hb_pb_cat_dur_appnex",
-   "hb_pb_pubmatic",
-   "hb_bidder_pubmatic",
-   "hb_env_pubmatic",
-   "hb_pb_cat_dur_pubmat",
-   "hb_env",
-   "hb_pb_appnexus",
-   "hb_pb",
-   "hb_bidder_appnexus",
-   "hb_env_appnexus",
-   "hb_bidder",
-   "hb_pb_cat_dur_appnex",
-   "hb_pb_cat_dur",
-   "hb_bidder_rubicon",
-   "hb_env_rubicon",
-   "hb_pb_rubicon",
-   "hb_pb_cat_dur_rubico"
-   ],
-   expectedtargets": [
-" mobile-app",
-"",
-" 2.30",
-" openx",
-" 7.64",
-" mobile-app",
-"",
-" 7.64",
-" appnexus",
-" appnexus",
-" mobile-app",
-"",
-" 15.64",
-" pubmatic",
-" mobile-app"},
-"",
-" mobile-app",
-" 1.64",
-" 1.64",
-" appnexus",
-" mobile-app",
-" appnexus",
-"",
-"",
-" rubicon",
-" mobile-app",
-" 7.64",
-""
-]
-*/
