@@ -403,9 +403,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bidtype = getBidType(internalRequest)
 
 
-	// glog.Info(response.Headers)
-	// response.Body = nil
-
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
 	if len(errs) != 0 {
