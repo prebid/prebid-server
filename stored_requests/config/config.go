@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prebid/prebid-server/pbsmetrics"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -40,7 +42,7 @@ var dbConnection struct {
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, router *httprouter.Router) (fetcher stored_requests.AllFetcher, db *sql.DB, shutdown func()) {
+func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (fetcher stored_requests.AllFetcher, db *sql.DB, shutdown func()) {
 	// Create database connection if given options for one
 	if cfg.Postgres.ConnectionInfo.Database != "" {
 		conn := cfg.Postgres.ConnectionInfo.ConnString()
@@ -71,7 +73,7 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, r
 
 	if cfg.InMemoryCache.Type != "" {
 		cache := newCache(cfg)
-		fetcher = stored_requests.WithCache(fetcher, cache)
+		fetcher = stored_requests.WithCache(fetcher, cache, metricsEngine)
 		shutdown1 = addListeners(cache, eventProducers)
 	}
 
@@ -105,7 +107,7 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, r
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, categoriesFetcher stored_requests.CategoryFetcher) {
+func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, categoriesFetcher stored_requests.CategoryFetcher) {
 	// Build individual slim options from combined config struct
 	slimAuction, slimAmp := resolvedStoredRequestsConfig(cfg)
 
@@ -114,9 +116,9 @@ func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *h
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
 	//}
 
-	fetcher1, db, shutdown1 := CreateStoredRequests(&slimAuction, client, router)
-	fetcher2, _, shutdown2 := CreateStoredRequests(&slimAmp, client, router)
-	fetcher3, catdb, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, client, router)
+	fetcher1, db, shutdown1 := CreateStoredRequests(&slimAuction, metricsEngine, client, router)
+	fetcher2, _, shutdown2 := CreateStoredRequests(&slimAmp, metricsEngine, client, router)
+	fetcher3, catdb, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router)
 
 	// Return the database still should it be defined in CategoryMapping and not StoredRequests in the config object.
 	if db == nil && catdb != nil {
