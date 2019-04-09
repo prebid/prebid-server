@@ -16,8 +16,7 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const BannerEndpoint = "http://yourmomshouse.com/mock/display.php"
-// const BannerEndpoint = "https://display.bfmio.com/prebid_display"
+const BannerEndpoint = "https://ioms.bfmio.com/prebid_display"
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
@@ -401,7 +400,6 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 	var bidtype = getBidType(internalRequest)
-
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
