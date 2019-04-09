@@ -16,7 +16,8 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const BannerEndpoint = "https://ioms.bfmio.com/prebid_display"
+// const BannerEndpoint = "https://ioms.bfmio.com/prebid_display"
+const BannerEndpoint = "https://display.bfmio.com/prebid_display"
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
@@ -400,6 +401,33 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 	var bidtype = getBidType(internalRequest)
+
+	/*
+	Beachfront is now sending an empty array and 200 as their "no results" response. This should catch that.
+ 	*/
+
+ 	/*
+	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 && false {
+		glog.Info("Hit trigger")
+		return nil, nil
+	}
+
+	glog.Info("Missed trigger")
+
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+	 */
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
