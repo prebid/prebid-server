@@ -23,7 +23,7 @@ const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
 
-const beachfrontAdapterName = "BF_PREBID_S2S1"
+const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.3.0"
 
 type BeachfrontAdapter struct {
