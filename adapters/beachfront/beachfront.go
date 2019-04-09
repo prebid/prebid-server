@@ -3,6 +3,8 @@ package beachfront
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/prebid/prebid-server/errortypes"
 	"net/http"
 	"strconv"
 	"strings"
@@ -406,13 +408,9 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	Beachfront is now sending an empty array and 200 as their "no results" response. This should catch that.
  	*/
 
- 	/*
-	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 && false {
-		glog.Info("Hit trigger")
+	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
 		return nil, nil
 	}
-
-	glog.Info("Missed trigger")
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -427,7 +425,6 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
-	 */
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID, bidtype)
 
