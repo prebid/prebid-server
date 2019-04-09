@@ -18,14 +18,13 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-// const BannerEndpoint = "https://ioms.bfmio.com/prebid_display"
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
 const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 
 const VideoEndpointSuffix = "&prebidserver"
 
-const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.2.2"
+const beachfrontAdapterName = "BF_PREBID_S2S1"
+const beachfrontAdapterVersion = "0.3.0"
 
 type BeachfrontAdapter struct {
 }
@@ -219,7 +218,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 	var errs = make([]error, 0, len(req.Imp))
 	var imps = 0
 
-
 	// step through the prebid request "imp" and inject into the beachfront request.
 	for _, imp := range req.Imp {
 		if imp.Banner != nil {
@@ -405,8 +403,8 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bidtype = getBidType(internalRequest)
 
 	/*
-	Beachfront is now sending an empty array and 200 as their "no results" response. This should catch that.
- 	*/
+		Beachfront is now sending an empty array and 200 as their "no results" response. This should catch that.
+	*/
 
 	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
 		return nil, nil
