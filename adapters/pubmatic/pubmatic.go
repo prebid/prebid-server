@@ -300,34 +300,6 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func getCookiesFromRequest(request *openrtb.BidRequest) []string {
-	var reqExt openrtb_ext.ExtRequest
-	err := json.Unmarshal(request.Ext, &reqExt)
-	if err != nil {
-		logf("[PUBMATIC] Error while unmarshalling request.ext: %v.", string(request.Ext))
-		return nil
-	}
-
-	if reqExt.RequestParams["Cookie"] == nil {
-		return nil
-	}
-
-	cbyte, err := json.Marshal(reqExt.RequestParams["Cookie"])
-	if err != nil {
-		logf("[PUBMATIC] Error retrieving cookies from request.ext.requestparams: %v.", reqExt.RequestParams)
-		return nil
-	}
-
-	var cookies []string
-	err = json.Unmarshal(cbyte, &cookies)
-	if err != nil {
-		logf("[PUBMATIC] Error retrieving cookies from request.ext.requestparams: %v.", reqExt.RequestParams)
-		return nil
-	}
-
-	return cookies
-}
-
 func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
@@ -345,7 +317,6 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 		}
 	}
 
-	cookies := getCookiesFromRequest(request)
 	if wrapExt != "" {
 		rawExt := fmt.Sprintf("{\"wrapper\": %s}", wrapExt)
 		request.Ext = openrtb.RawJSON(rawExt)
@@ -393,9 +364,6 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	for _, line := range cookies {
-		headers.Add("Cookie", line)
-	}
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
