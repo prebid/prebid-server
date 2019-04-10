@@ -365,6 +365,119 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.ConfigId, Pod index: 3", podErrors[1].ErrMsgs[2], "Pod error ind 1 should have missing config id")
 }
 
+func TestVideoBuildVideoResponseMissedCacheForOneBid(t *testing.T) {
+	openRtbBidResp := openrtb.BidResponse{}
+	podErrors := make([]PodError, 0)
+
+	seatBids := make([]openrtb.SeatBid, 0)
+	seatBid := openrtb.SeatBid{}
+
+	bids := make([]openrtb.Bid, 0)
+	bid1 := openrtb.Bid{}
+	bid2 := openrtb.Bid{}
+	bid3 := openrtb.Bid{}
+
+	extBid1 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_123_30s","hb_size":"1x1","hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"}}}`)
+	extBid2 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_456_30s","hb_size":"1x1","hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"}}}`)
+	extBid3 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_406_30s","hb_size":"1x1"}}}`)
+
+	bid1.Ext = extBid1
+	bids = append(bids, bid1)
+
+	bid2.Ext = extBid2
+	bids = append(bids, bid2)
+
+	bid3.Ext = extBid3
+	bids = append(bids, bid3)
+
+	seatBid.Bid = bids
+	seatBids = append(seatBids, seatBid)
+	openRtbBidResp.SeatBid = seatBids
+
+	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
+	assert.Equal(t, nil, err, "Error shopuld be nil")
+	assert.Equal(t, 1, len(bidRespVideo.AdPods), "AdPods length should be 1")
+	assert.Equal(t, 2, len(bidRespVideo.AdPods[0].Targeting), "AdPod Targeting length should be 2")
+	assert.Equal(t, "17.00_123_30s", bidRespVideo.AdPods[0].Targeting[0].Hb_pb_cat_dur, "AdPod Targeting first element hb_pb_cat_dur should be 17.00_123_30s")
+	assert.Equal(t, "17.00_456_30s", bidRespVideo.AdPods[0].Targeting[1].Hb_pb_cat_dur, "AdPod Targeting first element hb_pb_cat_dur should be 17.00_456_30s")
+}
+
+func TestVideoBuildVideoResponseMissedCacheForAllBids(t *testing.T) {
+	openRtbBidResp := openrtb.BidResponse{}
+	podErrors := make([]PodError, 0)
+
+	seatBids := make([]openrtb.SeatBid, 0)
+	seatBid := openrtb.SeatBid{}
+
+	bids := make([]openrtb.Bid, 0)
+	bid1 := openrtb.Bid{}
+	bid2 := openrtb.Bid{}
+	bid3 := openrtb.Bid{}
+
+	extBid1 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_123_30s","hb_size":"1x1"}}}`)
+	extBid2 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_456_30s","hb_size":"1x1"}}}`)
+	extBid3 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_406_30s","hb_size":"1x1"}}}`)
+
+	bid1.Ext = extBid1
+	bids = append(bids, bid1)
+
+	bid2.Ext = extBid2
+	bids = append(bids, bid2)
+
+	bid3.Ext = extBid3
+	bids = append(bids, bid3)
+
+	seatBid.Bid = bids
+	seatBids = append(seatBids, seatBid)
+	openRtbBidResp.SeatBid = seatBids
+
+	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
+	assert.Equal(t, true, bidRespVideo == nil, "bid response should be nil")
+	assert.Equal(t, "no cache id found for any bids", err.Error(), "error should be no cache id found for any bids")
+}
+
+func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
+	openRtbBidResp := openrtb.BidResponse{}
+	podErrors := make([]PodError, 0, 2)
+
+	seatBids := make([]openrtb.SeatBid, 0)
+	seatBid := openrtb.SeatBid{}
+
+	bids := make([]openrtb.Bid, 0)
+	bid1 := openrtb.Bid{}
+	bid2 := openrtb.Bid{}
+
+	extBid1 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_123_30s","hb_size":"1x1","hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"}}}`)
+	extBid2 := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"17.00","hb_pb_cat_dur":"17.00_456_30s","hb_size":"1x1","hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"}}}`)
+
+	bid1.Ext = extBid1
+	bids = append(bids, bid1)
+
+	bid2.Ext = extBid2
+	bids = append(bids, bid2)
+
+	seatBid.Bid = bids
+	seatBids = append(seatBids, seatBid)
+	openRtbBidResp.SeatBid = seatBids
+
+	podErr1 := PodError{}
+	podErr1.PodId = 222
+	podErr1.PodIndex = 1
+	podErrors = append(podErrors, podErr1)
+
+	podErr2 := PodError{}
+	podErr2.PodId = 333
+	podErr2.PodIndex = 2
+	podErrors = append(podErrors, podErr2)
+
+	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
+	assert.Equal(t, nil, err, "Error shopuld be nil")
+	assert.Equal(t, 3, len(bidRespVideo.AdPods), "AdPods length should be 3")
+
+	assert.Equal(t, int64(222), bidRespVideo.AdPods[1].PodId, "AdPods should contain error element at index 1")
+	assert.Equal(t, int64(333), bidRespVideo.AdPods[2].PodId, "AdPods should contain error element at index 2")
+}
+
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	edep := &endpointDeps{
@@ -398,7 +511,7 @@ type mockExchangeVideo struct {
 
 func (m *mockExchangeVideo) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, ids exchange.IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
 	m.lastRequest = bidRequest
-	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
+	ext := []byte(`{"prebid":{"targeting":{"hb_bidder":"appnexus","hb_pb":"20.00","hb_pb_cat_dur":"20.00_395_30s","hb_size":"1x1", "hb_uuid":"837ea3b7-5598-4958-8c45-8e9ef2bf7cc1"},"type":"video"},"bidder":{"appnexus":{"brand_id":1,"auction_id":7840037870526938650,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}}`)
 	return &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{{
 			Bid: []openrtb.Bid{

@@ -360,7 +360,7 @@ func minMax(array []int) (int, int) {
 	return min, max
 }
 
-func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) { //should be video response
+func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
 	for _, seatBid := range bidresponse.SeatBid {
@@ -369,6 +369,9 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			var tempRespBidExt openrtb_ext.ExtBid
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
+			}
+			if tempRespBidExt.Prebid.Targeting["hb_uuid"] == "" {
+				continue
 			}
 
 			impId := bid.ImpID
@@ -393,6 +396,13 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 
 		}
 	}
+
+	if len(adPods) == 0 {
+		//means there is a global cache error, we need to reject all bids
+		err := errors.New("no cache id found for any bids")
+		return nil, err
+	}
+
 	videoResponse := openrtb_ext.BidResponseVideo{}
 
 	// If there were incorrect pods, we put them back to response with error message
