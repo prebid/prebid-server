@@ -78,6 +78,25 @@ func TestCustomCacheKeyJSON(t *testing.T) {
 	}
 }
 
+// TestMultiImpCache executes multi-Imp test cases found in *.json files in
+// impcustomcachekeytest.
+func TestCustomCacheKeyMultiImp(t *testing.T) {
+	if specFiles, err := ioutil.ReadDir("./impcustomcachekeytest"); err == nil {
+		for _, specFile := range specFiles {
+			fileName := "./impcustomcachekeytest/" + specFile.Name()
+			fileDisplayName := "exchange/impcustomcachekeytest/" + specFile.Name()
+			multiImpSpecData, err := loadCacheSpec(fileName)
+			if err != nil {
+				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
+			}
+
+			runCacheSpec(t, fileDisplayName, multiImpSpecData, false, true)
+		}
+	} else {
+		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
+	}
+}
+
 // LoadCacheSpec reads and parses a file as a test case. If something goes wrong, it returns an error.
 func loadCacheSpec(filename string) (*cacheSpec, error) {
 	specData, err := ioutil.ReadFile(filename)
@@ -160,11 +179,15 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 	if !vast {
 		if len(specData.ExpectedCacheables) == len(cache.items) {
 			var ht map[string]int = make(map[string]int)
+			var compareString string
+
 			for _, cExpected := range specData.ExpectedCacheables {
-				ht[string(cExpected.Data)] += 1
+				compareString = string(cExpected.Data) + string(cExpected.TTLSeconds)
+				ht[compareString] += 1
 			}
 			for _, cFound := range cache.items {
-				ht[string(cFound.Data)] -= 1
+				compareString = string(cFound.Data) + string(cFound.TTLSeconds)
+				ht[compareString] -= 1
 			}
 			for _, freq := range ht {
 				if freq != 0 {
@@ -179,10 +202,6 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 			_, err := regexp.MatchString(cExpected.Key+`[a-zA-Z0-9_-]*`, cFound.Key)
 			if err != nil {
 				continue
-			}
-			// make sure TTLSeconds section matches exactly
-			if cExpected.TTLSeconds != cFound.TTLSeconds {
-				t.Errorf("%s:  All expected cacheables not found \n", fileDisplayName)
 			}
 		}
 	}
