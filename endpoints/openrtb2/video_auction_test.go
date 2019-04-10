@@ -350,17 +350,17 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 
 	assert.Equal(t, 2, podErrors[0].PodId, "Pod error ind 0, incorrect id should be 2")
 	assert.Equal(t, 2, podErrors[0].PodIndex, "Pod error ind 0, incorrect index should be 2")
-	assert.Equal(t, 3, len(podErrors[0].PodErrors), "Pod error ind 0 should contain 3 errors")
-	assert.Equal(t, "request duplicated required field: PodConfig.Pods.PodId, Pod id: 2", podErrors[0].PodErrors[0], "Pod error ind 0 should have duplicated pod id")
-	assert.Equal(t, "request missing required field: PodConfig.Pods.AdPodDurationSec, Pod index: 2", podErrors[0].PodErrors[1], "Pod error ind 0 should have missing AdPodDuration")
-	assert.Equal(t, "request missing required field: PodConfig.Pods.ConfigId, Pod index: 2", podErrors[0].PodErrors[2], "Pod error ind 0 should have missing config id")
+	assert.Equal(t, 3, len(podErrors[0].ErrMsgs), "Pod error ind 0 should contain 3 errors")
+	assert.Equal(t, "request duplicated required field: PodConfig.Pods.PodId, Pod id: 2", podErrors[0].ErrMsgs[0], "Pod error ind 0 should have duplicated pod id")
+	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.AdPodDurationSec, Pod index: 2", podErrors[0].ErrMsgs[1], "Pod error ind 0 should have missing AdPodDuration")
+	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.ConfigId, Pod index: 2", podErrors[0].ErrMsgs[2], "Pod error ind 0 should have missing config id")
 
 	assert.Equal(t, 0, podErrors[1].PodId, "Pod error ind 1, incorrect id should be 0")
 	assert.Equal(t, 3, podErrors[1].PodIndex, "Pod error ind 1, incorrect index should be 3")
-	assert.Equal(t, 3, len(podErrors[1].PodErrors), "Pod error ind 1 should contain 3 errors")
-	assert.Equal(t, "request missing required field: PodConfig.Pods.PodId, Pod index: 3", podErrors[1].PodErrors[0], "Pod error ind 1 should have missed pod id")
-	assert.Equal(t, "request incorrect required field: PodConfig.Pods.AdPodDurationSec is negative, Pod index: 3", podErrors[1].PodErrors[1], "Pod error ind 1 should have negative AdPodDurationSec")
-	assert.Equal(t, "request missing required field: PodConfig.Pods.ConfigId, Pod index: 3", podErrors[1].PodErrors[2], "Pod error ind 1 should have missing config id")
+	assert.Equal(t, 3, len(podErrors[1].ErrMsgs), "Pod error ind 1 should contain 3 errors")
+	assert.Equal(t, "request missing required field: PodConfig.Pods.PodId, Pod index: 3", podErrors[1].ErrMsgs[0], "Pod error ind 1 should have missed pod id")
+	assert.Equal(t, "request incorrect required field: PodConfig.Pods.AdPodDurationSec is negative, Pod index: 3", podErrors[1].ErrMsgs[1], "Pod error ind 1 should have negative AdPodDurationSec")
+	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.ConfigId, Pod index: 3", podErrors[1].ErrMsgs[2], "Pod error ind 1 should have missing config id")
 }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
