@@ -27,7 +27,8 @@
     "expectedCacheables": [
         {
             "Type": "json",
-            "TTLSeconds": 660
+            "TTLSeconds": 660,
+            "Key": "11_sports_22_"
         }, {
             "Type": "json",
             "TTLSeconds": 660
@@ -40,7 +41,7 @@
         "native": 300
     },
     "targetDataIncludeWinners":true,
-    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeBidderKeys":false,
     "targetDataIncludeCacheBids":false,
     "targetDataIncludeCacheVast":false
 }

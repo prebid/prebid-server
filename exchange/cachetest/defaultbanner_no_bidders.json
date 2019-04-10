@@ -1,27 +1,25 @@
 {
     "bidRequest": {
         "imp": [{
-            "id":  "oneImp",
-           "exp":   600
+            "id":  "oneImp"
         }]
     },
     "pbsBids": [{
         "bid":{
-            "cat": ["11_sports_22"],
-            "id": "appbid001",
+            "id": "bidOne",
             "impid": "oneImp",
-            "price": 7.64
+            "price": 7.64,
+            "exp":   600
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "appnexus"
     }, {
         "bid": {
-            "cat": ["33_news_44"],
-            "id": "pubbid001",
+            "id": "bidTwo",
             "impid": "oneImp",
             "price": 5.64
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "pubmatic"
     }],
     "expectedCacheables": [
@@ -30,7 +28,7 @@
             "TTLSeconds": 660
         }, {
             "Type": "json",
-            "TTLSeconds": 660
+            "TTLSeconds": 360
         }
     ],
     "defaultTTLs": {
@@ -40,7 +38,8 @@
         "native": 300
     },
     "targetDataIncludeWinners":true,
-    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeBidderKeys":false,
     "targetDataIncludeCacheBids":false,
     "targetDataIncludeCacheVast":false
 }
+            

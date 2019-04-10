@@ -38,5 +38,9 @@
         "video": 3600,
         "audio": 1800,
         "native": 300
-    }
+    },
+    "targetDataIncludeWinners":true,
+    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeCacheBids":false,
+    "targetDataIncludeCacheVast":false
 }

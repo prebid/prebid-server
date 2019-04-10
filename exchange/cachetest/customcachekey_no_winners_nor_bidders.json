@@ -39,8 +39,8 @@
         "audio": 1800,
         "native": 300
     },
-    "targetDataIncludeWinners":true,
-    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeWinners":false,
+    "targetDataIncludeBidderKeys":false,
     "targetDataIncludeCacheBids":false,
     "targetDataIncludeCacheVast":false
 }

@@ -70,7 +70,7 @@
             "TTLSeconds": 960
         }
     ],
-    "targetDataIncludeWinners":true,
+    "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":true,
     "targetDataIncludeCacheBids":false,
     "targetDataIncludeCacheVast":false

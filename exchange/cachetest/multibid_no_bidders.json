@@ -71,7 +71,7 @@
         }
     ],
     "targetDataIncludeWinners":true,
-    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeBidderKeys":false,
     "targetDataIncludeCacheBids":false,
     "targetDataIncludeCacheVast":false
 }
