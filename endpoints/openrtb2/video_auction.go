@@ -399,7 +399,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 
 	if len(adPods) == 0 {
 		//means there is a global cache error, we need to reject all bids
-		err := errors.New("no cache id found for any bids")
+		err := errors.New("caching failed for all bids")
 		return nil, err
 	}
 

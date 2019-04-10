@@ -433,7 +433,7 @@ func TestVideoBuildVideoResponseMissedCacheForAllBids(t *testing.T) {
 
 	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
 	assert.Equal(t, true, bidRespVideo == nil, "bid response should be nil")
-	assert.Equal(t, "no cache id found for any bids", err.Error(), "error should be no cache id found for any bids")
+	assert.Equal(t, "caching failed for all bids", err.Error(), "error should be caching failed for all bids")
 }
 
 func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
