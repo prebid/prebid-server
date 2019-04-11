@@ -68,6 +68,13 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 
 		pKey := extBtlrParams.Bidder.Pkey
 
+		var height, width uint64
+		if len(extBtlrParams.Bidder.IframeSize) >= 2 {
+			height, width = uint64(extBtlrParams.Bidder.IframeSize[0]), uint64(extBtlrParams.Bidder.IframeSize[1])
+		} else {
+			height, width = getPlacementSize(imp.Banner.Format)
+		}
+
 		potentialRequests = append(potentialRequests, &adapters.RequestData{
 			Method: "POST",
 			Uri: generateHBUri(s.URI, hbUriParams{
@@ -76,8 +83,8 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 				//ConsentRequired: !(extRegs.Gdpr == 0),
 				ConsentString: extUser.Consent,
 				Iframe:        extBtlrParams.Bidder.Iframe,
-				IframeWidth:   extBtlrParams.Bidder.IframeSize[0],
-				IframeHeight:  extBtlrParams.Bidder.IframeSize[1],
+				Height:        height,
+				Width:         width,
 			}),
 			Body:    nil,
 			Headers: headers,
@@ -131,7 +138,8 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 		CrID:   creative.Metadata.CreativeKey,
 		DealID: creative.Metadata.DealID,
 		AdM:    getAdMarkup(strResp, btlrParams),
-		// NURL: creative.Beacons.WinNotification[0] // what do we do with other notification URLs ???
+		H:      btlrParams.Height,
+		W:      btlrParams.Width,
 	}
 
 	typedBid.Bid = bid
@@ -252,8 +260,8 @@ type hbUriParams struct {
 	ConsentString      string
 	InstantPlayCapable bool
 	Iframe             bool
-	IframeHeight       int
-	IframeWidth        int
+	Height             uint64
+	Width              uint64
 }
 
 func generateHBUri(baseUrl string, params hbUriParams) string {
@@ -268,8 +276,8 @@ func generateHBUri(baseUrl string, params hbUriParams) string {
 
 	v.Set("instant_play_capable", fmt.Sprintf("%t", params.InstantPlayCapable))
 	v.Set("stayInIframe", fmt.Sprintf("%t", params.Iframe))
-	v.Set("iframeHeight", string(params.IframeHeight))
-	v.Set("iframeWidth", string(params.IframeWidth))
+	v.Set("height", strconv.FormatUint(params.Height, 10))
+	v.Set("width", strconv.FormatUint(params.Width, 10))
 
 	v.Set("hbVersion", "test-version") // todo: figure out the version dynamically
 	v.Set("hbSource", hbSource)
@@ -285,14 +293,34 @@ func parseHBUri(uri string) (*hbUriParams, error) {
 	}
 
 	params := btlrUrl.Query()
-	iframeHeight, _ := strconv.ParseInt(params.Get("iframeHeight"), 10, 64)
-	iframeWidth, _ := strconv.ParseInt(params.Get("iframeWidth"), 10, 64)
+	height, _ := strconv.ParseUint(params.Get("height"), 10, 64)
+	width, _ := strconv.ParseUint(params.Get("width"), 10, 64)
 
 	return &hbUriParams{
-		Pkey:         params.Get("placement_key"),
-		BidID:        params.Get("bidId"),
-		Iframe:       params.Get("stayInIframe") == "true",
-		IframeHeight: int(iframeHeight),
-		IframeWidth:  int(iframeWidth),
+		Pkey:   params.Get("placement_key"),
+		BidID:  params.Get("bidId"),
+		Iframe: params.Get("stayInIframe") == "true",
+		Height: height,
+		Width:  width,
 	}, nil
+}
+
+func getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
+	biggest := struct {
+		Height uint64
+		Width  uint64
+	}{
+		Height: 1,
+		Width:  1,
+	}
+
+	for i := 0; i < len(formats); i++ {
+		format := formats[i]
+		if (format.H * format.W) > (biggest.Height * biggest.Width) {
+			biggest.Height = format.H
+			biggest.Width = format.W
+		}
+	}
+
+	return biggest.Height, biggest.Width
 }
