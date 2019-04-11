@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 )
 
 // ExtDevice defines the contract for bidrequest.device.ext

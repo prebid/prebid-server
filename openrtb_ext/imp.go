@@ -21,7 +21,7 @@ type ExtImpPrebid struct {
 	// NOTE: This is not part of the official API, we are not expecting clients
 	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time
-	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
+	// https://github.com/PubMatic-OpenWrap/prebid-server/pull/846#issuecomment-476352224
 	Bidder map[string]json.RawMessage `json:"bidder"`
 }
 
