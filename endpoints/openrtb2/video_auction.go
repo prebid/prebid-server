@@ -30,14 +30,14 @@ import (
 
 var defaultRequestTimeout int64 = 5000
 
-func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) (httprouter.Handle, error) {
+func NewVideoEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, videoFetcher stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewVideoEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories, videoFetcher}).VideoAuctionEndpoint), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, videoFetcher, categories, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap}).VideoAuctionEndpoint), nil
 }
 
 /*

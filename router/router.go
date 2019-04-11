@@ -221,19 +221,19 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	exchanges = newExchangeMap(cfg)
 	theExchange := exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, r.MetricsEngine, bidderInfos, gdprPerms, rateConvertor)
 
-	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
+	openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the openrtb endpoint handler. %v", err)
 	}
 
-	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
+	ampEndpoint, err := openrtb2.NewAmpEndpoint(theExchange, paramsValidator, ampFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 
 	if err != nil {
 		glog.Fatalf("Failed to create the amp endpoint handler. %v", err)
 	}
 
-	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher, videoFetcher)
+	videoEndpoint, err := openrtb2.NewVideoEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap)
 	if err != nil {
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}

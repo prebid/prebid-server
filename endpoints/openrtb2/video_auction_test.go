@@ -189,6 +189,8 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -196,8 +198,6 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
-		empty_fetcher.EmptyFetcher{},
-		&mockVideoStoredReqFetcher{},
 	}
 
 	return edep

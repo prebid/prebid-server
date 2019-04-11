@@ -40,13 +40,13 @@ func NewAmpEndpoint(
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
+	categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
-	categories stored_requests.CategoryFetcher,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -59,15 +59,15 @@ func NewAmpEndpoint(
 		ex,
 		validator,
 		requestsById,
+		empty_fetcher.EmptyFetcher{},
+		categories,
 		cfg,
 		met,
 		pbsAnalytics,
 		disabledBidders,
 		defRequest,
 		defReqJSON,
-		bidderMap,
-		categories,
-		empty_fetcher.EmptyFetcher{}}).AmpAuction), nil
+		bidderMap}).AmpAuction), nil
 
 }
 
