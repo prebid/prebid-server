@@ -53,22 +53,18 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 			return nil, []error{err}
 		}
 
-		var extUser struct {
-			Consent string `json:"consent"`
-		}
-		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
-			extUser.Consent = ""
+		var gdprApplies int64 = 0
+		if request.Regs != nil {
+			if jsonExtRegs, err := request.Regs.Ext.MarshalJSON(); err == nil {
+				gdprApplies, _ = jsonparser.GetInt(jsonExtRegs, "gdpr")
+			}
 		}
 
-		var extRegs struct {
-			Gdpr int `json:"gdpr"`
-		}
-		if request.Regs != nil && request.Regs.Ext != nil {
-			if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
-				extRegs.Gdpr = 0
+		consentString := ""
+		if request.User != nil {
+			if jsonExtUser, err := request.User.Ext.MarshalJSON(); err == nil {
+				consentString, _ = jsonparser.GetString(jsonExtUser, "consent")
 			}
-		} else {
-			extRegs.Gdpr = 0
 		}
 
 		pKey := extBtlrParams.Bidder.Pkey
@@ -85,8 +81,8 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 			Uri: generateHBUri(s.URI, hbUriParams{
 				Pkey:            pKey,
 				BidID:           imp.ID,
-				ConsentRequired: !(extRegs.Gdpr == 0),
-				ConsentString:   extUser.Consent,
+				ConsentRequired: !(gdprApplies == 0),
+				ConsentString:   consentString,
 				Iframe:          extBtlrParams.Bidder.Iframe,
 				Height:          height,
 				Width:           width,
