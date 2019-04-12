@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -89,7 +90,7 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 				Iframe:          extBtlrParams.Bidder.Iframe,
 				Height:          height,
 				Width:           width,
-			}),
+			}, request.App),
 			Body:    nil,
 			Headers: headers,
 		})
@@ -268,7 +269,7 @@ type hbUriParams struct {
 	Width              uint64
 }
 
-func generateHBUri(baseUrl string, params hbUriParams) string {
+func generateHBUri(baseUrl string, params hbUriParams, app *openrtb.App) string {
 	v := url.Values{}
 	v.Set("placement_key", params.Pkey)
 	v.Set("bidId", params.BidID)
@@ -280,7 +281,17 @@ func generateHBUri(baseUrl string, params hbUriParams) string {
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
-	v.Set("hbVersion", "test-version") // todo: figure out the version dynamically
+	var version string
+	if app != nil {
+		var err error
+		version, err = jsonparser.GetString(app.Ext, "prebid", "version")
+		if err == nil {
+			// todo: handle error
+			fmt.Printf("Error extracting version: %+v", err)
+		}
+	}
+
+	v.Set("hbVersion", version)
 	v.Set("hbSource", hbSource)
 	v.Set("strVersion", strVersion)
 
