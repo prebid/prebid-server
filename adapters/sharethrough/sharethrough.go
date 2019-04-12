@@ -13,6 +13,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 )
 
@@ -79,13 +80,14 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 		potentialRequests = append(potentialRequests, &adapters.RequestData{
 			Method: "POST",
 			Uri: generateHBUri(s.URI, hbUriParams{
-				Pkey:            pKey,
-				BidID:           imp.ID,
-				ConsentRequired: !(gdprApplies == 0),
-				ConsentString:   consentString,
-				Iframe:          extBtlrParams.Bidder.Iframe,
-				Height:          height,
-				Width:           width,
+				Pkey:               pKey,
+				BidID:              imp.ID,
+				ConsentRequired:    !(gdprApplies == 0),
+				ConsentString:      consentString,
+				Iframe:             extBtlrParams.Bidder.Iframe,
+				Height:             height,
+				Width:              width,
+				InstantPlayCapable: canAutoPlayVideo(request.Device.UA),
 			}, request.App),
 			Body:    nil,
 			Headers: headers,
@@ -218,42 +220,6 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 	return templatedBuf.String()
 }
 
-func getMediaTypeForBid(bid *openrtb.Bid) (openrtb_ext.BidType, error) {
-	return openrtb_ext.BidTypeNative, nil
-	// var impExt struct {
-	// 	Sharethrough struct {
-	// 		BidType int `json:"bid_type"`
-	// 	} `json:"sharethrough"`
-	// }
-	// if err := json.Unmarshal(bid.Ext, &impExt); err != nil {
-	// 	return "", err
-	// }
-	// switch impExt.Sharethrough.BidType {
-	// case 0:
-	// 	return openrtb_ext.BidTypeBanner, nil
-	// case 1:
-	// 	return openrtb_ext.BidTypeVideo, nil
-	// case 2:
-	// 	return openrtb_ext.BidTypeNative, nil
-	// default:
-	// 	return "", fmt.Errorf("Unrecognized bid_ad_type in response from sharethrough: %d", impExt.Sharethrough.BidType)
-	// }
-}
-
-func preprocess(imp *openrtb.Imp) (pKey string, err error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return "", err
-	}
-
-	var sharethroughExt openrtb_ext.ExtImpSharethrough
-	if err := json.Unmarshal(bidderExt.Bidder, &sharethroughExt); err != nil {
-		return "", err
-	}
-
-	return sharethroughExt.PlacementKey, nil
-}
-
 type hbUriParams struct {
 	Pkey               string
 	BidID              string
@@ -333,4 +299,34 @@ func getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
 	}
 
 	return biggest.Height, biggest.Width
+}
+
+func canAutoPlayVideo(userAgent string) bool {
+	const minChromeVersion = 53
+	const minSafariVersion = 10
+
+	isAndroid, _ := regexp.MatchString("(?i)Android", userAgent)
+	isiOS, _ := regexp.MatchString("(?i)iPhone|iPad|iPod", userAgent)
+
+	var chromeVersion, chromeiOSVersion, safariVersion int64
+
+	chromeVersionRegex := regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`)
+	chromeVersionMatch := chromeVersionRegex.FindStringSubmatch(userAgent)
+	if len(chromeVersionMatch) > 1 {
+		chromeVersion, _ = strconv.ParseInt(chromeVersionMatch[1], 10, 64)
+	}
+
+	chromeiOSVersionRegex := regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`)
+	chromeiOSVersionMatch := chromeiOSVersionRegex.FindStringSubmatch(userAgent)
+	if len(chromeiOSVersionMatch) > 1 {
+		chromeiOSVersion, _ = strconv.ParseInt(chromeiOSVersionMatch[1], 10, 64)
+	}
+
+	safariVersionRegex := regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`)
+	safariVersionMatch := safariVersionRegex.FindStringSubmatch(userAgent)
+	if len(safariVersionMatch) > 1 {
+		safariVersion, _ = strconv.ParseInt(safariVersionMatch[1], 10, 64)
+	}
+
+	return (isAndroid && chromeVersion >= minChromeVersion) || (isiOS && (safariVersion >= minSafariVersion || chromeiOSVersion >= minChromeVersion)) || !(isAndroid || isiOS)
 }
