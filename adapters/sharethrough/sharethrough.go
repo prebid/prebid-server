@@ -58,13 +58,17 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 		if err := json.Unmarshal(request.User.Ext, &extUser); err != nil {
 			extUser.Consent = ""
 		}
-		fmt.Println(extUser)
 
-		// todo: get gdpr from Regs
-		//var extRegs struct{ Gdpr int }
-		//if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
-		//	extRegs.Gdpr = 0
-		//}
+		var extRegs struct {
+			Gdpr int `json:"gdpr"`
+		}
+		if request.Regs != nil && request.Regs.Ext != nil {
+			if err := json.Unmarshal(request.Regs.Ext, &extRegs); err != nil {
+				extRegs.Gdpr = 0
+			}
+		} else {
+			extRegs.Gdpr = 0
+		}
 
 		pKey := extBtlrParams.Bidder.Pkey
 
@@ -78,13 +82,13 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 		potentialRequests = append(potentialRequests, &adapters.RequestData{
 			Method: "POST",
 			Uri: generateHBUri(s.URI, hbUriParams{
-				Pkey:  pKey,
-				BidID: imp.ID,
-				//ConsentRequired: !(extRegs.Gdpr == 0),
-				ConsentString: extUser.Consent,
-				Iframe:        extBtlrParams.Bidder.Iframe,
-				Height:        height,
-				Width:         width,
+				Pkey:            pKey,
+				BidID:           imp.ID,
+				ConsentRequired: !(extRegs.Gdpr == 0),
+				ConsentString:   extUser.Consent,
+				Iframe:          extBtlrParams.Bidder.Iframe,
+				Height:          height,
+				Width:           width,
 			}),
 			Body:    nil,
 			Headers: headers,
@@ -269,10 +273,7 @@ func generateHBUri(baseUrl string, params hbUriParams) string {
 	v.Set("placement_key", params.Pkey)
 	v.Set("bidId", params.BidID)
 	v.Set("consent_required", fmt.Sprintf("%t", params.ConsentRequired))
-
-	if params.ConsentRequired {
-		v.Set("consent_string", params.ConsentString)
-	}
+	v.Set("consent_string", params.ConsentString)
 
 	v.Set("instant_play_capable", fmt.Sprintf("%t", params.InstantPlayCapable))
 	v.Set("stayInIframe", fmt.Sprintf("%t", params.Iframe))
@@ -297,11 +298,13 @@ func parseHBUri(uri string) (*hbUriParams, error) {
 	width, _ := strconv.ParseUint(params.Get("width"), 10, 64)
 
 	return &hbUriParams{
-		Pkey:   params.Get("placement_key"),
-		BidID:  params.Get("bidId"),
-		Iframe: params.Get("stayInIframe") == "true",
-		Height: height,
-		Width:  width,
+		Pkey:            params.Get("placement_key"),
+		BidID:           params.Get("bidId"),
+		Iframe:          params.Get("stayInIframe") == "true",
+		Height:          height,
+		Width:           width,
+		ConsentRequired: params.Get("consent_required") == "true",
+		ConsentString:   params.Get("consent_string"),
 	}, nil
 }
 
