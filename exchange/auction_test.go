@@ -190,8 +190,10 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 				ht[compareString] -= 1
 			}
 			for _, freq := range ht {
-				if freq != 0 {
-					t.Errorf("%s:  All expected cacheables not found \n", fileDisplayName)
+				if freq > 0 {
+					t.Errorf("%s:  Less elements were cached than expected \n", fileDisplayName)
+				} else if freq < 0 {
+					t.Errorf("%s:  More elements were cached than expected \n", fileDisplayName)
 				}
 			}
 		}
