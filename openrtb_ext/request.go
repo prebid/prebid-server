@@ -7,7 +7,7 @@ import (
 
 // ExtRequest defines the contract for bidrequest.ext
 type ExtRequest struct {
-	Prebid        ExtRequestPrebid       `json:"prebid"`
+	Prebid ExtRequestPrebid `json:"prebid"`
 }
 
 // ExtRequestPrebid defines the contract for bidrequest.ext.prebid
@@ -18,6 +18,7 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest      `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting   `json:"targeting,omitempty"`
 	Debug                int                    `json:"debug,omitempty"`
+	Ext                  interface{}            `json:"ext"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache
