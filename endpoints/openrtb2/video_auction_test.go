@@ -181,6 +181,188 @@ func TestVideoEndpointNoPods(t *testing.T) {
 	assert.Equal(t, "Critical error while running the video endpoint:  request missing required field: PodConfig.DurationRangeSec request missing required field: PodConfig.Pods", errorMessage, "Incorrect request validation message")
 }
 
+func TestVideoEndpointValidationsPositive(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	deps := mockDeps(t, ex)
+	deps.cfg.VideoStoredRequestRequired = true
+
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+
+	pods := make([]openrtb_ext.Pod, 0)
+	pod1 := openrtb_ext.Pod{
+		PodId:            1,
+		AdPodDurationSec: 30,
+		ConfigId:         "qwerty",
+	}
+	pod2 := openrtb_ext.Pod{
+		PodId:            2,
+		AdPodDurationSec: 30,
+		ConfigId:         "qwerty",
+	}
+	pods = append(pods, pod1)
+	pods = append(pods, pod2)
+
+	mimes := make([]string, 0)
+	mimes = append(mimes, "mp4")
+	mimes = append(mimes, "")
+
+	videoProtocols := make([]openrtb.Protocol, 0)
+	videoProtocols = append(videoProtocols, 15)
+	videoProtocols = append(videoProtocols, 30)
+
+	req := openrtb_ext.BidRequestVideo{
+		StoredRequestId: "123",
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     durationRange,
+			RequireExactDuration: true,
+			Pods:                 pods,
+		},
+		App: openrtb.App{
+			Domain: "pbs.com",
+		},
+		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 1,
+		},
+		Video: openrtb_ext.SimplifiedVideo{
+			Mimes:     mimes,
+			Protocols: videoProtocols,
+		},
+	}
+
+	errors, podErrors := deps.validateVideoRequest(&req)
+	assert.Equal(t, 0, len(errors), "Errors should be empty")
+	assert.Equal(t, 0, len(podErrors), "Pod errors should be empty")
+}
+
+func TestVideoEndpointValidationsCritical(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	deps := mockDeps(t, ex)
+	deps.cfg.VideoStoredRequestRequired = true
+
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 0)
+	durationRange = append(durationRange, -30)
+
+	pods := make([]openrtb_ext.Pod, 0)
+
+	mimes := make([]string, 0)
+	mimes = append(mimes, "")
+	mimes = append(mimes, "")
+
+	videoProtocols := make([]openrtb.Protocol, 0)
+
+	req := openrtb_ext.BidRequestVideo{
+		StoredRequestId: "",
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     durationRange,
+			RequireExactDuration: true,
+			Pods:                 pods,
+		},
+		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 0,
+		},
+		Video: openrtb_ext.SimplifiedVideo{
+			Mimes:     mimes,
+			Protocols: videoProtocols,
+		},
+	}
+
+	errors, podErrors := deps.validateVideoRequest(&req)
+	assert.Equal(t, 0, len(podErrors), "Pod errors should be empty")
+	assert.Equal(t, 6, len(errors), "Errors array should contain 6 error messages")
+
+	assert.Equal(t, "request missing required field: storedrequestid", errors[0].Error(), "Errors array should contain 6 error messages")
+	assert.Equal(t, "duration array cannot contain negative or zero values", errors[1].Error(), "Errors array should contain 6 error messages")
+	assert.Equal(t, "request missing required field: PodConfig.Pods", errors[2].Error(), "Errors array should contain 6 error messages")
+	assert.Equal(t, "request missing required field: site or app", errors[3].Error(), "Errors array should contain 6 error messages")
+	assert.Equal(t, "request missing required field: Video.Mimes, mime types contains empty strings only", errors[4].Error(), "Errors array should contain 6 error messages")
+	assert.Equal(t, "request missing required field: Video.Protocols", errors[5].Error(), "Errors array should contain 6 error messages")
+}
+
+func TestVideoEndpointValidationsPodErrors(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	deps := mockDeps(t, ex)
+	deps.cfg.VideoStoredRequestRequired = true
+
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+
+	pods := make([]openrtb_ext.Pod, 0)
+	pod1 := openrtb_ext.Pod{
+		PodId:            1,
+		AdPodDurationSec: 30,
+		ConfigId:         "qwerty",
+	}
+	pod2 := openrtb_ext.Pod{
+		PodId:            2,
+		AdPodDurationSec: 30,
+		ConfigId:         "qwerty",
+	}
+	pod3 := openrtb_ext.Pod{
+		PodId:            2,
+		AdPodDurationSec: 0,
+		ConfigId:         "",
+	}
+	pod4 := openrtb_ext.Pod{
+		PodId:            0,
+		AdPodDurationSec: -30,
+		ConfigId:         "",
+	}
+	pods = append(pods, pod1)
+	pods = append(pods, pod2)
+	pods = append(pods, pod3)
+	pods = append(pods, pod4)
+
+	mimes := make([]string, 0)
+	mimes = append(mimes, "mp4")
+	mimes = append(mimes, "")
+
+	videoProtocols := make([]openrtb.Protocol, 0)
+	videoProtocols = append(videoProtocols, 15)
+	videoProtocols = append(videoProtocols, 30)
+
+	req := openrtb_ext.BidRequestVideo{
+		StoredRequestId: "123",
+		PodConfig: openrtb_ext.PodConfig{
+			DurationRangeSec:     durationRange,
+			RequireExactDuration: true,
+			Pods:                 pods,
+		},
+		App: openrtb.App{
+			Domain: "pbs.com",
+		},
+		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver: 1,
+		},
+		Video: openrtb_ext.SimplifiedVideo{
+			Mimes:     mimes,
+			Protocols: videoProtocols,
+		},
+	}
+
+	errors, podErrors := deps.validateVideoRequest(&req)
+	assert.Equal(t, 0, len(errors), "Errors should be empty")
+
+	assert.Equal(t, 2, len(podErrors), "Pod errors should contain 2 elements")
+
+	assert.Equal(t, 2, podErrors[0].PodId, "Pod error ind 0, incorrect id should be 2")
+	assert.Equal(t, 2, podErrors[0].PodIndex, "Pod error ind 0, incorrect index should be 2")
+	assert.Equal(t, 3, len(podErrors[0].ErrMsgs), "Pod error ind 0 should contain 3 errors")
+	assert.Equal(t, "request duplicated required field: PodConfig.Pods.PodId, Pod id: 2", podErrors[0].ErrMsgs[0], "Pod error ind 0 should have duplicated pod id")
+	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.AdPodDurationSec, Pod index: 2", podErrors[0].ErrMsgs[1], "Pod error ind 0 should have missing AdPodDuration")
+	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.ConfigId, Pod index: 2", podErrors[0].ErrMsgs[2], "Pod error ind 0 should have missing config id")
+
+	assert.Equal(t, 0, podErrors[1].PodId, "Pod error ind 1, incorrect id should be 0")
+	assert.Equal(t, 3, podErrors[1].PodIndex, "Pod error ind 1, incorrect index should be 3")
+	assert.Equal(t, 3, len(podErrors[1].ErrMsgs), "Pod error ind 1 should contain 3 errors")
+	assert.Equal(t, "request missing required field: PodConfig.Pods.PodId, Pod index: 3", podErrors[1].ErrMsgs[0], "Pod error ind 1 should have missed pod id")
+	assert.Equal(t, "request incorrect required field: PodConfig.Pods.AdPodDurationSec is negative, Pod index: 3", podErrors[1].ErrMsgs[1], "Pod error ind 1 should have negative AdPodDurationSec")
+	assert.Equal(t, "request missing or incorrect required field: PodConfig.Pods.ConfigId, Pod index: 3", podErrors[1].ErrMsgs[2], "Pod error ind 1 should have missing config id")
+}
+
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	edep := &endpointDeps{
