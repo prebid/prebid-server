@@ -1,2 +1,0 @@
-PASS
-ok  	github.com/prebid/prebid-server	0.020s
