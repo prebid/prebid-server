@@ -98,6 +98,7 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetri
 // 3. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
 // 4. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
 // 5. A Fetcher which can be used to get Category Mapping data
+// 6. A Fetcher which can be used to get Stored Requests for /openrtb2/video
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
