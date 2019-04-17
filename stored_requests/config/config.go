@@ -34,8 +34,7 @@ type dbConnection struct {
 // CreateStoredRequests returns three things:
 //
 // 1. A Fetcher which can be used to get Stored Requests
-// 2. A DB connection, if one was created. This may be nil.
-// 3. A function which should be called on shutdown for graceful cleanups.
+// 2. A function which should be called on shutdown for graceful cleanups.
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
