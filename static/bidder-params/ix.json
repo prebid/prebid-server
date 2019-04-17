@@ -19,5 +19,5 @@
       "description": "An array of two integer containing the dimension"
     }
   },
-  "required": ["siteId"]
+  "required": ["siteId", "size"]
 }
