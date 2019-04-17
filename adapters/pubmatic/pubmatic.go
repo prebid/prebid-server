@@ -309,24 +309,24 @@ func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
 		return nil, err
 	}
 
-	if reqExt.Prebid.Ext == nil {
+	if reqExt.Prebid.BidderParams == nil {
 		return nil, nil
 	}
 
-	bidderExt, ok := reqExt.Prebid.Ext.(map[string]interface{})
+	bidderParams, ok := reqExt.Prebid.BidderParams.(map[string]interface{})
 	if !ok {
-		err := fmt.Errorf("%s Error retrieving request.ext.prebid.ext: %v", PUBMATIC, reqExt.Prebid.Ext)
+		err := fmt.Errorf("%s Error retrieving request.ext.prebid.ext: %v", PUBMATIC, reqExt.Prebid.BidderParams)
 		return nil, err
 	}
 
-	iface, ok := bidderExt[key]
+	iface, ok := bidderParams[key]
 	if !ok {
 		return nil, nil
 	}
 
 	bytes, err := json.Marshal(iface)
 	if err != nil {
-		err := fmt.Errorf("%s Error retrieving '%s' from request.ext.prebid.ext: %v", PUBMATIC, key, bidderExt)
+		err := fmt.Errorf("%s Error retrieving '%s' from request.ext.prebid.ext: %v", PUBMATIC, key, bidderParams)
 		return nil, err
 	}
 

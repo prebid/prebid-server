@@ -36,22 +36,22 @@ func getBidderExts(reqExt *openrtb_ext.ExtRequest) (map[string]map[string]interf
 		return nil, nil
 	}
 
-	if reqExt.Prebid.Ext == nil {
+	if reqExt.Prebid.BidderParams == nil {
 		return nil, nil
 	}
 
-	ext, err := json.Marshal(reqExt.Prebid.Ext)
+	pbytes, err := json.Marshal(reqExt.Prebid.BidderParams)
 	if err != nil {
 		return nil, err
 	}
 
-	var bidderExt map[string]map[string]interface{}
-	err = json.Unmarshal(ext, &bidderExt)
+	var bidderParams map[string]map[string]interface{}
+	err = json.Unmarshal(pbytes, &bidderParams)
 	if err != nil {
 		return nil, err
 	}
 
-	return bidderExt, nil
+	return bidderParams, nil
 }
 
 func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
@@ -95,9 +95,9 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 		if len(bidderExt) != 0 {
 			bidderName := openrtb_ext.BidderName(bidder)
 			if bidderParams, ok := bidderExt[string(bidderName)]; ok {
-				reqExt.Prebid.Ext = bidderParams
+				reqExt.Prebid.BidderParams = bidderParams
 			} else {
-				reqExt.Prebid.Ext = nil
+				reqExt.Prebid.BidderParams = nil
 			}
 
 			if reqCopy.Ext, err = json.Marshal(&reqExt); err != nil {
