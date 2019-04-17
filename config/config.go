@@ -36,7 +36,8 @@ type Configuration struct {
 	DataCache       DataCache          `mapstructure:"datacache"`
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
-	StoredVideo     StoredRequestsSlim `mapstructure:"stored_video"`
+	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
+	StoredVideo StoredRequestsSlim `mapstructure:"stored_video"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -525,6 +526,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.http_events.amp_endpoint", "")
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
+	// stored_video is short for stored_video_requests.
+	// PBS is not in the business of storing video content beyond the normal prebid cache system.
 	v.SetDefault("stored_video.filesystem.enabled", false)
 	v.SetDefault("stored_video.filesystem.directorypath", "")
 	v.SetDefault("stored_video.postgres.connection.dbname", "")
