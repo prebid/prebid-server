@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -182,11 +181,11 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 			var compareString string
 
 			for _, cExpected := range specData.ExpectedCacheables {
-				compareString = string(cExpected.Data) + string(cExpected.TTLSeconds)
+				compareString = fmt.Sprintf("%s_%d_%s", cExpected.Data, cExpected.TTLSeconds, cExpected.Key)
 				ht[compareString] += 1
 			}
 			for _, cFound := range cache.items {
-				compareString = string(cFound.Data) + string(cFound.TTLSeconds)
+				compareString = fmt.Sprintf("%s_%d_%s", cFound.Data, cFound.TTLSeconds, cFound.Key)
 				ht[compareString] -= 1
 			}
 			for _, freq := range ht {
@@ -195,15 +194,6 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 				} else if freq < 0 {
 					t.Errorf("%s:  More elements were cached than expected \n", fileDisplayName)
 				}
-			}
-		}
-	}
-	for _, cExpected := range specData.ExpectedCacheables {
-		for _, cFound := range cache.items {
-			// make sure Key value is as expected
-			_, err := regexp.MatchString(cExpected.Key+`[a-zA-Z0-9_-]*`, cFound.Key)
-			if err != nil {
-				continue
 			}
 		}
 	}
