@@ -134,10 +134,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		handleError(labels, w, errL, ao)
 		return
 	}
-	if len(podErrors) > 0 {
-		//remove incorrect pods
-		videoBidReq = cleanupVideoBidRequest(videoBidReq, podErrors)
-	}
 
 	var bidReq = &openrtb.BidRequest{}
 	if deps.defaultRequest {
