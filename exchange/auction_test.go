@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
@@ -137,6 +138,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 		// Marshal the bid for the expected cacheables
 		cjson, _ := json.Marshal(bid.bid)
 		specData.ExpectedCacheables[i].Data = cjson
+		specData.ExpectedCacheables[i].Key = pbsBid.Bid.Cat[0]
 	}
 	ctx := context.Background()
 	cache := &mockCache{}
@@ -175,17 +177,18 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 	}
 	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 
+	//asserting we have items with the same Data and TTLSeconds fields
 	if !vast {
 		if len(specData.ExpectedCacheables) == len(cache.items) {
 			var ht map[string]int = make(map[string]int)
 			var compareString string
 
 			for _, cExpected := range specData.ExpectedCacheables {
-				compareString = fmt.Sprintf("%s_%d_%s", cExpected.Data, cExpected.TTLSeconds, cExpected.Key)
+				compareString = string(cExpected.Data) + string(cExpected.TTLSeconds)
 				ht[compareString] += 1
 			}
 			for _, cFound := range cache.items {
-				compareString = fmt.Sprintf("%s_%d_%s", cFound.Data, cFound.TTLSeconds, cFound.Key)
+				compareString = string(cFound.Data) + string(cFound.TTLSeconds)
 				ht[compareString] -= 1
 			}
 			for _, freq := range ht {
@@ -195,6 +198,21 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 					t.Errorf("%s:  More elements were cached than expected \n", fileDisplayName)
 				}
 			}
+		}
+	}
+	//asserting we generated the Keys we expected
+	for _, cExpected := range specData.ExpectedCacheables {
+		found := false
+		keyNotFound := ""
+		for _, cFound := range cache.items {
+			// make sure Key value is as expected
+			if cExpected.Key == "" || strings.HasPrefix(cExpected.Key, cFound.Key) {
+				found = true
+				keyNotFound = cExpected.Key
+			}
+		}
+		if !found {
+			t.Errorf("Key \"%s\" was expected to get cached with a uuid but it was not\n", keyNotFound)
 		}
 	}
 }
