@@ -202,17 +202,17 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 	}
 	//asserting we generated the Keys we expected
 	for _, cExpected := range specData.ExpectedCacheables {
-		found := false
+		found := true
 		keyNotFound := ""
 		for _, cFound := range cache.items {
 			// make sure Key value is as expected
-			if cExpected.Key == "" || strings.HasPrefix(cExpected.Key, cFound.Key) {
+			if cExpected.Key != "" || strings.HasPrefix(cExpected.Key, cFound.Key) {
 				found = true
 				keyNotFound = cExpected.Key
 			}
 		}
 		if !found {
-			t.Errorf("Key \"%s\" was expected to get cached with a uuid but it was not\n", keyNotFound)
+			t.Errorf("Key \"%s\" was not cached and it was expected to\n", keyNotFound)
 		}
 	}
 }
