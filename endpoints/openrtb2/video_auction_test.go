@@ -3,6 +3,11 @@ package openrtb2
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/mxmCherry/openrtb"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -10,12 +15,9 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests"
-	"github.com/rcrowley/go-metrics"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
+	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 func TestVideoEndpointImpressionsNumber(t *testing.T) {
@@ -369,6 +371,8 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		ex,
 		newParamsValidator(t),
 		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
 		&config.Configuration{MaxRequestSize: maxSize},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
@@ -376,7 +380,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		false,
 		[]byte{},
 		openrtb_ext.BidderMap,
-		nil}
+	}
 
 	return edep
 }
@@ -426,24 +430,5 @@ var testVideoStoredImpData = map[string]json.RawMessage{
 }
 
 var testVideoStoredRequestData = map[string]json.RawMessage{
-	"2": json.RawMessage(`{
-		"tmax": 500,
-		"ext": {
-			"prebid": {
-				"targeting": {
-					"pricegranularity": "low"
-				}
-			}
-		}
-	}`),
-	"3": json.RawMessage(`{
-                "tmax": 500,
-                "ext": {
-                        "prebid": {
-                                "targeting": {
-                                        "pricegranularity": "low"
-                                }
-                        }
-                }}
-        }`),
+	"80ce30c53c16e6ede735f123ef6e32361bfc7b22": json.RawMessage(`{"accountid": "11223344", "site": {"page": "mygame.foo.com"}}`),
 }

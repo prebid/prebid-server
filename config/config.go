@@ -36,6 +36,8 @@ type Configuration struct {
 	DataCache       DataCache          `mapstructure:"datacache"`
 	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
 	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
+	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
+	StoredVideo StoredRequestsSlim `mapstructure:"stored_video_req"`
 
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
@@ -525,6 +527,31 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("stored_requests.http_events.amp_endpoint", "")
 	v.SetDefault("stored_requests.http_events.refresh_rate_seconds", 0)
 	v.SetDefault("stored_requests.http_events.timeout_ms", 0)
+	// stored_video is short for stored_video_requests.
+	// PBS is not in the business of storing video content beyond the normal prebid cache system.
+	v.SetDefault("stored_video_req.filesystem.enabled", false)
+	v.SetDefault("stored_video_req.filesystem.directorypath", "")
+	v.SetDefault("stored_video_req.postgres.connection.dbname", "")
+	v.SetDefault("stored_video_req.postgres.connection.host", "")
+	v.SetDefault("stored_video_req.postgres.connection.port", 0)
+	v.SetDefault("stored_video_req.postgres.connection.user", "")
+	v.SetDefault("stored_video_req.postgres.connection.password", "")
+	v.SetDefault("stored_video_req.postgres.fetcher.query", "")
+	v.SetDefault("stored_video_req.postgres.initialize_caches.timeout_ms", 0)
+	v.SetDefault("stored_video_req.postgres.initialize_caches.query", "")
+	v.SetDefault("stored_video_req.postgres.poll_for_updates.refresh_rate_seconds", 0)
+	v.SetDefault("stored_video_req.postgres.poll_for_updates.timeout_ms", 0)
+	v.SetDefault("stored_video_req.postgres.poll_for_updates.query", "")
+	v.SetDefault("stored_video_req.http.endpoint", "")
+	v.SetDefault("stored_video_req.in_memory_cache.type", "none")
+	v.SetDefault("stored_video_req.in_memory_cache.ttl_seconds", 0)
+	v.SetDefault("stored_video_req.in_memory_cache.request_cache_size_bytes", 0)
+	v.SetDefault("stored_video_req.in_memory_cache.imp_cache_size_bytes", 0)
+	v.SetDefault("stored_video_req.cache_events.enabled", false)
+	v.SetDefault("stored_video_req.cache_events.endpoint", "")
+	v.SetDefault("stored_video_req.http_events.endpoint", "")
+	v.SetDefault("stored_video_req.http_events.refresh_rate_seconds", 0)
+	v.SetDefault("stored_video_req.http_events.timeout_ms", 0)
 
 	for _, bidder := range openrtb_ext.BidderMap {
 		setBidderDefaults(v, strings.ToLower(string(bidder)))
