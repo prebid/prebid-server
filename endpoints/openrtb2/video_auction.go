@@ -366,7 +366,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
 			}
-			if tempRespBidExt.Prebid.Targeting["hb_uuid"] == "" {
+			if tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)] == "" {
 				continue
 			}
 
@@ -375,9 +375,9 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				Hb_pb:         tempRespBidExt.Prebid.Targeting["hb_pb"],
-				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting["hb_pb_cat_dur"],
-				Hb_cache_id:   tempRespBidExt.Prebid.Targeting["hb_uuid"],
+				Hb_pb:         tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)],
+				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbCategoryDurationKey)],
+				Hb_cache_id:   tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)],
 			}
 
 			adPod := findAdPod(podId, adPods)
