@@ -44,6 +44,11 @@ type NotFoundError struct {
 	DataType string
 }
 
+type Category struct {
+	Id   string
+	Name string
+}
+
 func (e NotFoundError) Error() string {
 	return fmt.Sprintf(`Stored %s with ID="%s" not found.`, e.DataType, e.ID)
 }

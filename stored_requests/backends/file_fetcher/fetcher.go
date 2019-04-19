@@ -22,12 +22,7 @@ func NewFileFetcher(directory string) (stored_requests.AllFetcher, error) {
 
 type eagerFetcher struct {
 	FileSystem FileSystem
-	Categories map[string]map[string]Category
-}
-
-type Category struct {
-	Id   string
-	Name string
+	Categories map[string]map[string]stored_requests.Category
 }
 
 func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -46,7 +41,7 @@ func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServe
 	}
 
 	if fetcher.Categories == nil {
-		fetcher.Categories = make(map[string]map[string]Category)
+		fetcher.Categories = make(map[string]map[string]stored_requests.Category)
 	}
 	if data, ok := fetcher.Categories[fileName]; ok {
 		return data[iabCategory].Id, nil
@@ -56,7 +51,7 @@ func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServe
 
 		if file, ok := primaryAdServerDir.Files[fileName]; ok {
 
-			tmp := make(map[string]Category)
+			tmp := make(map[string]stored_requests.Category)
 
 			if err := json.Unmarshal(file, &tmp); err != nil {
 				return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -60,7 +59,7 @@ type HttpFetcher struct {
 	client     *http.Client
 	Endpoint   string
 	hasQuery   bool
-	Categories map[string]map[string]file_fetcher.Category
+	Categories map[string]map[string]stored_requests.Category
 }
 
 func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
@@ -84,7 +83,7 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 
 func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	if fetcher.Categories == nil {
-		fetcher.Categories = make(map[string]map[string]file_fetcher.Category)
+		fetcher.Categories = make(map[string]map[string]stored_requests.Category)
 	}
 
 	if publisherId == "" {
@@ -110,7 +109,7 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	defer httpResp.Body.Close()
 
 	respBytes, err := ioutil.ReadAll(httpResp.Body)
-	tmp := make(map[string]file_fetcher.Category)
+	tmp := make(map[string]stored_requests.Category)
 
 	if err := json.Unmarshal(respBytes, &tmp); err != nil {
 		return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
