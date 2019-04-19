@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/stored_requests/backends/file_fetcher"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -56,9 +57,10 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 }
 
 type HttpFetcher struct {
-	client   *http.Client
-	Endpoint string
-	hasQuery bool
+	client     *http.Client
+	Endpoint   string
+	hasQuery   bool
+	Categories map[string]map[string]file_fetcher.Category
 }
 
 func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
@@ -80,8 +82,44 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher *HttpFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
-	return "", nil
+func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
+	if fetcher.Categories == nil {
+		fetcher.Categories = make(map[string]map[string]file_fetcher.Category)
+	}
+
+	if publisherId == "" {
+		publisherId = primaryAdServer
+	}
+
+	dataName := fmt.Sprintf("%s_%s", primaryAdServer, publisherId)
+	if data, ok := fetcher.Categories[dataName]; ok {
+		return data[iabCategory].Id, nil
+	}
+
+	url := fmt.Sprintf("%s/%s/%s.json", strings.Replace(fetcher.Endpoint, "?", "", -1), primaryAdServer, publisherId)
+
+	httpReq, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	tmp := make(map[string]file_fetcher.Category)
+
+	if err := json.Unmarshal(respBytes, &tmp); err != nil {
+		return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+	}
+	fetcher.Categories[dataName] = tmp
+
+	resultCategory := tmp[iabCategory].Id
+
+	return resultCategory, nil
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {

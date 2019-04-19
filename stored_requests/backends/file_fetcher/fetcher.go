@@ -38,7 +38,7 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
-func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	fileName := primaryAdServer
 
 	if len(publisherId) != 0 {
