@@ -52,7 +52,7 @@ func TestCacheJSON(t *testing.T) {
 				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
 
-			runCacheSpec(t, fileDisplayName, specData, true, false)
+			runCacheSpec(t, fileDisplayName, specData)
 		}
 	} else {
 		t.Fatalf("Failed to read contents of directory exchange/cachetest/: %v", err)
@@ -71,7 +71,7 @@ func TestCustomCacheKeyJSON(t *testing.T) {
 				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
 
-			runCacheSpec(t, fileDisplayName, specData, false, true)
+			runCacheSpec(t, fileDisplayName, specData)
 		}
 	} else {
 		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
@@ -90,7 +90,7 @@ func TestCustomCacheKeyMultiImp(t *testing.T) {
 				t.Fatalf("Failed to load contents of file %s: %v", fileDisplayName, err)
 			}
 
-			runCacheSpec(t, fileDisplayName, multiImpSpecData, false, true)
+			runCacheSpec(t, fileDisplayName, multiImpSpecData)
 		}
 	} else {
 		t.Fatalf("Failed to read contents of directory exchange/customcachekeytest/: %v", err)
@@ -112,7 +112,7 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 	return &spec, nil
 }
 
-func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bids bool, vast bool) {
+func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	// bid := make([]pbsOrtbBid, 5)
 	var bid *pbsOrtbBid
 	winningBids := make(map[string]*pbsOrtbBid)
@@ -135,10 +135,6 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 			bidCategory[pbsBid.Bid.ImpID] = pbsBid.Bid.Cat[0]
 		}
 		roundedPrices[bid] = strconv.FormatFloat(bid.bid.Price, 'f', 2, 64)
-		// Marshal the bid for the expected cacheables
-		cjson, _ := json.Marshal(bid.bid)
-		specData.ExpectedCacheables[i].Data = cjson
-		specData.ExpectedCacheables[i].Key = pbsBid.Bid.Cat[0]
 	}
 	ctx := context.Background()
 	cache := &mockCache{}
@@ -166,8 +162,8 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 		},
 		includeWinners:    specData.TargetDataIncludeWinners,
 		includeBidderKeys: specData.TargetDataIncludeBidderKeys,
-		includeCacheBids:  specData.TargetDataIncludeCacheBids || bids,
-		includeCacheVast:  specData.TargetDataIncludeCacheVast || vast,
+		includeCacheBids:  specData.TargetDataIncludeCacheBids,
+		includeCacheVast:  specData.TargetDataIncludeCacheVast,
 	}
 
 	testAuction := &auction{
@@ -177,42 +173,60 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec, bid
 	}
 	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 
-	//asserting we have items with the same Data and TTLSeconds fields
-	if !vast {
-		if len(specData.ExpectedCacheables) == len(cache.items) {
-			var ht map[string]int = make(map[string]int)
-			var compareString string
+	if len(specData.ExpectedCacheables) > len(cache.items) {
+		//t.Errorf("%s:  Less elements were cached than expected \n", fileDisplayName)
+		t.Errorf("%s:  [CACHE_ERROR] Less elements were cached than expected \n", fileDisplayName)
+	} else if len(specData.ExpectedCacheables) < len(cache.items) {
+		t.Errorf("%s:  [CACHE_ERROR] More elements were cached than expected \n", fileDisplayName)
+	} else { // len(specData.ExpectedCacheables) == len(cache.items)
+		var ht map[string]*cacheComparator = make(map[string]*cacheComparator)
+		var formattedData string
+		var compareString string
 
-			for _, cExpected := range specData.ExpectedCacheables {
-				compareString = string(cExpected.Data) + string(cExpected.TTLSeconds)
-				ht[compareString] += 1
+		for _, cExpected := range specData.ExpectedCacheables {
+			formattedData = strings.Replace(string(cExpected.Data), "\\", "", -1)
+			formattedData = strings.Replace(formattedData, " ", "", -1)
+			compareString = fmt.Sprintf("%s_%d", formattedData, cExpected.TTLSeconds)
+			// init cacheComparator element before hashing it. If needed
+			if _, ok := ht[compareString]; !ok {
+				ht[compareString] = &cacheComparator{0, make([]string, 0), make([]string, 0)}
 			}
-			for _, cFound := range cache.items {
-				compareString = string(cFound.Data) + string(cFound.TTLSeconds)
-				ht[compareString] -= 1
+			ht[compareString].freq += 1
+			if targData.includeCacheVast {
+				ht[compareString].expectedKeys = append(ht[compareString].expectedKeys, cExpected.Key)
 			}
-			for _, freq := range ht {
-				if freq > 0 {
-					t.Errorf("%s:  Less elements were cached than expected \n", fileDisplayName)
-				} else if freq < 0 {
-					t.Errorf("%s:  More elements were cached than expected \n", fileDisplayName)
+		}
+		for _, cFound := range cache.items {
+			formattedData = strings.Replace(string(cFound.Data), "\\", "", -1)
+			formattedData = strings.Replace(formattedData, " ", "", -1)
+			compareString = fmt.Sprintf("\"%s\"_%d", formattedData, cFound.TTLSeconds)
+			// init cacheComparator element before hashing it. If needed
+			if _, ok := ht[compareString]; !ok {
+				ht[compareString] = &cacheComparator{0, make([]string, 0), make([]string, 0)}
+			}
+			ht[compareString].freq -= 1
+			if targData.includeCacheVast {
+				ht[compareString].actualKeys = append(ht[compareString].actualKeys, cFound.Key)
+			}
+		}
+		for k, cachedElements := range ht {
+			if cachedElements.freq > 0 {
+				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistensy. Element %s was not expected to get cached\n", fileDisplayName, k)
+			} else if cachedElements.freq < 0 {
+				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistensy. We cached some more elements (%s) than expected.\n", fileDisplayName, k)
+			} else if targData.includeCacheVast {
+				for i := 0; i < cachedElements.freq; i++ {
+					found := false
+					for j := 0; j < cachedElements.freq; j++ {
+						if strings.HasPrefix(cachedElements.expectedKeys[i], cachedElements.actualKeys[j]) {
+							found = true
+						}
+					}
+					if !found {
+						t.Errorf("[CACHE_ERROR] Key \"%s\" was expected to be cached but was not.\n", cachedElements.expectedKeys[i])
+					}
 				}
 			}
-		}
-	}
-	//asserting we generated the Keys we expected
-	for _, cExpected := range specData.ExpectedCacheables {
-		found := true
-		keyNotFound := ""
-		for _, cFound := range cache.items {
-			// make sure Key value is as expected
-			if cExpected.Key != "" || strings.HasPrefix(cExpected.Key, cFound.Key) {
-				found = true
-				keyNotFound = cExpected.Key
-			}
-		}
-		if !found {
-			t.Errorf("Key \"%s\" was not cached and it was expected to\n", keyNotFound)
 		}
 	}
 }
@@ -236,6 +250,12 @@ type pbsBid struct {
 
 type mockCache struct {
 	items []prebid_cache_client.Cacheable
+}
+
+type cacheComparator struct {
+	freq         int
+	expectedKeys []string
+	actualKeys   []string
 }
 
 func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
