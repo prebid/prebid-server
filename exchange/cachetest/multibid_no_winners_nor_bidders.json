@@ -52,26 +52,9 @@
             "bidder": "rubicon"
         }
     ],
-    "expectedCacheables": [
-        {
-            "Type": "json",
-            "TTLSeconds": 360
-        }, {
-            "Type": "json",
-            "TTLSeconds": 260
-        }, {
-            "Type": "json",
-            "TTLSeconds": 360
-        }, {
-            "Type": "json",
-            "TTLSeconds": 0
-        }, {
-            "Type": "json",
-            "TTLSeconds": 960
-        }
-    ],
+    "expectedCacheables": [],
     "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":false,
-    "targetDataIncludeCacheBids":false,
+    "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false
 }

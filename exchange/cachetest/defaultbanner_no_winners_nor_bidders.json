@@ -22,15 +22,7 @@
         "bidType": "banner",
         "bidder": "pubmatic"
     }],
-    "expectedCacheables": [
-        {
-            "Type": "json",
-            "TTLSeconds": 660
-        }, {
-            "Type": "json",
-            "TTLSeconds": 360
-        }
-    ],
+    "expectedCacheables": [ ],
     "defaultTTLs": {
         "banner": 300,
         "video": 3600,
@@ -39,7 +31,7 @@
     },
     "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":false,
-    "targetDataIncludeCacheBids":false,
+    "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false
 }
             

@@ -55,23 +55,16 @@
     "expectedCacheables": [
         {
             "Type": "json",
+            "Data": "{\"id\": \"bidOne\",\"impid\": \"oneImp\",\"price\": 7.64,\"exp\": 600}",
             "TTLSeconds": 360
         }, {
             "Type": "json",
-            "TTLSeconds": 260
-        }, {
-            "Type": "json",
-            "TTLSeconds": 360
-        }, {
-            "Type": "json",
-            "TTLSeconds": 0
-        }, {
-            "Type": "json",
-            "TTLSeconds": 960
+            "Data": "{\"id\": \"bidTwo\",\"impid\": \"twoImp\",\"price\": 7.64,\"exp\": 900}",
+            "TTLSeconds": 900
         }
     ],
     "targetDataIncludeWinners":true,
     "targetDataIncludeBidderKeys":false,
-    "targetDataIncludeCacheBids":false,
+    "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false
 }
