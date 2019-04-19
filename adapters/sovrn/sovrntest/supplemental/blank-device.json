@@ -38,8 +38,7 @@
       "expectedRequest": {
         "headers": {
           "Content-Type": ["application/json"],
-          "Cookie": ["ljt_reader=test_reader_id"],
-          "Dnt": ["0"]
+          "Cookie": ["ljt_reader=test_reader_id"]
         },
         "uri": "http://sovrn.com/test/endpoint",
         "body": {

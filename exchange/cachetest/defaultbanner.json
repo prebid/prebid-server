@@ -1,14 +1,13 @@
 {
     "bidRequest": {
-		"imp": [
-			{
-				"id":  "oneImp"
-            }
-        ]
+        "imp": [{
+            "id":  "oneImp"
+        }]
     },
     "pbsBids": [{
         "bid":{
-            "id": "oneImp",
+            "id": "bidOne",
+            "impid": "oneImp",
             "price": 7.64,
             "exp":   600
         },
@@ -16,7 +15,8 @@
         "bidder": "appnexus"
     }, {
         "bid": {
-            "id": "oneImp",
+            "id": "bidTwo",
+            "impid": "oneImp",
             "price": 5.64
         },
         "bidType": "banner",
