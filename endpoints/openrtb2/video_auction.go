@@ -356,7 +356,7 @@ func minMax(array []int) (int, int) {
 	return min, max
 }
 
-func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) { //should be video response
+func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
 	for _, seatBid := range bidresponse.SeatBid {
@@ -366,15 +366,18 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
 				return nil, err
 			}
+			if tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)] == "" {
+				continue
+			}
 
 			impId := bid.ImpID
 			podNum := strings.Split(impId, "_")[0]
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				Hb_pb:         tempRespBidExt.Prebid.Targeting["hb_pb"],
-				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting["hb_pb_cat_dur"],
-				Hb_cache_id:   tempRespBidExt.Prebid.Targeting["hb_uuid"],
+				Hb_pb:         tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)],
+				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbCategoryDurationKey)],
+				Hb_cache_id:   tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)],
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -389,6 +392,13 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 
 		}
 	}
+
+	if len(adPods) == 0 {
+		//means there is a global cache error, we need to reject all bids
+		err := errors.New("caching failed for all bids")
+		return nil, err
+	}
+
 	videoResponse := openrtb_ext.BidResponseVideo{}
 
 	// If there were incorrect pods, we put them back to response with error message
