@@ -116,21 +116,30 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	// bid := make([]pbsOrtbBid, 5)
 	var bid *pbsOrtbBid
 	winningBids := make(map[string]*pbsOrtbBid)
-	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
+	winningBidsByImp := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
 	roundedPrices := make(map[*pbsOrtbBid]string)
 	bidCategory := make(map[string]string)
-	for i, pbsBid := range specData.PbsBids {
-		if _, ok := winningBidsByBidder[pbsBid.Bid.ImpID]; !ok {
-			winningBidsByBidder[pbsBid.Bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
-		}
+	for _, pbsBid := range specData.PbsBids {
 		bid = &pbsOrtbBid{
 			bid:     pbsBid.Bid,
 			bidType: pbsBid.BidType,
 		}
-		if _, ok := winningBids[pbsBid.Bid.ImpID]; !ok {
-			winningBids[pbsBid.Bid.ImpID] = bid
+		cpm := bid.bid.Price
+		wbid, ok := winningBids[bid.bid.ImpID]
+		if !ok || cpm > wbid.bid.Price {
+			winningBids[bid.bid.ImpID] = bid
 		}
-		winningBidsByBidder[pbsBid.Bid.ImpID][pbsBid.Bidder] = bid
+		if bidMap, ok := winningBidsByImp[bid.bid.ImpID]; ok {
+			bestSoFar, ok := bidMap[pbsBid.Bidder]
+			if !ok || cpm > bestSoFar.bid.Price {
+				bidMap[pbsBid.Bidder] = bid
+			}
+		} else {
+			winningBidsByImp[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
+			winningBidsByImp[bid.bid.ImpID][pbsBid.Bidder] = bid
+		}
+
+		winningBidsByImp[pbsBid.Bid.ImpID][pbsBid.Bidder] = bid
 		if len(pbsBid.Bid.Cat) == 1 {
 			bidCategory[pbsBid.Bid.ImpID] = pbsBid.Bid.Cat[0]
 		}
@@ -168,7 +177,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 
 	testAuction := &auction{
 		winningBids:         winningBids,
-		winningBidsByBidder: winningBidsByBidder,
+		winningBidsByBidder: winningBidsByImp,
 		roundedPrices:       roundedPrices,
 	}
 	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)

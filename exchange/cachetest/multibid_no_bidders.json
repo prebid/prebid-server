@@ -59,8 +59,8 @@
             "TTLSeconds": 360
         }, {
             "Type": "json",
-            "Data": "{\"id\": \"bidTwo\",\"impid\": \"twoImp\",\"price\": 7.64,\"exp\": 900}",
-            "TTLSeconds": 900
+            "Data": "{\"id\": \"bidFive\", \"impid\": \"twoImp\", \"price\": 7.64, \"exp\":   900}",
+            "TTLSeconds": 960
         }
     ],
     "targetDataIncludeWinners":true,
