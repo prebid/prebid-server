@@ -22,7 +22,7 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 	}
 
 	tmplBody := `
-		<img src="//b.sharethrough.com/butler?type=s2s-win&server=prebid&arid={{.Arid}}" />
+		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}" />
 
 		<div data-str-native-key="{{.Pkey}}" data-stx-response-name="{{.StrRespId}}"></div>
 	 	<script>var {{.StrRespId}} = "{{.B64EncodedJson}}"</script>
