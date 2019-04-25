@@ -112,39 +112,47 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 	return &spec, nil
 }
 
+// runCacheSpec has been modified to handle multi-Imp and multi-bid Json test files,
+// it cycles through the bids found in the test cases hardcoded in json files and
+// finds the highest bid of every Imp.
 func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
-	// bid := make([]pbsOrtbBid, 5)
 	var bid *pbsOrtbBid
-	winningBids := make(map[string]*pbsOrtbBid)
-	winningBidsByImp := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
+	winningBidsByImp := make(map[string]*pbsOrtbBid)
+	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
 	roundedPrices := make(map[*pbsOrtbBid]string)
 	bidCategory := make(map[string]string)
+
+	// Traverse through the bid list found in the parsed in Json file
 	for _, pbsBid := range specData.PbsBids {
 		bid = &pbsOrtbBid{
 			bid:     pbsBid.Bid,
 			bidType: pbsBid.BidType,
 		}
 		cpm := bid.bid.Price
-		wbid, ok := winningBids[bid.bid.ImpID]
+
+		// Map this bid if it's the highest we've seen from this Imp so far
+		wbid, ok := winningBidsByImp[bid.bid.ImpID]
 		if !ok || cpm > wbid.bid.Price {
-			winningBids[bid.bid.ImpID] = bid
-		}
-		if bidMap, ok := winningBidsByImp[bid.bid.ImpID]; ok {
-			bestSoFar, ok := bidMap[pbsBid.Bidder]
-			if !ok || cpm > bestSoFar.bid.Price {
-				bidMap[pbsBid.Bidder] = bid
-			}
-		} else {
-			winningBidsByImp[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
-			winningBidsByImp[bid.bid.ImpID][pbsBid.Bidder] = bid
+			winningBidsByImp[bid.bid.ImpID] = bid
 		}
 
-		winningBidsByImp[pbsBid.Bid.ImpID][pbsBid.Bidder] = bid
+		// Map this bid if it's the highest we've seen from this bidder so far
+		if _, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
+			bestSoFar, ok := winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder]
+			if !ok || cpm > bestSoFar.bid.Price {
+				winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder] = bid
+			}
+		} else {
+			winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
+			winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder] = bid
+		}
+
 		if len(pbsBid.Bid.Cat) == 1 {
 			bidCategory[pbsBid.Bid.ImpID] = pbsBid.Bid.Cat[0]
 		}
 		roundedPrices[bid] = strconv.FormatFloat(bid.bid.Price, 'f', 2, 64)
 	}
+
 	ctx := context.Background()
 	cache := &mockCache{}
 
@@ -176,8 +184,8 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	}
 
 	testAuction := &auction{
-		winningBids:         winningBids,
-		winningBidsByBidder: winningBidsByImp,
+		winningBids:         winningBidsByImp,
+		winningBidsByBidder: winningBidsByBidder,
 		roundedPrices:       roundedPrices,
 	}
 	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
@@ -224,9 +232,9 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 			} else if cachedElements.freq < 0 {
 				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistensy. We cached some more elements (%s) than expected.\n", fileDisplayName, k)
 			} else if targData.includeCacheVast {
-				for i := 0; i < cachedElements.freq; i++ {
+				for i := 0; i < len(cachedElements.expectedKeys); i++ {
 					found := false
-					for j := 0; j < cachedElements.freq; j++ {
+					for j := 0; j < len(cachedElements.actualKeys); j++ {
 						if strings.HasPrefix(cachedElements.expectedKeys[i], cachedElements.actualKeys[j]) {
 							found = true
 						}
