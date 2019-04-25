@@ -191,15 +191,16 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 
 	if len(specData.ExpectedCacheables) > len(cache.items) {
-		//t.Errorf("%s:  Less elements were cached than expected \n", fileDisplayName)
 		t.Errorf("%s:  [CACHE_ERROR] Less elements were cached than expected \n", fileDisplayName)
 	} else if len(specData.ExpectedCacheables) < len(cache.items) {
 		t.Errorf("%s:  [CACHE_ERROR] More elements were cached than expected \n", fileDisplayName)
 	} else { // len(specData.ExpectedCacheables) == len(cache.items)
+		// We cached the exact number of elements we expected, now we compare them
 		var ht map[string]*cacheComparator = make(map[string]*cacheComparator)
 		var formattedData string
 		var compareString string
 
+		// list the data expected to get cached into the hash table
 		for _, cExpected := range specData.ExpectedCacheables {
 			formattedData = strings.Replace(string(cExpected.Data), "\\", "", -1)
 			formattedData = strings.Replace(formattedData, " ", "", -1)
@@ -213,6 +214,8 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 				ht[compareString].expectedKeys = append(ht[compareString].expectedKeys, cExpected.Key)
 			}
 		}
+		// list the data that actually got cached into the hash table. If it matches any
+		// of the expected values, we decrease the frequency so we account for a match.
 		for _, cFound := range cache.items {
 			formattedData = strings.Replace(string(cFound.Data), "\\", "", -1)
 			formattedData = strings.Replace(formattedData, " ", "", -1)
@@ -226,11 +229,13 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 				ht[compareString].actualKeys = append(ht[compareString].actualKeys, cFound.Key)
 			}
 		}
+		// Check if the expected number of cached values are the same as the actual cached
+		// values by looking at the frequencies. If any of them differ from zero, something didn't match
 		for k, cachedElements := range ht {
 			if cachedElements.freq > 0 {
-				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistensy. Element %s was not expected to get cached\n", fileDisplayName, k)
+				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistency. Element %s was not expected to get cached\n", fileDisplayName, k)
 			} else if cachedElements.freq < 0 {
-				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistensy. We cached some more elements (%s) than expected.\n", fileDisplayName, k)
+				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistency. We cached some more elements (%s) than expected.\n", fileDisplayName, k)
 			} else if targData.includeCacheVast {
 				for i := 0; i < len(cachedElements.expectedKeys); i++ {
 					found := false
