@@ -22,6 +22,8 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 	}
 
 	tmplBody := `
+		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}" />
+
 		<div data-str-native-key="{{.Pkey}}" data-stx-response-name="{{.StrRespId}}"></div>
 	 	<script>var {{.StrRespId}} = "{{.B64EncodedJson}}"</script>
 	`
@@ -63,10 +65,12 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 
 	b64EncodedJson := base64.StdEncoding.EncodeToString(jsonPayload)
 	err = tmpl.Execute(templatedBuf, struct {
+		Arid           template.JS
 		Pkey           string
 		StrRespId      template.JS
 		B64EncodedJson string
 	}{
+		template.JS(strResp.AdServerRequestID),
 		params.Pkey,
 		template.JS(strRespId),
 		b64EncodedJson,
