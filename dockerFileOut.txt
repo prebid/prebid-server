@@ -1,0 +1,291 @@
+I0425 14:33:17.178321       1 config.go:380] Logging the resolved configuration:
+I0425 14:33:17.178422       1 structlog.go:40]   	external_url: http://localhost:8000
+I0425 14:33:17.178475       1 structlog.go:40]   	host: 
+I0425 14:33:17.178518       1 structlog.go:31]   	port: 8000
+I0425 14:33:17.178543       1 structlog.go:31]   	http_client.max_idle_connections: 400
+I0425 14:33:17.178597       1 structlog.go:31]   	http_client.max_idle_connections_per_host: 10
+I0425 14:33:17.178630       1 structlog.go:31]   	http_client.idle_connection_timeout_seconds: 60
+I0425 14:33:17.178657       1 structlog.go:31]   	admin_port: 6060
+I0425 14:33:17.178674       1 structlog.go:37]   	enable_gzip: false
+I0425 14:33:17.178776       1 structlog.go:40]   	status_response: 
+I0425 14:33:17.178803       1 structlog.go:33]   	auction_timeouts_ms.default: 0
+I0425 14:33:17.178939       1 structlog.go:33]   	auction_timeouts_ms.max: 0
+I0425 14:33:17.179088       1 structlog.go:40]   	cache.scheme: 
+I0425 14:33:17.179132       1 structlog.go:40]   	cache.host: 
+I0425 14:33:17.179178       1 structlog.go:40]   	cache.query: 
+I0425 14:33:17.179239       1 structlog.go:31]   	cache.expected_millis: 10
+I0425 14:33:17.179293       1 structlog.go:31]   	cache.default_ttl_seconds.banner: 0
+I0425 14:33:17.179349       1 structlog.go:31]   	cache.default_ttl_seconds.video: 0
+I0425 14:33:17.179411       1 structlog.go:31]   	cache.default_ttl_seconds.native: 0
+I0425 14:33:17.179433       1 structlog.go:31]   	cache.default_ttl_seconds.audio: 0
+I0425 14:33:17.179504       1 structlog.go:40]   	recaptcha_secret: 
+I0425 14:33:17.179534       1 structlog.go:40]   	host_cookie.domain: 
+I0425 14:33:17.179575       1 structlog.go:40]   	host_cookie.family: 
+I0425 14:33:17.179597       1 structlog.go:40]   	host_cookie.cookie_name: 
+I0425 14:33:17.179624       1 structlog.go:40]   	host_cookie.opt_out_url: 
+I0425 14:33:17.179646       1 structlog.go:40]   	host_cookie.opt_in_url: 
+I0425 14:33:17.179708       1 structlog.go:40]   	host_cookie.optout_cookie.name: 
+I0425 14:33:17.179775       1 structlog.go:40]   	host_cookie.optout_cookie.value: 
+I0425 14:33:17.179848       1 structlog.go:31]   	host_cookie.ttl_days: 90
+I0425 14:33:17.179868       1 structlog.go:40]   	metrics.influxdb.host: 
+I0425 14:33:17.179888       1 structlog.go:40]   	metrics.influxdb.database: 
+I0425 14:33:17.179908       1 structlog.go:40]   	metrics.influxdb.username: 
+I0425 14:33:17.180009       1 structlog.go:54]   	metrics.influxdb.password: <REDACTED>
+I0425 14:33:17.180054       1 structlog.go:31]   	metrics.prometheus.port: 0
+I0425 14:33:17.180080       1 structlog.go:40]   	metrics.prometheus.namespace: 
+I0425 14:33:17.180108       1 structlog.go:40]   	metrics.prometheus.subsystem: 
+I0425 14:33:17.180127       1 structlog.go:31]   	metrics.prometheus.timeout_ms: 10000
+I0425 14:33:17.180166       1 structlog.go:40]   	datacache.type: dummy
+I0425 14:33:17.180200       1 structlog.go:40]   	datacache.filename: 
+I0425 14:33:17.180258       1 structlog.go:31]   	datacache.cache_size: 0
+I0425 14:33:17.180300       1 structlog.go:31]   	datacache.ttl_seconds: 0
+I0425 14:33:17.180344       1 structlog.go:37]   	stored_requests.filesystem: false
+I0425 14:33:17.180388       1 structlog.go:40]   	stored_requests.directorypath: ./stored_requests/data/by_id
+I0425 14:33:17.180407       1 structlog.go:40]   	stored_requests.postgres.connection.dbname: 
+I0425 14:33:17.180451       1 structlog.go:40]   	stored_requests.postgres.connection.host: 
+I0425 14:33:17.180497       1 structlog.go:31]   	stored_requests.postgres.connection.port: 0
+I0425 14:33:17.180549       1 structlog.go:40]   	stored_requests.postgres.connection.user: 
+I0425 14:33:17.180584       1 structlog.go:54]   	stored_requests.postgres.connection.password: <REDACTED>
+I0425 14:33:17.180628       1 structlog.go:40]   	stored_requests.postgres.fetcher.query: 
+I0425 14:33:17.180648       1 structlog.go:40]   	stored_requests.postgres.fetcher.amp_query: 
+I0425 14:33:17.180680       1 structlog.go:31]   	stored_requests.postgres.initialize_caches.timeout_ms: 0
+I0425 14:33:17.180714       1 structlog.go:40]   	stored_requests.postgres.initialize_caches.query: 
+I0425 14:33:17.180761       1 structlog.go:40]   	stored_requests.postgres.initialize_caches.amp_query: 
+I0425 14:33:17.180807       1 structlog.go:31]   	stored_requests.postgres.poll_for_updates.refresh_rate_seconds: 0
+I0425 14:33:17.180853       1 structlog.go:31]   	stored_requests.postgres.poll_for_updates.timeout_ms: 0
+I0425 14:33:17.180930       1 structlog.go:40]   	stored_requests.postgres.poll_for_updates.query: 
+I0425 14:33:17.180971       1 structlog.go:40]   	stored_requests.postgres.poll_for_updates.amp_query: 
+I0425 14:33:17.181005       1 structlog.go:40]   	stored_requests.http.endpoint: 
+I0425 14:33:17.181037       1 structlog.go:40]   	stored_requests.http.amp_endpoint: 
+I0425 14:33:17.181062       1 structlog.go:40]   	stored_requests.in_memory_cache.type: none
+I0425 14:33:17.181084       1 structlog.go:31]   	stored_requests.in_memory_cache.ttl_seconds: 0
+I0425 14:33:17.181111       1 structlog.go:31]   	stored_requests.in_memory_cache.request_cache_size_bytes: 0
+I0425 14:33:17.181155       1 structlog.go:31]   	stored_requests.in_memory_cache.imp_cache_size_bytes: 0
+I0425 14:33:17.181211       1 structlog.go:37]   	stored_requests.cache_events_api: false
+I0425 14:33:17.181253       1 structlog.go:40]   	stored_requests.http_events.endpoint: 
+I0425 14:33:17.181278       1 structlog.go:31]   	stored_requests.http_events.refresh_rate_seconds: 0
+I0425 14:33:17.181316       1 structlog.go:31]   	stored_requests.http_events.timeout_ms: 0
+I0425 14:33:17.181361       1 structlog.go:40]   	stored_requests.http_events.amp_endpoint: 
+I0425 14:33:17.181414       1 structlog.go:37]   	category_mapping.filesystem.enabled: true
+I0425 14:33:17.181457       1 structlog.go:40]   	category_mapping.filesystem.directorypath: ./static/category-mapping
+I0425 14:33:17.181486       1 structlog.go:40]   	category_mapping.postgres.connection.dbname: 
+I0425 14:33:17.181535       1 structlog.go:40]   	category_mapping.postgres.connection.host: 
+I0425 14:33:17.181552       1 structlog.go:31]   	category_mapping.postgres.connection.port: 0
+I0425 14:33:17.181569       1 structlog.go:40]   	category_mapping.postgres.connection.user: 
+I0425 14:33:17.181594       1 structlog.go:54]   	category_mapping.postgres.connection.password: <REDACTED>
+I0425 14:33:17.181658       1 structlog.go:40]   	category_mapping.postgres.fetcher.query: 
+I0425 14:33:17.181711       1 structlog.go:31]   	category_mapping.postgres.initialize_caches.timeout_ms: 0
+I0425 14:33:17.181747       1 structlog.go:40]   	category_mapping.postgres.initialize_caches.query: 
+I0425 14:33:17.181790       1 structlog.go:31]   	category_mapping.postgres.poll_for_updates.refresh_rate_seconds: 0
+I0425 14:33:17.181809       1 structlog.go:31]   	category_mapping.postgres.poll_for_updates.timeout_ms: 0
+I0425 14:33:17.181850       1 structlog.go:40]   	category_mapping.postgres.poll_for_updates.query: 
+I0425 14:33:17.181864       1 structlog.go:40]   	category_mapping.http.endpoint: 
+I0425 14:33:17.181887       1 structlog.go:40]   	category_mapping.in_memory_cache.type: 
+I0425 14:33:17.181934       1 structlog.go:31]   	category_mapping.in_memory_cache.ttl_seconds: 0
+I0425 14:33:17.181964       1 structlog.go:31]   	category_mapping.in_memory_cache.request_cache_size_bytes: 0
+I0425 14:33:17.181995       1 structlog.go:31]   	category_mapping.in_memory_cache.imp_cache_size_bytes: 0
+I0425 14:33:17.182034       1 structlog.go:37]   	category_mapping.cache_events.enabled: false
+I0425 14:33:17.182050       1 structlog.go:40]   	category_mapping.cache_events.endpoint: 
+I0425 14:33:17.182088       1 structlog.go:40]   	category_mapping.http_events.endpoint: 
+I0425 14:33:17.182117       1 structlog.go:31]   	category_mapping.http_events.refresh_rate_seconds: 0
+I0425 14:33:17.182137       1 structlog.go:31]   	category_mapping.http_events.timeout_ms: 0
+I0425 14:33:17.182189       1 structlog.go:40]   	adapters[adkerneladn].endpoint: http://{{.Host}}/rtbpub?account={{.PublisherID}}
+I0425 14:33:17.182208       1 structlog.go:40]   	adapters[adkerneladn].usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3DadkernelAdn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BUID%7D
+I0425 14:33:17.182267       1 structlog.go:40]   	adapters[adkerneladn].platform_id: 
+I0425 14:33:17.182328       1 structlog.go:40]   	adapters[adkerneladn].xapi.username: 
+I0425 14:33:17.182400       1 structlog.go:54]   	adapters[adkerneladn].xapi.password: <REDACTED>
+I0425 14:33:17.182420       1 structlog.go:40]   	adapters[adkerneladn].xapi.tracker: 
+I0425 14:33:17.182439       1 structlog.go:37]   	adapters[adkerneladn].disabled: false
+I0425 14:33:17.182459       1 structlog.go:40]   	adapters[yieldmo].endpoint: http://ads.yieldmo.com/exchange/prebid-server
+I0425 14:33:17.182477       1 structlog.go:40]   	adapters[yieldmo].usersync_url: https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirectUri=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dyieldmo%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.182511       1 structlog.go:40]   	adapters[yieldmo].platform_id: 
+I0425 14:33:17.182530       1 structlog.go:40]   	adapters[yieldmo].xapi.username: 
+I0425 14:33:17.182550       1 structlog.go:54]   	adapters[yieldmo].xapi.password: <REDACTED>
+I0425 14:33:17.182570       1 structlog.go:40]   	adapters[yieldmo].xapi.tracker: 
+I0425 14:33:17.182601       1 structlog.go:37]   	adapters[yieldmo].disabled: false
+I0425 14:33:17.182661       1 structlog.go:40]   	adapters[rhythmone].endpoint: http://tag.1rx.io/rmp
+I0425 14:33:17.182728       1 structlog.go:40]   	adapters[rhythmone].usersync_url: https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D
+I0425 14:33:17.182762       1 structlog.go:40]   	adapters[rhythmone].platform_id: 
+I0425 14:33:17.182789       1 structlog.go:40]   	adapters[rhythmone].xapi.username: 
+I0425 14:33:17.182809       1 structlog.go:54]   	adapters[rhythmone].xapi.password: <REDACTED>
+I0425 14:33:17.182848       1 structlog.go:40]   	adapters[rhythmone].xapi.tracker: 
+I0425 14:33:17.182866       1 structlog.go:37]   	adapters[rhythmone].disabled: false
+I0425 14:33:17.182884       1 structlog.go:40]   	adapters[sovrn].endpoint: http://ap.lijit.com/rtb/bid?src=prebid_server
+I0425 14:33:17.182925       1 structlog.go:40]   	adapters[sovrn].usersync_url: https://ap.lijit.com/pixel?redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.182952       1 structlog.go:40]   	adapters[sovrn].platform_id: 
+I0425 14:33:17.182996       1 structlog.go:40]   	adapters[sovrn].xapi.username: 
+I0425 14:33:17.183012       1 structlog.go:54]   	adapters[sovrn].xapi.password: <REDACTED>
+I0425 14:33:17.183045       1 structlog.go:40]   	adapters[sovrn].xapi.tracker: 
+I0425 14:33:17.183088       1 structlog.go:37]   	adapters[sovrn].disabled: false
+I0425 14:33:17.183129       1 structlog.go:40]   	adapters[gumgum].endpoint: https://g2.gumgum.com/providers/prbds2s/bid
+I0425 14:33:17.183170       1 structlog.go:40]   	adapters[gumgum].usersync_url: https://rtb.gumgum.com/usync/prbds2s?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dgumgum%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D
+I0425 14:33:17.183209       1 structlog.go:40]   	adapters[gumgum].platform_id: 
+I0425 14:33:17.183261       1 structlog.go:40]   	adapters[gumgum].xapi.username: 
+I0425 14:33:17.183299       1 structlog.go:54]   	adapters[gumgum].xapi.password: <REDACTED>
+I0425 14:33:17.183324       1 structlog.go:40]   	adapters[gumgum].xapi.tracker: 
+I0425 14:33:17.183370       1 structlog.go:37]   	adapters[gumgum].disabled: false
+I0425 14:33:17.183402       1 structlog.go:40]   	adapters[consumable].endpoint: https://e.serverbid.com/api/v2
+I0425 14:33:17.183451       1 structlog.go:40]   	adapters[consumable].usersync_url: https://e.serverbid.com/udb/9969/match?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dconsumable%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D
+I0425 14:33:17.183528       1 structlog.go:40]   	adapters[consumable].platform_id: 
+I0425 14:33:17.183572       1 structlog.go:40]   	adapters[consumable].xapi.username: 
+I0425 14:33:17.183587       1 structlog.go:54]   	adapters[consumable].xapi.password: <REDACTED>
+I0425 14:33:17.183623       1 structlog.go:40]   	adapters[consumable].xapi.tracker: 
+I0425 14:33:17.183642       1 structlog.go:37]   	adapters[consumable].disabled: false
+I0425 14:33:17.183663       1 structlog.go:40]   	adapters[gamoshi].endpoint: https://rtb.gamoshi.io
+I0425 14:33:17.183682       1 structlog.go:40]   	adapters[gamoshi].usersync_url: https://rtb.gamoshi.io/pix/0000/scm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&rurl=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dgamoshi%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bgusr%5D
+I0425 14:33:17.183704       1 structlog.go:40]   	adapters[gamoshi].platform_id: 
+I0425 14:33:17.183762       1 structlog.go:40]   	adapters[gamoshi].xapi.username: 
+I0425 14:33:17.183810       1 structlog.go:54]   	adapters[gamoshi].xapi.password: <REDACTED>
+I0425 14:33:17.183834       1 structlog.go:40]   	adapters[gamoshi].xapi.tracker: 
+I0425 14:33:17.183881       1 structlog.go:37]   	adapters[gamoshi].disabled: false
+I0425 14:33:17.183900       1 structlog.go:40]   	adapters[33across].endpoint: http://ssc.33across.com/api/v1/hb
+I0425 14:33:17.183929       1 structlog.go:40]   	adapters[33across].usersync_url: 
+I0425 14:33:17.183951       1 structlog.go:40]   	adapters[33across].platform_id: 
+I0425 14:33:17.184029       1 structlog.go:40]   	adapters[33across].xapi.username: 
+I0425 14:33:17.184046       1 structlog.go:54]   	adapters[33across].xapi.password: <REDACTED>
+I0425 14:33:17.184100       1 structlog.go:40]   	adapters[33across].xapi.tracker: 
+I0425 14:33:17.184128       1 structlog.go:37]   	adapters[33across].disabled: false
+I0425 14:33:17.184182       1 structlog.go:40]   	adapters[rubicon].endpoint: http://exapi-us-east.rubiconproject.com/a/api/exchange.json
+I0425 14:33:17.184212       1 structlog.go:40]   	adapters[rubicon].usersync_url: 
+I0425 14:33:17.184262       1 structlog.go:40]   	adapters[rubicon].platform_id: 
+I0425 14:33:17.184316       1 structlog.go:40]   	adapters[rubicon].xapi.username: 
+I0425 14:33:17.184339       1 structlog.go:54]   	adapters[rubicon].xapi.password: <REDACTED>
+I0425 14:33:17.184378       1 structlog.go:40]   	adapters[rubicon].xapi.tracker: 
+I0425 14:33:17.184416       1 structlog.go:37]   	adapters[rubicon].disabled: true
+I0425 14:33:17.184461       1 structlog.go:40]   	adapters[eplanning].endpoint: http://ads.us.e-planning.net/hb/1
+I0425 14:33:17.184483       1 structlog.go:40]   	adapters[eplanning].usersync_url: https://ads.us.e-planning.net/getuid/1/5a1ad71d2d53a0f5?http://localhost:8000/setuid?bidder=eplanning&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&uid=$UID
+I0425 14:33:17.184503       1 structlog.go:40]   	adapters[eplanning].platform_id: 
+I0425 14:33:17.184537       1 structlog.go:40]   	adapters[eplanning].xapi.username: 
+I0425 14:33:17.184588       1 structlog.go:54]   	adapters[eplanning].xapi.password: <REDACTED>
+I0425 14:33:17.184629       1 structlog.go:40]   	adapters[eplanning].xapi.tracker: 
+I0425 14:33:17.184667       1 structlog.go:37]   	adapters[eplanning].disabled: false
+I0425 14:33:17.184687       1 structlog.go:40]   	adapters[conversant].endpoint: http://api.hb.ad.cpe.dotomi.com/s2s/header/24
+I0425 14:33:17.184735       1 structlog.go:40]   	adapters[conversant].usersync_url: https://prebid-match.dotomi.com/prebid/match?rurl=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dconversant%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D
+I0425 14:33:17.184781       1 structlog.go:40]   	adapters[conversant].platform_id: 
+I0425 14:33:17.184804       1 structlog.go:40]   	adapters[conversant].xapi.username: 
+I0425 14:33:17.184847       1 structlog.go:54]   	adapters[conversant].xapi.password: <REDACTED>
+I0425 14:33:17.184867       1 structlog.go:40]   	adapters[conversant].xapi.tracker: 
+I0425 14:33:17.184887       1 structlog.go:37]   	adapters[conversant].disabled: false
+I0425 14:33:17.184933       1 structlog.go:40]   	adapters[openx].endpoint: http://rtb.openx.net/prebid
+I0425 14:33:17.184952       1 structlog.go:40]   	adapters[openx].usersync_url: https://rtb.openx.net/sync/prebid?r=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dopenx%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D
+I0425 14:33:17.184976       1 structlog.go:40]   	adapters[openx].platform_id: 
+I0425 14:33:17.185020       1 structlog.go:40]   	adapters[openx].xapi.username: 
+I0425 14:33:17.185032       1 structlog.go:54]   	adapters[openx].xapi.password: <REDACTED>
+I0425 14:33:17.185051       1 structlog.go:40]   	adapters[openx].xapi.tracker: 
+I0425 14:33:17.185106       1 structlog.go:37]   	adapters[openx].disabled: false
+I0425 14:33:17.185151       1 structlog.go:40]   	adapters[brightroll].endpoint: http://east-bid.ybp.yahoo.com/bid/appnexuspbs
+I0425 14:33:17.185169       1 structlog.go:40]   	adapters[brightroll].usersync_url: https://pr-bh.ybp.yahoo.com/sync/appnexusprebidserver/?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dbrightroll%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.185212       1 structlog.go:40]   	adapters[brightroll].platform_id: 
+I0425 14:33:17.185235       1 structlog.go:40]   	adapters[brightroll].xapi.username: 
+I0425 14:33:17.185256       1 structlog.go:54]   	adapters[brightroll].xapi.password: <REDACTED>
+I0425 14:33:17.185296       1 structlog.go:40]   	adapters[brightroll].xapi.tracker: 
+I0425 14:33:17.185336       1 structlog.go:37]   	adapters[brightroll].disabled: false
+I0425 14:33:17.185387       1 structlog.go:40]   	adapters[grid].endpoint: http://grid.bidswitch.net/sp_bid?sp=prebid
+I0425 14:33:17.185406       1 structlog.go:40]   	adapters[grid].usersync_url: https://grid.bidswitch.net/sp_sync?sp_id=prebid&redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dgrid%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.185427       1 structlog.go:40]   	adapters[grid].platform_id: 
+I0425 14:33:17.185447       1 structlog.go:40]   	adapters[grid].xapi.username: 
+I0425 14:33:17.185475       1 structlog.go:54]   	adapters[grid].xapi.password: <REDACTED>
+I0425 14:33:17.185513       1 structlog.go:40]   	adapters[grid].xapi.tracker: 
+I0425 14:33:17.185553       1 structlog.go:37]   	adapters[grid].disabled: false
+I0425 14:33:17.185609       1 structlog.go:40]   	adapters[beachfront].endpoint: https://display.bfmio.com/prebid_display
+I0425 14:33:17.185642       1 structlog.go:40]   	adapters[beachfront].usersync_url: https://sync.bfmio.com/sync_s2s?gdpr={{.GDPR}}&url=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bio_cid%5D
+I0425 14:33:17.185677       1 structlog.go:40]   	adapters[beachfront].platform_id: 155
+I0425 14:33:17.185721       1 structlog.go:40]   	adapters[beachfront].xapi.username: 
+I0425 14:33:17.185741       1 structlog.go:54]   	adapters[beachfront].xapi.password: <REDACTED>
+I0425 14:33:17.185768       1 structlog.go:40]   	adapters[beachfront].xapi.tracker: 
+I0425 14:33:17.185811       1 structlog.go:37]   	adapters[beachfront].disabled: false
+I0425 14:33:17.185857       1 structlog.go:40]   	adapters[appnexus].endpoint: http://ib.adnxs.com/openrtb2
+I0425 14:33:17.185871       1 structlog.go:40]   	adapters[appnexus].usersync_url: https://ib.adnxs.com/getuid?http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dadnxs%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.185919       1 structlog.go:40]   	adapters[appnexus].platform_id: 
+I0425 14:33:17.185942       1 structlog.go:40]   	adapters[appnexus].xapi.username: 
+I0425 14:33:17.186008       1 structlog.go:54]   	adapters[appnexus].xapi.password: <REDACTED>
+I0425 14:33:17.186051       1 structlog.go:40]   	adapters[appnexus].xapi.tracker: 
+I0425 14:33:17.186114       1 structlog.go:37]   	adapters[appnexus].disabled: false
+I0425 14:33:17.186155       1 structlog.go:40]   	adapters[adtelligent].endpoint: http://hb.adtelligent.com/auction
+I0425 14:33:17.186177       1 structlog.go:40]   	adapters[adtelligent].usersync_url: https://sync.adtelligent.com/csync?t=p&ep=0&redir=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D
+I0425 14:33:17.186223       1 structlog.go:40]   	adapters[adtelligent].platform_id: 
+I0425 14:33:17.186246       1 structlog.go:40]   	adapters[adtelligent].xapi.username: 
+I0425 14:33:17.186290       1 structlog.go:54]   	adapters[adtelligent].xapi.password: <REDACTED>
+I0425 14:33:17.186310       1 structlog.go:40]   	adapters[adtelligent].xapi.tracker: 
+I0425 14:33:17.186348       1 structlog.go:37]   	adapters[adtelligent].disabled: false
+I0425 14:33:17.186367       1 structlog.go:40]   	adapters[audiencenetwork].endpoint: 
+I0425 14:33:17.186418       1 structlog.go:40]   	adapters[audiencenetwork].usersync_url: 
+I0425 14:33:17.186461       1 structlog.go:40]   	adapters[audiencenetwork].platform_id: 
+I0425 14:33:17.186503       1 structlog.go:40]   	adapters[audiencenetwork].xapi.username: 
+I0425 14:33:17.186522       1 structlog.go:54]   	adapters[audiencenetwork].xapi.password: <REDACTED>
+I0425 14:33:17.186542       1 structlog.go:40]   	adapters[audiencenetwork].xapi.tracker: 
+I0425 14:33:17.186590       1 structlog.go:37]   	adapters[audiencenetwork].disabled: true
+I0425 14:33:17.186634       1 structlog.go:40]   	adapters[pulsepoint].endpoint: http://bid.contextweb.com/header/s/ortb/prebid-s2s
+I0425 14:33:17.186662       1 structlog.go:40]   	adapters[pulsepoint].usersync_url: https://bh.contextweb.com/rtset?pid=561205&ev=1&rurl=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dpulsepoint%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%25%25VGUID%25%25
+I0425 14:33:17.186716       1 structlog.go:40]   	adapters[pulsepoint].platform_id: 
+I0425 14:33:17.186760       1 structlog.go:40]   	adapters[pulsepoint].xapi.username: 
+I0425 14:33:17.186808       1 structlog.go:54]   	adapters[pulsepoint].xapi.password: <REDACTED>
+I0425 14:33:17.186830       1 structlog.go:40]   	adapters[pulsepoint].xapi.tracker: 
+I0425 14:33:17.186881       1 structlog.go:37]   	adapters[pulsepoint].disabled: false
+I0425 14:33:17.186921       1 structlog.go:40]   	adapters[pubmatic].endpoint: http://hbopenbid.pubmatic.com/translator?source=prebid-server
+I0425 14:33:17.186945       1 structlog.go:40]   	adapters[pubmatic].usersync_url: https://ads.pubmatic.com/AdServer/js/user_sync.html?predirect=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dpubmatic%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D
+I0425 14:33:17.187012       1 structlog.go:40]   	adapters[pubmatic].platform_id: 
+I0425 14:33:17.187036       1 structlog.go:40]   	adapters[pubmatic].xapi.username: 
+I0425 14:33:17.187057       1 structlog.go:54]   	adapters[pubmatic].xapi.password: <REDACTED>
+I0425 14:33:17.187112       1 structlog.go:40]   	adapters[pubmatic].xapi.tracker: 
+I0425 14:33:17.187163       1 structlog.go:37]   	adapters[pubmatic].disabled: false
+I0425 14:33:17.187220       1 structlog.go:40]   	adapters[ix].endpoint: http://appnexus-us-east.lb.indexww.com/transbidder?p=184932
+I0425 14:33:17.187251       1 structlog.go:40]   	adapters[ix].usersync_url: https://ssum.casalemedia.com/usermatchredir?s=184932&cb=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dix%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D
+I0425 14:33:17.187303       1 structlog.go:40]   	adapters[ix].platform_id: 
+I0425 14:33:17.187358       1 structlog.go:40]   	adapters[ix].xapi.username: 
+I0425 14:33:17.187384       1 structlog.go:54]   	adapters[ix].xapi.password: <REDACTED>
+I0425 14:33:17.187405       1 structlog.go:40]   	adapters[ix].xapi.tracker: 
+I0425 14:33:17.187437       1 structlog.go:37]   	adapters[ix].disabled: false
+I0425 14:33:17.187462       1 structlog.go:40]   	adapters[somoaudience].endpoint: http://publisher-east.mobileadtrading.com/rtb/bid
+I0425 14:33:17.187476       1 structlog.go:40]   	adapters[somoaudience].usersync_url: https://publisher-east.mobileadtrading.com/usersync?ru=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsomoaudience%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D
+I0425 14:33:17.187523       1 structlog.go:40]   	adapters[somoaudience].platform_id: 
+I0425 14:33:17.187632       1 structlog.go:40]   	adapters[somoaudience].xapi.username: 
+I0425 14:33:17.187676       1 structlog.go:54]   	adapters[somoaudience].xapi.password: <REDACTED>
+I0425 14:33:17.187725       1 structlog.go:40]   	adapters[somoaudience].xapi.tracker: 
+I0425 14:33:17.187753       1 structlog.go:37]   	adapters[somoaudience].disabled: false
+I0425 14:33:17.187773       1 structlog.go:40]   	adapters[lifestreet].endpoint: https://prebid.s2s.lfstmedia.com/adrequest
+I0425 14:33:17.187837       1 structlog.go:40]   	adapters[lifestreet].usersync_url: https://ads.lfstmedia.com/idsync/137062?synced=1&ttl=1s&rurl=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dlifestreet%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%24visitor_cookie%24%24
+I0425 14:33:17.187857       1 structlog.go:40]   	adapters[lifestreet].platform_id: 
+I0425 14:33:17.187882       1 structlog.go:40]   	adapters[lifestreet].xapi.username: 
+I0425 14:33:17.187932       1 structlog.go:54]   	adapters[lifestreet].xapi.password: <REDACTED>
+I0425 14:33:17.187981       1 structlog.go:40]   	adapters[lifestreet].xapi.tracker: 
+I0425 14:33:17.188007       1 structlog.go:37]   	adapters[lifestreet].disabled: false
+I0425 14:33:17.188030       1 structlog.go:40]   	adapters[adform].endpoint: http://adx.adform.net/adx
+I0425 14:33:17.188080       1 structlog.go:40]   	adapters[adform].usersync_url: https://cm.adform.net/cookie?redirect_url=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.188112       1 structlog.go:40]   	adapters[adform].platform_id: 
+I0425 14:33:17.188170       1 structlog.go:40]   	adapters[adform].xapi.username: 
+I0425 14:33:17.188186       1 structlog.go:54]   	adapters[adform].xapi.password: <REDACTED>
+I0425 14:33:17.188199       1 structlog.go:40]   	adapters[adform].xapi.tracker: 
+I0425 14:33:17.188248       1 structlog.go:37]   	adapters[adform].disabled: false
+I0425 14:33:17.188293       1 structlog.go:40]   	adapters[sonobi].endpoint: https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af
+I0425 14:33:17.188334       1 structlog.go:40]   	adapters[sonobi].usersync_url: https://sync.go.sonobi.com/us.gif?loc=http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Dsonobi%26consent_string%3D{{.GDPR}}%26gdpr%3D{{.GDPRConsent}}%26uid%3D%24UID
+I0425 14:33:17.188372       1 structlog.go:40]   	adapters[sonobi].platform_id: 
+I0425 14:33:17.188390       1 structlog.go:40]   	adapters[sonobi].xapi.username: 
+I0425 14:33:17.188430       1 structlog.go:54]   	adapters[sonobi].xapi.password: <REDACTED>
+I0425 14:33:17.188468       1 structlog.go:40]   	adapters[sonobi].xapi.tracker: 
+I0425 14:33:17.188490       1 structlog.go:37]   	adapters[sonobi].disabled: false
+I0425 14:33:17.188529       1 structlog.go:31]   	max_request_size: 262144
+I0425 14:33:17.188580       1 structlog.go:40]   	analytics.file.filename: 
+I0425 14:33:17.188603       1 structlog.go:31]   	amp_timeout_adjustment_ms: 0
+I0425 14:33:17.188645       1 structlog.go:31]   	gdpr.host_vendor_id: 0
+I0425 14:33:17.188695       1 structlog.go:37]   	gdpr.usersync_if_ambiguous: false
+I0425 14:33:17.188763       1 structlog.go:31]   	gdpr.timeouts_ms.init_vendorlist_fetches: 0
+I0425 14:33:17.188804       1 structlog.go:31]   	gdpr.timeouts_ms.active_vendorlist_fetch: 0
+I0425 14:33:17.188823       1 structlog.go:40]   	currency_converter.fetch_url: https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json
+I0425 14:33:17.188847       1 structlog.go:31]   	currency_converter.fetch_interval_seconds: 0
+I0425 14:33:17.188867       1 structlog.go:40]   	default_request.type: 
+I0425 14:33:17.188914       1 structlog.go:40]   	default_request.file.name: 
+I0425 14:33:17.188938       1 structlog.go:37]   	default_request.alias_info: false
+I0425 14:33:17.188984       1 structlog.go:37]   	video_stored_request_required: false
+W0425 14:33:17.204291       1 config.go:297] No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config
+I0425 14:33:17.204344       1 config.go:219] No Stored Request cache configured. The Fetcher backend will be used for all Stored Requests.
+W0425 14:33:17.204364       1 config.go:297] No Stored Request support configured. request.imp[i].ext.prebid.storedrequest will be ignored. If you need this, check your app config
+I0425 14:33:17.204383       1 config.go:219] No Stored Request cache configured. The Fetcher backend will be used for all Stored Requests.
+I0425 14:33:17.204403       1 config.go:273] Loading Stored Requests from filesystem at path ./static/category-mapping
+W0425 14:33:17.219884       1 syncer.go:77] adapters.33across.usersync_url was not defined, and their usersync API isn't flexible enough for Prebid Server to choose a good default. No usersyncs will be performed with 33across
+W0425 14:33:17.220011       1 syncer.go:77] adapters.audienceNetwork.usersync_url was not defined, and their usersync API isn't flexible enough for Prebid Server to choose a good default. No usersyncs will be performed with audienceNetwork
+W0425 14:33:17.220135       1 syncer.go:77] adapters.rubicon.usersync_url was not defined, and their usersync API isn't flexible enough for Prebid Server to choose a good default. No usersyncs will be performed with rubicon
+E0425 14:33:17.220912       1 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+E0425 14:33:17.221228       1 facebook.go:284] No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?
+I0425 14:33:17.222303       1 server.go:91] Admin server starting on: :6060
+I0425 14:33:17.222394       1 server.go:91] Main server starting on: :8000
