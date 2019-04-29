@@ -22,7 +22,7 @@ import (
 // Constants
 
 const ExpectedSiteID string = "12345"
-const ExpectedDisplayManager string = "prebid-s2s"
+const ExpectedDisplayManager string = "pubmatic-openwrap"
 const ExpectedBuyerUID string = "AQECT_o7M1FLbQJK8QFmAQEBAQE"
 const ExpectedNURL string = "http://test.dotomi.com"
 const ExpectedAdM string = "<img src=\"test.jpg\"/>"

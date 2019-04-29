@@ -86,7 +86,7 @@ func TestAppBanner(t *testing.T) {
 		ID:       "host-id",
 		BuyerUID: "bidder-id",
 	}
-	ortbRequest.Test = 1
+	//ortbRequest.Test = 1
 
 	mockAdapter := mockLegacyAdapter{}
 

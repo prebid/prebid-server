@@ -1,7 +1,7 @@
 package macros
 
 import (
-	"strings"
+	"bytes"
 	"text/template"
 )
 
@@ -19,7 +19,7 @@ type UserSyncTemplateParams struct {
 
 // ResolveMacros resolves macros in the given template with the provided params
 func ResolveMacros(aTemplate template.Template, params interface{}) (string, error) {
-	strBuilder := strings.Builder{}
+	var strBuilder bytes.Buffer
 	err := aTemplate.Execute(&strBuilder, params)
 	if err != nil {
 		return "", err
