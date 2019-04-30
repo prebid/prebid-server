@@ -54,13 +54,6 @@ type callOneObject struct {
 	height      uint64
 }
 
-func isValidIXSize(f openrtb.Format, s [2]uint64) bool {
-	if f.W != s[0] || f.H != s[1] {
-		return false
-	}
-	return true
-}
-
 func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
 	var prioritizedRequests, requests []callOneObject
 
