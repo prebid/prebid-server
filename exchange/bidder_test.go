@@ -469,7 +469,6 @@ func TestMultiCurrencies(t *testing.T) {
 		bidderImpl.httpRequest = make([]*adapters.RequestData, len(tc.bids))
 
 		for i, bid := range tc.bids {
-
 			mockBidderResponses[i] = &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{
 					{
@@ -631,7 +630,6 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		bidderImpl.httpRequest = make([]*adapters.RequestData, len(tc.bidCurrency))
 
 		for i, cur := range tc.bidCurrency {
-
 			mockBidderResponses[i] = &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{
 					{
@@ -665,6 +663,180 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		assert.Equal(t, false, (seatBid == nil && tc.expectedBidsCount != 0), tc.description)
 		assert.Equal(t, tc.expectedBidsCount, uint(len(seatBid.bids)), tc.description)
 		assert.ElementsMatch(t, tc.expectedBadCurrencyErrors, errs, tc.description)
+	}
+}
+
+// TestMultiCurrencies_RequestCurrencyPick tests request currencies pick.
+func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
+	// Setup:
+	respStatus := 200
+	getRespBody := "{\"wasPost\":false}"
+	postRespBody := "{\"wasPost\":true}"
+
+	testCases := []struct {
+		bidRequestCurrencies   []string
+		bidResponsesCurrency   string
+		expectedPickedCurrency string
+		expectedError          bool
+		rates                  currencies.Rates
+		description            string
+	}{
+		{
+			bidRequestCurrencies:   []string{"EUR", "USD", "JPY"},
+			bidResponsesCurrency:   "EUR",
+			expectedPickedCurrency: "EUR",
+			expectedError:          false,
+			rates: currencies.Rates{
+				DataAsOf: time.Now(),
+				Conversions: map[string]map[string]float64{
+					"JPY": {
+						"USD": 0.0089,
+					},
+					"GBP": {
+						"USD": 1.3050530256,
+					},
+					"EUR": {
+						"USD": 1.1435678764,
+					},
+				},
+			},
+			description: "Case 1 - Allowed currencies in bid request are known, first one is picked",
+		},
+		{
+			bidRequestCurrencies:   []string{"JPY"},
+			bidResponsesCurrency:   "JPY",
+			expectedPickedCurrency: "JPY",
+			expectedError:          false,
+			rates: currencies.Rates{
+				DataAsOf: time.Now(),
+				Conversions: map[string]map[string]float64{
+					"JPY": {
+						"USD": 0.0089,
+					},
+				},
+			},
+			description: "Case 2 - There is only one allowed currencies in bid request, it's a known one, it's picked",
+		},
+		{
+			bidRequestCurrencies:   []string{"CNY", "USD", "EUR", "JPY"},
+			bidResponsesCurrency:   "USD",
+			expectedPickedCurrency: "USD",
+			expectedError:          false,
+			rates: currencies.Rates{
+				DataAsOf: time.Now(),
+				Conversions: map[string]map[string]float64{
+					"JPY": {
+						"USD": 0.0089,
+					},
+					"GBP": {
+						"USD": 1.3050530256,
+					},
+					"EUR": {
+						"USD": 1.1435678764,
+					},
+				},
+			},
+			description: "Case 3 - First allowed currencies in bid request is not known but the others are, second one is picked",
+		},
+		{
+			bidRequestCurrencies:   []string{"CNY", "EUR", "JPY"},
+			bidResponsesCurrency:   "",
+			expectedPickedCurrency: "",
+			expectedError:          true,
+			rates: currencies.Rates{
+				DataAsOf:    time.Now(),
+				Conversions: map[string]map[string]float64{},
+			},
+			description: "Case 4 - None allowed currencies in bid request are known, an error is returned",
+		},
+		{
+			bidRequestCurrencies:   []string{"CNY", "EUR", "JPY", "USD"},
+			bidResponsesCurrency:   "USD",
+			expectedPickedCurrency: "USD",
+			expectedError:          false,
+			rates: currencies.Rates{
+				DataAsOf:    time.Now(),
+				Conversions: map[string]map[string]float64{},
+			},
+			description: "Case 5 - None allowed currencies in bid request are known but the default one (`USD`), no rates are set but default currency will be picked",
+		},
+		{
+			bidRequestCurrencies:   nil,
+			bidResponsesCurrency:   "USD",
+			expectedPickedCurrency: "USD",
+			expectedError:          false,
+			rates: currencies.Rates{
+				DataAsOf:    time.Now(),
+				Conversions: map[string]map[string]float64{},
+			},
+			description: "Case 6 - No allowed currencies specified in bid request, default one is picked: `USD`",
+		},
+	}
+
+	server := httptest.NewServer(mockHandler(respStatus, getRespBody, postRespBody))
+	defer server.Close()
+
+	for _, tc := range testCases {
+
+		mockedHTTPServer := httptest.NewServer(http.HandlerFunc(
+			func(rw http.ResponseWriter, req *http.Request) {
+				b, err := json.Marshal(tc.rates)
+				if err == nil {
+					rw.WriteHeader(http.StatusOK)
+					rw.Write(b)
+				} else {
+					rw.WriteHeader(http.StatusInternalServerError)
+				}
+			}),
+		)
+
+		mockBidderResponses := []*adapters.BidderResponse{
+			{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid:     &openrtb.Bid{},
+						BidType: openrtb_ext.BidTypeBanner,
+					},
+				},
+				Currency: tc.bidResponsesCurrency,
+			},
+		}
+		bidderImpl := &goodMultiHTTPCallsBidder{
+			bidResponses: mockBidderResponses,
+		}
+		bidderImpl.httpRequest = []*adapters.RequestData{
+			{
+				Method:  "POST",
+				Uri:     server.URL,
+				Body:    []byte("{\"key\":\"val\"}"),
+				Headers: http.Header{},
+			},
+		}
+
+		// Execute:
+		bidder := adaptBidder(bidderImpl, server.Client())
+		currencyConverter := currencies.NewRateConverter(
+			&http.Client{},
+			mockedHTTPServer.URL,
+			time.Duration(10)*time.Second,
+		)
+		seatBid, errs := bidder.requestBid(
+			context.Background(),
+			&openrtb.BidRequest{
+				Cur: tc.bidRequestCurrencies,
+			},
+			"test",
+			1,
+			currencyConverter.Rates(),
+		)
+
+		// Verify:
+		if tc.expectedError {
+			assert.NotNil(t, errs, tc.description)
+		} else {
+			assert.Nil(t, errs, tc.description)
+			assert.Equal(t, tc.expectedPickedCurrency, seatBid.currency, tc.description)
+		}
 	}
 }
 
