@@ -42,9 +42,9 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 	var allBidderInfo = make(map[string]adapters.BidderInfo, len(infos)+len(aliases))
 
 	// Build all the responses up front, since there are a finite number and it won't use much memory.
-	responses := make(map[string]json.RawMessage, len(infos))
+	responses := make(map[string]json.RawMessage, len(infos)+len(aliases))
 	for bidderName, bidderInfo := range infos {
-		// copy bidderInfo into "allBidderInfo" map
+		// Copy bidderInfo into "allBidderInfo" map
 		allBidderInfo[bidderName] = bidderInfo
 
 		// JSON encode bidder info and add it to the "responses" map
@@ -57,7 +57,7 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 
 	// Add in any default aliases
 	for aliasName, bidderName := range aliases {
-		// add the alias bidder info into "allBidderInfo" map
+		// Add the alias bidder info into "allBidderInfo" map
 		aliasInfo := infos[bidderName]
 		aliasInfo.AliasOf = bidderName
 		allBidderInfo[aliasName] = aliasInfo
@@ -70,18 +70,12 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 	if err != nil {
 		glog.Fatal("Failed to JSON-marshal all bidder info data.")
 	}
+	// Add the json response containing all bidders info for the /info/bidders/all endpoint
+	responses["all"] = allBidderResponse
 
 	// Return an endpoint which writes the responses from memory.
 	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		forBidder := ps.ByName("bidderName")
-
-		// If the requested path was /info/bidders/all then return info about all the bidders
-		if forBidder == "all" {
-			w.Header().Set("Content-Type", "application/json")
-			if _, err := w.Write(allBidderResponse); err != nil {
-				glog.Errorf("error writing response to /info/bidders/%s: %v", forBidder, err)
-			}
-		}
 
 		// If the requested path was /info/bidders/{bidderName} then return the info about that bidder
 		if response, ok := responses[forBidder]; ok {
