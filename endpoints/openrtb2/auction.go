@@ -266,8 +266,20 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
-	if errL := deps.validateImps(req, aliases); errL != nil {
-		return errL
+	impIDs := make(map[string]int, len(req.Imp))
+	for index := range req.Imp {
+		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
+		errs := deps.validateImp(imp, aliases, index)
+		if len(errs) > 0 {
+			errL = append(errL, errs...)
+		}
+		if fatalError(errs) {
+			return errL
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
@@ -296,27 +308,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	return errL
-}
-
-func (deps *endpointDeps) validateImps(req *openrtb.BidRequest, aliases map[string]string) []error {
-	errL := []error{}
-	impIDs := make(map[string]int, len(req.Imp))
-	for index := range req.Imp {
-		imp := &req.Imp[index]
-		if firstIndex, ok := impIDs[imp.ID]; ok {
-			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
-		}
-		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index)
-		if len(errs) > 0 {
-			errL = append(errL, errs...)
-		}
-		if fatalError(errs) {
-			return errL
-		}
-	}
-
-	return nil
 }
 
 func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
@@ -703,7 +694,6 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	}
 
 	/* Process all the bidder exts in the request */
-	const ValidationFailed = "BidderSchemaValidationFailedError"
 	disabledBidders := []string{}
 	validationFailedBidders := []string{}
 	for bidder, ext := range bidderExts {
@@ -715,7 +705,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 			if bidderName, isValid := deps.bidderMap[coreBidder]; isValid {
 				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
 					validationFailedBidders = append(validationFailedBidders, bidder)
-					glog.Errorf("%s: request.imp[%d].ext.%s failed validation.\n%v", ValidationFailed, impIndex, coreBidder, err)
+					errL = append(errL, &errortypes.BidderFailedSchemaValidation{Message: fmt.Sprintf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)})
 				}
 			} else {
 				if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
@@ -749,7 +739,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 
 	// TODO #713 Fix this here
 	if len(bidderExts) < 1 {
-		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
+		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder with valid parameters", impIndex))
 		return errL
 	}
 
@@ -1163,7 +1153,8 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 // Checks to see if an error in an error list is a fatal error
 func fatalError(errL []error) bool {
 	for _, err := range errL {
-		if errortypes.DecodeError(err) != errortypes.BidderTemporarilyDisabledCode {
+		errType := errortypes.DecodeError(err)
+		if errType != errortypes.BidderTemporarilyDisabledCode && errType != errortypes.BidderFailedSchemaValidationCode {
 			return true
 		}
 	}

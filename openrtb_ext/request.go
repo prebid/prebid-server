@@ -18,6 +18,7 @@ type ExtRequestPrebid struct {
 	StoredRequest        *ExtStoredRequest      `json:"storedrequest,omitempty"`
 	Targeting            *ExtRequestTargeting   `json:"targeting,omitempty"`
 	Debug                int                    `json:"debug,omitempty"`
+	BidderParams         interface{}            `json:"bidderparams,omitempty"`
 }
 
 // ExtRequestPrebidCache defines the contract for bidrequest.ext.prebid.cache

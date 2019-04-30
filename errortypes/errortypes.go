@@ -9,6 +9,7 @@ const (
 	BadServerResponseCode
 	FailedToRequestBidsCode
 	BidderTemporarilyDisabledCode
+	BidderFailedSchemaValidationCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -102,6 +103,21 @@ func (err *BidderTemporarilyDisabled) Error() string {
 
 func (err *BidderTemporarilyDisabled) Code() int {
 	return BidderTemporarilyDisabledCode
+}
+
+// BidderFailedSchemaValidation is used at the request validation step,
+// when the bidder parameters fail the schema validation, we want to
+// continue processing the request and still return an error message.
+type BidderFailedSchemaValidation struct {
+	Message string
+}
+
+func (err *BidderFailedSchemaValidation) Error() string {
+	return err.Message
+}
+
+func (err *BidderFailedSchemaValidation) Code() int {
+	return BidderFailedSchemaValidationCode
 }
 
 // DecodeError provides the error code for an error, as defined above

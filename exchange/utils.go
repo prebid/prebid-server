@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 )
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -54,12 +54,47 @@ func cleanOpenRTBRequests(ctx context.Context,
 	return
 }
 
+func getBidderExts(reqExt *openrtb_ext.ExtRequest) (map[string]map[string]interface{}, error) {
+	if reqExt == nil {
+		return nil, nil
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	pbytes, err := json.Marshal(reqExt.Prebid.BidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	var bidderParams map[string]map[string]interface{}
+	err = json.Unmarshal(pbytes, &bidderParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return bidderParams, nil
+}
+
 func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
 	requestsByBidder := make(map[openrtb_ext.BidderName]*openrtb.BidRequest, len(impsByBidder))
 	explicitBuyerUIDs, err := extractBuyerUIDs(req.User)
 	if err != nil {
 		return nil, []error{err}
 	}
+
+	var reqExt openrtb_ext.ExtRequest
+	err = json.Unmarshal(req.Ext, &reqExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	bidderExt, err := getBidderExts(&reqExt)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
@@ -79,6 +114,20 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
 		}
 		reqCopy.Imp = imps
+
+		if len(bidderExt) != 0 {
+			bidderName := openrtb_ext.BidderName(bidder)
+			if bidderParams, ok := bidderExt[string(bidderName)]; ok {
+				reqExt.Prebid.BidderParams = bidderParams
+			} else {
+				reqExt.Prebid.BidderParams = nil
+			}
+
+			if reqCopy.Ext, err = json.Marshal(&reqExt); err != nil {
+				return nil, []error{err}
+			}
+		}
+
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
 	return requestsByBidder, nil
