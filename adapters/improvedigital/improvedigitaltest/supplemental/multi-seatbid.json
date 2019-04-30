@@ -1,9 +1,6 @@
 {
     "mockBidRequest": {
         "id": "test-request-id",
-        "site": {
-            "page": "https://good.site/url"
-        },
         "imp": [{
             "id": "test-imp-id",
             "banner": {
@@ -25,9 +22,6 @@
             "uri": "http://localhost/pbs",
             "body": {
                 "id": "test-request-id",
-                "site": {
-                    "page": "https://good.site/url"
-                },
                 "imp": [{
                     "id": "test-imp-id",
                     "banner": {
@@ -49,39 +43,18 @@
             "body": {
                 "id": "test-request-id",
                 "seatbid": [{
-                    "seat": "improvedigital",
-                    "bid": [{
-                        "id": "randomid",
-                        "impid": "test-imp-id",
-                        "price": 0.500000,
-                        "adid": "12345678",
-                        "adm": "some-test-ad",
-                        "cid": "987",
-                        "crid": "12345678",
-                        "h": 250,
-                        "w": 300
-                    }]
+                    "seat": "bad1",
+                    "bid": []
+                }, {
+                    "seat": "bad2",
+                    "bid": []
                 }],
                 "cur": "USD"
             }
         }
     }],
 
-    "expectedBidResponses": [{
-        "currency": "USD",
-        "bids": [{
-            "bid": {
-                "id": "randomid",
-                "impid": "test-imp-id",
-                "price": 0.5,
-                "adm": "some-test-ad",
-                "adid": "12345678",
-                "cid": "987",
-                "crid": "12345678",
-                "w": 300,
-                "h": 250
-            },
-            "type": "banner"
-        }]
-    }]
+    "expectedMakeBidsErrors": [
+        "Unexpected SeatBid! Must be only one but have: 2"
+    ]
 }
