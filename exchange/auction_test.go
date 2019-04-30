@@ -148,7 +148,7 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		}
 
 		if len(pbsBid.Bid.Cat) == 1 {
-			bidCategory[pbsBid.Bid.ImpID] = pbsBid.Bid.Cat[0]
+			bidCategory[pbsBid.Bid.ID] = pbsBid.Bid.Cat[0]
 		}
 		roundedPrices[bid] = strconv.FormatFloat(bid.bid.Price, 'f', 2, 64)
 	}
@@ -195,60 +195,35 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	} else if len(specData.ExpectedCacheables) < len(cache.items) {
 		t.Errorf("%s:  [CACHE_ERROR] More elements were cached than expected \n", fileDisplayName)
 	} else { // len(specData.ExpectedCacheables) == len(cache.items)
-		// We cached the exact number of elements we expected, now we compare them
-		var ht map[string]*cacheComparator = make(map[string]*cacheComparator)
-		var formattedData string
-		var compareString string
-
-		// list the data expected to get cached into the hash table
-		for _, cExpected := range specData.ExpectedCacheables {
-			formattedData = strings.Replace(string(cExpected.Data), "\\", "", -1)
-			formattedData = strings.Replace(formattedData, " ", "", -1)
-			compareString = fmt.Sprintf("%s_%d", formattedData, cExpected.TTLSeconds)
-			// init cacheComparator element before hashing it. If needed
-			if _, ok := ht[compareString]; !ok {
-				ht[compareString] = &cacheComparator{0, make([]string, 0), make([]string, 0)}
+		// We cached the exact number of elements we expected, now we compare them side by side in n^2
+		var matched int = 0
+		var formattedExpectedData string
+		for i := 0; i < len(specData.ExpectedCacheables); i++ {
+			if specData.ExpectedCacheables[i].Type == prebid_cache_client.TypeJSON {
+				ExpectedData := strings.Replace(string(specData.ExpectedCacheables[i].Data), "\\", "", -1)
+				ExpectedData = strings.Replace(ExpectedData, " ", "", -1)
+				formattedExpectedData = ExpectedData[1 : len(ExpectedData)-1]
+			} else {
+				formattedExpectedData = string(specData.ExpectedCacheables[i].Data)
 			}
-			ht[compareString].freq += 1
-			if targData.includeCacheVast {
-				ht[compareString].expectedKeys = append(ht[compareString].expectedKeys, cExpected.Key)
-			}
-		}
-		// list the data that actually got cached into the hash table. If it matches any
-		// of the expected values, we decrease the frequency so we account for a match.
-		for _, cFound := range cache.items {
-			formattedData = strings.Replace(string(cFound.Data), "\\", "", -1)
-			formattedData = strings.Replace(formattedData, " ", "", -1)
-			compareString = fmt.Sprintf("\"%s\"_%d", formattedData, cFound.TTLSeconds)
-			// init cacheComparator element before hashing it. If needed
-			if _, ok := ht[compareString]; !ok {
-				ht[compareString] = &cacheComparator{0, make([]string, 0), make([]string, 0)}
-			}
-			ht[compareString].freq -= 1
-			if targData.includeCacheVast {
-				ht[compareString].actualKeys = append(ht[compareString].actualKeys, cFound.Key)
-			}
-		}
-		// Check if the expected number of cached values are the same as the actual cached
-		// values by looking at the frequencies. If any of them differ from zero, something didn't match
-		for k, cachedElements := range ht {
-			if cachedElements.freq > 0 {
-				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistency. Element %s was not expected to get cached\n", fileDisplayName, k)
-			} else if cachedElements.freq < 0 {
-				t.Errorf("%s:  [CACHE_ERROR] Cache inconsistency. We cached some more elements (%s) than expected.\n", fileDisplayName, k)
-			} else if targData.includeCacheVast {
-				for i := 0; i < len(cachedElements.expectedKeys); i++ {
-					found := false
-					for j := 0; j < len(cachedElements.actualKeys); j++ {
-						if strings.HasPrefix(cachedElements.expectedKeys[i], cachedElements.actualKeys[j]) {
-							found = true
-						}
+			for j := 0; j < len(cache.items); j++ {
+				if formattedExpectedData == string(cache.items[j].Data) &&
+					specData.ExpectedCacheables[i].TTLSeconds == cache.items[j].TTLSeconds &&
+					specData.ExpectedCacheables[i].Type == cache.items[j].Type {
+					if specData.ExpectedCacheables[i].Type == prebid_cache_client.TypeJSON {
+						matched++
 					}
-					if !found {
-						t.Errorf("[CACHE_ERROR] Key \"%s\" was expected to be cached but was not.\n", cachedElements.expectedKeys[i])
+					if specData.ExpectedCacheables[i].Type == prebid_cache_client.TypeXML &&
+						len(specData.ExpectedCacheables[i].Key) <= len(cache.items[j].Key) &&
+						specData.ExpectedCacheables[i].Key == cache.items[j].Key[:len(specData.ExpectedCacheables[i].Key)] {
+						matched++
 					}
 				}
 			}
+		}
+		if matched != len(specData.ExpectedCacheables) {
+			t.Errorf("%s: [CACHE_ERROR] One or more keys were not cached as we expected \n", fileDisplayName)
+			t.FailNow()
 		}
 	}
 }
