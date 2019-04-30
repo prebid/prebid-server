@@ -35,11 +35,19 @@ func NewBiddersEndpoint(aliases map[string]string) httprouter.Handle {
 	})
 }
 
-// NewBiddersEndpoint implements /info/bidders/*
+// NewBidderDetailsEndpoint implements /info/bidders/*
 func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]string) httprouter.Handle {
+	// Build a new map that's basically a copy of "infos" but will also contain
+	// alias bidder infos
+	var allBidderInfo = make(map[string]adapters.BidderInfo, len(infos)+len(aliases))
+
 	// Build all the responses up front, since there are a finite number and it won't use much memory.
 	responses := make(map[string]json.RawMessage, len(infos))
 	for bidderName, bidderInfo := range infos {
+		// copy bidderInfo into "allBidderInfo" map
+		allBidderInfo[bidderName] = bidderInfo
+
+		// JSON encode bidder info and add it to the "responses" map
 		jsonData, err := json.Marshal(bidderInfo)
 		if err != nil {
 			glog.Fatalf("Failed to JSON-marshal bidder-info/%s.yaml data.", bidderName)
@@ -49,12 +57,33 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 
 	// Add in any default aliases
 	for aliasName, bidderName := range aliases {
+		// add the alias bidder info into "allBidderInfo" map
+		aliasInfo := infos[bidderName]
+		aliasInfo.AliasOf = bidderName
+		allBidderInfo[aliasName] = aliasInfo
+
+		// JSON encode core bidder info for the alias and add it to the "responses" map
 		responses[aliasName] = createAliasInfo(responses, aliasName, bidderName)
+	}
+
+	allBidderResponse, err := json.Marshal(allBidderInfo)
+	if err != nil {
+		glog.Fatal("Failed to JSON-marshal all bidder info data.")
 	}
 
 	// Return an endpoint which writes the responses from memory.
 	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 		forBidder := ps.ByName("bidderName")
+
+		// If the requested path was /info/bidders/all then return info about all the bidders
+		if forBidder == "all" {
+			w.Header().Set("Content-Type", "application/json")
+			if _, err := w.Write(allBidderResponse); err != nil {
+				glog.Errorf("error writing response to /info/bidders/%s: %v", forBidder, err)
+			}
+		}
+
+		// If the requested path was /info/bidders/{bidderName} then return the info about that bidder
 		if response, ok := responses[forBidder]; ok {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write(response); err != nil {
