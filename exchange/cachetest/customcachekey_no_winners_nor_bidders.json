@@ -33,6 +33,6 @@
     },
     "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":false,
-    "targetDataIncludeCacheBids":false,
-    "targetDataIncludeCacheVast":true
+    "targetDataIncludeCacheBids":true,
+    "targetDataIncludeCacheVast":false
 }
