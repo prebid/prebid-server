@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -33,6 +34,14 @@ func (a *LifestreetAdapter) SkipNoCookies() bool {
 // parameters for Lifestreet adapter.
 type lifestreetParams struct {
 	SlotTag string `json:"slot_tag"`
+}
+
+type lsmPrebid struct {
+	Type string `json:"type"`
+}
+
+type lsmExt struct {
+	Prebid lsmPrebid `json:"prebid"`
 }
 
 func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
@@ -71,6 +80,17 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
+	t := string(openrtb_ext.BidTypeBanner)
+
+	if bid.Ext != nil {
+		var e lsmExt
+		err = json.Unmarshal(bid.Ext, &e)
+		if err != nil {
+			return
+		}
+		t = e.Prebid.Type
+	}
+
 	result.Bid = &pbs.PBSBid{
 		AdUnitCode:  bid.ImpID,
 		Price:       bid.Price,
@@ -80,6 +100,7 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 		Height:      bid.H,
 		DealId:      bid.DealID,
 		NURL:        bid.NURL,
+		CreativeMediaType: t,
 	}
 	return
 }
