@@ -36,14 +36,6 @@ type lifestreetParams struct {
 	SlotTag string `json:"slot_tag"`
 }
 
-type lsmPrebid struct {
-	Type string `json:"type"`
-}
-
-type lsmExt struct {
-	Prebid lsmPrebid `json:"prebid"`
-}
-
 func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, reqJSON bytes.Buffer) (result adapters.CallOneResult, err error) {
 	httpReq, err := http.NewRequest("POST", a.URI, &reqJSON)
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
@@ -80,10 +72,10 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
-	t := string(openrtb_ext.BidTypeBanner)
+	t := openrtb_ext.BidTypeBanner
 
 	if bid.Ext != nil {
-		var e lsmExt
+		var e openrtb_ext.ExtBid
 		err = json.Unmarshal(bid.Ext, &e)
 		if err != nil {
 			return
@@ -100,7 +92,7 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 		Height:            bid.H,
 		DealId:            bid.DealID,
 		NURL:              bid.NURL,
-		CreativeMediaType: t,
+		CreativeMediaType: string(t),
 	}
 	return
 }
