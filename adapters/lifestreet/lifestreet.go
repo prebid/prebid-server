@@ -92,14 +92,14 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 	}
 
 	result.Bid = &pbs.PBSBid{
-		AdUnitCode:  bid.ImpID,
-		Price:       bid.Price,
-		Adm:         bid.AdM,
-		Creative_id: bid.CrID,
-		Width:       bid.W,
-		Height:      bid.H,
-		DealId:      bid.DealID,
-		NURL:        bid.NURL,
+		AdUnitCode:        bid.ImpID,
+		Price:             bid.Price,
+		Adm:               bid.AdM,
+		Creative_id:       bid.CrID,
+		Width:             bid.W,
+		Height:            bid.H,
+		DealId:            bid.DealID,
+		NURL:              bid.NURL,
 		CreativeMediaType: t,
 	}
 	return
