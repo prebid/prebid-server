@@ -29,7 +29,10 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
 	creative := strResp.Creatives[0]
 
-	btlrParams, _ := parseHBUri(btlrReq.Uri)
+	btlrParams, err := parseHBUri(btlrReq.Uri)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	bid := &openrtb.Bid{
 		AdID:   strResp.AdServerRequestID,
@@ -62,14 +65,9 @@ func generateHBUri(baseUrl string, params hbUriParams, app *openrtb.App) string 
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
-	var version string
+	version := "unknown"
 	if app != nil {
-		var err error
-		version, err = jsonparser.GetString(app.Ext, "prebid", "version")
-		if err == nil {
-			// todo: handle error
-			fmt.Printf("Error extracting version: %+v", err)
-		}
+		version, _ = jsonparser.GetString(app.Ext, "prebid", "version")
 	}
 
 	v.Set("hbVersion", version)

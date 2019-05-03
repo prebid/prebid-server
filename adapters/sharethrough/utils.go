@@ -13,12 +13,12 @@ import (
 )
 
 func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriParams) string {
+	var errs []error
+
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
 	jsonPayload, err := json.Marshal(strResp)
-
 	if err != nil {
-		//handle error
-		fmt.Printf("ERROR: %s\n", err)
+		return ""
 	}
 
 	tmplBody := `
@@ -55,10 +55,7 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 	}
 
 	tmpl, err := template.New("sfpjs").Parse(tmplBody)
-	if err != nil {
-		// handle error
-		fmt.Printf("ERROR TEMPLATE: %s\n", err)
-	}
+	errs = append(errs, err)
 
 	var buf []byte
 	templatedBuf := bytes.NewBuffer(buf)
@@ -76,11 +73,7 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 		b64EncodedJson,
 	})
 
-	if err != nil {
-		// handle error
-		fmt.Printf("ERROR TEMPLATE Execute: %s\n", err)
-
-	}
+	errs = append(errs, err)
 
 	return templatedBuf.String()
 }

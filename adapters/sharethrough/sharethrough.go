@@ -22,13 +22,11 @@ type SharethroughAdapter struct {
 	URI string
 }
 
-// Name returns the adapter name as a string
 func (s SharethroughAdapter) Name() string {
 	return "sharethrough"
 }
 
 func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	//fmt.Printf("in sharethrough adapter\nrequest: %+v\n", request)
 	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{}
 	var potentialRequests []*adapters.RequestData
@@ -38,8 +36,6 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 
 	for i := 0; i < len(request.Imp); i++ {
 		imp := request.Imp[i]
-
-		fmt.Printf("processing imp")
 
 		var extBtlrParams openrtb_ext.ExtImpSharethroughExt
 		if err := json.Unmarshal(imp.Ext, &extBtlrParams); err != nil {
@@ -109,7 +105,7 @@ func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		return nil, []error{err}
 	}
 
-	br, bidderResponseErr := butlerToOpenRTBResponse(externalRequest, strBidResp)
+	br, errs := butlerToOpenRTBResponse(externalRequest, strBidResp)
 
-	return br, bidderResponseErr
+	return br, errs
 }
