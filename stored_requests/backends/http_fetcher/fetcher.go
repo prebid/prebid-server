@@ -86,17 +86,20 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 		fetcher.Categories = make(map[string]map[string]stored_requests.Category)
 	}
 
-	if publisherId == "" {
-		publisherId = primaryAdServer
+	//in NewFetcher function there is a code to add "?" at the end of url
+	//in case of categories we don't expect to have any parameters, that's why we need to remove "?"
+	url := fmt.Sprintf("%s/%s.json", strings.Replace(fetcher.Endpoint, "?", "", -1), primaryAdServer)
+
+	dataName := primaryAdServer
+
+	if publisherId != "" {
+		dataName = fmt.Sprintf("%s_%s", primaryAdServer, publisherId)
+		url = fmt.Sprintf("%s/%s/%s.json", strings.Replace(fetcher.Endpoint, "?", "", -1), primaryAdServer, publisherId)
 	}
 
-	dataName := fmt.Sprintf("%s_%s", primaryAdServer, publisherId)
 	if data, ok := fetcher.Categories[dataName]; ok {
 		return data[iabCategory].Id, nil
 	}
-	//in NewFetcher function there is a code to add "?" at the end of url
-	//in case of categories we don't expect to have any parameters, that's why we need to remove "?"
-	url := fmt.Sprintf("%s/%s/%s.json", strings.Replace(fetcher.Endpoint, "?", "", -1), primaryAdServer, publisherId)
 
 	httpReq, err := http.NewRequest("GET", url, nil)
 	if err != nil {
