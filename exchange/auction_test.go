@@ -209,15 +209,10 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 			for j := 0; j < len(cache.items); j++ {
 				if formattedExpectedData == string(cache.items[j].Data) &&
 					specData.ExpectedCacheables[i].TTLSeconds == cache.items[j].TTLSeconds &&
-					specData.ExpectedCacheables[i].Type == cache.items[j].Type {
-					if specData.ExpectedCacheables[i].Type == prebid_cache_client.TypeJSON {
-						matched++
-					}
-					if specData.ExpectedCacheables[i].Type == prebid_cache_client.TypeXML &&
-						len(specData.ExpectedCacheables[i].Key) <= len(cache.items[j].Key) &&
-						specData.ExpectedCacheables[i].Key == cache.items[j].Key[:len(specData.ExpectedCacheables[i].Key)] {
-						matched++
-					}
+					specData.ExpectedCacheables[i].Type == cache.items[j].Type &&
+					len(specData.ExpectedCacheables[i].Key) <= len(cache.items[j].Key) &&
+					specData.ExpectedCacheables[i].Key == cache.items[j].Key[:len(specData.ExpectedCacheables[i].Key)] {
+					matched++
 				}
 			}
 		}
