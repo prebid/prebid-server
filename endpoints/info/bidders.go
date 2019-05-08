@@ -37,6 +37,12 @@ func NewBiddersEndpoint(aliases map[string]string) httprouter.Handle {
 
 // NewBidderDetailsEndpoint implements /info/bidders/*
 func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]string) httprouter.Handle {
+	// Validate if there exist and alias with name "all". If it does error out because
+	// that will break the /info/bidders/all endpoint.
+	if _, ok := aliases["all"]; ok {
+		glog.Fatal("Default aliases shouldn't contain an alias with name \"all\". This will break the /info/bidders/all endpoint")
+	}
+
 	// Build a new map that's basically a copy of "infos" but will also contain
 	// alias bidder infos
 	var allBidderInfo = make(map[string]adapters.BidderInfo, len(infos)+len(aliases))
