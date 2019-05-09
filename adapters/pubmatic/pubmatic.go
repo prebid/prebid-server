@@ -386,7 +386,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
 		imp.TagID = strings.TrimSpace(adSlot[0])
 
-		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
+		adSize := strings.Split(strings.ToLower(adSlot[1]), "x")
 		if len(adSize) != 2 {
 			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v", adSlotStr))
 		}
@@ -396,7 +396,7 @@ func validateAdSlot(adslot string, imp *openrtb.Imp) error {
 			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v", adSlotStr))
 		}
 
-		heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
+		heightStr := strings.Split(adSize[1], ":")
 		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
 		if err != nil {
 			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v", adSlotStr))
