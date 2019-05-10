@@ -3,7 +3,6 @@ package sharethrough
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -11,7 +10,7 @@ import (
 	"net/http"
 )
 
-const hbSource = "prebid-server"
+const supplyId = "FGMrCMMc"
 const strVersion = "1.0.0"
 
 func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
@@ -27,7 +26,6 @@ func (s SharethroughAdapter) Name() string {
 }
 
 func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
 	headers := http.Header{}
 	var potentialRequests []*adapters.RequestData
 
@@ -40,20 +38,6 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 		var extBtlrParams openrtb_ext.ExtImpSharethroughExt
 		if err := json.Unmarshal(imp.Ext, &extBtlrParams); err != nil {
 			return nil, []error{err}
-		}
-
-		var gdprApplies int64 = 0
-		if request.Regs != nil {
-			if jsonExtRegs, err := request.Regs.Ext.MarshalJSON(); err == nil {
-				gdprApplies, _ = jsonparser.GetInt(jsonExtRegs, "gdpr")
-			}
-		}
-
-		consentString := ""
-		if request.User != nil {
-			if jsonExtUser, err := request.User.Ext.MarshalJSON(); err == nil {
-				consentString, _ = jsonparser.GetString(jsonExtUser, "consent")
-			}
 		}
 
 		pKey := extBtlrParams.Bidder.Pkey
@@ -70,8 +54,8 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 			Uri: generateHBUri(s.URI, hbUriParams{
 				Pkey:               pKey,
 				BidID:              imp.ID,
-				ConsentRequired:    !(gdprApplies == 0),
-				ConsentString:      consentString,
+				ConsentRequired:    gdprApplies(request),
+				ConsentString:      gdprConsentString(request),
 				Iframe:             extBtlrParams.Bidder.Iframe,
 				Height:             height,
 				Width:              width,
@@ -82,7 +66,8 @@ func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 		})
 	}
 
-	return potentialRequests, errs
+	// We never add to the errs slice (early return), so we just create an empty one to return
+	return potentialRequests, []error{}
 }
 
 func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"html/template"
@@ -12,13 +13,14 @@ import (
 	"strconv"
 )
 
-func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriParams) string {
-	var errs []error
+const minChromeVersion = 53
+const minSafariVersion = 10
 
+func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriParams) (string, error) {
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
 	jsonPayload, err := json.Marshal(strResp)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	tmplBody := `
@@ -50,12 +52,13 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 		       }
 		     })()
 		   </script>
-	`
-
+		`
 	}
 
 	tmpl, err := template.New("sfpjs").Parse(tmplBody)
-	errs = append(errs, err)
+	if err != nil {
+		return "", err
+	}
 
 	var buf []byte
 	templatedBuf := bytes.NewBuffer(buf)
@@ -72,10 +75,11 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 		template.JS(strRespId),
 		b64EncodedJson,
 	})
+	if err != nil {
+		return "", err
+	}
 
-	errs = append(errs, err)
-
-	return templatedBuf.String()
+	return templatedBuf.String(), nil
 }
 
 func getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
@@ -99,31 +103,98 @@ func getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
 }
 
 func canAutoPlayVideo(userAgent string) bool {
-	const minChromeVersion = 53
-	const minSafariVersion = 10
+	return (isAndroid(userAgent) && isAtMinChromeVersion(userAgent)) ||
+		(isiOS(userAgent) &&
+			(isAtMinSafariVersion(userAgent) || isAtMinChromeIosVersion(userAgent))) ||
+		!(isAndroid(userAgent) || isiOS(userAgent))
+}
 
-	isAndroid, _ := regexp.MatchString("(?i)Android", userAgent)
-	isiOS, _ := regexp.MatchString("(?i)iPhone|iPad|iPod", userAgent)
+func isAndroid(userAgent string) bool {
+	isAndroid, err := regexp.MatchString("(?i)Android", userAgent)
+	if err != nil {
+		return false
+	}
+	return isAndroid
+}
 
-	var chromeVersion, chromeiOSVersion, safariVersion int64
+func isiOS(userAgent string) bool {
+	isiOS, err := regexp.MatchString("(?i)iPhone|iPad|iPod", userAgent)
+	if err != nil {
+		return false
+	}
+	return isiOS
+}
+
+func isAtMinChromeVersion(userAgent string) bool {
+	var chromeVersion int64
+	var err error
 
 	chromeVersionRegex := regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`)
 	chromeVersionMatch := chromeVersionRegex.FindStringSubmatch(userAgent)
 	if len(chromeVersionMatch) > 1 {
-		chromeVersion, _ = strconv.ParseInt(chromeVersionMatch[1], 10, 64)
+		chromeVersion, err = strconv.ParseInt(chromeVersionMatch[1], 10, 64)
 	}
+	if err != nil {
+		return false
+	}
+
+	return chromeVersion >= minChromeVersion
+}
+
+func isAtMinChromeIosVersion(userAgent string) bool {
+	var chromeiOSVersion int64
+	var err error
 
 	chromeiOSVersionRegex := regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`)
 	chromeiOSVersionMatch := chromeiOSVersionRegex.FindStringSubmatch(userAgent)
 	if len(chromeiOSVersionMatch) > 1 {
-		chromeiOSVersion, _ = strconv.ParseInt(chromeiOSVersionMatch[1], 10, 64)
+		chromeiOSVersion, err = strconv.ParseInt(chromeiOSVersionMatch[1], 10, 64)
 	}
+	if err != nil {
+		return false
+	}
+
+	return chromeiOSVersion >= minChromeVersion
+}
+
+func isAtMinSafariVersion(userAgent string) bool {
+	var safariVersion int64
+	var err error
 
 	safariVersionRegex := regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`)
 	safariVersionMatch := safariVersionRegex.FindStringSubmatch(userAgent)
 	if len(safariVersionMatch) > 1 {
-		safariVersion, _ = strconv.ParseInt(safariVersionMatch[1], 10, 64)
+		safariVersion, err = strconv.ParseInt(safariVersionMatch[1], 10, 64)
+	}
+	if err != nil {
+		return false
 	}
 
-	return (isAndroid && chromeVersion >= minChromeVersion) || (isiOS && (safariVersion >= minSafariVersion || chromeiOSVersion >= minChromeVersion)) || !(isAndroid || isiOS)
+	return safariVersion >= minSafariVersion
+}
+
+func gdprApplies(request *openrtb.BidRequest) bool {
+	var gdprApplies int64
+
+	if request.Regs != nil {
+		if jsonExtRegs, err := request.Regs.Ext.MarshalJSON(); err == nil {
+			// 0 is the return value if error, so no need to handle
+			gdprApplies, _ = jsonparser.GetInt(jsonExtRegs, "gdpr")
+		}
+	}
+
+	return gdprApplies != 0
+}
+
+func gdprConsentString(request *openrtb.BidRequest) string {
+	var consentString string
+
+	if request.User != nil {
+		if jsonExtUser, err := request.User.Ext.MarshalJSON(); err == nil {
+			// empty string is the return value if error, so no need to handle
+			consentString, _ = jsonparser.GetString(jsonExtUser, "consent")
+		}
+	}
+
+	return consentString
 }

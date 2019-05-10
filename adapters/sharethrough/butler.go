@@ -5,6 +5,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/url"
 	"strconv"
@@ -29,9 +30,15 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
 	creative := strResp.Creatives[0]
 
-	btlrParams, err := parseHBUri(btlrReq.Uri)
-	if err != nil {
-		errs = append(errs, err)
+	btlrParams, parseHBUriErr := parseHBUri(btlrReq.Uri)
+	if parseHBUriErr != nil {
+		errs = append(errs, &errortypes.BadInput{Message: parseHBUriErr.Error()})
+		return nil, errs
+	}
+
+	adm, admErr := getAdMarkup(strResp, btlrParams)
+	if admErr != nil {
+		errs = append(errs, &errortypes.BadServerResponse{Message: admErr.Error()})
 	}
 
 	bid := &openrtb.Bid{
@@ -42,7 +49,7 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 		CID:    creative.Metadata.CampaignKey,
 		CrID:   creative.Metadata.CreativeKey,
 		DealID: creative.Metadata.DealID,
-		AdM:    getAdMarkup(strResp, btlrParams),
+		AdM:    adm,
 		H:      btlrParams.Height,
 		W:      btlrParams.Width,
 	}
@@ -65,13 +72,19 @@ func generateHBUri(baseUrl string, params hbUriParams, app *openrtb.App) string 
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
-	version := "unknown"
+	var version string
+
 	if app != nil {
+		// Skipping error handling here because it should fall through to unknown in the flow
 		version, _ = jsonparser.GetString(app.Ext, "prebid", "version")
 	}
 
+	if len(version) == 0 {
+		version = "unknown"
+	}
+
 	v.Set("hbVersion", version)
-	v.Set("hbSource", hbSource)
+	v.Set("supplyId", supplyId)
 	v.Set("strVersion", strVersion)
 
 	return baseUrl + "?" + v.Encode()
@@ -84,8 +97,15 @@ func parseHBUri(uri string) (*hbUriParams, error) {
 	}
 
 	params := btlrUrl.Query()
-	height, _ := strconv.ParseUint(params.Get("height"), 10, 64)
-	width, _ := strconv.ParseUint(params.Get("width"), 10, 64)
+	height, err := strconv.ParseUint(params.Get("height"), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	width, err := strconv.ParseUint(params.Get("width"), 10, 64)
+	if err != nil {
+		return nil, err
+	}
 
 	return &hbUriParams{
 		Pkey:            params.Get("placement_key"),
