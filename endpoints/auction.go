@@ -347,12 +347,14 @@ func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderN
 // cache video bids only for Web
 func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auction, labels *pbsmetrics.Labels) {
 	var cobjs []*pbc.CacheObject
-	for _, bid := range bids {
+	var indexList []int
+	for i, bid := range bids {
 		if bid.CreativeMediaType == "video" {
 			cobjs = append(cobjs, &pbc.CacheObject{
 				Value:   bid.Adm,
 				IsVideo: true,
 			})
+			indexList = append(indexList, i)
 		}
 	}
 	err := pbc.Put(ctx, cobjs)
@@ -361,15 +363,13 @@ func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWr
 		labels.RequestStatus = pbsmetrics.RequestStatusErr
 		return
 	}
-	videoIndex := 0
-	for _, bid := range bids {
-		if bid.CreativeMediaType == "video" {
-			bid.CacheID = cobjs[videoIndex].UUID
-			bid.CacheURL = deps.cfg.GetCachedAssetURL(bid.CacheID)
-			bid.NURL = ""
-			bid.Adm = ""
-			videoIndex++
-		}
+	var cobjsIndex int = 0
+	for _, videoIndex := range indexList {
+		bids[videoIndex].CacheID = cobjs[cobjsIndex].UUID
+		bids[videoIndex].CacheURL = deps.cfg.GetCachedAssetURL(bids[videoIndex].CacheID)
+		bids[videoIndex].NURL = ""
+		bids[videoIndex].Adm = ""
+		cobjsIndex++
 	}
 }
 

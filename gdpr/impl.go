@@ -41,6 +41,12 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
 	id, ok := p.vendorIDs[bidder]
 	if ok {
+		// Linear seach the bidderName in the GDPR TrustVendors array. These trusted vendors come from the configuration .yaml file
+		for _, trustedBidder := range p.cfg.TrustVendors {
+			if trustedBidder == string(bidder) {
+				return true, nil
+			}
+		}
 		return p.allowPI(ctx, id, consent)
 	}
 

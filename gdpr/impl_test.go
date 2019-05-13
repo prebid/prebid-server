@@ -182,6 +182,12 @@ func TestAllowPersonalInfo(t *testing.T) {
 	allowPI, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, true, allowPI)
+
+	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.TrustVendor array
+	perms.cfg.TrustVendors = []string{string(openrtb_ext.BidderOpenx), string(openrtb_ext.BidderAppnexus)}
+	allowPI, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, true, allowPI)
 }
 
 func parseVendorListData(t *testing.T, data string) vendorlist.VendorList {

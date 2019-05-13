@@ -30,6 +30,7 @@ var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
   usersync_if_ambiguous: true
+  trust_vendors: ["appbid001","pubbid001"]
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -157,6 +158,8 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+	cmpStrings(t, "gdpr.trust_vendors", cfg.GDPR.TrustVendors[0], "appbid001")
+	cmpStrings(t, "gdpr.trust_vendors", cfg.GDPR.TrustVendors[1], "pubbid001")
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")

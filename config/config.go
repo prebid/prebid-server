@@ -122,6 +122,7 @@ type GDPR struct {
 	HostVendorID        int          `mapstructure:"host_vendor_id"`
 	UsersyncIfAmbiguous bool         `mapstructure:"usersync_if_ambiguous"`
 	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
+	TrustVendors        []string     `mapstructure:"trust_vendors,flow"`
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
