@@ -503,11 +503,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 	}
 
 	for a, b := range adapterBids {
-		if b != nil {
-			if req.Test == 1 {
-				// Fill debug info
-				bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
-			}
+		if b != nil && req.Test == 1 {
+			// Fill debug info
+			bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
 		if len(adapterExtra[a].Errors) > 0 {

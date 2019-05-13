@@ -1,10 +1,9 @@
 package usersyncers
 
 import (
-	"github.com/prebid/prebid-server/adapters/gamoshi"
-	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"strings"
 	"text/template"
+
 
 	"github.com/golang/glog"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
@@ -18,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/consumable"
 	"github.com/prebid/prebid-server/adapters/conversant"
 	"github.com/prebid/prebid-server/adapters/eplanning"
+	"github.com/prebid/prebid-server/adapters/gamoshi"
 	"github.com/prebid/prebid-server/adapters/grid"
 	"github.com/prebid/prebid-server/adapters/gumgum"
 	"github.com/prebid/prebid-server/adapters/improvedigital"
@@ -29,6 +29,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
 	"github.com/prebid/prebid-server/adapters/rhythmone"
 	"github.com/prebid/prebid-server/adapters/rubicon"
+	"github.com/prebid/prebid-server/adapters/sharethrough"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -76,7 +77,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	return syncers
 }
 
-func insertIntoMap(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, bidder openrtb_ext.BidderName, syncerFactory func(temp *template.Template) usersync.Usersyncer) {
+func insertIntoMap(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, bidder openrtb_ext.BidderName, syncerFactory func(*template.Template) usersync.Usersyncer) {
 	lowercased := strings.ToLower(string(bidder))
 	urlString := cfg.Adapters[lowercased].UserSyncURL
 	if urlString == "" {

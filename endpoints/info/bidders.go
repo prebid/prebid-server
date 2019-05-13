@@ -27,12 +27,12 @@ func NewBiddersEndpoint(aliases map[string]string) httprouter.Handle {
 		glog.Fatalf("error creating /info/bidders endpoint response: %v", err)
 	}
 
-	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
+	return func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
 		if _, err := w.Write(biddersJson); err != nil {
 			glog.Errorf("error writing response to /info/bidders: %v", err)
 		}
-	})
+	}
 }
 
 // NewBidderDetailsEndpoint implements /info/bidders/*
@@ -80,7 +80,7 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 	responses["all"] = allBidderResponse
 
 	// Return an endpoint which writes the responses from memory.
-	return httprouter.Handle(func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	return func(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
 		forBidder := ps.ByName("bidderName")
 
 		// If the requested path was /info/bidders/{bidderName} then return the info about that bidder
@@ -92,7 +92,7 @@ func NewBidderDetailsEndpoint(infos adapters.BidderInfos, aliases map[string]str
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
-	})
+	}
 }
 
 func createAliasInfo(responses map[string]json.RawMessage, alias string, core string) json.RawMessage {
