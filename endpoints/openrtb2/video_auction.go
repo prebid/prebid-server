@@ -574,7 +574,7 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 	for ind, pod := range req.PodConfig.Pods {
 		podErr := PodError{}
 
-		if podIdsSet[pod.PodId] == true {
+		if podIdsSet[pod.PodId] {
 			err := fmt.Sprintf("request duplicated required field: PodConfig.Pods.PodId, Pod id: %d", pod.PodId)
 			podErr.ErrMsgs = append(podErr.ErrMsgs, err)
 		} else {

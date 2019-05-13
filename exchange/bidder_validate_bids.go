@@ -86,7 +86,7 @@ func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) err
 			break
 		}
 	}
-	if currencyAllowed == false {
+	if !currencyAllowed {
 		return fmt.Errorf(
 			"Bid currency is not allowed. Was '%s', wants: ['%s']",
 			currencyUnit.String(),
