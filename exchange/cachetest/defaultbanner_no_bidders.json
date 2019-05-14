@@ -1,38 +1,32 @@
 {
     "bidRequest": {
         "imp": [{
-            "id":  "oneImp",
-            "exp":   600
-        }, {
-            "id":  "twoImp"
+            "id":  "oneImp"
         }]
     },
     "pbsBids": [{
         "bid":{
             "id": "bidOne",
             "impid": "oneImp",
-            "price": 7.64
+            "price": 7.64,
+            "exp":   600
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "appnexus"
     }, {
         "bid": {
             "id": "bidTwo",
-            "impid": "twoImp",
+            "impid": "oneImp",
             "price": 5.64
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "pubmatic"
     }],
     "expectedCacheables": [
         {
             "Type": "json",
             "TTLSeconds": 660,
-            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
-        }, {
-            "Type": "json",
-            "TTLSeconds": 3660,
-            "Data": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+            "Data":"{ \"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64, \"exp\": 600 }"
         }
     ],
     "defaultTTLs": {
@@ -42,7 +36,8 @@
         "native": 300
     },
     "targetDataIncludeWinners":true,
-    "targetDataIncludeBidderKeys":true,
+    "targetDataIncludeBidderKeys":false,
     "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false
 }
+            

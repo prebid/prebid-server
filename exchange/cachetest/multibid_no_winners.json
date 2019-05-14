@@ -75,7 +75,7 @@
             "Data": "{ \"id\": \"bidFive\", \"impid\": \"twoImp\", \"price\": 7.64, \"exp\":   900 }"
         }
     ],
-    "targetDataIncludeWinners":true,
+    "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":true,
     "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false

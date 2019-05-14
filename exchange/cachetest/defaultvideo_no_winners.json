@@ -11,7 +11,8 @@
         "bid":{
             "id": "bidOne",
             "impid": "oneImp",
-            "price": 7.64
+            "price": 7.64,
+            "nurl": "http://domain.com/win-notify/1"
         },
         "bidType": "video",
         "bidder": "appnexus"
@@ -19,7 +20,8 @@
         "bid": {
             "id": "bidTwo",
             "impid": "twoImp",
-            "price": 5.64
+            "price": 5.64,
+            "nurl": "http://domain.com/win-notify/1"
         },
         "bidType": "video",
         "bidder": "pubmatic"
@@ -28,11 +30,11 @@
         {
             "Type": "json",
             "TTLSeconds": 660,
-            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64, \"nurl\": \"http://domain.com/win-notify/1\"}"
         }, {
             "Type": "json",
             "TTLSeconds": 3660,
-            "Data": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+            "Data": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64, \"nurl\": \"http://domain.com/win-notify/1\"}"
         }
     ],
     "defaultTTLs": {
@@ -41,7 +43,7 @@
         "audio": 1800,
         "native": 300
     },
-    "targetDataIncludeWinners":true,
+    "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":true,
     "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false

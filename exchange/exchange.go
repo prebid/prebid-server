@@ -147,7 +147,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	if targData != nil && adapterBids != nil {
 		auc.setRoundedPrices(targData.priceGranularity)
-		cacheErrs := auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast, bidRequest, 60, &e.defaultTTLs, bidCategory)
+		cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
 		if len(cacheErrs) > 0 {
 			errs = append(errs, cacheErrs...)
 		}

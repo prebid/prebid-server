@@ -1,38 +1,36 @@
 {
     "bidRequest": {
         "imp": [{
-            "id":  "oneImp",
-            "exp":   600
-        }, {
-            "id":  "twoImp"
+            "id":  "oneImp"
         }]
     },
     "pbsBids": [{
         "bid":{
             "id": "bidOne",
             "impid": "oneImp",
-            "price": 7.64
+            "price": 7.64,
+            "exp":   600
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "appnexus"
     }, {
         "bid": {
             "id": "bidTwo",
-            "impid": "twoImp",
+            "impid": "oneImp",
             "price": 5.64
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "pubmatic"
     }],
     "expectedCacheables": [
         {
             "Type": "json",
             "TTLSeconds": 660,
-            "Data": "{\"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64}"
+            "Data":"{ \"id\": \"bidOne\", \"impid\": \"oneImp\", \"price\": 7.64, \"exp\":   600 }"
         }, {
             "Type": "json",
-            "TTLSeconds": 3660,
-            "Data": "{\"id\": \"bidTwo\", \"impid\": \"twoImp\", \"price\": 5.64}"
+            "TTLSeconds": 360,
+            "Data": "{ \"id\": \"bidTwo\", \"impid\": \"oneImp\", \"price\": 5.64 }"
         }
     ],
     "defaultTTLs": {
@@ -41,8 +39,9 @@
         "audio": 1800,
         "native": 300
     },
-    "targetDataIncludeWinners":true,
+    "targetDataIncludeWinners":false,
     "targetDataIncludeBidderKeys":true,
     "targetDataIncludeCacheBids":true,
     "targetDataIncludeCacheVast":false
 }
+            
