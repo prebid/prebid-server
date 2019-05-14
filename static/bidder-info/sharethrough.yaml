@@ -1,13 +1,9 @@
 maintainer:
-  email: "cnguyen@sharethrough.com"
+  email: "pubgrowth.engineering@sharethrough.com"
 capabilities:
   app:
     mediaTypes:
-      - banner
       - native
-      - video
   site:
     mediaTypes:
-      - banner
-      - video
       - native

@@ -1,17 +1,19 @@
 package sharethrough
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"net/http"
 	"net/url"
 	"strconv"
 )
 
-type hbUriParams struct {
+type StrAdSeverParams struct {
 	Pkey               string
 	BidID              string
 	ConsentRequired    bool
@@ -22,21 +24,81 @@ type hbUriParams struct {
 	Width              uint64
 }
 
-func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.ExtImpSharethroughResponse) (*adapters.BidderResponse, []error) {
+type StrOpenRTBInterface interface {
+	requestFromOpenRTB(openrtb.Imp, *openrtb.BidRequest) (*adapters.RequestData, error)
+	responseToOpenRTB(openrtb_ext.ExtImpSharethroughResponse, *adapters.RequestData) (*adapters.BidderResponse, []error)
+}
+
+type StrAdServerUriInterface interface {
+	buildUri(StrAdSeverParams, *openrtb.App) string
+	parseUri(string) (*StrAdSeverParams, error)
+}
+
+type StrUriHelper struct {
+	BaseURI string
+}
+
+type StrOpenRTBTranslator struct {
+	UriHelper StrAdServerUriInterface
+	Util      UtilityInterface
+}
+
+func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest) (*adapters.RequestData, error) {
+	headers := http.Header{}
+	headers.Add("Content-Type", "text/plain;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	var extBtlrParams openrtb_ext.ExtImpSharethroughExt
+	if err := json.Unmarshal(imp.Ext, &extBtlrParams); err != nil {
+		return nil, err
+	}
+
+	pKey := extBtlrParams.Bidder.Pkey
+
+	var height, width uint64
+	if len(extBtlrParams.Bidder.IframeSize) >= 2 {
+		height, width = uint64(extBtlrParams.Bidder.IframeSize[0]), uint64(extBtlrParams.Bidder.IframeSize[1])
+	} else {
+		height, width = s.Util.getPlacementSize(imp.Banner.Format)
+	}
+
+	return &adapters.RequestData{
+		Method: "POST",
+		Uri: s.UriHelper.buildUri(StrAdSeverParams{
+			Pkey:               pKey,
+			BidID:              imp.ID,
+			ConsentRequired:    s.Util.gdprApplies(request),
+			ConsentString:      s.Util.gdprConsentString(request),
+			Iframe:             extBtlrParams.Bidder.Iframe,
+			Height:             height,
+			Width:              width,
+			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA),
+		}, request.App),
+		Body:    nil,
+		Headers: headers,
+	}, nil
+}
+
+func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharethroughResponse, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
 	var errs []error
 	bidResponse := adapters.NewBidderResponse()
 
 	bidResponse.Currency = "USD"
 	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
+
+	if len(strResp.Creatives) == 0 {
+		errs = append(errs, &errortypes.BadInput{Message: "No creative provided"})
+		return nil, errs
+	}
 	creative := strResp.Creatives[0]
 
-	btlrParams, parseHBUriErr := parseHBUri(btlrReq.Uri)
+	btlrParams, parseHBUriErr := s.UriHelper.parseUri(btlrReq.Uri)
 	if parseHBUriErr != nil {
 		errs = append(errs, &errortypes.BadInput{Message: parseHBUriErr.Error()})
 		return nil, errs
 	}
 
-	adm, admErr := getAdMarkup(strResp, btlrParams)
+	adm, admErr := s.Util.getAdMarkup(strResp, btlrParams)
 	if admErr != nil {
 		errs = append(errs, &errortypes.BadServerResponse{Message: admErr.Error()})
 	}
@@ -60,7 +122,7 @@ func butlerToOpenRTBResponse(btlrReq *adapters.RequestData, strResp openrtb_ext.
 	return bidResponse, errs
 }
 
-func generateHBUri(baseUrl string, params hbUriParams, app *openrtb.App) string {
+func (h StrUriHelper) buildUri(params StrAdSeverParams, app *openrtb.App) string {
 	v := url.Values{}
 	v.Set("placement_key", params.Pkey)
 	v.Set("bidId", params.BidID)
@@ -87,10 +149,10 @@ func generateHBUri(baseUrl string, params hbUriParams, app *openrtb.App) string 
 	v.Set("supplyId", supplyId)
 	v.Set("strVersion", strVersion)
 
-	return baseUrl + "?" + v.Encode()
+	return h.BaseURI + "?" + v.Encode()
 }
 
-func parseHBUri(uri string) (*hbUriParams, error) {
+func (h StrUriHelper) parseUri(uri string) (*StrAdSeverParams, error) {
 	btlrUrl, err := url.Parse(uri)
 	if err != nil {
 		return nil, err
@@ -107,7 +169,7 @@ func parseHBUri(uri string) (*hbUriParams, error) {
 		return nil, err
 	}
 
-	return &hbUriParams{
+	return &StrAdSeverParams{
 		Pkey:            params.Get("placement_key"),
 		BidID:           params.Get("bidId"),
 		Iframe:          params.Get("stayInIframe") == "true",

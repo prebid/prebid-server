@@ -14,63 +14,39 @@ const supplyId = "FGMrCMMc"
 const strVersion = "1.0.0"
 
 func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
-	return &SharethroughAdapter{URI: endpoint}
+	return &SharethroughAdapter{
+		AdServer: StrOpenRTBTranslator{
+			UriHelper: StrUriHelper{BaseURI: endpoint},
+			Util:      Util{},
+		},
+	}
 }
 
 type SharethroughAdapter struct {
-	URI string
+	AdServer StrOpenRTBInterface
 }
 
-func (s SharethroughAdapter) Name() string {
+func (a SharethroughAdapter) Name() string {
 	return "sharethrough"
 }
 
-func (s SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-	headers := http.Header{}
-	var potentialRequests []*adapters.RequestData
-
-	headers.Add("Content-Type", "text/plain;charset=utf-8")
-	headers.Add("Accept", "application/json")
+func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+	var reqs []*adapters.RequestData
 
 	for i := 0; i < len(request.Imp); i++ {
-		imp := request.Imp[i]
+		req, err := a.AdServer.requestFromOpenRTB(request.Imp[i], request)
 
-		var extBtlrParams openrtb_ext.ExtImpSharethroughExt
-		if err := json.Unmarshal(imp.Ext, &extBtlrParams); err != nil {
+		if err != nil {
 			return nil, []error{err}
 		}
-
-		pKey := extBtlrParams.Bidder.Pkey
-
-		var height, width uint64
-		if len(extBtlrParams.Bidder.IframeSize) >= 2 {
-			height, width = uint64(extBtlrParams.Bidder.IframeSize[0]), uint64(extBtlrParams.Bidder.IframeSize[1])
-		} else {
-			height, width = getPlacementSize(imp.Banner.Format)
-		}
-
-		potentialRequests = append(potentialRequests, &adapters.RequestData{
-			Method: "POST",
-			Uri: generateHBUri(s.URI, hbUriParams{
-				Pkey:               pKey,
-				BidID:              imp.ID,
-				ConsentRequired:    gdprApplies(request),
-				ConsentString:      gdprConsentString(request),
-				Iframe:             extBtlrParams.Bidder.Iframe,
-				Height:             height,
-				Width:              width,
-				InstantPlayCapable: canAutoPlayVideo(request.Device.UA),
-			}, request.App),
-			Body:    nil,
-			Headers: headers,
-		})
+		reqs = append(reqs, req)
 	}
 
 	// We never add to the errs slice (early return), so we just create an empty one to return
-	return potentialRequests, []error{}
+	return reqs, []error{}
 }
 
-func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -90,7 +66,7 @@ func (s SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		return nil, []error{err}
 	}
 
-	br, errs := butlerToOpenRTBResponse(externalRequest, strBidResp)
+	br, errs := a.AdServer.responseToOpenRTB(strBidResp, externalRequest)
 
 	return br, errs
 }

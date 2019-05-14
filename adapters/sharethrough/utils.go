@@ -16,7 +16,24 @@ import (
 const minChromeVersion = 53
 const minSafariVersion = 10
 
-func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriParams) (string, error) {
+type UtilityInterface interface {
+	gdprApplies(*openrtb.BidRequest) bool
+	gdprConsentString(*openrtb.BidRequest) string
+
+	getAdMarkup(openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
+	getPlacementSize([]openrtb.Format) (uint64, uint64)
+
+	canAutoPlayVideo(string) bool
+	isAndroid(string) bool
+	isiOS(string) bool
+	isAtMinChromeIosVersion(string) bool
+	isAtMinChromeVersion(string) bool
+	isAtMinSafariVersion(string) bool
+}
+
+type Util struct{}
+
+func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
 	jsonPayload, err := json.Marshal(strResp)
 	if err != nil {
@@ -82,7 +99,7 @@ func getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *hbUriPa
 	return templatedBuf.String(), nil
 }
 
-func getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
+func (u Util) getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
 	biggest := struct {
 		Height uint64
 		Width  uint64
@@ -102,14 +119,14 @@ func getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
 	return biggest.Height, biggest.Width
 }
 
-func canAutoPlayVideo(userAgent string) bool {
-	return (isAndroid(userAgent) && isAtMinChromeVersion(userAgent)) ||
-		(isiOS(userAgent) &&
-			(isAtMinSafariVersion(userAgent) || isAtMinChromeIosVersion(userAgent))) ||
-		!(isAndroid(userAgent) || isiOS(userAgent))
+func (u Util) canAutoPlayVideo(userAgent string) bool {
+	return (u.isAndroid(userAgent) && u.isAtMinChromeVersion(userAgent)) ||
+		(u.isiOS(userAgent) &&
+			(u.isAtMinSafariVersion(userAgent) || u.isAtMinChromeIosVersion(userAgent))) ||
+		!(u.isAndroid(userAgent) || u.isiOS(userAgent))
 }
 
-func isAndroid(userAgent string) bool {
+func (u Util) isAndroid(userAgent string) bool {
 	isAndroid, err := regexp.MatchString("(?i)Android", userAgent)
 	if err != nil {
 		return false
@@ -117,7 +134,7 @@ func isAndroid(userAgent string) bool {
 	return isAndroid
 }
 
-func isiOS(userAgent string) bool {
+func (u Util) isiOS(userAgent string) bool {
 	isiOS, err := regexp.MatchString("(?i)iPhone|iPad|iPod", userAgent)
 	if err != nil {
 		return false
@@ -125,7 +142,7 @@ func isiOS(userAgent string) bool {
 	return isiOS
 }
 
-func isAtMinChromeVersion(userAgent string) bool {
+func (u Util) isAtMinChromeVersion(userAgent string) bool {
 	var chromeVersion int64
 	var err error
 
@@ -141,7 +158,7 @@ func isAtMinChromeVersion(userAgent string) bool {
 	return chromeVersion >= minChromeVersion
 }
 
-func isAtMinChromeIosVersion(userAgent string) bool {
+func (u Util) isAtMinChromeIosVersion(userAgent string) bool {
 	var chromeiOSVersion int64
 	var err error
 
@@ -157,7 +174,7 @@ func isAtMinChromeIosVersion(userAgent string) bool {
 	return chromeiOSVersion >= minChromeVersion
 }
 
-func isAtMinSafariVersion(userAgent string) bool {
+func (u Util) isAtMinSafariVersion(userAgent string) bool {
 	var safariVersion int64
 	var err error
 
@@ -173,7 +190,7 @@ func isAtMinSafariVersion(userAgent string) bool {
 	return safariVersion >= minSafariVersion
 }
 
-func gdprApplies(request *openrtb.BidRequest) bool {
+func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	var gdprApplies int64
 
 	if request.Regs != nil {
@@ -186,7 +203,7 @@ func gdprApplies(request *openrtb.BidRequest) bool {
 	return gdprApplies != 0
 }
 
-func gdprConsentString(request *openrtb.BidRequest) string {
+func (u Util) gdprConsentString(request *openrtb.BidRequest) string {
 	var consentString string
 
 	if request.User != nil {
