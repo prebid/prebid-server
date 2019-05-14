@@ -98,7 +98,11 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 
 	if data, ok := fetcher.Categories[dataName]; ok {
-		return data[iabCategory].Id, nil
+		if val, ok := data[iabCategory]; ok {
+			return val.Id, nil
+		} else {
+			return "", fmt.Errorf("Unable to find category mapping for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+		}
 	}
 
 	httpReq, err := http.NewRequest("GET", url, nil)
@@ -120,9 +124,11 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	}
 	fetcher.Categories[dataName] = tmp
 
-	resultCategory := tmp[iabCategory].Id
-
-	return resultCategory, nil
+	if val, ok := tmp[iabCategory]; ok {
+		return val.Id, nil
+	} else {
+		return "", fmt.Errorf("Unable to find category mapping for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+	}
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {
