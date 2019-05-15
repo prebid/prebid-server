@@ -53,7 +53,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	return &returnEngine
 }
 
-// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to unerlying metrics engines.
+// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to underlying metrics engines.
 type DetailedMetricsEngine struct {
 	pbsmetrics.MetricsEngine
 	GoMetrics         *pbsmetrics.Metrics
@@ -139,6 +139,20 @@ func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
 	}
 }
 
+// RecordStoredReqCacheResult across all engines
+func (me *MultiMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordStoredReqCacheResult(cacheResult, inc)
+	}
+}
+
+// RecordStoredImpCacheResult across all engines
+func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordStoredImpCacheResult(cacheResult, inc)
+	}
+}
+
 // RecordAdapterCookieSync across all engines
 func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
 	for _, thisME := range *me {
@@ -218,5 +232,15 @@ func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.Bidder
 
 // RecordUserIDSet as a noop
 func (me *DummyMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
+	return
+}
+
+// RecordStoredReqCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	return
+}
+
+// RecordStoredImpCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	return
 }

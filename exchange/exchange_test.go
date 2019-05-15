@@ -513,6 +513,33 @@ func newExchangeForTests(t *testing.T, filename string, expectations map[string]
 	}
 }
 
+func newExtRequest() openrtb_ext.ExtRequest {
+	priceGran := openrtb_ext.PriceGranularity{
+		Precision: 2,
+		Ranges: []openrtb_ext.GranularityRange{
+			{
+				Min:       0.0,
+				Max:       20.0,
+				Increment: 2.0,
+			},
+		},
+	}
+
+	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1}
+
+	reqExt := openrtb_ext.ExtRequestTargeting{
+		PriceGranularity:     priceGran,
+		IncludeWinners:       true,
+		IncludeBrandCategory: brandCat,
+	}
+
+	return openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			Targeting: &reqExt,
+		},
+	}
+}
+
 func TestCategoryMapping(t *testing.T) {
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
@@ -520,61 +547,126 @@ func TestCategoryMapping(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	priceGran := openrtb_ext.PriceGranularity{Precision: 2, Ranges: make([]openrtb_ext.GranularityRange, 0, 0)}
+	requestExt := newExtRequest()
 
-	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1}
-	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
-		IncludeBrandCategory: brandCat,
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
 	}
-
-	requestExt := openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &reqExt,
-		},
-	}
+	durationRange := make([]int, 0)
+	durationRange = append(durationRange, 15)
+	durationRange = append(durationRange, 30)
+	durationRange = append(durationRange, 50)
+	requestExt.Prebid.Targeting.DurationRangeSec = durationRange
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
-	data1 := []byte(`{"appnexus":{"brand_id":1,"auction_id":4797544351646081865,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":30,"mimes":["video\/mp4"]}}}}`)
-	data2 := []byte(`{"prebid": {"duration": 50, "targeting": {"hb_bidder": "appnexus","hb_pb": "20.00","hb_pb_cat_dur": "Sports","hb_size": "1x1"},"type": "video"},"bidder": {"appnexus":{"brand_id":1,"auction_id":4797544351646081865,"bidder_id":2,"bid_ad_type":1,"creative_info":{"video":{"duration":50,"mimes":["video\/mp4"]}}} }}`)
 
-	cats1 := append(make([]string, 0, 1), "IAB1-3")
-	cats2 := append(make([]string, 0, 1), "IAB1-4")
-	cats3 := append(make([]string, 0, 1), "IAB1-1000")
-	cats4 := append(make([]string, 0, 1), "IAB1-2000")
-	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, ADomain: make([]string, 0, 0), Cat: cats1, W: 1, H: 1, Ext: data1}
-	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, ADomain: make([]string, 0, 0), Cat: cats2, W: 1, H: 1, Ext: data2}
-	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, ADomain: make([]string, 0, 0), Cat: cats3, W: 1, H: 1, Ext: data1}
-	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, ADomain: make([]string, 0, 0), Cat: cats4, W: 1, H: 1, Ext: data1}
+	cats1 := []string{"IAB1-3"}
+	cats2 := []string{"IAB1-4"}
+	cats3 := []string{"IAB1-1000"}
+	cats4 := []string{"IAB1-2000"}
+	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
+	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
+	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil}
-	bid1_4 := pbsOrtbBid{&bid4, "video", nil}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
 
-	innerBids := make([]*pbsOrtbBid, 0, 4)
-	innerBids = append(innerBids, &bid1_1)
-	innerBids = append(innerBids, &bid1_2)
-	innerBids = append(innerBids, &bid1_3)
-	innerBids = append(innerBids, &bid1_4)
+	innerBids := []*pbsOrtbBid{
+		&bid1_1,
+		&bid1_2,
+		&bid1_3,
+		&bid1_4,
+	}
 
 	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
 	bidderName1 := openrtb_ext.BidderName("appnexus")
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, err := applyCategoryMapping(requestExt, &adapterBids, categoriesFetcher)
-
-	expectedCategoryMapping := make(map[string]string)
-	expectedCategoryMapping["bid_id1"] = "10.00_Electronics_30s"
-	expectedCategoryMapping["bid_id2"] = "20.00_Sports_50s"
+	bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
-	assert.Equal(t, "Electronics_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
-	assert.Equal(t, "Sports_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
-	assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
-	assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
+	assert.Equal(t, "10.00_Electronics_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
+	assert.Equal(t, "20.00_Sports_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Equal(t, "20.00_AdapterOverride_30s", bidCategory["bid_id3"], "Category mapping override from adapter didn't take")
+	assert.Equal(t, 3, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
+	assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
+}
+
+func TestCategoryDedupe(t *testing.T) {
+
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequest()
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+
+	cats1 := []string{"IAB1-3"}
+	cats2 := []string{"IAB1-4"}
+	// bid3 will be same price, category, and duration as bid1 so one of them should get removed
+	cats4 := []string{"IAB1-2000"}
+	bid1 := openrtb.Bid{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 15.0000, Cat: cats2, W: 1, H: 1}
+	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
+	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
+
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+
+	selectedBids := make(map[string]int)
+	expectedCategories := map[string]string{
+		"bid_id1": "10.00_Electronics_30s",
+		"bid_id2": "14.00_Sports_50s",
+		"bid_id3": "10.00_Electronics_30s",
+	}
+
+	numIterations := 10
+
+	// Run the function many times, this should be enough for the 50% chance of which bid to remove to remove bid1 sometimes
+	// and bid3 others. It's conceivably possible (but highly unlikely) that the same bid get chosen every single time, but
+	// if you notice false fails from this test increase numIterations to make it even less likely to happen.
+	for i := 0; i < numIterations; i++ {
+		innerBids := []*pbsOrtbBid{
+			&bid1_1,
+			&bid1_2,
+			&bid1_3,
+			&bid1_4,
+		}
+
+		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+		bidderName1 := openrtb_ext.BidderName("appnexus")
+
+		adapterBids[bidderName1] = &seatBid
+
+		bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, categoriesFetcher, targData)
+
+		assert.Equal(t, nil, err, "Category mapping error should be empty")
+		assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
+		assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
+
+		for bidId, bidCat := range bidCategory {
+			assert.Equal(t, expectedCategories[bidId], bidCat, "Category mapping doesn't match")
+			selectedBids[bidId]++
+		}
+	}
+
+	assert.Equal(t, numIterations, selectedBids["bid_id2"], "Bid 2 did not make it through every time")
+	assert.NotEqual(t, numIterations, selectedBids["bid_id1"], "Bid 1 made it through every time")
+	assert.NotEqual(t, numIterations, selectedBids["bid_id3"], "Bid 3 made it through every time")
 }
 
 type exchangeSpec struct {

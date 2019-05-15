@@ -46,10 +46,12 @@ type adaptedBidder interface {
 // pbsOrtbBid.bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
+// pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
 type pbsOrtbBid struct {
 	bid        *openrtb.Bid
 	bidType    openrtb_ext.BidType
 	bidTargets map[string]string
+	bidVideo   *openrtb_ext.ExtBidPrebidVideo
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -127,28 +129,40 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 
 		if httpInfo.err == nil {
-
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
-
+				// Setup default currency as `USD` is not set in bid request nor bid response
 				if bidResponse.Currency == "" {
-					// Empty currency means default currency `USD`
 					bidResponse.Currency = defaultCurrency
+				}
+				if len(request.Cur) == 0 {
+					request.Cur = []string{defaultCurrency}
 				}
 
 				// Try to get a conversion rate
-				// TODO(#280): try to convert every to element of request.cur, and use the first one which succeeds
-				if conversionRate, err := conversions.GetRate(bidResponse.Currency, "USD"); err == nil {
+				// Try to get the first currency from request.cur having a match in the rate converter,
+				// and use it as currency
+				var conversionRate float64
+				var err error
+				for _, bidReqCur := range request.Cur {
+					if conversionRate, err = conversions.GetRate(bidResponse.Currency, bidReqCur); err == nil {
+						seatBid.currency = bidReqCur
+						break
+					}
+				}
+
+				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if bidResponse.Bids[i].Bid != nil {
 							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
 						}
 						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-							bid:     bidResponse.Bids[i].Bid,
-							bidType: bidResponse.Bids[i].BidType,
+							bid:      bidResponse.Bids[i].Bid,
+							bidType:  bidResponse.Bids[i].BidType,
+							bidVideo: bidResponse.Bids[i].BidVideo,
 						})
 					}
 				} else {

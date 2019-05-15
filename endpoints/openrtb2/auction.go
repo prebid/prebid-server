@@ -28,26 +28,41 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"golang.org/x/net/publicsuffix"
 )
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).Auction), nil
+	return httprouter.Handle((&endpointDeps{
+		ex,
+		validator,
+		requestsById,
+		empty_fetcher.EmptyFetcher{},
+		categories,
+		cfg,
+		met,
+		pbsAnalytics,
+		disabledBidders,
+		defRequest,
+		defReqJSON,
+		bidderMap}).Auction), nil
 }
 
 type endpointDeps struct {
 	ex               exchange.Exchange
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
+	videoFetcher     stored_requests.Fetcher
+	categories       stored_requests.CategoryFetcher
 	cfg              *config.Configuration
 	metricsEngine    pbsmetrics.MetricsEngine
 	analytics        analytics.PBSAnalyticsModule
@@ -55,7 +70,6 @@ type endpointDeps struct {
 	defaultRequest   bool
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
-	categories       stored_requests.CategoryFetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -670,11 +684,31 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	if len(imp.Ext) == 0 {
 		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
 	}
+
 	var bidderExts map[string]json.RawMessage
 	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
 		return []error{err}
 	}
 
+	// Also accept bidder exts within imp[...].ext.prebid.bidder
+	// NOTE: This is not part of the official API, we are not expecting clients
+	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
+	// at this time
+	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
+	if rawPrebidExt, ok := bidderExts["prebid"]; ok {
+		var prebidExt openrtb_ext.ExtImpPrebid
+		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
+			for bidder, ext := range prebidExt.Bidder {
+				if ext == nil {
+					continue
+				}
+
+				bidderExts[bidder] = ext
+			}
+		}
+	}
+
+	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
 		if bidder != "prebid" {

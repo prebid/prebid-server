@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Improve Digital Adapter Params",
+    "description": "A schema which validates params accepted by Improve Digital adapter",
+    "type": "object",
+    "properties": {
+        "placementId": {
+            "type": "integer",
+            "description": "An ID which identifies this placement of the impression"
+        },
+        "size": {
+            "type": "object",
+            "properties": {
+                "w": {
+                    "type": "integer"
+                },
+                "h": {
+                    "type": "integer"
+                }
+            },
+            "required": ["w", "h"],
+            "description": "Placement size"
+        }
+    },
+    "required": []
+}
