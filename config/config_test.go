@@ -30,6 +30,7 @@ var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
   usersync_if_ambiguous: true
+  trusted_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -157,6 +158,22 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+
+	//Assert the TrustedPublisherList was correctly unmarshalled
+	cmpStrings(t, "gdpr.trusted_publishers", cfg.GDPR.TrustedPublisherList[0], "siteID")
+	cmpStrings(t, "gdpr.trusted_publishers", cfg.GDPR.TrustedPublisherList[1], "fake-site-id")
+	cmpStrings(t, "gdpr.trusted_publishers", cfg.GDPR.TrustedPublisherList[2], "appID")
+	cmpStrings(t, "gdpr.trusted_publishers", cfg.GDPR.TrustedPublisherList[3], "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA")
+
+	//Assert the TrustedPublisherMap hash table was built correctly
+	var found bool
+	for i := 0; i < len(cfg.GDPR.TrustedPublisherList); i++ {
+		_, found = cfg.GDPR.TrustedPublisherMap[cfg.GDPR.TrustedPublisherList[i]]
+		cmpBools(t, "cfg.GDPR.TrustedPublisherMap", found, true)
+	}
+	_, found = cfg.GDPR.TrustedPublisherMap["appnexus"]
+	cmpBools(t, "cfg.GDPR.TrustedPublisherMap", found, false)
+
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")

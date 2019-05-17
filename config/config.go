@@ -119,9 +119,11 @@ func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Du
 }
 
 type GDPR struct {
-	HostVendorID        int          `mapstructure:"host_vendor_id"`
-	UsersyncIfAmbiguous bool         `mapstructure:"usersync_if_ambiguous"`
-	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
+	HostVendorID         int          `mapstructure:"host_vendor_id"`
+	UsersyncIfAmbiguous  bool         `mapstructure:"usersync_if_ambiguous"`
+	Timeouts             GDPRTimeouts `mapstructure:"timeouts_ms"`
+	TrustedPublisherList []string     `mapstructure:"trusted_publishers,flow"`
+	TrustedPublisherMap  map[string]int
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -383,6 +385,13 @@ func New(v *viper.Viper) (*Configuration, error) {
 	logGeneral(reflect.ValueOf(c), "  \t")
 	if errs := c.validate(); len(errs) > 0 {
 		return &c, errs
+	}
+
+	// To look for a request's publisher_id into the TurstedPublisherList in
+	// O(1) time, we fill this hash table located in the GDPR's TrustedPublisherMap field
+	c.GDPR.TrustedPublisherMap = make(map[string]int)
+	for i := 0; i < len(c.GDPR.TrustedPublisherList); i++ {
+		c.GDPR.TrustedPublisherMap[c.GDPR.TrustedPublisherList[i]] = 1
 	}
 	return &c, nil
 }
