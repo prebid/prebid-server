@@ -12,21 +12,23 @@ import (
 
 // Defines the actual Prometheus metrics we will be using. Satisfies interface MetricsEngine
 type Metrics struct {
-	Registry        *prometheus.Registry
-	connCounter     prometheus.Gauge
-	connError       *prometheus.CounterVec
-	imps            *prometheus.CounterVec
-	requests        *prometheus.CounterVec
-	reqTimer        *prometheus.HistogramVec
-	adaptRequests   *prometheus.CounterVec
-	adaptTimer      *prometheus.HistogramVec
-	adaptBids       *prometheus.CounterVec
-	adaptPrices     *prometheus.HistogramVec
-	adaptErrors     *prometheus.CounterVec
-	adaptPanics     *prometheus.CounterVec
-	cookieSync      prometheus.Counter
-	adaptCookieSync *prometheus.CounterVec
-	userID          *prometheus.CounterVec
+	Registry             *prometheus.Registry
+	connCounter          prometheus.Gauge
+	connError            *prometheus.CounterVec
+	imps                 *prometheus.CounterVec
+	requests             *prometheus.CounterVec
+	reqTimer             *prometheus.HistogramVec
+	adaptRequests        *prometheus.CounterVec
+	adaptTimer           *prometheus.HistogramVec
+	adaptBids            *prometheus.CounterVec
+	adaptPrices          *prometheus.HistogramVec
+	adaptErrors          *prometheus.CounterVec
+	adaptPanics          *prometheus.CounterVec
+	cookieSync           prometheus.Counter
+	adaptCookieSync      *prometheus.CounterVec
+	userID               *prometheus.CounterVec
+	storedReqCacheResult *prometheus.CounterVec
+	storedImpCacheResult *prometheus.CounterVec
 }
 
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
@@ -86,6 +88,16 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		bidLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.adaptBids)
+	metrics.storedReqCacheResult = newCounter(cfg, "stored_request_cache_performance",
+		"Number of stored request cache hits vs miss",
+		standardLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.storedReqCacheResult)
+	metrics.storedImpCacheResult = newCounter(cfg, "stored_imp_cache_performance",
+		"Number of stored imp cache hits vs miss",
+		standardLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.storedImpCacheResult)
 	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
 		"Values of the bids from each bidder.",
 		adapterLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
@@ -223,6 +235,24 @@ func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprB
 		labels["gdpr_blocked"] = "false"
 	}
 	me.adaptCookieSync.With(labels).Inc()
+}
+
+// RecordStoredReqCacheResult records cache hits and misses when looking up stored requests
+func (me *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	labels := prometheus.Labels{
+		"cache_result": string(cacheResult),
+	}
+
+	me.storedReqCacheResult.With(labels).Add(float64(inc))
+}
+
+// RecordStoredImpCacheResult records cache hits and misses when looking up stored imps
+func (me *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	labels := prometheus.Labels{
+		"cache_result": string(cacheResult),
+	}
+
+	me.storedImpCacheResult.With(labels).Add(float64(inc))
 }
 
 func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {

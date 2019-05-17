@@ -51,6 +51,9 @@ type AdapterBid string
 // AdapterError : Errors which may have occurred during the adapter's execution
 type AdapterError string
 
+// CacheResult : Cache hit/miss
+type CacheResult string
+
 // The demand sources
 const (
 	DemandWeb     DemandSource = "web"
@@ -72,6 +75,7 @@ const (
 	ReqTypeORTB2Web RequestType = "openrtb2-web"
 	ReqTypeORTB2App RequestType = "openrtb2-app"
 	ReqTypeAMP      RequestType = "amp"
+	ReqTypeVideo    RequestType = "video"
 )
 
 func RequestTypes() []RequestType {
@@ -80,6 +84,7 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2Web,
 		ReqTypeORTB2App,
 		ReqTypeAMP,
+		ReqTypeVideo,
 	}
 }
 
@@ -160,6 +165,22 @@ func AdapterErrors() []AdapterError {
 	}
 }
 
+const (
+	// CacheHit represents a cache hit i.e the key was found in cache
+	CacheHit CacheResult = "hit"
+	// CacheMiss represents a cache miss i.e that key wasn't found in cache
+	// and had to be fetched from the backend
+	CacheMiss CacheResult = "miss"
+)
+
+// CacheResults returns possible cache results i.e. cache hit or miss
+func CacheResults() []CacheResult {
+	return []CacheResult{
+		CacheHit,
+		CacheMiss,
+	}
+}
+
 // UserLabels : Labels for /setuid endpoint
 type UserLabels struct {
 	Action RequestAction
@@ -199,4 +220,6 @@ type MetricsEngine interface {
 	RecordCookieSync(labels Labels) // May ignore all labels
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
+	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
+	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
 }

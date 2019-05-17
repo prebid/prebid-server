@@ -22,6 +22,9 @@ type Metrics struct {
 	SafariRequestMeter         metrics.Meter
 	SafariNoCookieMeter        metrics.Meter
 	RequestTimer               metrics.Timer
+	StoredReqCacheMeter        map[CacheResult]metrics.Meter
+	StoredImpCacheMeter        map[CacheResult]metrics.Meter
+
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
 	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
@@ -93,6 +96,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		SafariRequestMeter:         blankMeter,
 		SafariNoCookieMeter:        blankMeter,
 		RequestTimer:               &metrics.NilTimer{},
+		StoredReqCacheMeter:        make(map[CacheResult]metrics.Meter),
+		StoredImpCacheMeter:        make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:           blankMeter,
 		CookieSyncMeter:            blankMeter,
 		CookieSyncGen:              make(map[openrtb_ext.BidderName]metrics.Meter),
@@ -153,6 +158,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
 	}
+	for _, cacheRes := range CacheResults() {
+		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
+		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)
+	}
+
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
 	return newMetrics
@@ -434,6 +444,16 @@ func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
 	case RequestActionGDPR:
 		doMark(userLabels.Bidder, me.userSyncGDPRPrevent)
 	}
+}
+
+// RecordStoredReqCacheResult implements a part of the MetricsEngine interface. Records the
+// cache hits and misses when looking up stored requests
+func (me *Metrics) RecordStoredReqCacheResult(cacheResult CacheResult, inc int) {
+	me.StoredReqCacheMeter[cacheResult].Mark(int64(inc))
+}
+
+func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) {
+	me.StoredImpCacheMeter[cacheResult].Mark(int64(inc))
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

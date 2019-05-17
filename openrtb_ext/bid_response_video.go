@@ -10,6 +10,7 @@ type BidResponseVideo struct {
 type AdPod struct {
 	PodId     int64            `json:"podid"`
 	Targeting []VideoTargeting `json:"targeting"`
+	Errors    []string         `json:"errors"`
 }
 
 type VideoTargeting struct {

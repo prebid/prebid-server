@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prebid/prebid-server/pbsmetrics"
+
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prebid/prebid-server/config"
@@ -24,7 +26,7 @@ import (
 
 // This gets set to the connection string used when a database connection is made. We only support a single
 // database currently, so all fetchers need to share the same db connection for now.
-var dbConnection struct {
+type dbConnection struct {
 	conn string
 	db   *sql.DB
 }
@@ -32,46 +34,43 @@ var dbConnection struct {
 // CreateStoredRequests returns three things:
 //
 // 1. A Fetcher which can be used to get Stored Requests
-// 2. A DB connection, if one was created. This may be nil.
-// 3. A function which should be called on shutdown for graceful cleanups.
+// 2. A function which should be called on shutdown for graceful cleanups.
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, router *httprouter.Router) (fetcher stored_requests.AllFetcher, db *sql.DB, shutdown func()) {
+func CreateStoredRequests(cfg *config.StoredRequestsSlim, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router, dbc *dbConnection) (fetcher stored_requests.AllFetcher, shutdown func()) {
 	// Create database connection if given options for one
 	if cfg.Postgres.ConnectionInfo.Database != "" {
 		conn := cfg.Postgres.ConnectionInfo.ConnString()
 
-		if dbConnection.conn == "" {
+		if dbc.conn == "" {
 			glog.Infof("Connecting to Postgres for Stored Requests. DB=%s, host=%s, port=%d, user=%s",
 				cfg.Postgres.ConnectionInfo.Database,
 				cfg.Postgres.ConnectionInfo.Host,
 				cfg.Postgres.ConnectionInfo.Port,
 				cfg.Postgres.ConnectionInfo.Username)
-			db = newPostgresDB(cfg.Postgres.ConnectionInfo)
-			dbConnection.conn = conn
-			dbConnection.db = db
-		} else {
-			db = dbConnection.db
+			db := newPostgresDB(cfg.Postgres.ConnectionInfo)
+			dbc.conn = conn
+			dbc.db = db
 		}
 
 		// Error out if config is trying to use multiple database connections for different stored requests (not supported yet)
-		if conn != dbConnection.conn {
+		if conn != dbc.conn {
 			glog.Fatal("Multiple database connection settings found in Stored Requests config, only a single database connection is currently supported.")
 		}
 	}
 
-	eventProducers := newEventProducers(cfg, client, db, router)
-	fetcher = newFetcher(cfg, client, db)
+	eventProducers := newEventProducers(cfg, client, dbc.db, router)
+	fetcher = newFetcher(cfg, client, dbc.db)
 
 	var shutdown1 func()
 
 	if cfg.InMemoryCache.Type != "" {
 		cache := newCache(cfg)
-		fetcher = stored_requests.WithCache(fetcher, cache)
+		fetcher = stored_requests.WithCache(fetcher, cache, metricsEngine)
 		shutdown1 = addListeners(cache, eventProducers)
 	}
 
@@ -79,10 +78,10 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, r
 		if shutdown1 != nil {
 			shutdown1()
 		}
-		if dbConnection.db != nil {
-			db := dbConnection.db
-			dbConnection.db = nil
-			dbConnection.conn = ""
+		if dbc.db != nil {
+			db := dbc.db
+			dbc.db = nil
+			dbc.conn = ""
 			if err := db.Close(); err != nil {
 				glog.Errorf("Error closing DB connection: %v", err)
 			}
@@ -99,13 +98,14 @@ func CreateStoredRequests(cfg *config.StoredRequestsSlim, client *http.Client, r
 // 3. A Fetcher which can be used to get Stored Requests for /openrtb2/auction
 // 4. A Fetcher which can be used to get Stored Requests for /openrtb2/amp
 // 5. A Fetcher which can be used to get Category Mapping data
+// 6. A Fetcher which can be used to get Stored Requests for /openrtb2/video
 //
 // If any errors occur, the program will exit with an error message.
 // It probably means you have a bad config or networking issue.
 //
 // As a side-effect, it will add some endpoints to the router if the config calls for it.
 // In the future we should look for ways to simplify this so that it's not doing two things.
-func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, categoriesFetcher stored_requests.CategoryFetcher) {
+func NewStoredRequests(cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, client *http.Client, router *httprouter.Router) (db *sql.DB, shutdown func(), fetcher stored_requests.Fetcher, ampFetcher stored_requests.Fetcher, categoriesFetcher stored_requests.CategoryFetcher, videoFetcher stored_requests.Fetcher) {
 	// Build individual slim options from combined config struct
 	slimAuction, slimAmp := resolvedStoredRequestsConfig(cfg)
 
@@ -114,23 +114,25 @@ func NewStoredRequests(cfg *config.Configuration, client *http.Client, router *h
 	//	cfg.CategoryMapping.CacheEvents.Endpoint = "/storedrequest/categorymapping"
 	//}
 
-	fetcher1, db, shutdown1 := CreateStoredRequests(&slimAuction, client, router)
-	fetcher2, _, shutdown2 := CreateStoredRequests(&slimAmp, client, router)
-	fetcher3, catdb, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, client, router)
+	var dbc dbConnection
 
-	// Return the database still should it be defined in CategoryMapping and not StoredRequests in the config object.
-	if db == nil && catdb != nil {
-		db = catdb
-	}
+	fetcher1, shutdown1 := CreateStoredRequests(&slimAuction, metricsEngine, client, router, &dbc)
+	fetcher2, shutdown2 := CreateStoredRequests(&slimAmp, metricsEngine, client, router, &dbc)
+	fetcher3, shutdown3 := CreateStoredRequests(&cfg.CategoryMapping, metricsEngine, client, router, &dbc)
+	fetcher4, shutdown4 := CreateStoredRequests(&cfg.StoredVideo, metricsEngine, client, router, &dbc)
+
+	db = dbc.db
 
 	fetcher = fetcher1.(stored_requests.Fetcher)
 	ampFetcher = fetcher2.(stored_requests.Fetcher)
 	categoriesFetcher = fetcher3.(stored_requests.CategoryFetcher)
+	videoFetcher = fetcher4.(stored_requests.Fetcher)
 
 	shutdown = func() {
 		shutdown1()
 		shutdown2()
 		shutdown3()
+		shutdown4()
 	}
 
 	return

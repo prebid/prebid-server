@@ -54,7 +54,7 @@ func cleanPI(bidRequest *openrtb.BidRequest, isAMP bool) {
 		// Need to duplicate pointer objects
 		user := *bidRequest.User
 		bidRequest.User = &user
-		if isAMP == false {
+		if !isAMP {
 			bidRequest.User.BuyerUID = ""
 		}
 		bidRequest.User.Geo = cleanGeo(bidRequest.User.Geo)

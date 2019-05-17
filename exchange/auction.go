@@ -60,11 +60,11 @@ func (a *auction) setRoundedPrices(priceGranularity openrtb_ext.PriceGranularity
 	a.roundedPrices = roundedPrices
 }
 
-func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, bids bool, vast bool, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string) []error {
-	if !bids && !vast {
+func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string) []error {
+	var bids, vast, includeBidderKeys, includeWinners bool = targData.includeCacheBids, targData.includeCacheVast, targData.includeBidderKeys, targData.includeWinners
+	if !((bids || vast) && (includeBidderKeys || includeWinners)) {
 		return nil
 	}
-
 	var errs []error
 	expectNumBids := valOrZero(bids, len(a.roundedPrices))
 	expectNumVast := valOrZero(vast, len(a.roundedPrices))
@@ -91,10 +91,14 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	for _, topBidsPerImp := range a.winningBidsByBidder {
 		for _, topBidPerBidder := range topBidsPerImp {
 			impID := topBidPerBidder.bid.ImpID
+			isOverallWinner := a.winningBids[impID] == topBidPerBidder
+			if !includeBidderKeys && !isOverallWinner {
+				continue
+			}
 			var customCacheKey string
 			var catDur string
 			useCustomCacheKey := false
-			if competitiveExclusion && topBidPerBidder == a.winningBids[impID] {
+			if competitiveExclusion && isOverallWinner {
 				// set custom cache key for winning bid when competitive exclusion applies
 				catDur = bidCategory[topBidPerBidder.bid.ID]
 				if len(catDur) > 0 {

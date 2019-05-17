@@ -1,0 +1,6 @@
+maintainer:
+  email: "j.bartek@improvedigital.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
