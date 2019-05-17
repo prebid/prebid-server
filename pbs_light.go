@@ -74,6 +74,8 @@ func serve(revision string, cfg *config.Configuration) error {
 	}
 	// Init prebid cache
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
+	pbc.InitPrebidCacheURL(cfg.ExternalURL)
+
 	// Add cors support
 	//corsRouter := router.SupportCORS(r)
 	//server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision, currencyConverter), r.MetricsEngine)
