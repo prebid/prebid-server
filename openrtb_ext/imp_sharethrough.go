@@ -67,27 +67,32 @@ type ExtImpSharethroughPlacement struct {
 	Status                string                                `json:"status"`
 }
 
+type ExtImpSharethroughPlacementThirdPartyPartner struct {
+	Key string `json:"key"`
+	Tag string `json:"tag"`
+}
+
 type ExtImpSharethroughPlacementAttributes struct {
-	AdServerKey              string          `json:"ad_server_key"`
-	AdServerPath             string          `json:"ad_server_path"`
-	AllowDynamicCropping     bool            `json:"allow_dynamic_cropping"`
-	AppThirdPartyPartners    []string        `json:"app_third_party_partners"`
-	CustomCardCSS            string          `json:"custom_card_css"`
-	DFPPath                  string          `json:"dfp_path"`
-	DirectSellPromotedByText string          `json:"direct_sell_promoted_by_text"`
-	Domain                   string          `json:"domain"`
-	EnableLinkRedirection    bool            `json:"enable_link_redirection"`
-	FeaturedContent          json.RawMessage `json:"featured_content"`
-	MaxHeadlineLength        int             `json:"max_headline_length"`
-	MultiAdPlacement         bool            `json:"multi_ad_placement"`
-	PromotedByText           string          `json:"promoted_by_text"`
-	PublisherKey             string          `json:"publisher_key"`
-	RenderingPixelOffset     int             `json:"rendering_pixel_offset"`
-	SafeFrameSize            []int           `json:"safe_frame_size"`
-	SiteKey                  string          `json:"site_key"`
-	StrOptOutURL             string          `json:"str_opt_out_url"`
-	Template                 string          `json:"template"`
-	ThirdPartyPartners       []string        `json:"third_party_partners"`
+	AdServerKey              string                                         `json:"ad_server_key"`
+	AdServerPath             string                                         `json:"ad_server_path"`
+	AllowDynamicCropping     bool                                           `json:"allow_dynamic_cropping"`
+	AppThirdPartyPartners    []string                                       `json:"app_third_party_partners"`
+	CustomCardCSS            string                                         `json:"custom_card_css"`
+	DFPPath                  string                                         `json:"dfp_path"`
+	DirectSellPromotedByText string                                         `json:"direct_sell_promoted_by_text"`
+	Domain                   string                                         `json:"domain"`
+	EnableLinkRedirection    bool                                           `json:"enable_link_redirection"`
+	FeaturedContent          json.RawMessage                                `json:"featured_content"`
+	MaxHeadlineLength        int                                            `json:"max_headline_length"`
+	MultiAdPlacement         bool                                           `json:"multi_ad_placement"`
+	PromotedByText           string                                         `json:"promoted_by_text"`
+	PublisherKey             string                                         `json:"publisher_key"`
+	RenderingPixelOffset     int                                            `json:"rendering_pixel_offset"`
+	SafeFrameSize            []int                                          `json:"safe_frame_size"`
+	SiteKey                  string                                         `json:"site_key"`
+	StrOptOutURL             string                                         `json:"str_opt_out_url"`
+	Template                 string                                         `json:"template"`
+	ThirdPartyPartners       []ExtImpSharethroughPlacementThirdPartyPartner `json:"third_party_partners"`
 }
 
 type ExtImpSharethroughExt struct {
