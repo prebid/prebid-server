@@ -125,12 +125,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	ctx := context.Background()
-	cancel := func() {}
+
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
 	if timeout > 0 {
+		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+		defer cancel()
 	}
-	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if req.App != nil {
@@ -452,14 +453,14 @@ func validateNativeContextTypes(cType native.ContextType, cSubtype native.Contex
 		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype < 0 {
-		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype value can't be less than 0. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype == 0 {
 		return nil
 	}
 
 	if cSubtype >= 100 {
-		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype can't be greater than or equal to 100. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype >= native.ContextSubTypeGeneral && cSubtype <= native.ContextSubTypeUserGenerated {
 		if cType != native.ContextTypeContent {
@@ -513,6 +514,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 	}
 
 	foundType := false
+	multipleAssets := false
 
 	if asset.Title != nil {
 		foundType = true
@@ -523,32 +525,43 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 
 	if asset.Img != nil {
 		if foundType {
-			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
-		}
-		foundType = true
-		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
-			return err
+			multipleAssets = true
+		} else {
+			foundType = true
+			if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
+				return err
+			}
 		}
 	}
 
 	if asset.Video != nil {
 		if foundType {
-			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
-		}
-		foundType = true
-		if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
-			return err
+			multipleAssets = true
+		} else {
+			foundType = true
+			if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
+				return err
+			}
 		}
 	}
 
 	if asset.Data != nil {
 		if foundType {
-			return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+			multipleAssets = true
+		} else {
+			foundType = true
+			if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
+				return err
+			}
 		}
-		foundType = true
-		if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
-			return err
-		}
+	}
+
+	if multipleAssets {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+	}
+
+	if !foundType {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at least one of {title, img, video, data}", impIndex, assetIndex)
 	}
 
 	return nil
@@ -690,7 +703,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
 	// at this time
 	// https://github.com/prebid/prebid-server/pull/846#issuecomment-476352224
-	if rawPrebidExt, ok := bidderExts["prebid"]; ok {
+	if rawPrebidExt, ok := bidderExts[openrtb_ext.PrebidExtKey]; ok {
 		var prebidExt openrtb_ext.ExtImpPrebid
 		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
 			for bidder, ext := range prebidExt.Bidder {
@@ -706,7 +719,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
 	for bidder, ext := range bidderExts {
-		if bidder != "prebid" {
+		if bidder != openrtb_ext.PrebidExtKey {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
@@ -1066,7 +1079,7 @@ func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, imp
 // (e.g. malformed json, id not a string, etc).
 func getStoredRequestId(data []byte) (string, bool, error) {
 	// These keys must be kept in sync with openrtb_ext.ExtStoredRequest
-	value, dataType, _, err := jsonparser.Get(data, "ext", "prebid", "storedrequest", "id")
+	value, dataType, _, err := jsonparser.Get(data, "ext", openrtb_ext.PrebidExtKey, "storedrequest", "id")
 	if dataType == jsonparser.NotExist {
 		return "", false, nil
 	}
