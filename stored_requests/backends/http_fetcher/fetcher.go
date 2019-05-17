@@ -91,10 +91,10 @@ func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer
 	var dataName, url string
 	if publisherId != "" {
 		dataName = fmt.Sprintf("%s_%s", primaryAdServer, publisherId)
-		url = fmt.Sprintf("%s/%s/%s.json", strings.Replace(fetcher.Endpoint, "?", "", -1), primaryAdServer, publisherId)
+		url = fmt.Sprintf("%s/%s/%s.json", strings.TrimSuffix(fetcher.Endpoint, "?"), primaryAdServer, publisherId)
 	} else {
 		dataName = primaryAdServer
-		url = fmt.Sprintf("%s/%s.json", strings.Replace(fetcher.Endpoint, "?", "", -1), primaryAdServer)
+		url = fmt.Sprintf("%s/%s.json", strings.TrimSuffix(fetcher.Endpoint, "?"), primaryAdServer)
 	}
 
 	if data, ok := fetcher.Categories[dataName]; ok {
