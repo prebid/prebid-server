@@ -587,7 +587,7 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, "10.00_Electronics_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
@@ -652,7 +652,7 @@ func TestCategoryDedupe(t *testing.T) {
 
 		adapterBids[bidderName1] = &seatBid
 
-		bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, categoriesFetcher, targData)
+		bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
 		assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")

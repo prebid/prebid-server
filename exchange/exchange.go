@@ -139,7 +139,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	conversions := e.currencyConverter.Rates()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
-	bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, *categoriesFetcher, targData)
+	bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
 	auc := newAuction(adapterBids, len(bidRequest.Imp))
 	if err != nil {
 		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
@@ -321,7 +321,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
+func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -375,7 +375,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids map[openrt
 					continue
 				} else {
 					//if unique IAB category is present then translate it to the adserver category based on mapping file
-					category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
+					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
 					if err != nil || category == "" {
 						//TODO: add metrics
 						//if mapping required but no mapping file is found then discard the bid
