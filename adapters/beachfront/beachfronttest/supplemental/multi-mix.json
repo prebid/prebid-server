@@ -154,6 +154,7 @@
         }
         },
       "mockResponse": {
+        "status": 200,
         "body": {
           "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
           "seatBid":[

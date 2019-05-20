@@ -1,9 +1,8 @@
 {
   "mockBidRequest": {
     "id": "some_test_ad",
-    "app": {
-      "domain": "yourmomshouse.com",
-      "id": "some-mobile-app"
+    "site": {
+      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
     },
     "imp": [
       {
@@ -19,7 +18,7 @@
         "ext": {
           "bidder": {
             "bidfloor": 0.02,
-            "appId": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
+            "appId": "00000000-1111-2222-3333-11111111111"
           }
         }
       }
@@ -34,7 +33,7 @@
           "slots": [
             {
               "slot": "",
-              "id": "3b16770b-17af-4d22-daff-9606bdf2c9c3",
+              "id": "00000000-1111-2222-3333-11111111111",
               "bidfloor": 0.02,
               "sizes": [
                 {
@@ -44,12 +43,12 @@
               ]
             }
           ],
-          "domain": "yourmomshouse.com",
-          "page": "some-mobile-app",
+          "domain": "test.opposingviews.com",
+          "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
           "referrer": "",
           "search": "",
-          "requestId": "some_test_ad",
           "secure": 0,
+          "requestId": "some_test_ad",
           "isMobile": 0,
           "ip": "",
           "deviceModel": "",
@@ -64,32 +63,10 @@
       },
       "mockResponse": {
         "status": 200,
-        "body": [
-          {
-            "crid":"crid_1",
-            "price":2.942808,
-            "w":300,
-            "h":250,
-            "slot":"div-gpt-ad-1460505748561-0",
-            "adm":"<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
-          }
-        ]
+        "body": []
       }
     }
   ],
 
-  "expectedBids": [
-    {
-      "Bid": {
-        "id": "12345678",
-        "impid": "test-slot",
-        "price": 2,
-        "adm": "\u003cdiv id=\"12345678\" style=\"width:300;height:250;background-color:black;color:white;\"\u003e300x250\u003c\\div\u003e",
-        "crid": "crid_1",
-        "w": 300,
-        "h": 250
-      },
-      "type": "banner"
-    }
-  ]
+  "expectedBids": []
 }
