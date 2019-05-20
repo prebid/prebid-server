@@ -90,12 +90,12 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.adaptBids)
 	metrics.storedReqCacheResult = newCounter(cfg, "stored_request_cache_performance",
 		"Number of stored request cache hits vs miss",
-		standardLabelNames,
+		[]string{"cache_result"},
 	)
 	metrics.Registry.MustRegister(metrics.storedReqCacheResult)
 	metrics.storedImpCacheResult = newCounter(cfg, "stored_imp_cache_performance",
 		"Number of stored imp cache hits vs miss",
-		standardLabelNames,
+		[]string{"cache_result"},
 	)
 	metrics.Registry.MustRegister(metrics.storedImpCacheResult)
 	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
@@ -365,6 +365,11 @@ func initializeTimeSeries(m *Metrics) {
 	for _, l := range cookieLabels {
 		_ = m.adaptCookieSync.With(l)
 	}
+	cacheLabels := addDimension([]prometheus.Labels{}, "cache_result", cacheResultAsString())
+	for _, l := range cacheLabels {
+		_ = m.storedImpCacheResult.With(l)
+		_ = m.storedReqCacheResult.With(l)
+	}
 }
 
 // addDimesion will expand a slice of labels to add the dimension of a new set of values for a new label name
@@ -456,6 +461,15 @@ func adapterBidsAsString() []string {
 
 func adapterErrorsAsString() []string {
 	list := pbsmetrics.AdapterErrors()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func cacheResultAsString() []string {
+	list := pbsmetrics.CacheResults()
 	output := make([]string, len(list))
 	for i, s := range list {
 		output[i] = string(s)
