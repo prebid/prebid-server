@@ -139,20 +139,30 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	conversions := e.currencyConverter.Rates()
 
 	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
-	bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
-	auc := newAuction(adapterBids, len(bidRequest.Imp))
-	if err != nil {
-		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+	anyBidsReturned := false
+	for _, seatBid := range adapterBids {
+		if seatBid != nil && len(seatBid.bids) > 0 {
+			anyBidsReturned = true
+			break
+		}
+	}
+	if anyBidsReturned {
+		bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+		auc := newAuction(adapterBids, len(bidRequest.Imp))
+		if err != nil {
+			return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+		}
+
+		if targData != nil {
+			auc.setRoundedPrices(targData.priceGranularity)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
+			if len(cacheErrs) > 0 {
+				errs = append(errs, cacheErrs...)
+			}
+			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
+		}
 	}
 
-	if targData != nil && len(auc.winningBidsByBidder) > 0 {
-		auc.setRoundedPrices(targData.priceGranularity)
-		cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
-		if len(cacheErrs) > 0 {
-			errs = append(errs, cacheErrs...)
-		}
-		targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
-	}
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
 }
