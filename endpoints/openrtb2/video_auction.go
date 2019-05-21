@@ -359,8 +359,10 @@ func minMax(array []int) (int, int) {
 func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
+	anyBidsReturned := false
 	for _, seatBid := range bidresponse.SeatBid {
 		for _, bid := range seatBid.Bid {
+			anyBidsReturned = true
 
 			var tempRespBidExt openrtb_ext.ExtBid
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
@@ -393,7 +395,9 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 		}
 	}
 
-	if len(adPods) == 0 {
+	//check if there are any bids in response.
+	//if there are no bids - empty response should be returned, no cache errors
+	if len(adPods) == 0 && anyBidsReturned {
 		//means there is a global cache error, we need to reject all bids
 		err := errors.New("caching failed for all bids")
 		return nil, err

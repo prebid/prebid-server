@@ -145,7 +145,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 	}
 
-	if targData != nil && adapterBids != nil {
+	if targData != nil && len(auc.winningBidsByBidder) > 0 {
 		auc.setRoundedPrices(targData.priceGranularity)
 		cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
 		if len(cacheErrs) > 0 {
