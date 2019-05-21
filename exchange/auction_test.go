@@ -117,8 +117,8 @@ func loadCacheSpec(filename string) (*cacheSpec, error) {
 // finds the highest bid of every Imp.
 func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	var bid *pbsOrtbBid
-	winningBidsByImp := make(map[string]*pbsOrtbBid)
-	winningBidsByBidder := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
+	impsToTopBids := make(map[string]*pbsOrtbBid)
+	impsToBiddersTopBids := make(map[string]map[openrtb_ext.BidderName]*pbsOrtbBid)
 	roundedPrices := make(map[*pbsOrtbBid]string)
 	bidCategory := make(map[string]string)
 
@@ -131,20 +131,20 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 		cpm := bid.bid.Price
 
 		// Map this bid if it's the highest we've seen from this Imp so far
-		wbid, ok := winningBidsByImp[bid.bid.ImpID]
+		wbid, ok := impsToTopBids[bid.bid.ImpID]
 		if !ok || cpm > wbid.bid.Price {
-			winningBidsByImp[bid.bid.ImpID] = bid
+			impsToTopBids[bid.bid.ImpID] = bid
 		}
 
 		// Map this bid if it's the highest we've seen from this bidder so far
-		if _, ok := winningBidsByBidder[bid.bid.ImpID]; ok {
-			bestSoFar, ok := winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder]
+		if _, ok := impsToBiddersTopBids[bid.bid.ImpID]; ok {
+			bestSoFar, ok := impsToBiddersTopBids[bid.bid.ImpID][pbsBid.Bidder]
 			if !ok || cpm > bestSoFar.bid.Price {
-				winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder] = bid
+				impsToBiddersTopBids[bid.bid.ImpID][pbsBid.Bidder] = bid
 			}
 		} else {
-			winningBidsByBidder[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
-			winningBidsByBidder[bid.bid.ImpID][pbsBid.Bidder] = bid
+			impsToBiddersTopBids[bid.bid.ImpID] = make(map[openrtb_ext.BidderName]*pbsOrtbBid)
+			impsToBiddersTopBids[bid.bid.ImpID][pbsBid.Bidder] = bid
 		}
 
 		if len(pbsBid.Bid.Cat) == 1 {
@@ -184,9 +184,9 @@ func runCacheSpec(t *testing.T, fileDisplayName string, specData *cacheSpec) {
 	}
 
 	testAuction := &auction{
-		winningBids:         winningBidsByImp,
-		winningBidsByBidder: winningBidsByBidder,
-		roundedPrices:       roundedPrices,
+		impsToTopBids:        impsToTopBids,
+		impsToBiddersTopBids: impsToBiddersTopBids,
+		roundedPrices:        roundedPrices,
 	}
 	_ = testAuction.doCache(ctx, cache, targData, &specData.BidRequest, 60, &specData.DefaultTTLs, bidCategory)
 

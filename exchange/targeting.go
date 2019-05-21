@@ -31,8 +31,8 @@ type targetData struct {
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
 func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string) {
-	for impId, topBidsPerImp := range auc.winningBidsByBidder {
-		overallWinner := auc.winningBids[impId]
+	for impId, topBidsPerImp := range auc.impsToBiddersTopBids {
+		overallWinner := auc.impsToTopBids[impId]
 		for bidderName, topBidPerBidder := range topBidsPerImp {
 			isOverallWinner := overallWinner == topBidPerBidder
 
