@@ -175,11 +175,21 @@ func TestAllowPersonalInfo(t *testing.T) {
 	}
 
 	// PI needs both purposes to succeed
-	allowPI, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
+	allowPI, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "", "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowPI)
 
-	allowPI, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
+	allowPI, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderPubmatic, "", "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, true, allowPI)
+
+	// Assert that an item that otherwise would not be allowed PI access, gets approved because it is found in the GDPR.NonStandardPublishers array
+	perms.cfg.NonStandardPublishers = []string{"siteID", "fake-site-id", "appNexusAppID"}
+	perms.cfg.NonStandardPublisherMap = make(map[string]int)
+	for _, publisher_id := range perms.cfg.NonStandardPublishers {
+		perms.cfg.NonStandardPublisherMap[publisher_id] = 1
+	}
+	allowPI, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "appNexusAppID", "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, true, allowPI)
 }
