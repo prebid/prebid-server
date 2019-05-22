@@ -276,7 +276,8 @@ func TestOpenRTBRequest(t *testing.T) {
 	testData := createTestData()
 	request := createOpenRtbRequest(testData)
 
-	httpRequests, errs := bidder.MakeRequests(request)
+	reqInfo := adapters.ExtraRequestInfo{}
+	httpRequests, errs := bidder.MakeRequests(request, reqInfo)
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -311,7 +312,8 @@ func TestOpenRTBIncorrectRequest(t *testing.T) {
 		User:   &openrtb.User{BuyerUID: "buyerUID"},
 	}
 
-	httpRequests, errs := bidder.MakeRequests(request)
+	reqInfo := adapters.ExtraRequestInfo{}
+	httpRequests, errs := bidder.MakeRequests(request, reqInfo)
 
 	if len(errs) != len(request.Imp) {
 		t.Errorf("%d Imp objects should have errors. but was %d errors", len(request.Imp), len(errs))

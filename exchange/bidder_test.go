@@ -61,7 +61,8 @@ func TestSingleBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates())
+	reqInfo := adapters.ExtraRequestInfo{}
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), reqInfo)
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -146,7 +147,8 @@ func TestMultiBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates())
+	reqInfo := adapters.ExtraRequestInfo{}
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), reqInfo)
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -508,12 +510,14 @@ func TestMultiCurrencies(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 		)
+		reqInfo := adapters.ExtraRequestInfo{}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			&openrtb.BidRequest{},
 			"test",
 			1,
 			currencyConverter.Rates(),
+			reqInfo,
 		)
 
 		// Verify:
@@ -651,12 +655,14 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		// Execute:
 		bidder := adaptBidder(bidderImpl, server.Client())
 		currencyConverter := currencies.NewRateConverterDefault()
+		reqInfo := adapters.ExtraRequestInfo{}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			&openrtb.BidRequest{},
 			"test",
 			1,
 			currencyConverter.Rates(),
+			reqInfo,
 		)
 
 		// Verify:
@@ -820,6 +826,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 		)
+		reqInfo := adapters.ExtraRequestInfo{}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			&openrtb.BidRequest{
@@ -828,6 +835,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			"test",
 			1,
 			currencyConverter.Rates(),
+			reqInfo,
 		)
 
 		// Verify:
@@ -931,6 +939,7 @@ func TestServerCallDebugging(t *testing.T) {
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
 
+	reqInfo := adapters.ExtraRequestInfo{}
 	bids, _ := bidder.requestBid(
 		context.Background(),
 		&openrtb.BidRequest{
@@ -939,6 +948,7 @@ func TestServerCallDebugging(t *testing.T) {
 		"test",
 		1.0,
 		currencyConverter.Rates(),
+		reqInfo,
 	)
 
 	if len(bids.httpCalls) != 1 {
@@ -961,7 +971,8 @@ func TestServerCallDebugging(t *testing.T) {
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
 	currencyConverter := currencies.NewRateConverterDefault()
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates())
+	reqInfo := adapters.ExtraRequestInfo{}
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), reqInfo)
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -980,7 +991,7 @@ type goodSingleBidder struct {
 	bidResponse  *adapters.BidderResponse
 }
 
-func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest, reqInfo adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return []*adapters.RequestData{bidder.httpRequest}, nil
 }
@@ -998,7 +1009,7 @@ type goodMultiHTTPCallsBidder struct {
 	bidResponseNumber int
 }
 
-func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest, reqInfo adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	response := make([]*adapters.RequestData, len(bidder.httpRequest))
 
@@ -1023,7 +1034,7 @@ type mixedMultiBidder struct {
 	bidResponse   *adapters.BidderResponse
 }
 
-func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest, reqInfo adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return bidder.httpRequests, []error{errors.New("The requests weren't ideal.")}
 }
@@ -1038,7 +1049,7 @@ type bidRejector struct {
 	httpResponse *adapters.ResponseData
 }
 
-func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest, reqInfo adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return nil, []error{errors.New("Invalid params on BidRequest.")}
 }
 

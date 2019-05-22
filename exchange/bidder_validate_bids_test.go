@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,8 @@ func TestAllValidBids(t *testing.T) {
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates())
+	reqInfo := adapters.ExtraRequestInfo{}
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
 	assert.Len(t, seatBid.bids, 3)
 	assert.Len(t, errs, 0)
 }
@@ -82,7 +84,8 @@ func TestAllBadBids(t *testing.T) {
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates())
+	reqInfo := adapters.ExtraRequestInfo{}
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
 	assert.Len(t, seatBid.bids, 0)
 	assert.Len(t, errs, 5)
 }
@@ -125,7 +128,8 @@ func TestMixedBids(t *testing.T) {
 			},
 		},
 	})
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates())
+	reqInfo := adapters.ExtraRequestInfo{}
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
 	assert.Len(t, seatBid.bids, 2)
 	assert.Len(t, errs, 3)
 }
@@ -245,7 +249,8 @@ func TestCurrencyBids(t *testing.T) {
 			Cur: tc.brqCur,
 		}
 
-		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates())
+		reqInfo := adapters.ExtraRequestInfo{}
+		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
 		assert.Len(t, seatBid.bids, expectedValidBids)
 		assert.Len(t, errs, expectedErrs)
 	}
@@ -256,6 +261,6 @@ type mockAdaptedBidder struct {
 	errorResponse []error
 }
 
-func (b *mockAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions) (*pbsOrtbSeatBid, []error) {
+func (b *mockAdaptedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
 	return b.bidResponse, b.errorResponse
 }

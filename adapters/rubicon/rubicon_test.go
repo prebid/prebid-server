@@ -1046,7 +1046,8 @@ func TestOpenRTBRequest(t *testing.T) {
 		},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqInfo := adapters.ExtraRequestInfo{}
+	reqs, errs := bidder.MakeRequests(request, reqInfo)
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1163,7 +1164,8 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 		}},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqInfo := adapters.ExtraRequestInfo{}
+	reqs, errs := bidder.MakeRequests(request, reqInfo)
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1223,7 +1225,8 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 		}},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqInfo := adapters.ExtraRequestInfo{}
+	reqs, errs := bidder.MakeRequests(request, reqInfo)
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
