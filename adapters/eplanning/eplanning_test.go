@@ -1,13 +1,14 @@
 package eplanning
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
+	"net/http"
 	"testing"
 
-	"net/http"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 )
 
 func TestJsonSamples(t *testing.T) {
-	eplanningAdapter := NewEPlanningBidder(new(http.Client), "http://ads.us.e-planning.net/dsp/obr/1")
+	eplanningAdapter := NewEPlanningBidder(new(http.Client), "http://ads.us.e-planning.net/hb/1")
+	eplanningAdapter.testing = true
 	adapterstest.RunJSONBidderTest(t, "eplanningtest", eplanningAdapter)
 }

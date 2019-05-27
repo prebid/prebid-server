@@ -185,7 +185,7 @@ func GenerateBidRequestForTestData(fbdata bidInfo, url string) (*pbs.PBSRequest,
 				},
 			},
 			Bids: []pbs.Bids{
-				pbs.Bids{
+				{
 					BidderCode: "audienceNetwork",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
 					Params:     json.RawMessage(fmt.Sprintf("{\"placementId\": \"%s\"}", tag.placementID)),

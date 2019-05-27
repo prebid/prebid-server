@@ -11,7 +11,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
-const config = "hb_pbs_1.0.0"
+const hbconfig = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
 	endpoint string
@@ -37,11 +37,6 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 			bannerImps = append(bannerImps, imp)
 		} else if imp.Video != nil {
 			videoImps = append(videoImps, imp)
-		} else {
-			err := &errortypes.BadInput{
-				Message: fmt.Sprintf("OpenX only supports banner and video imps. Ignoring imp id=%s", imp.ID),
-			}
-			errs = append(errs, err)
 		}
 	}
 
@@ -72,7 +67,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
-	reqExt := openxReqExt{BidderConfig: config}
+	reqExt := openxReqExt{BidderConfig: hbconfig}
 
 	for _, imp := range request.Imp {
 		if err := preprocess(&imp, &reqExt); err != nil {

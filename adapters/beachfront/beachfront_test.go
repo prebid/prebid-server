@@ -1,8 +1,9 @@
 package beachfront
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 	"testing"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 )
 
 func TestJsonSamples(t *testing.T) {

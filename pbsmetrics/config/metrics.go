@@ -6,9 +6,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/prometheus"
-	"github.com/rcrowley/go-metrics"
-	"github.com/vrischmann/go-metrics-influxdb"
+	prometheusmetrics "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/prometheus"
+	metrics "github.com/rcrowley/go-metrics"
+	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
@@ -97,6 +97,13 @@ func (me *MultiMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length
 	}
 }
 
+// RecordAdapterPanic across all engines
+func (me *MultiMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterPanic(labels)
+	}
+}
+
 // RecordAdapterRequest across all engines
 func (me *MultiMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	for _, thisME := range *me {
@@ -129,6 +136,13 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels,
 func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
 	for _, thisME := range *me {
 		thisME.RecordCookieSync(labels)
+	}
+}
+
+// RecordAdapterCookieSync across all engines
+func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterCookieSync(adapter, gdprBlocked)
 	}
 }
 
@@ -167,6 +181,11 @@ func (me *DummyMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length
 	return
 }
 
+// RecordAdapterPanic as a noop
+func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
+	return
+}
+
 // RecordAdapterRequest as a noop
 func (me *DummyMetricsEngine) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	return
@@ -189,6 +208,11 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels,
 
 // RecordCookieSync as a noop
 func (me *DummyMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
+	return
+}
+
+// RecordAdapterCookieSync as a noop
+func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
 	return
 }
 

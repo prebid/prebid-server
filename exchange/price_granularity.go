@@ -1,9 +1,10 @@
 package exchange
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"math"
 	"strconv"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
 // DEFAULT_PRECISION should be taken care of in openrtb_ext/request.go, but throwing an additional safety check here.

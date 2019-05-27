@@ -173,7 +173,7 @@ func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targeting := "{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"
-	rawTargeting := openrtb.RawJSON(targeting)
+	rawTargeting := json.RawMessage(targeting)
 
 	resp.SeatBid[0].Bid[0] = openrtb.Bid{
 		ID:    "random-id",
@@ -711,7 +711,7 @@ func TestWrongBidIdResponse(t *testing.T) {
 			ImpID: "zma",
 			Price: 1.67,
 			AdM:   "zma",
-			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+			Ext:   json.RawMessage("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
 		}
 		js, _ := json.Marshal(resp)
 		w.Write(js)
@@ -754,7 +754,7 @@ func TestZeroPriceBidResponse(t *testing.T) {
 			ImpID: "first-tag",
 			Price: 0,
 			AdM:   "zma",
-			Ext:   openrtb.RawJSON("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
+			Ext:   json.RawMessage("{\"rp\":{\"targeting\":[{\"key\":\"key1\",\"values\":[\"value1\"]},{\"key\":\"key2\",\"values\":[\"value2\"]}]}}"),
 		}
 		js, _ := json.Marshal(resp)
 		w.Write(js)
@@ -994,7 +994,7 @@ func TestOpenRTBRequest(t *testing.T) {
 					SIZE_ID[10],
 				},
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {
+			Ext: json.RawMessage(`{"bidder": {
 				"zoneId": 8394,
 				"siteId": 283282,
 				"accountId": 7891,
@@ -1010,7 +1010,7 @@ func TestOpenRTBRequest(t *testing.T) {
 				MinDuration: 15,
 				MaxDuration: 30,
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {
+			Ext: json.RawMessage(`{"bidder": {
 				"zoneId": 7780,
 				"siteId": 283282,
 				"accountId": 7891,
@@ -1030,12 +1030,19 @@ func TestOpenRTBRequest(t *testing.T) {
 			PxRatio: rubidata.devicePxRatio,
 		},
 		User: &openrtb.User{
-			Ext: openrtb.RawJSON(`{"digitrust": {
-				"id": "some-digitrust-id",
-				"keyv": 1,
-				"pref": 0
-
-			}}`),
+			Ext: json.RawMessage(`{"digitrust": {
+                    "id": "some-digitrust-id",
+                    "keyv": 1,
+                    "pref": 0
+                },
+                "tpid": [{
+                    "source": "tdid",
+                    "uid": "3d50a262-bd8e-4be3-90b8-246291523907"
+                },{
+                    "source": "pubcid",
+                    "uid": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+                }]
+            }`),
 		},
 	}
 
@@ -1064,6 +1071,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 		if len(rpRequest.Imp) != len(request.Imp) {
 			t.Fatalf("Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
+		}
+		if rpRequest.Cur != nil {
+			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
 		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
@@ -1115,6 +1125,9 @@ func TestOpenRTBRequest(t *testing.T) {
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
 			}
+			if userExt.TpID == nil || len(userExt.TpID) != 2 {
+				t.Fatal("TpID values are not as expected!")
+			}
 		} else {
 			t.Fatalf("User.Ext object should not be nil since it contains a valid digitrust object.")
 		}
@@ -1160,7 +1173,7 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 					H: 50,
 				}},
 			},
-			Ext: openrtb.RawJSON(`{"bidder": {
+			Ext: json.RawMessage(`{"bidder": {
 				"accountId": 2763,
 				"siteId": 68780,
 				"zoneId": 327642
@@ -1193,6 +1206,29 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	if bidResponse.Bids[0].BidType != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected a banner bid. Got: %s", bidResponse.Bids[0].BidType)
 	}
+	theBid := bidResponse.Bids[0].Bid
+	if theBid.ID != "1234567890" {
+		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
+	}
+}
+
+func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{Body: requestJson}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","bidid":"1234567890","seatbid":[{"bid":[{"id":"0","price": 1}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, _ := bidder.MakeBids(request, reqData, httpResp)
+
 	theBid := bidResponse.Bids[0].Bid
 	if theBid.ID != "1234567890" {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)

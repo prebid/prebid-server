@@ -128,7 +128,7 @@ func RequestStatuses() []RequestStatus {
 	}
 }
 
-// Adapter bid repsonse status.
+// Adapter bid response status.
 const (
 	AdapterBidPresent AdapterBid = "bid"
 	AdapterBidNone    AdapterBid = "nobid"
@@ -190,11 +190,13 @@ type MetricsEngine interface {
 	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
+	RecordAdapterPanic(labels AdapterLabels)
 	// This records whether or not a bid of a particular type uses `adm` or `nurl`.
 	// Since the legacy endpoints don't have a bid type, it can only count bids from OpenRTB and AMP.
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels)        // May ignore all labels
+	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 }

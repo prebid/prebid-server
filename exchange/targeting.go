@@ -30,7 +30,7 @@ type targetData struct {
 // The one exception is the `hb_cache_id` key. Since our APIs explicitly document cache keys to be on a "best effort" basis,
 // it's ok if those stay in the auction. For now, this method implements a very naive cache strategy.
 // In the future, we should implement a more clever retry & backoff strategy to balance the success rate & performance.
-func (targData *targetData) setTargeting(auc *auction, isApp bool) {
+func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMapping map[string]string) {
 	for impId, topBidsPerImp := range auc.winningBidsByBidder {
 		overallWinner := auc.winningBids[impId]
 		for bidderName, topBidPerBidder := range topBidsPerImp {
@@ -54,14 +54,11 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool) {
 				targData.addKeys(targets, openrtb_ext.HbDealIdConstantKey, deal, bidderName, isOverallWinner)
 			}
 
-			if bidderName == "audienceNetwork" {
-				targets[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodDemandSDK
-			} else {
-				targets[string(openrtb_ext.HbCreativeLoadMethodConstantKey)] = openrtb_ext.HbCreativeLoadMethodHTML
-			}
-
 			if isApp {
 				targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner)
+			}
+			if len(categoryMapping) > 0 {
+				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBidPerBidder.bid.ID], bidderName, isOverallWinner)
 			}
 
 			topBidPerBidder.bidTargets = targets

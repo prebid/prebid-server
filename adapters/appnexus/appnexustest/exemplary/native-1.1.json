@@ -87,6 +87,7 @@
                   "ext": {
                     "appnexus": {
                       "brand_id": 350,
+                      "brand_category_id": 350,
                       "auction_id": 5607483846416358664,
                       "bidder_id": 2,
                       "bid_ad_type": 3
@@ -126,6 +127,7 @@
             "ext": {
               "appnexus": {
                 "brand_id": 350,
+                "brand_category_id": 350,
                 "auction_id": 5607483846416358664,
                 "bidder_id": 2,
                 "bid_ad_type": 3

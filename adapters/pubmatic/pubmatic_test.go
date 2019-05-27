@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
-	"github.com/mxmCherry/openrtb"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -65,31 +65,17 @@ func DummyPubMaticServer(w http.ResponseWriter, r *http.Request) {
 	var bids []openrtb.Bid
 
 	for i, imp := range breq.Imp {
-		if imp.Banner != nil {
-			bids = append(bids, openrtb.Bid{
-				ID:     fmt.Sprintf("SeatID_%d", i),
-				ImpID:  imp.ID,
-				Price:  float64(int(rand.Float64()*1000)) / 100,
-				AdID:   fmt.Sprintf("adID-%d", i),
-				AdM:    "AdContent",
-				CrID:   fmt.Sprintf("creative-%d", i),
-				W:      *imp.Banner.W,
-				H:      *imp.Banner.H,
-				DealID: fmt.Sprintf("DealID_%d", i),
-			})
-		} else {
-			bids = append(bids, openrtb.Bid{
-				ID:     fmt.Sprintf("SeatID_%d", i),
-				ImpID:  imp.ID,
-				Price:  float64(int(rand.Float64()*1000)) / 100,
-				AdID:   fmt.Sprintf("adID-%d", i),
-				AdM:    "AdContent",
-				CrID:   fmt.Sprintf("creative-%d", i),
-				W:      imp.Video.W,
-				H:      imp.Video.H,
-				DealID: fmt.Sprintf("DealID_%d", i),
-			})
-		}
+		bids = append(bids, openrtb.Bid{
+			ID:     fmt.Sprintf("SeatID_%d", i),
+			ImpID:  imp.ID,
+			Price:  float64(int(rand.Float64()*1000)) / 100,
+			AdID:   fmt.Sprintf("adID-%d", i),
+			AdM:    "AdContent",
+			CrID:   fmt.Sprintf("creative-%d", i),
+			W:      *imp.Banner.W,
+			H:      *imp.Banner.H,
+			DealID: fmt.Sprintf("DealID_%d", i),
+		})
 	}
 	resp.SeatBid[0].Bid = bids
 

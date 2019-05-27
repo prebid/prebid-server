@@ -14,7 +14,7 @@ type ExtImpPubmatic struct {
 	Keywords    []*ExtImpPubmaticKeyVal `json:"keywords,omitempty"`
 }
 
-// ExtImpPubmaticKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]
+// ExtImpPubmaticKeyVal defines the contract for bidrequest.imp[i].ext.pubmatic.keywords[i]
 type ExtImpPubmaticKeyVal struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"value,omitempty"`

@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mxmCherry/openrtb"
 	"net/http"
+
+	"github.com/mxmCherry/openrtb"
 )
 
 // OrtbMockService Represents a scaffolded OpenRTB service.

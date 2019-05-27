@@ -124,6 +124,7 @@ func doRequest(req *http.Request, gdprAllowsHostCookies bool, gdprReturnsError b
 	perms := &mockPermsSetUID{
 		allowHost: gdprAllowsHostCookies,
 		errorHost: gdprReturnsError,
+		allowPI:   true,
 	}
 	cfg := config.Configuration{}
 	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), metricsConf.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
@@ -177,6 +178,7 @@ func assertSyncValue(t *testing.T, cookie *usersync.PBSCookie, family string, ex
 type mockPermsSetUID struct {
 	allowHost bool
 	errorHost bool
+	allowPI   bool
 }
 
 func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string) (bool, error) {
@@ -189,4 +191,8 @@ func (g *mockPermsSetUID) HostCookiesAllowed(ctx context.Context, consent string
 
 func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
 	return false, nil
+}
+
+func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+	return g.allowPI, nil
 }

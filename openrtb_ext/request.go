@@ -51,9 +51,16 @@ type ExtRequestPrebidCacheVAST struct{}
 
 // ExtRequestTargeting defines the contract for bidrequest.ext.prebid.targeting
 type ExtRequestTargeting struct {
-	PriceGranularity  PriceGranularity `json:"pricegranularity"`
-	IncludeWinners    bool             `json:"includewinners"`
-	IncludeBidderKeys bool             `json:"includebidderkeys"`
+	PriceGranularity     PriceGranularity        `json:"pricegranularity"`
+	IncludeWinners       bool                    `json:"includewinners"`
+	IncludeBidderKeys    bool                    `json:"includebidderkeys"`
+	IncludeBrandCategory ExtIncludeBrandCategory `json:"includebrandcategory"`
+	DurationRangeSec     []int                   `json:"durationrangesec"`
+}
+
+type ExtIncludeBrandCategory struct {
+	PrimaryAdServer int    `json:"primaryadserver"`
+	Publisher       string `json:"publisher"`
 }
 
 // Make an unmarshaller that will set a default PriceGranularity
@@ -62,7 +69,7 @@ func (ert *ExtRequestTargeting) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 
-	// define seperate type to prevent infinite recursive calls to UnmarshalJSON
+	// define separate type to prevent infinite recursive calls to UnmarshalJSON
 	type extRequestTargetingDefaults ExtRequestTargeting
 	defaults := &extRequestTargetingDefaults{
 		PriceGranularity:  priceGranularityMed,

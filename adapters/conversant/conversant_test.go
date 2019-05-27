@@ -3,23 +3,20 @@ package conversant
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
-	"io/ioutil"
-
-	"net/http"
-	"net/http/httptest"
-
-	"encoding/json"
-
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
-	"github.com/mxmCherry/openrtb"
 )
 
 // Constants
@@ -171,7 +168,7 @@ func TestConversantNoBid(t *testing.T) {
 
 	resp, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 	if resp != nil || err != nil {
-		t.Fatal("Failed to handle emtpy bid", err)
+		t.Fatal("Failed to handle empty bid", err)
 	}
 }
 
@@ -303,7 +300,7 @@ func TestConversantResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -526,7 +523,7 @@ func TestConversantVideoResponse(t *testing.T) {
 
 	prices, imps := FilterZeroPrices(prices, lastReq.Imp)
 
-	assertEqual(t, len(resp), len(prices), "Bad number of reponses")
+	assertEqual(t, len(resp), len(prices), "Bad number of responses")
 
 	for i, bid := range resp {
 		assertEqual(t, bid.Price, prices[i], "Bad price in response")
@@ -729,7 +726,7 @@ func FilterZeroPrices(prices []float64, imps []openrtb.Imp) ([]float64, []openrt
 	prices2 := make([]float64, 0)
 	imps2 := make([]openrtb.Imp, 0)
 
-	for i, _ := range prices {
+	for i := range prices {
 		if prices[i] > 0 {
 			prices2 = append(prices2, prices[i])
 			imps2 = append(imps2, imps[i])

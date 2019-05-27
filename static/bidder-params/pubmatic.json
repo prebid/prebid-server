@@ -24,7 +24,8 @@
 					"type": "integer",
 					"description": "An ID which identifies version of the openwrap profile"
 				}
-			}
+			},
+			"required": ["profile"]
 		},
 		"keywords": {
 			"type": "array",
@@ -44,7 +45,7 @@
 				  }
 				}
 			  },
-			  "required": ["key"]
+			  "required": ["key", "value"]
 			}
 		  }
 	},

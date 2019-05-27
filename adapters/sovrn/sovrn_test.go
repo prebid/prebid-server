@@ -136,8 +136,10 @@ func checkHttpRequest(req http.Request, t *testing.T) {
 }
 
 func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
+	dnt := int8(0)
 	device := openrtb.Device{
 		Language: "murican",
+		DNT:      &dnt,
 	}
 
 	user := openrtb.User{

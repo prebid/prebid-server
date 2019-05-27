@@ -1,0 +1,13 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "ext": {
+      "bidder": {
+        "supplyPartnerId": "1707"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    "No impressions in the bid request"
+  ]
+}

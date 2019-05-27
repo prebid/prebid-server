@@ -3,14 +3,16 @@ package exchange
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -36,7 +38,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, debug bool) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, debug bool) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -44,10 +46,12 @@ type adaptedBidder interface {
 // pbsOrtbBid.bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // pbsOrtbBid.bidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
 // pbsOrtbBid.bidTargets does not need to be filled out by the Bidder. It will be set later by the exchange.
+// pbsOrtbBid.bidVideo is optional but should be filled out by the Bidder if bidType is video.
 type pbsOrtbBid struct {
 	bid        *openrtb.Bid
 	bidType    openrtb_ext.BidType
 	bidTargets map[string]string
+	bidVideo   *openrtb_ext.ExtBidPrebidVideo
 }
 
 // pbsOrtbSeatBid is a SeatBid returned by an adaptedBidder.
@@ -56,13 +60,16 @@ type pbsOrtbBid struct {
 type pbsOrtbSeatBid struct {
 	// bids is the list of bids which this adaptedBidder wishes to make.
 	bids []*pbsOrtbBid
+	// currency is the currency in which the bids are made.
+	// Should be a valid currency ISO code.
+	currency string
 	// httpCalls is the list of debugging info. It should only be populated if the request.test == 1.
 	// This will become response.ext.debug.httpcalls.{bidder} on the final Response.
 	httpCalls []*openrtb_ext.ExtHttpCall
 	// ext contains the extension for this seatbid.
 	// if len(bids) > 0, this will become response.seatbid[i].ext.{bidder} on the final OpenRTB response.
 	// if len(bids) == 0, this will be ignored because the OpenRTB spec doesn't allow a SeatBid with 0 Bids.
-	ext openrtb.RawJSON
+	ext json.RawMessage
 }
 
 // adaptBidder converts an adapters.Bidder into an exchange.adaptedBidder.
@@ -81,7 +88,7 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, debug bool) (*pbsOrtbSeatBid, []error) {
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, debug bool) (*pbsOrtbSeatBid, []error) {
 	reqData, errs := bidder.Bidder.MakeRequests(request)
 
 	if len(reqData) == 0 {
@@ -105,8 +112,10 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 	}
 
+	defaultCurrency := "USD"
 	seatBid := &pbsOrtbSeatBid{
 		bids:      make([]*pbsOrtbBid, 0, len(reqData)),
+		currency:  defaultCurrency,
 		httpCalls: make([]*openrtb_ext.ExtHttpCall, 0, len(reqData)),
 	}
 
@@ -120,18 +129,34 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 
 		if httpInfo.err == nil {
+
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
+
 			if bidResponse != nil {
-				for i := 0; i < len(bidResponse.Bids); i++ {
-					if bidResponse.Bids[i].Bid != nil {
-						// TODO #280: Convert the bid price
-						bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment
+
+				if bidResponse.Currency == "" {
+					// Empty currency means default currency `USD`
+					bidResponse.Currency = defaultCurrency
+				}
+
+				// Try to get a conversion rate
+				// TODO(#280): try to convert every to element of request.cur, and use the first one which succeeds
+				if conversionRate, err := conversions.GetRate(bidResponse.Currency, "USD"); err == nil {
+					// Conversion rate found, using it for conversion
+					for i := 0; i < len(bidResponse.Bids); i++ {
+						if bidResponse.Bids[i].Bid != nil {
+							bidResponse.Bids[i].Bid.Price = bidResponse.Bids[i].Bid.Price * bidAdjustment * conversionRate
+						}
+						seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
+							bid:      bidResponse.Bids[i].Bid,
+							bidType:  bidResponse.Bids[i].BidType,
+							bidVideo: bidResponse.Bids[i].BidVideo,
+						})
 					}
-					seatBid.bids = append(seatBid.bids, &pbsOrtbBid{
-						bid:     bidResponse.Bids[i].Bid,
-						bidType: bidResponse.Bids[i].BidType,
-					})
+				} else {
+					// If no conversions found, do not handle the bid
+					errs = append(errs, err)
 				}
 			}
 		} else {

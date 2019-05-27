@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -26,7 +25,7 @@ func newPrometheusServer(cfg *config.Configuration, metrics *metricsconfig.Detai
 		Handler: promhttp.HandlerFor(proMetrics.Registry, promhttp.HandlerOpts{
 			ErrorLog:            loggerForPrometheus{},
 			MaxRequestsInFlight: 5,
-			Timeout:             5 * time.Second,
+			Timeout:             cfg.Metrics.Prometheus.Timeout(),
 		}),
 	}
 }

@@ -2,7 +2,7 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "app": {
-      "domain": "yourmomshouse.com",
+      "domain": "some.app.com",
       "id": "some-mobile-app"
     },
     "imp": [
@@ -36,18 +36,16 @@
             "USD"
           ],
           "device": {
-            "deviceType": 0,
-            "geo": {
-              "ip": ""
-            },
-            "ua": ""
+            "ip": "",
+            "ua": "",
+            "js": ""
           },
-          "domain": "yourmomshouse.com",
           "id": "some_test_ad",
           "imp": [
             {
               "bidfloor": 0.01,
               "id": 0,
+              "secure": 0,
               "impid": "video1",
               "video": {
                 "h": 250,
@@ -57,6 +55,7 @@
           ],
           "isPrebid": true,
           "site": {
+            "domain": "some.app.com",
             "page": "some-mobile-app"
           },
           "user": {

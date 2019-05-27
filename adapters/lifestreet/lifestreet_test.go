@@ -203,7 +203,7 @@ func TestLifestreetBasicResponse(t *testing.T) {
 				},
 			},
 			Bids: []pbs.Bids{
-				pbs.Bids{
+				{
 					BidderCode: "lifestreet",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
 					Params:     json.RawMessage(fmt.Sprintf("{\"slot_tag\": \"%s\"}", tag.slotTag)),

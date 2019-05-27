@@ -150,7 +150,7 @@ func (a *LifestreetAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 	}
 
 	ch := make(chan adapters.CallOneResult)
-	for i, _ := range bidder.AdUnits {
+	for i := range bidder.AdUnits {
 		go func(bidder *pbs.PBSBidder, reqJSON bytes.Buffer) {
 			result, err := a.callOne(ctx, req, reqJSON)
 			result.Error = err

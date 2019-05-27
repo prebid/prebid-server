@@ -48,10 +48,10 @@ func TestNoConsentAndRejectByDefault(t *testing.T) {
 
 func TestAllowedSyncs(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1},
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{1},
 		},
 	})
@@ -79,10 +79,10 @@ func TestAllowedSyncs(t *testing.T) {
 
 func TestProhibitedPurposes(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1}, // cookie reads/writes
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{3}, // ad personalization
 		},
 	})
@@ -110,10 +110,10 @@ func TestProhibitedPurposes(t *testing.T) {
 
 func TestProhibitedVendors(t *testing.T) {
 	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
-		2: &purposes{
+		2: {
 			purposes: []uint8{1}, // cookie reads/writes
 		},
-		3: &purposes{
+		3: {
 			purposes: []uint8{3}, // ad personalization
 		},
 	})
@@ -130,11 +130,11 @@ func TestProhibitedVendors(t *testing.T) {
 		}),
 	}
 
-	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BON3PCUON3PCUABABBAAABoAAAAANA")
+	allowSync, err := perms.HostCookiesAllowed(context.Background(), "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowSync)
 
-	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BON3PCUON3PCUABABBAAABoAAAAANA")
+	allowSync, err = perms.BidderSyncAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BOS2bx5OS2bx5ABABBAAABoAAAAAFA")
 	assertNilErr(t, err)
 	assertBoolsEqual(t, false, allowSync)
 }
@@ -150,6 +150,38 @@ func TestMalformedConsent(t *testing.T) {
 	sync, err := perms.HostCookiesAllowed(context.Background(), "BON")
 	assertErr(t, err, true)
 	assertBoolsEqual(t, false, sync)
+}
+
+func TestAllowPersonalInfo(t *testing.T) {
+	vendorListData := mockVendorListData(t, 1, map[uint16]*purposes{
+		2: {
+			purposes: []uint8{1}, // cookie reads/writes
+		},
+		3: {
+			purposes: []uint8{1, 3}, // ad personalization
+		},
+	})
+	perms := permissionsImpl{
+		cfg: config.GDPR{
+			HostVendorID: 2,
+		},
+		vendorIDs: map[openrtb_ext.BidderName]uint16{
+			openrtb_ext.BidderAppnexus: 2,
+			openrtb_ext.BidderPubmatic: 3,
+		},
+		fetchVendorList: listFetcher(map[uint16]vendorlist.VendorList{
+			1: parseVendorListData(t, vendorListData),
+		}),
+	}
+
+	// PI needs both purposes to succeed
+	allowPI, err := perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderAppnexus, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, false, allowPI)
+
+	allowPI, err = perms.PersonalInfoAllowed(context.Background(), openrtb_ext.BidderPubmatic, "BOS2bx5OS2bx5ABABBAAABoAAAABBwAA")
+	assertNilErr(t, err)
+	assertBoolsEqual(t, true, allowPI)
 }
 
 func parseVendorListData(t *testing.T, data string) vendorlist.VendorList {

@@ -48,6 +48,7 @@
           "page": "some-mobile-app",
           "referrer": "",
           "search": "",
+          "requestId": "some_test_ad",
           "secure": 0,
           "isMobile": 0,
           "ip": "",
@@ -56,8 +57,9 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.1.1",
-          "user": ""
+          "adapterVersion": "0.2.2",
+          "user": {
+          }
         }
       },
       "mockResponse": {

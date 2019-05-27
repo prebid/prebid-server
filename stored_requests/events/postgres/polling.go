@@ -49,7 +49,7 @@ func PollForUpdates(ctxProducer func() (ctx context.Context, canceller func()), 
 	if refreshRate > 0 {
 		go e.refresh(time.Tick(refreshRate))
 	} else {
-		glog.Warningf("Postgres Stored Event polling refreshRate was %d. This must be positive. No updates will occur.")
+		glog.Warningf("Postgres Stored Event polling refreshRate was %d. This must be positive. No updates will occur.", refreshRate)
 	}
 	return e
 }

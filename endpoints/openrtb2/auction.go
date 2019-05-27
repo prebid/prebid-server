@@ -9,12 +9,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
@@ -27,18 +27,21 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/mssola/user_agent"
 	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/native"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"golang.org/x/net/publicsuffix"
 )
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
+
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
+	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics}).Auction), nil
+	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).Auction), nil
 }
 
 type endpointDeps struct {
@@ -48,24 +51,11 @@ type endpointDeps struct {
 	cfg              *config.Configuration
 	metricsEngine    pbsmetrics.MetricsEngine
 	analytics        analytics.PBSAnalyticsModule
-}
-
-func OrtbAuctionEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, analytics analytics.PBSAnalyticsModule, w http.ResponseWriter, r *http.Request) error {
-	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
-		return errors.New("OrtbAuctionEndpoint requires non-nil arguments.")
-	}
-
-	endpointDepsParams := &endpointDeps{
-		ex:               ex,
-		paramsValidator:  validator,
-		storedReqFetcher: requestsById,
-		cfg:              cfg,
-		metricsEngine:    met,
-		analytics:        analytics,
-	}
-	endpointDepsParams.Auction(w, r, nil)
-	return nil
-
+	disabledBidders  map[string]string
+	defaultRequest   bool
+	defReqJSON       []byte
+	bidderMap        map[string]openrtb_ext.BidderName
+	categories       stored_requests.CategoryFetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -105,7 +95,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if writeError(errL, w) {
+	if fatalError(errL) && writeError(errL, w) {
 		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
@@ -141,7 +131,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	}
 
 	numImps = len(req.Imp)
-	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels)
+	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
 	ao.Response = response
 	if err != nil {
@@ -165,7 +155,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	// If we've sent _any_ bytes, then Go would have sent the 200 status code first.
 	// That status code can't be un-sent... so the best we can do is log the error.
 	if err := enc.Encode(response); err != nil {
-		glog.Warningf("/openrtb2/auction Failed to send response: %v", err)
 		labels.RequestStatus = pbsmetrics.RequestStatusNetworkErr
 		ao.Errors = append(ao.Errors, fmt.Errorf("/openrtb2/auction Failed to send response: %v", err))
 	}
@@ -220,9 +209,14 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request) (req *openrtb.
 	// Populate any "missing" OpenRTB fields with info from other sources, (e.g. HTTP request headers).
 	deps.setFieldsImplicitly(httpRequest, req)
 
-	if err := deps.validateRequest(req); err != nil {
+	if err := processInterstitials(req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	errL := deps.validateRequest(req)
+	if len(errL) > 0 {
+		errs = append(errs, errL...)
 	}
 
 	return
@@ -243,55 +237,77 @@ func parseTimeout(requestJson []byte, defaultTimeout time.Duration) time.Duratio
 	return defaultTimeout
 }
 
-func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) error {
+func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
+	errL := []error{}
 	if req.ID == "" {
-		return errors.New("request missing required field: \"id\"")
+		return []error{errors.New("request missing required field: \"id\"")}
 	}
 
 	if req.TMax < 0 {
-		return fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)
+		return []error{fmt.Errorf("request.tmax must be nonnegative. Got %d", req.TMax)}
 	}
 
 	if len(req.Imp) < 1 {
-		return errors.New("request.imp must contain at least one element.")
+		return []error{errors.New("request.imp must contain at least one element.")}
 	}
 
 	var aliases map[string]string
 	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
-		return err
+		return []error{err}
 	} else if bidExt != nil {
 		aliases = bidExt.Prebid.Aliases
 
 		if err := deps.validateAliases(aliases); err != nil {
-			return err
+			return []error{err}
 		}
 
 		if err := validateBidAdjustmentFactors(bidExt.Prebid.BidAdjustmentFactors, aliases); err != nil {
-			return err
+			return []error{err}
 		}
 	}
 
-	if err := deps.validateImps(req, aliases); err != nil {
-		return err
+	impIDs := make(map[string]int, len(req.Imp))
+	for index := range req.Imp {
+		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
+		errs := deps.validateImp(imp, aliases, index)
+		if len(errs) > 0 {
+			errL = append(errL, errs...)
+		}
+		if fatalError(errs) {
+			return errL
+		}
 	}
 
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
-		return errors.New("request.site or request.app must be defined, but not both.")
+		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
+		return errL
 	}
 
 	if err := deps.validateSite(req.Site); err != nil {
-		return err
+		errL = append(errL, err)
+		return errL
+	}
+
+	if err := deps.validateApp(req.App); err != nil {
+		errL = append(errL, err)
+		return errL
 	}
 
 	if err := validateUser(req.User, aliases); err != nil {
-		return err
+		errL = append(errL, err)
+		return errL
 	}
 
 	if err := validateRegs(req.Regs); err != nil {
-		return err
+		errL = append(errL, err)
+		return errL
 	}
 
-	return nil
+	return errL
 }
 
 func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases map[string]string) error {
@@ -308,82 +324,46 @@ func validateBidAdjustmentFactors(adjustmentFactors map[string]float64, aliases 
 	return nil
 }
 
-func (deps *endpointDeps) validateImps(req *openrtb.BidRequest, aliases map[string]string) error {
-	imps := req.Imp
-	impCount := len(imps)
-	invalidImpIndexes := make([]int, 0, impCount)
-	for index, imp := range imps {
-		if err := deps.validateImp(&imp, aliases, index); err != nil {
-			invalidImpIndexes = append(invalidImpIndexes, index)
-			glog.Errorf("Error encuntered while parsing request.imp[%d] for request '%s'. %v", index, req.ID, err)
-		}
-	}
-
-	invalidImpCount := len(invalidImpIndexes)
-	if invalidImpCount == 0 {
-		return nil
-	}
-
-	if invalidImpCount == impCount {
-		return errors.New("All impressions in request.imp[] failed validation")
-	}
-
-	//deleting individual elements inserted at random location from a slice causes performance impact
-	//better approach is to move all the valid imps to front of the slice and then truncate the slice
-	sort.Sort(sort.Reverse(sort.IntSlice(invalidImpIndexes)))
-	index := impCount - 1
-	for _, invalidImpIdx := range invalidImpIndexes {
-
-		if invalidImpIdx != index {
-			imps[invalidImpIdx] = imps[index]
-		}
-		index--
-		glog.Errorf("Removing request.imp[%d] from the request %s.", invalidImpIdx, req.ID)
-	}
-
-	req.Imp = imps[:impCount-invalidImpCount]
-	return nil
-}
-
-func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) error {
+func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]string, index int) []error {
 	if imp.ID == "" {
-		return fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)
+		return []error{fmt.Errorf("request.imp[%d] missing required field: \"id\"", index)}
 	}
 
 	if len(imp.Metric) != 0 {
-		return fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)
+		return []error{fmt.Errorf("request.imp[%d].metric is not yet supported by prebid-server. Support may be added in the future", index)}
 	}
 
 	if imp.Banner == nil && imp.Video == nil && imp.Audio == nil && imp.Native == nil {
-		return fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)
+		return []error{fmt.Errorf("request.imp[%d] must contain at least one of \"banner\", \"video\", \"audio\", or \"native\"", index)}
 	}
 
 	if err := validateBanner(imp.Banner, index); err != nil {
-		return err
+		return []error{err}
 	}
 
 	if imp.Video != nil {
 		if len(imp.Video.MIMEs) < 1 {
-			return fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", index)
+			return []error{fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", index)}
 		}
 	}
 
 	if imp.Audio != nil {
 		if len(imp.Audio.MIMEs) < 1 {
-			return fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", index)
+			return []error{fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", index)}
 		}
 	}
 
 	if err := fillAndValidateNative(imp.Native, index); err != nil {
-		return err
+		return []error{err}
 	}
 
 	if err := validatePmp(imp.PMP, index); err != nil {
-		return err
+		return []error{err}
 	}
 
-	if err := deps.validateImpExt(&imp.Ext, aliases, index); err != nil {
-		return err
+	errL := deps.validateImpExt(imp, aliases, index)
+	if len(errL) != 0 {
+		return errL
 	}
 
 	return nil
@@ -409,6 +389,11 @@ func validateBanner(banner *openrtb.Banner, impIndex int) error {
 		return fmt.Errorf("request.imp[%d].banner uses unsupported property: \"hmax\". Use the \"format\" array instead.", impIndex)
 	}
 
+	hasRootSize := banner.H != nil && banner.W != nil && *banner.H > 0 && *banner.W > 0
+	if !hasRootSize && len(banner.Format) == 0 {
+		return fmt.Errorf("request.imp[%d].banner has no sizes. Define \"w\" and \"h\", or include \"format\" elements.", impIndex)
+	}
+
 	for fmtIndex, format := range banner.Format {
 		if err := validateFormat(&format, impIndex, fmtIndex); err != nil {
 			return err
@@ -431,7 +416,7 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 		return err
 	}
 
-	if err := validateNativeContext(nativePayload.Context, impIndex); err != nil {
+	if err := validateNativeContextTypes(nativePayload.Context, nativePayload.ContextSubType, impIndex); err != nil {
 		return err
 	}
 	if err := validateNativePlacementType(nativePayload.PlcmtType, impIndex); err != nil {
@@ -440,8 +425,9 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	if err := fillAndValidateNativeAssets(nativePayload.Assets, impIndex); err != nil {
 		return err
 	}
-
-	// TODO #218: Validate eventtrackers once mxmcherry/openrtb has been updated to support Native v1.2
+	if err := validateNativeEventTrackers(nativePayload.EventTrackers, impIndex); err != nil {
+		return err
+	}
 
 	serialized, err := json.Marshal(nativePayload)
 	if err != nil {
@@ -451,23 +437,52 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 	return nil
 }
 
-func validateNativeContext(c nativeRequests.ContextType, impIndex int) error {
-	if c < 1 || c > 3 {
-		return fmt.Errorf("request.imp[%d].native.request.context must be in the range [1, 3]. Got %d", impIndex, c)
+func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
+	if cType < native.ContextTypeContent || cType > native.ContextTypeProduct {
+		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
-	return nil
+	if cSubtype < 0 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+	}
+	if cSubtype == 0 {
+		return nil
+	}
+
+	if cSubtype >= 100 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+	}
+	if cSubtype >= native.ContextSubTypeGeneral && cSubtype <= native.ContextSubTypeUserGenerated {
+		if cType != native.ContextTypeContent {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+	if cSubtype >= native.ContextSubTypeSocial && cSubtype <= native.ContextSubTypeChat {
+		if cType != native.ContextTypeSocial {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+	if cSubtype >= native.ContextSubTypeSelling && cSubtype <= native.ContextSubTypeProductReview {
+		if cType != native.ContextTypeProduct {
+			return fmt.Errorf("request.imp[%d].native.request.context is %d, but contextsubtype is %d. This is an invalid combination. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex, cType, cSubtype)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("request.imp[%d].native.request.contextsubtype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 }
 
-func validateNativePlacementType(pt nativeRequests.PlacementType, impIndex int) error {
-	if pt < 1 || pt > 4 {
-		return fmt.Errorf("request.imp[%d].native.request.plcmttype must be in the range [1, 4]. Got %d", impIndex, pt)
+func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
+	if pt < native.PlacementTypeFeed || pt > native.PlacementTypeRecommendationWidget {
+		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
 	return nil
 }
 
 func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) error {
 	if len(assets) < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object.", impIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object", impIndex)
 	}
 
 	for i := 0; i < len(assets); i++ {
@@ -484,7 +499,7 @@ func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) er
 
 func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
 	if asset.ID != 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID.`, impIndex, assetIndex)
+		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
 	}
 
 	foundType := false
@@ -529,10 +544,35 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 	return nil
 }
 
+func validateNativeEventTrackers(trackers []nativeRequests.EventTracker, impIndex int) error {
+	for i := 0; i < len(trackers); i++ {
+		if err := validateNativeEventTracker(trackers[i], impIndex, i); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func validateNativeAssetTitle(title *nativeRequests.Title, impIndex int, assetIndex int) error {
 	if title.Len < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].title.len must be a positive integer", impIndex, assetIndex)
 	}
+	return nil
+}
+
+func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex int, eventIndex int) error {
+	if tracker.Event < native.EventTypeImpression || tracker.Event > native.EventTypeViewableVideo50 {
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].event is invalid. See section 7.6: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
+	}
+	if len(tracker.Methods) < 1 {
+		return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].method is required. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex)
+	}
+	for methodIndex, method := range tracker.Methods {
+		if method < native.EventTrackingMethodImage || method > native.EventTrackingMethodJS {
+			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].methods[%d] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex, methodIndex)
+		}
+	}
+
 	return nil
 }
 
@@ -551,13 +591,13 @@ func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetInde
 
 func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIndex int) error {
 	if len(video.MIMEs) < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.mimes must be an array with at least one MIME type.", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.mimes must be an array with at least one MIME type", impIndex, assetIndex)
 	}
 	if video.MinDuration < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.minduration must be a positive integer.", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.minduration must be a positive integer", impIndex, assetIndex)
 	}
 	if video.MaxDuration < 1 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.maxduration must be a positive integer.", impIndex, assetIndex)
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.maxduration must be a positive integer", impIndex, assetIndex)
 	}
 	if err := validateNativeVideoProtocols(video.Protocols, impIndex, assetIndex); err != nil {
 		return err
@@ -567,14 +607,14 @@ func validateNativeAssetVideo(video *nativeRequests.Video, impIndex int, assetIn
 }
 
 func validateNativeAssetData(data *nativeRequests.Data, impIndex int, assetIndex int) error {
-	if data.Type < 1 || data.Type > 12 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type must in the range [1, 12]. Got %d.", impIndex, assetIndex, data.Type)
+	if data.Type < native.DataAssetTypeSponsored || data.Type > native.DataAssetTypeCTAText {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].data.type is invalid. See section 7.4: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex, assetIndex)
 	}
 
 	return nil
 }
 
-func validateNativeVideoProtocols(protocols []nativeRequests.Protocol, impIndex int, assetIndex int) error {
+func validateNativeVideoProtocols(protocols []native.Protocol, impIndex int, assetIndex int) error {
 	if len(protocols) < 1 {
 		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols must be an array with at least one element", impIndex, assetIndex)
 	}
@@ -586,9 +626,9 @@ func validateNativeVideoProtocols(protocols []nativeRequests.Protocol, impIndex 
 	return nil
 }
 
-func validateNativeVideoProtocol(protocol nativeRequests.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
-	if protocol < 0 || protocol > 10 {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] must be in the range [1, 10]. Got %d", impIndex, assetIndex, protocolIndex, protocol)
+func validateNativeVideoProtocol(protocol native.Protocol, impIndex int, assetIndex int, protocolIndex int) error {
+	if protocol < native.ProtocolVAST10 || protocol > native.ProtocolDAAST10Wrapper {
+		return fmt.Errorf("request.imp[%d].native.request.assets[%d].video.protocols[%d] is invalid. See Section 5.8: https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf#page=52", impIndex, assetIndex, protocolIndex)
 	}
 	return nil
 }
@@ -624,66 +664,91 @@ func validatePmp(pmp *openrtb.PMP, impIndex int) error {
 	return nil
 }
 
-func (deps *endpointDeps) validateImpExt(impExt *openrtb.RawJSON, aliases map[string]string, impIndex int) error {
-	ext := *impExt
-	if len(ext) == 0 {
-		return fmt.Errorf("request.imp[%d].ext is required", impIndex)
-	}
-	var bidderExts map[string]openrtb.RawJSON
-	if err := json.Unmarshal(ext, &bidderExts); err != nil {
-		return err
+func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]string, impIndex int) []error {
+	errL := []error{}
+	if len(imp.Ext) == 0 {
+		return []error{fmt.Errorf("request.imp[%d].ext is required", impIndex)}
 	}
 
-	if len(bidderExts) < 1 {
-		return fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex)
+	var bidderExts map[string]json.RawMessage
+	if err := json.Unmarshal(imp.Ext, &bidderExts); err != nil {
+		return []error{err}
 	}
 
-	valFailedBidders := make(map[string]string, len(bidderExts))
+	// Also accept bidder exts within imp[...].ext.prebid.bidder
+	// NOTE: This is not part of the official API, we are not expecting clients
+	// migrate from imp[...].ext.${BIDDER} to imp[...].ext.prebid.bidder.${BIDDER}
+	// at this time
+	// https://github.com/PubMatic-OpenWrap/prebid-server/pull/846#issuecomment-476352224
+	if rawPrebidExt, ok := bidderExts["prebid"]; ok {
+		var prebidExt openrtb_ext.ExtImpPrebid
+		if err := json.Unmarshal(rawPrebidExt, &prebidExt); err == nil && prebidExt.Bidder != nil {
+			for bidder, ext := range prebidExt.Bidder {
+				if ext == nil {
+					continue
+				}
+
+				bidderExts[bidder] = ext
+			}
+		}
+	}
+
+	/* Process all the bidder exts in the request */
+	disabledBidders := []string{}
+	validationFailedBidders := []string{}
 	for bidder, ext := range bidderExts {
 		if bidder != "prebid" {
 			coreBidder := bidder
 			if tmp, isAlias := aliases[bidder]; isAlias {
 				coreBidder = tmp
 			}
-
-			bidder, isValid := openrtb_ext.BidderMap[coreBidder]
-			bidderName := string(bidder)
-			if isValid {
-				if err := deps.paramsValidator.Validate(bidder, ext); err != nil {
-					if _, isPresent := valFailedBidders[bidderName]; !isPresent {
-						valFailedBidders[bidderName] = err.Error()
-						glog.Errorf("BidderParamsSchemaError: request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
-					}
+			if bidderName, isValid := deps.bidderMap[coreBidder]; isValid {
+				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
+					validationFailedBidders = append(validationFailedBidders, bidder)
+					msg := fmt.Sprintf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+					glog.Errorf("BidderSchemaValidationError: %s", msg)
+					errL = append(errL, &errortypes.BidderFailedSchemaValidation{Message: msg})
 				}
 			} else {
-				if _, isPresent := valFailedBidders[bidderName]; !isPresent {
-					valFailedBidders[bidderName] = "Unknown Bidder"
-					glog.Errorf("UnknownBidderError: request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)
+				if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
+					errL = append(errL, &errortypes.BidderTemporarilyDisabled{Message: msg})
+					disabledBidders = append(disabledBidders, bidder)
+				} else {
+					return []error{fmt.Errorf("request.imp[%d].ext contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 				}
 			}
 		}
 	}
 
-	if len(valFailedBidders) != 0 {
-
-		if len(valFailedBidders) == len(bidderExts) {
-			return fmt.Errorf("request.imp[%d].ext failed validation for all bidders", impIndex)
-		}
-
-		for bidder, _ := range valFailedBidders {
+	// defer deleting disabled bidders so we don't disrupt the loop
+	if len(disabledBidders) > 0 {
+		for _, bidder := range disabledBidders {
 			delete(bidderExts, bidder)
 		}
-
-		bidderExtBytes, err := json.Marshal(bidderExts)
-		if err != nil {
-			return err
-		}
-		*impExt = bidderExtBytes
 	}
-	return nil
+
+	if len(validationFailedBidders) > 0 {
+		for _, bidder := range validationFailedBidders {
+			delete(bidderExts, bidder)
+		}
+	}
+
+	extJSON, err := json.Marshal(bidderExts)
+	if err != nil {
+		return []error{err}
+	}
+	imp.Ext = extJSON
+
+	// TODO #713 Fix this here
+	if len(bidderExts) < 1 {
+		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder with valid parameters", impIndex))
+		return errL
+	}
+
+	return errL
 }
 
-func (deps *endpointDeps) parseBidExt(ext openrtb.RawJSON) (*openrtb_ext.ExtRequest, error) {
+func (deps *endpointDeps) parseBidExt(ext json.RawMessage) (*openrtb_ext.ExtRequest, error) {
 	if len(ext) < 1 {
 		return nil, nil
 	}
@@ -696,7 +761,7 @@ func (deps *endpointDeps) parseBidExt(ext openrtb.RawJSON) (*openrtb_ext.ExtRequ
 
 func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 	for thisAlias, coreBidder := range aliases {
-		if _, isCoreBidder := openrtb_ext.BidderMap[coreBidder]; !isCoreBidder {
+		if _, isCoreBidder := deps.bidderMap[coreBidder]; !isCoreBidder {
 			return fmt.Errorf("request.ext.prebid.aliases.%s refers to unknown bidder: %s", thisAlias, coreBidder)
 		}
 		if thisAlias == coreBidder {
@@ -707,8 +772,33 @@ func (deps *endpointDeps) validateAliases(aliases map[string]string) error {
 }
 
 func (deps *endpointDeps) validateSite(site *openrtb.Site) error {
-	if site != nil && site.ID == "" && site.Page == "" {
+	if site == nil {
+		return nil
+	}
+
+	if site.ID == "" && site.Page == "" {
 		return errors.New("request.site should include at least one of request.site.id or request.site.page.")
+	}
+	if len(site.Ext) > 0 {
+		var s openrtb_ext.ExtSite
+		if err := json.Unmarshal(site.Ext, &s); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (deps *endpointDeps) validateApp(app *openrtb.App) error {
+	if app == nil {
+		return nil
+	}
+
+	if len(app.Ext) > 0 {
+		var a openrtb_ext.ExtApp
+		if err := json.Unmarshal(app.Ext, &a); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -729,11 +819,25 @@ func validateUser(user *openrtb.User, aliases map[string]string) error {
 				if len(userExt.Prebid.BuyerUIDs) < 1 {
 					return errors.New(`request.user.ext.prebid requires a "buyeruids" property with at least one ID defined. If none exist, then request.user.ext.prebid should not be defined.`)
 				}
-				for bidderName, _ := range userExt.Prebid.BuyerUIDs {
+				for bidderName := range userExt.Prebid.BuyerUIDs {
 					if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
 						if _, ok := aliases[bidderName]; !ok {
 							return fmt.Errorf("request.user.ext.%s is neither a known bidder name nor an alias in request.ext.prebid.aliases.", bidderName)
 						}
+					}
+				}
+			}
+			// Check Universal User ID
+			if userExt.TpID != nil {
+				if len(userExt.TpID) == 0 {
+					return fmt.Errorf("request.user.ext.tpid must contain at least one element or be undefined")
+				}
+				for tpidIndex, tpid := range userExt.TpID {
+					if tpid.Source == "" {
+						return fmt.Errorf("request.user.ext.tpid[%d] missing required field: \"source\"", tpidIndex)
+					}
+					if tpid.UID == "" {
+						return fmt.Errorf("request.user.ext.tpid[%d] missing required field: \"uid\"", tpidIndex)
 					}
 				}
 			}
@@ -813,6 +917,9 @@ func setSiteImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			}
 		}
 	}
+	if bidReq.Site != nil {
+		setAmpExt(bidReq.Site, "0")
+	}
 }
 
 func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
@@ -822,6 +929,23 @@ func setImpsImplicitly(httpReq *http.Request, imps []openrtb.Imp) {
 			imps[i].Secure = &secure
 		}
 	}
+}
+
+func getJsonSyntaxError(testJSON []byte) (bool, string) {
+	type JsonNode struct {
+		raw   *json.RawMessage
+		doc   map[string]*JsonNode
+		ary   []*JsonNode
+		which int
+	}
+	type jNode map[string]*JsonNode
+	docErrdoc := &jNode{}
+	docErr := json.Unmarshal(testJSON, docErrdoc)
+	if uerror, ok := docErr.(*json.SyntaxError); ok {
+		err := fmt.Sprintf("%s at offset %v", uerror.Error(), uerror.Offset)
+		return true, err
+	}
+	return false, ""
 }
 
 func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson []byte) ([]byte, []error) {
@@ -850,8 +974,36 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	if hasStoredBidRequest {
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequests[storedBidRequestId], requestJson)
 		if err != nil {
+			hasErr, Err := getJsonSyntaxError(requestJson)
+			if hasErr {
+				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
+			} else {
+				hasErr, Err = getJsonSyntaxError(storedRequests[storedBidRequestId])
+				if hasErr {
+					err = fmt.Errorf("Invalid JSON in Stored Request with ID %s: %s", storedBidRequestId, Err)
+					err = fmt.Errorf("ext.prebid.storedrequest.id refers to Stored Request %s which contains Invalid JSON: %s", storedBidRequestId, Err)
+				}
+			}
 			return nil, []error{err}
 		}
+	}
+
+	// Apply default aliases, if they are provided
+	if deps.defaultRequest {
+		aliasedRequest, err := jsonpatch.MergePatch(deps.defReqJSON, resolvedRequest)
+		if err != nil {
+			hasErr, Err := getJsonSyntaxError(resolvedRequest)
+			if hasErr {
+				err = fmt.Errorf("Invalid JSON in Incoming Request: %s", Err)
+			} else {
+				hasErr, Err = getJsonSyntaxError(deps.defReqJSON)
+				if hasErr {
+					err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", Err)
+				}
+			}
+			return nil, []error{err}
+		}
+		resolvedRequest = aliasedRequest
 	}
 
 	// Apply any Stored Imps, if they exist. Since the JSON Merge Patch overrides arrays,
@@ -860,6 +1012,15 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 	for i := 0; i < len(impIds); i++ {
 		resolvedImp, err := jsonpatch.MergePatch(storedImps[impIds[i]], imps[idIndices[i]])
 		if err != nil {
+			hasErr, Err := getJsonSyntaxError(imps[idIndices[i]])
+			if hasErr {
+				err = fmt.Errorf("Invalid JSON in Imp[%d] of Incoming Request: %s", i, Err)
+			} else {
+				hasErr, Err = getJsonSyntaxError(storedImps[impIds[i]])
+				if hasErr {
+					err = fmt.Errorf("imp.ext.prebid.storedrequest.id %s: Stored Imp has Invalid JSON: %s", impIds[i], Err)
+				}
+			}
 			return nil, []error{err}
 		}
 		imps[idIndices[i]] = resolvedImp
@@ -987,6 +1148,17 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
 		return true
+	}
+	return false
+}
+
+// Checks to see if an error in an error list is a fatal error
+func fatalError(errL []error) bool {
+	for _, err := range errL {
+		errType := errortypes.DecodeError(err)
+		if errType != errortypes.BidderTemporarilyDisabledCode && errType != errortypes.BidderFailedSchemaValidationCode {
+			return true
+		}
 	}
 	return false
 }
