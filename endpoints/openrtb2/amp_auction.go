@@ -143,16 +143,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+	labels.Source = pbsmetrics.DemandWeb
+	if usersyncs.LiveSyncCount() == 0 {
+		labels.CookieFlag = pbsmetrics.CookieFlagNo
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
-		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
-		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
-		}
+		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
+	if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
+		labels.PubID = req.Site.Publisher.ID
+	} else {
+		labels.PubID = "UNKNOWN"
+	}
+
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.AuctionResponse = response
 

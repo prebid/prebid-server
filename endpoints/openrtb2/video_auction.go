@@ -190,6 +190,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
+		if bidReq.App.Publisher != nil {
+			labels.PubID = bidReq.App.Publisher.ID
+		}
 	} else {
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -197,6 +200,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
+	}
+	if labels.PubID == "" && bidReq.Site != nil && bidReq.Site.Publisher != nil {
+		labels.PubID = bidReq.Site.Publisher.ID
+	}
+	if labels.PubID == "" {
+		labels.PubID = "UNKNOWN"
 	}
 
 	numImps = len(bidReq.Imp)
