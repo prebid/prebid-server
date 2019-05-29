@@ -47,12 +47,31 @@
           ]
         }
       },
-      "mockResponse": {
-        "status": 204,
-        "body": {}
-      }
+	  "mockResponse": {
+		  "status": 200,
+		  "body": {
+			  "id": "test-request-id",
+			  "seatbid": [{
+				  "seat": "improvedigital",
+				  "bid": [{
+					  "id": "randomid",
+					  "impid": "unknown_impid",
+					  "price": 0.500000,
+					  "adid": "12345678",
+					  "adm": "some-test-ad",
+					  "cid": "987",
+					  "crid": "12345678",
+					  "h": 250,
+					  "w": 300
+				  }]
+			  }],
+			  "cur": "USD"
+		  }
+	  }
     }
   ],
 
-  "expectedBidResponses": []
+  "expectedMakeBidsErrors": [
+    "Failed to find impression for ID: \"unknown_impid\""
+  ]
 }
