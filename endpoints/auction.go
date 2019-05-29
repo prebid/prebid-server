@@ -441,7 +441,11 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			hbPbBidderKey := string(openrtb_ext.HbpbConstantKey) + "_" + bid.BidderCode
 			hbBidderBidderKey := string(openrtb_ext.HbBidderConstantKey) + "_" + bid.BidderCode
 			hbCacheIDBidderKey := string(openrtb_ext.HbCacheKey) + "_" + bid.BidderCode
+<<<<<<< HEAD
 			hbDealIDBidderKey := string(openrtb_ext.HbDealIDConstantKey) + "_" + bid.BidderCode
+=======
+			hbDealIDBidderKey := string(openrtb_ext.HbDealIdConstantKey) + "_" + bid.BidderCode
+>>>>>>> Remove hard coded targeting keys
 			hbSizeBidderKey := string(openrtb_ext.HbSizeConstantKey) + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
@@ -473,7 +477,11 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				kvs[string(openrtb_ext.HbBidderConstantKey)] = bid.BidderCode
 				kvs[string(openrtb_ext.HbCacheKey)] = bid.CacheID
 				if bid.DealId != "" {
+<<<<<<< HEAD
 					kvs[string(openrtb_ext.HbDealIDConstantKey)] = bid.DealId
+=======
+					kvs[string(openrtb_ext.HbDealIdConstantKey)] = bid.DealId
+>>>>>>> Remove hard coded targeting keys
 				}
 				if hbSize != "" {
 					kvs[string(openrtb_ext.HbSizeConstantKey)] = hbSize
