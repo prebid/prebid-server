@@ -119,9 +119,11 @@ func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Du
 }
 
 type GDPR struct {
-	HostVendorID        int          `mapstructure:"host_vendor_id"`
-	UsersyncIfAmbiguous bool         `mapstructure:"usersync_if_ambiguous"`
-	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
+	HostVendorID            int          `mapstructure:"host_vendor_id"`
+	UsersyncIfAmbiguous     bool         `mapstructure:"usersync_if_ambiguous"`
+	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
+	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
+	NonStandardPublisherMap map[string]int
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -384,6 +386,13 @@ func New(v *viper.Viper) (*Configuration, error) {
 	if errs := c.validate(); len(errs) > 0 {
 		return &c, errs
 	}
+
+	// To look for a request's publisher_id into the NonStandardPublishers in
+	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
+	c.GDPR.NonStandardPublisherMap = make(map[string]int)
+	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
+		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = 1
+	}
 	return &c, nil
 }
 
@@ -599,6 +608,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
+	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("default_request.type", "")
