@@ -403,8 +403,6 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 		return nil, err
 	}
 
-	videoResponse := openrtb_ext.BidResponseVideo{}
-
 	// If there were incorrect pods, we put them back to response with error message
 	if len(podErrors) > 0 {
 		for _, podEr := range podErrors {
@@ -416,9 +414,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 		}
 	}
 
-	videoResponse.AdPods = adPods
-
-	return &videoResponse, nil
+	return &openrtb_ext.BidResponseVideo{AdPods: adPods}, nil
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {
