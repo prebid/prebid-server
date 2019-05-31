@@ -33,8 +33,6 @@ type bidResult struct {
 
 const defaultPriceGranularity = "med"
 
-// Constant keys for ad server targeting for responses to Prebid Mobile
-
 func min(x, y int) int {
 	if x < y {
 		return x
