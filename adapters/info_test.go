@@ -21,10 +21,9 @@ func TestAppNotSupported(t *testing.T) {
 		},
 	}
 	constrained := adapters.EnforceBidderInfo(bidder, info)
-	reqInfo := adapters.ExtraRequestInfo{}
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		App: &openrtb.App{},
-	}, reqInfo)
+	}, adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
 	}
@@ -43,10 +42,9 @@ func TestSiteNotSupported(t *testing.T) {
 		},
 	}
 	constrained := adapters.EnforceBidderInfo(bidder, info)
-	reqInfo := adapters.ExtraRequestInfo{}
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Site: &openrtb.Site{},
-	}, reqInfo)
+	}, adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
 	}
@@ -69,7 +67,6 @@ func TestImpFiltering(t *testing.T) {
 	}
 
 	constrained := adapters.EnforceBidderInfo(bidder, info)
-	reqInfo := adapters.ExtraRequestInfo{}
 	_, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Imp: []openrtb.Imp{
 			{
@@ -89,7 +86,7 @@ func TestImpFiltering(t *testing.T) {
 			},
 		},
 		Site: &openrtb.Site{},
-	}, reqInfo)
+	}, adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 6) {
 		return
 	}

@@ -42,8 +42,7 @@ func TestAllValidBids(t *testing.T) {
 			},
 		},
 	})
-	reqInfo := adapters.ExtraRequestInfo{}
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), adapters.ExtraRequestInfo{})
 	assert.Len(t, seatBid.bids, 3)
 	assert.Len(t, errs, 0)
 }
@@ -84,8 +83,7 @@ func TestAllBadBids(t *testing.T) {
 			},
 		},
 	})
-	reqInfo := adapters.ExtraRequestInfo{}
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), adapters.ExtraRequestInfo{})
 	assert.Len(t, seatBid.bids, 0)
 	assert.Len(t, errs, 5)
 }
@@ -128,8 +126,7 @@ func TestMixedBids(t *testing.T) {
 			},
 		},
 	})
-	reqInfo := adapters.ExtraRequestInfo{}
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), adapters.ExtraRequestInfo{})
 	assert.Len(t, seatBid.bids, 2)
 	assert.Len(t, errs, 3)
 }
@@ -249,8 +246,7 @@ func TestCurrencyBids(t *testing.T) {
 			Cur: tc.brqCur,
 		}
 
-		reqInfo := adapters.ExtraRequestInfo{}
-		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), reqInfo)
+		seatBid, errs := bidder.requestBid(context.Background(), request, openrtb_ext.BidderAppnexus, 1.0, currencies.NewConstantRates(), adapters.ExtraRequestInfo{})
 		assert.Len(t, seatBid.bids, expectedValidBids)
 		assert.Len(t, errs, expectedErrs)
 	}

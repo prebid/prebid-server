@@ -61,8 +61,7 @@ func TestSingleBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
-	reqInfo := adapters.ExtraRequestInfo{}
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), reqInfo)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), adapters.ExtraRequestInfo{})
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -147,8 +146,7 @@ func TestMultiBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
-	reqInfo := adapters.ExtraRequestInfo{}
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), reqInfo)
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), adapters.ExtraRequestInfo{})
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -510,14 +508,13 @@ func TestMultiCurrencies(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 		)
-		reqInfo := adapters.ExtraRequestInfo{}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			&openrtb.BidRequest{},
 			"test",
 			1,
 			currencyConverter.Rates(),
-			reqInfo,
+			adapters.ExtraRequestInfo{},
 		)
 
 		// Verify:
@@ -655,14 +652,13 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 		// Execute:
 		bidder := adaptBidder(bidderImpl, server.Client())
 		currencyConverter := currencies.NewRateConverterDefault()
-		reqInfo := adapters.ExtraRequestInfo{}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			&openrtb.BidRequest{},
 			"test",
 			1,
 			currencyConverter.Rates(),
-			reqInfo,
+			adapters.ExtraRequestInfo{},
 		)
 
 		// Verify:
@@ -826,7 +822,6 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			mockedHTTPServer.URL,
 			time.Duration(10)*time.Second,
 		)
-		reqInfo := adapters.ExtraRequestInfo{}
 		seatBid, errs := bidder.requestBid(
 			context.Background(),
 			&openrtb.BidRequest{
@@ -835,7 +830,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			"test",
 			1,
 			currencyConverter.Rates(),
-			reqInfo,
+			adapters.ExtraRequestInfo{},
 		)
 
 		// Verify:
@@ -939,7 +934,6 @@ func TestServerCallDebugging(t *testing.T) {
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
 
-	reqInfo := adapters.ExtraRequestInfo{}
 	bids, _ := bidder.requestBid(
 		context.Background(),
 		&openrtb.BidRequest{
@@ -948,7 +942,7 @@ func TestServerCallDebugging(t *testing.T) {
 		"test",
 		1.0,
 		currencyConverter.Rates(),
-		reqInfo,
+		adapters.ExtraRequestInfo{},
 	)
 
 	if len(bids.httpCalls) != 1 {
@@ -971,8 +965,7 @@ func TestServerCallDebugging(t *testing.T) {
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
 	currencyConverter := currencies.NewRateConverterDefault()
-	reqInfo := adapters.ExtraRequestInfo{}
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), reqInfo)
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), adapters.ExtraRequestInfo{})
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
