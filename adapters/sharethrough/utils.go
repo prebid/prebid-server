@@ -23,12 +23,11 @@ type UtilityInterface interface {
 	getAdMarkup(openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
 	getPlacementSize([]openrtb.Format) (uint64, uint64)
 
-	canAutoPlayVideo(string) bool
+	canAutoPlayVideo(string, UserAgentParsers) bool
 	isAndroid(string) bool
 	isiOS(string) bool
-	isAtMinChromeIosVersion(string) bool
-	isAtMinChromeVersion(string) bool
-	isAtMinSafariVersion(string) bool
+	isAtMinChromeVersion(string, *regexp.Regexp) bool
+	isAtMinSafariVersion(string, *regexp.Regexp) bool
 }
 
 type Util struct{}
@@ -119,11 +118,22 @@ func (u Util) getPlacementSize(formats []openrtb.Format) (height uint64, width u
 	return biggest.Height, biggest.Width
 }
 
-func (u Util) canAutoPlayVideo(userAgent string) bool {
-	return (u.isAndroid(userAgent) && u.isAtMinChromeVersion(userAgent)) ||
-		(u.isiOS(userAgent) &&
-			(u.isAtMinSafariVersion(userAgent) || u.isAtMinChromeIosVersion(userAgent))) ||
-		!(u.isAndroid(userAgent) || u.isiOS(userAgent))
+func (u Util) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) bool {
+	if u.isAndroid(userAgent) {
+		if u.isAtMinChromeVersion(userAgent, parsers.ChromeVersion) {
+			return true
+		} else {
+			return false
+		}
+	} else if u.isiOS(userAgent) {
+		if u.isAtMinSafariVersion(userAgent, parsers.SafariVersion) || u.isAtMinChromeVersion(userAgent, parsers.ChromeiOSVersion) {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return true
+	}
 }
 
 func (u Util) isAndroid(userAgent string) bool {
@@ -142,52 +152,27 @@ func (u Util) isiOS(userAgent string) bool {
 	return isiOS
 }
 
-func (u Util) isAtMinChromeVersion(userAgent string) bool {
-	var chromeVersion int64
+func (u Util) isAtMinVersion(userAgent string, parser *regexp.Regexp, minVersion int64) bool {
+	var version int64
 	var err error
 
-	chromeVersionRegex := regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`)
-	chromeVersionMatch := chromeVersionRegex.FindStringSubmatch(userAgent)
+	chromeVersionMatch := parser.FindStringSubmatch(userAgent)
 	if len(chromeVersionMatch) > 1 {
-		chromeVersion, err = strconv.ParseInt(chromeVersionMatch[1], 10, 64)
+		version, err = strconv.ParseInt(chromeVersionMatch[1], 10, 64)
 	}
 	if err != nil {
 		return false
 	}
 
-	return chromeVersion >= minChromeVersion
+	return version >= minVersion
 }
 
-func (u Util) isAtMinChromeIosVersion(userAgent string) bool {
-	var chromeiOSVersion int64
-	var err error
-
-	chromeiOSVersionRegex := regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`)
-	chromeiOSVersionMatch := chromeiOSVersionRegex.FindStringSubmatch(userAgent)
-	if len(chromeiOSVersionMatch) > 1 {
-		chromeiOSVersion, err = strconv.ParseInt(chromeiOSVersionMatch[1], 10, 64)
-	}
-	if err != nil {
-		return false
-	}
-
-	return chromeiOSVersion >= minChromeVersion
+func (u Util) isAtMinChromeVersion(userAgent string, parser *regexp.Regexp) bool {
+	return u.isAtMinVersion(userAgent, parser, minChromeVersion)
 }
 
-func (u Util) isAtMinSafariVersion(userAgent string) bool {
-	var safariVersion int64
-	var err error
-
-	safariVersionRegex := regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`)
-	safariVersionMatch := safariVersionRegex.FindStringSubmatch(userAgent)
-	if len(safariVersionMatch) > 1 {
-		safariVersion, err = strconv.ParseInt(safariVersionMatch[1], 10, 64)
-	}
-	if err != nil {
-		return false
-	}
-
-	return safariVersion >= minSafariVersion
+func (u Util) isAtMinSafariVersion(userAgent string, parser *regexp.Regexp) bool {
+	return u.isAtMinVersion(userAgent, parser, minSafariVersion)
 }
 
 func (u Util) gdprApplies(request *openrtb.BidRequest) bool {

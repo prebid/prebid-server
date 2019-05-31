@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"regexp"
 )
 
 const supplyId = "FGMrCMMc"
@@ -18,6 +19,11 @@ func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 		AdServer: StrOpenRTBTranslator{
 			UriHelper: StrUriHelper{BaseURI: endpoint},
 			Util:      Util{},
+			UserAgentParsers: UserAgentParsers{
+				ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+				ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+				SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+			},
 		},
 	}
 }

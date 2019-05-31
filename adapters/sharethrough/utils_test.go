@@ -3,6 +3,7 @@ package sharethrough
 import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -120,6 +121,12 @@ func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *
 }
 
 func TestCanAutoPlayVideo(t *testing.T) {
+	uaParsers := UserAgentParsers{
+		ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+		ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+	}
+
 	ableAgents := map[string]string{
 		"Android at min Chrome version": "Android Chrome/60.0",
 		"iOS at min Chrome version":     "iPhone CriOS/60.0",
@@ -146,7 +153,14 @@ func TestCanAutoPlayVideo(t *testing.T) {
 		}
 	}
 
-	runUserAgentTests(tests, Util{}.canAutoPlayVideo, t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		output := Util{}.canAutoPlayVideo(test.input, uaParsers)
+		if output != test.expected {
+			t.Errorf("Expected: %t, got %t\n", test.expected, output)
+		}
+	}
 }
 
 func TestIsAndroid(t *testing.T) {
@@ -197,6 +211,7 @@ func TestIsiOS(t *testing.T) {
 }
 
 func TestIsAtMinChromeVersion(t *testing.T) {
+	regex := regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`)
 	v60ChromeUA := "Mozilla/5.0 Chrome/60.0.3112.113"
 	v12ChromeUA := "Mozilla/5.0 Chrome/12.0.3112.113"
 	badUA := "Fake User Agent"
@@ -216,10 +231,18 @@ func TestIsAtMinChromeVersion(t *testing.T) {
 		},
 	}
 
-	runUserAgentTests(tests, Util{}.isAtMinChromeVersion, t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		output := Util{}.isAtMinChromeVersion(test.input, regex)
+		if output != test.expected {
+			t.Errorf("Expected: %t, got %t\n", test.expected, output)
+		}
+	}
 }
 
 func TestIsAtMinChromeIosVersion(t *testing.T) {
+	regex := regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`)
 	v60ChrIosUA := "Mozilla/5.0 CriOS/60.0.3112.113"
 	v12ChrIosUA := "Mozilla/5.0 CriOS/12.0.3112.113"
 	badUA := "Fake User Agent"
@@ -239,10 +262,18 @@ func TestIsAtMinChromeIosVersion(t *testing.T) {
 		},
 	}
 
-	runUserAgentTests(tests, Util{}.isAtMinChromeIosVersion, t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		output := Util{}.isAtMinChromeVersion(test.input, regex)
+		if output != test.expected {
+			t.Errorf("Expected: %t, got %t\n", test.expected, output)
+		}
+	}
 }
 
 func TestIsAtMinSafariVersion(t *testing.T) {
+	regex := regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`)
 	v12SafariUA := "Mozilla/5.0 Version/12.0.3112.113"
 	v07SafariUA := "Mozilla/5.0 Version/07.0.3112.113"
 	badUA := "Fake User Agent"
@@ -262,7 +293,14 @@ func TestIsAtMinSafariVersion(t *testing.T) {
 		},
 	}
 
-	runUserAgentTests(tests, Util{}.isAtMinSafariVersion, t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		output := Util{}.isAtMinSafariVersion(test.input, regex)
+		if output != test.expected {
+			t.Errorf("Expected: %t, got %t\n", test.expected, output)
+		}
+	}
 }
 
 func TestGdprApplies(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -96,7 +97,11 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		},
 	}
 
-	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: Util{}}
+	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: Util{}, UserAgentParsers: UserAgentParsers{
+		ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+		ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+	}}
 	for testName, test := range tests {
 		outputSuccess, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq)
 		assertRequestDataEquals(t, testName, test.expected, outputSuccess)

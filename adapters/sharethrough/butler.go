@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 )
 
@@ -34,13 +35,20 @@ type StrAdServerUriInterface interface {
 	parseUri(string) (*StrAdSeverParams, error)
 }
 
+type UserAgentParsers struct {
+	ChromeVersion    *regexp.Regexp
+	ChromeiOSVersion *regexp.Regexp
+	SafariVersion    *regexp.Regexp
+}
+
 type StrUriHelper struct {
 	BaseURI string
 }
 
 type StrOpenRTBTranslator struct {
-	UriHelper StrAdServerUriInterface
-	Util      UtilityInterface
+	UriHelper        StrAdServerUriInterface
+	Util             UtilityInterface
+	UserAgentParsers UserAgentParsers
 }
 
 func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest) (*adapters.RequestData, error) {
@@ -72,7 +80,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			Iframe:             extBtlrParams.Bidder.Iframe,
 			Height:             height,
 			Width:              width,
-			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA),
+			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
 		}, request.App),
 		Body:    nil,
 		Headers: headers,
