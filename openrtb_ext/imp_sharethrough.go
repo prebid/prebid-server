@@ -96,9 +96,7 @@ type ExtImpSharethroughPlacementAttributes struct {
 }
 
 type ExtImpSharethroughExt struct {
-	Bidder struct {
-		Pkey       string `json:"pkey"`
-		Iframe     bool   `json:"iframe"`
-		IframeSize []int  `json:"iframeSize"`
-	} `json:"bidder"`
+	Pkey       string `json:"pkey"`
+	Iframe     bool   `json:"iframe"`
+	IframeSize []int  `json:"iframeSize"`
 }

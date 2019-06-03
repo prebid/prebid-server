@@ -152,13 +152,13 @@ func (u Util) isiOS(userAgent string) bool {
 	return isiOS
 }
 
-func (u Util) isAtMinVersion(userAgent string, parser *regexp.Regexp, minVersion int64) bool {
+func (u Util) isAtMinVersion(userAgent string, versionParser *regexp.Regexp, minVersion int64) bool {
 	var version int64
 	var err error
 
-	chromeVersionMatch := parser.FindStringSubmatch(userAgent)
-	if len(chromeVersionMatch) > 1 {
-		version, err = strconv.ParseInt(chromeVersionMatch[1], 10, 64)
+	versionMatch := versionParser.FindStringSubmatch(userAgent)
+	if len(versionMatch) > 1 {
+		version, err = strconv.ParseInt(versionMatch[1], 10, 64)
 	}
 	if err != nil {
 		return false

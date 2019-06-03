@@ -68,7 +68,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		"Generates the correct AdServer request from Imp": {
 			inputImp: openrtb.Imp{
 				ID:  "abc",
-				Ext: []byte(`{"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]}`),
+				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]} }`),
 				Banner: &openrtb.Banner{
 					Format: []openrtb.Format{{H: 30, W: 40}},
 				},

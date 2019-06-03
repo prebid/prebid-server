@@ -56,16 +56,20 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	headers.Add("Content-Type", "text/plain;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
-	var extBtlrParams openrtb_ext.ExtImpSharethroughExt
-	if err := json.Unmarshal(imp.Ext, &extBtlrParams); err != nil {
+	var strImpExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {
+		return nil, err
+	}
+	var strImpParams openrtb_ext.ExtImpSharethroughExt
+	if err := json.Unmarshal(strImpExt.Bidder, &strImpParams); err != nil {
 		return nil, err
 	}
 
-	pKey := extBtlrParams.Bidder.Pkey
+	pKey := strImpParams.Pkey
 
 	var height, width uint64
-	if len(extBtlrParams.Bidder.IframeSize) >= 2 {
-		height, width = uint64(extBtlrParams.Bidder.IframeSize[0]), uint64(extBtlrParams.Bidder.IframeSize[1])
+	if len(strImpParams.IframeSize) >= 2 {
+		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
 	} else {
 		height, width = s.Util.getPlacementSize(imp.Banner.Format)
 	}
@@ -77,7 +81,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			BidID:              imp.ID,
 			ConsentRequired:    s.Util.gdprApplies(request),
 			ConsentString:      s.Util.gdprConsentString(request),
-			Iframe:             extBtlrParams.Bidder.Iframe,
+			Iframe:             strImpParams.Iframe,
 			Height:             height,
 			Width:              width,
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
@@ -109,6 +113,9 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharet
 	adm, admErr := s.Util.getAdMarkup(strResp, btlrParams)
 	if admErr != nil {
 		errs = append(errs, &errortypes.BadServerResponse{Message: admErr.Error()})
+	}
+	if adm == "" {
+		return nil, errs
 	}
 
 	bid := &openrtb.Bid{
@@ -177,13 +184,23 @@ func (h StrUriHelper) parseUri(uri string) (*StrAdSeverParams, error) {
 		return nil, err
 	}
 
+	stayInIframe, err := strconv.ParseBool(params.Get("stayInIframe"))
+	if err != nil {
+		stayInIframe = false
+	}
+
+	consentRequired, err := strconv.ParseBool(params.Get("consent_required"))
+	if err != nil {
+		consentRequired = false
+	}
+
 	return &StrAdSeverParams{
 		Pkey:            params.Get("placement_key"),
 		BidID:           params.Get("bidId"),
-		Iframe:          params.Get("stayInIframe") == "true",
+		Iframe:          stayInIframe,
 		Height:          height,
 		Width:           width,
-		ConsentRequired: params.Get("consent_required") == "true",
+		ConsentRequired: consentRequired,
 		ConsentString:   params.Get("consent_string"),
 	}, nil
 }

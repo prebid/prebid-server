@@ -32,10 +32,6 @@ type SharethroughAdapter struct {
 	AdServer StrOpenRTBInterface
 }
 
-func (a SharethroughAdapter) Name() string {
-	return "sharethrough"
-}
-
 func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	var reqs []*adapters.RequestData
 
@@ -72,7 +68,5 @@ func (a SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		return nil, []error{err}
 	}
 
-	br, errs := a.AdServer.responseToOpenRTB(strBidResp, externalRequest)
-
-	return br, errs
+	return a.AdServer.responseToOpenRTB(strBidResp, externalRequest)
 }
