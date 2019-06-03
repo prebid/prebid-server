@@ -480,9 +480,8 @@ func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
 
 func TestVideoBuildVideoResponseNoBids(t *testing.T) {
 	openRtbBidResp := openrtb.BidResponse{}
-	podErrors := make([]PodError, 0, 2)
-	seatBids := make([]openrtb.SeatBid, 0)
-	openRtbBidResp.SeatBid = seatBids
+	podErrors := make([]PodError, 0, 0)
+	openRtbBidResp.SeatBid = make([]openrtb.SeatBid, 0)
 	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
 	assert.NoError(t, err, "Error should be nil")
 	assert.Len(t, bidRespVideo.AdPods, 0, "AdPods length should be 0")
