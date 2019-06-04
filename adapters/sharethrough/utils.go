@@ -120,20 +120,11 @@ func (u Util) getPlacementSize(formats []openrtb.Format) (height uint64, width u
 
 func (u Util) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) bool {
 	if u.isAndroid(userAgent) {
-		if u.isAtMinChromeVersion(userAgent, parsers.ChromeVersion) {
-			return true
-		} else {
-			return false
-		}
+		return u.isAtMinChromeVersion(userAgent, parsers.ChromeVersion)
 	} else if u.isiOS(userAgent) {
-		if u.isAtMinSafariVersion(userAgent, parsers.SafariVersion) || u.isAtMinChromeVersion(userAgent, parsers.ChromeiOSVersion) {
-			return true
-		} else {
-			return false
-		}
-	} else {
-		return true
+		return u.isAtMinSafariVersion(userAgent, parsers.SafariVersion) || u.isAtMinChromeVersion(userAgent, parsers.ChromeiOSVersion)
 	}
+	return true
 }
 
 func (u Util) isAndroid(userAgent string) bool {

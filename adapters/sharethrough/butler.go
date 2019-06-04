@@ -3,7 +3,6 @@ package sharethrough
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -31,7 +30,7 @@ type StrOpenRTBInterface interface {
 }
 
 type StrAdServerUriInterface interface {
-	buildUri(StrAdSeverParams, *openrtb.App) string
+	buildUri(StrAdSeverParams) string
 	parseUri(string) (*StrAdSeverParams, error)
 }
 
@@ -85,7 +84,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			Height:             height,
 			Width:              width,
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
-		}, request.App),
+		}),
 		Body:    nil,
 		Headers: headers,
 	}, nil
@@ -137,7 +136,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharet
 	return bidResponse, errs
 }
 
-func (h StrUriHelper) buildUri(params StrAdSeverParams, app *openrtb.App) string {
+func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v := url.Values{}
 	v.Set("placement_key", params.Pkey)
 	v.Set("bidId", params.BidID)
@@ -149,18 +148,6 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams, app *openrtb.App) string
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
-	var version string
-
-	if app != nil {
-		// Skipping error handling here because it should fall through to unknown in the flow
-		version, _ = jsonparser.GetString(app.Ext, "prebid", "version")
-	}
-
-	if len(version) == 0 {
-		version = "unknown"
-	}
-
-	v.Set("hbVersion", version)
 	v.Set("supplyId", supplyId)
 	v.Set("strVersion", strVersion)
 

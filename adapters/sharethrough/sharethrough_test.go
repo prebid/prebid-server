@@ -32,7 +32,7 @@ type MockStrUriHelper struct {
 	StrAdServerUriInterface
 }
 
-func (m MockStrUriHelper) buildUri(params StrAdSeverParams, app *openrtb.App) string {
+func (m MockStrUriHelper) buildUri(params StrAdSeverParams) string {
 	return m.mockBuildUri()
 }
 

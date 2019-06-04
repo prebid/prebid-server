@@ -276,7 +276,6 @@ func TestBuildUri(t *testing.T) {
 				Height:             20,
 				Width:              30,
 			},
-			inputApp: &openrtb.App{Ext: []byte(`{"prebid": {"version": "1"}}`)},
 			expected: []string{
 				"http://abc.com?",
 				"placement_key=pkey",
@@ -287,16 +286,8 @@ func TestBuildUri(t *testing.T) {
 				"stayInIframe=false",
 				"height=20",
 				"width=30",
-				"hbVersion=1",
 				"supplyId=FGMrCMMc",
 				"strVersion=1.0.0",
-			},
-		},
-		"Sets version to unknown if version not found": {
-			inputParams: StrAdSeverParams{},
-			inputApp:    &openrtb.App{Ext: []byte(`{}`)},
-			expected: []string{
-				"hbVersion=unknown",
 			},
 		},
 	}
@@ -304,7 +295,7 @@ func TestBuildUri(t *testing.T) {
 	uriHelper := StrUriHelper{BaseURI: "http://abc.com"}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
-		output := uriHelper.buildUri(test.inputParams, test.inputApp)
+		output := uriHelper.buildUri(test.inputParams)
 
 		for _, uriParam := range test.expected {
 			if !strings.Contains(output, uriParam) {
