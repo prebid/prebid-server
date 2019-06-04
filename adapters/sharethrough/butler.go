@@ -112,8 +112,6 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharet
 	adm, admErr := s.Util.getAdMarkup(strResp, btlrParams)
 	if admErr != nil {
 		errs = append(errs, &errortypes.BadServerResponse{Message: admErr.Error()})
-	}
-	if adm == "" {
 		return nil, errs
 	}
 
