@@ -46,6 +46,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
+		IsImpBanner:   false,
+		IsImpVideo:    false,
+		IsImpAudio:    false,
+		IsImpNative:   false,
 		PubID:         "test1",
 		Browser:       pbsmetrics.BrowserSafari,
 		CookieFlag:    pbsmetrics.CookieFlagYes,
@@ -54,6 +58,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	apnLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
+		IsImpBanner: false,
+		IsImpVideo:  false,
+		IsImpAudio:  false,
+		IsImpNative: false,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
 		Browser:     pbsmetrics.BrowserSafari,
@@ -63,6 +71,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	pubLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
+		IsImpBanner: false,
+		IsImpVideo:  false,
+		IsImpAudio:  false,
+		IsImpNative: false,
 		Adapter:     openrtb_ext.BidderPubmatic,
 		PubID:       "test1",
 		Browser:     pbsmetrics.BrowserSafari,
@@ -79,6 +91,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 	}
+	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][pbsmetrics.RequestStatusXX] with the new boolean values added to pbsmetrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeLegacy][pbsmetrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeAMP][pbsmetrics.RequestStatusOK].Count(), 0)
@@ -87,6 +100,12 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBadInput].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBadInput].Count(), 0)
+	//PBS-108 modify these accordingly so from the second comma on, they make sense. Modifications should probably come from the metrics.go file in here and should have a test case of their on
+	VerifyMetrics(t, "ImpMeter.isBanner", goEngine.RequestStatuses[pbsmetrics.ReqTypeNative][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "ImpMeter.isVideo", goEngine.RequestStatuses[pbsmetrics.ReqTypeNative][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "ImpMeter.isAudio", goEngine.RequestStatuses[pbsmetrics.ReqTypeNative][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "ImpMeter.isNative", goEngine.RequestStatuses[pbsmetrics.ReqTypeNative][pbsmetrics.RequestStatusOK].Count(), 0)
+
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)

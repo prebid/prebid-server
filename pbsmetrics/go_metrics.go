@@ -37,6 +37,12 @@ type Metrics struct {
 	userSyncSet           map[openrtb_ext.BidderName]metrics.Meter
 	userSyncGDPRPrevent   map[openrtb_ext.BidderName]metrics.Meter
 
+	// Media types found in the "imp" JSON object
+	ImpBanner metrics.Meter
+	ImpVideo  metrics.Meter
+	ImpAudio  metrics.Meter
+	ImpNative metrics.Meter
+
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
 	accountMetrics        map[string]*accountMetrics
@@ -107,6 +113,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
 		userSyncGDPRPrevent:        make(map[openrtb_ext.BidderName]metrics.Meter),
 
+		ImpBanner: blankMeter,
+		ImpVideo:  blankMeter,
+		ImpAudio:  blankMeter,
+		ImpNative: blankMeter,
+
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
 
@@ -137,6 +148,13 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
+
+	// Find out how to GetOrRegisterMeter
+	newMetrics.ImpBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
+	newMetrics.ImpVideo = metrics.GetOrRegisterMeter("imp_video", registry)
+	newMetrics.ImpAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
+	newMetrics.ImpNative = metrics.GetOrRegisterMeter("imp_native", registry)
+
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)

@@ -10,6 +10,10 @@ import (
 type Labels struct {
 	Source        DemandSource
 	RType         RequestType
+	IsImpBanner   bool
+	IsImpVideo    bool
+	IsImpAudio    bool
+	IsImpNative   bool
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
@@ -19,7 +23,7 @@ type Labels struct {
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
 type AdapterLabels struct {
 	Source        DemandSource
-	RType         RequestType
+	RType         RequestType //change??
 	Adapter       openrtb_ext.BidderName
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
@@ -32,6 +36,9 @@ type AdapterLabels struct {
 
 // DemandSource : Demand source enumeration
 type DemandSource string
+
+// ImpMediaType : Media type described in the "imp" JSON object
+type ImpMediaType string
 
 // RequestType : Request type enumeration
 type RequestType string
@@ -76,6 +83,14 @@ const (
 	ReqTypeORTB2App RequestType = "openrtb2-app"
 	ReqTypeAMP      RequestType = "amp"
 	ReqTypeVideo    RequestType = "video"
+)
+
+// The media types described in the "imp json objects
+const (
+	ImpTypeBanner ImpMediaType = "banner"
+	ImpTypeVideo  ImpMediaType = "video"
+	ImpTypeAudio  ImpMediaType = "audio"
+	ImpTypeNative ImpMediaType = "native"
 )
 
 func RequestTypes() []RequestType {
