@@ -114,16 +114,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	if req.Site != nil && req.Site.Publisher != nil {
-		labels.PubID = req.Site.Publisher.ID
-	}
-	if req.App != nil {
-		labels.RType = pbsmetrics.ReqTypeORTB2App
-		if req.App.Publisher != nil {
-			labels.PubID = req.App.Publisher.ID
-		}
-	}
-
 	ctx := context.Background()
 	cancel := func() {}
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(req.TMax) * time.Millisecond)
@@ -133,8 +123,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
+	if req.Site != nil && req.Site.Publisher != nil {
+		labels.PubID = req.Site.Publisher.ID
+	}
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
+		labels.RType = pbsmetrics.ReqTypeORTB2App
+		if req.App.Publisher != nil {
+			labels.PubID = req.App.Publisher.ID
+		}
 	} else {
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
