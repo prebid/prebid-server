@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"reflect"
 	"testing"
 )
+
+func TestJsonSamples(t *testing.T) {
+	adapterConfig := new(adapters.HTTPAdapterConfig)
+	adapterstest.RunJSONBidderTest(t, "unrulytest", NewUnrulyAdapter(adapterConfig, "http://targeting.unrulymedia.com/openrtb/2.2"))
+}
 
 func TestReturnsNewUnrulyBidderWithParams(t *testing.T) {
 	mockClient := &http.Client{}
