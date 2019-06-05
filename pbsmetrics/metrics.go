@@ -24,6 +24,10 @@ type Labels struct {
 type AdapterLabels struct {
 	Source        DemandSource
 	RType         RequestType //change??
+	IsImpBanner   bool
+	IsImpVideo    bool
+	IsImpAudio    bool
+	IsImpNative   bool
 	Adapter       openrtb_ext.BidderName
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser

@@ -38,10 +38,10 @@ type Metrics struct {
 	userSyncGDPRPrevent   map[openrtb_ext.BidderName]metrics.Meter
 
 	// Media types found in the "imp" JSON object
-	ImpBanner metrics.Meter
-	ImpVideo  metrics.Meter
-	ImpAudio  metrics.Meter
-	ImpNative metrics.Meter
+	ImpTypeBanner metrics.Meter
+	ImpTypeVideo  metrics.Meter
+	ImpTypeAudio  metrics.Meter
+	ImpTypeNative metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
