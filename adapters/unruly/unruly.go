@@ -47,11 +47,9 @@ func (a *UnrulyAdapter) ReplaceImp(imp openrtb.Imp, request *openrtb.BidRequest)
 }
 
 func (a *UnrulyAdapter) BuildRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{err}
 	}
 
 	return &adapters.RequestData{
@@ -59,7 +57,7 @@ func (a *UnrulyAdapter) BuildRequest(request *openrtb.BidRequest) (*adapters.Req
 		Uri:     a.URI,
 		Body:    reqJSON,
 		Headers: AddHeadersToRequest(),
-	}, errs
+	}, nil
 }
 
 func AddHeadersToRequest() http.Header {
@@ -93,8 +91,6 @@ func getMediaTypeForImpWithId(impID string, imps []openrtb.Imp) (openrtb_ext.Bid
 	for _, imp := range imps {
 		if imp.ID == impID {
 			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner, nil
-			} else {
 				return openrtb_ext.BidTypeVideo, nil
 			}
 		}
