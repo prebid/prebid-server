@@ -90,9 +90,7 @@ func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.R
 func getMediaTypeForImpWithId(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
 	for _, imp := range imps {
 		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeVideo, nil
-			}
+			return openrtb_ext.BidTypeVideo, nil
 		}
 	}
 	return "", &errortypes.BadInput{
