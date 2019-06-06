@@ -135,22 +135,6 @@ func TestMakeRequests(t *testing.T) {
 	}
 }
 
-func TestGetMediaTypeForImpIsBanner(t *testing.T) {
-	testID := string("1234")
-	testBidMediaType := openrtb_ext.BidTypeBanner
-	imp := openrtb.Imp{
-		ID: testID,
-		Banner: &openrtb.Banner{
-			Format: []openrtb.Format{{W: 320, H: 50}},
-		},
-	}
-	imps := []openrtb.Imp{imp}
-	actual, _ := getMediaTypeForImpWithId(testID, imps)
-	if actual != testBidMediaType {
-		t.Errorf("actual = %v expected = %v", actual, testBidMediaType)
-	}
-}
-
 func TestGetMediaTypeForImpIsVideo(t *testing.T) {
 	testID := string("4321")
 	testBidMediaType := openrtb_ext.BidTypeVideo
