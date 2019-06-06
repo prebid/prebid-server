@@ -46,16 +46,6 @@ func (a *UnrulyAdapter) ReplaceImp(imp openrtb.Imp, request *openrtb.BidRequest)
 	return &reqCopy
 }
 
-func (a *UnrulyAdapter) CheckImpExtension(request *openrtb.BidRequest) bool {
-	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
-	if err == nil {
-		var unrulyExt openrtb_ext.ExtImpUnruly
-		return json.Unmarshal(bidderExt.Bidder, &unrulyExt) == nil
-	}
-	return false
-}
-
 func (a *UnrulyAdapter) BuildRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	reqJSON, err := json.Marshal(request)

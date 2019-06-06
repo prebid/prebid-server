@@ -98,33 +98,6 @@ func TestConvertBidderNameInExt(t *testing.T) {
 	}
 }
 
-func TestCheckImpExtension(t *testing.T) {
-	adapter := UnrulyAdapter{URI: "http://mockEndpoint.com"}
-
-	imp := openrtb.Imp{Ext: json.RawMessage(`{"bidder": {"uuid": "1234", "siteid": "aSiteID"}}`)}
-	request := openrtb.BidRequest{Imp: []openrtb.Imp{imp}}
-
-	actual := adapter.CheckImpExtension(&request)
-	expected := true
-
-	if actual != expected {
-		t.Errorf("actual = %v expected = %v", actual, expected)
-	}
-}
-
-func TestCheckImpExtensionWithBadInput(t *testing.T) {
-	adapter := UnrulyAdapter{URI: "http://mockEndpoint.com"}
-
-	imp := openrtb.Imp{Ext: json.RawMessage(`{"bidder": notjson}`)}
-	request := openrtb.BidRequest{Imp: []openrtb.Imp{imp}}
-
-	actual := adapter.CheckImpExtension(&request)
-	expected := false
-
-	if actual != expected {
-		t.Errorf("actual = %v expected = %v", actual, expected)
-	}
-}
 func TestMakeRequests(t *testing.T) {
 	adapter := UnrulyAdapter{URI: "http://mockEndpoint.com"}
 
