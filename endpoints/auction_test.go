@@ -161,8 +161,8 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			if bid.AdServerTargeting[string(openrtb_ext.HbBidderConstantKey)] != "audienceNetwork" {
 				t.Error(string(openrtb_ext.HbBidderConstantKey) + " key was not parsed correctly")
 			}
-			if bid.AdServerTargeting[string(openrtb_ext.HbDealIdConstantKey)] != "2345" {
-				t.Error(string(openrtb_ext.HbDealIdConstantKey) + " key was not parsed correctly ")
+			if bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)] != "2345" {
+				t.Error(string(openrtb_ext.HbDealIDConstantKey) + " key was not parsed correctly ")
 			}
 		}
 		if bid.BidderCode == "appnexus" {
@@ -181,8 +181,8 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			if bid.AdServerTargeting[string(openrtb_ext.HbpbConstantKey)] != "" {
 				t.Error(string(openrtb_ext.HbpbConstantKey) + " key was parsed for two bidders")
 			}
-			if bid.AdServerTargeting[string(openrtb_ext.HbDealIdConstantKey)+"_appnexus"] != "1234" {
-				t.Errorf(string(openrtb_ext.HbDealIdConstantKey)+"_appnexus was not parsed correctly %v", bid.AdServerTargeting[string(openrtb_ext.HbDealIdConstantKey)+"_appnexus"])
+			if bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)+"_appnexus"] != "1234" {
+				t.Errorf(string(openrtb_ext.HbDealIDConstantKey)+"_appnexus was not parsed correctly %v", bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)+"_appnexus"])
 			}
 		}
 		if bid.BidderCode == string(openrtb_ext.BidderRubicon) {
@@ -196,8 +196,8 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			}
 		}
 		if bid.BidderCode == "nodeal" {
-			if _, exists := bid.AdServerTargeting[string(openrtb_ext.HbDealIdConstantKey)+"_nodeal"]; exists {
-				t.Error(string(openrtb_ext.HbDealIdConstantKey) + " key for nodeal bidder was not parsed correctly")
+			if _, exists := bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)+"_nodeal"]; exists {
+				t.Error(string(openrtb_ext.HbDealIDConstantKey) + " key for nodeal bidder was not parsed correctly")
 			}
 		}
 	}

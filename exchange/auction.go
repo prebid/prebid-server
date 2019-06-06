@@ -73,11 +73,11 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 	toCache := make([]prebid_cache_client.Cacheable, 0, expectNumBids+expectNumVast)
 	expByImp := make(map[string]int64)
 	competitiveExclusion := false
-	var hbCacheID string
+	var HbCacheID string
 	if len(bidCategory) > 0 {
 		// assert:  category of winning bids never duplicated
 		if rawUuid, err := uuid.NewV4(); err == nil {
-			hbCacheID = rawUuid.String()
+			HbCacheID = rawUuid.String()
 			competitiveExclusion = true
 		} else {
 			errs = append(errs, errors.New("failed to create custom cache key"))
@@ -102,7 +102,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 				// set custom cache key for winning bid when competitive exclusion applies
 				catDur = bidCategory[topBidPerBidder.bid.ID]
 				if len(catDur) > 0 {
-					customCacheKey = fmt.Sprintf("%s_%s", catDur, hbCacheID)
+					customCacheKey = fmt.Sprintf("%s_%s", catDur, HbCacheID)
 					useCustomCacheKey = true
 				}
 			}
@@ -164,9 +164,9 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 		a.vastCacheIds = make(map[*openrtb.Bid]string, len(vastIndices))
 		for index, bid := range vastIndices {
 			if ids[index] != "" {
-				if competitiveExclusion && strings.HasSuffix(ids[index], hbCacheID) {
+				if competitiveExclusion && strings.HasSuffix(ids[index], HbCacheID) {
 					// omit the pb_cat_dur_ portion of cache ID
-					a.vastCacheIds[bid] = hbCacheID
+					a.vastCacheIds[bid] = HbCacheID
 				} else {
 					a.vastCacheIds[bid] = ids[index]
 				}
