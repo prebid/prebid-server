@@ -64,5 +64,6 @@ var invalidParams = []string{
 	`{"mid":"123","mkv":"color:blue;length:350"}`,
 	`{"mid":"123","mkv":"color"}`,
 	`{"mid":"123","mkv":"color:blue,l&ngth:350"}`,
+	`{"mid":"123","mkv":"color::blue"}`,
 	`{"mid":"123","mkw":"fem&le"}`,
 }
