@@ -79,7 +79,8 @@ func (adapter *RTBHouseAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(1)
+	bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
+	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
