@@ -93,7 +93,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
-func (fetcher *dbFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (fetcher *dbFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }
 

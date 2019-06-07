@@ -36,10 +36,10 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 	return
 }
 
-func (mf MultiFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (mf MultiFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	for _, f := range mf {
 		if cf, ok := f.(CategoryFetcher); ok {
-			iabCategory, _ := cf.FetchCategories(primaryAdServer, publisherId, iabCategory)
+			iabCategory, _ := cf.FetchCategories(ctx, primaryAdServer, publisherId, iabCategory)
 			if iabCategory != "" {
 				return iabCategory, nil
 			}

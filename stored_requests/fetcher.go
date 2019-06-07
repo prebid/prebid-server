@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 // Fetcher knows how to fetch Stored Request data by id.
@@ -25,13 +27,13 @@ type Fetcher interface {
 
 type CategoryFetcher interface {
 	// FetchCategories fetches the ad-server/publisher specific category for the given IAB category
-	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
+	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
 }
 
 // AllFetcher is an iterface that encapsulates both the original Fetcher and the CategoryFetcher
 type AllFetcher interface {
 	FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error)
-	FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error)
+	FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error)
 }
 
 // NotFoundError is an error type to flag that an ID was not found by the Fetcher.
@@ -40,6 +42,11 @@ type AllFetcher interface {
 type NotFoundError struct {
 	ID       string
 	DataType string
+}
+
+type Category struct {
+	Id   string
+	Name string
 }
 
 func (e NotFoundError) Error() string {
@@ -130,18 +137,20 @@ func (c ComposedCache) Save(ctx context.Context, requestData map[string]json.Raw
 }
 
 type fetcherWithCache struct {
-	fetcher Fetcher
-	cache   Cache
+	fetcher       AllFetcher
+	cache         Cache
+	metricsEngine pbsmetrics.MetricsEngine
 }
 
 // WithCache returns a Fetcher which uses the given Cache before delegating to the original.
 // This can be called multiple times to compose Cache layers onto the backing Fetcher, though
 // it is usually more desirable to first compose caches with Compose, ensuring propagation of updates
 // and invalidations through all cache layers.
-func WithCache(fetcher Fetcher, cache Cache) Fetcher {
+func WithCache(fetcher AllFetcher, cache Cache, metricsEngine pbsmetrics.MetricsEngine) AllFetcher {
 	return &fetcherWithCache{
-		cache:   cache,
-		fetcher: fetcher,
+		cache:         cache,
+		fetcher:       fetcher,
+		metricsEngine: metricsEngine,
 	}
 }
 
@@ -151,6 +160,13 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	// Fixes #311
 	leftoverImps := findLeftovers(impIDs, impData)
 	leftoverReqs := findLeftovers(requestIDs, requestData)
+
+	// Record cache hits for stored requests and stored imps
+	f.metricsEngine.RecordStoredReqCacheResult(pbsmetrics.CacheHit, len(requestIDs)-len(leftoverReqs))
+	f.metricsEngine.RecordStoredImpCacheResult(pbsmetrics.CacheHit, len(impIDs)-len(leftoverImps))
+	// Record cache misses for stored requests and stored imps
+	f.metricsEngine.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, len(leftoverReqs))
+	f.metricsEngine.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, len(leftoverImps))
 
 	if len(leftoverReqs) > 0 || len(leftoverImps) > 0 {
 		fetcherReqData, fetcherImpData, fetcherErrs := f.fetcher.FetchRequests(ctx, leftoverReqs, leftoverImps)
@@ -165,7 +181,7 @@ func (f *fetcherWithCache) FetchRequests(ctx context.Context, requestIDs []strin
 	return
 }
 
-func (f *fetcherWithCache) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (f *fetcherWithCache) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }
 

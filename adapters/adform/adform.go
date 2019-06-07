@@ -40,7 +40,7 @@ type adformRequest struct {
 	gdprApplies   string
 	consent       string
 	digitrust     *adformDigitrust
-	cur           string
+	currency      string
 }
 
 type adformDigitrust struct {
@@ -75,6 +75,7 @@ type adformBid struct {
 
 const priceTypeGross = "gross"
 const priceTypeNet = "net"
+const defaultCurrency = "USD"
 
 func isPriceTypeValid(priceType string) (string, bool) {
 	pt := strings.ToLower(priceType)
@@ -224,7 +225,7 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		gdprApplies:   gdprApplies,
 		consent:       consent,
 		digitrust:     digitrust,
-		cur:           "USD",
+		currency:      defaultCurrency,
 	}, nil
 }
 
@@ -286,7 +287,7 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.cur)
+		str := fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.currency)
 		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
 	}
 
@@ -366,7 +367,7 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	return &AdformAdapter{
 		http:    a,
 		URL:     uriObj,
-		version: "0.1.2",
+		version: "0.1.3",
 	}
 }
 
@@ -475,20 +476,17 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		}
 	}
 
-	cur := "USD"
-	if request.Cur != nil && len(request.Cur) > 0 {
-		/* If USD is one of the supported currencies, then we should send that to the adserver */
-		usdSupported := false
+	requestCurrency := defaultCurrency
+	if len(request.Cur) != 0 {
+		hasDefaultCurrency := false
 		for _, c := range request.Cur {
-			if c == "USD" {
-				usdSupported = true
+			if defaultCurrency == c {
+				hasDefaultCurrency = true
 				break
 			}
 		}
-
-		/* If USD is not a supported currency, then we'll just choose the top level currency */
-		if usdSupported == false {
-			cur = request.Cur[0]
+		if !hasDefaultCurrency {
+			requestCurrency = request.Cur[0]
 		}
 	}
 
@@ -504,7 +502,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		gdprApplies:   gdprApplies,
 		consent:       consent,
 		digitrust:     digitrust,
-		cur:           cur,
+		currency:      requestCurrency,
 	}, errors
 }
 
@@ -565,6 +563,7 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
+	currency := bidResponse.Currency
 
 	if len(adformBids) > 0 {
 		bidResponse.Currency = adformBids[0].Currency
@@ -586,7 +585,10 @@ func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapt
 		}
 
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
+		currency = bid.Currency
 	}
+
+	bidResponse.Currency = currency
 
 	return bidResponse
 }

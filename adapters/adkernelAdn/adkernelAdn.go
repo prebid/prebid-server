@@ -108,12 +108,15 @@ func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpAdkerne
 func compatImpression(imp *openrtb.Imp) error {
 	imp.Ext = nil //do not forward ext to adkernel platform
 	if imp.Banner != nil {
-		return compatBanerImpression(imp.Banner)
+		return compatBannerImpression(imp)
 	}
 	return nil
 }
 
-func compatBanerImpression(banner *openrtb.Banner) error {
+func compatBannerImpression(imp *openrtb.Imp) error {
+	// Create a copy of the banner, since imp is a shallow copy of the original.
+	bannerCopy := *imp.Banner
+	banner := &bannerCopy
 	//As banner.w/h are required fields for adkernelAdn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
@@ -123,6 +126,7 @@ func compatBanerImpression(banner *openrtb.Banner) error {
 		banner.Format = banner.Format[1:]
 		banner.W = &format.W
 		banner.H = &format.H
+		imp.Banner = banner
 	}
 	return nil
 }
@@ -175,10 +179,16 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 		imp.TagID = imp.ID
 	}
 	if bidRequest.Site != nil {
+		// Need to copy Site as Request is a shallow copy
+		siteCopy := *bidRequest.Site
+		bidRequest.Site = &siteCopy
 		bidRequest.Site.Publisher = nil
 		bidRequest.Site.Domain = ""
 	}
 	if bidRequest.App != nil {
+		// Need to copy App as Request is a shallow copy
+		appCopy := *bidRequest.App
+		bidRequest.App = &appCopy
 		bidRequest.App.Publisher = nil
 	}
 	return &bidRequest

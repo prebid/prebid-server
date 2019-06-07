@@ -76,6 +76,7 @@
             "page": "http://www.publisher.com/awesome/site"
           },
           "device": {
+            "dnt": 0,
             "ua": "test-user-agent",
             "ip": "123.123.123.123",
             "language": "en"

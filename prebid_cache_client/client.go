@@ -36,6 +36,7 @@ type Cacheable struct {
 	Type       PayloadType
 	Data       json.RawMessage
 	TTLSeconds int64
+	Key        string
 }
 
 func NewClient(conf *config.Cache) Client {
@@ -149,6 +150,11 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteString(`","value":`)
 	}
 	buffer.Write(value.Data)
+	if len(value.Key) > 0 {
+		buffer.WriteString(`,"key":"`)
+		buffer.WriteString(string(value.Key))
+		buffer.WriteString(`"`)
+	}
 	buffer.WriteByte('}')
 	return nil
 }

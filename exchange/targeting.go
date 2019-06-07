@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/mxmCherry/openrtb"
@@ -59,8 +58,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 				targData.addKeys(targets, openrtb_ext.HbEnvKey, openrtb_ext.HbEnvKeyApp, bidderName, isOverallWinner)
 			}
 			if len(categoryMapping) > 0 {
-				finalCategory := fmt.Sprintf("%s_%s", targets[string(openrtb_ext.HbpbConstantKey)], categoryMapping[topBidPerBidder.bid.ID])
-				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, finalCategory, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbCategoryDurationKey, categoryMapping[topBidPerBidder.bid.ID], bidderName, isOverallWinner)
 			}
 
 			topBidPerBidder.bidTargets = targets
