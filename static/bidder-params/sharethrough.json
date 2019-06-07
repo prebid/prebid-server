@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Sharethrough Adapter Params",
+  "description": "A schema which validates params accepted by the Sharethrough adapter",
+  "type": "object",
+  "properties": {
+    "pkey": {
+      "type": "string",
+      "description": "placement key to use."
+    },
+    "iframe": {
+      "type": "boolean",
+      "description": "whether or not to stay in iframe",
+      "default": false
+    },
+    "iframeSize": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "integer"
+      },
+      "description": "iframe dimensions",
+      "default": [0, 0]
+    }
+  },
+  "required": ["pkey"]
+}

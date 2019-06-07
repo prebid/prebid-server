@@ -478,6 +478,15 @@ func TestVideoBuildVideoResponsePodErrors(t *testing.T) {
 	assert.Equal(t, int64(333), bidRespVideo.AdPods[2].PodId, "AdPods should contain error element at index 2")
 }
 
+func TestVideoBuildVideoResponseNoBids(t *testing.T) {
+	openRtbBidResp := openrtb.BidResponse{}
+	podErrors := make([]PodError, 0, 0)
+	openRtbBidResp.SeatBid = make([]openrtb.SeatBid, 0)
+	bidRespVideo, err := buildVideoResponse(&openRtbBidResp, podErrors)
+	assert.NoError(t, err, "Error should be nil")
+	assert.Len(t, bidRespVideo.AdPods, 0, "AdPods length should be 0")
+}
+
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	edep := &endpointDeps{
