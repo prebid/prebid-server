@@ -24,12 +24,12 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 ) (
 	requestsToBidder []*adapters.RequestData,
-	errors []error,
+	errs []error,
 ) {
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	headers := http.Header{}
@@ -42,7 +42,7 @@ func (adapter *RTBHouseAdapter) MakeRequests(
 	}
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 
-	return requestsToBidder, errors
+	return requestsToBidder, errs
 }
 
 const unexpectedStatusCodeFormat = "" +
@@ -55,7 +55,7 @@ func (adapter *RTBHouseAdapter) MakeBids(
 	bidderRawResponse *adapters.ResponseData,
 ) (
 	bidderResponse *adapters.BidderResponse,
-	errors []error,
+	errs []error,
 ) {
 	switch bidderRawResponse.StatusCode {
 	case http.StatusOK:
