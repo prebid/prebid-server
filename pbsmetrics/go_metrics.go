@@ -113,10 +113,10 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
 		userSyncGDPRPrevent:        make(map[openrtb_ext.BidderName]metrics.Meter),
 
-		ImpBanner: blankMeter,
-		ImpVideo:  blankMeter,
-		ImpAudio:  blankMeter,
-		ImpNative: blankMeter,
+		ImpTypeBanner: blankMeter,
+		ImpTypeVideo:  blankMeter,
+		ImpTypeAudio:  blankMeter,
+		ImpTypeNative: blankMeter,
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
@@ -150,10 +150,10 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 
 	// Find out how to GetOrRegisterMeter
-	newMetrics.ImpBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
-	newMetrics.ImpVideo = metrics.GetOrRegisterMeter("imp_video", registry)
-	newMetrics.ImpAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
-	newMetrics.ImpNative = metrics.GetOrRegisterMeter("imp_native", registry)
+	newMetrics.ImpTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
+	newMetrics.ImpTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
+	newMetrics.ImpTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
+	newMetrics.ImpTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
 
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
