@@ -12,7 +12,7 @@
             "price": 7.64,
             "cat": ["11_sports_22"]
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "appnexus"
     }, {
         "bid": {
@@ -21,7 +21,7 @@
             "price": 5.64,
             "cat": ["33_news_44"]
         },
-        "bidType": "video",
+        "bidType": "banner",
         "bidder": "pubmatic"
     }],
     "expectedCacheables": [

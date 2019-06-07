@@ -79,15 +79,13 @@ func (a *auction) doCache(
 	}
 
 	var errs []error
-	var expectNumBids int
-	var expectNumVast int
-	var bidIndices map[int]*openrtb.Bid
-	var vastIndices map[int]*openrtb.Bid
+	var cacheErr error
+	var expectNumBids, expectNumVast, newlyCached int
+	var bidIndices, vastIndices map[int]*openrtb.Bid
 	var toCache []prebid_cache_client.Cacheable
 	var expByImp map[string]int64
 	var hbCacheID string
-	var competitiveExclusion bool
-	var bids_to_cache_arr []*pbsOrtbBid
+	var competitiveExclusion, isNonVast, isVast bool
 
 	expectNumBids = valOrZero(targData.includeCacheBids, len(a.roundedPrices))
 	expectNumVast = valOrZero(targData.includeCacheVast, len(a.roundedPrices))
@@ -97,7 +95,7 @@ func (a *auction) doCache(
 	expByImp = make(map[string]int64)
 	competitiveExclusion = false
 
-	if len(bidCategory) > 0 {
+	if len(bidCategory) > 0 && targData.includeCacheVast {
 		// assert:  category of winning bids never duplicated
 		if rawUuid, err := uuid.NewV4(); err == nil {
 			hbCacheID = rawUuid.String()
@@ -112,55 +110,38 @@ func (a *auction) doCache(
 		expByImp[imp.ID] = imp.Exp
 	}
 
-	/* bidders vs winners			*/
+	// if targData.includeBidderKeys is true, we should cache all bids, both winning and losing. In other words, we'll cache
+	// banners and/or videos found in impsToBiddersTopBids map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
 	if targData.includeBidderKeys {
-		// cache banners and/or videos found in impsToBiddersTopBids map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
 		for impID := range a.impsToBiddersTopBids {
-			for _, bid_to_cache := range a.impsToBiddersTopBids[impID] {
-				bids_to_cache_arr = append(bids_to_cache_arr, bid_to_cache)
-			}
-		}
-	} else if targData.includeWinners {
-		// cache banners and/or videos found in impsToTopBids map[string]*pbsOrtbBid
-		for _, bid_to_cache := range a.impsToTopBids {
-			bids_to_cache_arr = append(bids_to_cache_arr, bid_to_cache)
-		}
-	}
-
-	for _, bid_to_cache := range bids_to_cache_arr {
-		/* banners vs videos 			*/
-		if targData.includeCacheBids { //banner
-			if jsonBytes, err := json.Marshal(bid_to_cache.bid); err == nil {
-				toCache = append(toCache, prebid_cache_client.Cacheable{
-					Type:       prebid_cache_client.TypeJSON,
-					Data:       jsonBytes,
-					TTLSeconds: cacheTTL(expByImp[bid_to_cache.bid.ImpID], bid_to_cache.bid.Exp, defTTL(bid_to_cache.bidType, defaultTTLs), ttlBuffer),
-				})
-				bidIndices[len(toCache)-1] = bid_to_cache.bid
-			} else {
-				errs = append(errs, err)
-			}
-		}
-		if targData.includeCacheVast && bid_to_cache.bidType == openrtb_ext.BidTypeVideo { //video
-			if jsonBytes, err := json.Marshal(makeVAST(bid_to_cache.bid)); err == nil {
-				catDur, ok := bidCategory[a.impsToTopBids[bid_to_cache.bid.ImpID].bid.ID]
-				if ok && (a.impsToTopBids[bid_to_cache.bid.ImpID] == bid_to_cache) {
-					toCache = append(toCache, prebid_cache_client.Cacheable{
-						Type:       prebid_cache_client.TypeXML,
-						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[bid_to_cache.bid.ImpID], bid_to_cache.bid.Exp, defTTL(bid_to_cache.bidType, defaultTTLs), ttlBuffer),
-						Key:        fmt.Sprintf("%s_%s", catDur, hbCacheID),
-					})
-				} else {
-					toCache = append(toCache, prebid_cache_client.Cacheable{
-						Type:       prebid_cache_client.TypeXML,
-						Data:       jsonBytes,
-						TTLSeconds: cacheTTL(expByImp[bid_to_cache.bid.ImpID], bid_to_cache.bid.Exp, defTTL(bid_to_cache.bidType, defaultTTLs), ttlBuffer),
-					})
+			for _, bidToCache := range a.impsToBiddersTopBids[impID] {
+				isNonVast, isVast, newlyCached, cacheErr = a.cacheBid(bidToCache, targData.includeCacheBids, targData.includeCacheVast, competitiveExclusion, &toCache, expByImp, defaultTTLs, ttlBuffer, bidCategory, hbCacheID)
+				if isNonVast {
+					bidIndices[len(toCache)-newlyCached] = bidToCache.bid
+					newlyCached--
 				}
-				vastIndices[len(toCache)-1] = bid_to_cache.bid
-			} else {
-				errs = append(errs, err)
+				if isVast {
+					vastIndices[len(toCache)-newlyCached] = bidToCache.bid
+				}
+				if cacheErr != nil {
+					errs = append(errs, cacheErr)
+				}
+			}
+		}
+	} else {
+		// targData.includeBidderKeys is false, therefore, targData.includeWinners is true and we should cache only winning bids
+		// which are found in a.impsToTopBids
+		for _, bidToCache := range a.impsToTopBids {
+			isNonVast, isVast, newlyCached, cacheErr = a.cacheBid(bidToCache, targData.includeCacheBids, targData.includeCacheVast, competitiveExclusion, &toCache, expByImp, defaultTTLs, ttlBuffer, bidCategory, hbCacheID)
+			if isNonVast {
+				bidIndices[len(toCache)-newlyCached] = bidToCache.bid
+				newlyCached--
+			}
+			if isVast {
+				vastIndices[len(toCache)-newlyCached] = bidToCache.bid
+			}
+			if cacheErr != nil {
+				errs = append(errs, cacheErr)
 			}
 		}
 	}
@@ -192,6 +173,52 @@ func (a *auction) doCache(
 		}
 	}
 	return errs
+}
+
+func (a *auction) cacheBid(bidToCache *pbsOrtbBid, incBannerBids bool, incVastBids bool, hasCustomCacheKey bool, toCache *[]prebid_cache_client.Cacheable, expByImp map[string]int64, defaultTTLs *config.DefaultTTLs, ttlBuffer int64, bidCategory map[string]string, hbCacheID string) (bool, bool, int, error) {
+	var chachedBid, chachedVast bool = false, false
+	var cachedSoFar int = len(*toCache)
+	var anError error = nil
+
+	if incBannerBids { //banner
+		if jsonBytes, err := json.Marshal(bidToCache.bid); err == nil {
+			if hasCustomCacheKey {
+				anError = errors.New("cannot use custom cache key for non-vast bids")
+			}
+			*toCache = append(*toCache, prebid_cache_client.Cacheable{
+				Type:       prebid_cache_client.TypeJSON,
+				Data:       jsonBytes,
+				TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
+			})
+			chachedBid = true
+		} else {
+			anError = err
+		}
+
+	}
+	if incVastBids && bidToCache.bidType == openrtb_ext.BidTypeVideo { //video
+		if jsonBytes, err := json.Marshal(makeVAST(bidToCache.bid)); err == nil {
+			_, isTopBid := a.impsToTopBids[bidToCache.bid.ImpID]
+			if catDur, ok := bidCategory[a.impsToTopBids[bidToCache.bid.ImpID].bid.ID]; ok && isTopBid {
+				*toCache = append(*toCache, prebid_cache_client.Cacheable{
+					Type:       prebid_cache_client.TypeXML,
+					Data:       jsonBytes,
+					TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
+					Key:        fmt.Sprintf("%s_%s", catDur, hbCacheID),
+				})
+			} else {
+				*toCache = append(*toCache, prebid_cache_client.Cacheable{
+					Type:       prebid_cache_client.TypeXML,
+					Data:       jsonBytes,
+					TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
+				})
+			}
+			chachedVast = true
+		} else {
+			anError = err
+		}
+	}
+	return chachedBid, chachedVast, len(*toCache) - cachedSoFar, anError
 }
 
 // makeVAST returns some VAST XML for the given bid. If AdM is defined,
@@ -262,9 +289,9 @@ func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl i
 }
 
 type auction struct {
-	// impsToTopBids is a map from imp.id to the highest overall CPM bid in that imp.
+	// We'll store the hightest bid comming from each Imp in the request
 	impsToTopBids map[string]*pbsOrtbBid
-	// impsToBiddersTopBids stores the highest bid on each imp by each bidder.
+	// We'll store the hightest bids comming from each Bidder of each Imp in the request
 	impsToBiddersTopBids map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*pbsOrtbBid]string
