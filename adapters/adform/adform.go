@@ -1,6 +1,7 @@
 package adform
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -57,6 +58,8 @@ type adformDigitrustPrivacy struct {
 type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
 	PriceType   string      `json:"priceType,omitempty"`
+	KeyValues   string      `json:"mkv,omitempty"`
+	Keywords    string      `json:"mkw,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -286,8 +289,15 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.cur)
-		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
+		var buffer bytes.Buffer
+		buffer.WriteString(fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.cur))
+		if adUnit.KeyValues != "" {
+			buffer.WriteString(fmt.Sprintf("&mkv=%s", adUnit.KeyValues))
+		}
+		if adUnit.Keywords != "" {
+			buffer.WriteString(fmt.Sprintf("&mkw=%s", adUnit.Keywords))
+		}
+		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(buffer.Bytes()))
 	}
 
 	return fmt.Sprintf("%s&%s", uri, strings.Join(adUnitsParams, "&"))
