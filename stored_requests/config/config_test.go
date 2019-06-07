@@ -19,7 +19,8 @@ import (
 )
 
 func TestNewEmptyFetcher(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{}, nil, nil)
+	fetcher := newFetcher(&config.StoredRequestsSlim{}, nil, nil)
+	ampFetcher := newFetcher(&config.StoredRequestsSlim{}, nil, nil)
 	if fetcher == nil || ampFetcher == nil {
 		t.Errorf("The fetchers should be non-nil, even with an empty config.")
 	}
@@ -32,10 +33,14 @@ func TestNewEmptyFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcher(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint:    "stored-requests.prebid.com",
-			AmpEndpoint: "stored-requests.prebid.com?type=amp",
+	fetcher := newFetcher(&config.StoredRequestsSlim{
+		HTTP: config.HTTPFetcherConfigSlim{
+			Endpoint: "stored-requests.prebid.com",
+		},
+	}, nil, nil)
+	ampFetcher := newFetcher(&config.StoredRequestsSlim{
+		HTTP: config.HTTPFetcherConfigSlim{
+			Endpoint: "stored-requests.prebid.com?type=amp",
 		},
 	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
@@ -55,10 +60,14 @@ func TestNewHTTPFetcher(t *testing.T) {
 }
 
 func TestNewHTTPFetcherNoAmp(t *testing.T) {
-	fetcher, ampFetcher := newFetchers(&config.StoredRequests{
-		HTTP: config.HTTPFetcherConfig{
-			Endpoint:    "stored-requests.prebid.com",
-			AmpEndpoint: "",
+	fetcher := newFetcher(&config.StoredRequestsSlim{
+		HTTP: config.HTTPFetcherConfigSlim{
+			Endpoint: "stored-requests.prebid.com",
+		},
+	}, nil, nil)
+	ampFetcher := newFetcher(&config.StoredRequestsSlim{
+		HTTP: config.HTTPFetcherConfigSlim{
+			Endpoint: "",
 		},
 	}, nil, nil)
 	if httpFetcher, ok := fetcher.(*http_fetcher.HttpFetcher); ok {
@@ -72,30 +81,91 @@ func TestNewHTTPFetcherNoAmp(t *testing.T) {
 		t.Errorf("An HTTP Fetching config should not return an Amp HTTP fetcher in this case. Got %v (%v)", ampFetcher, httpAmpFetcher)
 	}
 }
+
+func TestResolveConfig(t *testing.T) {
+	cfg := &config.Configuration{
+		StoredRequests: config.StoredRequests{
+			Files: true,
+			Path:  "/test-path",
+			Postgres: config.PostgresConfig{
+				ConnectionInfo: config.PostgresConnection{
+					Database: "db",
+					Host:     "pghost",
+					Port:     5,
+					Username: "user",
+					Password: "pass",
+				},
+				FetcherQueries: config.PostgresFetcherQueries{
+					AmpQueryTemplate: "amp-fetcher-query",
+				},
+				CacheInitialization: config.PostgresCacheInitializer{
+					AmpQuery: "amp-cache-init-query",
+				},
+				PollUpdates: config.PostgresUpdatePolling{
+					AmpQuery: "amp-poll-query",
+				},
+			},
+			HTTP: config.HTTPFetcherConfig{
+				AmpEndpoint: "amp-http-fetcher-endpoint",
+			},
+			InMemoryCache: config.InMemoryCache{
+				Type:             "none",
+				TTL:              50,
+				RequestCacheSize: 1,
+				ImpCacheSize:     2,
+			},
+			CacheEventsAPI: true,
+			HTTPEvents: config.HTTPEventsConfig{
+				AmpEndpoint: "amp-http-events-endpoint",
+			},
+		},
+	}
+
+	cfg.StoredRequests.Postgres.FetcherQueries.QueryTemplate = "auc-fetcher-query"
+	cfg.StoredRequests.Postgres.CacheInitialization.Query = "auc-cache-init-query"
+	cfg.StoredRequests.Postgres.PollUpdates.Query = "auc-poll-query"
+	cfg.StoredRequests.HTTP.Endpoint = "auc-http-fetcher-endpoint"
+	cfg.StoredRequests.HTTPEvents.Endpoint = "auc-http-events-endpoint"
+
+	auc, amp := resolvedStoredRequestsConfig(cfg)
+
+	// Auction slim should have the non-amp values in it
+	assertStringsEqual(t, auc.Postgres.FetcherQueries.QueryTemplate, cfg.StoredRequests.Postgres.FetcherQueries.QueryTemplate)
+	assertStringsEqual(t, auc.Postgres.CacheInitialization.Query, cfg.StoredRequests.Postgres.CacheInitialization.Query)
+	assertStringsEqual(t, auc.Postgres.PollUpdates.Query, cfg.StoredRequests.Postgres.PollUpdates.Query)
+	assertStringsEqual(t, auc.HTTP.Endpoint, cfg.StoredRequests.HTTP.Endpoint)
+	assertStringsEqual(t, auc.HTTPEvents.Endpoint, cfg.StoredRequests.HTTPEvents.Endpoint)
+	assertStringsEqual(t, auc.CacheEvents.Endpoint, "/storedrequests/openrtb2")
+
+	// Amp slim should have the amp values in it
+	assertStringsEqual(t, amp.Postgres.FetcherQueries.QueryTemplate, cfg.StoredRequests.Postgres.FetcherQueries.AmpQueryTemplate)
+	assertStringsEqual(t, amp.Postgres.CacheInitialization.Query, cfg.StoredRequests.Postgres.CacheInitialization.AmpQuery)
+	assertStringsEqual(t, amp.Postgres.PollUpdates.Query, cfg.StoredRequests.Postgres.PollUpdates.AmpQuery)
+	assertStringsEqual(t, amp.HTTP.Endpoint, cfg.StoredRequests.HTTP.AmpEndpoint)
+	assertStringsEqual(t, amp.HTTPEvents.Endpoint, cfg.StoredRequests.HTTPEvents.AmpEndpoint)
+	assertStringsEqual(t, amp.CacheEvents.Endpoint, "/storedrequests/amp")
+}
+
 func TestNewHTTPEvents(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	server1 := httptest.NewServer(http.HandlerFunc(handler))
-	server2 := httptest.NewServer(http.HandlerFunc(handler))
 
-	cfg := &config.StoredRequests{
-		HTTPEvents: config.HTTPEventsConfig{
+	cfg := &config.StoredRequestsSlim{
+		HTTPEvents: config.HTTPEventsConfigSlim{
 			Endpoint:    server1.URL,
-			AmpEndpoint: server2.URL,
 			RefreshRate: 100,
 			Timeout:     1000,
 		},
 	}
-	evProducers, ampProducers := newEventProducers(cfg, server1.Client(), nil, nil)
+	evProducers := newEventProducers(cfg, server1.Client(), nil, nil)
 	assertSliceLength(t, evProducers, 1)
-	assertSliceLength(t, ampProducers, 1)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
-	assertHttpWithURL(t, ampProducers[0], server2.URL)
 }
 
 func TestNewEmptyCache(t *testing.T) {
-	cache := newCache(&config.StoredRequests{InMemoryCache: config.InMemoryCache{Type: "none"}})
+	cache := newCache(&config.StoredRequestsSlim{InMemoryCache: config.InMemoryCache{Type: "none"}})
 	cache.Save(context.Background(), map[string]json.RawMessage{"foo": json.RawMessage("true")}, nil)
 	reqs, _ := cache.Get(context.Background(), []string{"foo"}, nil)
 	if len(reqs) != 0 {
@@ -104,7 +174,7 @@ func TestNewEmptyCache(t *testing.T) {
 }
 
 func TestNewInMemoryCache(t *testing.T) {
-	cache := newCache(&config.StoredRequests{
+	cache := newCache(&config.StoredRequestsSlim{
 		InMemoryCache: config.InMemoryCache{
 			TTL:              60,
 			RequestCacheSize: 100,
@@ -119,18 +189,29 @@ func TestNewInMemoryCache(t *testing.T) {
 }
 
 func TestNewPostgresEventProducers(t *testing.T) {
-	cfg := &config.StoredRequests{
-		Postgres: config.PostgresConfig{
-			CacheInitialization: config.PostgresCacheInitializer{
-				Timeout:  50,
-				Query:    "SELECT id, requestData, type FROM stored_data",
-				AmpQuery: "SELECT id, requestData, type FROM stored_amp_data",
+	cfg := &config.StoredRequestsSlim{
+		Postgres: config.PostgresConfigSlim{
+			CacheInitialization: config.PostgresCacheInitializerSlim{
+				Timeout: 50,
+				Query:   "SELECT id, requestData, type FROM stored_data",
 			},
-			PollUpdates: config.PostgresUpdatePolling{
+			PollUpdates: config.PostgresUpdatePollingSlim{
 				RefreshRate: 20,
 				Timeout:     50,
 				Query:       "SELECT id, requestData, type FROM stored_data WHERE last_updated > $1",
-				AmpQuery:    "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",
+			},
+		},
+	}
+	ampCfg := &config.StoredRequestsSlim{
+		Postgres: config.PostgresConfigSlim{
+			CacheInitialization: config.PostgresCacheInitializerSlim{
+				Timeout: 50,
+				Query:   "SELECT id, requestData, type FROM stored_amp_data",
+			},
+			PollUpdates: config.PostgresUpdatePollingSlim{
+				RefreshRate: 20,
+				Timeout:     50,
+				Query:       "SELECT id, requestData, type FROM stored_amp_data WHERE last_updated > $1",
 			},
 		},
 	}
@@ -140,13 +221,17 @@ func TestNewPostgresEventProducers(t *testing.T) {
 		t.Fatalf("Failed to create mock: %v", err)
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
-	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Postgres.CacheInitialization.AmpQuery) + "$").WillReturnError(errors.New("Query failed"))
+	mock.ExpectQuery("^" + regexp.QuoteMeta(ampCfg.Postgres.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers, ampEvProducers := newEventProducers(cfg, client, db, nil)
-	assertExpectationsMet(t, mock)
+	evProducers := newEventProducers(cfg, client, db, nil)
 	assertProducerLength(t, evProducers, 2)
+
+	ampEvProducers := newEventProducers(ampCfg, client, db, nil)
 	assertProducerLength(t, ampEvProducers, 2)
+
+	assertExpectationsMet(t, mock)
 }
+
 func TestNewEventsAPI(t *testing.T) {
 	router := httprouter.New()
 	newEventsAPI(router, "/test-endpoint")

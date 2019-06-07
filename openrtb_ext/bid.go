@@ -16,6 +16,7 @@ type ExtBidPrebid struct {
 	Cache     *ExtBidPrebidCache `json:"cache,omitempty"`
 	Targeting map[string]string  `json:"targeting,omitempty"`
 	Type      BidType            `json:"type"`
+	Video     *ExtBidPrebidVideo `json:"video,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
@@ -24,16 +25,10 @@ type ExtBidPrebidCache struct {
 	Url string `json:"url"`
 }
 
-type BidderExt struct {
-	CreativeInfo CreativeInfo `json:"creative_info"`
-}
-
-type CreativeInfo struct {
-	Video Video `json:"video"`
-}
-
-type Video struct {
-	Duration int `json:"duration"`
+// ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
+type ExtBidPrebidVideo struct {
+	Duration        int    `json:"duration"`
+	PrimaryCategory string `json:"primary_category"`
 }
 
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type

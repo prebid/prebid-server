@@ -7,6 +7,6 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	sonobiAdapter := NewSonobiBidder(new(http.Client), "https://apex.go.sonobi.com/bid?partnerid=71d9d3d8af")
+	sonobiAdapter := NewSonobiBidder(new(http.Client), "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	adapterstest.RunJSONBidderTest(t, "sonobitest", sonobiAdapter)
 }

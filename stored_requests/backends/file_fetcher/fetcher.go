@@ -22,7 +22,7 @@ func NewFileFetcher(directory string) (stored_requests.AllFetcher, error) {
 
 type eagerFetcher struct {
 	FileSystem FileSystem
-	Categories map[string]map[string]string
+	Categories map[string]map[string]stored_requests.Category
 }
 
 func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (map[string]json.RawMessage, map[string]json.RawMessage, []error) {
@@ -33,7 +33,7 @@ func (fetcher *eagerFetcher) FetchRequests(ctx context.Context, requestIDs []str
 	return storedRequests, storedImpressions, errs
 }
 
-func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (fetcher *eagerFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	fileName := primaryAdServer
 
 	if len(publisherId) != 0 {
@@ -41,23 +41,23 @@ func (fetcher *eagerFetcher) FetchCategories(primaryAdServer, publisherId, iabCa
 	}
 
 	if fetcher.Categories == nil {
-		fetcher.Categories = make(map[string]map[string]string)
+		fetcher.Categories = make(map[string]map[string]stored_requests.Category)
 	}
 	if data, ok := fetcher.Categories[fileName]; ok {
-		return data[iabCategory], nil
+		return data[iabCategory].Id, nil
 	}
 
 	if primaryAdServerDir, found := fetcher.FileSystem.Directories[primaryAdServer]; found {
 
 		if file, ok := primaryAdServerDir.Files[fileName]; ok {
 
-			tmp := make(map[string]string)
+			tmp := make(map[string]stored_requests.Category)
 
 			if err := json.Unmarshal(file, &tmp); err != nil {
 				return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
 			}
 			fetcher.Categories[fileName] = tmp
-			resultCategory := tmp[iabCategory]
+			resultCategory := tmp[iabCategory].Id
 			primaryAdServerDir.Files[fileName] = nil
 
 			if len(resultCategory) == 0 {

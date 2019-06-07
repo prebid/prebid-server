@@ -53,6 +53,7 @@ type ExtRequestTargeting struct {
 	IncludeWinners       bool                    `json:"includewinners"`
 	IncludeBidderKeys    bool                    `json:"includebidderkeys"`
 	IncludeBrandCategory ExtIncludeBrandCategory `json:"includebrandcategory"`
+	DurationRangeSec     []int                   `json:"durationrangesec"`
 }
 
 type ExtIncludeBrandCategory struct {

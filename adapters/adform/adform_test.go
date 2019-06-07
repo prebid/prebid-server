@@ -51,6 +51,7 @@ type aBidInfo struct {
 	tid       string
 	buyerUID  string
 	secure    bool
+	currency  string
 	delay     time.Duration
 }
 
@@ -59,7 +60,7 @@ var adformTestData aBidInfo
 // Legacy auction tests
 
 func DummyAdformServer(w http.ResponseWriter, r *http.Request) {
-	errorString := assertAdformServerRequest(adformTestData, r)
+	errorString := assertAdformServerRequest(adformTestData, r, false)
 	if errorString != nil {
 		http.Error(w, *errorString, http.StatusInternalServerError)
 		return
@@ -84,7 +85,7 @@ func createAdformServerResponse(testData aBidInfo) ([]byte, error) {
 			ResponseType: "banner",
 			Banner:       testData.tags[0].content,
 			Price:        testData.tags[0].price,
-			Currency:     "USD",
+			Currency:     "EUR",
 			Width:        testData.width,
 			Height:       testData.height,
 			DealId:       testData.tags[0].dealId,
@@ -95,7 +96,7 @@ func createAdformServerResponse(testData aBidInfo) ([]byte, error) {
 			ResponseType: "banner",
 			Banner:       testData.tags[2].content,
 			Price:        testData.tags[2].price,
-			Currency:     "USD",
+			Currency:     "EUR",
 			Width:        testData.width,
 			Height:       testData.height,
 			DealId:       testData.tags[2].dealId,
@@ -163,6 +164,7 @@ func TestAdformBasicResponse(t *testing.T) {
 
 func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, context.Context, *pbs.PBSRequest) {
 	adformTestData = createTestData(false)
+		currency:  "EUR",
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
@@ -277,7 +279,7 @@ func TestOpenRTBRequest(t *testing.T) {
 	}
 	r.Header = httpRequests[0].Headers
 
-	errorString := assertAdformServerRequest(testData, r)
+	errorString := assertAdformServerRequest(testData, r, true)
 	if errorString != nil {
 		t.Errorf("Request error: %s", *errorString)
 	}
@@ -321,6 +323,7 @@ func createTestData(secure bool) aBidInfo {
 			{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"},
 		},
 		secure: secure,
+		currency: "EUR",
 	}
 	return testData
 }
@@ -361,6 +364,9 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 	regs := getRegs()
 	bidRequest.Regs = &regs
 	bidRequest.User.Ext = getUserExt()
+
+	bidRequest.Cur = make([]string, 1)
+	bidRequest.Cur[0] = testData.currency
 
 	return bidRequest
 }
@@ -500,7 +506,7 @@ func formatAdUnitParam(fieldName string, fieldValue string) string {
 	return ""
 }
 
-func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
+func assertAdformServerRequest(testData aBidInfo, r *http.Request, isOpenRtb bool) *string {
 	if ok, err := equal("GET", r.Method, "HTTP method"); !ok {
 		return err
 	}
@@ -510,7 +516,14 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request) *string {
 		}
 	}
 
-	if ok, err := equal("CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&bWlkPTMyMzQ0JnJjdXI9VVNEJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9VVNE&bWlkPTMyMzQ2JnJjdXI9VVNE", r.URL.RawQuery, "Query string"); !ok {
+	var midsWithCurrency = ""
+	if isOpenRtb {
+		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9RVVSJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9RVVS&bWlkPTMyMzQ2JnJjdXI9RVVS"
+	} else {
+		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9VVNEJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9VVNE&bWlkPTMyMzQ2JnJjdXI9VVNE" // no way to pass currency in legacy adapter
+	}
+
+	if ok, err := equal("CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&"+midsWithCurrency, r.URL.RawQuery, "Query string"); !ok {
 		return err
 	}
 	if ok, err := equal("application/json;charset=utf-8", r.Header.Get("Content-Type"), "Content type"); !ok {

@@ -1,0 +1,11 @@
+maintainer:
+  email: "pubgrowth.engineering@sharethrough.com"
+capabilities:
+  app:
+    mediaTypes:
+      - native
+      - banner
+  site:
+    mediaTypes:
+      - native
+      - banner
