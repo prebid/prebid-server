@@ -85,53 +85,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
-	// Before the `cleanOpenRTBRequests(..)` function runs, let's set the  labels.RType value here because this is a place common to all endpoints.
-	/*  labels.RType must be extracted from bidRequest.Imp object
-	type Imp struct {
-		.
-		.
-		Banner *Banner `json:"banner,omitempty"`
-
-		// Attribute:
-		//   video
-		// Type:
-		//   object
-		// Description:
-		//   A Video object (Section 3.2.7); required if this impression is
-		//   offered as a video ad opportunity.
-		Video *Video `json:"video,omitempty"`
-
-		// Attribute:
-		//   audio
-		// Type:
-		//   object
-		// Description:
-		//   An Audio object (Section 3.2.8); required if this impression is
-		//   offered as an audio ad opportunity.
-		Audio *Audio `json:"audio,omitempty"`
-
-		// Attribute:
-		//   native
-		// Type:
-		//   object
-		// Description:
-		//   A Native object (Section 3.2.9); required if this impression is
-		//   offered as a native ad opportunity.
-		Native *Native `json:"native,omitempty"`
-		.
-		.
-	}
-	Since:
-		"Hans Hjort [2:58 PM]
-		 More complicated than that, as the type can have multiple simultaneous values.
-		 Might be best to have 4 flags, `isNative`, `isBanner`, `isVideo`, and `isAudio`."
-	Then:
-	We can just turn on flags here if the Imp has some other type in there
-		IsImpBanner:   false,
-		IsImpVideo:    false,
-		IsImpAudio:    false,
-		IsImpNative:   false,
-	*/
 	for _, impInRequest := range bidRequest.Imp {
 		if impInRequest.Banner != nil {
 			labels.IsImpBanner = true

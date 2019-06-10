@@ -23,7 +23,7 @@ type Labels struct {
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
 type AdapterLabels struct {
 	Source        DemandSource
-	RType         RequestType //change??
+	RType         RequestType
 	IsImpBanner   bool
 	IsImpVideo    bool
 	IsImpAudio    bool

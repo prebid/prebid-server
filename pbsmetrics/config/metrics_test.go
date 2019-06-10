@@ -100,7 +100,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBadInput].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBadInput].Count(), 0)
-	//PBS-108 modify these accordingly so from the second comma on, they make sense. Modifications should probably come from the metrics.go file in here and should have a test case of their on
+
 	VerifyMetrics(t, "ImpTypeBanner", goEngine.ImpTypeBanner.Count(), 3)
 	VerifyMetrics(t, "ImpTypeVideo", goEngine.ImpTypeVideo.Count(), 0)
 	VerifyMetrics(t, "ImpTypeAudio", goEngine.ImpTypeAudio.Count(), 0)
