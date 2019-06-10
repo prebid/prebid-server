@@ -27,6 +27,6 @@ func (fetcher EmptyFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher EmptyFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (fetcher EmptyFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }

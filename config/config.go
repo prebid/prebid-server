@@ -119,9 +119,11 @@ func (cfg *AuctionTimeouts) LimitAuctionTimeout(requested time.Duration) time.Du
 }
 
 type GDPR struct {
-	HostVendorID        int          `mapstructure:"host_vendor_id"`
-	UsersyncIfAmbiguous bool         `mapstructure:"usersync_if_ambiguous"`
-	Timeouts            GDPRTimeouts `mapstructure:"timeouts_ms"`
+	HostVendorID            int          `mapstructure:"host_vendor_id"`
+	UsersyncIfAmbiguous     bool         `mapstructure:"usersync_if_ambiguous"`
+	Timeouts                GDPRTimeouts `mapstructure:"timeouts_ms"`
+	NonStandardPublishers   []string     `mapstructure:"non_standard_publishers,flow"`
+	NonStandardPublisherMap map[string]int
 }
 
 func (cfg *GDPR) validate(errs configErrors) configErrors {
@@ -384,6 +386,13 @@ func New(v *viper.Viper) (*Configuration, error) {
 	if errs := c.validate(); len(errs) > 0 {
 		return &c, errs
 	}
+
+	// To look for a request's publisher_id into the NonStandardPublishers in
+	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
+	c.GDPR.NonStandardPublisherMap = make(map[string]int)
+	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
+		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = 1
+	}
 	return &c, nil
 }
 
@@ -436,6 +445,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSonobi, "https://sync.go.sonobi.com/us.gif?loc="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsonobi%26consent_string%3D{{.GDPR}}%26gdpr%3D{{.GDPRConsent}}%26uid%3D%5BUID%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderYieldmo, "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dyieldmo%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderGamoshi, "https://rtb.gamoshi.io/pix/0000/scm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dgamoshi%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bgusr%5D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderMgid, "https://cm.mgid.com/m?cdsp=363893&adu="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dmgid%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Bmuidn%7D")
 
 }
 
@@ -501,6 +511,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("datacache.ttl_seconds", 0)
 	v.SetDefault("category_mapping.filesystem.enabled", true)
 	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
+	v.SetDefault("category_mapping.http.endpoint", "")
 	v.SetDefault("stored_requests.filesystem", false)
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
 	v.SetDefault("stored_requests.postgres.connection.dbname", "")
@@ -592,6 +603,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
 	v.SetDefault("adapters.yieldmo.endpoint", "http://ads.yieldmo.com/exchange/prebid-server")
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
+	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")
@@ -600,8 +612,9 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.usersync_if_ambiguous", false)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
+	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
-	v.SetDefault("currency_converter.fetch_interval_seconds", 0) // #280 Not activated for the time being
+	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)

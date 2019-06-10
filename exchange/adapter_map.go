@@ -23,6 +23,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/improvedigital"
 	"github.com/prebid/prebid-server/adapters/ix"
 	"github.com/prebid/prebid-server/adapters/lifestreet"
+	"github.com/prebid/prebid-server/adapters/mgid"
 	"github.com/prebid/prebid-server/adapters/openx"
 	"github.com/prebid/prebid-server/adapters/pubmatic"
 	"github.com/prebid/prebid-server/adapters/pulsepoint"
@@ -69,6 +70,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderSonobi:         sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
 		openrtb_ext.BidderYieldmo:        yieldmo.NewYieldmoBidder(cfg.Adapters[string(openrtb_ext.BidderYieldmo)].Endpoint),
 		openrtb_ext.BidderGamoshi:        gamoshi.NewGamoshiBidder(cfg.Adapters[string(openrtb_ext.BidderGamoshi)].Endpoint),
+		openrtb_ext.BidderMgid:           mgid.NewMgidBidder(cfg.Adapters[string(openrtb_ext.BidderMgid)].Endpoint),
 		openrtb_ext.BidderImprovedigital: improvedigital.NewImprovedigitalBidder(cfg.Adapters[string(openrtb_ext.BidderImprovedigital)].Endpoint),
 	}
 

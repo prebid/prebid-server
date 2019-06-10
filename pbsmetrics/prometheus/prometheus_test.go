@@ -279,6 +279,40 @@ func TestAdapterTimeMetrics(t *testing.T) {
 
 }
 
+func TestRecordStoredReqCacheResult(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricCacheHit := dto.Metric{}
+	metricCacheMiss := dto.Metric{}
+
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 2)
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 0)
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, 1)
+
+	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
+	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
+
+	assertCounterValue(t, "stored_request_cache_performance[hit]", &metricCacheHit, 2)
+	assertCounterValue(t, "stored_request_cache_performance[miss]", &metricCacheMiss, 1)
+}
+
+func TestRecordStoredImpCacheResult(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricCacheHit := dto.Metric{}
+	metricCacheMiss := dto.Metric{}
+
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 2)
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 0)
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, 1)
+
+	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
+	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
+
+	assertCounterValue(t, "stored_imp_cache_performance[hit]", &metricCacheHit, 2)
+	assertCounterValue(t, "stored_imp_cache_performance[miss]", &metricCacheMiss, 1)
+}
+
 func TestCookieMetrics(t *testing.T) {
 	proMetrics := newTestMetricsEngine()
 
@@ -332,6 +366,7 @@ func TestMetricsExist(t *testing.T) {
 
 	if err := proMetrics.Registry.Register(prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "prebid",
+		Subsystem: "server",
 		Name:      "active_connections",
 		Help:      "Current number of active (open) connections.",
 	})); err == nil {
@@ -343,7 +378,7 @@ func newTestMetricsEngine() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
-		Subsystem: "",
+		Subsystem: "server",
 	})
 }
 
