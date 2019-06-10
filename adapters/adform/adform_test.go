@@ -164,7 +164,6 @@ func TestAdformBasicResponse(t *testing.T) {
 
 func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, context.Context, *pbs.PBSRequest) {
 	adformTestData = createTestData(false)
-		currency:  "EUR",
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
