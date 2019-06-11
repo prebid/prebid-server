@@ -321,7 +321,7 @@ func createTestData(secure bool) aBidInfo {
 			{mid: 32345, priceType: "net", code: "code2"}, // no bid for ad unit
 			{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"},
 		},
-		secure: secure,
+		secure:   secure,
 		currency: "EUR",
 	}
 	return testData
