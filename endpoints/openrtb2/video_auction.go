@@ -205,8 +205,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	if labels.PubID == "UNKNOWN" && bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
 		labels.PubID = bidReq.Site.Publisher.ID
-	} else {
-		labels.PubID = "UNKNOWN"
 	}
 
 	numImps = len(bidReq.Imp)
