@@ -1044,6 +1044,7 @@ func TestOpenRTBRequest(t *testing.T) {
                 }]
             }`),
 		},
+		Ext: json.RawMessage(`{"prebid": {}}`),
 	}
 
 	reqs, errs := bidder.MakeRequests(request)
@@ -1074,6 +1075,14 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 		if rpRequest.Cur != nil {
 			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
+		}
+
+		var requestExt rubiconExtRequest
+		if err := json.Unmarshal(request.Ext, &requestExt); err != nil {
+			t.Fatalf("Failed to unmarshal request.ext: %v", request.Ext)
+		}
+		if requestExt.Prebid != nil {
+			t.Fatalf("Wrong request.ext.prebid. Expected nil, Got %v", requestExt.Prebid)
 		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
