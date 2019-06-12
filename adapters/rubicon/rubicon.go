@@ -143,13 +143,6 @@ type rubiconUser struct {
 	Language string `json:"language"`
 }
 
-// This just overrides OpenRTB request.ext with hiding prebid field.
-// Rubicon XAPI doesn't need it for performing the auction.
-type rubiconExtRequest struct {
-	openrtb_ext.ExtRequest
-	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid,omitempty"`
-}
-
 type rubiSize struct {
 	w uint16
 	h uint16
@@ -663,15 +656,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
-
-		// remove "ext.prebid" if exists
-		if request.Ext != nil {
-			var requestExt rubiconExtRequest
-			if err = json.Unmarshal(request.Ext, &requestExt); err == nil {
-				requestExt.Prebid = nil
-				request.Ext, err = json.Marshal(&requestExt)
-			}
-		}
+		request.Ext = nil
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
