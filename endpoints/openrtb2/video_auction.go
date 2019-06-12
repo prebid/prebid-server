@@ -200,10 +200,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
+		if bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
+			labels.PubID = bidReq.Site.Publisher.ID
+		}
 	}
-	if labels.PubID == "" && bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
-		labels.PubID = bidReq.Site.Publisher.ID
-	} else {
+	if labels.PubID == "" {
 		labels.PubID = "UNKNOWN"
 	}
 
