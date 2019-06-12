@@ -123,13 +123,15 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.Site != nil && req.Site.Publisher != nil {
+	if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
 		labels.PubID = req.Site.Publisher.ID
+	} else {
+		labels.PubID = "UNKNOWN"
 	}
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		if req.App.Publisher != nil {
+		if labels.PubID == "UNKNOWN" && req.App.Publisher != nil && req.App.Publisher.ID != "" {
 			labels.PubID = req.App.Publisher.ID
 		}
 	} else {

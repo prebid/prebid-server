@@ -203,8 +203,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	if labels.PubID == "" && bidReq.Site != nil && bidReq.Site.Publisher != nil {
 		labels.PubID = bidReq.Site.Publisher.ID
-	}
-	if labels.PubID == "" {
+	} else {
 		labels.PubID = "UNKNOWN"
 	}
 
