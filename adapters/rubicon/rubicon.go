@@ -146,7 +146,7 @@ type rubiconUser struct {
 // This just overrides OpenRTB request.ext with hiding prebid field.
 // Rubicon XAPI doesn't need it for performing the auction.
 type rubiconExtRequest struct {
-	openrtb_ext.ExtRequestPrebid
+	openrtb_ext.ExtRequest
 	Prebid *openrtb_ext.ExtRequestPrebid `json:"prebid,omitempty"`
 }
 
