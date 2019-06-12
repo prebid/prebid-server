@@ -9,10 +9,8 @@ import (
 	"github.com/golang/glog"
 )
 
-type logMsg func(string, ...interface{})
-
-var mapregex = regexp.MustCompile(`mapstructure:"([^"]+)"`)
-var blacklistregexp = []*regexp.Regexp{
+var mapregex *regexp.Regexp = regexp.MustCompile(`mapstructure:"([^"]+)"`)
+var blacklistregexp []*regexp.Regexp = []*regexp.Regexp{
 	regexp.MustCompile("password"),
 }
 
@@ -23,7 +21,7 @@ func logGeneral(v reflect.Value, prefix string) {
 	logGeneralWithLogger(v, prefix, glog.Infof)
 }
 
-func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
+func logGeneralWithLogger(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
 	switch v.Kind() {
 	case reflect.Struct:
 		logStructWithLogger(v, prefix, logger)
@@ -43,7 +41,7 @@ func logGeneralWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	}
 }
 
-func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
+func logStructWithLogger(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
 	if v.Kind() != reflect.Struct {
 		glog.Fatalf("LogStruct called on type %s, whuch is not a struct!", v.Type().String())
 	}
@@ -58,7 +56,7 @@ func logStructWithLogger(v reflect.Value, prefix string, logger logMsg) {
 	}
 }
 
-func logMapWithLogger(v reflect.Value, prefix string, logger logMsg) {
+func logMapWithLogger(v reflect.Value, prefix string, logger func(msg string, args ...interface{})) {
 	if v.Kind() != reflect.Map {
 		glog.Fatalf("LogMap called on type %s, whuch is not a map!", v.Type().String())
 	}
