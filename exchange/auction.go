@@ -79,13 +79,13 @@ func (a *auction) doCache(
 	}
 
 	var errs []error
-	var cacheErr error
-	var expectNumBids, expectNumVast, newlyCached int
+	var cacheErrs []error
+	var expectNumBids, expectNumVast int
 	var bidIndices, vastIndices map[int]*openrtb.Bid
 	var toCache []prebid_cache_client.Cacheable
 	var expByImp map[string]int64
 	var hbCacheID string
-	var competitiveExclusion, isNonVast, isVast bool
+	var competitiveExclusion bool
 
 	expectNumBids = valOrZero(targData.includeCacheBids, len(a.roundedPrices))
 	expectNumVast = valOrZero(targData.includeCacheVast, len(a.roundedPrices))
@@ -105,7 +105,6 @@ func (a *auction) doCache(
 		}
 	}
 
-	// Grab the imp TTLs
 	for _, imp := range bidRequest.Imp {
 		expByImp[imp.ID] = imp.Exp
 	}
@@ -115,34 +114,14 @@ func (a *auction) doCache(
 	if targData.includeBidderKeys {
 		for impID := range a.impsToBiddersTopBids {
 			for _, bidToCache := range a.impsToBiddersTopBids[impID] {
-				isNonVast, isVast, newlyCached, cacheErr = a.cacheBid(bidToCache, targData.includeCacheBids, targData.includeCacheVast, competitiveExclusion, &toCache, expByImp, defaultTTLs, ttlBuffer, bidCategory, hbCacheID)
-				if isNonVast {
-					bidIndices[len(toCache)-newlyCached] = bidToCache.bid
-					newlyCached--
-				}
-				if isVast {
-					vastIndices[len(toCache)-newlyCached] = bidToCache.bid
-				}
-				if cacheErr != nil {
-					errs = append(errs, cacheErr)
-				}
+				a.cacheBid(bidToCache, targData.includeCacheBids, targData.includeCacheVast, false, &toCache, bidIndices, vastIndices, &cacheErrs, expByImp, defaultTTLs, ttlBuffer, bidCategory, hbCacheID)
 			}
 		}
 	} else {
 		// targData.includeBidderKeys is false, therefore, targData.includeWinners is true and we should cache only winning bids
 		// which are found in a.impsToTopBids
 		for _, bidToCache := range a.impsToTopBids {
-			isNonVast, isVast, newlyCached, cacheErr = a.cacheBid(bidToCache, targData.includeCacheBids, targData.includeCacheVast, competitiveExclusion, &toCache, expByImp, defaultTTLs, ttlBuffer, bidCategory, hbCacheID)
-			if isNonVast {
-				bidIndices[len(toCache)-newlyCached] = bidToCache.bid
-				newlyCached--
-			}
-			if isVast {
-				vastIndices[len(toCache)-newlyCached] = bidToCache.bid
-			}
-			if cacheErr != nil {
-				errs = append(errs, cacheErr)
-			}
+			a.cacheBid(bidToCache, targData.includeCacheBids, targData.includeCacheVast, true, &toCache, bidIndices, vastIndices, &cacheErrs, expByImp, defaultTTLs, ttlBuffer, bidCategory, hbCacheID)
 		}
 	}
 
@@ -175,50 +154,52 @@ func (a *auction) doCache(
 	return errs
 }
 
-func (a *auction) cacheBid(bidToCache *pbsOrtbBid, incBannerBids bool, incVastBids bool, hasCustomCacheKey bool, toCache *[]prebid_cache_client.Cacheable, expByImp map[string]int64, defaultTTLs *config.DefaultTTLs, ttlBuffer int64, bidCategory map[string]string, hbCacheID string) (bool, bool, int, error) {
-	var chachedBid, chachedVast bool = false, false
-	var cachedSoFar int = len(*toCache)
-	var anError error = nil
-
+func (a *auction) cacheBid(bidToCache *pbsOrtbBid, incBannerBids bool, incVastBids bool, isWinner bool, toCache *[]prebid_cache_client.Cacheable, bidIndices map[int]*openrtb.Bid, vastIndices map[int]*openrtb.Bid, errList *[]error, expByImp map[string]int64, defaultTTLs *config.DefaultTTLs, ttlBuffer int64, bidCategory map[string]string, hbCacheID string) {
 	if incBannerBids { //banner
 		if jsonBytes, err := json.Marshal(bidToCache.bid); err == nil {
-			if hasCustomCacheKey {
-				anError = errors.New("cannot use custom cache key for non-vast bids")
+			if hbCacheID != "" {
+				*errList = append(*errList, errors.New("cannot use custom cache key for non-vast bids"))
 			}
 			*toCache = append(*toCache, prebid_cache_client.Cacheable{
 				Type:       prebid_cache_client.TypeJSON,
 				Data:       jsonBytes,
 				TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
 			})
-			chachedBid = true
+			bidIndices[len(*toCache)-1] = bidToCache.bid
 		} else {
-			anError = err
+			*errList = append(*errList, err)
 		}
-
 	}
 	if incVastBids && bidToCache.bidType == openrtb_ext.BidTypeVideo { //video
 		if jsonBytes, err := json.Marshal(makeVAST(bidToCache.bid)); err == nil {
-			_, isTopBid := a.impsToTopBids[bidToCache.bid.ImpID]
-			if catDur, ok := bidCategory[a.impsToTopBids[bidToCache.bid.ImpID].bid.ID]; ok && isTopBid {
-				*toCache = append(*toCache, prebid_cache_client.Cacheable{
-					Type:       prebid_cache_client.TypeXML,
-					Data:       jsonBytes,
-					TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
-					Key:        fmt.Sprintf("%s_%s", catDur, hbCacheID),
-				})
-			} else {
-				*toCache = append(*toCache, prebid_cache_client.Cacheable{
-					Type:       prebid_cache_client.TypeXML,
-					Data:       jsonBytes,
-					TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
-				})
+			//init cache element
+			cacheElement := prebid_cache_client.Cacheable{
+				Type:       prebid_cache_client.TypeXML,
+				Data:       jsonBytes,
+				TTLSeconds: cacheTTL(expByImp[bidToCache.bid.ImpID], bidToCache.bid.Exp, defTTL(bidToCache.bidType, defaultTTLs), ttlBuffer),
 			}
-			chachedVast = true
+
+			var isTopBid bool = false
+			if !isWinner {
+				_, isTopBid = a.impsToTopBids[bidToCache.bid.ImpID]
+			} else {
+				isTopBid = true
+			}
+
+			if isTopBid && hbCacheID != "" {
+				if catDur, ok := bidCategory[a.impsToTopBids[bidToCache.bid.ImpID].bid.ID]; ok {
+					cacheElement.Key = fmt.Sprintf("%s_%s", catDur, hbCacheID)
+				} else {
+					*errList = append(*errList, errors.New(fmt.Sprintf("bid.ID %s didn't map to any bid category in the bidCategory map \n", a.impsToTopBids[bidToCache.bid.ImpID].bid.ID)))
+				}
+			}
+			*toCache = append(*toCache, cacheElement)
+			vastIndices[len(*toCache)-1] = bidToCache.bid
 		} else {
-			anError = err
+			*errList = append(*errList, err)
 		}
 	}
-	return chachedBid, chachedVast, len(*toCache) - cachedSoFar, anError
+	return
 }
 
 // makeVAST returns some VAST XML for the given bid. If AdM is defined,
@@ -289,9 +270,9 @@ func defTTL(bidType openrtb_ext.BidType, defaultTTLs *config.DefaultTTLs) (ttl i
 }
 
 type auction struct {
-	// We'll store the hightest bid comming from each Imp in the request
+	// We'll store the highest bid coming from each Imp in the request
 	impsToTopBids map[string]*pbsOrtbBid
-	// We'll store the hightest bids comming from each Bidder of each Imp in the request
+	// We'll store the highest bids coming from each Bidder of each Imp in the request
 	impsToBiddersTopBids map[string]map[openrtb_ext.BidderName]*pbsOrtbBid
 	// roundedPrices stores the price strings rounded for each bid according to the price granularity.
 	roundedPrices map[*pbsOrtbBid]string
