@@ -115,7 +115,11 @@ func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
 		}
 	}
-
+	fmt.Printf("%s", thisURI)
+	fmt.Println("")
+	fmt.Printf("%s", reqJSON)
+	fmt.Println("")
+	fmt.Printf("%s", headers)
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,
