@@ -15,7 +15,7 @@ type TripleliftAdapter struct {
     endpoint string
 }
 
-func MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
     errs := make([]error, 0, len(request.Imp))
     reqs := make([]*adapters.RequestData, 0, 1) 
     ad := "http://localhost:8076/s2s/auction"
@@ -35,13 +35,13 @@ func MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error
     return reqs, errs
 }
 
-func MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
     errs := make([]error,2)
     bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-    return bidResponse,errs
+    return bidResponse, errs
 }
 
-func NewTripleliftBidder(client *adapters.HTTPAdapterConfig, endpoint string) *TripleliftAdapter {
+func NewTripleliftBidder(client *http.Client, endpoint string) *TripleliftAdapter {
     return &TripleliftAdapter{
         endpoint: endpoint}
 }
