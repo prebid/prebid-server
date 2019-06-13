@@ -32,5 +32,7 @@ import (
     }
 	
     func MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
+	    bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+        return bidResponse
     }
 
