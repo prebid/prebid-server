@@ -54,7 +54,7 @@ func TestVideoEndpointImpressionsNumber(t *testing.T) {
 	assert.Len(t, resp.AdPods[3].Targeting, 1, "Incorrect Targeting data in response")
 	assert.Len(t, resp.AdPods[4].Targeting, 3, "Incorrect Targeting data in response")
 
-	assert.Equal(t, resp.AdPods[4].Targeting[0].Hb_pb_cat_dur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
+	assert.Equal(t, resp.AdPods[4].Targeting[0].HbPbCatDur, "20.00_395_30s", "Incorrect number of Ad Pods in response")
 
 }
 
@@ -398,8 +398,8 @@ func TestVideoBuildVideoResponseMissedCacheForOneBid(t *testing.T) {
 	assert.NoError(t, err, "Should be no error")
 	assert.Len(t, bidRespVideo.AdPods, 1, "AdPods length should be 1")
 	assert.Len(t, bidRespVideo.AdPods[0].Targeting, 2, "AdPod Targeting length should be 2")
-	assert.Equal(t, "17.00_123_30s", bidRespVideo.AdPods[0].Targeting[0].Hb_pb_cat_dur, "AdPod Targeting first element hb_pb_cat_dur should be 17.00_123_30s")
-	assert.Equal(t, "17.00_456_30s", bidRespVideo.AdPods[0].Targeting[1].Hb_pb_cat_dur, "AdPod Targeting first element hb_pb_cat_dur should be 17.00_456_30s")
+	assert.Equal(t, "17.00_123_30s", bidRespVideo.AdPods[0].Targeting[0].HbPbCatDur, "AdPod Targeting first element hb_pb_cat_dur should be 17.00_123_30s")
+	assert.Equal(t, "17.00_456_30s", bidRespVideo.AdPods[0].Targeting[1].HbPbCatDur, "AdPod Targeting first element hb_pb_cat_dur should be 17.00_456_30s")
 }
 
 func TestVideoBuildVideoResponseMissedCacheForAllBids(t *testing.T) {

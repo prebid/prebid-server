@@ -87,7 +87,7 @@ const (
 	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"
-	HbDealIdConstantKey TargetingKey = "hb_deal"
+	HbDealIDConstantKey TargetingKey = "hb_deal"
 
 	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.
