@@ -10,10 +10,11 @@ type BidResponseVideo struct {
 type AdPod struct {
 	PodId     int64            `json:"podid"`
 	Targeting []VideoTargeting `json:"targeting"`
+	Errors    []string         `json:"errors"`
 }
 
 type VideoTargeting struct {
-	Hb_pb         string `json:"hb_pb"`
-	Hb_pb_cat_dur string `json:"hb_pb_cat_dur"`
-	Hb_cache_id   string `json:"hb_cache_id"`
+	HbPb       string `json:"hb_pb"`
+	HbPbCatDur string `json:"hb_pb_cat_dur"`
+	HbCacheID  string `json:"hb_cache_id"`
 }

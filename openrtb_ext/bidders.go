@@ -20,31 +20,34 @@ type BidderName string
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
-	Bidder33Across     BidderName = "33across"
-	BidderAdkernelAdn  BidderName = "adkernelAdn"
-	BidderAdtelligent  BidderName = "adtelligent"
-	BidderAdform       BidderName = "adform"
-	BidderAppnexus     BidderName = "appnexus"
-	BidderBeachfront   BidderName = "beachfront"
-	BidderBrightroll   BidderName = "brightroll"
-	BidderConsumable   BidderName = "consumable"
-	BidderConversant   BidderName = "conversant"
-	BidderEPlanning    BidderName = "eplanning"
-	BidderFacebook     BidderName = "audienceNetwork"
-	BidderGamoshi      BidderName = "gamoshi"
-	BidderGrid         BidderName = "grid"
-	BidderGumGum       BidderName = "gumgum"
-	BidderIx           BidderName = "ix"
-	BidderLifestreet   BidderName = "lifestreet"
-	BidderOpenx        BidderName = "openx"
-	BidderPubmatic     BidderName = "pubmatic"
-	BidderPulsepoint   BidderName = "pulsepoint"
-	BidderRhythmone    BidderName = "rhythmone"
-	BidderRubicon      BidderName = "rubicon"
-	BidderSomoaudience BidderName = "somoaudience"
-	BidderSovrn        BidderName = "sovrn"
-	BidderSonobi       BidderName = "sonobi"
-	BidderYieldmo      BidderName = "yieldmo"
+	Bidder33Across       BidderName = "33across"
+	BidderAdkernelAdn    BidderName = "adkernelAdn"
+	BidderAdtelligent    BidderName = "adtelligent"
+	BidderAdform         BidderName = "adform"
+	BidderAppnexus       BidderName = "appnexus"
+	BidderBeachfront     BidderName = "beachfront"
+	BidderBrightroll     BidderName = "brightroll"
+	BidderConsumable     BidderName = "consumable"
+	BidderConversant     BidderName = "conversant"
+	BidderEPlanning      BidderName = "eplanning"
+	BidderFacebook       BidderName = "audienceNetwork"
+	BidderGamoshi        BidderName = "gamoshi"
+	BidderGrid           BidderName = "grid"
+	BidderGumGum         BidderName = "gumgum"
+	BidderImprovedigital BidderName = "improvedigital"
+	BidderIx             BidderName = "ix"
+	BidderLifestreet     BidderName = "lifestreet"
+	BidderMgid           BidderName = "mgid"
+	BidderOpenx          BidderName = "openx"
+	BidderPubmatic       BidderName = "pubmatic"
+	BidderPulsepoint     BidderName = "pulsepoint"
+	BidderRhythmone      BidderName = "rhythmone"
+	BidderRubicon        BidderName = "rubicon"
+	BidderSharethrough   BidderName = "sharethrough"
+	BidderSomoaudience   BidderName = "somoaudience"
+	BidderSovrn          BidderName = "sovrn"
+	BidderSonobi         BidderName = "sonobi"
+	BidderYieldmo        BidderName = "yieldmo"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -63,13 +66,16 @@ var BidderMap = map[string]BidderName{
 	"gamoshi":         BidderGamoshi,
 	"grid":            BidderGrid,
 	"gumgum":          BidderGumGum,
+	"improvedigital":  BidderImprovedigital,
 	"ix":              BidderIx,
 	"lifestreet":      BidderLifestreet,
 	"openx":           BidderOpenx,
+	"mgid":            BidderMgid,
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rhythmone":       BidderRhythmone,
 	"rubicon":         BidderRubicon,
+	"sharethrough":    BidderSharethrough,
 	"somoaudience":    BidderSomoaudience,
 	"sovrn":           BidderSovrn,
 	"sonobi":          BidderSonobi,

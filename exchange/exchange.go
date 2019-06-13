@@ -138,21 +138,26 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// Get currency rates conversions for the auction
 	conversions := e.currencyConverter.Rates()
 
-	adapterBids, adapterExtra := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
-	bidCategory, adapterBids, err := applyCategoryMapping(requestExt, adapterBids, *categoriesFetcher, targData)
-	auc := newAuction(adapterBids, len(bidRequest.Imp))
-	if err != nil {
-		return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
+
+	if anyBidsReturned {
+		bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+		if err != nil {
+			return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+		}
+
+		auc := newAuction(adapterBids, len(bidRequest.Imp))
+
+		if targData != nil {
+			auc.setRoundedPrices(targData.priceGranularity)
+			cacheErrs := auc.doCache(ctx, e.cache, targData, bidRequest, 60, &e.defaultTTLs, bidCategory)
+			if len(cacheErrs) > 0 {
+				errs = append(errs, cacheErrs...)
+			}
+			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
+		}
 	}
 
-	if targData != nil && adapterBids != nil {
-		auc.setRoundedPrices(targData.priceGranularity)
-		cacheErrs := auc.doCache(ctx, e.cache, targData.includeCacheBids, targData.includeCacheVast, bidRequest, 60, &e.defaultTTLs, bidCategory)
-		if len(cacheErrs) > 0 {
-			errs = append(errs, cacheErrs...)
-		}
-		targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
-	}
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
 }
@@ -169,11 +174,12 @@ func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auc
 }
 
 // This piece sends all the requests to the bidder adapters and gathers the results.
-func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra) {
+func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, bidAdjustments map[string]float64, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, conversions currencies.Conversions) (map[openrtb_ext.BidderName]*pbsOrtbSeatBid, map[openrtb_ext.BidderName]*seatResponseExtra, bool) {
 	// Set up pointers to the bid results
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, len(cleanRequests))
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, len(cleanRequests))
 	chBids := make(chan *bidResponseWrapper, len(cleanRequests))
+	bidsFound := false
 
 	for bidderName, req := range cleanRequests {
 		// Here we actually call the adapters and collect the bids.
@@ -228,9 +234,13 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 		brw := <-chBids
 		adapterBids[brw.bidder] = brw.adapterBids
 		adapterExtra[brw.bidder] = brw.adapterExtra
+
+		if !bidsFound && adapterBids[brw.bidder] != nil && len(adapterBids[brw.bidder].bids) > 0 {
+			bidsFound = true
+		}
 	}
 
-	return adapterBids, adapterExtra
+	return adapterBids, adapterExtra, bidsFound
 }
 
 func (e *exchange) recoverSafely(inner func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions), chBids chan *bidResponseWrapper) func(openrtb_ext.BidderName, openrtb_ext.BidderName, *openrtb.BidRequest, *pbsmetrics.AdapterLabels, currencies.Conversions) {
@@ -321,7 +331,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
+func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -375,7 +385,7 @@ func applyCategoryMapping(requestExt openrtb_ext.ExtRequest, seatBids map[openrt
 					continue
 				} else {
 					//if unique IAB category is present then translate it to the adserver category based on mapping file
-					category, err = categoriesFetcher.FetchCategories(primaryAdServer, publisher, bidIabCat[0])
+					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
 					if err != nil || category == "" {
 						//TODO: add metrics
 						//if mapping required but no mapping file is found then discard the bid
@@ -493,11 +503,9 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 	}
 
 	for a, b := range adapterBids {
-		if b != nil {
-			if req.Test == 1 {
-				// Fill debug info
-				bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
-			}
+		if b != nil && req.Test == 1 {
+			// Fill debug info
+			bidResponseExt.Debug.HttpCalls[a] = b.httpCalls
 		}
 		// Only make an entry for bidder errors if the bidder reported any.
 		if len(adapterExtra[a].Errors) > 0 {

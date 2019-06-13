@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Improve Digital Adapter Params",
+    "description": "A schema which validates params accepted by Improve Digital adapter",
+    "type": "object",
+    "properties": {
+        "placementId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "An ID which identifies this placement of the impression"
+        },
+        "publisherId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "An ID which identifies publisher. Required when using a placementKey"
+        },
+        "placementKey": {
+            "type": "string",
+            "description": "An uniq name which identifies this placement of the impression. Must be used with publisherId"
+        },
+        "keyValues": {
+            "type": "object",
+            "description": "Contains one or more key-value pairings for key-value targeting"
+        },
+        "size": {
+            "type": "object",
+            "properties": {
+                "w": {
+                    "type": "integer"
+                },
+                "h": {
+                    "type": "integer"
+                }
+            },
+            "required": ["w", "h"],
+            "description": "Placement size"
+        }
+    },
+    "oneOf": [{
+        "required": ["placementId"]
+    }, {
+        "required": ["publisherId", "placementKey"]
+    }]
+}

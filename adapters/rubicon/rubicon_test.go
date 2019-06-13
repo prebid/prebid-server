@@ -1134,6 +1134,122 @@ func TestOpenRTBRequest(t *testing.T) {
 	}
 }
 
+func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Video: &openrtb.Video{
+				W:     640,
+				H:     360,
+				MIMEs: []string{"video/mp4"},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891,
+				"inventory": {"key1" : "val1"},
+				"visitor": {"key2" : "val2"}
+			}}`),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) > 0 {
+		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Errorf("Unexpected error while decoding request: %s", err)
+	}
+
+	if len(rubiconReq.Imp) != 1 {
+		t.Fatalf("Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+	}
+
+	if rubiconReq.Imp[0].Video != nil {
+		t.Error("Unexpected video object in request impression")
+	}
+
+	if rubiconReq.Imp[0].Banner == nil {
+		t.Error("Banner object must be in request impression")
+	}
+}
+
+func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Video: &openrtb.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
+				MaxDuration: 30,
+				Linearity:   1,
+				API:         []openrtb.APIFramework{},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891,
+				"inventory": {"key1" : "val1"},
+				"visitor": {"key2" : "val2"}
+			}}`),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(request)
+
+	if len(errs) > 0 {
+		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Errorf("Unexpected error while decoding request: %s", err)
+	}
+
+	if len(rubiconReq.Imp) != 1 {
+		t.Fatalf("Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+	}
+
+	if rubiconReq.Imp[0].Banner != nil {
+		t.Error("Unexpected banner object in request impression")
+	}
+
+	if rubiconReq.Imp[0].Video == nil {
+		t.Error("Video object must be in request impression")
+	}
+}
+
 func TestOpenRTBEmptyResponse(t *testing.T) {
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusNoContent,

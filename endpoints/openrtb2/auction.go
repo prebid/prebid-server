@@ -28,26 +28,41 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
 	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
 	"golang.org/x/net/publicsuffix"
 )
 
 const storedRequestTimeoutMillis = 50
 
-func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName, categories stored_requests.CategoryFetcher) (httprouter.Handle, error) {
+func NewEndpoint(ex exchange.Exchange, validator openrtb_ext.BidderParamValidator, requestsById stored_requests.Fetcher, categories stored_requests.CategoryFetcher, cfg *config.Configuration, met pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule, disabledBidders map[string]string, defReqJSON []byte, bidderMap map[string]openrtb_ext.BidderName) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
 		return nil, errors.New("NewEndpoint requires non-nil arguments.")
 	}
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categories}).Auction), nil
+	return httprouter.Handle((&endpointDeps{
+		ex,
+		validator,
+		requestsById,
+		empty_fetcher.EmptyFetcher{},
+		categories,
+		cfg,
+		met,
+		pbsAnalytics,
+		disabledBidders,
+		defRequest,
+		defReqJSON,
+		bidderMap}).Auction), nil
 }
 
 type endpointDeps struct {
 	ex               exchange.Exchange
 	paramsValidator  openrtb_ext.BidderParamValidator
 	storedReqFetcher stored_requests.Fetcher
+	videoFetcher     stored_requests.Fetcher
+	categories       stored_requests.CategoryFetcher
 	cfg              *config.Configuration
 	metricsEngine    pbsmetrics.MetricsEngine
 	analytics        analytics.PBSAnalyticsModule
@@ -55,7 +70,6 @@ type endpointDeps struct {
 	defaultRequest   bool
 	defReqJSON       []byte
 	bidderMap        map[string]openrtb_ext.BidderName
-	categories       stored_requests.CategoryFetcher
 }
 
 func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -341,16 +355,12 @@ func (deps *endpointDeps) validateImp(imp *openrtb.Imp, aliases map[string]strin
 		return []error{err}
 	}
 
-	if imp.Video != nil {
-		if len(imp.Video.MIMEs) < 1 {
-			return []error{fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", index)}
-		}
+	if imp.Video != nil && len(imp.Video.MIMEs) < 1 {
+		return []error{fmt.Errorf("request.imp[%d].video.mimes must contain at least one supported MIME type", index)}
 	}
 
-	if imp.Audio != nil {
-		if len(imp.Audio.MIMEs) < 1 {
-			return []error{fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", index)}
-		}
+	if imp.Audio != nil && len(imp.Audio.MIMEs) < 1 {
+		return []error{fmt.Errorf("request.imp[%d].audio.mimes must contain at least one supported MIME type", index)}
 	}
 
 	if err := fillAndValidateNative(imp.Native, index); err != nil {
@@ -1037,7 +1047,7 @@ func (deps *endpointDeps) processStoredRequests(ctx context.Context, requestJson
 func parseImpInfo(requestJson []byte) (imps []json.RawMessage, ids []string, impIdIndices []int, errs []error) {
 	if impArray, dataType, _, err := jsonparser.Get(requestJson, "imp"); err == nil && dataType == jsonparser.Array {
 		i := 0
-		jsonparser.ArrayEach(impArray, func(imp []byte, dataType jsonparser.ValueType, offset int, err error) {
+		jsonparser.ArrayEach(impArray, func(imp []byte, _ jsonparser.ValueType, _ int, err error) {
 			if storedImpId, hasStoredImp, err := getStoredRequestId(imp); err != nil {
 				errs = append(errs, err)
 			} else if hasStoredImp {
