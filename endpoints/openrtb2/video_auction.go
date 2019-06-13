@@ -74,7 +74,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
-		PubID:         "",
+		PubID:         pbsmetrics.PublisherUnknown,
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
@@ -142,6 +142,29 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			errL = []error{err}
 			return
 		}
+		if bidReq.App == nil && bidReq.Site == nil {
+			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
+			errL = []error{err}
+			return
+		} else if bidReq.App.Publisher == nil && bidReq.Site.Publisher == nil {
+			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
+			errL = []error{err}
+			return
+		} else if bidReq.App != nil && bidReq.Site != nil {
+			err = fmt.Errorf("Request seems to be sent with both 'Site' and 'App' values", err)
+			errL = []error{err}
+			return
+		} else if bidReq.App != nil {
+			labels.Source = pbsmetrics.DemandApp
+			if bidReq.App.Publisher != nil && bidReq.App.Publisher.ID != "" {
+				labels.PubID = bidReq.App.Publisher.ID
+			}
+		} else { // bidReq.Site != nil
+			labels.Source = pbsmetrics.DemandWeb
+			if bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
+				labels.PubID = bidReq.Site.Publisher.ID
+			}
+		}
 	}
 
 	//create full open rtb req from full video request
@@ -188,24 +211,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if bidReq.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-		if bidReq.App.Publisher != nil && bidReq.App.Publisher.ID != "" {
-			labels.PubID = bidReq.App.Publisher.ID
-		}
-	} else {
-		labels.Source = pbsmetrics.DemandWeb
+	if bidReq.Site != nil {
 		if usersyncs.LiveSyncCount() == 0 {
 			labels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
-			labels.PubID = bidReq.Site.Publisher.ID
-		}
-	}
-	if labels.PubID == "" {
-		labels.PubID = "UNKNOWN"
 	}
 
 	numImps = len(bidReq.Imp)

@@ -91,7 +91,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeAMP,
-		PubID:         "",
+		PubID:         pbsmetrics.PublisherUnknown,
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
@@ -151,8 +151,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
 		labels.PubID = req.Site.Publisher.ID
-	} else {
-		labels.PubID = "UNKNOWN"
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)

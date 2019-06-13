@@ -89,7 +89,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
-		PubID:         "",
+		PubID:         pbsmetrics.PublisherUnknown,
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
@@ -139,9 +139,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
 			labels.PubID = req.Site.Publisher.ID
 		}
-	}
-	if labels.PubID == "" {
-		labels.PubID = "UNKNOWN"
 	}
 
 	numImps = len(req.Imp)

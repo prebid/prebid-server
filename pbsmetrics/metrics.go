@@ -56,9 +56,10 @@ type CacheResult string
 
 // The demand sources
 const (
-	DemandWeb     DemandSource = "web"
-	DemandApp     DemandSource = "app"
-	DemandUnknown DemandSource = "unknown"
+	DemandWeb        DemandSource = "web"
+	DemandApp        DemandSource = "app"
+	DemandUnknown    DemandSource = "unknown"
+	PublisherUnknown DemandSource = "UNKNOWN"
 )
 
 func DemandTypes() []DemandSource {
