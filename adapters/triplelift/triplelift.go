@@ -10,6 +10,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
+type TripleliftAdapter struct {
+    endpoint String
+}
+
 func MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
     errs := make([]error, 0, len(request.Imp))
     reqs = make([]*RequestData, 0, 1) 
@@ -36,5 +40,10 @@ func MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData,
     return bidResponse
 }
 
+func NewTripleliftBidder(client *adapters.HTTPAdapterConfig, endpoint string) *TripleiftAdapter {
+    return &TripleliftAdapter{
+        endpoint: endpoint
+    }
+}
 
 
