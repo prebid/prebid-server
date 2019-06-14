@@ -459,8 +459,8 @@ func validateNativeContextTypes(cType native.ContextType, cSubtype native.Contex
 		return nil
 	}
 
-	if cSubtype >= 100 {
-		return fmt.Errorf("request.imp[%d].native.request.contextsubtype can't be greater than or equal to 100. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
+	if cSubtype >= 500 {
+		return fmt.Errorf("request.imp[%d].native.request.contextsubtype can't be greater than or equal to 500. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
 	if cSubtype >= native.ContextSubTypeGeneral && cSubtype <= native.ContextSubTypeUserGenerated {
 		if cType != native.ContextTypeContent {
@@ -513,8 +513,8 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
 	}
 
+	multipleAssetErr := "request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}"
 	foundType := false
-	multipleAssets := false
 
 	if asset.Title != nil {
 		foundType = true
@@ -525,39 +525,32 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 
 	if asset.Img != nil {
 		if foundType {
-			multipleAssets = true
-		} else {
-			foundType = true
-			if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
-				return err
-			}
+			return fmt.Errorf(multipleAssetErr, impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
+			return err
 		}
 	}
 
 	if asset.Video != nil {
 		if foundType {
-			multipleAssets = true
-		} else {
-			foundType = true
-			if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
-				return err
-			}
+			return fmt.Errorf(multipleAssetErr, impIndex, assetIndex)
+		}
+		foundType = true
+		if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
+			return err
 		}
 	}
 
 	if asset.Data != nil {
 		if foundType {
-			multipleAssets = true
-		} else {
-			foundType = true
-			if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
-				return err
-			}
+			return fmt.Errorf(multipleAssetErr, impIndex, assetIndex)
 		}
-	}
-
-	if multipleAssets {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}", impIndex, assetIndex)
+		foundType = true
+		if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
+			return err
+		}
 	}
 
 	if !foundType {
