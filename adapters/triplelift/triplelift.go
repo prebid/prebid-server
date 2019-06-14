@@ -35,9 +35,40 @@ func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapt
     return reqs, errs
 }
 
+func getBidCount(seatBid SeatBid) (int) {
+    c := 0
+    for _, sb := range seatBid {
+        c = c + len(sb.Bid)
+    }
+    return c;
+}
+
 func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
     errs := make([]error,0,2)
-    bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+    count := getBidCount(bidResp.SeatBid)
+    bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+
+    for _, sb := range bidResp.SeatBig {
+
+        bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+            Bid: &bid
     return bidResponse, errs
 }
 
