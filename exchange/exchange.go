@@ -87,16 +87,16 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	for _, impInRequest := range bidRequest.Imp {
 		if impInRequest.Banner != nil {
-			labels.IsImpBanner = true
+			labels.BannerImps += 1
 		}
 		if impInRequest.Video != nil {
-			labels.IsImpVideo = true
+			labels.VideoImps += 1
 		}
 		if impInRequest.Audio != nil {
-			labels.IsImpAudio = true
+			labels.AudioImps += 1
 		}
 		if impInRequest.Native != nil {
-			labels.IsImpNative = true
+			labels.NativeImps += 1
 		}
 	}
 

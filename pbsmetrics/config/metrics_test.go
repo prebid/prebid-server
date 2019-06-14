@@ -46,10 +46,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
-		IsImpBanner:   true,
-		IsImpVideo:    false,
-		IsImpAudio:    false,
-		IsImpNative:   false,
+		BannerImps:    1,
+		VideoImps:     0,
+		AudioImps:     0,
+		NativeImps:    0,
 		PubID:         "test1",
 		Browser:       pbsmetrics.BrowserSafari,
 		CookieFlag:    pbsmetrics.CookieFlagYes,
@@ -58,10 +58,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	apnLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
-		IsImpBanner: true,
-		IsImpVideo:  false,
-		IsImpAudio:  false,
-		IsImpNative: false,
+		BannerImps:  1,
+		VideoImps:   0,
+		AudioImps:   0,
+		NativeImps:  0,
 		Adapter:     openrtb_ext.BidderAppnexus,
 		PubID:       "test1",
 		Browser:     pbsmetrics.BrowserSafari,
@@ -71,10 +71,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	pubLabels := pbsmetrics.AdapterLabels{
 		Source:      pbsmetrics.DemandWeb,
 		RType:       pbsmetrics.ReqTypeORTB2Web,
-		IsImpBanner: true,
-		IsImpVideo:  false,
-		IsImpAudio:  false,
-		IsImpNative: false,
+		BannerImps:  1,
+		VideoImps:   0,
+		AudioImps:   0,
+		NativeImps:  0,
 		Adapter:     openrtb_ext.BidderPubmatic,
 		PubID:       "test1",
 		Browser:     pbsmetrics.BrowserSafari,
@@ -101,10 +101,10 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBadInput].Count(), 0)
 
-	VerifyMetrics(t, "ImpTypeBanner", goEngine.ImpTypeBanner.Count(), 3)
-	VerifyMetrics(t, "ImpTypeVideo", goEngine.ImpTypeVideo.Count(), 0)
-	VerifyMetrics(t, "ImpTypeAudio", goEngine.ImpTypeAudio.Count(), 0)
-	VerifyMetrics(t, "ImpTypeNative", goEngine.ImpTypeNative.Count(), 0)
+	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
+	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 0)
+	VerifyMetrics(t, "ImpsTypeAudio", goEngine.ImpsTypeAudio.Count(), 0)
+	VerifyMetrics(t, "ImpsTypeNative", goEngine.ImpsTypeNative.Count(), 0)
 
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 10)

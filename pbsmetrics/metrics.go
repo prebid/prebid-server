@@ -10,10 +10,10 @@ import (
 type Labels struct {
 	Source        DemandSource
 	RType         RequestType
-	IsImpBanner   bool
-	IsImpVideo    bool
-	IsImpAudio    bool
-	IsImpNative   bool
+	BannerImps    int
+	VideoImps     int
+	AudioImps     int
+	NativeImps    int
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
@@ -24,10 +24,10 @@ type Labels struct {
 type AdapterLabels struct {
 	Source        DemandSource
 	RType         RequestType
-	IsImpBanner   bool
-	IsImpVideo    bool
-	IsImpAudio    bool
-	IsImpNative   bool
+	BannerImps    int
+	VideoImps     int
+	AudioImps     int
+	NativeImps    int
 	Adapter       openrtb_ext.BidderName
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
@@ -41,7 +41,7 @@ type AdapterLabels struct {
 // DemandSource : Demand source enumeration
 type DemandSource string
 
-// ImpMediaType : Media type described in the "imp" JSON object
+// ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
 type ImpMediaType string
 
 // RequestType : Request type enumeration
@@ -89,7 +89,7 @@ const (
 	ReqTypeVideo    RequestType = "video"
 )
 
-// The media types described in the "imp json objects
+// The media types described in the "imp" json objects  TODO is this still needed?
 const (
 	ImpTypeBanner ImpMediaType = "banner"
 	ImpTypeVideo  ImpMediaType = "video"
