@@ -16,6 +16,7 @@ type TripleliftAdapter struct {
 }
 
 func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+    println("hi")
     errs := make([]error, 0, len(request.Imp))
     reqs := make([]*adapters.RequestData, 0, 1) 
     ad := "http://localhost:8076/s2s/auction"
