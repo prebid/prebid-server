@@ -24,6 +24,7 @@ func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapt
         errs = append(errs,err)
         return nil, errs
     }
+    println("hi")
     headers := http.Header{}
     headers.Add("Content-Type","application/json;charset=utf-8")
     headers.Add("Accept", "application/json")
