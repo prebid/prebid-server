@@ -2,25 +2,25 @@ package openrtb_ext
 
 import "encoding/json"
 
-// ExtImpAppnexus defines the contract for bidrequest.imp[i].ext.appnexus
-type ExtImpAppnexus struct {
-	LegacyPlacementId       int                     `json:"placementId"`
-	LegacyInvCode           string                  `json:"invCode"`
-	LegacyTrafficSourceCode string                  `json:"trafficSourceCode"`
-	PlacementId             int                     `json:"placement_id"`
-	InvCode                 string                  `json:"inv_code"`
-	Member                  string                  `json:"member"`
-	Keywords                []*ExtImpAppnexusKeyVal `json:"keywords"`
-	TrafficSourceCode       string                  `json:"traffic_source_code"`
-	Reserve                 float64                 `json:"reserve"`
-	Position                string                  `json:"position"`
-	UsePmtRule              *bool                   `json:"use_pmt_rule"`
-	// At this time we do no processing on the private sizes, so just leaving it as a JSON blob.
-	PrivateSizes json.RawMessage `json:"private_sizes"`
+// ExtImpTriplelift defines the contract for bidrequest.imp[i].ext.appnexus
+type ExtImpTriplelift struct {
+	SSP                     string                  `json:"ssp"`
+	PaymentChain            string                  `json:"pchain"`
+	AppID                   string                  `json:"appId"`
+	SupplyChain             *ExtTLSupplyChain       `json:"schain"`
 }
 
-// ExtImpAppnexusKeyVal defines the contract for bidrequest.imp[i].ext.appnexus.keywords[i]
-type ExtImpAppnexusKeyVal struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"value,omitempty"`
+// ExtTLSupplyChainNode defines the format of bidrequest.imp[i].ext.triplelift.schain.nodes[n]
+type ExtTLSupplyChainNode struct {
+    ASI    string `json:"asi"`
+    PID    string `json:"pid"`
+    RID    string `json:"rid"`
+    NAME   string `json:"name"`
+    DOMAIN string `json:"domain"`
+}
+
+// ExtTLSupplyChain defines the format of bidrequest.imp[i].ext.triplelift.schain
+type ExtTLSupplyChain struct {
+	Complete    int   `json:"complete"`
+	Values      []*ExtTLSupplyChainNode `json:"nodes"`
 }
