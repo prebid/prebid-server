@@ -317,10 +317,18 @@ func (me *Metrics) RecordRequest(labels Labels) {
 
 func (me *Metrics) RecordImps(labels Labels, numImps int) {
 	me.ImpMeter.Mark(int64(numImps))
-	me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
-	me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
-	me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
-	me.ImpsTypeNative.Mark(int64(labels.NativeImps))
+	if labels.BannerImps > 0 {
+		me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
+	}
+	if labels.VideoImps > 0 {
+		me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
+	}
+	if labels.AudioImps > 0 {
+		me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
+	}
+	if labels.NativeImps > 0 {
+		me.ImpsTypeNative.Mark(int64(labels.NativeImps))
+	}
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {
