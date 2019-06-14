@@ -149,7 +149,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
+	if req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
 		labels.PubID = req.Site.Publisher.ID
 	}
 

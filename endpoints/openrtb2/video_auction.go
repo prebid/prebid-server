@@ -193,14 +193,14 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		if bidReq.App.Publisher != nil && bidReq.App.Publisher.ID != "" {
 			labels.PubID = bidReq.App.Publisher.ID
 		}
-	} else { //bidReq.App == nil
+	} else { // both bidReq.App == nil and bidReq.Site != nil are true
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
 			labels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
+		if bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
 			labels.PubID = bidReq.Site.Publisher.ID
 		}
 	}

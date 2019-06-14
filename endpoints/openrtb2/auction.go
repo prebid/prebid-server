@@ -129,14 +129,14 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		if req.App.Publisher != nil && req.App.Publisher.ID != "" {
 			labels.PubID = req.App.Publisher.ID
 		}
-	} else {
+	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
 			labels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
+		if req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
 			labels.PubID = req.Site.Publisher.ID
 		}
 	}
