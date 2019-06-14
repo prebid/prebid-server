@@ -42,6 +42,7 @@ const (
 	BidderPubmatic       BidderName = "pubmatic"
 	BidderPulsepoint     BidderName = "pulsepoint"
 	BidderRhythmone      BidderName = "rhythmone"
+	BidderRTBHouse       BidderName = "rtbhouse"
 	BidderRubicon        BidderName = "rubicon"
 	BidderSharethrough   BidderName = "sharethrough"
 	BidderSomoaudience   BidderName = "somoaudience"
@@ -74,6 +75,7 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rhythmone":       BidderRhythmone,
+	"rtbhouse":        BidderRTBHouse,
 	"rubicon":         BidderRubicon,
 	"sharethrough":    BidderSharethrough,
 	"somoaudience":    BidderSomoaudience,
