@@ -59,7 +59,7 @@ const (
 	DemandWeb        DemandSource = "web"
 	DemandApp        DemandSource = "app"
 	DemandUnknown    DemandSource = "unknown"
-	PublisherUnknown DemandSource = "UNKNOWN"
+	PublisherUnknown DemandSource = "unknown"
 )
 
 func DemandTypes() []DemandSource {

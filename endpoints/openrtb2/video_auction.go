@@ -151,7 +151,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			errL = []error{err}
 			return
 		} else if bidReq.App != nil && bidReq.Site != nil {
-			err = fmt.Errorf("Request seems to be sent with both 'Site' and 'App' values", err)
+			err = fmt.Errorf("Request specifies both 'Site' and 'App' values", err)
 			errL = []error{err}
 			return
 		} else if bidReq.App != nil {
