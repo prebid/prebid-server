@@ -16,19 +16,17 @@ type TripleliftAdapter struct {
 }
 
 func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-    println("hi")
     errs := make([]error, 0, len(request.Imp))
     reqs := make([]*adapters.RequestData, 0, 1) 
-    ad := "http://localhost:8076/s2s/auction"
     reqJSON, err := json.Marshal(request)
     if err != nil {
         errs = append(errs,err)
         return nil, errs
     }
-    println("hi")
     headers := http.Header{}
     headers.Add("Content-Type","application/json;charset=utf-8")
     headers.Add("Accept", "application/json")
+    ad := a.endpoint
     reqs = append(reqs, &adapters.RequestData{
         Method: "POST",
         Uri: ad,
@@ -38,7 +36,7 @@ func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapt
 }
 
 func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-    errs := make([]error,2)
+    errs := make([]error,0,2)
     bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
     return bidResponse, errs
 }
