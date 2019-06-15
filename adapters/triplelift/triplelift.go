@@ -4,10 +4,11 @@ import (
 	//"encoding/base64"
 	"encoding/json"
 	"net/http"
+    "fmt"
 
 	"github.com/mxmCherry/openrtb"
-	//"github.com/prebid/prebid-server/errortypes"
-	//"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/adapters"
 )
 
@@ -35,9 +36,9 @@ func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapt
     return reqs, errs
 }
 
-func getBidCount(seatBid SeatBid) (int) {
+func getBidCount(bidResponse openrtb.BidResponse) (int) {
     c := 0
-    for _, sb := range seatBid {
+    for _, sb := range bidResponse.SeatBid {
         c = c + len(sb.Bid)
     }
     return c;
@@ -62,20 +63,20 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
-    count := getBidCount(bidResp.SeatBid)
+    count := getBidCount(bidResp)
     bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
 
-    for _, sb := range bidResp.SeatBig {
+    for _, sb := range bidResp.SeatBid {
         for i := 0; i < len(sb.Bid); i++ {
             bid := sb.Bid[i]
-            impVideo = &openrtb_ext.ExtBidPrebidVideo {
-                Duration: 2
+            impVideo := &openrtb_ext.ExtBidPrebidVideo {
+                Duration: 2,
             }
             bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
                 Bid: &bid,
                 BidType: openrtb_ext.BidTypeBanner,
-                BidVideo: impVideo
-            }
+                BidVideo: impVideo,
+            })
         }
     }
     return bidResponse, errs
