@@ -8,7 +8,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	//"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/adapters"
 )
 
@@ -69,13 +69,8 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
     for _, sb := range bidResp.SeatBid {
         for i := 0; i < len(sb.Bid); i++ {
             bid := sb.Bid[i]
-            impVideo := &openrtb_ext.ExtBidPrebidVideo {
-                Duration: 2,
-            }
             bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
                 Bid: &bid,
-                BidType: openrtb_ext.BidTypeBanner,
-                BidVideo: impVideo,
             })
         }
     }
