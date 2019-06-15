@@ -66,9 +66,18 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
     bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
 
     for _, sb := range bidResp.SeatBig {
-
-        bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-            Bid: &bid
+        for i := 0; i < len(sb.Bid); i++ {
+            bid := sb.Bid[i]
+            impVideo = &openrtb_ext.ExtBidPrebidVideo {
+                Duration: 2
+            }
+            bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+                Bid: &bid,
+                BidType: openrtb_ext.BidTypeBanner,
+                BidVideo: impVideo
+            }
+        }
+    }
     return bidResponse, errs
 }
 
