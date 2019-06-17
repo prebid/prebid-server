@@ -127,7 +127,7 @@ func NewBidderParamsValidator(schemaDirectory string) (BidderParamValidator, err
 	for _, fileInfo := range fileInfos {
 		bidderName := strings.TrimSuffix(fileInfo.Name(), ".json")
 		if _, isValid := BidderMap[bidderName]; !isValid {
-			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, fileInfo.Name())
+			return nil, fmt.Errorf("File %s/%s does not match a valid BidderName.", schemaDirectory, bidderName)
 		}
 		toOpen, err := filepath.Abs(filepath.Join(schemaDirectory, fileInfo.Name()))
 		if err != nil {
