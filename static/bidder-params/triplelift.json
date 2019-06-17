@@ -8,8 +8,13 @@
     "inventoryCode": {
       "type": "string",
       "description": "A code which identifies this placement of the impression"
-    },
-    "not": {
-        "required": ["inventoryCode"]
     }
+  },
+  "oneOf": [{
+    "oneOf": [{
+      "required": ["inventoryCode"]
+    }] }],
+  "not": {
+    "required": []
+  }
 }
