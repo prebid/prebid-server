@@ -89,7 +89,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	start := time.Now()
 	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
+		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeAMP,
 		PubID:         pbsmetrics.PublisherUnknown,
 		Browser:       pbsmetrics.BrowserOther,
@@ -143,13 +143,12 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	labels.Source = pbsmetrics.DemandWeb
 	if usersyncs.LiveSyncCount() == 0 {
 		labels.CookieFlag = pbsmetrics.CookieFlagNo
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	if req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
+	if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
 		labels.PubID = req.Site.Publisher.ID
 	}
 
