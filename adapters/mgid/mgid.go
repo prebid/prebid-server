@@ -24,7 +24,7 @@ type RespBidExt struct {
 	CreativeType openrtb_ext.BidType `json:"crtype"`
 }
 
-func (a *MgidAdapter) MakeRequests(request *openrtb.BidRequest) (adapterRequests []*adapters.RequestData, errs []error) {
+func (a *MgidAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (adapterRequests []*adapters.RequestData, errs []error) {
 
 	adapterReq, errs := a.makeRequest(request)
 	if adapterReq != nil && len(errs) == 0 {

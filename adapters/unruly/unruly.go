@@ -68,7 +68,7 @@ func AddHeadersToRequest() http.Header {
 	return headers
 }
 
-func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *UnrulyAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 	for _, imp := range request.Imp {

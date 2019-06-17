@@ -112,7 +112,7 @@ func TestMakeRequests(t *testing.T) {
 	expectImps := []openrtb.Imp{expectImp1, expectImp2, expectImp3}
 
 	inputRequest := openrtb.BidRequest{Imp: []openrtb.Imp{imp1, imp2, imp3}}
-	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest)
+	actualAdapterRequests, _ := adapter.MakeRequests(&inputRequest, &adapters.ExtraRequestInfo{})
 	mockHeaders := http.Header{}
 	mockHeaders.Add("Content-Type", "application/json;charset=utf-8")
 	mockHeaders.Add("Accept", "application/json")

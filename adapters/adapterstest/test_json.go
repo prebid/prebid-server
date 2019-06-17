@@ -103,7 +103,7 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 		// simulates AMP entry point
 		reqInfo.PbsEntryPoint = "amp"
 	}
-	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, reqInfo)
+	actualReqs, errs := bidder.MakeRequests(&spec.BidRequest, &reqInfo)
 	diffErrorLists(t, fmt.Sprintf("%s: MakeRequests", filename), errs, spec.MakeRequestErrors)
 	diffHttpRequestLists(t, filename, actualReqs, spec.HttpCalls)
 

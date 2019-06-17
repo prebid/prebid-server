@@ -32,7 +32,7 @@ type SharethroughAdapter struct {
 	AdServer StrOpenRTBInterface
 }
 
-func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqs []*adapters.RequestData
 
 	for i := 0; i < len(request.Imp); i++ {

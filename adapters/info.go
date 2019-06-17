@@ -33,7 +33,7 @@ type InfoAwareBidder struct {
 	info parsedBidderInfo
 }
 
-func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo ExtraRequestInfo) ([]*RequestData, []error) {
+func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
 	if request.Site != nil {
 		if !i.info.site.enabled {

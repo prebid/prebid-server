@@ -280,7 +280,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
