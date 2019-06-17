@@ -1044,6 +1044,7 @@ func TestOpenRTBRequest(t *testing.T) {
                 }]
             }`),
 		},
+		Ext: json.RawMessage(`{"prebid": {}}`),
 	}
 
 	reqs, errs := bidder.MakeRequests(request)
@@ -1074,6 +1075,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 		if rpRequest.Cur != nil {
 			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
+		}
+		if request.Ext != nil {
+			t.Fatalf("Wrong request.ext. Expected nil, Got %v", request.Ext)
 		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
