@@ -8,7 +8,7 @@ import (
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/errortypes"
-	//"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/adapters"
 )
 
@@ -16,8 +16,8 @@ type TripleliftAdapter struct {
     endpoint string
 }
 
-type TripleliftRespExt struct {
-    format int `json:"format`"
+type TripleliftRespExtTriplelift struct {
+    format int `json:"format"`
 }
 
 type TripleliftRespExt struct {
@@ -35,6 +35,7 @@ func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
     if t == 10 {
         return openrtb_ext.BidTypeBanner, nil
     }
+    return  "", fmt.Errorf("could not find bid type")
 }
 
 func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -91,17 +92,15 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
         for i := 0; i < len(sb.Bid); i++ {
             bid := sb.Bid[i]
             var bidExt TripleliftRespExt
-            if err := json.Unmarshal(bid.Ext, &bidExtx); err != nil {
+            if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
                 errs = append(errs,err)
-            }
-            else {
-                if bidType, err := getBidType(*bidExt); err != nil {
+            } else {
+                if bidType, err := getBidType(bidExt); err != nil {
                     errs = append(errs,err)
-                }
-                else {
+                } else {
                     bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
                         Bid: &bid,
-                        BidType: bidType
+                        BidType: bidType,
                     })
                 }
             }
