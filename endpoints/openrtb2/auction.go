@@ -513,7 +513,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
 	}
 
-	multipleAssetErr := "request.imp[%d].native.request.assets[%d] must define at most one of {title, img, video, data}"
+	assetErr := "request.imp[%d].native.request.assets[%d] must define exactly one of {title, img, video, data}"
 	foundType := false
 
 	if asset.Title != nil {
@@ -525,7 +525,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 
 	if asset.Img != nil {
 		if foundType {
-			return fmt.Errorf(multipleAssetErr, impIndex, assetIndex)
+			return fmt.Errorf(assetErr, impIndex, assetIndex)
 		}
 		foundType = true
 		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
@@ -535,7 +535,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 
 	if asset.Video != nil {
 		if foundType {
-			return fmt.Errorf(multipleAssetErr, impIndex, assetIndex)
+			return fmt.Errorf(assetErr, impIndex, assetIndex)
 		}
 		foundType = true
 		if err := validateNativeAssetVideo(asset.Video, impIndex, assetIndex); err != nil {
@@ -545,7 +545,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 
 	if asset.Data != nil {
 		if foundType {
-			return fmt.Errorf(multipleAssetErr, impIndex, assetIndex)
+			return fmt.Errorf(assetErr, impIndex, assetIndex)
 		}
 		foundType = true
 		if err := validateNativeAssetData(asset.Data, impIndex, assetIndex); err != nil {
@@ -554,7 +554,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 	}
 
 	if !foundType {
-		return fmt.Errorf("request.imp[%d].native.request.assets[%d] must define at least one of {title, img, video, data}", impIndex, assetIndex)
+		return fmt.Errorf(assetErr, impIndex, assetIndex)
 	}
 
 	return nil
