@@ -16,6 +16,10 @@ type Metrics struct {
 	connCounter          prometheus.Gauge
 	connError            *prometheus.CounterVec
 	imps                 *prometheus.CounterVec
+	bannerImps           *prometheus.CounterVec
+	videoImps            *prometheus.CounterVec
+	audioImps            *prometheus.CounterVec
+	nativeImps           *prometheus.CounterVec
 	requests             *prometheus.CounterVec
 	reqTimer             *prometheus.HistogramVec
 	adaptRequests        *prometheus.CounterVec
@@ -58,6 +62,28 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		standardLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
+
+	metrics.bannerImps = newCounter(cfg, "banner_imps_requested_total",
+		"Total number of impressions of type 'banner' requested through PBS.",
+		standardLabelNames,
+	)
+	metrics.videoImps = newCounter(cfg, "video_imps_requested_total",
+		"Total number of impressions of type 'video' requested through PBS.",
+		standardLabelNames,
+	)
+	metrics.videoImps = newCounter(cfg, "audio_imps_requested_total",
+		"Total number of impressions of type 'audio' requested through PBS.",
+		standardLabelNames,
+	)
+	metrics.nativeImps = newCounter(cfg, "native_imps_requested_total",
+		"Total number of impressions of type 'native' requested through PBS.",
+		standardLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.imps)
+	metrics.Registry.MustRegister(metrics.imps)
+	metrics.Registry.MustRegister(metrics.imps)
+	metrics.Registry.MustRegister(metrics.imps)
+
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
@@ -190,6 +216,18 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 
 func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
 	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
+	if labels.BannerImps > 0 {
+		me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
+	}
+	if labels.VideoImps > 0 {
+		me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
+	}
+	if labels.AudioImps > 0 {
+		me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
+	}
+	if labels.NativeImps > 0 {
+		me.ImpsTypeNative.Mark(int64(labels.NativeImps))
+	}
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
