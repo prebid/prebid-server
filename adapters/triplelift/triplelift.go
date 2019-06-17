@@ -54,15 +54,15 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
-
+	
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
-    errs := make([]error,0,2)
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
+    var errs []error
     count := getBidCount(bidResp)
     bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
 
