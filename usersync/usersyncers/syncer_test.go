@@ -43,6 +43,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSonobi):         syncConfig,
 			string(openrtb_ext.BidderYieldmo):        syncConfig,
 			string(openrtb_ext.BidderGamoshi):        syncConfig,
+			string(openrtb_ext.BidderUnruly):         syncConfig,
 		},
 	}
 	for bidder, config := range cfg.Adapters {

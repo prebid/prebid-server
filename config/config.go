@@ -447,6 +447,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderYieldmo, "https://ads.yieldmo.com/pbsync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dyieldmo%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderGamoshi, "https://rtb.gamoshi.io/pix/0000/scm?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dgamoshi%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bgusr%5D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderMgid, "https://cm.mgid.com/m?cdsp=363893&adu="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dmgid%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Bmuidn%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderUnruly, "https://usermatch.targeting.unrulymedia.com/pbsync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dunruly%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 
 }
 
@@ -603,6 +604,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
 	v.SetDefault("adapters.sharethrough.endpoint", "http://btlr.sharethrough.com/FGMrCMMc/v1")
 	v.SetDefault("adapters.sonobi.endpoint", "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af")
+	v.SetDefault("adapters.unruly.endpoint", "http://targeting.unrulymedia.com/openrtb/2.2")
 	v.SetDefault("adapters.yieldmo.endpoint", "http://ads.yieldmo.com/exchange/prebid-server")
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
