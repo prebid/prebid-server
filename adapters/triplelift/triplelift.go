@@ -16,6 +16,27 @@ type TripleliftAdapter struct {
     endpoint string
 }
 
+type TripleliftRespExt struct {
+    format int `json:"format"
+}
+
+type TripleliftRespExt struct {
+    Triplelift TripleliftRespExtTriplelift `json:"triplelift"`
+}
+
+func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
+    t := ext.Triplelift.format
+    if t == 1 {
+        return openrtb_ext.BidTypeNative, nil
+    }
+    if t == 2 || t == 8 || t == 11 {
+        return openrtb_ext.BidTypeVideo, nil
+    }
+    if t == 10 {
+        return openrtb_ext.BidTypeBanner, nil
+    }
+}
+
 func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
     errs := make([]error, 0, len(request.Imp))
     reqs := make([]*adapters.RequestData, 0, 1) 
@@ -69,9 +90,21 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
     for _, sb := range bidResp.SeatBid {
         for i := 0; i < len(sb.Bid); i++ {
             bid := sb.Bid[i]
-            bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-                Bid: &bid,
-            })
+            var bidExt TripleliftRespExt
+            if err := json.Unmarshal(bid.Ext, &bidExtx); err != nil {
+                errs = append(errs,err)
+            }
+            else {
+                if bidType, err := getBidType(*bidExt); err != nil {
+                    errs = append(errs,err)
+                }
+                else {
+                    bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+                        Bid: &bid,
+                        BidType: bidType
+                    })
+                }
+            }
         }
     }
     return bidResponse, errs
