@@ -13,8 +13,5 @@
   "oneOf": [{
     "oneOf": [{
       "required": ["inventoryCode"]
-    }] }],
-  "not": {
-    "required": []
-  }
+    }] }]
 }
