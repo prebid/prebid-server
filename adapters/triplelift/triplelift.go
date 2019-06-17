@@ -17,7 +17,7 @@ type TripleliftAdapter struct {
 }
 
 type TripleliftRespExt struct {
-    format int `json:"format"
+    format int `json:"format`"
 }
 
 type TripleliftRespExt struct {
