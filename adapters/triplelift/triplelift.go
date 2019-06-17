@@ -21,21 +21,18 @@ type TripleliftRespExtTriplelift struct {
 }
 
 type TripleliftRespExt struct {
-    Triplelift TripleliftRespExtTriplelift `json:"triplelift"`
+    Triplelift TripleliftRespExtTriplelift `json:"triplelift_pb"`
 }
 
 func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
     t := ext.Triplelift.format
-    if t == 1 {
-        return openrtb_ext.BidTypeNative, nil
-    }
     if t == 2 || t == 8 || t == 11 {
         return openrtb_ext.BidTypeVideo, nil
     }
     if t == 10 {
         return openrtb_ext.BidTypeBanner, nil
     }
-    return  "", fmt.Errorf("could not find bid type")
+    return openrtb_ext.BidTypeNative, nil
 }
 
 func (a *TripleliftAdapter)  MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
