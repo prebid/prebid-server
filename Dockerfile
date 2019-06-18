@@ -14,7 +14,6 @@ RUN apt-get install -y git go-dep && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CGO_ENABLED 0
 COPY ./ ./
-RUN echo $(go version)
 RUN dep ensure && \
     go build .
 
