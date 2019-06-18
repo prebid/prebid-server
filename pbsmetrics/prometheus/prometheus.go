@@ -48,6 +48,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter", "bidtype", "markup_type"}
 	errorLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_error", "adapter"}
 
+	impLabelNames := []string{"banner", "video", "audio", "native"}
+
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
 	metrics.connCounter = newConnCounter(cfg)
@@ -59,31 +61,9 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.connError)
 	metrics.imps = newCounter(cfg, "imps_requested_total",
 		"Total number of impressions requested through PBS.",
-		standardLabelNames,
+		impLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
-
-	metrics.bannerImps = newCounter(cfg, "banner_imps_requested_total",
-		"Total number of impressions of type 'banner' requested through PBS.",
-		standardLabelNames,
-	)
-	metrics.videoImps = newCounter(cfg, "video_imps_requested_total",
-		"Total number of impressions of type 'video' requested through PBS.",
-		standardLabelNames,
-	)
-	metrics.videoImps = newCounter(cfg, "audio_imps_requested_total",
-		"Total number of impressions of type 'audio' requested through PBS.",
-		standardLabelNames,
-	)
-	metrics.nativeImps = newCounter(cfg, "native_imps_requested_total",
-		"Total number of impressions of type 'native' requested through PBS.",
-		standardLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.imps)
-	metrics.Registry.MustRegister(metrics.imps)
-	metrics.Registry.MustRegister(metrics.imps)
-	metrics.Registry.MustRegister(metrics.imps)
-
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
@@ -216,6 +196,8 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 
 func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
 	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
+	// TODO. Read https://prometheus.io/docs/prometheus/latest/getting_started/
+	// and make changes here
 	if labels.BannerImps > 0 {
 		me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
 	}
