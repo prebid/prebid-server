@@ -7,11 +7,15 @@
   "properties": {
     "inventoryCode": {
       "type": "string",
-      "description": "A code which identifies this placement of the impression"
-    }
+      "description": "TripleLift inventory code for this ad unit (provided to you by your partner manager)"
+    },
+    "floor" :  {"description" : "the bid floor", "type": "number" }
   },
   "oneOf": [{
     "oneOf": [{
       "required": ["inventoryCode"]
-    }] }]
+    }] }],
+  "not": {
+    "required": ["floor"]
+  }
 }
