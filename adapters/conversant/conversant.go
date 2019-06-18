@@ -78,9 +78,13 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 
 		// Fill in additional Site info
-
-		if params.SiteID != "" && !(cnvrReq.Site == nil) {
-			cnvrReq.Site.ID = params.SiteID
+		if params.SiteID != "" {
+			if cnvrReq.Site != nil {
+				cnvrReq.Site.ID = params.SiteID
+			}
+			if cnvrReq.App != nil {
+				cnvrReq.App.ID = params.SiteID
+			}
 		}
 
 		if params.Mobile != nil && !(cnvrReq.Site == nil) {
