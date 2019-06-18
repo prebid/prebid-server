@@ -1,4 +1,4 @@
-package triplelift 
+package triplelift
 
 import (
 	"text/template"
