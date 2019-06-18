@@ -59,7 +59,7 @@ type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
 	PriceType   string      `json:"priceType,omitempty"`
 	KeyValues   string      `json:"mkv,omitempty"`
-	Keywords    string      `json:"mkw,omitempty"`
+	KeyWords    string      `json:"mkw,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -295,8 +295,8 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 		if adUnit.KeyValues != "" {
 			buffer.WriteString(fmt.Sprintf("&mkv=%s", adUnit.KeyValues))
 		}
-		if adUnit.Keywords != "" {
-			buffer.WriteString(fmt.Sprintf("&mkw=%s", adUnit.Keywords))
+		if adUnit.KeyWords != "" {
+			buffer.WriteString(fmt.Sprintf("&mkw=%s", adUnit.KeyWords))
 		}
 		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(buffer.Bytes()))
 	}
