@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 
@@ -61,7 +60,6 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 func preprocess(request *openrtb.BidRequest) error {
 
 	secure := int8(0)
-
 	pageURL, err := url.Parse(request.Site.Page)
 	if err == nil {
 		if pageURL.Scheme == "https" {
@@ -70,7 +68,8 @@ func preprocess(request *openrtb.BidRequest) error {
 	}
 
 	for i := 0; i < len(request.Imp); i++ {
-		var imp = request.Imp[i]
+		impCopy := request.Imp[i]
+		imp := &impCopy
 		var bidderExt adapters.ExtImpBidder
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -88,20 +87,24 @@ func preprocess(request *openrtb.BidRequest) error {
 		}
 
 		request.Imp[i].Secure = &secure
-		request.Imp[i].TagID = emxExt.TagID
+		request.Imp[i].TagID = imp.TagID
 
-		if request.Imp[i].BidFloor != 0 {
-			request.Imp[i].BidFloor, err = strconv.ParseFloat(emxExt.BidFloor, 64)
-			if err != nil {
-				return &errortypes.BadInput{
-					Message: err.Error(),
-				}
-			}
+		bidfloor := emxExt.BidFloor
+
+		if bidfloor > 0 {
+			request.Imp[i].BidFloor = emxExt.BidFloor
+			request.Imp[i].BidFloorCur = "USD"
 		}
 
-		if request.Imp[i].Banner.Format != nil {
-			request.Imp[i].Banner.W = &request.Imp[i].Banner.Format[0].W
-			request.Imp[i].Banner.H = &request.Imp[i].Banner.Format[0].H
+		if imp.Banner.Format != nil {
+			bannerCopy := *request.Imp[i].Banner
+			banner := &bannerCopy
+
+			format := banner.Format[0]
+			banner.W = &format.W
+			banner.H = &format.H
+
+			request.Imp[i].Banner = banner
 		}
 
 	}
@@ -127,9 +130,6 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
-
-	// nick dev
-	os.Stdout.Write(response.Body)
 
 	var bidResp openrtb.BidResponse
 

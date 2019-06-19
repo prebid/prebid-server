@@ -34,7 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"tagid": "25251", "bidfloor": "0.01"}`,
+	`{"tagid": "25251", "bidfloor": 0.01}`,
 }
 
 var invalidParams = []string{
@@ -46,7 +46,8 @@ var invalidParams = []string{
 	`{}`,
 	`{"tagid":12345678}`,
 	`{"tagId":"12345678"}`,
-	`{"tagId":12345678}`,
+	`{"tagid":"25251", "bidfloor": "0.01"}`,
+	`{"tagId": 12345678}`,
 	`{"placementId": "1"}`,
 	`{"placementId": 1}`,
 }

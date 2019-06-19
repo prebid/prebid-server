@@ -1,6 +1,6 @@
 package openrtb_ext
 
 type ExtImpEmxDigital struct {
-	TagID    string `json:"tagid"`
-	BidFloor string `json:"bidfloor,omitempty"`
+	TagID    string  `json:"tagid"`
+	BidFloor float64 `json:"bidfloor,omitempty"`
 }
