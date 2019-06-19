@@ -138,7 +138,7 @@ func getEndpoint(request *openrtb.BidRequest) (uri string) {
 	return BannerEndpoint
 }
 
-func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests BeachfrontRequests
 	var reqJSON []byte
 	var uri string

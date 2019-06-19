@@ -22,6 +22,7 @@ type RTBHouseAdapter struct {
 // MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (adapter *RTBHouseAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
+	reqInfo *adapters.ExtraRequestInfo,
 ) (
 	requestsToBidder []*adapters.RequestData,
 	errs []error,

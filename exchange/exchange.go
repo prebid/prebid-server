@@ -202,7 +202,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if givenAdjustment, ok := bidAdjustments[string(aName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
-			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions)
+			var reqInfo adapters.ExtraRequestInfo
+			reqInfo.PbsEntryPoint = bidlabels.RType
+			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions, &reqInfo)
 
 			// Add in time reporting
 			elapsed := time.Since(start)

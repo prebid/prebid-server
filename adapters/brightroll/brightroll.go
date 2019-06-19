@@ -16,7 +16,7 @@ type BrightrollAdapter struct {
 	URI string
 }
 
-func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *BrightrollAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	request := *requestIn
 	errs := make([]error, 0, len(request.Imp))

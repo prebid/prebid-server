@@ -371,7 +371,7 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	}
 }
 
-func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	adformRequest, errors := openRtbToAdformRequest(request)
 	if len(adformRequest.adUnits) == 0 {
 		return nil, errors

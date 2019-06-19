@@ -19,6 +19,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 )
 
 type AppNexusAdapter struct {
@@ -92,8 +93,9 @@ type appnexusBidExt struct {
 }
 
 type appnexusReqExtAppnexus struct {
-	IncludeBrandCategory    *bool `json:"include_brand_category"`
-	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness"`
+	IncludeBrandCategory    *bool `json:"include_brand_category,omitempty"`
+	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness,omitempty"`
+	IsAMP                   int   `json:"is_amp,omitempty"`
 }
 
 // Full request extension including appnexus extension object
@@ -278,7 +280,7 @@ func (a *AppNexusAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	memberIds := make(map[string]bool)
 	errs := make([]error, 0, len(request.Imp))
 
@@ -325,8 +327,14 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}
 
 	// Add Appnexus request level extension
+	var isAMP int
+	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+		isAMP = 1
+	} else {
+		isAMP = 0
+	}
+	var reqExt appnexusReqExt
 	if len(request.Ext) > 0 {
-		var reqExt appnexusReqExt
 		if err := json.Unmarshal(request.Ext, &reqExt); err == nil {
 			includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer != 0
 			if includeBrandCategory {
@@ -335,6 +343,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 				}
 				reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
 				reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
+				reqExt.Appnexus.IsAMP = isAMP
 				request.Ext, err = json.Marshal(reqExt)
 				if err != nil {
 					errs = append(errs, err)
@@ -342,6 +351,16 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 				}
 			}
 		} else {
+			errs = append(errs, err)
+			return nil, errs
+		}
+	} else if isAMP != 0 {
+		// if isAMP is 0, bidder doesn't need it included
+		var err error
+		reqExt.Appnexus = &appnexusReqExtAppnexus{}
+		reqExt.Appnexus.IsAMP = isAMP
+		request.Ext, err = json.Marshal(reqExt)
+		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
