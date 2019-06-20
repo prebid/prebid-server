@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	//"fmt"
 	"regexp"
 	"strconv"
 	"testing"
@@ -78,6 +79,7 @@ func TestImpMetrics(t *testing.T) {
 	metrics3 := dto.Metric{}
 	metrics4 := dto.Metric{}
 
+	//proMetrics.imps.With(resolveLabels(labels[4)).Add(float64(5))
 	proMetrics.RecordImps(labels[0], 1)
 	proMetrics.RecordImps(labels[1], 5)
 	proMetrics.RecordImps(labels[0], 2)
@@ -97,6 +99,35 @@ func TestImpMetrics(t *testing.T) {
 	assertCounterValue(t, "imps_requested[2]", &metrics2, 3)
 	assertCounterValue(t, "imps_requested[3]", &metrics3, 0)
 	assertCounterValue(t, "imps_requested[4]", &metrics4, 1)
+}
+
+func TestImpTypeMetrics(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricsBanner := dto.Metric{}
+	//metricsAudio := dto.Metric{}
+	//metricsVideo := dto.Metric{}
+	//metricsNative := dto.Metric{}
+
+	proMetrics.impTypes.With(prometheus.Labels{"banner_imps": "1", "video_imps": "0", "audio_imps": "0", "native_imps": "0"}).Add(float64(impTypeLabels[0].BannerImps))
+	//a_banner_imp_counter := proMetrics.impTypes.With(prometheus.Labels{"banner_imps": "1", "video_imps": "0", "audio_imps": "0", "native_imps": "0"})
+	//a_banner_imp_counter.Add(1)
+
+	//prometheus.Labels{ "banner_imps": "1", "video_imps":  "0", "audio_imps":  "0", "native_imps": "0" }
+	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[0])).Add(float64(impTypeLabels[0].BannerImps))
+	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[1])).Add(float64(impTypeLabels[1].VideoImps))
+	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Add(float64(impTypeLabels[2].AudioImps))
+	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Add(float64(impTypeLabels[3].NativeImps))
+
+	proMetrics.impTypes.With(prometheus.Labels{"banner_imps": "1", "video_imps": "0", "audio_imps": "0", "native_imps": "0"}).Write(&metricsBanner)
+	//proMetrics.impTypes.With(resolveLabels(impTypeLabels[1])).Write(&metricsAudio)
+	//proMetrics.impTypes.With(resolveLabels(impTypeLabels[2])).Write(&metricsVideo)
+	//proMetrics.impTypes.With(resolveLabels(impTypeLabels[3])).Write(&metricsNative)
+
+	assertCounterValue(t, "imps_types_0", &metricsBanner, 1)
+	//assertCounterValue(t, "imps_types_1", &metricsAudio, 1)
+	//assertCounterValue(t, "imps_types_2", &metricsVideo, 1)
+	//assertCounterValue(t, "imps_types_3", &metricsNative, 1)
 }
 
 func TestTimerMetrics(t *testing.T) {
@@ -422,6 +453,36 @@ var labels = []pbsmetrics.Labels{
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
+	},
+}
+var impTypeLabels = []pbsmetrics.Labels{
+	{
+		//impType: "banner",
+		BannerImps: 1,
+		VideoImps:  0,
+		AudioImps:  0,
+		NativeImps: 0,
+	},
+	{
+		//impType: "audio",
+		BannerImps: 0,
+		VideoImps:  1,
+		AudioImps:  0,
+		NativeImps: 0,
+	},
+	{
+		//impType: "video",
+		BannerImps: 0,
+		VideoImps:  0,
+		AudioImps:  1,
+		NativeImps: 0,
+	},
+	{
+		//impType: "native",
+		BannerImps: 0,
+		VideoImps:  0,
+		AudioImps:  0,
+		NativeImps: 1,
 	},
 }
 

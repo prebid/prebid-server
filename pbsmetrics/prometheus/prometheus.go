@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -16,6 +17,7 @@ type Metrics struct {
 	connCounter          prometheus.Gauge
 	connError            *prometheus.CounterVec
 	imps                 *prometheus.CounterVec
+	impTypes             *prometheus.CounterVec
 	bannerImps           *prometheus.CounterVec
 	videoImps            *prometheus.CounterVec
 	audioImps            *prometheus.CounterVec
@@ -48,7 +50,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter", "bidtype", "markup_type"}
 	errorLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_error", "adapter"}
 
-	impLabelNames := []string{"banner", "video", "audio", "native"}
+	impLabelNames := []string{"banner_imps", "video_imps", "audio_imps", "native_imps"}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
@@ -61,9 +63,17 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.connError)
 	metrics.imps = newCounter(cfg, "imps_requested_total",
 		"Total number of impressions requested through PBS.",
-		impLabelNames,
+		standardLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
+
+	// NEW imp types
+	metrics.impTypes = newCounter(cfg, "imps_types_total",
+		"Total number of impression types requested through PBS.",
+		impLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.impTypes)
+
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
@@ -198,18 +208,20 @@ func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
 	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
 	// TODO. Read https://prometheus.io/docs/prometheus/latest/getting_started/
 	// and make changes here
-	if labels.BannerImps > 0 {
-		me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
-	}
-	if labels.VideoImps > 0 {
-		me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
-	}
-	if labels.AudioImps > 0 {
-		me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
-	}
-	if labels.NativeImps > 0 {
-		me.ImpsTypeNative.Mark(int64(labels.NativeImps))
-	}
+	/*
+		if labels.BannerImps > 0 {
+			me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
+		}
+		if labels.VideoImps > 0 {
+			me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
+		}
+		if labels.AudioImps > 0 {
+			me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
+		}
+		if labels.NativeImps > 0 {
+			me.ImpsTypeNative.Mark(int64(labels.NativeImps))
+		}
+	*/
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
@@ -336,6 +348,15 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 	return prometheus.Labels{
 		"action": string(userLabels.Action),
 		"bidder": string(userLabels.Bidder),
+	}
+}
+
+func resolveImpTypeLabels(labels pbsmetrics.Labels) prometheus.Labels {
+	return prometheus.Labels{
+		"banner_imps": strconv.Itoa(labels.BannerImps),
+		"video_imps":  strconv.Itoa(labels.VideoImps),
+		"audio_imps":  strconv.Itoa(labels.AudioImps),
+		"native_imps": strconv.Itoa(labels.NativeImps),
 	}
 }
 
