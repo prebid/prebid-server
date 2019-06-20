@@ -62,14 +62,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		standardLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
-
-	// NEW imp types
 	metrics.impTypes = newCounter(cfg, "imps_types_total",
 		"Total number of impression types requested through PBS.",
 		impLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.impTypes)
-
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,

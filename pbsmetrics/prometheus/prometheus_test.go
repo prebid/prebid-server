@@ -1,7 +1,7 @@
 package prometheusmetrics
 
 import (
-	//"fmt"
+	"fmt"
 	"regexp"
 	"strconv"
 	"testing"
@@ -12,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/stretchr/testify/assert"
 )
 
 var gaugeValueRegexp = regexp.MustCompile("gauge:<value:([0-9]+) >")
@@ -119,10 +120,47 @@ func TestImpTypeMetrics(t *testing.T) {
 	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Write(&metricsVideo)
 	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Write(&metricsNative)
 
-	assertCounterValue(t, "imps_types_banner_count", &metricsBanner, 1)
-	assertCounterValue(t, "imps_types_banner_count", &metricsAudio, 1)
-	assertCounterValue(t, "imps_types_banner_count", &metricsVideo, 1)
-	assertCounterValue(t, "imps_types_banner_count", &metricsNative, 1)
+	assertCounterValue(t, "imps_types_banner_count", &metricsBanner, 5)
+	assertCounterValue(t, "imps_types_banner_count", &metricsAudio, 9)
+	assertCounterValue(t, "imps_types_banner_count", &metricsVideo, 8)
+	assertCounterValue(t, "imps_types_banner_count", &metricsNative, 3)
+}
+
+func TestRecordImps(t *testing.T) {
+	var sampleEngine *Metrics = newTestMetricsEngine()
+	var sampleMetrics dto.Metric = dto.Metric{}
+	var samplePBSLabels pbsmetrics.Labels = pbsmetrics.Labels{
+		BannerImps: 5,
+		VideoImps:  4,
+		AudioImps:  3,
+		NativeImps: 2,
+	}
+	var samplePrometheusMetrics prometheus.Labels = resolveImpTypeLabels(samplePBSLabels)
+
+	sampleEngine.RecordImps(samplePBSLabels, 14)
+	sampleEngine.impTypes.With(samplePrometheusMetrics).Write(&sampleMetrics)
+
+	for _, metricLabel := range sampleMetrics.Label {
+		var impType string = *metricLabel.Name
+		switch impType {
+		case "banner_imps":
+			assert.Equal(t, *metricLabel.Value, "5", "'banner_imps' should equal '3'")
+		case "video_imps":
+			assert.Equal(t, *metricLabel.Value, "4", "'banner_imps' should equal '3'")
+		case "audio_imps":
+			assert.Equal(t, *metricLabel.Value, "3", "'banner_imps' should equal '3'")
+		case "native_imps":
+			assert.Equal(t, *metricLabel.Value, "2", "'banner_imps' should equal '3'")
+		default:
+			fmt.Printf("'%s' is not recognized as a label \n", impType)
+		}
+	}
+
+	//fmt.Printf("%s \n", sampleMetrics.String())
+	//assertCounterValue(t, "imps_types_banner_count", &sampleMetrics, 5)
+	//assertCounterValue(t, "imps_types_banner_count", &metricsAudio, 9)
+	//assertCounterValue(t, "imps_types_banner_count", &metricsVideo, 8)
+	//assertCounterValue(t, "imps_types_banner_count", &metricsNative, 3)
 }
 
 func TestTimerMetrics(t *testing.T) {
@@ -453,7 +491,7 @@ var labels = []pbsmetrics.Labels{
 var impTypeLabels = []pbsmetrics.Labels{
 	{
 		//impType: "banner",
-		BannerImps: 1,
+		BannerImps: 5,
 		VideoImps:  0,
 		AudioImps:  0,
 		NativeImps: 0,
@@ -461,7 +499,7 @@ var impTypeLabels = []pbsmetrics.Labels{
 	{
 		//impType: "audio",
 		BannerImps: 0,
-		VideoImps:  1,
+		VideoImps:  9,
 		AudioImps:  0,
 		NativeImps: 0,
 	},
@@ -469,7 +507,7 @@ var impTypeLabels = []pbsmetrics.Labels{
 		//impType: "video",
 		BannerImps: 0,
 		VideoImps:  0,
-		AudioImps:  1,
+		AudioImps:  8,
 		NativeImps: 0,
 	},
 	{
@@ -477,7 +515,7 @@ var impTypeLabels = []pbsmetrics.Labels{
 		BannerImps: 0,
 		VideoImps:  0,
 		AudioImps:  0,
-		NativeImps: 1,
+		NativeImps: 3,
 	},
 }
 
