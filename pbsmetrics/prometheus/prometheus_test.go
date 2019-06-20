@@ -105,29 +105,24 @@ func TestImpTypeMetrics(t *testing.T) {
 	proMetrics := newTestMetricsEngine()
 
 	metricsBanner := dto.Metric{}
-	//metricsAudio := dto.Metric{}
-	//metricsVideo := dto.Metric{}
-	//metricsNative := dto.Metric{}
+	metricsAudio := dto.Metric{}
+	metricsVideo := dto.Metric{}
+	metricsNative := dto.Metric{}
 
-	proMetrics.impTypes.With(prometheus.Labels{"banner_imps": "1", "video_imps": "0", "audio_imps": "0", "native_imps": "0"}).Add(float64(impTypeLabels[0].BannerImps))
-	//a_banner_imp_counter := proMetrics.impTypes.With(prometheus.Labels{"banner_imps": "1", "video_imps": "0", "audio_imps": "0", "native_imps": "0"})
-	//a_banner_imp_counter.Add(1)
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[0])).Add(float64(impTypeLabels[0].BannerImps))
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[1])).Add(float64(impTypeLabels[1].VideoImps))
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Add(float64(impTypeLabels[2].AudioImps))
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Add(float64(impTypeLabels[3].NativeImps))
 
-	//prometheus.Labels{ "banner_imps": "1", "video_imps":  "0", "audio_imps":  "0", "native_imps": "0" }
-	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[0])).Add(float64(impTypeLabels[0].BannerImps))
-	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[1])).Add(float64(impTypeLabels[1].VideoImps))
-	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Add(float64(impTypeLabels[2].AudioImps))
-	//proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Add(float64(impTypeLabels[3].NativeImps))
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[0])).Write(&metricsBanner)
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[1])).Write(&metricsAudio)
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Write(&metricsVideo)
+	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Write(&metricsNative)
 
-	proMetrics.impTypes.With(prometheus.Labels{"banner_imps": "1", "video_imps": "0", "audio_imps": "0", "native_imps": "0"}).Write(&metricsBanner)
-	//proMetrics.impTypes.With(resolveLabels(impTypeLabels[1])).Write(&metricsAudio)
-	//proMetrics.impTypes.With(resolveLabels(impTypeLabels[2])).Write(&metricsVideo)
-	//proMetrics.impTypes.With(resolveLabels(impTypeLabels[3])).Write(&metricsNative)
-
-	assertCounterValue(t, "imps_types_0", &metricsBanner, 1)
-	//assertCounterValue(t, "imps_types_1", &metricsAudio, 1)
-	//assertCounterValue(t, "imps_types_2", &metricsVideo, 1)
-	//assertCounterValue(t, "imps_types_3", &metricsNative, 1)
+	assertCounterValue(t, "imps_types_banner_count", &metricsBanner, 1)
+	assertCounterValue(t, "imps_types_banner_count", &metricsAudio, 1)
+	assertCounterValue(t, "imps_types_banner_count", &metricsVideo, 1)
+	assertCounterValue(t, "imps_types_banner_count", &metricsNative, 1)
 }
 
 func TestTimerMetrics(t *testing.T) {

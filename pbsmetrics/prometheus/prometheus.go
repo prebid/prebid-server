@@ -18,10 +18,6 @@ type Metrics struct {
 	connError            *prometheus.CounterVec
 	imps                 *prometheus.CounterVec
 	impTypes             *prometheus.CounterVec
-	bannerImps           *prometheus.CounterVec
-	videoImps            *prometheus.CounterVec
-	audioImps            *prometheus.CounterVec
-	nativeImps           *prometheus.CounterVec
 	requests             *prometheus.CounterVec
 	reqTimer             *prometheus.HistogramVec
 	adaptRequests        *prometheus.CounterVec
@@ -206,22 +202,19 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 
 func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
 	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
-	// TODO. Read https://prometheus.io/docs/prometheus/latest/getting_started/
-	// and make changes here
-	/*
-		if labels.BannerImps > 0 {
-			me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
-		}
-		if labels.VideoImps > 0 {
-			me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
-		}
-		if labels.AudioImps > 0 {
-			me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
-		}
-		if labels.NativeImps > 0 {
-			me.ImpsTypeNative.Mark(int64(labels.NativeImps))
-		}
-	*/
+	var impLabels prometheus.Labels = resolveImpTypeLabels(labels)
+	if labels.BannerImps > 0 {
+		me.impTypes.With(impLabels).Add(float64(labels.BannerImps))
+	}
+	if labels.VideoImps > 0 {
+		me.impTypes.With(impLabels).Add(float64(labels.VideoImps))
+	}
+	if labels.AudioImps > 0 {
+		me.impTypes.With(impLabels).Add(float64(labels.AudioImps))
+	}
+	if labels.NativeImps > 0 {
+		me.impTypes.With(impLabels).Add(float64(labels.NativeImps))
+	}
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
