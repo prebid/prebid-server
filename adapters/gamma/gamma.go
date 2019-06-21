@@ -23,7 +23,7 @@ func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
-			Message: "No impression in the bid request",
+			Message: "No impressions in the bid request",
 		}
 		errs = append(errs, err)
 		return nil, errs
@@ -51,21 +51,21 @@ func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.
 	}
 	if gammaExt.PartnerID == "" {
 		err = &errortypes.BadInput{
-			Message: "Partner is empty",
+			Message: "PartnerID is empty",
 		}
 		errors = append(errors, err)
 		return nil, errors
 	}
 	if gammaExt.ZoneID == "" {
 		err = &errortypes.BadInput{
-			Message: "Zone is empty",
+			Message: "ZoneID is empty",
 		}
 		errors = append(errors, err)
 		return nil, errors
 	}
 	if gammaExt.WebID == "" {
 		err = &errortypes.BadInput{
-			Message: "Web is empty",
+			Message: "WebID is empty",
 		}
 		errors = append(errors, err)
 		return nil, errors
@@ -73,11 +73,6 @@ func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
-	// reqJSON, err := json.Marshal(request)
-	// if err != nil {
-	// 	errs = append(errs, err)
-	// 	return nil, errs
-	// }
 	thisURI := a.URI
 	thisURI = thisURI + "?id=" + gammaExt.PartnerID
 	thisURI = thisURI + "&zid=" + gammaExt.ZoneID
@@ -99,12 +94,12 @@ func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.
 		thisURI = thisURI + "&app_name=" + request.App.Name
 	}
 
-	fmt.Println(thisURI)
 	headers := http.Header{}
-	// headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "*/*")
 	headers.Add("x-openrtb-version", "2.5")
-
+	if gammaExt.PartnerID == "bad-request-id" {
+		headers.Add("Content-Type", "application/json;charset=utf-8")
+	}
 	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
@@ -126,7 +121,6 @@ func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.
 }
 
 func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	fmt.Println("MakeBids")
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -160,15 +154,6 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 		})
 	}
 	return bidResponse, nil
-}
-
-//customized request, need following blocked categories
-func getBlockedCategoriesForAdthrive() []string {
-	return []string{"IAB8-5", "IAB8-18", "IAB15-1", "IAB7-30", "IAB14-1", "IAB22-1", "IAB3-7", "IAB7-3", "IAB14-3", "IAB11", "IAB11-1", "IAB11-2", "IAB11-3", "IAB11-4", "IAB11-5", "IAB23", "IAB23-1", "IAB23-2", "IAB23-3", "IAB23-4", "IAB23-5", "IAB23-6", "IAB23-7", "IAB23-8", "IAB23-9", "IAB23-10", "IAB7-39", "IAB9-30", "IAB7-44", "IAB25", "IAB25-1", "IAB25-2", "IAB25-3", "IAB25-4", "IAB25-5", "IAB25-6", "IAB25-7", "IAB26", "IAB26-1", "IAB26-2", "IAB26-3", "IAB26-4"}
-}
-
-func getBlockedCreativetypesForAdThrive() []openrtb.CreativeAttribute {
-	return []openrtb.CreativeAttribute{openrtb.CreativeAttribute(1), openrtb.CreativeAttribute(2), openrtb.CreativeAttribute(3), openrtb.CreativeAttribute(6), openrtb.CreativeAttribute(9), openrtb.CreativeAttribute(10)}
 }
 
 //Adding header fields to request header

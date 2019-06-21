@@ -8,6 +8,6 @@
     }
   },
   "expectedMakeRequestsErrors": [
-    "No impression in the bid request"
+    "No impressions in the bid request"
   ]
 }

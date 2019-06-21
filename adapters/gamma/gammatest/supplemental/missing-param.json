@@ -18,7 +18,9 @@
         },
         "ext": {
           "bidder": {
-            "wid":""
+            "zid": "sample-zone-id",
+            "wid": "sample-web-id"
+          
           }
         }
 
@@ -26,6 +28,6 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "Partner is empty"
+    "PartnerID is empty"
   ]
 }
