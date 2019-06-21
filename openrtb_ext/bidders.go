@@ -31,6 +31,7 @@ const (
 	BidderConversant     BidderName = "conversant"
 	BidderEPlanning      BidderName = "eplanning"
 	BidderFacebook       BidderName = "audienceNetwork"
+	BidderGamma          BidderName = "gamma"
 	BidderGamoshi        BidderName = "gamoshi"
 	BidderGrid           BidderName = "grid"
 	BidderGumGum         BidderName = "gumgum"
@@ -61,6 +62,7 @@ var BidderMap = map[string]BidderName{
 	"consumable":      BidderConsumable,
 	"conversant":      BidderConversant,
 	"eplanning":       BidderEPlanning,
+	"gamma":           BidderGamma,
 	"gamoshi":         BidderGamoshi,
 	"grid":            BidderGrid,
 	"gumgum":          BidderGumGum,
