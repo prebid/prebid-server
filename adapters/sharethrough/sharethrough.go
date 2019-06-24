@@ -36,7 +36,7 @@ func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapt
 	var reqs []*adapters.RequestData
 
 	if request.Site == nil {
-		return nil, []error{fmt.Errorf("the requests does not have a Site, in App placements are not supported")}
+		return nil, []error{fmt.Errorf("request must include a site; in-app placements are not supported")}
 	}
 	var domain = Util{}.parseDomain(request.Site.Page)
 
