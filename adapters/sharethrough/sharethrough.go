@@ -35,8 +35,13 @@ type SharethroughAdapter struct {
 func (a SharethroughAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var reqs []*adapters.RequestData
 
+	if request.Site == nil {
+		return nil, []error{fmt.Errorf("request must include a site; in-app placements are not supported")}
+	}
+	var domain = Util{}.parseDomain(request.Site.Page)
+
 	for i := 0; i < len(request.Imp); i++ {
-		req, err := a.AdServer.requestFromOpenRTB(request.Imp[i], request)
+		req, err := a.AdServer.requestFromOpenRTB(request.Imp[i], request, domain)
 
 		if err != nil {
 			return nil, []error{err}

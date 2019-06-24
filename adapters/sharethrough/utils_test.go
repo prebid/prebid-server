@@ -408,3 +408,34 @@ func TestGdprConsentString(t *testing.T) {
 		}
 	}
 }
+
+func TestParseDomain(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"Parses domain without port": {
+			input:    "http://a.domain.com/page?param=value",
+			expected: "a.domain.com",
+		},
+		"Parses domain with port": {
+			input:    "http://a.domain.com:8000/page?param=value",
+			expected: "a.domain.com",
+		},
+		"Returns empty string if cannot parse the domain": {
+			input:    "abc",
+			expected: "",
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		output := Util{}.parseDomain(test.input)
+
+		if output != test.expected {
+			t.Errorf("Expected parsed url %s, got %s\n", test.expected, output)
+			return
+		}
+	}
+}

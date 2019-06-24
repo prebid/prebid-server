@@ -25,7 +25,7 @@ type StrAdSeverParams struct {
 }
 
 type StrOpenRTBInterface interface {
-	requestFromOpenRTB(openrtb.Imp, *openrtb.BidRequest) (*adapters.RequestData, error)
+	requestFromOpenRTB(openrtb.Imp, *openrtb.BidRequest, string) (*adapters.RequestData, error)
 	responseToOpenRTB(openrtb_ext.ExtImpSharethroughResponse, *adapters.RequestData) (*adapters.BidderResponse, []error)
 }
 
@@ -50,10 +50,11 @@ type StrOpenRTBTranslator struct {
 	UserAgentParsers UserAgentParsers
 }
 
-func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
 	headers := http.Header{}
 	headers.Add("Content-Type", "text/plain;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	headers.Add("Origin", domain)
 
 	var strImpExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {

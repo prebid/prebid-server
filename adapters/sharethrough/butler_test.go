@@ -63,6 +63,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 	tests := map[string]struct {
 		inputImp openrtb.Imp
 		inputReq *openrtb.BidRequest
+		inputDom string
 		expected *adapters.RequestData
 	}{
 		"Generates the correct AdServer request from Imp": {
@@ -79,6 +80,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					UA: "Android Chome/60",
 				},
 			},
+			inputDom: "a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
@@ -86,6 +88,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Headers: http.Header{
 					"Content-Type": []string{"text/plain;charset=utf-8"},
 					"Accept":       []string{"application/json"},
+					"Origin":       []string{"a.domain.com"},
 				},
 			},
 		},
@@ -103,7 +106,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
 	}}
 	for testName, test := range tests {
-		outputSuccess, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq)
+		outputSuccess, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq, test.inputDom)
 		assertRequestDataEquals(t, testName, test.expected, outputSuccess)
 		if outputError != nil {
 			t.Errorf("Expected no errors, got %s\n", outputError)

@@ -9,6 +9,8 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"html/template"
+	"net"
+	"net/url"
 	"regexp"
 	"strconv"
 )
@@ -28,6 +30,8 @@ type UtilityInterface interface {
 	isiOS(string) bool
 	isAtMinChromeVersion(string, *regexp.Regexp) bool
 	isAtMinSafariVersion(string, *regexp.Regexp) bool
+
+	parseDomain(string) string
 }
 
 type Util struct{}
@@ -190,4 +194,19 @@ func (u Util) gdprConsentString(request *openrtb.BidRequest) string {
 	}
 
 	return consentString
+}
+
+func (u Util) parseDomain(fullUrl string) string {
+	domain := ""
+	uri, err := url.Parse(fullUrl)
+	if err == nil {
+		host, _, errSplit := net.SplitHostPort(uri.Host)
+		if errSplit == nil {
+			domain = host
+		} else {
+			domain = uri.Host
+		}
+	}
+
+	return domain
 }
