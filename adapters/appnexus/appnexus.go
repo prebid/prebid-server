@@ -287,8 +287,8 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	// AppNexus openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
 	var defaultDisplayManagerVer string
 	if request.App != nil {
-		source, err1 := jsonparser.GetString(request.App.Ext, "prebid", "source")
-		version, err2 := jsonparser.GetString(request.App.Ext, "prebid", "version")
+		source, err1 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "source")
+		version, err2 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "version")
 		if (err1 == nil) && (err2 == nil) {
 			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
 		}

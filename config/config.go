@@ -631,12 +631,13 @@ func SetupViper(v *viper.Viper, filename string) {
 }
 
 func setBidderDefaults(v *viper.Viper, bidder string) {
-	v.SetDefault("adapters."+bidder+".endpoint", "")
-	v.SetDefault("adapters."+bidder+".usersync_url", "")
-	v.SetDefault("adapters."+bidder+".platform_id", "")
-	v.SetDefault("adapters."+bidder+".xapi.username", "")
-	v.SetDefault("adapters."+bidder+".xapi.password", "")
-	v.SetDefault("adapters."+bidder+".xapi.tracker", "")
-	v.SetDefault("adapters."+bidder+".disabled", false)
-	v.SetDefault("adapters."+bidder+".partner_id", "")
+	adapterCfgPrefix := "adapters."
+	v.SetDefault(adapterCfgPrefix+bidder+".endpoint", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".usersync_url", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".platform_id", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
+	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
 }

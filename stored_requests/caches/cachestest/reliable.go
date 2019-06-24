@@ -8,6 +8,13 @@ import (
 	"github.com/prebid/prebid-server/stored_requests"
 )
 
+const (
+	reqCacheKey = "known-req"
+	reqCacheVal = `{"req":true}`
+	impCacheKey = "known-imp"
+	impCacheVal = `{"imp":true}`
+)
+
 // AssertCacheRobustness runs tests which can be used to validate any Cache that is 100% reliable.
 // That is, its Save() and Invalidate() functions _alway_ work.
 //
@@ -32,62 +39,63 @@ func cacheMissTester(cache stored_requests.Cache) func(*testing.T) {
 func cacheHitTester(cache stored_requests.Cache) func(*testing.T) {
 	return func(t *testing.T) {
 		cache.Save(context.Background(), map[string]json.RawMessage{
-			"known-req": json.RawMessage(`{"req":true}`),
+			reqCacheKey: json.RawMessage(reqCacheVal),
 		}, map[string]json.RawMessage{
-			"known-imp": json.RawMessage(`{"imp":true}`),
+			impCacheKey: json.RawMessage(impCacheVal),
 		})
-		reqData, impData := cache.Get(context.Background(), []string{"known-req"}, []string{"known-imp"})
+		reqData, impData := cache.Get(context.Background(), []string{reqCacheKey}, []string{impCacheKey})
 		if len(reqData) != 1 {
 			t.Errorf("The cache should have returned the data.")
 		}
 		assertMapLength(t, 1, reqData)
-		assertHasValue(t, reqData, "known-req", `{"req":true}`)
+		assertHasValue(t, reqData, reqCacheKey, reqCacheVal)
 
 		assertMapLength(t, 1, impData)
-		assertHasValue(t, impData, "known-imp", `{"imp":true}`)
+		assertHasValue(t, impData, impCacheKey, impCacheVal)
 	}
 }
 
 func cacheMixedTester(cache stored_requests.Cache) func(*testing.T) {
 	return func(t *testing.T) {
 		cache.Save(context.Background(), map[string]json.RawMessage{
-			"known-req": json.RawMessage(`{"req":true}`),
+			reqCacheKey: json.RawMessage(reqCacheVal),
 		}, nil)
-		reqData, impData := cache.Get(context.Background(), []string{"known-req", "unknown-req"}, nil)
+		reqData, impData := cache.Get(context.Background(), []string{reqCacheKey, "unknown-req"}, nil)
 		assertMapLength(t, 1, reqData)
-		assertHasValue(t, reqData, "known-req", `{"req":true}`)
+		assertHasValue(t, reqData, reqCacheKey, reqCacheVal)
 		assertMapLength(t, 0, impData)
 	}
 }
 
 func cacheOverlapTester(cache stored_requests.Cache) func(*testing.T) {
+	commonKey := "id"
 	return func(t *testing.T) {
 		cache.Save(context.Background(), map[string]json.RawMessage{
-			"id": json.RawMessage(`{"req":true}`),
+			commonKey: json.RawMessage(reqCacheVal),
 		}, map[string]json.RawMessage{
-			"id": json.RawMessage(`{"imp":true}`),
+			commonKey: json.RawMessage(impCacheVal),
 		})
-		reqData, impData := cache.Get(context.Background(), []string{"id"}, []string{"id"})
+		reqData, impData := cache.Get(context.Background(), []string{commonKey}, []string{commonKey})
 		assertMapLength(t, 1, reqData)
-		assertHasValue(t, reqData, "id", `{"req":true}`)
+		assertHasValue(t, reqData, commonKey, reqCacheVal)
 		assertMapLength(t, 1, impData)
-		assertHasValue(t, impData, "id", `{"imp":true}`)
+		assertHasValue(t, impData, commonKey, impCacheVal)
 	}
 }
 
 func cacheSaveInvalidateTester(cache stored_requests.Cache) func(*testing.T) {
 	return func(t *testing.T) {
 		cache.Save(context.Background(), map[string]json.RawMessage{
-			"known": json.RawMessage(`{}`),
+			reqCacheKey: json.RawMessage(reqCacheVal),
 		}, map[string]json.RawMessage{
-			"known": json.RawMessage(`{}`),
+			reqCacheKey: json.RawMessage(reqCacheVal),
 		})
-		reqData, impData := cache.Get(context.Background(), []string{"known"}, []string{"known"})
+		reqData, impData := cache.Get(context.Background(), []string{reqCacheKey}, []string{reqCacheKey})
 		assertMapLength(t, 1, reqData)
 		assertMapLength(t, 1, impData)
 
-		cache.Invalidate(context.Background(), []string{"known"}, []string{"known"})
-		reqData, impData = cache.Get(context.Background(), []string{"known"}, []string{"known"})
+		cache.Invalidate(context.Background(), []string{reqCacheKey}, []string{reqCacheKey})
+		reqData, impData = cache.Get(context.Background(), []string{reqCacheKey}, []string{reqCacheKey})
 		assertMapLength(t, 0, reqData)
 		assertMapLength(t, 0, impData)
 	}
