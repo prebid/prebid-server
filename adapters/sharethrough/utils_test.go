@@ -422,6 +422,10 @@ func TestParseDomain(t *testing.T) {
 			input:    "http://a.domain.com:8000/page?param=value",
 			expected: "a.domain.com",
 		},
+		"Returns empty string if cannot parse the domain": {
+			input:    "abc",
+			expected: "",
+		},
 	}
 
 	for testName, test := range tests {
