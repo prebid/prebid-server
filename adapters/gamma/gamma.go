@@ -17,9 +17,7 @@ type GammaAdapter struct {
 	URI string
 }
 
-func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
-
-	request := *requestIn
+func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
@@ -77,7 +75,7 @@ func (a *GammaAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.
 	thisURI = thisURI + "?id=" + gammaExt.PartnerID
 	thisURI = thisURI + "&zid=" + gammaExt.ZoneID
 	thisURI = thisURI + "&wid=" + gammaExt.WebID
-	thisURI = thisURI + "&bidid=" + request.ID
+	thisURI = thisURI + "&bidid=" + request.Imp[0].ID
 	thisURI = thisURI + "&hb=pbmobile"
 	if request.Device != nil {
 		thisURI = thisURI + "&device_ip=" + request.Device.IP
