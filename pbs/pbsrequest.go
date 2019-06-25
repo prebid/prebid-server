@@ -246,12 +246,10 @@ func ParsePBSRequest(r *http.Request, cfg *config.AuctionTimeouts, cache cache.C
 	// To handle those traffic, adding a check here to ignore the sent gender for versions lower than 0.0.2.
 	v1, err := semver.Make(pbsReq.SDK.Version)
 	v2, err := semver.Make("0.0.2")
-	if v1.Compare(v2) >= 0 {
-		if pbsReq.PBSUser != nil {
-			err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
-			if err != nil {
-				return nil, err
-			}
+	if v1.Compare(v2) >= 0 && pbsReq.PBSUser != nil {
+		err = json.Unmarshal([]byte(pbsReq.PBSUser), &pbsReq.User)
+		if err != nil {
+			return nil, err
 		}
 	}
 

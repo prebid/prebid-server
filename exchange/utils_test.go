@@ -24,7 +24,7 @@ func (p *permissionsMock) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return true, nil
 }
 
-func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
 	if bidder == "appnexus" {
 		return true, nil
 	}

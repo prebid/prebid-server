@@ -38,7 +38,7 @@ type adaptedBidder interface {
 	//
 	// Any errors will be user-facing in the API.
 	// Error messages should help publishers understand what might account for "bad" bids.
-	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions) (*pbsOrtbSeatBid, []error)
+	requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error)
 }
 
 // pbsOrtbBid is a Bid returned by an adaptedBidder.
@@ -88,8 +88,8 @@ type bidderAdapter struct {
 	Client *http.Client
 }
 
-func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions) (*pbsOrtbSeatBid, []error) {
-	reqData, errs := bidder.Bidder.MakeRequests(request)
+func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+	reqData, errs := bidder.Bidder.MakeRequests(request, reqInfo)
 
 	if len(reqData) == 0 {
 		// If the adapter failed to generate both requests and errors, this is an error.
@@ -129,20 +129,31 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 		}
 
 		if httpInfo.err == nil {
-
 			bidResponse, moreErrs := bidder.Bidder.MakeBids(request, httpInfo.request, httpInfo.response)
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
-
+				// Setup default currency as `USD` is not set in bid request nor bid response
 				if bidResponse.Currency == "" {
-					// Empty currency means default currency `USD`
 					bidResponse.Currency = defaultCurrency
+				}
+				if len(request.Cur) == 0 {
+					request.Cur = []string{defaultCurrency}
 				}
 
 				// Try to get a conversion rate
-				// TODO(#280): try to convert every to element of request.cur, and use the first one which succeeds
-				if conversionRate, err := conversions.GetRate(bidResponse.Currency, "USD"); err == nil {
+				// Try to get the first currency from request.cur having a match in the rate converter,
+				// and use it as currency
+				var conversionRate float64
+				var err error
+				for _, bidReqCur := range request.Cur {
+					if conversionRate, err = conversions.GetRate(bidResponse.Currency, bidReqCur); err == nil {
+						seatBid.currency = bidReqCur
+						break
+					}
+				}
+
+				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if bidResponse.Bids[i].Bid != nil {

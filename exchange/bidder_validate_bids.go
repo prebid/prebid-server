@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"golang.org/x/text/currency"
@@ -27,8 +28,8 @@ type validatedBidder struct {
 	bidder adaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions) (*pbsOrtbSeatBid, []error) {
-	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions)
+func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
+	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo)
 	if validationErrors := removeInvalidBids(request, seatBid); len(validationErrors) > 0 {
 		errs = append(errs, validationErrors...)
 	}
@@ -86,7 +87,7 @@ func validateCurrency(requestAllowedCurrencies []string, bidCurrency string) err
 			break
 		}
 	}
-	if currencyAllowed == false {
+	if !currencyAllowed {
 		return fmt.Errorf(
 			"Bid currency is not allowed. Was '%s', wants: ['%s']",
 			currencyUnit.String(),

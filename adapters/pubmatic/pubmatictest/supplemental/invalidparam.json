@@ -11,7 +11,7 @@
             },
             "ext": {
                 "bidder": {
-                    "adSlot": "AdTag_Div1",
+                    "adSlot": "AdTag_Div1@",
                     "publisherId": "999"
                 }
             }
@@ -58,6 +58,34 @@
                     "publisherId": "999"
                 }
             }
+        },{
+            "id": "test-imp-id-5",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "adSlot": "AdTag_Div1@300x",
+                    "publisherId": "999"
+                }
+            }
+        },{
+            "id": "test-imp-id-6",
+            "banner": {
+                "format": [{
+                    "w": 300,
+                    "h": 250
+                }]
+            },
+            "ext": {
+                "bidder": {
+                    "adSlot": "AdTag_Div1@x250",
+                    "publisherId": "999"
+                }
+            }
         }],
         "site": {
 			"id": "siteID",
@@ -68,9 +96,11 @@
     },
   
     "expectedMakeRequestsErrors": [
-        "Invalid adSlot provided",
-        "Invalid size provided in adSlot",
-        "Invalid width provided in adSlot",
-        "Invalid height provided in adSlot"
+        "Invalid adSlot AdTag_Div1@",
+        "Invalid size provided in adSlot AdTag_Div1@300",
+        "Invalid width provided in adSlot AdTag_Div1@valx250",
+        "Invalid height provided in adSlot AdTag_Div1@300xval",
+        "Invalid height provided in adSlot AdTag_Div1@300x",
+        "Invalid width provided in adSlot AdTag_Div1@x250"
       ]
   }

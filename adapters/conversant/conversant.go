@@ -51,14 +51,6 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		return nil, err
 	}
 
-	// Without this, the code crashes with a nil-pointer dereference below, on
-	// cnvrReq.Site.ID = params.SiteID
-	if cnvrReq.Site == nil {
-		return nil, &errortypes.BadInput{
-			Message: "Conversant doesn't support App requests",
-		}
-	}
-
 	// Create a map of impression objects for both request creation
 	// and response parsing.
 
@@ -86,12 +78,16 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 
 		// Fill in additional Site info
-
 		if params.SiteID != "" {
-			cnvrReq.Site.ID = params.SiteID
+			if cnvrReq.Site != nil {
+				cnvrReq.Site.ID = params.SiteID
+			}
+			if cnvrReq.App != nil {
+				cnvrReq.App.ID = params.SiteID
+			}
 		}
 
-		if params.Mobile != nil {
+		if params.Mobile != nil && !(cnvrReq.Site == nil) {
 			cnvrReq.Site.Mobile = *params.Mobile
 		}
 
@@ -149,9 +145,15 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 	// Do a quick check on required parameters
 
-	if cnvrReq.Site.ID == "" {
+	if cnvrReq.Site != nil && cnvrReq.Site.ID == "" {
 		return nil, &errortypes.BadInput{
 			Message: "Missing site id",
+		}
+	}
+
+	if cnvrReq.App != nil && cnvrReq.App.ID == "" {
+		return nil, &errortypes.BadInput{
+			Message: "Missing app id",
 		}
 	}
 

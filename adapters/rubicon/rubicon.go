@@ -533,7 +533,7 @@ func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass strin
 	}
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
@@ -612,11 +612,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 			request.Device = &deviceCopy
 		}
 
-		if thisImp.Video != nil {
+		isVideo := isVideo(thisImp)
+		if isVideo {
 			videoCopy := *thisImp.Video
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
 			thisImp.Video = &videoCopy
+			thisImp.Banner = nil
 		} else {
 			primarySizeID, altSizeIDs, err := parseRubiconSizes(thisImp.Banner.Format)
 			if err != nil {
@@ -631,6 +633,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 				continue
 			}
 			thisImp.Banner = &bannerCopy
+			thisImp.Video = nil
 		}
 
 		siteExt := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: rubiconExt.SiteId}}
@@ -653,6 +656,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
+		request.Ext = nil
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {
@@ -671,6 +675,20 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 	}
 
 	return requestData, errs
+}
+
+func isVideo(imp openrtb.Imp) bool {
+	video := imp.Video
+	if video != nil {
+		// Do any other media types exist? Or check required video fields.
+		return imp.Banner == nil || isFullyPopulatedVideo(video)
+	}
+	return false
+}
+
+func isFullyPopulatedVideo(video *openrtb.Video) bool {
+	// These are just recommended video fields for XAPI
+	return video.MIMEs != nil && video.Protocols != nil && video.MaxDuration != 0 && video.Linearity != 0 && video.API != nil
 }
 
 func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -706,7 +724,8 @@ func (a *RubiconAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalR
 
 	bidType := openrtb_ext.BidTypeBanner
 
-	if bidReq.Imp[0].Video != nil {
+	isVideo := isVideo(bidReq.Imp[0])
+	if isVideo {
 		bidType = openrtb_ext.BidTypeVideo
 	}
 
