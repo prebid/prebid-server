@@ -1,8 +1,8 @@
 package triplelift
 
 import (
-	//"encoding/base64"
-	"encoding/json"
+	"strconv"
+    "encoding/json"
 	"fmt"
 	"net/http"
 
@@ -38,15 +38,18 @@ func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
 func processImp(imp openrtb.Imp) (error) {
     // get the triplelift extension
     var ext adapters.ExtImpBidder
-    var tlext ExtImpTriplelift
-    if err = json.Unmarshal(imp.Ext, &ext); err != nil {
+    var tlext openrtb_ext.ExtImpTriplelift
+    if err := json.Unmarshal(imp.Ext, &ext); err != nil {
         return err
     }
-    if err = json.Unmarshal(ext.Bidder, &tlext); err != nil {
+    if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
         return err
     }
-    imp.TagId = tlext.InvCode
-    imp.BidFloor = tlext.Floor
+    if floor, err = strconv.ParseFloat(tlext.InvCode,64); err != nil {
+        return err
+    }
+    imp.TagID = tlext.InvCode
+    imp.BidFloor = floor 
 }
 
 func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
