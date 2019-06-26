@@ -1,0 +1,11 @@
+maintainer:
+  email: "lokesh@advangelists.com"
+capabilities:
+  site:
+    mediaTypes:
+    - banner
+    
+  app:
+    mediaTypes:
+    - banner
+   

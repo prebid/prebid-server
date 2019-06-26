@@ -24,6 +24,7 @@ const (
 	BidderAdkernelAdn    BidderName = "adkernelAdn"
 	BidderAdtelligent    BidderName = "adtelligent"
 	BidderAdform         BidderName = "adform"
+	BidderAdvangelists   BidderName = "advangelists"
 	BidderAppnexus       BidderName = "appnexus"
 	BidderBeachfront     BidderName = "beachfront"
 	BidderBrightroll     BidderName = "brightroll"
@@ -59,6 +60,7 @@ var BidderMap = map[string]BidderName{
 	"adkernelAdn":     BidderAdkernelAdn,
 	"adtelligent":     BidderAdtelligent,
 	"adform":          BidderAdform,
+	"advangelists":    BidderAdvangelists,
 	"appnexus":        BidderAppnexus,
 	"beachfront":      BidderBeachfront,
 	"audienceNetwork": BidderFacebook,

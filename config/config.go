@@ -581,6 +581,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
+	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid=0cf8d6d643e13d86a5b6374148a4afac")
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
 	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
