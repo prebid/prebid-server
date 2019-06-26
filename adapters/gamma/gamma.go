@@ -69,6 +69,37 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		return nil, errors
 	}
 
+	validImpExists := false
+	for i := 0; i < len(request.Imp); i++ {
+		if request.Imp[i].Banner != nil {
+			bannerCopy := *request.Imp[i].Banner
+			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+				firstFormat := bannerCopy.Format[0]
+				bannerCopy.W = &(firstFormat.W)
+				bannerCopy.H = &(firstFormat.H)
+			}
+			request.Imp[i].Banner = &bannerCopy
+			validImpExists = true
+		} else if request.Imp[i].Video != nil {
+			validImpExists = true
+		} else {
+			err := &errortypes.BadInput{
+				Message: fmt.Sprintf("Gamma only supports banner and video media types. Ignoring imp id=%s", request.Imp[i].ID),
+			}
+			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
+		}
+	}
+
+	if !validImpExists {
+		err := &errortypes.BadInput{
+			Message: fmt.Sprintf("No valid impression in the bid request"),
+		}
+		errs = append(errs, err)
+		return nil, errs
+	}
+
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
 	thisURI := a.URI
@@ -166,7 +197,9 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
+			if imp.Banner != nil {
+				mediaType = openrtb_ext.BidTypeBanner
+			} else if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
 			}
 			return mediaType
