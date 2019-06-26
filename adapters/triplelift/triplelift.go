@@ -35,7 +35,7 @@ func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
 	return openrtb_ext.BidTypeNative, nil
 }
 
-func processImp(imp openrtb.Imp) (error) {
+func processImp(imp *openrtb.Imp) (error) {
     // get the triplelift extension
     var ext adapters.ExtImpBidder
     var tlext openrtb_ext.ExtImpTriplelift
@@ -45,11 +45,14 @@ func processImp(imp openrtb.Imp) (error) {
     if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
         return err
     }
-    if floor, err = strconv.ParseFloat(tlext.InvCode,64); err != nil {
-        return err
-    }
     imp.TagID = tlext.InvCode
-    imp.BidFloor = floor 
+    if floor, err := strconv.ParseFloat(tlext.InvCode,64); err != nil {
+        return err
+    } else {
+        imp.BidFloor = floor 
+    }
+    // no error
+    return nil
 }
 
 func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
@@ -62,7 +65,7 @@ func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapte
     // pre-process the imps
     for _, imp := range tlRequest.Imp {
         if err := processImp(&imp); err == nil {
-            append(validImps, imp)
+            validImps = append(validImps, imp)
         }
     }
     tlRequest.Imp = validImps
