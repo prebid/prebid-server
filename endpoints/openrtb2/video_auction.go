@@ -74,19 +74,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
-		BannerImps:    0,
-		VideoImps:     0,
-		AudioImps:     0,
-		NativeImps:    0,
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	numImps := 0
+	impLabels := pbsmetrics.ImpLabels{
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: false,
+	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, numImps)
+		deps.metricsEngine.RecordImps(impLabels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
@@ -202,8 +203,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
 	}
-
-	numImps = len(bidReq.Imp)
 
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)

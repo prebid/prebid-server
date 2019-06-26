@@ -89,19 +89,20 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
-		BannerImps:    0,
-		VideoImps:     0,
-		AudioImps:     0,
-		NativeImps:    0,
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	numImps := 0
+	impLabels := pbsmetrics.ImpLabels{
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: false,
+	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, numImps)
+		deps.metricsEngine.RecordImps(impLabels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
@@ -148,7 +149,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 	}
 
-	numImps = len(req.Imp)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
 	ao.Response = response

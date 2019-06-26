@@ -78,89 +78,57 @@ func TestImpMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
-	metrics4 := dto.Metric{}
 
-	//proMetrics.imps.With(resolveLabels(labels[4)).Add(float64(5))
-	proMetrics.RecordImps(labels[0], 1)
-	proMetrics.RecordImps(labels[1], 5)
-	proMetrics.RecordImps(labels[0], 2)
-	proMetrics.RecordImps(labels[2], 2)
-	proMetrics.RecordImps(labels[0], 7)
-	proMetrics.RecordImps(labels[2], 1)
-	proMetrics.RecordImps(labels[4], 1)
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[1])
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[2])
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[2])
+	proMetrics.RecordImps(impTypeLabels[3])
 
-	proMetrics.imps.With(resolveLabels(labels[0])).Write(&metrics0)
-	proMetrics.imps.With(resolveLabels(labels[1])).Write(&metrics1)
-	proMetrics.imps.With(resolveLabels(labels[2])).Write(&metrics2)
-	proMetrics.imps.With(resolveLabels(labels[3])).Write(&metrics3)
-	proMetrics.imps.With(resolveLabels(labels[4])).Write(&metrics4)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[0])).Write(&metrics0)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[1])).Write(&metrics1)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[2])).Write(&metrics2)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[3])).Write(&metrics3)
 
-	assertCounterValue(t, "imps_requested[0]", &metrics0, 10)
-	assertCounterValue(t, "imps_requested[1]", &metrics1, 5)
-	assertCounterValue(t, "imps_requested[2]", &metrics2, 3)
-	assertCounterValue(t, "imps_requested[3]", &metrics3, 0)
-	assertCounterValue(t, "imps_requested[4]", &metrics4, 1)
-}
-
-func TestImpTypeMetrics(t *testing.T) {
-	proMetrics := newTestMetricsEngine()
-
-	metricsBanner := dto.Metric{}
-	metricsAudio := dto.Metric{}
-	metricsVideo := dto.Metric{}
-	metricsNative := dto.Metric{}
-
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[0])).Add(float64(impTypeLabels[0].BannerImps))
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[1])).Add(float64(impTypeLabels[1].VideoImps))
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Add(float64(impTypeLabels[2].AudioImps))
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Add(float64(impTypeLabels[3].NativeImps))
-
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[0])).Write(&metricsBanner)
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[1])).Write(&metricsAudio)
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[2])).Write(&metricsVideo)
-	proMetrics.impTypes.With(resolveImpTypeLabels(impTypeLabels[3])).Write(&metricsNative)
-
-	assertCounterValue(t, "imps_types_banner_count", &metricsBanner, 5)
-	assertCounterValue(t, "imps_types_banner_count", &metricsAudio, 9)
-	assertCounterValue(t, "imps_types_banner_count", &metricsVideo, 8)
-	assertCounterValue(t, "imps_types_banner_count", &metricsNative, 3)
+	assertCounterValue(t, "imp_metrics[0]", &metrics0, 3)
+	assertCounterValue(t, "imp_metrics[1]", &metrics1, 1)
+	assertCounterValue(t, "imp_metrics[2]", &metrics2, 2)
+	assertCounterValue(t, "imp_metrics[3]", &metrics3, 1)
 }
 
 func TestRecordImps(t *testing.T) {
 	var sampleEngine *Metrics = newTestMetricsEngine()
 	var sampleMetrics dto.Metric = dto.Metric{}
-	var samplePBSLabels pbsmetrics.Labels = pbsmetrics.Labels{
-		BannerImps: 5,
-		VideoImps:  4,
-		AudioImps:  3,
-		NativeImps: 2,
+	var samplePBSImpLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: true,
 	}
-	var samplePrometheusMetrics prometheus.Labels = resolveImpTypeLabels(samplePBSLabels)
+	var samplePrometheusMetrics prometheus.Labels = resolveImpLabels(samplePBSImpLabels)
 
-	sampleEngine.RecordImps(samplePBSLabels, 14)
-	sampleEngine.impTypes.With(samplePrometheusMetrics).Write(&sampleMetrics)
+	sampleEngine.RecordImps(samplePBSImpLabels)
+	sampleEngine.imps.With(samplePrometheusMetrics).Write(&sampleMetrics)
 
 	for _, metricLabel := range sampleMetrics.Label {
 		var impType string = *metricLabel.Name
 		switch impType {
 		case "banner_imps":
-			assert.Equal(t, *metricLabel.Value, "5", "'banner_imps' should equal '3'")
+			assert.Equal(t, *metricLabel.Value, "no", "'banner_imps' should equal 'no'")
 		case "video_imps":
-			assert.Equal(t, *metricLabel.Value, "4", "'banner_imps' should equal '3'")
+			assert.Equal(t, *metricLabel.Value, "no", "'banner_imps' should equal 'no'")
 		case "audio_imps":
-			assert.Equal(t, *metricLabel.Value, "3", "'banner_imps' should equal '3'")
+			assert.Equal(t, *metricLabel.Value, "no", "'banner_imps' should equal 'no'")
 		case "native_imps":
-			assert.Equal(t, *metricLabel.Value, "2", "'banner_imps' should equal '3'")
+			assert.Equal(t, *metricLabel.Value, "yes", "'banner_imps' should equal 'yes'")
 		default:
 			fmt.Printf("'%s' is not recognized as a label \n", impType)
 		}
 	}
 
-	//fmt.Printf("%s \n", sampleMetrics.String())
-	//assertCounterValue(t, "imps_types_banner_count", &sampleMetrics, 5)
-	//assertCounterValue(t, "imps_types_banner_count", &metricsAudio, 9)
-	//assertCounterValue(t, "imps_types_banner_count", &metricsVideo, 8)
-	//assertCounterValue(t, "imps_types_banner_count", &metricsNative, 3)
+	assertCounterValue(t, "imps_types_banner_count", &sampleMetrics, 1)
 }
 
 func TestTimerMetrics(t *testing.T) {
@@ -488,34 +456,35 @@ var labels = []pbsmetrics.Labels{
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	},
 }
-var impTypeLabels = []pbsmetrics.Labels{
+
+var impTypeLabels = []pbsmetrics.ImpLabels{
 	{
 		//impType: "banner",
-		BannerImps: 5,
-		VideoImps:  0,
-		AudioImps:  0,
-		NativeImps: 0,
+		BannerImps: true,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: false,
 	},
 	{
 		//impType: "audio",
-		BannerImps: 0,
-		VideoImps:  9,
-		AudioImps:  0,
-		NativeImps: 0,
+		BannerImps: false,
+		VideoImps:  true,
+		AudioImps:  false,
+		NativeImps: false,
 	},
 	{
 		//impType: "video",
-		BannerImps: 0,
-		VideoImps:  0,
-		AudioImps:  8,
-		NativeImps: 0,
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  true,
+		NativeImps: false,
 	},
 	{
 		//impType: "native",
-		BannerImps: 0,
-		VideoImps:  0,
-		AudioImps:  0,
-		NativeImps: 3,
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: true,
 	},
 }
 

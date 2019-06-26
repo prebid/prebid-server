@@ -1,7 +1,8 @@
 package prometheusmetrics
 
 import (
-	"strconv"
+	//"fmt"
+	//"strconv"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -17,7 +18,6 @@ type Metrics struct {
 	connCounter          prometheus.Gauge
 	connError            *prometheus.CounterVec
 	imps                 *prometheus.CounterVec
-	impTypes             *prometheus.CounterVec
 	requests             *prometheus.CounterVec
 	reqTimer             *prometheus.HistogramVec
 	adaptRequests        *prometheus.CounterVec
@@ -45,7 +45,6 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	adapterLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter"}
 	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter", "bidtype", "markup_type"}
 	errorLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_error", "adapter"}
-
 	impLabelNames := []string{"banner_imps", "video_imps", "audio_imps", "native_imps"}
 
 	metrics := Metrics{}
@@ -57,16 +56,12 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"ErrorType"},
 	)
 	metrics.Registry.MustRegister(metrics.connError)
-	metrics.imps = newCounter(cfg, "imps_requested_total",
-		"Total number of impressions requested through PBS.",
-		standardLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.imps)
-	metrics.impTypes = newCounter(cfg, "imps_types_total",
-		"Total number of impression types requested through PBS.",
+	metrics.imps = newCounter(cfg, "imps_requested_total_by_type",
+		"Count of Impressions by type and in total requested through PBS.",
+		//standardLabelNames,
 		impLabelNames,
 	)
-	metrics.Registry.MustRegister(metrics.impTypes)
+	metrics.Registry.MustRegister(metrics.imps)
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
@@ -197,21 +192,21 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 	me.requests.With(resolveLabels(labels)).Inc()
 }
 
-func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
-	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
-	var impLabels prometheus.Labels = resolveImpTypeLabels(labels)
-	if labels.BannerImps > 0 {
-		me.impTypes.With(impLabels).Add(float64(labels.BannerImps))
-	}
-	if labels.VideoImps > 0 {
-		me.impTypes.With(impLabels).Add(float64(labels.VideoImps))
-	}
-	if labels.AudioImps > 0 {
-		me.impTypes.With(impLabels).Add(float64(labels.AudioImps))
-	}
-	if labels.NativeImps > 0 {
-		me.impTypes.With(impLabels).Add(float64(labels.NativeImps))
-	}
+func (me *Metrics) RecordImps(implabels pbsmetrics.ImpLabels) {
+	me.imps.With(resolveImpLabels(implabels)).Inc()
+	//var impLabels prometheus.Labels = resolveImpTypeLabels(labels)
+	//if labels.BannerImps {
+	//	me.imps.With(promLabels).Inc()
+	//}
+	//if labels.VideoImps {
+	//	me.imps.With(promLabels).Inc()
+	//}
+	//if labels.AudioImps {
+	//	me.imps.With(promLabels).Inc()
+	//}
+	//if labels.NativeImps {
+	//	me.imps.With(promLabels).Inc()
+	//}
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
@@ -341,13 +336,26 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 	}
 }
 
-func resolveImpTypeLabels(labels pbsmetrics.Labels) prometheus.Labels {
-	return prometheus.Labels{
-		"banner_imps": strconv.Itoa(labels.BannerImps),
-		"video_imps":  strconv.Itoa(labels.VideoImps),
-		"audio_imps":  strconv.Itoa(labels.AudioImps),
-		"native_imps": strconv.Itoa(labels.NativeImps),
+func resolveImpLabels(labels pbsmetrics.ImpLabels) prometheus.Labels {
+	var impLabels prometheus.Labels = prometheus.Labels{
+		"banner_imps": "no",
+		"video_imps":  "no",
+		"audio_imps":  "no",
+		"native_imps": "no",
 	}
+	if labels.BannerImps {
+		impLabels["banner_imps"] = "yes"
+	}
+	if labels.VideoImps {
+		impLabels["video_imps"] = "yes"
+	}
+	if labels.AudioImps {
+		impLabels["audio_imps"] = "yes"
+	}
+	if labels.NativeImps {
+		impLabels["native_imps"] = "yes"
+	}
+	return impLabels
 }
 
 // initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances
@@ -366,9 +374,10 @@ func initializeTimeSeries(m *Metrics) {
 	adapterLabels := labels // save regenerating these dimensions for adapter status
 	labels = addDimension(labels, "response_status", requestStatusesAsString())
 	for _, l := range labels {
-		_ = m.imps.With(l)
+		//a := m.imps.With(l)
 		_ = m.requests.With(l)
 		_ = m.reqTimer.With(l)
+		//fmt.Printf("%v \n", a)
 	}
 
 	// Adapter labels
@@ -400,6 +409,15 @@ func initializeTimeSeries(m *Metrics) {
 	for _, l := range cacheLabels {
 		_ = m.storedImpCacheResult.With(l)
 		_ = m.storedReqCacheResult.With(l)
+	}
+
+	// ImpType labels
+	impTypeLabels := addDimension([]prometheus.Labels{}, "banner_imps", []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, "video_imps", []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, "audio_imps", []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, "native_imps", []string{"yes", "no"})
+	for _, l := range impTypeLabels {
+		_ = m.imps.With(l)
 	}
 }
 
@@ -447,6 +465,15 @@ func demandTypesAsString() []string {
 
 func requestTypesAsString() []string {
 	list := pbsmetrics.RequestTypes()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func impTypesAsString() []string {
+	list := pbsmetrics.ImpTypes()
 	output := make([]string, len(list))
 	for i, s := range list {
 		output[i] = string(s)

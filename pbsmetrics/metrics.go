@@ -10,10 +10,6 @@ import (
 type Labels struct {
 	Source        DemandSource
 	RType         RequestType
-	BannerImps    int
-	VideoImps     int
-	AudioImps     int
-	NativeImps    int
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
@@ -24,16 +20,20 @@ type Labels struct {
 type AdapterLabels struct {
 	Source        DemandSource
 	RType         RequestType
-	BannerImps    int
-	VideoImps     int
-	AudioImps     int
-	NativeImps    int
 	Adapter       openrtb_ext.BidderName
 	PubID         string // exchange specific ID, so we cannot compile in values
 	Browser       Browser
 	CookieFlag    CookieFlag
 	AdapterBids   AdapterBid
 	AdapterErrors map[AdapterError]struct{}
+}
+
+// ImpLabels
+type ImpLabels struct {
+	BannerImps bool
+	VideoImps  bool
+	AudioImps  bool
+	NativeImps bool
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -104,6 +104,15 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2App,
 		ReqTypeAMP,
 		ReqTypeVideo,
+	}
+}
+
+func ImpTypes() []ImpMediaType {
+	return []ImpMediaType{
+		ImpTypeBanner,
+		ImpTypeVideo,
+		ImpTypeAudio,
+		ImpTypeNative,
 	}
 }
 
@@ -227,7 +236,7 @@ type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
-	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels ImpLabels)                           // ignores adapter. only statusOk and statusErr fom status
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterPanic(labels AdapterLabels)

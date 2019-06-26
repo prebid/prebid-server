@@ -149,8 +149,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
 
-	// Find out how to GetOrRegisterMeter
-	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry) //TODO: where is the "imp_banner" label or value?
+	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
 	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
 	newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
 	newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
@@ -315,19 +314,19 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	am.requestMeter.Mark(1)
 }
 
-func (me *Metrics) RecordImps(labels Labels, numImps int) {
-	me.ImpMeter.Mark(int64(numImps))
-	if labels.BannerImps > 0 {
-		me.ImpsTypeBanner.Mark(int64(labels.BannerImps))
+func (me *Metrics) RecordImps(labels ImpLabels) {
+	me.ImpMeter.Mark(int64(1))
+	if labels.BannerImps {
+		me.ImpsTypeBanner.Mark(int64(1))
 	}
-	if labels.VideoImps > 0 {
-		me.ImpsTypeVideo.Mark(int64(labels.VideoImps))
+	if labels.VideoImps {
+		me.ImpsTypeVideo.Mark(int64(1))
 	}
-	if labels.AudioImps > 0 {
-		me.ImpsTypeAudio.Mark(int64(labels.AudioImps))
+	if labels.AudioImps {
+		me.ImpsTypeAudio.Mark(int64(1))
 	}
-	if labels.NativeImps > 0 {
-		me.ImpsTypeNative.Mark(int64(labels.NativeImps))
+	if labels.NativeImps {
+		me.ImpsTypeNative.Mark(int64(1))
 	}
 }
 

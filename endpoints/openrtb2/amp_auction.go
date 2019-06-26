@@ -91,18 +91,20 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeAMP,
-		BannerImps:    0,
-		VideoImps:     0,
-		AudioImps:     0,
-		NativeImps:    0,
 		PubID:         "",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
+	impLabels := pbsmetrics.ImpLabels{
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: false,
+	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, 1)
+		deps.metricsEngine.RecordImps(impLabels)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAmpObject(&ao)
 	}()
