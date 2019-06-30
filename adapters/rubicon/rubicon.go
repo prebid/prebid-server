@@ -533,7 +533,7 @@ func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass strin
 	}
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
@@ -656,6 +656,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
+		request.Ext = nil
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {

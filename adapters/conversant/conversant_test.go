@@ -226,8 +226,8 @@ func TestConversantInappVideoRequest(t *testing.T) {
 	conf := *adapters.DefaultHTTPAdapterConfig
 	an := NewConversantAdapter(&conf, server.URL)
 
-	requestParam := `{"secure": 1}`
-	appParam := `{ "Id": "12345" }`
+	requestParam := `{"secure": 1, "site_id": "12345"}`
+	appParam := `{ "bundle": "com.naver.linewebtoon" }`
 	videoParam := `{ "mimes": ["video/x-ms-wmv"],
 		   "protocols": [1, 2],
 		   "maxduration": 90 }`
@@ -268,10 +268,11 @@ func TestConversantInappBannerRequest(t *testing.T) {
 	an := NewConversantAdapter(&conf, server.URL)
 
 	param := `{ "secure": 1,
+		"site_id": "12345",
 		"tag_id": "top",
 		"position": 2,
 		"bidfloor": 1.01 }`
-	appParam := `{ "Id": "12345" }`
+	appParam := `{ "bundle": "com.naver.linewebtoon" }`
 
 	ctx := context.TODO()
 	pbReq, _ := CreateBannerRequest(param)

@@ -1044,9 +1044,10 @@ func TestOpenRTBRequest(t *testing.T) {
                 }]
             }`),
 		},
+		Ext: json.RawMessage(`{"prebid": {}}`),
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1074,6 +1075,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 		if rpRequest.Cur != nil {
 			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
+		}
+		if request.Ext != nil {
+			t.Fatalf("Wrong request.ext. Expected nil, Got %v", request.Ext)
 		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
@@ -1163,7 +1167,7 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 		}},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1223,7 +1227,7 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 		}},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)

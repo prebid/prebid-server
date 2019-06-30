@@ -54,6 +54,9 @@ type AdapterError string
 // CacheResult : Cache hit/miss
 type CacheResult string
 
+// PublisherUnknown: Default value for Labels.PubID
+const PublisherUnknown = "unknown"
+
 // The demand sources
 const (
 	DemandWeb     DemandSource = "web"
