@@ -193,6 +193,7 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 320, h: 100}:   117,
 	{w: 800, h: 250}:   125,
 	{w: 200, h: 600}:   126,
+	{w: 640, h: 320}:   156,
 }
 
 //MAS algorithm
