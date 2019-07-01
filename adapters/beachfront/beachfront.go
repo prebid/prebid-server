@@ -402,6 +402,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	var bids []openrtb.Bid
 	var bidtype = getBidType(internalRequest)
 
+	println("got here.")
 	/*
 		Beachfront is now sending an empty array and 200 as their "no results" response. This should catch that.
 	*/
