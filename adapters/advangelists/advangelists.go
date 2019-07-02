@@ -3,134 +3,267 @@ package advangelists
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"text/template"
+
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
+const defaultDomain string = "nep.advangelists.com"
+
 type AdvangelistsAdapter struct {
-	URI string
+	EndpointTemplate template.Template
 }
 
-func (g *AdvangelistsAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var validImps []openrtb.Imp
-	var trackingId string
+//MakeRequests prepares request information for prebid-server core
+func (adapter *AdvangelistsAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	errs := make([]error, 0, len(request.Imp))
+	if len(request.Imp) == 0 {
+		errs = append(errs, newBadInputError("No impression in the bid request"))
+		return nil, errs
+	}
+	imps, impExts, err := getImpressionsInfo(request.Imp)
+	if len(imps) == 0 {
+		return nil, err
+	}
+	errs = append(errs, err...)
 
-	numRequests := len(request.Imp)
-	errs := make([]error, 0, numRequests)
-
-	for i := 0; i < numRequests; i++ {
-
-		imp := request.Imp[i]
-		zone, err := preprocess(&imp)
+	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
+	if len(dispErrors) > 0 {
+		errs = append(errs, dispErrors...)
+	}
+	if len(pub2impressions) == 0 {
+		return nil, errs
+	}
+	result := make([]*adapters.RequestData, 0, len(pub2impressions))
+	for k, imps := range pub2impressions {
+		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			if request.Imp[i].Banner != nil {
-				bannerCopy := *request.Imp[i].Banner
-				if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
-					format := bannerCopy.Format[0]
-					bannerCopy.W = &(format.W)
-					bannerCopy.H = &(format.H)
-				}
-				request.Imp[i].Banner = &bannerCopy
-				validImps = append(validImps, request.Imp[i])
-				trackingId = zone
-			}
+			result = append(result, bidRequest)
 		}
 	}
+	return result, errs
+}
 
-	if len(validImps) == 0 {
-		return nil, errs
+// getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
+func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImpAdvangelists, []error) {
+	impsCount := len(imps)
+	errors := make([]error, 0, impsCount)
+	resImps := make([]openrtb.Imp, 0, impsCount)
+	resImpExts := make([]openrtb_ext.ExtImpAdvangelists, 0, impsCount)
+
+	for _, imp := range imps {
+		impExt, err := getImpressionExt(&imp)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		if err := validateImpression(&imp, impExt); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		resImps = append(resImps, imp)
+		resImpExts = append(resImpExts, *impExt)
+
 	}
+	return resImps, resImpExts, errors
+}
 
-	request.Imp = validImps
-
-	if request.Site != nil {
-		siteCopy := *request.Site
-		siteCopy.ID = trackingId
-		request.Site = &siteCopy
+func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdvangelists) error {
+	if impExt.Pubid == "" {
+		return newBadInputError(fmt.Sprintf("Invalid pubId value. Ignoring imp id=%s", imp.ID))
 	}
+	return nil
+}
 
-	reqJSON, err := json.Marshal(request)
+//Group impressions by advangelists-specific parameters `pubid
+func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpAdvangelists) (map[openrtb_ext.ExtImpAdvangelists][]openrtb.Imp, []error) {
+	res := make(map[openrtb_ext.ExtImpAdvangelists][]openrtb.Imp)
+	errors := make([]error, 0)
+	for idx := range imps {
+		imp := imps[idx]
+		err := compatImpression(&imp)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+		impExt := impsExt[idx]
+		if res[impExt] == nil {
+			res[impExt] = make([]openrtb.Imp, 0)
+		}
+		res[impExt] = append(res[impExt], imp)
+
+	}
+	return res, errors
+}
+
+//Alter impression info to comply with advangelists platform requirements
+func compatImpression(imp *openrtb.Imp) error {
+	imp.Ext = nil //do not forward ext to advangelists platform
+	if imp.Banner != nil {
+		return compatBannerImpression(imp)
+	}
+	return nil
+}
+
+func compatBannerImpression(imp *openrtb.Imp) error {
+	// Create a copy of the banner, since imp is a shallow copy of the original.
+	bannerCopy := *imp.Banner
+	banner := &bannerCopy
+	//As banner.w/h are required fields for advangelistsAdn platform - take the first format entry
+	if banner.W == nil && banner.H == nil {
+		if len(banner.Format) == 0 {
+			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry or explicit w/h"))
+		}
+		format := banner.Format[0]
+		banner.Format = banner.Format[1:]
+		banner.W = &format.W
+		banner.H = &format.H
+		imp.Banner = banner
+	}
+	return nil
+}
+
+func getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpAdvangelists, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	var advangelistsExt openrtb_ext.ExtImpAdvangelists
+	if err := json.Unmarshal(bidderExt.Bidder, &advangelistsExt); err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	return &advangelistsExt, nil
+}
+
+func (adapter *AdvangelistsAdapter) buildAdapterRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdvangelists, imps []openrtb.Imp) (*adapters.RequestData, error) {
+	newBidRequest := createBidRequest(prebidBidRequest, params, imps)
+	reqJSON, err := json.Marshal(newBidRequest)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, err
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	return []*adapters.RequestData{{
+	headers.Add("x-openrtb-version", "2.5")
+
+	url, err := adapter.buildEndpointURL(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adapters.RequestData{
 		Method:  "POST",
-		Uri:     g.URI,
+		Uri:     url,
 		Body:    reqJSON,
-		Headers: headers,
-	}}, errs
+		Headers: headers}, nil
 }
 
-func (g *AdvangelistsAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdvangelists, imps []openrtb.Imp) *openrtb.BidRequest {
+	bidRequest := *prebidBidRequest
+	bidRequest.Imp = imps
+	for idx := range bidRequest.Imp {
+		imp := &bidRequest.Imp[idx]
+		imp.TagID = imp.ID
+	}
+	if bidRequest.Site != nil {
+		// Need to copy Site as Request is a shallow copy
+		siteCopy := *bidRequest.Site
+		bidRequest.Site = &siteCopy
+		bidRequest.Site.Publisher = nil
+		bidRequest.Site.Domain = ""
+	}
+	if bidRequest.App != nil {
+		// Need to copy App as Request is a shallow copy
+		appCopy := *bidRequest.App
+		bidRequest.App = &appCopy
+		bidRequest.App.Publisher = nil
+	}
+	return &bidRequest
+}
+
+// Builds enpoint url based on adapter-specific pub settings from imp.ext
+func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdvangelists) (string, error) {
+
+	endpointParams := macros.EndpointTemplateParams{Pubid: params.Pubid}
+	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
+}
+
+//MakeBids translates advangelists bid response to prebid-server specific format
+func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Bad user input: HTTP status %d", response.StatusCode),
-		}}
-	}
-
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bad server response: HTTP status %d", response.StatusCode),
-		}}
+		return nil, []error{
+			newBadServerResponseError(fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)),
+		}
 	}
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bad server response: %d. ", err),
-		}}
-	}
-
-	var errs []error
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-
-	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
-			})
+		return nil, []error{
+			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
 		}
 	}
-	return bidResponse, errs
+	if len(bidResp.SeatBid) != 1 {
+		return nil, []error{
+			newBadServerResponseError(fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))),
+		}
+	}
+
+	seatBid := bidResp.SeatBid[0]
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+
+	for i := 0; i < len(seatBid.Bid); i++ {
+		bid := seatBid.Bid[i]
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bid,
+			BidType: getMediaTypeForImpID(bid.ImpID, internalRequest.Imp),
+		})
+	}
+	return bidResponse, nil
 }
 
-func preprocess(imp *openrtb.Imp) (string, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		err = &errortypes.BadInput{
-			Message: err.Error(),
+// getMediaTypeForImp figures out which media type this bid is for
+func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+	for _, imp := range imps {
+		if imp.ID == impID && imp.Video != nil {
+			return openrtb_ext.BidTypeVideo
 		}
-		return "", err
 	}
-
-	var advangelistsExt openrtb_ext.ExtImpAdvangelists
-	if err := json.Unmarshal(bidderExt.Bidder, &advangelistsExt); err != nil {
-		err = &errortypes.BadInput{
-			Message: err.Error(),
-		}
-		return "", err
-	}
-
-	pub := advangelistsExt.Pub
-	return pub, nil
+	return openrtb_ext.BidTypeBanner
 }
 
-func NewAdvangelistsBidder(endpoint string) *AdvangelistsAdapter {
-	return &AdvangelistsAdapter{
-		URI: endpoint,
+func newBadInputError(message string) error {
+	return &errortypes.BadInput{
+		Message: message,
 	}
+}
+
+func newBadServerResponseError(message string) error {
+	return &errortypes.BadServerResponse{
+		Message: message,
+	}
+}
+
+// NewAdvangelistsAdapter to be called in prebid-server core to create advangelists adapter instance
+func NewAdvangelistsBidder(endpointTemplate string) adapters.Bidder {
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
+		return nil
+	}
+	return &AdvangelistsAdapter{EndpointTemplate: *template}
 }

@@ -35,6 +35,7 @@
             "id": "testid",
             "imp": [{
               "id": "testimpid",
+              "tagid": "testimpid",
               "banner": {
                 "format": [{
                   "w": 320,
@@ -45,12 +46,8 @@
                 }],
                 "w": 320,
                 "h": 250
-              },
-              "ext": {
-                "bidder": {
-                    "pubid": "19f1b372c7548ec1fe734d2c9f8dc688"
-                }
               }
+              
             }]
           }
         },

@@ -185,7 +185,9 @@ func (cfg *HostCookie) TTLDuration() time.Duration {
 const (
 	dummyHost        string = "dummyhost.com"
 	dummyPublisherID int    = 12
+	dummyPubid       string = "dummypubid"
 	dummyGDPR        string = "0"
+
 	dummyGDPRConsent string = "someGDPRConsentString"
 )
 
@@ -229,7 +231,7 @@ func validateAdapterEndpoint(endpoint string, adapterName string, errs configErr
 		return append(errs, fmt.Errorf("Invalid endpoint template: %s for adapter: %s. %v", endpoint, adapterName, err))
 	}
 	// Resolve macros (if any) in the endpoint URL
-	resolvedEndpoint, err := macros.ResolveMacros(*endpointTemplate, macros.EndpointTemplateParams{Host: dummyHost, PublisherID: dummyPublisherID})
+	resolvedEndpoint, err := macros.ResolveMacros(*endpointTemplate, macros.EndpointTemplateParams{Host: dummyHost, PublisherID: dummyPublisherID, Pubid: dummyPubid})
 	if err != nil {
 		return append(errs, fmt.Errorf("Unable to resolve endpoint: %s for adapter: %s. %v", endpoint, adapterName, err))
 	}
@@ -422,6 +424,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdkernelAdn, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3DadkernelAdn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtelligent, "https://sync.adtelligent.com/csync?t=p&ep=0&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdform, "https://cm.adform.net/cookie?redirect_url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdvangelists, "https://nep.advangelists.com/xp/user-sync?acctid={aid}&&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadvangelists%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAppnexus, "https://ib.adnxs.com/getuid?"+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadnxs%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBrightroll, "https://pr-bh.ybp.yahoo.com/sync/appnexusprebidserver/?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbrightroll%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderBeachfront, "https://sync.bfmio.com/sync_s2s?gdpr={{.GDPR}}&url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dbeachfront%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5Bio_cid%5D")
@@ -581,7 +584,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adtelligent.endpoint", "http://hb.adtelligent.com/auction")
 	v.SetDefault("adapters.adform.endpoint", "http://adx.adform.net/adx")
 	v.SetDefault("adapters.appnexus.endpoint", "http://ib.adnxs.com/openrtb2") // Docs: https://wiki.appnexus.com/display/supply/Incoming+Bid+Request+from+SSPs
-	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid=0cf8d6d643e13d86a5b6374148a4afac")
+	v.SetDefault("adapters.advangelists.endpoint", "http://nep.advangelists.com/xp/get?pubid={{.Pubid}}")
 	v.SetDefault("adapters.beachfront.endpoint", "https://display.bfmio.com/prebid_display")
 	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
