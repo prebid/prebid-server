@@ -3,12 +3,16 @@ package tappx
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/mxmCherry/openrtb"
+	"net/http"
+	"strconv"
+	"time"
 )
+
+const TAPPX_BIDDER_VERSION = "1.0"
 
 type TappxAdapter struct {
 	http *adapters.HTTPAdapter
@@ -29,8 +33,8 @@ func NewTappxBidder(client *http.Client, endpoint string) *TappxAdapter {
 }
 
 type tappxParams struct {
-	TappxKey	string            `json:"tappxkey"`
-	Endpoint    string            `json:"endpoint"`
+	TappxKey string `json:"tappxkey"`
+	Endpoint string `json:"endpoint"`
 }
 
 func (a *TappxAdapter) Name() string {
@@ -41,29 +45,31 @@ func (a *TappxAdapter) SkipNoCookies() bool {
 	return false
 }
 
-/*func (a *TappxAdapter) Call(ctx context.Context, request *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
-
-}*/
-
 func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
-		//fmt.Println("ERROR")
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	var tappxExt openrtb_ext.ExtImpTappx
 	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
-		//fmt.Println("ERROR")
+		errs = append(errs, err)
+		return nil, errs
 	}
 
-	if(tappxExt.TappxKey != ""){
-		//fmt.Println("ERROR")
+	if tappxExt.TappxKey == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Tappx key undefined",
+		}}
 	}
-	if(tappxExt.Endpoint != ""){
-		//fmt.Println("ERROR")
-	}	
+	if tappxExt.Endpoint == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Endpoint undefined",
+		}}
+	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
@@ -71,7 +77,9 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		return nil, errs
 	}
 
-	thisURI := a.URL + tappxExt.Endpoint + "?test=1&appkey=" + tappxExt.TappxKey
+	t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+
+	thisURI := a.URL + tappxExt.Endpoint + "?appkey=" + tappxExt.TappxKey + "&ts=" + strconv.Itoa(int(t)) + "&v=" + TAPPX_BIDDER_VERSION
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
