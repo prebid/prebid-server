@@ -3,6 +3,8 @@ package tappx
 import (
 	"encoding/json"
 	"fmt"
+	//"text/template"
+	"strings"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -33,6 +35,7 @@ func NewTappxBidder(client *http.Client, endpoint string) *TappxAdapter {
 }
 
 type tappxParams struct {
+	Host string `json:"host"`
 	TappxKey string `json:"tappxkey"`
 	Endpoint string `json:"endpoint"`
 }
@@ -70,6 +73,11 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 			Message: "Endpoint undefined",
 		}}
 	}
+	if tappxExt.Host == "" {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Host undefined",
+		}}
+	}
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
@@ -79,7 +87,9 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 	t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 
-	thisURI := a.URL + tappxExt.Endpoint + "?appkey=" + tappxExt.TappxKey + "&ts=" + strconv.Itoa(int(t)) + "&v=" + TAPPX_BIDDER_VERSION
+	url := strings.Replace(a.URL, "you.new.the.tappx.host.com", tappxExt.Host, -1)
+
+	thisURI := url + tappxExt.Endpoint + "?appkey=" + tappxExt.TappxKey + "&ts=" + strconv.Itoa(int(t)) + "&v=" + TAPPX_BIDDER_VERSION
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -91,6 +101,15 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		Headers: headers,
 	}}, errs
 }
+
+/*func (a *TappxAdapter) buildEndpointURL(endpoint string) (string, error) {
+	reqHost := ""
+	if endpoint != "" {
+		reqHost = endpoint
+	}
+	endpointParams := macros.EndpointTemplateParams{Host: reqHost}
+	return macros.ResolveMacros(a.Host, endpointParams)
+}*/
 
 func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
