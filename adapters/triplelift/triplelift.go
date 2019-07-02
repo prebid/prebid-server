@@ -26,13 +26,10 @@ type TripleliftRespExt struct {
 
 func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
 	t := ext.Triplelift.format
-	if t == 2 || t == 8 || t == 11 {
+	if t == 11 {
 		return openrtb_ext.BidTypeVideo, nil
 	}
-	if t == 10 {
-		return openrtb_ext.BidTypeBanner, nil
-	}
-	return openrtb_ext.BidTypeNative, nil
+	return openrtb_ext.BidTypeBanner, nil
 }
 
 func processImp(imp *openrtb.Imp) error {
