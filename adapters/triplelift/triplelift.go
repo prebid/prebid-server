@@ -1,10 +1,10 @@
 package triplelift
 
 import (
-	"strconv"
-    "encoding/json"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -35,42 +35,42 @@ func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
 	return openrtb_ext.BidTypeNative, nil
 }
 
-func processImp(imp *openrtb.Imp) (error) {
-    // get the triplelift extension
-    var ext adapters.ExtImpBidder
-    var tlext openrtb_ext.ExtImpTriplelift
-    if err := json.Unmarshal(imp.Ext, &ext); err != nil {
-        return err
-    }
-    if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
-        return err
-    }
-    imp.TagID = tlext.InvCode
-    // floor is optional
-    if floor, err := strconv.ParseFloat(tlext.Floor,64); err != nil {
-        return nil
-    } else {
-        imp.BidFloor = floor 
-    }
-    // no error
-    return nil
+func processImp(imp *openrtb.Imp) error {
+	// get the triplelift extension
+	var ext adapters.ExtImpBidder
+	var tlext openrtb_ext.ExtImpTriplelift
+	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
+		return err
+	}
+	imp.TagID = tlext.InvCode
+	// floor is optional
+	if floor, err := strconv.ParseFloat(tlext.Floor, 64); err != nil {
+		return nil
+	} else {
+		imp.BidFloor = floor
+	}
+	// no error
+	return nil
 }
 
 func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	reqs := make([]*adapters.RequestData, 0, 1)
-    // copy the request, because we are going to mutate it
-    tlRequest := *request
-    // this will contain all the valid impressions
-    var validImps []openrtb.Imp
-    // pre-process the imps
-    for _, imp := range tlRequest.Imp {
-        if err := processImp(&imp); err == nil {
-            validImps = append(validImps, imp)
-        }
-    }
-    tlRequest.Imp = validImps
-    reqJSON, err := json.Marshal(tlRequest)
+	// copy the request, because we are going to mutate it
+	tlRequest := *request
+	// this will contain all the valid impressions
+	var validImps []openrtb.Imp
+	// pre-process the imps
+	for _, imp := range tlRequest.Imp {
+		if err := processImp(&imp); err == nil {
+			validImps = append(validImps, imp)
+		}
+	}
+	tlRequest.Imp = validImps
+	reqJSON, err := json.Marshal(tlRequest)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
