@@ -1,0 +1,17 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"title": "Tappx Adapter Params",
+	"description": "A schema which validates params accepted by the Tappx adapter",
+	"type": "object",
+	"properties": {
+		"tappxkey": {
+			"type": "string",
+			"description": "An ID which identifies the adunit"
+		},
+		"endpoint": {
+			"type": "string",
+			"description": "Endpoint provided to publisher"
+		}
+	},
+	"required": ["tappxkey","endpoint"]
+}
