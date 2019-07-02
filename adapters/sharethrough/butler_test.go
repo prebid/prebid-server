@@ -290,7 +290,7 @@ func TestBuildUri(t *testing.T) {
 				"height=20",
 				"width=30",
 				"supplyId=FGMrCMMc",
-				"strVersion=1.0.0",
+				"strVersion=" + strVersion,
 			},
 		},
 	}
