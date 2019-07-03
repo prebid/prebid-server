@@ -52,6 +52,9 @@ func assertRequestDataEquals(t *testing.T, testName string, expected *adapters.R
 	if len(expected.Body) != len(actual.Body) {
 		t.Errorf("Body mismatch: expected %s got %s\n", expected.Body, actual.Body)
 	}
+	if len(expected.Headers) != len(actual.Headers) {
+		t.Errorf("Number of headers mismatch: expected %d got %d\n", len(expected.Headers), len(actual.Headers))
+	}
 	for headerIndex, expectedHeader := range expected.Headers {
 		if expectedHeader[0] != actual.Headers[headerIndex][0] {
 			t.Errorf("Header %s mismatch: expected %s got %s\n", headerIndex, expectedHeader[0], actual.Headers[headerIndex][0])
@@ -78,17 +81,20 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				App: &openrtb.App{Ext: []byte(`{}`)},
 				Device: &openrtb.Device{
 					UA: "Android Chome/60",
+					IP: "127.0.0.1",
 				},
 			},
-			inputDom: "a.domain.com",
+			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
 				Body:   nil,
 				Headers: http.Header{
-					"Content-Type": []string{"text/plain;charset=utf-8"},
-					"Accept":       []string{"application/json"},
-					"Origin":       []string{"a.domain.com"},
+					"Content-Type":    []string{"text/plain;charset=utf-8"},
+					"Accept":          []string{"application/json"},
+					"Origin":          []string{"http://a.domain.com"},
+					"User-Agent":      []string{"Android Chome/60"},
+					"X-Forwarded-For": []string{"127.0.0.1"},
 				},
 			},
 		},
@@ -290,7 +296,7 @@ func TestBuildUri(t *testing.T) {
 				"height=20",
 				"width=30",
 				"supplyId=FGMrCMMc",
-				"strVersion=1.0.0",
+				"strVersion=" + strVersion,
 			},
 		},
 	}
