@@ -23,7 +23,7 @@ func (a *OneMobileAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	request := *requestIn
 	errs := make([]error, 0, len(request.Imp))
@@ -145,9 +145,6 @@ func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_
 	}
 	if request.Site.ID == "" {
 		request.Site.ID = extension.Dcn
-	}
-	if request.Device.IP == "::1" {
-		request.Device.IP = "1.2.3.4"
 	}
 }
 
