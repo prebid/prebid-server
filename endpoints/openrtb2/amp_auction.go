@@ -148,8 +148,17 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	} else {
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
-	if req.Site != nil && req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
-		labels.PubID = req.Site.Publisher.ID
+	if req.Site != nil && req.Site.Publisher != nil {
+		if req.Site.Publisher.ID != "" {
+			labels.PubID = req.Site.Publisher.ID
+		}
+		var pubExt openrtb_ext.ExtPublisher
+		if req.Site.Ext != nil {
+			err := json.Unmarshal(req.Site.Ext, &pubExt)
+			if err == nil && pubExt.ParentAccount != nil {
+				labels.PubID = *pubExt.ParentAccount
+			}
+		}
 	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)

@@ -190,8 +190,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
-		if bidReq.App.Publisher != nil && bidReq.App.Publisher.ID != "" {
-			labels.PubID = bidReq.App.Publisher.ID
+		if bidReq.App.Publisher != nil {
+			if bidReq.App.Publisher.ID != "" {
+				labels.PubID = bidReq.App.Publisher.ID
+			}
+			var pubExt openrtb_ext.ExtPublisher
+			if bidReq.App.Ext != nil {
+				err := json.Unmarshal(bidReq.App.Ext, &pubExt)
+				if err == nil && pubExt.ParentAccount != nil {
+					labels.PubID = *pubExt.ParentAccount
+				}
+			}
 		}
 	} else { // both bidReq.App == nil and bidReq.Site != nil are true
 		labels.Source = pbsmetrics.DemandWeb
@@ -200,8 +209,17 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
-			labels.PubID = bidReq.Site.Publisher.ID
+		if bidReq.Site.Publisher != nil {
+			if bidReq.Site.Publisher.ID != "" {
+				labels.PubID = bidReq.Site.Publisher.ID
+			}
+			var pubExt openrtb_ext.ExtPublisher
+			if bidReq.Site.Ext != nil {
+				err := json.Unmarshal(bidReq.Site.Ext, &pubExt)
+				if err == nil && pubExt.ParentAccount != nil {
+					labels.PubID = *pubExt.ParentAccount
+				}
+			}
 		}
 	}
 

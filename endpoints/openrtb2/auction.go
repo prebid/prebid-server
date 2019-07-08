@@ -127,8 +127,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		if req.App.Publisher != nil && req.App.Publisher.ID != "" {
-			labels.PubID = req.App.Publisher.ID
+		if req.App.Publisher != nil {
+			if req.App.Publisher.ID != "" {
+				labels.PubID = req.App.Publisher.ID
+			}
+			var pubExt openrtb_ext.ExtPublisher
+			if req.App.Ext != nil {
+				err := json.Unmarshal(req.App.Ext, &pubExt)
+				if err == nil && pubExt.ParentAccount != nil {
+					labels.PubID = *pubExt.ParentAccount
+				}
+			}
 		}
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
@@ -137,8 +146,17 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
-			labels.PubID = req.Site.Publisher.ID
+		if req.Site.Publisher != nil {
+			if req.Site.Publisher.ID != "" {
+				labels.PubID = req.Site.Publisher.ID
+			}
+			var pubExt openrtb_ext.ExtPublisher
+			if req.Site.Ext != nil {
+				err := json.Unmarshal(req.Site.Ext, &pubExt)
+				if err == nil && pubExt.ParentAccount != nil {
+					labels.PubID = *pubExt.ParentAccount
+				}
+			}
 		}
 	}
 
