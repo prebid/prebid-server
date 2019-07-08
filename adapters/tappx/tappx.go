@@ -3,12 +3,15 @@ package tappx
 import (
 	"encoding/json"
 	"fmt"
-	//"text/template"
-	"strings"
+	"text/template"
+	//"strings"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	//"github.com/prebid/prebid-server/config"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,19 +21,23 @@ const TAPPX_BIDDER_VERSION = "1.0"
 
 type TappxAdapter struct {
 	http *adapters.HTTPAdapter
-	URL  string
+	endpointTemplate template.Template
 }
 
-func NewTappxAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *TappxAdapter {
-	return NewTappxBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+func NewTappxAdapter(config *adapters.HTTPAdapterConfig, endpointTemplate string) adapters.Bidder {
+	return NewTappxBidder(adapters.NewHTTPAdapter(config).Client, endpointTemplate)
 }
 
-func NewTappxBidder(client *http.Client, endpoint string) *TappxAdapter {
+func NewTappxBidder(client *http.Client, endpointTemplate string) *TappxAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
-
+	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
+	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
+		return nil
+	}
 	return &TappxAdapter{
 		http: a,
-		URL:  endpoint,
+		endpointTemplate:  *template,
 	}
 }
 
@@ -79,37 +86,60 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		}}
 	}
 
+	url, err := a.buildEndpointURL(&tappxExt)
+	if(url == ""){
+		return nil, []error{err}
+	}
+
+	fmt.Println(url)
+
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
 
-	t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
-
-	url := strings.Replace(a.URL, "you.new.the.tappx.host.com", tappxExt.Host, -1)
-
-	thisURI := url + tappxExt.Endpoint + "?appkey=" + tappxExt.TappxKey + "&ts=" + strconv.Itoa(int(t)) + "&v=" + TAPPX_BIDDER_VERSION
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisURI,
+		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, errs
 }
 
-/*func (a *TappxAdapter) buildEndpointURL(endpoint string) (string, error) {
+// Builds enpoint url based on adapter-specific pub settings from imp.ext
+func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx) (string, error) {
 	reqHost := ""
-	if endpoint != "" {
-		reqHost = endpoint
+	if params.Host != "" {
+		reqHost = params.Host
+	} 
+
+	if(reqHost == "") {
+		return "", &errortypes.BadInput{
+			Message: "Tappx host undefined",
+		} 
+	} else {
+		endpointParams := macros.EndpointTemplateParams{Host: reqHost}
+		host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
+
+		if(err != nil){
+			return "", &errortypes.BadInput{
+				Message: "Unable to parse endpoint url template",
+			} 
+		}
+
+		t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+
+		thisURI := host + params.Endpoint + "?appkey=" + params.TappxKey + "&ts=" + strconv.Itoa(int(t)) + "&v=" + TAPPX_BIDDER_VERSION
+
+		//fmt.Println(thisURI)
+
+		return thisURI, nil
 	}
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost}
-	return macros.ResolveMacros(a.Host, endpointParams)
-}*/
+}
 
 func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
