@@ -1035,13 +1035,19 @@ func TestOpenRTBRequest(t *testing.T) {
                     "keyv": 1,
                     "pref": 0
                 },
-                "tpid": [{
-                    "source": "tdid",
-                    "uid": "3d50a262-bd8e-4be3-90b8-246291523907"
-                },{
+				"eids": [{
+                    "source": "adserver.org",
+                    "uids": [{
+                        "id": "3d50a262-bd8e-4be3-90b8-246291523907",
+                        "ext": {
+                            "rtiPartner": "TDID"
+                        }
+                    }]
+                },
+                {
                     "source": "pubcid",
-                    "uid": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
-                }]
+                    "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+				}]
             }`),
 		},
 		Ext: json.RawMessage(`{"prebid": {}}`),
@@ -1129,7 +1135,10 @@ func TestOpenRTBRequest(t *testing.T) {
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
 			}
-			if userExt.TpID == nil || len(userExt.TpID) != 2 {
+			if userExt.Eids == nil || len(userExt.Eids) != 2 {
+				t.Fatal("Eids values are not as expected!")
+			}
+			if userExt.TpID == nil || len(userExt.TpID) != 1 {
 				t.Fatal("TpID values are not as expected!")
 			}
 		} else {
