@@ -34,6 +34,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderPubmatic):       syncConfig,
 			string(openrtb_ext.BidderPulsepoint):     syncConfig,
 			string(openrtb_ext.BidderRhythmone):      syncConfig,
+			string(openrtb_ext.BidderRTBHouse):       syncConfig,
 			string(openrtb_ext.BidderRubicon):        syncConfig,
 			string(openrtb_ext.BidderSharethrough):   syncConfig,
 			string(openrtb_ext.BidderSomoaudience):   syncConfig,
@@ -41,8 +42,11 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderTriplelift):     syncConfig,
 			string(openrtb_ext.Bidder33Across):       syncConfig,
 			string(openrtb_ext.BidderSonobi):         syncConfig,
+			string(openrtb_ext.BidderVrtcal):         syncConfig,
 			string(openrtb_ext.BidderYieldmo):        syncConfig,
+			string(openrtb_ext.BidderVisx):           syncConfig,
 			string(openrtb_ext.BidderGamoshi):        syncConfig,
+			string(openrtb_ext.BidderUnruly):         syncConfig,
 		},
 	}
 	for bidder, config := range cfg.Adapters {

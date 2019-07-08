@@ -53,7 +53,7 @@ func processImp(imp *openrtb.Imp) error {
 	return nil
 }
 
-func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	reqs := make([]*adapters.RequestData, 0, 1)
 	// copy the request, because we are going to mutate it

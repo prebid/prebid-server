@@ -17,7 +17,7 @@ type MockStrAdServer struct {
 	StrOpenRTBInterface
 }
 
-func (m MockStrAdServer) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest) (*adapters.RequestData, error) {
+func (m MockStrAdServer) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
 	return m.mockRequestFromOpenRTB()
 }
 
@@ -57,7 +57,9 @@ func TestSuccessMakeRequests(t *testing.T) {
 	}{
 		"Generates expected Request": {
 			input: &openrtb.BidRequest{
-				App: &openrtb.App{Ext: []byte(`{}`)},
+				Site: &openrtb.Site{
+					Page: "test.com",
+				},
 				Device: &openrtb.Device{
 					UA: "Android Chome/60",
 				},
@@ -83,7 +85,7 @@ func TestSuccessMakeRequests(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		output, actualErrors := adapter.MakeRequests(test.input)
+		output, actualErrors := adapter.MakeRequests(test.input, &adapters.ExtraRequestInfo{})
 
 		if len(output) != 1 {
 			t.Errorf("Expected one request in result, got %d\n", len(output))
@@ -104,7 +106,9 @@ func TestFailureMakeRequests(t *testing.T) {
 	}{
 		"Returns nil if failed to generate request": {
 			input: &openrtb.BidRequest{
-				App: &openrtb.App{Ext: []byte(`{}`)},
+				Site: &openrtb.Site{
+					Page: "test.com",
+				},
 				Device: &openrtb.Device{
 					UA: "Android Chome/60",
 				},
@@ -130,7 +134,7 @@ func TestFailureMakeRequests(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		output, actualErrors := adapter.MakeRequests(test.input)
+		output, actualErrors := adapter.MakeRequests(test.input, &adapters.ExtraRequestInfo{})
 
 		if output != nil {
 			t.Errorf("Expected result to be nil, got %d elements\n", len(output))

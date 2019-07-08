@@ -1,0 +1,6 @@
+maintainer:
+  email: "service@yoc.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
