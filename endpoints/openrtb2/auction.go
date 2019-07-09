@@ -127,18 +127,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		if req.App.Publisher != nil {
-			if req.App.Publisher.ID != "" {
-				labels.PubID = req.App.Publisher.ID
-			}
-			var pubExt openrtb_ext.ExtPublisher
-			if req.App.Ext != nil {
-				err := json.Unmarshal(req.App.Ext, &pubExt)
-				if err == nil && pubExt.ParentAccount != nil {
-					labels.PubID = *pubExt.ParentAccount
-				}
-			}
-		}
+		labels.PubID = effectivePubID(req.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -146,18 +135,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if req.Site.Publisher != nil {
-			if req.Site.Publisher.ID != "" {
-				labels.PubID = req.Site.Publisher.ID
-			}
-			var pubExt openrtb_ext.ExtPublisher
-			if req.Site.Ext != nil {
-				err := json.Unmarshal(req.Site.Ext, &pubExt)
-				if err == nil && pubExt.ParentAccount != nil {
-					labels.PubID = *pubExt.ParentAccount
-				}
-			}
-		}
+		labels.PubID = effectivePubID(req.Site.Publisher)
 	}
 
 	numImps = len(req.Imp)
@@ -1196,4 +1174,32 @@ func fatalError(errL []error) bool {
 		}
 	}
 	return false
+}
+
+// Returns the effective publisher ID
+func effectivePubID(pub *openrtb.Publisher) string {
+	if pub != nil {
+		if pub.Ext != nil {
+			var pubExt openrtb_ext.ExtPublisher
+			err := json.Unmarshal(pub.Ext, &pubExt)
+			if err == nil && pubExt.ParentAccount != nil && *pubExt.ParentAccount != "" {
+				return *pubExt.ParentAccount
+			} else {
+				if pub.ID != "" {
+					return pub.ID
+				} else {
+					return pbsmetrics.PublisherUnknown
+				}
+			}
+		} else {
+			if pub.ID != "" {
+				return pub.ID
+			} else {
+				return pbsmetrics.PublisherUnknown
+			}
+		}
+	} else {
+		return pbsmetrics.PublisherUnknown
+	}
+
 }
