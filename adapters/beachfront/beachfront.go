@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
-
-	"github.com/mxmCherry/openrtb"
 )
 
 const Seat = "beachfront"
@@ -111,40 +110,14 @@ type BeachfrontResponseSlot struct {
 	Adm   string  `json:"adm"`
 }
 
-func NewBeachfrontBannerRequest() BeachfrontBannerRequest {
-	r := BeachfrontBannerRequest{}
-	r.AdapterName = beachfrontAdapterName
-	r.AdapterVersion = beachfrontAdapterVersion
-
-	return r
-}
-
-func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
-	r := BeachfrontVideoRequest{}
-	r.Cur = append(r.Cur, "USD")
-	r.IsPrebid = true
-
-	return r
-}
-
-func getEndpoint(request *openrtb.BidRequest) (uri string) {
-	for i := range request.Imp {
-		if request.Imp[i].Video != nil {
-			// If there are any video imps, we will be running a video auction
-			// and dropping all of the banner actions.
-			return VideoEndpoint
-		}
-	}
-	return BannerEndpoint
-}
-
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests BeachfrontRequests
 	var reqJSON []byte
-	var uri string
 	var errs = make([]error, 0, len(request.Imp))
 	var err error
 	var imps int
+	var uri string
+
 
 	uri = getEndpoint(request)
 
@@ -170,6 +143,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		errs = append(errs, err)
 		return nil, errs
 	}
+
 	// ------------------------------------
 
 	headers := http.Header{}
@@ -178,11 +152,14 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
-		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
 		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
 		if request.Device.DNT != nil {
 			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
 		}
+	}
+
+	if request.User != nil && request.User.BuyerUID != "" {
+		addHeaderIfNonEmpty(headers, "Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
 	return []*adapters.RequestData{{
@@ -212,6 +189,60 @@ func preprocess(req *openrtb.BidRequest, uri string) (BeachfrontRequests, []erro
 	return beachfrontReqs, errs, imps
 }
 
+func NewBeachfrontBannerRequest() BeachfrontBannerRequest {
+	r := BeachfrontBannerRequest{}
+	r.AdapterName = beachfrontAdapterName
+	r.AdapterVersion = beachfrontAdapterVersion
+
+	return r
+}
+
+func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
+	r := BeachfrontVideoRequest{}
+	r.Cur = append(r.Cur, "USD")
+	r.IsPrebid = true
+
+	return r
+}
+
+func getEndpoint(request *openrtb.BidRequest) (uri string) {
+	for i := range request.Imp {
+		if checkIfForced(request.Imp[i]) {
+			return BannerEndpoint
+		}
+	}
+
+	for i := range request.Imp {
+		if request.Imp[i].Video != nil {
+			// If there are any video imps, we will be running a video auction
+			// and dropping all of the banner actions.
+			return VideoEndpoint
+		}
+	}
+	return BannerEndpoint
+}
+
+func checkIfForced(imp openrtb.Imp) (bool) {
+
+	beachfrontExt, _ := getBeachfrontExtension(imp)
+	if imp.Banner != nil && beachfrontExt.ForceBanner {
+		return true
+	}
+
+	return false
+}
+
+func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
+	var bidderExt adapters.ExtImpBidder
+	var beachfrontExt openrtb_ext.ExtImpBeachfront
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return beachfrontExt, err
+	}
+
+	err := json.Unmarshal(bidderExt.Bidder, &beachfrontExt);
+	return beachfrontExt, err
+}
+
 func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error, int) {
 	var bannerImpsIndex = 0
 	var beachfrontReq = NewBeachfrontBannerRequest()
@@ -233,19 +264,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.Slots[bannerImpsIndex].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
-			var bidderExt adapters.ExtImpBidder
-			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-				// possible banner error 2
-				errs = append(errs, err)
-				continue
-			}
-
-			var beachfrontExt openrtb_ext.ExtImpBeachfront
-			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
-				// possible banner error 3 - supplemental/unmarshal-error-banner.json
-				errs = append(errs, err)
-				continue
-			}
 
 			if req.Device != nil {
 				beachfrontReq.IP = req.Device.IP
@@ -259,9 +277,16 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				}
 			}
 
-			beachfrontReq.Slots[bannerImpsIndex].Bidfloor = beachfrontExt.BidFloor
-			beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
-			beachfrontReq.Slots[bannerImpsIndex].Id = beachfrontExt.AppId
+			beachfrontExt,err := getBeachfrontExtension(imp)
+			if err == nil {
+				beachfrontReq.Slots[bannerImpsIndex].Bidfloor = beachfrontExt.BidFloor
+				beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
+				beachfrontReq.Slots[bannerImpsIndex].Id = beachfrontExt.AppId
+			} else {
+				errs = append(errs, err)
+				continue
+			}
+
 		}
 
 		imps++
@@ -353,21 +378,9 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 				continue
 			}
 
-			var beachfrontVideoExt openrtb_ext.ExtImpBeachfront
-			if err := json.Unmarshal(bidderExt.Bidder, &beachfrontVideoExt); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			beachfrontReq.Imp[videoImpsIndex].Bidfloor = beachfrontVideoExt.BidFloor
-			if imp.Secure != nil {
-				beachfrontReq.Imp[videoImpsIndex].Secure = *imp.Secure
-			} else {
-				beachfrontReq.Imp[videoImpsIndex].Secure = 0
-			}
-
 			beachfrontReq.Imp[videoImpsIndex].Id = videoImpsIndex
 			beachfrontReq.Imp[videoImpsIndex].ImpId = imp.ID
+
 
 			if req.Device != nil {
 				beachfrontReq.Device.IP = req.Device.IP
@@ -375,7 +388,13 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 				beachfrontReq.Device.JS = "1"
 			}
 
-			beachfrontReq.AppId = beachfrontVideoExt.AppId
+			beachfrontExt,err := getBeachfrontExtension(imp)
+			if err == nil {
+				beachfrontReq.AppId = beachfrontExt.AppId
+			} else {
+				errs = append(errs, err)
+				continue
+			}
 			imps++
 		}
 	}
@@ -401,11 +420,6 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 	var bidtype = getBidType(internalRequest)
-
-	println("got here.")
-	/*
-		Beachfront is now sending an empty array and 200 as their "no results" response. This should catch that.
-	*/
 
 	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
 		return nil, nil
@@ -448,6 +462,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 	var errs = make([]error, 0)
 
 	if bidtype == openrtb_ext.BidTypeVideo {
+		glog.Info("Video")
 		var openrtbResp openrtb.BidResponse
 		if err := json.Unmarshal(response.Body, &openrtbResp); err != nil {
 			errs = append(errs, err)
@@ -455,6 +470,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		}
 		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	} else {
+		glog.Info("Banner")
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
 			errs = append(errs, err)
 			return nil, errs
@@ -514,10 +530,9 @@ func extractBannerCrid(adm string) string {
 }
 
 func getBidType(internal *openrtb.BidRequest) openrtb_ext.BidType {
-	for i := range internal.Imp {
-		if internal.Imp[i].Video != nil {
-			return openrtb_ext.BidTypeVideo
-		}
+	var uri = getEndpoint(internal)
+	if uri == VideoEndpoint {
+		return openrtb_ext.BidTypeVideo
 	}
 
 	return openrtb_ext.BidTypeBanner
