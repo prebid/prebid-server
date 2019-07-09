@@ -71,6 +71,36 @@ func TestRequestMetrics(t *testing.T) {
 	assertCounterValue(t, "requests[4]", &metrics4, 1)
 }
 
+func TestLegacyImpMetrics(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metrics0 := dto.Metric{}
+	metrics1 := dto.Metric{}
+	metrics2 := dto.Metric{}
+	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
+
+	proMetrics.RecordLegacyImps(labels[0], 1)
+	proMetrics.RecordLegacyImps(labels[1], 5)
+	proMetrics.RecordLegacyImps(labels[0], 2)
+	proMetrics.RecordLegacyImps(labels[2], 2)
+	proMetrics.RecordLegacyImps(labels[0], 7)
+	proMetrics.RecordLegacyImps(labels[2], 1)
+	proMetrics.RecordLegacyImps(labels[4], 1)
+
+	proMetrics.legacyImps.With(resolveLabels(labels[0])).Write(&metrics0)
+	proMetrics.legacyImps.With(resolveLabels(labels[1])).Write(&metrics1)
+	proMetrics.legacyImps.With(resolveLabels(labels[2])).Write(&metrics2)
+	proMetrics.legacyImps.With(resolveLabels(labels[3])).Write(&metrics3)
+	proMetrics.legacyImps.With(resolveLabels(labels[4])).Write(&metrics4)
+
+	assertCounterValue(t, "legacyImps_requested[0]", &metrics0, 10)
+	assertCounterValue(t, "legacyImps_requested[1]", &metrics1, 5)
+	assertCounterValue(t, "legacyImps_requested[2]", &metrics2, 3)
+	assertCounterValue(t, "legacyImps_requested[3]", &metrics3, 0)
+	assertCounterValue(t, "legacyImps_requested[4]", &metrics4, 1)
+}
+
 func TestImpMetrics(t *testing.T) {
 	proMetrics := newTestMetricsEngine()
 
@@ -115,14 +145,14 @@ func TestRecordImps(t *testing.T) {
 	for _, metricLabel := range sampleMetrics.Label {
 		var impType string = *metricLabel.Name
 		switch impType {
-		case "banner_imps":
-			assert.Equal(t, *metricLabel.Value, "no", "'banner_imps' should equal 'no'")
-		case "video_imps":
-			assert.Equal(t, *metricLabel.Value, "no", "'banner_imps' should equal 'no'")
-		case "audio_imps":
-			assert.Equal(t, *metricLabel.Value, "no", "'banner_imps' should equal 'no'")
-		case "native_imps":
-			assert.Equal(t, *metricLabel.Value, "yes", "'banner_imps' should equal 'yes'")
+		case "banner":
+			assert.Equal(t, *metricLabel.Value, "no", "'banner")
+		case "video":
+			assert.Equal(t, *metricLabel.Value, "no", "'video' should equal 'no'")
+		case "audio":
+			assert.Equal(t, *metricLabel.Value, "no", "'audio' should equal 'no'")
+		case "native":
+			assert.Equal(t, *metricLabel.Value, "yes", "'native' should equal 'yes'")
 		default:
 			fmt.Printf("'%s' is not recognized as a label \n", impType)
 		}

@@ -78,6 +78,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
 		metricsEngine.RecordImps(impTypeLabels)
+		metricsEngine.RecordLegacyImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(pubLabels)
 		metricsEngine.RecordAdapterRequest(apnLabels)
@@ -109,6 +110,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
+	VerifyMetrics(t, "LegacyImpMeter", goEngine.LegacyImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)
 	VerifyMetrics(t, "SafariNoCookieMeter", goEngine.SafariNoCookieMeter.Count(), 0)

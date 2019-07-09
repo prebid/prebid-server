@@ -17,6 +17,7 @@ type Metrics struct {
 	ConnectionAcceptErrorMeter metrics.Meter
 	ConnectionCloseErrorMeter  metrics.Meter
 	ImpMeter                   metrics.Meter
+	LegacyImpMeter             metrics.Meter
 	AppRequestMeter            metrics.Meter
 	NoCookieMeter              metrics.Meter
 	SafariRequestMeter         metrics.Meter
@@ -97,6 +98,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ConnectionAcceptErrorMeter: blankMeter,
 		ConnectionCloseErrorMeter:  blankMeter,
 		ImpMeter:                   blankMeter,
+		LegacyImpMeter:             blankMeter,
 		AppRequestMeter:            blankMeter,
 		NoCookieMeter:              blankMeter,
 		SafariRequestMeter:         blankMeter,
@@ -148,6 +150,7 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
+	newMetrics.LegacyImpMeter = metrics.GetOrRegisterMeter("legacy_imps_requested", registry)
 
 	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
 	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
@@ -328,6 +331,10 @@ func (me *Metrics) RecordImps(labels ImpLabels) {
 	if labels.NativeImps {
 		me.ImpsTypeNative.Mark(int64(1))
 	}
+}
+
+func (me *Metrics) RecordLegacyImps(labels Labels, numImps int) {
+	me.LegacyImpMeter.Mark(int64(numImps))
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {

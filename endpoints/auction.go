@@ -93,12 +93,6 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	impLabels := pbsmetrics.ImpLabels{
-		BannerImps: false,
-		VideoImps:  false,
-		AudioImps:  false,
-		NativeImps: false,
-	}
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
@@ -110,11 +104,11 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	defer func() {
 		if req == nil {
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(impLabels)
+			a.metricsEngine.RecordLegacyImps(labels, 0)
 		} else {
 			// handles the case that ParsePBSRequest returns an error, so req.Start is not defined
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(impLabels)
+			a.metricsEngine.RecordLegacyImps(labels, len(req.AdUnits))
 			a.metricsEngine.RecordRequestTime(labels, time.Since(req.Start))
 		}
 	}()

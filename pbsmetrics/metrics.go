@@ -89,7 +89,7 @@ const (
 	ReqTypeVideo    RequestType = "video"
 )
 
-// The media types described in the "imp" json objects  TODO is this still needed?
+// The media types described in the "imp" json objects
 const (
 	ImpTypeBanner ImpMediaType = "banner"
 	ImpTypeVideo  ImpMediaType = "video"
@@ -236,7 +236,8 @@ type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
-	RecordImps(labels ImpLabels)                           // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
+	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterPanic(labels AdapterLabels)

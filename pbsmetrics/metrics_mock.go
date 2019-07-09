@@ -36,6 +36,12 @@ func (me *MetricsEngineMock) RecordImps(labels ImpLabels) {
 	return
 }
 
+// RecordLegacyImps mock
+func (me *MetricsEngineMock) RecordLegacyImps(labels Labels, numImps int) {
+	me.Called(labels, numImps)
+	return
+}
+
 // RecordRequestTime mock
 func (me *MetricsEngineMock) RecordRequestTime(labels Labels, length time.Duration) {
 	me.Called(labels, length)

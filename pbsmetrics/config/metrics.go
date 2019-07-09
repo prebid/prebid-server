@@ -83,10 +83,17 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-// RecordImps across all engines
+// RecordImps across openRTB2 engines that support the 'Native' Imp type
 func (me *MultiMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
 	for _, thisME := range *me {
 		thisME.RecordImps(implabels)
+	}
+}
+
+// RecordImps for the legacy endpoint
+func (me *MultiMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	for _, thisME := range *me {
+		thisME.RecordLegacyImps(labels, numImps)
 	}
 }
 
@@ -187,6 +194,11 @@ func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
 
 // RecordImps as a noop
 func (me *DummyMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
+	return
+}
+
+// RecordLegacyImps as a noop
+func (me *DummyMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
 	return
 }
 
