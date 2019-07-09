@@ -1,8 +1,6 @@
 package prometheusmetrics
 
 import (
-	//"fmt"
-	//"strconv"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -58,7 +56,6 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.connError)
 	metrics.imps = newCounter(cfg, "imps_requested_total_by_type",
 		"Count of Impressions by type and in total requested through PBS.",
-		//standardLabelNames,
 		impLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
@@ -194,19 +191,6 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 
 func (me *Metrics) RecordImps(implabels pbsmetrics.ImpLabels) {
 	me.imps.With(resolveImpLabels(implabels)).Inc()
-	//var impLabels prometheus.Labels = resolveImpTypeLabels(labels)
-	//if labels.BannerImps {
-	//	me.imps.With(promLabels).Inc()
-	//}
-	//if labels.VideoImps {
-	//	me.imps.With(promLabels).Inc()
-	//}
-	//if labels.AudioImps {
-	//	me.imps.With(promLabels).Inc()
-	//}
-	//if labels.NativeImps {
-	//	me.imps.With(promLabels).Inc()
-	//}
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
@@ -374,10 +358,9 @@ func initializeTimeSeries(m *Metrics) {
 	adapterLabels := labels // save regenerating these dimensions for adapter status
 	labels = addDimension(labels, "response_status", requestStatusesAsString())
 	for _, l := range labels {
-		//a := m.imps.With(l)
+		_ = m.imps.With(l)
 		_ = m.requests.With(l)
 		_ = m.reqTimer.With(l)
-		//fmt.Printf("%v \n", a)
 	}
 
 	// Adapter labels
