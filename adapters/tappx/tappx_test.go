@@ -7,5 +7,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "tappx", NewTappxBidder(new(http.Client), "http://tappx.com"))
+	adapterstest.RunJSONBidderTest(t, "tappxtest", NewTappxBidder(new(http.Client), "https://{{.Host}}"))
 }

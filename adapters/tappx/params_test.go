@@ -34,7 +34,7 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915"}`,
+	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com/"}`,
 }
 
 var invalidParams = []string{
@@ -49,7 +49,15 @@ var invalidParams = []string{
 	`{"tappxkey":"pub-12345-android-9876"}`,
 	`{"endpoint":""}`,
 	`{"endpoint":"ZZ1INTERNALTEST149147915"}`,
+	`{"host":""}`,
+	`{"host": 1}`,
+	`{"host": 1.2}`,
+	`{"host": null}`,
+	`{"host": true}`,
 	`{"tappxkey": 1, "endpoint":"ZZ1INTERNALTEST149147915"}`,
 	`{"tappxkey":"pub-12345-android-9876", "endpoint": 1}`,
 	`{"tappxkey": 1, "endpoint": 1}`,
+	`{"tappxkey": 1, "endpoint":"ZZ1INTERNALTEST149147915", "host":""}`,
+	`{"tappxkey":"pub-12345-android-9876", "endpoint": 1, "host":""}`,
+	`{"tappxkey": 1, "endpoint": 1, "host": 123}`,
 }
