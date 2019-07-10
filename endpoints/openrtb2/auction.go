@@ -1194,12 +1194,8 @@ func effectivePubID(pub *openrtb.Publisher) string {
 		} else {
 			if pub.ID != "" {
 				return pub.ID
-			} else {
-				return pbsmetrics.PublisherUnknown
 			}
 		}
-	} else {
-		return pbsmetrics.PublisherUnknown
 	}
-
+	return pbsmetrics.PublisherUnknown
 }
