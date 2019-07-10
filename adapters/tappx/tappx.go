@@ -56,7 +56,7 @@ func (a *TappxAdapter) SkipNoCookies() bool {
 }
 
 func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if(len(request.Imp) == 0){
+	if len(request.Imp) == 0 {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No impression in the bid request",
 		}}
@@ -105,7 +105,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
-	reqHost, reqKey, reqEndpoint := "","",""
+	reqHost, reqKey, reqEndpoint := "", "", ""
 	if params.Host != "" {
 		reqHost = params.Host
 	}
@@ -126,7 +126,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 
 	if err != nil {
-		return "", &errortypes.BadInput{	
+		return "", &errortypes.BadInput{
 			Message: "Unable to parse endpoint url template",
 		}
 	}
@@ -145,7 +145,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 
 	thisURI := host + params.Endpoint + "?tappxkey=" + params.TappxKey
 
-	if(test == 0){
+	if test == 0 {
 		t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 		thisURI = thisURI + "&ts=" + strconv.Itoa(int(t))
 	}
