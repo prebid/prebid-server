@@ -28,10 +28,10 @@
 		  "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
 		  "body": {
 			"id": "test-request-id",
-            "tagid" : "aaw",
-            "bidfloor" : 0.10,
 			"imp": [
 			  {
+                "tagid" : "aaw",
+                "bidfloor" : 0.10,
 				"id": "test-imp-id",
 				"video": {
 					"mimes": ["video/mp4"],
@@ -72,13 +72,8 @@
 					"w": 300,
 					"cat": ["IAB9-1"],
 				  "ext": {
-					"appnexus": {
-					  "brand_id": 9,
-						"brand_category_id": 9,
-					  "auction_id": 8189378542222915032,
-					  "bid_ad_type": 1,
-					  "bidder_id": 2,
-					  "ranking_price": 0.000000
+					"triplelift": {
+					  "format": 11
 					}
 				  }
 				}]
@@ -103,20 +98,15 @@
 			  "adm": "some-test-ad",
 			  "adid": "29681110",
 			  "adomain": ["appnexus.com"],
-			  "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+			  "iurl": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
 			  "cid": "958",
 			  "crid": "29681110",
 			  "w": 300,
 			  "h": 250,
-			  "cat": ["IAB5-3"],
+			  "cat": ["IAB9-1"],
 			  "ext": {
-				"appnexus": {
-				  "brand_id": 9,
-					"brand_category_id": 9,
-				  "auction_id": 8189378542222915032,
-				  "bid_ad_type": 1,
-				  "bidder_id": 2,
-				  "ranking_price": 0.000000
+				"triplelift": {
+				  "format": 11
 				}
 			  }
 			},
