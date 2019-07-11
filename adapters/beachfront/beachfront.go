@@ -25,6 +25,9 @@ const VideoEndpointSuffix = "&prebidserver"
 const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.3.0"
 
+const DefaultVideoWidth = 300
+const DefaultVideoHeight = 250
+
 type BeachfrontAdapter struct {
 }
 
@@ -118,7 +121,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var imps int
 	var uri string
 
-
 	uri = getEndpoint(request)
 
 	beachfrontRequests, errs, imps = preprocess(request, uri)
@@ -208,6 +210,9 @@ func NewBeachfrontVideoRequest() BeachfrontVideoRequest {
 func getEndpoint(request *openrtb.BidRequest) (uri string) {
 	for i := range request.Imp {
 		if checkIfForced(request.Imp[i]) {
+			// If this bidder includes the forceBanner flag, there is probably another
+			// bidder in this same request that is an aliased bidder referencing this same adapter
+			// that does not have the flag and will get video, so "this" one will return banner.
 			return BannerEndpoint
 		}
 	}
@@ -219,10 +224,11 @@ func getEndpoint(request *openrtb.BidRequest) (uri string) {
 			return VideoEndpoint
 		}
 	}
+
 	return BannerEndpoint
 }
 
-func checkIfForced(imp openrtb.Imp) (bool) {
+func checkIfForced(imp openrtb.Imp) bool {
 
 	beachfrontExt, _ := getBeachfrontExtension(imp)
 	if imp.Banner != nil && beachfrontExt.ForceBanner {
@@ -239,7 +245,7 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 		return beachfrontExt, err
 	}
 
-	err := json.Unmarshal(bidderExt.Bidder, &beachfrontExt);
+	err := json.Unmarshal(bidderExt.Bidder, &beachfrontExt)
 	return beachfrontExt, err
 }
 
@@ -264,7 +270,6 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				beachfrontReq.Slots[bannerImpsIndex].Sizes[j].W = imp.Banner.Format[j].W
 			}
 
-
 			if req.Device != nil {
 				beachfrontReq.IP = req.Device.IP
 				beachfrontReq.DeviceModel = req.Device.Model
@@ -277,7 +282,7 @@ func getBannerRequest(req *openrtb.BidRequest) (BeachfrontBannerRequest, []error
 				}
 			}
 
-			beachfrontExt,err := getBeachfrontExtension(imp)
+			beachfrontExt, err := getBeachfrontExtension(imp)
 			if err == nil {
 				beachfrontReq.Slots[bannerImpsIndex].Bidfloor = beachfrontExt.BidFloor
 				beachfrontReq.Slots[bannerImpsIndex].Slot = req.Imp[bannerImpsIndex].ID
@@ -369,8 +374,13 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 			beachfrontReq.Imp = append(beachfrontReq.Imp, BeachfrontVideoImp{})
 			videoImpsIndex = len(beachfrontReq.Imp) - 1
 
-			beachfrontReq.Imp[videoImpsIndex].Video.H = imp.Video.H
-			beachfrontReq.Imp[videoImpsIndex].Video.W = imp.Video.W
+			if imp.Video.H != 0 && imp.Video.W != 0 {
+				beachfrontReq.Imp[videoImpsIndex].Video.W = imp.Video.W
+				beachfrontReq.Imp[videoImpsIndex].Video.H = imp.Video.H
+			} else {
+				beachfrontReq.Imp[videoImpsIndex].Video.W = DefaultVideoWidth
+				beachfrontReq.Imp[videoImpsIndex].Video.H = DefaultVideoHeight
+			}
 
 			var bidderExt adapters.ExtImpBidder
 			if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -382,21 +392,23 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 			beachfrontReq.Imp[videoImpsIndex].ImpId = imp.ID
 
 
-			if req.Device != nil {
-				beachfrontReq.Device.IP = req.Device.IP
-				beachfrontReq.Device.UA = req.Device.UA
-				beachfrontReq.Device.JS = "1"
-			}
-
-			beachfrontExt,err := getBeachfrontExtension(imp)
+			beachfrontExt, err := getBeachfrontExtension(imp)
 			if err == nil {
 				beachfrontReq.AppId = beachfrontExt.AppId
+				beachfrontReq.Imp[videoImpsIndex].Bidfloor = beachfrontExt.BidFloor
 			} else {
 				errs = append(errs, err)
 				continue
 			}
+
 			imps++
 		}
+	}
+
+	if req.Device != nil {
+		beachfrontReq.Device.IP = req.Device.IP
+		beachfrontReq.Device.UA = req.Device.UA
+		beachfrontReq.Device.JS = "1"
 	}
 
 	if req.User != nil {
