@@ -1,5 +1,6 @@
 package openrtb_ext
 
 type ExtImpAdvangelists struct {
-	Pubid string `json:"pubid"`
+	PubID string `json:"pubid"`
+	Placement string `json:"Placement,omitempty"`
 }

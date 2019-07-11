@@ -8,7 +8,7 @@ import (
 // EndpointTemplateParams specifies params for an endpoint template
 type EndpointTemplateParams struct {
 	Host        string
-	Pubid       string
+	PubID       string
 	PublisherID int
 }
 

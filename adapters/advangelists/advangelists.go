@@ -14,8 +14,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const defaultDomain string = "nep.advangelists.com"
-
 type AdvangelistsAdapter struct {
 	EndpointTemplate template.Template
 }
@@ -24,7 +22,7 @@ type AdvangelistsAdapter struct {
 func (adapter *AdvangelistsAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
-		errs = append(errs, newBadInputError("No impression in the bid request"))
+		errs = append(errs, &errortypes.BadInput{Message: "No impression in the bid request"})
 		return nil, errs
 	}
 	imps, impExts, err := getImpressionsInfo(request.Imp)
@@ -34,12 +32,11 @@ func (adapter *AdvangelistsAdapter) MakeRequests(request *openrtb.BidRequest, re
 	errs = append(errs, err...)
 
 	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
-	if len(dispErrors) > 0 {
-		errs = append(errs, dispErrors...)
-	}
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
+	errs = append(errs, dispErrors...)
+
 	result := make([]*adapters.RequestData, 0, len(pub2impressions))
 	for k, imps := range pub2impressions {
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
@@ -77,8 +74,8 @@ func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImp
 }
 
 func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdvangelists) error {
-	if impExt.Pubid == "" {
-		return newBadInputError(fmt.Sprintf("Invalid pubId value. Ignoring imp id=%s", imp.ID))
+	if impExt.PubID == "" {
+		return &errortypes.BadInput{Message: "No pubid value provided"}
 	}
 	return nil
 }
@@ -120,7 +117,7 @@ func compatBannerImpression(imp *openrtb.Imp) error {
 	//As banner.w/h are required fields for advangelistsAdn platform - take the first format entry
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
-			return newBadInputError(fmt.Sprintf("Expected at least one banner.format entry or explicit w/h"))
+			return &errortypes.BadInput{Message: "Expected at least one banner.format entry or explicit w/h"}
 		}
 		format := banner.Format[0]
 		banner.Format = banner.Format[1:]
@@ -176,7 +173,8 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 	bidRequest.Imp = imps
 	for idx := range bidRequest.Imp {
 		imp := &bidRequest.Imp[idx]
-		imp.TagID = imp.ID
+		imp.TagID = params.Placement
+		fmt.Printf(imp.TagID)
 	}
 	if bidRequest.Site != nil {
 		// Need to copy Site as Request is a shallow copy
@@ -196,31 +194,28 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdvangelists) (string, error) {
-
-	endpointParams := macros.EndpointTemplateParams{Pubid: params.Pubid}
+	endpointParams := macros.EndpointTemplateParams{PubID: params.PubID}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
 //MakeBids translates advangelists bid response to prebid-server specific format
 func (adapter *AdvangelistsAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var msg = ""
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{
-			newBadServerResponseError(fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)),
-		}
+		msg = fmt.Sprintf("Unexpected http status code: %d", response.StatusCode)
+		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
-		return nil, []error{
-			newBadServerResponseError(fmt.Sprintf("Bad server response: %d", err)),
-		}
+		msg = fmt.Sprintf("Bad server response: %d", err)
+		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 	if len(bidResp.SeatBid) != 1 {
-		return nil, []error{
-			newBadServerResponseError(fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))),
-		}
+		var msg = fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid))
+		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
 
 	seatBid := bidResp.SeatBid[0]
@@ -244,18 +239,6 @@ func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType 
 		}
 	}
 	return openrtb_ext.BidTypeBanner
-}
-
-func newBadInputError(message string) error {
-	return &errortypes.BadInput{
-		Message: message,
-	}
-}
-
-func newBadServerResponseError(message string) error {
-	return &errortypes.BadServerResponse{
-		Message: message,
-	}
 }
 
 // NewAdvangelistsAdapter to be called in prebid-server core to create advangelists adapter instance
