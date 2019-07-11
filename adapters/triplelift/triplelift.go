@@ -23,12 +23,12 @@ type TripleliftRespExt struct {
 	Triplelift TripleliftRespExtTriplelift `json:"triplelift_pb"`
 }
 
-func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType, error) {
+func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType) {
 	t := ext.Triplelift.format
 	if t == 11 {
-		return openrtb_ext.BidTypeVideo, nil
+		return openrtb_ext.BidTypeVideo
 	}
-	return openrtb_ext.BidTypeBanner, nil
+	return openrtb_ext.BidTypeBanner
 }
 
 func processImp(imp *openrtb.Imp) error {
@@ -120,14 +120,11 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
 				errs = append(errs, err)
 			} else {
-				if bidType, err := getBidType(bidExt); err != nil {
-					errs = append(errs, err)
-				} else {
-					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-						Bid:     &bid,
-						BidType: bidType,
-					})
-				}
+                bidType := getBidType(bidExt)
+                bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+                    Bid:     &bid,
+                    BidType: bidType,
+                })
 			}
 		}
 	}
