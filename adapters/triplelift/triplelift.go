@@ -44,10 +44,10 @@ func processImp(imp *openrtb.Imp) error {
 	}
 	imp.TagID = tlext.InvCode
 	// floor is optional
-	if floor, err := strconv.ParseFloat(tlext.Floor, 64); err != nil {
+	if tlext.Floor == nil {
 		return nil
 	} else {
-		imp.BidFloor = floor
+		imp.BidFloor = tlext.Floor
 	}
 	// no error
 	return nil
