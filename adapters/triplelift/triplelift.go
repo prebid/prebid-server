@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -47,7 +46,7 @@ func processImp(imp *openrtb.Imp) error {
 	if tlext.Floor == nil {
 		return nil
 	} else {
-		imp.BidFloor = tlext.Floor
+		imp.BidFloor = *tlext.Floor
 	}
 	// no error
 	return nil
