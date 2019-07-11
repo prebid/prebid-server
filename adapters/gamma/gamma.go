@@ -17,20 +17,11 @@ type GammaAdapter struct {
 	URI string
 }
 
-func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No impressions in the bid request",
-		}
-		errs = append(errs, err)
-		return nil, errs
-	}
-
-	errors := make([]error, 0, 1)
+func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, []error) {
+	var errors []error
 
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
+	err := json.Unmarshal(imp.Ext, &bidderExt)
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: "ext.bidder not provided",
@@ -68,7 +59,60 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		errors = append(errors, err)
 		return nil, errors
 	}
+	thisURI := a.URI
+	thisURI = thisURI + "?id=" + gammaExt.PartnerID
+	thisURI = thisURI + "&zid=" + gammaExt.ZoneID
+	thisURI = thisURI + "&wid=" + gammaExt.WebID
+	thisURI = thisURI + "&bidid=" + imp.ID
+	thisURI = thisURI + "&hb=pbmobile"
+	if request.Device != nil {
+		thisURI = thisURI + "&device_ip=" + request.Device.IP
+		thisURI = thisURI + "&device_model=" + request.Device.Model
+		thisURI = thisURI + "&device_os=" + request.Device.OS
+		if request.Device.UA != "" {
+			thisURI = thisURI + "&device_ua=" + url.QueryEscape(request.Device.UA)
+		}
+		thisURI = thisURI + "&device_ifa=" + request.Device.IFA
+	}
+	if request.App != nil {
+		thisURI = thisURI + "&app_id=" + request.App.ID
+		thisURI = thisURI + "&app_bundle=" + request.App.Bundle
+		thisURI = thisURI + "&app_name=" + request.App.Name
+	}
+	headers := http.Header{}
+	headers.Add("Accept", "*/*")
+	headers.Add("x-openrtb-version", "2.5")
+	if gammaExt.PartnerID == "bad-request-id" {
+		headers.Add("Content-Type", "application/json;charset=utf-8")
+	}
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
+	}
 
+	addHeaderIfNonEmpty(headers, "Connection", "keep-alive")
+	addHeaderIfNonEmpty(headers, "cache-control", "no-cache")
+	addHeaderIfNonEmpty(headers, "Accept-Encoding", "gzip, deflate")
+
+	return &adapters.RequestData{
+		Method:  "GET",
+		Uri:     thisURI,
+		Headers: headers,
+	}, errors
+}
+func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	errs := make([]error, 0, len(request.Imp))
+	if len(request.Imp) == 0 {
+		err := &errortypes.BadInput{
+			Message: "No impressions in the bid request",
+		}
+		errs = append(errs, err)
+		return nil, errs
+	}
 	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
@@ -99,54 +143,16 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		errs = append(errs, err)
 		return nil, errs
 	}
-
-	request.AT = 1 //Defaulting to first price auction for all prebid requests
-
-	thisURI := a.URI
-	thisURI = thisURI + "?id=" + gammaExt.PartnerID
-	thisURI = thisURI + "&zid=" + gammaExt.ZoneID
-	thisURI = thisURI + "&wid=" + gammaExt.WebID
-	thisURI = thisURI + "&bidid=" + request.Imp[0].ID
-	thisURI = thisURI + "&hb=pbmobile"
-	if request.Device != nil {
-		thisURI = thisURI + "&device_ip=" + request.Device.IP
-		thisURI = thisURI + "&device_model=" + request.Device.Model
-		thisURI = thisURI + "&device_os=" + request.Device.OS
-		if request.Device.UA != "" {
-			thisURI = thisURI + "&device_ua=" + url.QueryEscape(request.Device.UA)
+	var adapterRequests []*adapters.RequestData
+	for _, imp := range request.Imp {
+		adapterReq, errors := a.makeRequest(request, imp)
+		if adapterReq != nil {
+			adapterRequests = append(adapterRequests, adapterReq)
 		}
-		thisURI = thisURI + "&device_ifa=" + request.Device.IFA
-	}
-	if request.App != nil {
-		thisURI = thisURI + "&app_id=" + request.App.ID
-		thisURI = thisURI + "&app_bundle=" + request.App.Bundle
-		thisURI = thisURI + "&app_name=" + request.App.Name
+		errs = append(errs, errors...)
 	}
 
-	headers := http.Header{}
-	headers.Add("Accept", "*/*")
-	headers.Add("x-openrtb-version", "2.5")
-	if gammaExt.PartnerID == "bad-request-id" {
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-	}
-	if request.Device != nil {
-		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
-		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
-		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
-		if request.Device.DNT != nil {
-			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
-		}
-	}
-
-	addHeaderIfNonEmpty(headers, "Connection", "keep-alive")
-	addHeaderIfNonEmpty(headers, "cache-control", "no-cache")
-	addHeaderIfNonEmpty(headers, "Accept-Encoding", "gzip, deflate")
-
-	return []*adapters.RequestData{{
-		Method:  "GET",
-		Uri:     thisURI,
-		Headers: headers,
-	}}, errors
+	return adapterRequests, errs
 }
 
 func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -174,13 +180,14 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
-	sb := bidResp.SeatBid[0]
-	for i := 0; i < len(sb.Bid); i++ {
-		bid := sb.Bid[i]
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bid,
-			BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
-		})
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bid := sb.Bid[i]
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: getMediaTypeForImp(bidResp.ID, internalRequest.Imp),
+			})
+		}
 	}
 	return bidResponse, nil
 }
