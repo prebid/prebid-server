@@ -32,16 +32,17 @@ func (adapter *AdvangelistsAdapter) MakeRequests(request *openrtb.BidRequest, re
 	errs = append(errs, err...)
 
 	pub2impressions, dispErrors := dispatchImpressions(imps, impExts)
+	errs = append(errs, dispErrors...)
 	if len(pub2impressions) == 0 {
 		return nil, errs
 	}
-	errs = append(errs, dispErrors...)
 
 	result := make([]*adapters.RequestData, 0, len(pub2impressions))
 	for k, imps := range pub2impressions {
 		bidRequest, err := adapter.buildAdapterRequest(request, &k, imps)
 		if err != nil {
 			errs = append(errs, err)
+			return nil, errs
 		} else {
 			result = append(result, bidRequest)
 		}
@@ -115,7 +116,7 @@ func compatBannerImpression(imp *openrtb.Imp) error {
 	bannerCopy := *imp.Banner
 	banner := &bannerCopy
 	//As banner.w/h are required fields for advangelistsAdn platform - take the first format entry
-	if banner.W == nil && banner.H == nil {
+	if banner.W == nil || banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{Message: "Expected at least one banner.format entry or explicit w/h"}
 		}
@@ -174,7 +175,6 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 	for idx := range bidRequest.Imp {
 		imp := &bidRequest.Imp[idx]
 		imp.TagID = params.Placement
-		fmt.Printf(imp.TagID)
 	}
 	if bidRequest.Site != nil {
 		// Need to copy Site as Request is a shallow copy
