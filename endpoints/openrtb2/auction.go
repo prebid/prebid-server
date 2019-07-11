@@ -1184,17 +1184,10 @@ func effectivePubID(pub *openrtb.Publisher) string {
 			err := json.Unmarshal(pub.Ext, &pubExt)
 			if err == nil && pubExt.ParentAccount != nil && *pubExt.ParentAccount != "" {
 				return *pubExt.ParentAccount
-			} else {
-				if pub.ID != "" {
-					return pub.ID
-				} else {
-					return pbsmetrics.PublisherUnknown
-				}
 			}
-		} else {
-			if pub.ID != "" {
-				return pub.ID
-			}
+		}
+		if pub.ID != "" {
+			return pub.ID
 		}
 	}
 	return pbsmetrics.PublisherUnknown
