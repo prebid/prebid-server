@@ -72,10 +72,11 @@ func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		return nil, errors
 	}
 
-	//clean-up
 	requestImp := make([]openrtb.Imp, len(requestIn.Imp))
 	copy(requestImp, requestIn.Imp)
 	request.Imp = requestImp
+	siteCopy := *request.Site
+	request.Site = &siteCopy
 	changeRequestForBidService(&request, &oneMobileExt)
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
