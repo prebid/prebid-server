@@ -3,17 +3,15 @@ package tappx
 import (
 	"encoding/json"
 	"fmt"
-	"text/template"
-	//"strings"
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	//"github.com/prebid/prebid-server/config"
 	"net/http"
 	"strconv"
+	"text/template"
 	"time"
 )
 
@@ -22,10 +20,6 @@ const TAPPX_BIDDER_VERSION = "1.0"
 type TappxAdapter struct {
 	http             *adapters.HTTPAdapter
 	endpointTemplate template.Template
-}
-
-func NewTappxAdapter(config *adapters.HTTPAdapterConfig, endpointTemplate string) adapters.Bidder {
-	return NewTappxBidder(adapters.NewHTTPAdapter(config).Client, endpointTemplate)
 }
 
 func NewTappxBidder(client *http.Client, endpointTemplate string) *TappxAdapter {
@@ -62,18 +56,18 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		}}
 	}
 
-	errs := make([]error, 0, len(request.Imp))
-
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil { // 3
-		errs = append(errs, err)
-		return nil, errs
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Error parsing bidderExt object",
+		}}
 	}
 
 	var tappxExt openrtb_ext.ExtImpTappx
-	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil { // 2
-		errs = append(errs, err)
-		return nil, errs
+	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
+		return nil, []error{&errortypes.BadInput{
+			Message: "Error parsing tappxExt parameters",
+		}}
 	}
 
 	var test int
@@ -84,12 +78,11 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		return nil, []error{err}
 	}
 
-	//fmt.Println(url)
-
-	reqJSON, err := json.Marshal(request) // 1
+	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{&errortypes.BadInput{
+			Message: "Error parsing reqJSON object",
+		}}
 	}
 
 	headers := http.Header{}
@@ -100,7 +93,7 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		Uri:     url,
 		Body:    reqJSON,
 		Headers: headers,
-	}}, errs
+	}}, []error{}
 }
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
@@ -152,8 +145,6 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 
 	thisURI = thisURI + "&v=" + TAPPX_BIDDER_VERSION
 
-	//fmt.Println(thisURI)
-
 	return thisURI, nil
 }
 
@@ -179,7 +170,6 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	var errs []error
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
@@ -190,7 +180,7 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 
 		}
 	}
-	return bidResponse, errs
+	return bidResponse, []error{}
 }
 
 func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {

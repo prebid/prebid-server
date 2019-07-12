@@ -20,6 +20,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "json: cannot unmarshal number into Go struct field ExtImpTappx.tappxkey of type string"
+    "Error parsing tappxExt parameters"
   ]
 }
