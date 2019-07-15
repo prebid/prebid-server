@@ -12,12 +12,12 @@ type versionModel struct {
 }
 
 // NewVersionEndpoint returns the latest commit sha1 from which the binary was built
-func NewVersionEndpoint(version string) func(w http.ResponseWriter, r *http.Request) {
+func NewVersionEndpoint(version string) http.HandlerFunc {
 	if version == "" {
 		version = "not-set"
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		jsonOutput, err := json.Marshal(versionModel{
 			Revision: version,
 		})

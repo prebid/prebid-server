@@ -201,7 +201,7 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
 	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
-	if familyName == "audienceNetwork" && uid == "0" {
+	if familyName == string(openrtb_ext.BidderFacebook) && uid == "0" {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
@@ -273,8 +273,8 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 			//
 			// Since users may log into facebook later, this is a bad strategy.
 			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
-			if id, ok := cookie.uids["audienceNetwork"]; ok && id.UID == "0" {
-				delete(cookie.uids, "audienceNetwork")
+			if id, ok := cookie.uids[string(openrtb_ext.BidderFacebook)]; ok && id.UID == "0" {
+				delete(cookie.uids, string(openrtb_ext.BidderFacebook))
 			}
 		}
 	}

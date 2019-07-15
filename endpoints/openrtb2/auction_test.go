@@ -780,6 +780,16 @@ func TestValidateImpExtDisabledBidder(t *testing.T) {
 	assert.Equal(t, []error{&errortypes.BidderTemporarilyDisabled{Message: "The biddder 'unknownbidder' has been disabled."}}, errs)
 }
 
+func TestEffectivePubID(t *testing.T) {
+	var pub openrtb.Publisher
+	assert.Equal(t, pbsmetrics.PublisherUnknown, effectivePubID(nil), "effectivePubID failed for nil Publisher.")
+	assert.Equal(t, pbsmetrics.PublisherUnknown, effectivePubID(&pub), "effectivePubID failed for empty Publisher.")
+	pub.ID = "123"
+	assert.Equal(t, "123", effectivePubID(&pub), "effectivePubID failed for standard Publisher.")
+	pub.Ext = json.RawMessage(`{"parentAccount": "abc"}`)
+	assert.Equal(t, "abc", effectivePubID(&pub), "effectivePubID failed for parentAccount.")
+}
+
 func validRequest(t *testing.T, filename string) string {
 	requestData, err := ioutil.ReadFile("sample-requests/valid-whole/supplementary/" + filename)
 	if err != nil {

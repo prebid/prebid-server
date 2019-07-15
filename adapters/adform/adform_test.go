@@ -30,6 +30,8 @@ func TestJsonSamples(t *testing.T) {
 type aTagInfo struct {
 	mid       uint32
 	priceType string
+	keyValues string
+	keyWords  string
 	code      string
 
 	price      float64
@@ -161,22 +163,7 @@ func TestAdformBasicResponse(t *testing.T) {
 }
 
 func initTestData(server *httptest.Server, t *testing.T) (*AdformAdapter, context.Context, *pbs.PBSRequest) {
-	adformTestData = aBidInfo{
-		deviceIP:  "111.111.111.111",
-		deviceUA:  "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Mobile/14E8301",
-		deviceIFA: "6D92078A-8246-4BA4-AE5B-76104861E7DC",
-		tags:      make([]aTagInfo, 3),
-		referrer:  "http://test.com",
-		width:     200,
-		height:    300,
-		tid:       "transaction-id",
-		buyerUID:  "user-id",
-		secure:    false,
-		currency:  "EUR",
-	}
-	adformTestData.tags[0] = aTagInfo{mid: 32344, priceType: "gross", code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"}
-	adformTestData.tags[1] = aTagInfo{mid: 32345, priceType: "net", code: "code2"} // no bid for ad unit
-	adformTestData.tags[2] = aTagInfo{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"}
+	adformTestData = createTestData(false)
 
 	// prepare adapter
 	conf := *adapters.DefaultHTTPAdapterConfig
@@ -253,7 +240,7 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 				{
 					BidderCode: "adform",
 					BidID:      fmt.Sprintf("random-id-from-pbjs-%d", i),
-					Params:     json.RawMessage(fmt.Sprintf("{\"mid\": %d%s}", tag.mid, getPriceTypeString(tag.priceType))),
+					Params:     json.RawMessage(formatAdUnitJson(tag)),
 				},
 			},
 		}
@@ -273,10 +260,10 @@ func preparePrebidRequestBody(requestData aBidInfo, t *testing.T) *bytes.Buffer 
 func TestOpenRTBRequest(t *testing.T) {
 	bidder := NewAdformBidder(nil, "http://adx.adform.net")
 
-	testData := createTestData()
-	request := createOpenRtbRequest(testData)
+	testData := createTestData(true)
+	request := createOpenRtbRequest(&testData)
 
-	httpRequests, errs := bidder.MakeRequests(request)
+	httpRequests, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -291,7 +278,7 @@ func TestOpenRTBRequest(t *testing.T) {
 	}
 	r.Header = httpRequests[0].Headers
 
-	errorString := assertAdformServerRequest(*testData, r, true)
+	errorString := assertAdformServerRequest(testData, r, true)
 	if errorString != nil {
 		t.Errorf("Request error: %s", *errorString)
 	}
@@ -311,7 +298,7 @@ func TestOpenRTBIncorrectRequest(t *testing.T) {
 		User:   &openrtb.User{BuyerUID: "buyerUID"},
 	}
 
-	httpRequests, errs := bidder.MakeRequests(request)
+	httpRequests, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) != len(request.Imp) {
 		t.Errorf("%d Imp objects should have errors. but was %d errors", len(request.Imp), len(errs))
@@ -321,8 +308,8 @@ func TestOpenRTBIncorrectRequest(t *testing.T) {
 	}
 }
 
-func createTestData() *aBidInfo {
-	testData := &aBidInfo{
+func createTestData(secure bool) aBidInfo {
+	testData := aBidInfo{
 		deviceIP:  "111.111.111.111",
 		deviceUA:  "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 (KHTML, like Gecko) Mobile/14E8301",
 		deviceIFA: "6D92078A-8246-4BA4-AE5B-76104861E7DC",
@@ -330,11 +317,11 @@ func createTestData() *aBidInfo {
 		tid:       "transaction-id",
 		buyerUID:  "user-id",
 		tags: []aTagInfo{
-			{mid: 32344, priceType: "gross", code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"},
+			{mid: 32344, keyValues: "color:red,age:30-40", keyWords: "red,blue", priceType: "gross", code: "code1", price: 1.23, content: "banner-content1", dealId: "dealId1", creativeId: "creativeId1"},
 			{mid: 32345, priceType: "net", code: "code2"}, // no bid for ad unit
 			{mid: 32346, code: "code3", price: 1.24, content: "banner-content2", dealId: "dealId2"},
 		},
-		secure:   true,
+		secure:   secure,
 		currency: "EUR",
 	}
 	return testData
@@ -368,7 +355,7 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 		bidRequest.Imp[i] = openrtb.Imp{
 			ID:     tag.code,
 			Secure: &secure,
-			Ext:    json.RawMessage(fmt.Sprintf("{\"bidder\": { \"mid\": %d%s}}", tag.mid, getPriceTypeString(tag.priceType))),
+			Ext:    json.RawMessage(fmt.Sprintf("{\"bidder\": %s}", formatAdUnitJson(tag))),
 			Banner: &openrtb.Banner{},
 		}
 	}
@@ -384,10 +371,10 @@ func createOpenRtbRequest(testData *aBidInfo) *openrtb.BidRequest {
 }
 
 func TestOpenRTBStandardResponse(t *testing.T) {
-	testData := createTestData()
-	request := createOpenRtbRequest(testData)
+	testData := createTestData(true)
+	request := createOpenRtbRequest(&testData)
 
-	responseBody, err := createAdformServerResponse(*testData)
+	responseBody, err := createAdformServerResponse(testData)
 	if err != nil {
 		t.Fatalf("Unable to create server response: %v", err)
 		return
@@ -502,9 +489,17 @@ func getUserExt() []byte {
 	return nil
 }
 
-func getPriceTypeString(priceType string) string {
-	if priceType != "" {
-		return fmt.Sprintf(", \"priceType\": \"%s\"", priceType)
+func formatAdUnitJson(tag aTagInfo) string {
+	return fmt.Sprintf("{ \"mid\": %d%s%s%s}",
+		tag.mid,
+		formatAdUnitParam("priceType", tag.priceType),
+		formatAdUnitParam("mkv", tag.keyValues),
+		formatAdUnitParam("mkw", tag.keyWords))
+}
+
+func formatAdUnitParam(fieldName string, fieldValue string) string {
+	if fieldValue != "" {
+		return fmt.Sprintf(", \"%s\": \"%s\"", fieldName, fieldValue)
 	}
 
 	return ""
@@ -522,9 +517,9 @@ func assertAdformServerRequest(testData aBidInfo, r *http.Request, isOpenRtb boo
 
 	var midsWithCurrency = ""
 	if isOpenRtb {
-		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9RVVS&bWlkPTMyMzQ1JnJjdXI9RVVS&bWlkPTMyMzQ2JnJjdXI9RVVS"
+		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9RVVSJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9RVVS&bWlkPTMyMzQ2JnJjdXI9RVVS"
 	} else {
-		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9VVNE&bWlkPTMyMzQ1JnJjdXI9VVNE&bWlkPTMyMzQ2JnJjdXI9VVNE" // no way to pass currency in legacy adapter
+		midsWithCurrency = "bWlkPTMyMzQ0JnJjdXI9VVNEJm1rdj1jb2xvcjpyZWQsYWdlOjMwLTQwJm1rdz1yZWQsYmx1ZQ&bWlkPTMyMzQ1JnJjdXI9VVNE&bWlkPTMyMzQ2JnJjdXI9VVNE" // no way to pass currency in legacy adapter
 	}
 
 	if ok, err := equal("CC=1&adid=6D92078A-8246-4BA4-AE5B-76104861E7DC&fd=1&gdpr=1&gdpr_consent=abc&ip=111.111.111.111&pt=gross&rp=4&stid=transaction-id&"+midsWithCurrency, r.URL.RawQuery, "Query string"); !ok {

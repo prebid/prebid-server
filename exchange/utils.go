@@ -46,14 +46,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			// Fixes #820
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
-			var publisherID string
-			if bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
-				publisherID = bidReq.Site.Publisher.ID
-			} else if bidReq.App != nil && bidReq.App.Publisher != nil {
-				publisherID = bidReq.App.Publisher.ID
-			} else {
-				publisherID = ""
-			}
+			var publisherID = labels.PubID
 			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent); !ok && err == nil {
 				cleanPI(bidReq, labels.RType == pbsmetrics.ReqTypeAMP)
 			}
@@ -148,7 +141,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 		imp := imps[i]
 		impExt := impExts[i]
 
-		rawPrebidExt, ok := impExt["prebid"]
+		rawPrebidExt, ok := impExt[openrtb_ext.PrebidExtKey]
 
 		if ok {
 			var prebidExt openrtb_ext.ExtImpPrebid
@@ -193,7 +186,7 @@ func sanitizedImpCopy(imp *openrtb.Imp,
 	}
 
 	for bidder, ext := range bidderExts {
-		if bidder == "prebid" {
+		if bidder == openrtb_ext.PrebidExtKey {
 			continue
 		}
 
@@ -203,7 +196,7 @@ func sanitizedImpCopy(imp *openrtb.Imp,
 		newExt["bidder"] = ext
 
 		if rawPrebidExt != nil {
-			newExt["prebid"] = rawPrebidExt
+			newExt[openrtb_ext.PrebidExtKey] = rawPrebidExt
 		}
 
 		rawExt, err := json.Marshal(newExt)
@@ -284,7 +277,7 @@ func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
 // parseAliases parses the aliases from the BidRequest
 func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 	var aliases map[string]string
-	if value, dataType, _, err := jsonparser.Get(orig.Ext, "prebid", "aliases"); dataType == jsonparser.Object && err == nil {
+	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliases"); dataType == jsonparser.Object && err == nil {
 		if err := json.Unmarshal(value, &aliases); err != nil {
 			return nil, []error{err}
 		}

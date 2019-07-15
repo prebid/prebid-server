@@ -23,7 +23,7 @@ type somoaudienceReqExt struct {
 	BidderConfig string `json:"prebid"`
 }
 
-func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *SomoaudienceAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	var errs []error
 	var bannerImps []openrtb.Imp
