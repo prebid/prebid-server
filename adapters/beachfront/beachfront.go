@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -391,7 +390,6 @@ func getVideoRequest(req *openrtb.BidRequest) (BeachfrontVideoRequest, []error, 
 			beachfrontReq.Imp[videoImpsIndex].Id = videoImpsIndex
 			beachfrontReq.Imp[videoImpsIndex].ImpId = imp.ID
 
-
 			beachfrontExt, err := getBeachfrontExtension(imp)
 			if err == nil {
 				beachfrontReq.AppId = beachfrontExt.AppId
@@ -474,7 +472,6 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 	var errs = make([]error, 0)
 
 	if bidtype == openrtb_ext.BidTypeVideo {
-		glog.Info("Video")
 		var openrtbResp openrtb.BidResponse
 		if err := json.Unmarshal(response.Body, &openrtbResp); err != nil {
 			errs = append(errs, err)
@@ -482,7 +479,6 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		}
 		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	} else {
-		glog.Info("Banner")
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
 			errs = append(errs, err)
 			return nil, errs
