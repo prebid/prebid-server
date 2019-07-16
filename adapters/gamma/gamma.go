@@ -66,18 +66,32 @@ func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp)
 	thisURI = thisURI + "&bidid=" + imp.ID
 	thisURI = thisURI + "&hb=pbmobile"
 	if request.Device != nil {
-		thisURI = thisURI + "&device_ip=" + request.Device.IP
-		thisURI = thisURI + "&device_model=" + request.Device.Model
-		thisURI = thisURI + "&device_os=" + request.Device.OS
+		if request.Device.IP != "" {
+			thisURI = thisURI + "&device_ip=" + request.Device.IP
+		}
+		if request.Device.Model != "" {
+			thisURI = thisURI + "&device_model=" + request.Device.Model
+		}
+		if request.Device.OS != "" {
+			thisURI = thisURI + "&device_os=" + request.Device.OS
+		}
 		if request.Device.UA != "" {
 			thisURI = thisURI + "&device_ua=" + url.QueryEscape(request.Device.UA)
 		}
-		thisURI = thisURI + "&device_ifa=" + request.Device.IFA
+		if request.Device.IFA != "" {
+			thisURI = thisURI + "&device_ifa=" + request.Device.IFA
+		}
 	}
 	if request.App != nil {
-		thisURI = thisURI + "&app_id=" + request.App.ID
-		thisURI = thisURI + "&app_bundle=" + request.App.Bundle
-		thisURI = thisURI + "&app_name=" + request.App.Name
+		if request.App.ID != "" {
+			thisURI = thisURI + "&app_id=" + request.App.ID
+		}
+		if request.App.Bundle != "" {
+			thisURI = thisURI + "&app_bundle=" + request.App.Bundle
+		}
+		if request.App.Name != "" {
+			thisURI = thisURI + "&app_name=" + request.App.Name
+		}
 	}
 	headers := http.Header{}
 	headers.Add("Accept", "*/*")
@@ -113,7 +127,8 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		errs = append(errs, err)
 		return nil, errs
 	}
-	validImpExists := false
+	var invalidImpIndex = make([]int, 0, 0)
+
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
 			bannerCopy := *request.Imp[i].Banner
@@ -123,33 +138,43 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 				bannerCopy.H = &(firstFormat.H)
 			}
 			request.Imp[i].Banner = &bannerCopy
-			validImpExists = true
-		} else if request.Imp[i].Video != nil {
-			validImpExists = true
-		} else {
+		} else if request.Imp[i].Video == nil {
 			err := &errortypes.BadInput{
 				Message: fmt.Sprintf("Gamma only supports banner and video media types. Ignoring imp id=%s", request.Imp[i].ID),
 			}
 			errs = append(errs, err)
-			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
-			i--
+			invalidImpIndex = append(invalidImpIndex, i)
 		}
 	}
 
-	if !validImpExists {
+	var adapterRequests []*adapters.RequestData
+	if len(invalidImpIndex) == 0 {
+		for _, imp := range request.Imp {
+			adapterReq, errors := a.makeRequest(request, imp)
+			if adapterReq != nil {
+				adapterRequests = append(adapterRequests, adapterReq)
+			}
+			errs = append(errs, errors...)
+		}
+	} else if len(request.Imp) == len(invalidImpIndex) { //only true if every Imp was not a Banner or a Video
 		err := &errortypes.BadInput{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
 		}
 		errs = append(errs, err)
 		return nil, errs
-	}
-	var adapterRequests []*adapters.RequestData
-	for _, imp := range request.Imp {
-		adapterReq, errors := a.makeRequest(request, imp)
-		if adapterReq != nil {
-			adapterRequests = append(adapterRequests, adapterReq)
+	} else {
+		var j int = 0
+		for i := 0; i < len(request.Imp); i++ {
+			if j < len(invalidImpIndex) && i == invalidImpIndex[j] {
+				j++
+			} else {
+				adapterReq, errors := a.makeRequest(request, request.Imp[i])
+				if adapterReq != nil {
+					adapterRequests = append(adapterRequests, adapterReq)
+				}
+				errs = append(errs, errors...)
+			}
 		}
-		errs = append(errs, errors...)
 	}
 
 	return adapterRequests, errs
@@ -204,9 +229,7 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Banner != nil {
-				mediaType = openrtb_ext.BidTypeBanner
-			} else if imp.Video != nil {
+			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
 			}
 			return mediaType

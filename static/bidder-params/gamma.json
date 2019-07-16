@@ -15,14 +15,6 @@
     "wid": {
       "type": "string",
       "description": "Web ID"
-    },
-    "app_id": {
-      "type": "string",
-      "description": "App ID"
-    },
-    "app_name": {
-      "type": "string",
-      "description": "App Name"
     }
   },
   "required": ["id", "zid","wid"]
