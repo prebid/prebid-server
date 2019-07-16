@@ -61,7 +61,7 @@ func TestSingleBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates())
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", bidAdjustment, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 
 	// Make sure the goodSingleBidder was called with the expected arguments.
 	if bidderImpl.httpResponse == nil {
@@ -146,7 +146,7 @@ func TestMultiBidder(t *testing.T) {
 	}
 	bidder := adaptBidder(bidderImpl, server.Client())
 	currencyConverter := currencies.NewRateConverterDefault()
-	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates())
+	seatBid, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 
 	if seatBid == nil {
 		t.Fatalf("SeatBid should exist, because bids exist.")
@@ -514,6 +514,7 @@ func TestMultiCurrencies(t *testing.T) {
 			"test",
 			1,
 			currencyConverter.Rates(),
+			&adapters.ExtraRequestInfo{},
 		)
 
 		// Verify:
@@ -657,6 +658,7 @@ func TestMultiCurrencies_RateConverterNotSet(t *testing.T) {
 			"test",
 			1,
 			currencyConverter.Rates(),
+			&adapters.ExtraRequestInfo{},
 		)
 
 		// Verify:
@@ -828,6 +830,7 @@ func TestMultiCurrencies_RequestCurrencyPick(t *testing.T) {
 			"test",
 			1,
 			currencyConverter.Rates(),
+			&adapters.ExtraRequestInfo{},
 		)
 
 		// Verify:
@@ -939,6 +942,7 @@ func TestServerCallDebugging(t *testing.T) {
 		"test",
 		1.0,
 		currencyConverter.Rates(),
+		&adapters.ExtraRequestInfo{},
 	)
 
 	if len(bids.httpCalls) != 1 {
@@ -961,7 +965,7 @@ func TestServerCallDebugging(t *testing.T) {
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
 	currencyConverter := currencies.NewRateConverterDefault()
-	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates())
+	bids, errs := bidder.requestBid(context.Background(), &openrtb.BidRequest{}, "test", 1.0, currencyConverter.Rates(), &adapters.ExtraRequestInfo{})
 	if bids != nil {
 		t.Errorf("There should be no seatbid if no http requests are returned.")
 	}
@@ -980,7 +984,7 @@ type goodSingleBidder struct {
 	bidResponse  *adapters.BidderResponse
 }
 
-func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *goodSingleBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return []*adapters.RequestData{bidder.httpRequest}, nil
 }
@@ -998,7 +1002,7 @@ type goodMultiHTTPCallsBidder struct {
 	bidResponseNumber int
 }
 
-func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *goodMultiHTTPCallsBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	response := make([]*adapters.RequestData, len(bidder.httpRequest))
 
@@ -1023,7 +1027,7 @@ type mixedMultiBidder struct {
 	bidResponse   *adapters.BidderResponse
 }
 
-func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *mixedMultiBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	bidder.bidRequest = request
 	return bidder.httpRequests, []error{errors.New("The requests weren't ideal.")}
 }
@@ -1038,7 +1042,7 @@ type bidRejector struct {
 	httpResponse *adapters.ResponseData
 }
 
-func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (bidder *bidRejector) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return nil, []error{errors.New("Invalid params on BidRequest.")}
 }
 

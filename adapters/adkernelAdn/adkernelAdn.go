@@ -21,7 +21,7 @@ type adkernelAdnAdapter struct {
 }
 
 //MakeRequests prepares request information for prebid-server core
-func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		errs = append(errs, newBadInputError("No impression in the bid request"))

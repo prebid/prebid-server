@@ -74,7 +74,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	labels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
-		PubID:         "",
+		PubID:         pbsmetrics.PublisherUnknown,
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
@@ -178,23 +178,25 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	ctx := context.Background()
-	cancel := func() {}
 	timeout := deps.cfg.AuctionTimeouts.LimitAuctionTimeout(time.Duration(bidReq.TMax) * time.Millisecond)
 	if timeout > 0 {
+		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, start.Add(timeout))
+		defer cancel()
 	}
-	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
-	} else {
+		labels.PubID = effectivePubID(bidReq.App.Publisher)
+	} else { // both bidReq.App == nil and bidReq.Site != nil are true
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
 			labels.CookieFlag = pbsmetrics.CookieFlagNo
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
+		labels.PubID = effectivePubID(bidReq.Site.Publisher)
 	}
 
 	//execute auction logic
@@ -355,8 +357,10 @@ func minMax(array []int) (int, int) {
 func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) (*openrtb_ext.BidResponseVideo, error) {
 
 	adPods := make([]*openrtb_ext.AdPod, 0)
+	anyBidsReturned := false
 	for _, seatBid := range bidresponse.SeatBid {
 		for _, bid := range seatBid.Bid {
+			anyBidsReturned = true
 
 			var tempRespBidExt openrtb_ext.ExtBid
 			if err := json.Unmarshal(bid.Ext, &tempRespBidExt); err != nil {
@@ -371,9 +375,9 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 			podId, _ := strconv.ParseInt(podNum, 0, 64)
 
 			videoTargeting := openrtb_ext.VideoTargeting{
-				Hb_pb:         tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)],
-				Hb_pb_cat_dur: tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbCategoryDurationKey)],
-				Hb_cache_id:   tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)],
+				HbPb:       tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbpbConstantKey)],
+				HbPbCatDur: tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbCategoryDurationKey)],
+				HbCacheID:  tempRespBidExt.Prebid.Targeting[string(openrtb_ext.HbVastCacheKey)],
 			}
 
 			adPod := findAdPod(podId, adPods)
@@ -389,13 +393,13 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 		}
 	}
 
-	if len(adPods) == 0 {
+	//check if there are any bids in response.
+	//if there are no bids - empty response should be returned, no cache errors
+	if len(adPods) == 0 && anyBidsReturned {
 		//means there is a global cache error, we need to reject all bids
 		err := errors.New("caching failed for all bids")
 		return nil, err
 	}
-
-	videoResponse := openrtb_ext.BidResponseVideo{}
 
 	// If there were incorrect pods, we put them back to response with error message
 	if len(podErrors) > 0 {
@@ -408,9 +412,7 @@ func buildVideoResponse(bidresponse *openrtb.BidResponse, podErrors []PodError) 
 		}
 	}
 
-	videoResponse.AdPods = adPods
-
-	return &videoResponse, nil
+	return &openrtb_ext.BidResponseVideo{AdPods: adPods}, nil
 }
 
 func findAdPod(podInd int64, pods []*openrtb_ext.AdPod) *openrtb_ext.AdPod {

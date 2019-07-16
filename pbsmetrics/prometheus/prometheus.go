@@ -63,7 +63,9 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	adapterLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel}
 	bidLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel, bidTypeLabel, markupTypeLabel}
 	errorLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterErrLabel, adapterLabel}
+
 	impLabelNames := []string{bannerLabel, videoLabel, audioLabel, nativeLabel}
+
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
