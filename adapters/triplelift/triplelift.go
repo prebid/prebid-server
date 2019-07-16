@@ -15,12 +15,12 @@ type TripleliftAdapter struct {
 	endpoint string
 }
 
-type TripleliftRespExtTriplelift struct {
-	format int `json:"format"`
+type TripleliftInnerExt struct {
+	Format int `json:"format"`
 }
 
 type TripleliftRespExt struct {
-	Triplelift TripleliftRespExtTriplelift `json:"triplelift_pb"`
+	Triplelift TripleliftInnerExt `json:"triplelift_pb"`
 }
 
 func getBidType(ext TripleliftRespExt) (openrtb_ext.BidType) {

@@ -71,11 +71,7 @@
 				  "h": 250,
 					"w": 300,
 					"cat": ["IAB9-1"],
-				  "ext": {
-					"triplelift": {
-					  "format": 11
-					}
-				  }
+				  "ext": {"triplelift_pb":{"format":11}}
 				}]
 			  }
 			],
@@ -104,10 +100,10 @@
 			  "w": 300,
 			  "h": 250,
 			  "cat": ["IAB9-1"],
-			  "ext": {
-				"triplelift": {
+			  "ext": { 
+				"triplelift_pb": {
 				  "format": 11
-				}
+				} 
 			  }
 			},
 			"type": "video"
