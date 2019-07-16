@@ -78,8 +78,8 @@
                   "h": 250,
                   "w": 300,
                   "ext": {
-                    "triplelift": {
-                        "format" : 11
+                    "triplelift_pb": {
+                        "format" : 2
                     }
                   }
                 }
@@ -112,7 +112,7 @@
             "w": 300,
             "h": 250,
             "ext": {
-              "triplelift": {
+              "triplelift_pb": {
                 "format" : 11
               }
             }
