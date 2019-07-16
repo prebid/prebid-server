@@ -66,7 +66,6 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	impLabelNames := []string{bannerLabel, videoLabel, audioLabel, nativeLabel}
 
-
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
 	metrics.connCounter = newConnCounter(cfg)
