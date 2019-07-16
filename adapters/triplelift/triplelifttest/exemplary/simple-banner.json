@@ -113,7 +113,7 @@
             "h": 250,
             "ext": {
               "triplelift_pb": {
-                "format" : 11
+                "format" : 2
               }
             }
           },
