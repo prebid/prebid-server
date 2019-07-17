@@ -83,7 +83,7 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-// RecordImps across openRTB2 engines that support the 'Native' Imp type
+//RecordsImps records imps with imp types across all metric engines
 func (me *MultiMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
 	for _, thisME := range *me {
 		thisME.RecordImps(implabels)

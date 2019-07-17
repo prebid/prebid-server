@@ -486,15 +486,6 @@ func requestTypesAsString() []string {
 	return output
 }
 
-func impTypesAsString() []string {
-	list := pbsmetrics.ImpTypes()
-	output := make([]string, len(list))
-	for i, s := range list {
-		output[i] = string(s)
-	}
-	return output
-}
-
 func browserTypesAsString() []string {
 	list := pbsmetrics.BrowserTypes()
 	output := make([]string, len(list))
