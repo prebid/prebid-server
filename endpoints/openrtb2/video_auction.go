@@ -79,10 +79,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	numImps := 0
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, numImps)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
@@ -200,8 +198,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		labels.PubID = effectivePubID(bidReq.Site.Publisher)
 	}
-
-	numImps = len(bidReq.Imp)
 
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
