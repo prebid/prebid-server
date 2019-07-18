@@ -467,6 +467,14 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 		}
 	}
 
+	if len(videoRequest.BCat) != 0 {
+		bidRequest.BCat = videoRequest.BCat
+	}
+
+	if len(videoRequest.BAdv) != 0 {
+		bidRequest.BAdv = videoRequest.BAdv
+	}
+
 	bidExt, err := createBidExtension(videoRequest)
 	if err != nil {
 		return err
