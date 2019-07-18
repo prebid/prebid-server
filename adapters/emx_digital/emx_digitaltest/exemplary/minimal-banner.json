@@ -1,9 +1,6 @@
 {
   "mockBidRequest": {
     "id": "some_test_auction",
-    "site": {
-      "page": "https://www.celebuzz.com/g/taylor-swift-debuts-red-hair-in-sugarland-video/"
-    },
     "imp": [{
       "id": "some_test_ad_id",
       "banner": {
@@ -14,14 +11,16 @@
         "w": 300,
         "h": 250
       },
-      "tagid": "25251",
-      "secure": 1,
       "ext": {
         "bidder": {
           "tagid": "25251"
         }
       }
-    }]
+    }],
+    "site": {
+      "domain": "www.celebuzz.com",
+      "page": "https://www.celebuzz.com/g/taylor-swift-debuts-red-hair-in-sugarland-video/"
+    }
   },
 
   "httpCalls": [{
@@ -40,14 +39,10 @@
             "h": 250
           },
           "tagid": "25251",
-          "secure": 1,
-          "ext": {
-            "bidder": {
-              "tagid": "25251"
-            }
-          }
+          "secure": 1
         }],
         "site": {
+          "domain": "www.celebuzz.com",
           "page": "https://www.celebuzz.com/g/taylor-swift-debuts-red-hair-in-sugarland-video/"
         }
       }
