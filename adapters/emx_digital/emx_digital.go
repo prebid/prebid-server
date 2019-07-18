@@ -36,6 +36,7 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		errs = append(errs, &errortypes.BadInput{
 			Message: fmt.Sprintf("No Imps in Bid Request"),
 		})
+		return nil, errs
 	}
 
 	if err := preprocess(request); err != nil && len(err) > 0 {
@@ -98,23 +99,28 @@ func unpackImpExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpEmxDigital, error) {
 func buildImpBanner(imp *openrtb.Imp) error {
 	imp.Ext = nil
 
-	if imp.Banner != nil {
-		bannerCopy := *imp.Banner
-		banner := &bannerCopy
-
-		if banner.W == nil && banner.H == nil {
-			if len(banner.Format) == 0 {
-				return &errortypes.BadInput{
-					Message: fmt.Sprintf("Need at least one banner.format size for request"),
-				}
-			}
-			format := banner.Format[0]
-			banner.Format = banner.Format[1:]
-			banner.W = &format.W
-			banner.H = &format.H
-			imp.Banner = banner
+	if imp.Banner == nil {
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Request needs to include a Banner object."),
 		}
 	}
+
+	bannerCopy := *imp.Banner
+	banner := &bannerCopy
+
+	if banner.W == nil && banner.H == nil {
+		if len(banner.Format) == 0 {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("Need at least one banner.format size for request"),
+			}
+		}
+		format := banner.Format[0]
+		banner.Format = banner.Format[1:]
+		banner.W = &format.W
+		banner.H = &format.H
+		imp.Banner = banner
+	}
+
 	return nil
 }
 
@@ -132,7 +138,7 @@ func addImpProps(imp *openrtb.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDi
 // handle request errors and formatting to be sent to EMX
 func preprocess(request *openrtb.BidRequest) []error {
 	impsCount := len(request.Imp)
-	errors := make([]error, 0, 4)
+	errors := make([]error, 0, impsCount)
 	resImps := make([]openrtb.Imp, 0, impsCount)
 	secure := int8(0)
 
