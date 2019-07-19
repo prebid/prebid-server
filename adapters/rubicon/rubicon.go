@@ -53,7 +53,7 @@ type rubiconImpExtRPTrack struct {
 
 type rubiconImpExtRP struct {
 	ZoneID int                  `json:"zone_id"`
-	Target json.RawMessage      `json:"target"`
+	Target json.RawMessage      `json:"target,omitempty"`
 	Track  rubiconImpExtRPTrack `json:"track"`
 }
 
@@ -62,7 +62,7 @@ type rubiconImpExt struct {
 }
 
 type rubiconUserExtRP struct {
-	Target json.RawMessage `json:"target"`
+	Target json.RawMessage `json:"target,omitempty"`
 }
 
 type rubiconExtUserTpID struct {
