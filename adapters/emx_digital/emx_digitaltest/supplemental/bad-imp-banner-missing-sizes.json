@@ -5,12 +5,10 @@
       {
         "id": "test-imp-id",
         "banner": {
-            "w": 300,
-            "h": 250
         },
         "ext": {
           "bidder": {
-            "tagid": "test_adunit"
+            "tagid": "12356"
           }
         }
       }
@@ -20,5 +18,6 @@
       "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
     }
   },
-  "expectedMakeRequestsErrors": ["ignoring imp id=test-imp-id, invalid tagid must be a String of numbers","Error in preprocess of Imp, err: [ignoring imp id=test-imp-id, invalid tagid must be a String of numbers]"]
+  "expectedMakeRequestsErrors": ["Need at least one size to build request",
+"Error in preprocess of Imp, err: [Need at least one size to build request]"]
 }

@@ -30,30 +30,38 @@ func buildEndpoint(endpoint string, timeout int64, requestID string) string {
 }
 
 func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
+	var errs []error
 
 	if len(request.Imp) == 0 {
-		errs = append(errs, &errortypes.BadInput{
+		return nil, []error{&errortypes.BadInput{
 			Message: fmt.Sprintf("No Imps in Bid Request"),
-		})
-		return nil, errs
+		}}
 	}
 
-	if err := preprocess(request); err != nil && len(err) > 0 {
-		errs = append(errs, &errortypes.BadInput{
-			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", err),
+	if errs := preprocess(request); errs != nil && len(errs) > 0 {
+		return nil, append(errs, &errortypes.BadInput{
+			Message: fmt.Sprintf("Error in preprocess of Imp, err: %s", errs),
 		})
-		return nil, errs
 	}
 
 	data, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Error in packaging request to JSON"),
+		}}
 	}
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	if request.Device != nil {
+		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
+		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
+		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		if request.Device.DNT != nil {
+			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+		}
+	}
 
 	url := buildEndpoint(a.endpoint, request.TMax, request.ID)
 
@@ -101,7 +109,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 
 	if imp.Banner == nil {
 		return &errortypes.BadInput{
-			Message: fmt.Sprintf("Request needs to include a Banner object."),
+			Message: fmt.Sprintf("Request needs to include a Banner object"),
 		}
 	}
 
@@ -111,7 +119,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 	if banner.W == nil && banner.H == nil {
 		if len(banner.Format) == 0 {
 			return &errortypes.BadInput{
-				Message: fmt.Sprintf("Need at least one banner.format size for request"),
+				Message: fmt.Sprintf("Need at least one size to build request"),
 			}
 		}
 		format := banner.Format[0]
@@ -124,6 +132,7 @@ func buildImpBanner(imp *openrtb.Imp) error {
 	return nil
 }
 
+// Add EMX required properties to Imp object
 func addImpProps(imp *openrtb.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDigital) error {
 	imp.TagID = emxExt.TagID
 	imp.Secure = secure
@@ -135,7 +144,14 @@ func addImpProps(imp *openrtb.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDi
 	return nil
 }
 
-// handle request errors and formatting to be sent to EMX
+// Adding header fields to request header
+func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
+	if len(headerValue) > 0 {
+		headers.Add(headerName, headerValue)
+	}
+}
+
+// Handle request errors and formatting to be sent to EMX
 func preprocess(request *openrtb.BidRequest) []error {
 	impsCount := len(request.Imp)
 	errors := make([]error, 0, impsCount)
