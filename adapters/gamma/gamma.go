@@ -96,9 +96,6 @@ func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp)
 	headers := http.Header{}
 	headers.Add("Accept", "*/*")
 	headers.Add("x-openrtb-version", "2.5")
-	if gammaExt.PartnerID == "bad-request-id" {
-		headers.Add("Content-Type", "application/json;charset=utf-8")
-	}
 	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
