@@ -52,10 +52,9 @@ func (adapter *AdvangelistsAdapter) MakeRequests(request *openrtb.BidRequest, re
 
 // getImpressionsInfo checks each impression for validity and returns impressions copy with corresponding exts
 func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImpAdvangelists, []error) {
-	impsCount := len(imps)
-	errors := make([]error, 0, impsCount)
-	resImps := make([]openrtb.Imp, 0, impsCount)
-	resImpExts := make([]openrtb_ext.ExtImpAdvangelists, 0, impsCount)
+	errors := make([]error, 0, len(imps))
+	resImps := make([]openrtb.Imp, 0, len(imps))
+	resImpExts := make([]openrtb_ext.ExtImpAdvangelists, 0, len(imps))
 
 	for _, imp := range imps {
 		impExt, err := getImpressionExt(&imp)
@@ -85,8 +84,7 @@ func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdvangelists
 func dispatchImpressions(imps []openrtb.Imp, impsExt []openrtb_ext.ExtImpAdvangelists) (map[openrtb_ext.ExtImpAdvangelists][]openrtb.Imp, []error) {
 	res := make(map[openrtb_ext.ExtImpAdvangelists][]openrtb.Imp)
 	errors := make([]error, 0)
-	for idx := range imps {
-		imp := imps[idx]
+	for idx, imp := range imps {
 		err := compatImpression(&imp)
 		if err != nil {
 			errors = append(errors, err)
