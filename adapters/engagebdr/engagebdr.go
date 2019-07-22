@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
-	//"regexp"
 
 	"fmt"
 
@@ -18,15 +17,17 @@ type EngageBDRAdapter struct {
 	URI  string
 }
 
-//func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
 func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errors := make([]error, 0)
 
 	// EngageBDR uses different sspid parameters for banner and video.
 	sspidImps := make(map[string][]openrtb.Imp)
-
 	for _, imp := range request.Imp {
+		if imp.Native != nil {
+			// filter native imps from bid request
+			continue
+		}
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
