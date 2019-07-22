@@ -274,13 +274,6 @@ func DummyPrebidCacheServer(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-var requiredConfig = []byte(`
-adapters:
-  onemobile:
-    endpoint: https://hb.nexage.com/admax/bid/partners/prebidtest
-    usersync_url: https://pixel.advertising.com/ups/58207/occ?http%3A%2F%2Flocalhost%3A8000%2Fsetuid%3Fbidder%3Donemobile%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID
-`)
-
 func TestCacheVideoOnly(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(DummyPrebidCacheServer))
 	defer server.Close()
@@ -351,8 +344,6 @@ func TestCacheVideoOnly(t *testing.T) {
 	w := httptest.NewRecorder()
 	v := viper.New()
 	config.SetupViper(v, "")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(requiredConfig))
 	cfg, err := config.New(v)
 	if err != nil {
 		t.Fatal(err.Error())

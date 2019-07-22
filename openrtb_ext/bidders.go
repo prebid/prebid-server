@@ -38,7 +38,6 @@ const (
 	BidderIx             BidderName = "ix"
 	BidderLifestreet     BidderName = "lifestreet"
 	BidderMgid           BidderName = "mgid"
-	BidderOneMobile      BidderName = "onemobile"
 	BidderOpenx          BidderName = "openx"
 	BidderPubmatic       BidderName = "pubmatic"
 	BidderPulsepoint     BidderName = "pulsepoint"
@@ -50,6 +49,7 @@ const (
 	BidderSovrn          BidderName = "sovrn"
 	BidderSonobi         BidderName = "sonobi"
 	BidderUnruly         BidderName = "unruly"
+	BidderVerizonMedia   BidderName = "verizonmedia"
 	BidderVrtcal         BidderName = "vrtcal"
 	BidderYieldmo        BidderName = "yieldmo"
 	BidderVisx           BidderName = "visx"
@@ -74,7 +74,6 @@ var BidderMap = map[string]BidderName{
 	"improvedigital":  BidderImprovedigital,
 	"ix":              BidderIx,
 	"lifestreet":      BidderLifestreet,
-	"onemobile":       BidderOneMobile,
 	"openx":           BidderOpenx,
 	"mgid":            BidderMgid,
 	"pubmatic":        BidderPubmatic,
@@ -87,6 +86,7 @@ var BidderMap = map[string]BidderName{
 	"sovrn":           BidderSovrn,
 	"sonobi":          BidderSonobi,
 	"unruly":          BidderUnruly,
+	"verizonmedia":    BidderVerizonMedia,
 	"vrtcal":          BidderVrtcal,
 	"yieldmo":         BidderYieldmo,
 	"visx":            BidderVisx,

@@ -1,4 +1,4 @@
-package onemobile
+package verizonmedia
 
 import (
 	"encoding/json"
@@ -10,22 +10,21 @@ import (
 	"net/http"
 )
 
-type OneMobileAdapter struct {
+type VerizonMediaAdapter struct {
 	http *adapters.HTTPAdapter
 	URI  string
 }
 
-func (a *OneMobileAdapter) Name() string {
-	return "onemobile"
+func (a *VerizonMediaAdapter) Name() string {
+	return "verizonmedia"
 }
 
-func (a *OneMobileAdapter) SkipNoCookies() bool {
+func (a *VerizonMediaAdapter) SkipNoCookies() bool {
 	return false
 }
 
-func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	request := *requestIn
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
@@ -46,8 +45,8 @@ func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		errors = append(errors, err)
 		return nil, errors
 	}
-	var oneMobileExt openrtb_ext.ExtImpOneMobile
-	err = json.Unmarshal(bidderExt.Bidder, &oneMobileExt)
+	var verizonMediaExt openrtb_ext.ExtImpVerizonMedia
+	err = json.Unmarshal(bidderExt.Bidder, &verizonMediaExt)
 	if err != nil {
 		err = &errortypes.BadInput{
 			Message: err.Error(),
@@ -56,7 +55,7 @@ func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		return nil, errors
 	}
 
-	if oneMobileExt.Dcn == "" {
+	if verizonMediaExt.Dcn == "" {
 		err = &errortypes.BadInput{
 			Message: "Missing param dcn",
 		}
@@ -64,7 +63,7 @@ func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		return nil, errors
 	}
 
-	if oneMobileExt.Pos == "" {
+	if verizonMediaExt.Pos == "" {
 		err = &errortypes.BadInput{
 			Message: "Missing param pos",
 		}
@@ -72,12 +71,9 @@ func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		return nil, errors
 	}
 
-	requestImp := make([]openrtb.Imp, len(requestIn.Imp))
-	copy(requestImp, requestIn.Imp)
-	request.Imp = requestImp
 	siteCopy := *request.Site
 	request.Site = &siteCopy
-	changeRequestForBidService(&request, &oneMobileExt)
+	changeRequestForBidService(request, &verizonMediaExt)
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errs = append(errs, err)
@@ -100,7 +96,7 @@ func (a *OneMobileAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	}}, errors
 }
 
-func (a *OneMobileAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
@@ -123,16 +119,20 @@ func (a *OneMobileAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			impID := lookupImpID(bid.ImpID, internalRequest.Imp)
-			if impID == "" {
+			if !impIDExists(bid.ImpID, internalRequest.Imp) {
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}}
 			}
 
+			if openrtb_ext.BidTypeBanner != getMediaTypeForImp(bid.ImpID, internalRequest.Imp) {
+				//only banner is supported, anything else is ignored
+				continue
+			}
+
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
 	}
@@ -140,7 +140,20 @@ func (a *OneMobileAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return bidResponse, nil
 }
 
-func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpOneMobile) {
+func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+	var mediaType openrtb_ext.BidType
+	for _, imp := range imps {
+		if imp.ID == impId {
+			if imp.Banner != nil {
+				mediaType = openrtb_ext.BidTypeBanner
+			}
+			return mediaType
+		}
+	}
+	return mediaType
+}
+
+func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) {
 	if request.Imp[0].TagID == "" {
 		request.Imp[0].TagID = extension.Pos
 	}
@@ -149,40 +162,27 @@ func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_
 	}
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
+func impIDExists(impId string, imps []openrtb.Imp) bool {
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			}
-			return mediaType
+			return true
 		}
 	}
-	return mediaType
+	return false
 }
 
-func lookupImpID(impId string, imps []openrtb.Imp) string {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			return imp.ID
-		}
-	}
-	return ""
-}
-
-func NewOneMobileAdapter(config *adapters.HTTPAdapterConfig, uri string) *OneMobileAdapter {
+func NewVerizonMediaAdapter(config *adapters.HTTPAdapterConfig, uri string) *VerizonMediaAdapter {
 	a := adapters.NewHTTPAdapter(config)
 
-	return &OneMobileAdapter{
+	return &VerizonMediaAdapter{
 		http: a,
 		URI:  uri,
 	}
 }
 
-func NewOneMobileBidder(client *http.Client, endpoint string) *OneMobileAdapter {
+func NewVerizonMediaBidder(client *http.Client, endpoint string) *VerizonMediaAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
-	return &OneMobileAdapter{
+	return &VerizonMediaAdapter{
 		http: a,
 		URI:  endpoint,
 	}
