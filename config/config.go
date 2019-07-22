@@ -50,6 +50,10 @@ type Configuration struct {
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
+
+	// PBS-418 array of blacklisted apps and its correpondent hash table to be instantly accessed.
+	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
+	BlacklistedAppMap map[string]bool
 }
 
 type HTTPClient struct {
@@ -392,6 +396,13 @@ func New(v *viper.Viper) (*Configuration, error) {
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
 	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
 		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = 1
+	}
+
+	// To look for a request's app_id in O(1) time, we fill this hash table located in the
+	// the BlacklistedApps field of the Configuration struct defined in this file
+	c.BlacklistedAppMap = make(map[string]bool)
+	for i := 0; i < len(c.BlacklistedApps); i++ {
+		c.BlacklistedAppMap[c.BlacklistedApps[i]] = true
 	}
 	return &c, nil
 }

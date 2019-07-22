@@ -89,6 +89,7 @@ adapters:
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
   adkerneladn:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+blacklisted_apps: ["spamAppID","sketchy-app-id"]
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
@@ -175,6 +176,15 @@ func TestFullConfig(t *testing.T) {
 	}
 	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+
+	//Assert the NonStandardPublishers was correctly unmarshalled
+	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
+	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[1], "sketchy-app-id")
+
+	//Assert the BlacklistedAppMap hash table was built correctly
+	for i := 0; i < len(cfg.BlacklistedApps); i++ {
+		cmpBools(t, "cfg.BlacklistedAppMap", cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]], true)
+	}
 
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
