@@ -126,6 +126,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
 		labels.PubID = effectivePubID(req.App.Publisher)
+		if _, found := deps.cfg.BlacklistedAppMap[labels.PubID]; found {
+			return
+		}
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {

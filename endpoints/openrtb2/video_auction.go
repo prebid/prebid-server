@@ -189,6 +189,9 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.PubID = effectivePubID(bidReq.App.Publisher)
+		if _, found := deps.cfg.BlacklistedAppMap[labels.PubID]; found {
+			return
+		}
 	} else { // both bidReq.App == nil and bidReq.Site != nil are true
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
