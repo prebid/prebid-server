@@ -97,11 +97,11 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	defer func() {
 		if req == nil {
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(labels, 0)
+			a.metricsEngine.RecordLegacyImps(labels, 0)
 		} else {
 			// handles the case that ParsePBSRequest returns an error, so req.Start is not defined
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(labels, len(req.AdUnits))
+			a.metricsEngine.RecordLegacyImps(labels, len(req.AdUnits))
 			a.metricsEngine.RecordRequestTime(labels, time.Since(req.Start))
 		}
 	}()

@@ -487,6 +487,43 @@ func TestVideoBuildVideoResponseNoBids(t *testing.T) {
 	assert.Len(t, bidRespVideo.AdPods, 0, "AdPods length should be 0")
 }
 
+func TestMergeOpenRTBToVideoRequest(t *testing.T) {
+	var bidReq = &openrtb.BidRequest{}
+	var videoReq = &openrtb_ext.BidRequestVideo{}
+
+	videoReq.App = openrtb.App{
+		Domain: "test.com",
+		Bundle: "test.bundle",
+	}
+
+	videoReq.Site = openrtb.Site{
+		Page: "site.com/index",
+	}
+
+	var dnt int8 = 4
+	var lmt int8 = 5
+	videoReq.Device = openrtb.Device{
+		DNT: &dnt,
+		Lmt: &lmt,
+	}
+
+	videoReq.BCat = []string{"test1", "test2"}
+	videoReq.BAdv = []string{"test3", "test4"}
+
+	mergeData(videoReq, bidReq)
+
+	assert.Equal(t, videoReq.BCat, bidReq.BCat, "BCat is incorrect")
+	assert.Equal(t, videoReq.BAdv, bidReq.BAdv, "BAdv is incorrect")
+
+	assert.Equal(t, videoReq.App.Domain, bidReq.App.Domain, "App.Domain is incorrect")
+	assert.Equal(t, videoReq.App.Bundle, bidReq.App.Bundle, "App.Bundle is incorrect")
+
+	assert.Equal(t, videoReq.Device.Lmt, bidReq.Device.Lmt, "Device.Lmt is incorrect")
+	assert.Equal(t, videoReq.Device.DNT, bidReq.Device.DNT, "Device.DNT is incorrect")
+
+	assert.Equal(t, videoReq.Site.Page, bidReq.Site.Page, "Device.Site.Page is incorrect")
+}
+
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	edep := &endpointDeps{
