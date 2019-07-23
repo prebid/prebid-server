@@ -53,7 +53,7 @@ func processImp(imp *openrtb.Imp) error {
 }
 
 func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	errs := make([]error, 0, len(request.Imp))
+	errs := make([]error, 0, len(request.Imp)+1)
 	reqs := make([]*adapters.RequestData, 0, 1)
 	// copy the request, because we are going to mutate it
 	tlRequest := *request
@@ -63,7 +63,14 @@ func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest, extra *ada
 	for _, imp := range tlRequest.Imp {
 		if err := processImp(&imp); err == nil {
 			validImps = append(validImps, imp)
+		} else {
+			errs = append(errs, err)
 		}
+	}
+	if len(validImps) == 0 {
+		err := fmt.Errorf("No valid impressions for triplelift")
+		errs = append(errs, err)
+		return nil, errs
 	}
 	tlRequest.Imp = validImps
 	reqJSON, err := json.Marshal(tlRequest)
