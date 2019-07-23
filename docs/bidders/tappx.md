@@ -1,8 +1,10 @@
 # Tappx Bidder
 
-Please contact [Tappx](../../static/bidder-info/tappx.yaml) to get set up with the required parameters in order to send us your requests.
-
-Our operations team will provide 
+## Parameters
+Please contact [Tappx](../../static/bidder-info/tappx.yaml) to get set up. Our operations team will provide the 3 required parameters:
+- Tappx Key
+- Tappx Publisher Endpoint
+- Tappx Host URL
 
 **Note:** The Tappx prebid bidder only supports in app traffic at the moment
 
