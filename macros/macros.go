@@ -8,8 +8,7 @@ import (
 // EndpointTemplateParams specifies params for an endpoint template
 type EndpointTemplateParams struct {
 	Host        string
-	PubID       string
-	PublisherID int
+	PublisherID string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template

@@ -74,7 +74,7 @@ func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImp
 }
 
 func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdvangelists) error {
-	if impExt.PubID == "" {
+	if impExt.PublisherID == "" {
 		return &errortypes.BadInput{Message: "No pubid value provided"}
 	}
 	return nil
@@ -192,7 +192,7 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *AdvangelistsAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdvangelists) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{PubID: params.PubID}
+	endpointParams := macros.EndpointTemplateParams{PublisherID: params.PublisherID}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 

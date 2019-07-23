@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strconv"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -18,6 +20,11 @@ const defaultDomain string = "tag.adkernel.com"
 
 type adkernelAdnAdapter struct {
 	EndpointTemplate template.Template
+}
+
+type structImpAdkernelAdn struct {
+	PubID int    `json:"pubId"`
+	Host  string `json:"host,omitempty"`
 }
 
 //MakeRequests prepares request information for prebid-server core
@@ -77,10 +84,11 @@ func getImpressionsInfo(imps []openrtb.Imp) ([]openrtb.Imp, []openrtb_ext.ExtImp
 }
 
 func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn) error {
-	if impExt.PublisherID < 1 {
+	pubId, err := strconv.Atoi(impExt.PublisherID)
+	if pubId < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid pubId value. Ignoring imp id=%s", imp.ID))
 	}
-	return nil
+	return err
 }
 
 //Group impressions by AdKernel-specific parameters `pubId` & `host`
@@ -138,8 +146,27 @@ func getImpressionExt(imp *openrtb.Imp) (*openrtb_ext.ExtImpAdkernelAdn, error) 
 			Message: err.Error(),
 		}
 	}
+	//unmarshal to get pubid
+	var obj structImpAdkernelAdn
+	json.Unmarshal(bidderExt.Bidder, &obj)
+	val := obj.PubID
+
+	//unmarshal to set pubid
+	objInterface := map[string]interface{}{}
+	json.Unmarshal([]byte(bidderExt.Bidder), &objInterface)
+	if reflect.TypeOf(val).String() == "int" {
+		objInterface["pubId"] = strconv.Itoa(val)
+	}
+
+	//marshal back
+	js, err := json.Marshal(objInterface)
+	if err != nil {
+		return nil, &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
 	var adkernelAdnExt openrtb_ext.ExtImpAdkernelAdn
-	if err := json.Unmarshal(bidderExt.Bidder, &adkernelAdnExt); err != nil {
+	if err := json.Unmarshal(js, &adkernelAdnExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}

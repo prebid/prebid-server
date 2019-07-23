@@ -17,6 +17,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "json: cannot unmarshal string into Go struct field ExtImpAdkernelAdn.pubId of type int"
+    "Invalid pubId value. Ignoring imp id=malconfigured-adunit"
   ]
 }
