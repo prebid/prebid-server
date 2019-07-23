@@ -41,6 +41,9 @@ func processImp(imp *openrtb.Imp) error {
 	if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
 		return err
 	}
+	if imp.Banner == nil && imp.Video == nil {
+		return fmt.Errorf("neither Banner nor Video object specified")
+	}
 	imp.TagID = tlext.InvCode
 	// floor is optional
 	if tlext.Floor == nil {
