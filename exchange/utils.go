@@ -43,8 +43,17 @@ func cleanOpenRTBRequests(ctx context.Context,
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
 
+	// Check if it's an AMP request
+	isAMP := labels.RType == pbsmetrics.ReqTypeAMP
+
+	// Check if COPPA applies for this request
+	var applyCOPPA bool
+	if orig.Regs != nil && orig.Regs.COPPA == 1 {
+		applyCOPPA = true
+	}
+
 	for bidder, bidReq := range requestsByBidder {
-		var applyGDPR, applyCOPPA, isAMP bool
+		var applyGDPR bool
 		// Fixes #820
 		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
@@ -52,12 +61,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			var publisherID = labels.PubID
 			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent); !ok && err == nil {
 				applyGDPR = true
-				isAMP = labels.RType == pbsmetrics.ReqTypeAMP
 			}
-		}
-
-		if bidReq.Regs != nil && bidReq.Regs.COPPA == 1 {
-			applyCOPPA = true
 		}
 
 		if applyGDPR || applyCOPPA {
