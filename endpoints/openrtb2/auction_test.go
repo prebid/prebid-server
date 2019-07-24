@@ -253,7 +253,12 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 
 		expectMsg := gr.messageGetter(t, fileData)
 		if len(expectMsg) > 0 {
-			assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+			//assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+			if string(expectMsg) != msg {
+				t.Errorf("[ERROR]     Test: %s \n", filename)
+				t.Errorf("[ERROR] Expected: %s ", string(expectMsg))
+				t.Errorf("[ERROR]   Actual: %s \n\n", msg)
+			}
 		}
 	}
 }

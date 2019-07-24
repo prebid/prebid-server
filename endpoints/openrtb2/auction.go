@@ -1176,7 +1176,8 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 // Checks to see if an error in an error list is a fatal error
 func fatalError(errL []error) bool {
 	for _, err := range errL {
-		if errortypes.DecodeError(err) != errortypes.BidderTemporarilyDisabledCode {
+		errCode := errortypes.DecodeError(err)
+		if errCode != errortypes.BidderTemporarilyDisabledCode {
 			return true
 		}
 	}
