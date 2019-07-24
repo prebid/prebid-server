@@ -18,14 +18,17 @@
         },
         "ext": {
           "bidder": {
-            "accountId": "123",
-            "placementId": "456",
-            "bidfloor": 1.1,
-            "cur": "GBP"
+            "accountId": "123"
           }
         }
       }
     ],
+    "device": {
+      "ua": "test-user-agent",
+      "ip": "123.123.123.123",
+      "language": "en",
+      "dnt": 0
+    },
     "site": {
       "domain": "www.publisher.com",
       "page": "http://www.publisher.com/awesome/site"
@@ -48,8 +51,6 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "bidfloor": 1.1,
-              "bidfloorcur": "GBP",
               "banner": {
                 "format": [
                   {
@@ -62,13 +63,10 @@
                   }
                 ]
               },
-              "tagid": "456/test-imp-id",
+              "tagid": "test-imp-id",
               "ext": {
                 "bidder": {
-                  "accountId": "123",
-                  "placementId": "456",
-                  "bidfloor": 1.1,
-                  "cur": "GBP"
+                  "accountId": "123"
                 }
               }
             }
@@ -80,6 +78,12 @@
           "tmax": 200,
           "user": {
             "buyeruid": "test_reader_id"
+          },
+          "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "dnt": 0,
+            "language": "en"
           }
         }
       },

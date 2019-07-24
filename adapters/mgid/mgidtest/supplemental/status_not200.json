@@ -34,7 +34,7 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "tagid": "321",
+              "tagid": "321/test-imp-id",
               "banner": {
                 "format": [
                   {

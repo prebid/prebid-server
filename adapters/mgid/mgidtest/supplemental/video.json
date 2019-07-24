@@ -30,7 +30,7 @@
           "imp": [
             {
               "id": "test-imp-id",
-              "tagid": "456",
+              "tagid": "456/test-imp-id",
               "video": {
                 "mimes": ["video/mp4"],
                 "protocols": [2, 5],
