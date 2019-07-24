@@ -229,10 +229,8 @@ func newEventProducers(cfg *config.StoredRequestsSlim, client *http.Client, db *
 	if cfg.CacheEvents.Enabled {
 		eventProducers = append(eventProducers, newEventsAPI(router, cfg.CacheEvents.Endpoint))
 	}
-	if cfg.HTTPEvents.RefreshRate != 0 {
-		if cfg.HTTPEvents.Endpoint != "" {
-			eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
-		}
+	if cfg.HTTPEvents.RefreshRate != 0 && cfg.HTTPEvents.Endpoint != "" {
+		eventProducers = append(eventProducers, newHttpEvents(client, cfg.HTTPEvents.TimeoutDuration(), cfg.HTTPEvents.RefreshRateDuration(), cfg.HTTPEvents.Endpoint))
 	}
 	if cfg.Postgres.CacheInitialization.Query != "" {
 		// Make sure we don't miss any updates in between the initial fetch and the "update" polling.

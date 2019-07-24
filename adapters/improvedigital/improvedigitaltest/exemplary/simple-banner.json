@@ -6,7 +6,6 @@
         },
         "imp": [{
             "id": "test-imp-id",
-            "pid": 123,
             "banner": {
                 "format": [{
                     "w": 300,

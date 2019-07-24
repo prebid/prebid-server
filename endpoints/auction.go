@@ -33,13 +33,6 @@ type bidResult struct {
 
 const defaultPriceGranularity = "med"
 
-// Constant keys for ad server targeting for responses to Prebid Mobile
-const hbpbConstantKey = "hb_pb"
-const hbBidderConstantKey = "hb_bidder"
-const hbCacheIdConstantKey = "hb_cache_id"
-const hbDealIdConstantKey = "hb_deal"
-const hbSizeConstantKey = "hb_size"
-
 func min(x, y int) int {
 	if x < y {
 		return x
@@ -104,11 +97,11 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	defer func() {
 		if req == nil {
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(labels, 0)
+			a.metricsEngine.RecordLegacyImps(labels, 0)
 		} else {
 			// handles the case that ParsePBSRequest returns an error, so req.Start is not defined
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(labels, len(req.AdUnits))
+			a.metricsEngine.RecordLegacyImps(labels, len(req.AdUnits))
 			a.metricsEngine.RecordRequestTime(labels, time.Since(req.Start))
 		}
 	}()
@@ -445,16 +438,16 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbSize = width + "x" + height
 			}
 
-			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
-			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
-			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
-			hbDealIdBidderKey := hbDealIdConstantKey + "_" + bid.BidderCode
-			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
+			hbPbBidderKey := string(openrtb_ext.HbpbConstantKey) + "_" + bid.BidderCode
+			hbBidderBidderKey := string(openrtb_ext.HbBidderConstantKey) + "_" + bid.BidderCode
+			hbCacheIDBidderKey := string(openrtb_ext.HbCacheKey) + "_" + bid.BidderCode
+			hbDealIDBidderKey := string(openrtb_ext.HbDealIDConstantKey) + "_" + bid.BidderCode
+			hbSizeBidderKey := string(openrtb_ext.HbSizeConstantKey) + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
-				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
-				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbCacheIDBidderKey = hbCacheIDBidderKey[:min(len(hbCacheIDBidderKey), int(pbs_req.MaxKeyLength))]
+				hbDealIDBidderKey = hbDealIDBidderKey[:min(len(hbDealIDBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 
@@ -466,24 +459,24 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 			kvs[hbPbBidderKey] = roundedCpm
 			kvs[hbBidderBidderKey] = bid.BidderCode
-			kvs[hbCacheIdBidderKey] = bid.CacheID
+			kvs[hbCacheIDBidderKey] = bid.CacheID
 
 			if hbSize != "" {
 				kvs[hbSizeBidderKey] = hbSize
 			}
 			if bid.DealId != "" {
-				kvs[hbDealIdBidderKey] = bid.DealId
+				kvs[hbDealIDBidderKey] = bid.DealId
 			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
-				kvs[hbpbConstantKey] = roundedCpm
-				kvs[hbBidderConstantKey] = bid.BidderCode
-				kvs[hbCacheIdConstantKey] = bid.CacheID
+				kvs[string(openrtb_ext.HbpbConstantKey)] = roundedCpm
+				kvs[string(openrtb_ext.HbBidderConstantKey)] = bid.BidderCode
+				kvs[string(openrtb_ext.HbCacheKey)] = bid.CacheID
 				if bid.DealId != "" {
-					kvs[hbDealIdConstantKey] = bid.DealId
+					kvs[string(openrtb_ext.HbDealIDConstantKey)] = bid.DealId
 				}
 				if hbSize != "" {
-					kvs[hbSizeConstantKey] = hbSize
+					kvs[string(openrtb_ext.HbSizeConstantKey)] = hbSize
 				}
 			}
 		}

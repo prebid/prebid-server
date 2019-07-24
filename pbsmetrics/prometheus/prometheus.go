@@ -16,6 +16,7 @@ type Metrics struct {
 	connCounter          prometheus.Gauge
 	connError            *prometheus.CounterVec
 	imps                 *prometheus.CounterVec
+	legacyImps           *prometheus.CounterVec
 	requests             *prometheus.CounterVec
 	reqTimer             *prometheus.HistogramVec
 	adaptRequests        *prometheus.CounterVec
@@ -31,6 +32,25 @@ type Metrics struct {
 	storedImpCacheResult *prometheus.CounterVec
 }
 
+const (
+	requestTypeLabel    = "request_type"
+	demandSourceLabel   = "demand_source"
+	browserLabel        = "browser"
+	cookieLabel         = "cookie"
+	responseStatusLabel = "response_status"
+	adapterLabel        = "adapter"
+	adapterBidLabel     = "adapter_bid"
+	markupTypeLabel     = "markup_type"
+	bidTypeLabel        = "bid_type"
+	adapterErrLabel     = "adapter_error"
+	cacheResultLabel    = "cache_result"
+	gdprBlockedLabel    = "gdpr_blocked"
+	bannerLabel         = "banner"
+	videoLabel          = "video"
+	audioLabel          = "audio"
+	nativeLabel         = "native"
+)
+
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
 // Its own function to keep the metric creation function cleaner.
 func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
@@ -38,11 +58,13 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
 	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
 
-	standardLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "response_status"}
+	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel}
 
-	adapterLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter"}
-	bidLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_bid", "adapter", "bidtype", "markup_type"}
-	errorLabelNames := []string{"demand_source", "request_type", "browser", "cookie", "adapter_error", "adapter"}
+	adapterLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel}
+	bidLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel, bidTypeLabel, markupTypeLabel}
+	errorLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterErrLabel, adapterLabel}
+
+	impLabelNames := []string{bannerLabel, videoLabel, audioLabel, nativeLabel}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
@@ -53,11 +75,16 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"ErrorType"},
 	)
 	metrics.Registry.MustRegister(metrics.connError)
-	metrics.imps = newCounter(cfg, "imps_requested_total",
-		"Total number of impressions requested through PBS.",
-		standardLabelNames,
+	metrics.imps = newCounter(cfg, "imps_requested",
+		"Count of Impressions by type and in total requested through PBS.",
+		impLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
+	metrics.legacyImps = newCounter(cfg, "legacy_imps_requested",
+		"Total number of impressions requested through legacy PBS.",
+		standardLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.legacyImps)
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
@@ -90,12 +117,12 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.adaptBids)
 	metrics.storedReqCacheResult = newCounter(cfg, "stored_request_cache_performance",
 		"Number of stored request cache hits vs miss",
-		standardLabelNames,
+		[]string{"cache_result"},
 	)
 	metrics.Registry.MustRegister(metrics.storedReqCacheResult)
 	metrics.storedImpCacheResult = newCounter(cfg, "stored_imp_cache_performance",
 		"Number of stored imp cache hits vs miss",
-		standardLabelNames,
+		[]string{"cache_result"},
 	)
 	metrics.Registry.MustRegister(metrics.storedImpCacheResult)
 	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
@@ -112,7 +139,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.cookieSync)
 	metrics.adaptCookieSync = newCounter(cfg, "cookie_sync_returns",
 		"Number of syncs generated for a bidder, and if they were subsequently blocked.",
-		[]string{"adapter", "gdpr_blocked"},
+		[]string{adapterLabel, gdprBlockedLabel},
 	)
 	metrics.Registry.MustRegister(metrics.adaptCookieSync)
 	metrics.userID = newCounter(cfg, "setuid_calls",
@@ -188,8 +215,14 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 	me.requests.With(resolveLabels(labels)).Inc()
 }
 
-func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
-	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
+func (me *Metrics) RecordImps(implabels pbsmetrics.ImpLabels) {
+	me.imps.With(resolveImpLabels(implabels)).Inc()
+}
+
+func (me *Metrics) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	var lbls prometheus.Labels
+	lbls = resolveLabels(labels)
+	me.legacyImps.With(lbls).Add(float64(numImps))
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
@@ -227,12 +260,12 @@ func (me *Metrics) RecordCookieSync(labels pbsmetrics.Labels) {
 
 func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
 	labels := prometheus.Labels{
-		"adapter": string(adapter),
+		adapterLabel: string(adapter),
 	}
 	if gdprBlocked {
-		labels["gdpr_blocked"] = "true"
+		labels[gdprBlockedLabel] = "true"
 	} else {
-		labels["gdpr_blocked"] = "false"
+		labels[gdprBlockedLabel] = "false"
 	}
 	me.adaptCookieSync.With(labels).Inc()
 }
@@ -240,7 +273,7 @@ func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprB
 // RecordStoredReqCacheResult records cache hits and misses when looking up stored requests
 func (me *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	labels := prometheus.Labels{
-		"cache_result": string(cacheResult),
+		cacheResultLabel: string(cacheResult),
 	}
 
 	me.storedReqCacheResult.With(labels).Add(float64(inc))
@@ -249,7 +282,7 @@ func (me *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult
 // RecordStoredImpCacheResult records cache hits and misses when looking up stored imps
 func (me *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	labels := prometheus.Labels{
-		"cache_result": string(cacheResult),
+		cacheResultLabel: string(cacheResult),
 	}
 
 	me.storedImpCacheResult.With(labels).Add(float64(inc))
@@ -261,54 +294,54 @@ func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
 	return prometheus.Labels{
-		"demand_source": string(labels.Source),
-		"request_type":  string(labels.RType),
+		demandSourceLabel: string(labels.Source),
+		requestTypeLabel:  string(labels.RType),
 		// "pubid":   labels.PubID,
-		"browser":         string(labels.Browser),
-		"cookie":          string(labels.CookieFlag),
-		"response_status": string(labels.RequestStatus),
+		browserLabel:        string(labels.Browser),
+		cookieLabel:         string(labels.CookieFlag),
+		responseStatusLabel: string(labels.RequestStatus),
 	}
 }
 
 func resolveAdapterLabels(labels pbsmetrics.AdapterLabels) prometheus.Labels {
 	return prometheus.Labels{
-		"demand_source": string(labels.Source),
-		"request_type":  string(labels.RType),
+		demandSourceLabel: string(labels.Source),
+		requestTypeLabel:  string(labels.RType),
 		// "pubid":   labels.PubID,
-		"browser":     string(labels.Browser),
-		"cookie":      string(labels.CookieFlag),
-		"adapter_bid": string(labels.AdapterBids),
-		"adapter":     string(labels.Adapter),
+		browserLabel:    string(labels.Browser),
+		cookieLabel:     string(labels.CookieFlag),
+		adapterBidLabel: string(labels.AdapterBids),
+		adapterLabel:    string(labels.Adapter),
 	}
 }
 
 func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) prometheus.Labels {
 	bidLabels := prometheus.Labels{
-		"demand_source": string(labels.Source),
-		"request_type":  string(labels.RType),
+		demandSourceLabel: string(labels.Source),
+		requestTypeLabel:  string(labels.RType),
 		// "pubid":   labels.PubID,
-		"browser":     string(labels.Browser),
-		"cookie":      string(labels.CookieFlag),
-		"adapter_bid": string(labels.AdapterBids),
-		"adapter":     string(labels.Adapter),
-		"bidtype":     string(bidType),
-		"markup_type": "unknown",
+		browserLabel:    string(labels.Browser),
+		cookieLabel:     string(labels.CookieFlag),
+		adapterBidLabel: string(labels.AdapterBids),
+		adapterLabel:    string(labels.Adapter),
+		bidTypeLabel:    string(bidType),
+		markupTypeLabel: "unknown",
 	}
 	if hasAdm {
-		bidLabels["markup_type"] = "adm"
+		bidLabels[markupTypeLabel] = "adm"
 	}
 	return bidLabels
 }
 
 func resolveAdapterErrorLabels(labels pbsmetrics.AdapterLabels, errorType string) prometheus.Labels {
 	return prometheus.Labels{
-		"demand_source": string(labels.Source),
-		"request_type":  string(labels.RType),
+		demandSourceLabel: string(labels.Source),
+		requestTypeLabel:  string(labels.RType),
 		// "pubid":   labels.PubID,
-		"browser":       string(labels.Browser),
-		"cookie":        string(labels.CookieFlag),
-		"adapter_error": errorType,
-		"adapter":       string(labels.Adapter),
+		browserLabel:    string(labels.Browser),
+		cookieLabel:     string(labels.CookieFlag),
+		adapterErrLabel: errorType,
+		adapterLabel:    string(labels.Adapter),
 	}
 }
 
@@ -317,6 +350,28 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 		"action": string(userLabels.Action),
 		"bidder": string(userLabels.Bidder),
 	}
+}
+
+func resolveImpLabels(labels pbsmetrics.ImpLabels) prometheus.Labels {
+	var impLabels prometheus.Labels = prometheus.Labels{
+		bannerLabel: "no",
+		videoLabel:  "no",
+		audioLabel:  "no",
+		nativeLabel: "no",
+	}
+	if labels.BannerImps {
+		impLabels[bannerLabel] = "yes"
+	}
+	if labels.VideoImps {
+		impLabels[videoLabel] = "yes"
+	}
+	if labels.AudioImps {
+		impLabels[audioLabel] = "yes"
+	}
+	if labels.NativeImps {
+		impLabels[nativeLabel] = "yes"
+	}
+	return impLabels
 }
 
 // initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances
@@ -328,22 +383,21 @@ func initializeTimeSeries(m *Metrics) {
 	}
 
 	// Standard labels
-	labels = addDimension([]prometheus.Labels{}, "demand_source", demandTypesAsString())
-	labels = addDimension(labels, "request_type", requestTypesAsString())
-	labels = addDimension(labels, "browser", browserTypesAsString())
-	labels = addDimension(labels, "cookie", cookieTypesAsString())
+	labels = addDimension([]prometheus.Labels{}, demandSourceLabel, demandTypesAsString())
+	labels = addDimension(labels, requestTypeLabel, requestTypesAsString())
+	labels = addDimension(labels, browserLabel, browserTypesAsString())
+	labels = addDimension(labels, cookieLabel, cookieTypesAsString())
 	adapterLabels := labels // save regenerating these dimensions for adapter status
-	labels = addDimension(labels, "response_status", requestStatusesAsString())
+	labels = addDimension(labels, responseStatusLabel, requestStatusesAsString())
 	for _, l := range labels {
-		_ = m.imps.With(l)
 		_ = m.requests.With(l)
 		_ = m.reqTimer.With(l)
 	}
 
 	// Adapter labels
-	labels = addDimension(adapterLabels, "adapter", adaptersAsString())
+	labels = addDimension(adapterLabels, adapterLabel, adaptersAsString())
 	errorLabels := labels // save regenerating these dimensions for adapter errors
-	labels = addDimension(labels, "adapter_bid", adapterBidsAsString())
+	labels = addDimension(labels, adapterBidLabel, adapterBidsAsString())
 	for _, l := range labels {
 		_ = m.adaptRequests.With(l)
 		_ = m.adaptTimer.With(l)
@@ -351,19 +405,33 @@ func initializeTimeSeries(m *Metrics) {
 		_ = m.adaptPanics.With(l)
 	}
 	// AdapterBid labels
-	labels = addDimension(labels, "bidtype", bidTypesAsString())
-	labels = addDimension(labels, "markup_type", []string{"unknown", "adm"})
+	labels = addDimension(labels, bidTypeLabel, bidTypesAsString())
+	labels = addDimension(labels, markupTypeLabel, []string{"unknown", "adm"})
 	for _, l := range labels {
 		_ = m.adaptBids.With(l)
 	}
-	labels = addDimension(errorLabels, "adapter_error", adapterErrorsAsString())
+	labels = addDimension(errorLabels, adapterErrLabel, adapterErrorsAsString())
 	for _, l := range labels {
 		_ = m.adaptErrors.With(l)
 	}
-	cookieLabels := addDimension([]prometheus.Labels{}, "adapter", adaptersAsString())
-	cookieLabels = addDimension(cookieLabels, "gdpr_blocked", []string{"true", "false"})
+	cookieLabels := addDimension([]prometheus.Labels{}, adapterLabel, adaptersAsString())
+	cookieLabels = addDimension(cookieLabels, gdprBlockedLabel, []string{"true", "false"})
 	for _, l := range cookieLabels {
 		_ = m.adaptCookieSync.With(l)
+	}
+	cacheLabels := addDimension([]prometheus.Labels{}, "cache_result", cacheResultAsString())
+	for _, l := range cacheLabels {
+		_ = m.storedImpCacheResult.With(l)
+		_ = m.storedReqCacheResult.With(l)
+	}
+
+	// ImpType labels
+	impTypeLabels := addDimension([]prometheus.Labels{}, bannerLabel, []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, videoLabel, []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, audioLabel, []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, nativeLabel, []string{"yes", "no"})
+	for _, l := range impTypeLabels {
+		_ = m.imps.With(l)
 	}
 }
 
@@ -456,6 +524,15 @@ func adapterBidsAsString() []string {
 
 func adapterErrorsAsString() []string {
 	list := pbsmetrics.AdapterErrors()
+	output := make([]string, len(list))
+	for i, s := range list {
+		output[i] = string(s)
+	}
+	return output
+}
+
+func cacheResultAsString() []string {
+	list := pbsmetrics.CacheResults()
 	output := make([]string, len(list))
 	for i, s := range list {
 		output[i] = string(s)

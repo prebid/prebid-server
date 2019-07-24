@@ -1,0 +1,9 @@
+maintainer:
+  email: "prodev@unrulymedia.com"
+capabilities:
+  site:
+    mediaTypes:
+      - video
+  app:
+    mediaTypes:
+      - video

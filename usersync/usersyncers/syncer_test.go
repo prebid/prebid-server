@@ -34,15 +34,25 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderPubmatic):       syncConfig,
 			string(openrtb_ext.BidderPulsepoint):     syncConfig,
 			string(openrtb_ext.BidderRhythmone):      syncConfig,
+			string(openrtb_ext.BidderRTBHouse):       syncConfig,
 			string(openrtb_ext.BidderRubicon):        syncConfig,
+			string(openrtb_ext.BidderSharethrough):   syncConfig,
 			string(openrtb_ext.BidderSomoaudience):   syncConfig,
 			string(openrtb_ext.BidderSovrn):          syncConfig,
 			string(openrtb_ext.Bidder33Across):       syncConfig,
 			string(openrtb_ext.BidderSonobi):         syncConfig,
+			string(openrtb_ext.BidderVrtcal):         syncConfig,
 			string(openrtb_ext.BidderYieldmo):        syncConfig,
+			string(openrtb_ext.BidderVisx):           syncConfig,
 			string(openrtb_ext.BidderGamoshi):        syncConfig,
+			string(openrtb_ext.BidderUnruly):         syncConfig,
 		},
 	}
+
+	adaptersWithoutSyncers := map[openrtb_ext.BidderName]bool{
+		openrtb_ext.BidderTappx: true,
+	}
+
 	for bidder, config := range cfg.Adapters {
 		delete(cfg.Adapters, bidder)
 		cfg.Adapters[strings.ToLower(string(bidder))] = config
@@ -50,7 +60,8 @@ func TestNewSyncerMap(t *testing.T) {
 
 	syncers := NewSyncerMap(cfg)
 	for _, bidderName := range openrtb_ext.BidderMap {
-		if _, ok := syncers[bidderName]; !ok {
+		_, adapterWithoutSyncer := adaptersWithoutSyncers[bidderName]
+		if _, ok := syncers[bidderName]; !ok && !adapterWithoutSyncer {
 			t.Errorf("No syncer exists for adapter: %s", bidderName)
 		}
 	}

@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/stretchr/testify/assert"
 )
 
 var gaugeValueRegexp = regexp.MustCompile("gauge:<value:([0-9]+) >")
@@ -69,7 +71,7 @@ func TestRequestMetrics(t *testing.T) {
 	assertCounterValue(t, "requests[4]", &metrics4, 1)
 }
 
-func TestImpMetrics(t *testing.T) {
+func TestLegacyImpMetrics(t *testing.T) {
 	proMetrics := newTestMetricsEngine()
 
 	metrics0 := dto.Metric{}
@@ -78,25 +80,85 @@ func TestImpMetrics(t *testing.T) {
 	metrics3 := dto.Metric{}
 	metrics4 := dto.Metric{}
 
-	proMetrics.RecordImps(labels[0], 1)
-	proMetrics.RecordImps(labels[1], 5)
-	proMetrics.RecordImps(labels[0], 2)
-	proMetrics.RecordImps(labels[2], 2)
-	proMetrics.RecordImps(labels[0], 7)
-	proMetrics.RecordImps(labels[2], 1)
-	proMetrics.RecordImps(labels[4], 1)
+	proMetrics.RecordLegacyImps(labels[0], 1)
+	proMetrics.RecordLegacyImps(labels[1], 5)
+	proMetrics.RecordLegacyImps(labels[0], 2)
+	proMetrics.RecordLegacyImps(labels[2], 2)
+	proMetrics.RecordLegacyImps(labels[0], 7)
+	proMetrics.RecordLegacyImps(labels[2], 1)
+	proMetrics.RecordLegacyImps(labels[4], 1)
 
-	proMetrics.imps.With(resolveLabels(labels[0])).Write(&metrics0)
-	proMetrics.imps.With(resolveLabels(labels[1])).Write(&metrics1)
-	proMetrics.imps.With(resolveLabels(labels[2])).Write(&metrics2)
-	proMetrics.imps.With(resolveLabels(labels[3])).Write(&metrics3)
-	proMetrics.imps.With(resolveLabels(labels[4])).Write(&metrics4)
+	proMetrics.legacyImps.With(resolveLabels(labels[0])).Write(&metrics0)
+	proMetrics.legacyImps.With(resolveLabels(labels[1])).Write(&metrics1)
+	proMetrics.legacyImps.With(resolveLabels(labels[2])).Write(&metrics2)
+	proMetrics.legacyImps.With(resolveLabels(labels[3])).Write(&metrics3)
+	proMetrics.legacyImps.With(resolveLabels(labels[4])).Write(&metrics4)
 
-	assertCounterValue(t, "imps_requested[0]", &metrics0, 10)
-	assertCounterValue(t, "imps_requested[1]", &metrics1, 5)
-	assertCounterValue(t, "imps_requested[2]", &metrics2, 3)
-	assertCounterValue(t, "imps_requested[3]", &metrics3, 0)
-	assertCounterValue(t, "imps_requested[4]", &metrics4, 1)
+	assertCounterValue(t, "legacyImps_requested[0]", &metrics0, 10)
+	assertCounterValue(t, "legacyImps_requested[1]", &metrics1, 5)
+	assertCounterValue(t, "legacyImps_requested[2]", &metrics2, 3)
+	assertCounterValue(t, "legacyImps_requested[3]", &metrics3, 0)
+	assertCounterValue(t, "legacyImps_requested[4]", &metrics4, 1)
+}
+
+func TestImpMetrics(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metrics0 := dto.Metric{}
+	metrics1 := dto.Metric{}
+	metrics2 := dto.Metric{}
+	metrics3 := dto.Metric{}
+
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[1])
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[2])
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[2])
+	proMetrics.RecordImps(impTypeLabels[3])
+
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[0])).Write(&metrics0)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[1])).Write(&metrics1)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[2])).Write(&metrics2)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[3])).Write(&metrics3)
+
+	assertCounterValue(t, "imp_metrics[0]", &metrics0, 3)
+	assertCounterValue(t, "imp_metrics[1]", &metrics1, 1)
+	assertCounterValue(t, "imp_metrics[2]", &metrics2, 2)
+	assertCounterValue(t, "imp_metrics[3]", &metrics3, 1)
+}
+
+func TestRecordImps(t *testing.T) {
+	var sampleEngine *Metrics = newTestMetricsEngine()
+	var sampleMetrics dto.Metric = dto.Metric{}
+	var samplePBSImpLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: true,
+	}
+	var samplePrometheusMetrics prometheus.Labels = resolveImpLabels(samplePBSImpLabels)
+
+	sampleEngine.RecordImps(samplePBSImpLabels)
+	sampleEngine.imps.With(samplePrometheusMetrics).Write(&sampleMetrics)
+
+	for _, metricLabel := range sampleMetrics.Label {
+		var impType string = *metricLabel.Name
+		switch impType {
+		case "banner":
+			assert.Equal(t, *metricLabel.Value, "no", "'banner")
+		case "video":
+			assert.Equal(t, *metricLabel.Value, "no", "'video' should equal 'no'")
+		case "audio":
+			assert.Equal(t, *metricLabel.Value, "no", "'audio' should equal 'no'")
+		case "native":
+			assert.Equal(t, *metricLabel.Value, "yes", "'native' should equal 'yes'")
+		default:
+			fmt.Printf("'%s' is not recognized as a label \n", impType)
+		}
+	}
+
+	assertCounterValue(t, "imps_types_banner_count", &sampleMetrics, 1)
 }
 
 func TestTimerMetrics(t *testing.T) {
@@ -279,6 +341,40 @@ func TestAdapterTimeMetrics(t *testing.T) {
 
 }
 
+func TestRecordStoredReqCacheResult(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricCacheHit := dto.Metric{}
+	metricCacheMiss := dto.Metric{}
+
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 2)
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 0)
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, 1)
+
+	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
+	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
+
+	assertCounterValue(t, "stored_request_cache_performance[hit]", &metricCacheHit, 2)
+	assertCounterValue(t, "stored_request_cache_performance[miss]", &metricCacheMiss, 1)
+}
+
+func TestRecordStoredImpCacheResult(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricCacheHit := dto.Metric{}
+	metricCacheMiss := dto.Metric{}
+
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 2)
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 0)
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, 1)
+
+	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
+	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
+
+	assertCounterValue(t, "stored_imp_cache_performance[hit]", &metricCacheHit, 2)
+	assertCounterValue(t, "stored_imp_cache_performance[miss]", &metricCacheMiss, 1)
+}
+
 func TestCookieMetrics(t *testing.T) {
 	proMetrics := newTestMetricsEngine()
 
@@ -332,6 +428,7 @@ func TestMetricsExist(t *testing.T) {
 
 	if err := proMetrics.Registry.Register(prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "prebid",
+		Subsystem: "server",
 		Name:      "active_connections",
 		Help:      "Current number of active (open) connections.",
 	})); err == nil {
@@ -343,7 +440,7 @@ func newTestMetricsEngine() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
-		Subsystem: "",
+		Subsystem: "server",
 	})
 }
 
@@ -387,6 +484,37 @@ var labels = []pbsmetrics.Labels{
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
+	},
+}
+
+var impTypeLabels = []pbsmetrics.ImpLabels{
+	{
+		//impType: "banner",
+		BannerImps: true,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: false,
+	},
+	{
+		//impType: "audio",
+		BannerImps: false,
+		VideoImps:  true,
+		AudioImps:  false,
+		NativeImps: false,
+	},
+	{
+		//impType: "video",
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  true,
+		NativeImps: false,
+	},
+	{
+		//impType: "native",
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: true,
 	},
 }
 
