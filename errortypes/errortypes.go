@@ -6,6 +6,7 @@ const (
 	NoErrorCode = iota
 	TimeoutCode
 	BadInputCode
+	BlacklistedAppCode
 	BadServerResponseCode
 	FailedToRequestBidsCode
 	BidderTemporarilyDisabledCode
@@ -49,6 +50,22 @@ func (err *BadInput) Error() string {
 
 func (err *BadInput) Code() int {
 	return BadInputCode
+}
+
+// BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedApp struct {
+	Message string
+}
+
+func (err *BlacklistedApp) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedApp) Code() int {
+	return BlacklistedAppCode
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.

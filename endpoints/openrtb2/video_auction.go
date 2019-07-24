@@ -189,9 +189,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.PubID = effectivePubID(bidReq.App.Publisher)
-		if _, found := deps.cfg.BlacklistedAppMap[labels.PubID]; found {
-			return
-		}
 	} else { // both bidReq.App == nil and bidReq.Site != nil are true
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -245,14 +242,19 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 
 func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
-	w.WriteHeader(http.StatusInternalServerError)
+	if errortypes.DecodeError(errL[0]) == errortypes.BlacklistedAppCode {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		ao.Status = http.StatusServiceUnavailable
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		ao.Status = http.StatusInternalServerError
+	}
 	var errors string
 	for _, er := range errL {
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
-	ao.Status = http.StatusInternalServerError
 	ao.Errors = append(ao.Errors, errL...)
 }
 
@@ -562,6 +564,9 @@ type PodError struct {
 func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) ([]error, []PodError) {
 	errL := []error{}
 
+	if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
+		return []error{&errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}}, nil
+	}
 	if deps.cfg.VideoStoredRequestRequired && req.StoredRequestId == "" {
 		err := errors.New("request missing required field: storedrequestid")
 		errL = append(errL, err)
