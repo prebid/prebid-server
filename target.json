@@ -1,0 +1,14 @@
+[
+    {
+        "provider" : "google",
+        "project" : "spil-portal-services",
+        "region" : "europe-west1",
+        "resourceLabels" : ["deploy-target:primary"]
+    },
+    {
+        "provider" : "google",
+        "project" : "spil-portal-services",
+        "region" : "europe-west1",
+        "resourceLabels" : ["deploy-target:tertiary"]
+    }
+]

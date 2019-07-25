@@ -1,0 +1,5 @@
+consul:
+  image: eu.gcr.io/spil-infra-registry/image-consul:20150508151709
+  ports:
+   - "8500:8500"    # makes it easy to access webui of consul
+  command: -advertise %%DOCKER_HOST_IP%%

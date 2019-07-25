@@ -1,41 +1,29 @@
 # Makefile
+APP=prebid-server
 
-all:
-	@echo ""
-	@echo "  install: install dep (assumes go is installed)"
-	@echo "  deps: grab dependencies using dep"
-	@echo "  test: test prebid-server (via validate.sh)"
-	@echo "  build: build prebid-server"
-	@echo "  image: build docker image"
-	@echo ""
 
-.PHONY: install deps test build image
+PROJECT-TYPE=other
+CONTAINER_PORTS=-p 5000:8000/tcp -p 18080:8080/tcp
+BUILD_CREDENTIALS=true
 
-# install dep https://golang.github.io/dep/ (assumes go is already installed)
-install:
-	export DEP_RELEASE_TAG=v0.4.1
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+# overrides
+.ME-postup=off
+.ME-test=off
 
-# deps will clean out the vendor directory and use dep for a fresh install
-deps:
-	-rm -rf vendor
-	dep ensure
 
-# test will ensure that all of our dependencies are available and run validate.sh
-test: deps
-	./validate.sh
+# Include common makefile
+-include microservices-ext/make/Makefile-common.mk
 
-	# TODO: when adapters are in their own packages we can enable adapter-specific testing by passing the "adapter" argument
-	#ifeq ($(adapter),"all")
-	#	./validate.sh
-	#else
-	#	go test github.com/prebid/prebid-server/adapters/$(adapter) -bench=.
-	#endif
+# Or get it, if it's not there
+GITURL:=$(shell git remote -v | awk '{sub("8/.*", "8/", $$2); print $$2}' | head -1)
+$(.ME-ext)microservices-ext:
+	git clone -q https://github.com/spilgames/microservices-ext
+	-@test "`grep microservices-ext .gitignore`" || echo "microservices-ext/" >> .gitignore
+	@make $(MAKECMDGOALS)
 
-# build will ensure all of our tests pass and then build the go binary
-build: test
-	go build .
 
-# image will build a docker image
-image: build
-	docker build -t prebid-server .
+postup::
+	$(CONSUL) wait
+
+test:
+	@curl -i 'localhost:5000' | grep 200
