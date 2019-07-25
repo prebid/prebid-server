@@ -1,0 +1,622 @@
+package vssp
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/buger/jsonparser"
+	"github.com/prebid/prebid-server/pbs"
+
+	"golang.org/x/net/context/ctxhttp"
+
+	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
+)
+
+type VsspAdapter struct {
+	http           *adapters.HTTPAdapter
+	URI            string
+	iabCategoryMap map[string]string
+}
+
+// used for cookies and such
+func (a *VsspAdapter) Name() string {
+	return "vssp"
+}
+
+func (a *VsspAdapter) SkipNoCookies() bool {
+	return false
+}
+
+type KeyVal struct {
+	Key    string   `json:"key,omitempty"`
+	Values []string `json:"value,omitempty"`
+}
+
+type vsspAdapterOptions struct {
+	IabCategories map[string]string `json:"iab_categories"`
+}
+
+type vsspParams struct {
+	LegacyPlacementId       int             `json:"placementId"`
+	LegacyInvCode           string          `json:"invCode"`
+	LegacyTrafficSourceCode string          `json:"trafficSourceCode"`
+	PlacementId             int             `json:"placement_id"`
+	InvCode                 string          `json:"inv_code"`
+	Member                  string          `json:"member"`
+	Keywords                []KeyVal        `json:"keywords"`
+	TrafficSourceCode       string          `json:"traffic_source_code"`
+	Reserve                 float64         `json:"reserve"`
+	Position                string          `json:"position"`
+	UsePmtRule              *bool           `json:"use_pmt_rule"`
+	PrivateSizes            json.RawMessage `json:"private_sizes"`
+}
+
+type vsspImpExtVssp struct {
+	PlacementID       int             `json:"placement_id,omitempty"`
+	Keywords          string          `json:"keywords,omitempty"`
+	TrafficSourceCode string          `json:"traffic_source_code,omitempty"`
+	UsePmtRule        *bool           `json:"use_pmt_rule,omitempty"`
+	PrivateSizes      json.RawMessage `json:"private_sizes,omitempty"`
+}
+
+type vsspImpExt struct {
+	Vssp vsspImpExtVssp `json:"vssp"`
+}
+
+type vsspBidExtVideo struct {
+	Duration int `json:"duration"`
+}
+
+type vsspBidExtCreative struct {
+	Video vsspBidExtVideo `json:"video"`
+}
+
+type vsspBidExtVssp struct {
+	BidType       int                `json:"bid_ad_type"`
+	BrandId       int                `json:"brand_id"`
+	BrandCategory int                `json:"brand_category_id"`
+	CreativeInfo  vsspBidExtCreative `json:"creative_info"`
+}
+
+type vsspBidExt struct {
+	Vssp vsspBidExtVssp `json:"vssp"`
+}
+
+type vsspReqExtVssp struct {
+	IncludeBrandCategory    *bool `json:"include_brand_category,omitempty"`
+	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness,omitempty"`
+	IsAMP                   int   `json:"is_amp,omitempty"`
+}
+
+// Full request extension including vssp extension object
+type vsspReqExt struct {
+	openrtb_ext.ExtRequest
+	Vssp *vsspReqExtVssp `json:"vssp,omitempty"`
+}
+
+var maxImpsPerReq = 10
+
+func (a *VsspAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
+	supportedMediaTypes := []pbs.MediaType{pbs.MEDIA_TYPE_BANNER, pbs.MEDIA_TYPE_VIDEO}
+	anReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), supportedMediaTypes)
+
+	if err != nil {
+		return nil, err
+	}
+	uri := a.URI
+	for i, unit := range bidder.AdUnits {
+		var params vsspParams
+		err := json.Unmarshal(unit.Params, &params)
+		if err != nil {
+			return nil, err
+		}
+		// Accept legacy Vssp parameters if we don't have modern ones
+		// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
+		if params.PlacementId == 0 && params.LegacyPlacementId != 0 {
+			params.PlacementId = params.LegacyPlacementId
+		}
+		if params.InvCode == "" && params.LegacyInvCode != "" {
+			params.InvCode = params.LegacyInvCode
+		}
+		if params.TrafficSourceCode == "" && params.LegacyTrafficSourceCode != "" {
+			params.TrafficSourceCode = params.LegacyTrafficSourceCode
+		}
+
+		if params.PlacementId == 0 && (params.InvCode == "" || params.Member == "") {
+			return nil, &errortypes.BadInput{
+				Message: "No placement or member+invcode provided",
+			}
+		}
+
+		// Fixes some segfaults. Since this is legacy code, I'm not looking into it too deeply
+		if len(anReq.Imp) <= i {
+			break
+		}
+		if params.InvCode != "" {
+			anReq.Imp[i].TagID = params.InvCode
+			if params.Member != "" {
+				// this assumes that the same member ID is used across all tags, which should be the case
+				uri = appendMemberId(a.URI, params.Member)
+			}
+
+		}
+		if params.Reserve > 0 {
+			anReq.Imp[i].BidFloor = params.Reserve // TODO: we need to factor in currency here if non-USD
+		}
+		if anReq.Imp[i].Banner != nil && params.Position != "" {
+			if params.Position == "above" {
+				anReq.Imp[i].Banner.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+			} else if params.Position == "below" {
+				anReq.Imp[i].Banner.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+			}
+		}
+
+		kvs := make([]string, 0, len(params.Keywords)*2)
+		for _, kv := range params.Keywords {
+			if len(kv.Values) == 0 {
+				kvs = append(kvs, kv.Key)
+			} else {
+				for _, val := range kv.Values {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
+				}
+
+			}
+		}
+
+		keywordStr := strings.Join(kvs, ",")
+
+		impExt := vsspImpExt{Vssp: vsspImpExtVssp{
+			PlacementID:       params.PlacementId,
+			TrafficSourceCode: params.TrafficSourceCode,
+			Keywords:          keywordStr,
+			UsePmtRule:        params.UsePmtRule,
+			PrivateSizes:      params.PrivateSizes,
+		}}
+		anReq.Imp[i].Ext, err = json.Marshal(&impExt)
+	}
+
+	reqJSON, err := json.Marshal(anReq)
+	if err != nil {
+		return nil, err
+	}
+
+	debug := &pbs.BidderDebug{
+		RequestURI: uri,
+	}
+
+	if req.IsDebug {
+		debug.RequestBody = string(reqJSON)
+		bidder.Debug = append(bidder.Debug, debug)
+	}
+
+	httpReq, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqJSON))
+	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
+	httpReq.Header.Add("Accept", "application/json")
+
+	anResp, err := ctxhttp.Do(ctx, a.http.Client, httpReq)
+	if err != nil {
+		return nil, err
+	}
+
+	debug.StatusCode = anResp.StatusCode
+
+	if anResp.StatusCode == 204 {
+		return nil, nil
+	}
+
+	defer anResp.Body.Close()
+	body, err := ioutil.ReadAll(anResp.Body)
+	if err != nil {
+		return nil, err
+	}
+	responseBody := string(body)
+
+	if anResp.StatusCode == http.StatusBadRequest {
+		return nil, &errortypes.BadInput{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
+		}
+	}
+
+	if anResp.StatusCode != http.StatusOK {
+		return nil, &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("HTTP status %d; body: %s", anResp.StatusCode, responseBody),
+		}
+	}
+
+	if req.IsDebug {
+		debug.ResponseBody = responseBody
+	}
+
+	var bidResp openrtb.BidResponse
+	err = json.Unmarshal(body, &bidResp)
+	if err != nil {
+		return nil, err
+	}
+
+	bids := make(pbs.PBSBidSlice, 0)
+
+	for _, sb := range bidResp.SeatBid {
+		for _, bid := range sb.Bid {
+			bidID := bidder.LookupBidID(bid.ImpID)
+			if bidID == "" {
+				return nil, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
+				}
+			}
+
+			pbid := pbs.PBSBid{
+				BidID:       bidID,
+				AdUnitCode:  bid.ImpID,
+				BidderCode:  bidder.BidderCode,
+				Price:       bid.Price,
+				Adm:         bid.AdM,
+				Creative_id: bid.CrID,
+				Width:       bid.W,
+				Height:      bid.H,
+				DealId:      bid.DealID,
+				NURL:        bid.NURL,
+			}
+
+			var impExt vsspBidExt
+			if err := json.Unmarshal(bid.Ext, &impExt); err == nil {
+				if mediaType, err := getMediaTypeForBid(&impExt); err == nil {
+					pbid.CreativeMediaType = string(mediaType)
+					bids = append(bids, &pbid)
+				}
+			}
+		}
+	}
+
+	return bids, nil
+}
+
+func (a *VsspAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	memberIds := make(map[string]bool)
+	errs := make([]error, 0, len(request.Imp))
+
+	// Vssp openrtb2 endpoint expects imp.displaymanagerver to be populated, but some SDKs will put it in imp.ext.prebid instead
+	var defaultDisplayManagerVer string
+	if request.App != nil {
+		source, err1 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "source")
+		version, err2 := jsonparser.GetString(request.App.Ext, openrtb_ext.PrebidExtKey, "version")
+		if (err1 == nil) && (err2 == nil) {
+			defaultDisplayManagerVer = fmt.Sprintf("%s-%s", source, version)
+		}
+	}
+	for i := 0; i < len(request.Imp); i++ {
+		memberId, err := preprocess(&request.Imp[i], defaultDisplayManagerVer)
+		if memberId != "" {
+			memberIds[memberId] = true
+		}
+		// If the preprocessing failed, the server won't be able to bid on this Imp. Delete it, and note the error.
+		if err != nil {
+			errs = append(errs, err)
+			request.Imp = append(request.Imp[:i], request.Imp[i+1:]...)
+			i--
+		}
+	}
+
+	thisURI := a.URI
+
+	// The Vssp API requires a Member ID in the URL. This means the request may fail if
+	// different impressions have different member IDs.
+	// Check for this condition, and log an error if it's a problem.
+	if len(memberIds) > 0 {
+		uniqueIds := keys(memberIds)
+		memberId := uniqueIds[0]
+		thisURI = appendMemberId(thisURI, memberId)
+
+		if len(uniqueIds) > 1 {
+			errs = append(errs, fmt.Errorf("All request.imp[i].ext.vssp.member params must match. Request contained: %v", uniqueIds))
+		}
+	}
+
+	// If all the requests were malformed, don't bother making a server call with no impressions.
+	if len(request.Imp) == 0 {
+		return nil, errs
+	}
+
+	// Add Vssp request level extension
+	var isAMP int
+	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
+		isAMP = 1
+	} else {
+		isAMP = 0
+	}
+	var reqExt vsspReqExt
+	if len(request.Ext) > 0 {
+		if err := json.Unmarshal(request.Ext, &reqExt); err == nil {
+			includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer != 0
+			if includeBrandCategory {
+				if reqExt.Vssp == nil {
+					reqExt.Vssp = &vsspReqExtVssp{}
+				}
+				reqExt.Vssp.BrandCategoryUniqueness = &includeBrandCategory
+				reqExt.Vssp.IncludeBrandCategory = &includeBrandCategory
+				reqExt.Vssp.IsAMP = isAMP
+				request.Ext, err = json.Marshal(reqExt)
+				if err != nil {
+					errs = append(errs, err)
+					return nil, errs
+				}
+			}
+		} else {
+			errs = append(errs, err)
+			return nil, errs
+		}
+	} else if isAMP != 0 {
+		// if isAMP is 0, bidder doesn't need it included
+		var err error
+		reqExt.Vssp = &vsspReqExtVssp{}
+		reqExt.Vssp.IsAMP = isAMP
+		request.Ext, err = json.Marshal(reqExt)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+	}
+
+	imps := request.Imp
+	// Initial capacity for future array of requests, memory optimization.
+	// Let's say there are 35 impressions and limit impressions per request equals to 10.
+	// In this case we need to create 4 requests with 10, 10, 10 and 5 impressions.
+	// With this formula initial capacity=(35+10-1)/10 = 4
+	initialCapacity := (len(imps) + maxImpsPerReq - 1) / maxImpsPerReq
+	resArr := make([]*adapters.RequestData, 0, initialCapacity)
+	startInd := 0
+	impsLeft := len(imps) > 0
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+
+	for impsLeft {
+
+		endInd := startInd + maxImpsPerReq
+		if endInd >= len(imps) {
+			endInd = len(imps)
+			impsLeft = false
+		}
+		impsForReq := imps[startInd:endInd]
+		request.Imp = impsForReq
+
+		reqJSON, err := json.Marshal(request)
+		if err != nil {
+			errs = append(errs, err)
+			return nil, errs
+		}
+
+		resArr = append(resArr, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     thisURI,
+			Body:    reqJSON,
+			Headers: headers,
+		})
+		startInd = endInd
+	}
+	return resArr, errs
+}
+
+// get the keys from the map
+func keys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+// preprocess mutates the imp to get it ready to send to vssp.
+//
+// It returns the member param, if it exists, and an error if anything went wrong during the preprocessing.
+func preprocess(imp *openrtb.Imp, defaultDisplayManagerVer string) (string, error) {
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return "", err
+	}
+
+	var vsspExt openrtb_ext.ExtImpVssp
+	if err := json.Unmarshal(bidderExt.Bidder, &vsspExt); err != nil {
+		return "", err
+	}
+
+	// Accept legacy Vssp parameters if we don't have modern ones
+	// Don't worry if both is set as validation rules should prevent, and this is temporary anyway.
+	if vsspExt.PlacementId == 0 && vsspExt.LegacyPlacementId != 0 {
+		vsspExt.PlacementId = vsspExt.LegacyPlacementId
+	}
+	if vsspExt.InvCode == "" && vsspExt.LegacyInvCode != "" {
+		vsspExt.InvCode = vsspExt.LegacyInvCode
+	}
+	if vsspExt.TrafficSourceCode == "" && vsspExt.LegacyTrafficSourceCode != "" {
+		vsspExt.TrafficSourceCode = vsspExt.LegacyTrafficSourceCode
+	}
+
+	if vsspExt.PlacementId == 0 && (vsspExt.InvCode == "" || vsspExt.Member == "") {
+		return "", &errortypes.BadInput{
+			Message: "No placement or member+invcode provided",
+		}
+	}
+
+	if vsspExt.InvCode != "" {
+		imp.TagID = vsspExt.InvCode
+	}
+	if vsspExt.Reserve > 0 {
+		imp.BidFloor = vsspExt.Reserve // This will be broken for non-USD currency.
+	}
+	if imp.Banner != nil {
+		bannerCopy := *imp.Banner
+		if vsspExt.Position == "above" {
+			bannerCopy.Pos = openrtb.AdPositionAboveTheFold.Ptr()
+		} else if vsspExt.Position == "below" {
+			bannerCopy.Pos = openrtb.AdPositionBelowTheFold.Ptr()
+		}
+
+		// Fixes #307
+		if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+			firstFormat := bannerCopy.Format[0]
+			bannerCopy.W = &(firstFormat.W)
+			bannerCopy.H = &(firstFormat.H)
+		}
+		imp.Banner = &bannerCopy
+	}
+
+	// Populate imp.displaymanagerver if the SDK failed to do it.
+	if len(imp.DisplayManagerVer) == 0 && len(defaultDisplayManagerVer) > 0 {
+		imp.DisplayManagerVer = defaultDisplayManagerVer
+	}
+
+	impExt := vsspImpExt{Vssp: vsspImpExtVssp{
+		PlacementID:       vsspExt.PlacementId,
+		TrafficSourceCode: vsspExt.TrafficSourceCode,
+		Keywords:          makeKeywordStr(vsspExt.Keywords),
+		UsePmtRule:        vsspExt.UsePmtRule,
+		PrivateSizes:      vsspExt.PrivateSizes,
+	}}
+	var err error
+	if imp.Ext, err = json.Marshal(&impExt); err != nil {
+		return vsspExt.Member, err
+	}
+
+	return vsspExt.Member, nil
+}
+
+func makeKeywordStr(keywords []*openrtb_ext.ExtImpVsspKeyVal) string {
+	kvs := make([]string, 0, len(keywords)*2)
+	for _, kv := range keywords {
+		if len(kv.Values) == 0 {
+			kvs = append(kvs, kv.Key)
+		} else {
+			for _, val := range kv.Values {
+				kvs = append(kvs, fmt.Sprintf("%s=%s", kv.Key, val))
+			}
+		}
+	}
+
+	return strings.Join(kvs, ",")
+}
+
+func (a *VsspAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+	}
+
+	var bidResp openrtb.BidResponse
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+
+	var errs []error
+	for _, sb := range bidResp.SeatBid {
+		for i := 0; i < len(sb.Bid); i++ {
+			bid := sb.Bid[i]
+			var bidExt vsspBidExt
+			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
+				errs = append(errs, err)
+			} else {
+				if bidType, err := getMediaTypeForBid(&bidExt); err == nil {
+					if iabCategory, err := a.getIabCategoryForBid(&bidExt); err == nil {
+						bid.Cat = []string{iabCategory}
+					} else if len(bid.Cat) > 1 {
+						//create empty categories array to force bid to be rejected
+						bid.Cat = make([]string, 0, 0)
+					}
+
+					impVideo := &openrtb_ext.ExtBidPrebidVideo{
+						Duration: bidExt.Vssp.CreativeInfo.Video.Duration,
+					}
+
+					bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+						Bid:      &bid,
+						BidType:  bidType,
+						BidVideo: impVideo,
+					})
+				} else {
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+	return bidResponse, errs
+}
+
+// getMediaTypeForBid determines which type of bid.
+func getMediaTypeForBid(bid *vsspBidExt) (openrtb_ext.BidType, error) {
+	switch bid.Vssp.BidType {
+	case 0:
+		return openrtb_ext.BidTypeBanner, nil
+	case 1:
+		return openrtb_ext.BidTypeVideo, nil
+	case 2:
+		return openrtb_ext.BidTypeAudio, nil
+	case 3:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", fmt.Errorf("Unrecognized bid_ad_type in response from vssp: %d", bid.Vssp.BidType)
+	}
+}
+
+// getIabCategoryForBid maps an vssp brand id to an IAB category.
+func (a *VsspAdapter) getIabCategoryForBid(bid *vsspBidExt) (string, error) {
+	brandIDString := strconv.Itoa(bid.Vssp.BrandCategory)
+	if iabCategory, ok := a.iabCategoryMap[brandIDString]; ok {
+		return iabCategory, nil
+	} else {
+		return "", fmt.Errorf("category not in map: %s", brandIDString)
+	}
+}
+
+func appendMemberId(uri string, memberId string) string {
+	if strings.Contains(uri, "?") {
+		return uri + "&member_id=" + memberId
+	}
+
+	return uri + "?member_id=" + memberId
+}
+
+func NewVsspAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *VsspAdapter {
+	return NewVsspBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+}
+
+func NewVsspBidder(client *http.Client, endpoint string) *VsspAdapter {
+	a := &adapters.HTTPAdapter{Client: client}
+
+	// Load custom options for our adapter (currently just a lookup table to convert vssp => iab categories)
+	var catmap map[string]string
+	opts, err := ioutil.ReadFile("./static/adapter/vssp/opts.json")
+	if err == nil {
+		var adapterOptions vsspAdapterOptions
+
+		if err := json.Unmarshal(opts, &adapterOptions); err == nil {
+			catmap = adapterOptions.IabCategories
+		}
+	}
+
+	return &VsspAdapter{
+		http:           a,
+		URI:            endpoint,
+		iabCategoryMap: catmap,
+	}
+}
