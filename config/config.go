@@ -638,6 +638,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
+	v.SetDefault("blacklisted_apps", []string{""})
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
