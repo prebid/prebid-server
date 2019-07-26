@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -14,6 +16,9 @@ import (
 // DEFAULT_TTL is the default amount of time which a cookie is considered valid.
 const DEFAULT_TTL = 14 * 24 * time.Hour
 const UID_COOKIE_NAME = "uids"
+const chromeStr = "Chrome/"
+const chromeMinVer = 67
+const chromeStrLen = len(chromeStr)
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -160,12 +165,38 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Request, domain string, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
-	http.SetCookie(w, httpCookie)
+	cookieStr := httpCookie.String()
+	if isChromeBrowser(r) {
+		cookieStr += "; SameSite=none"
+	}
+	//http.SetCookie(w, httpCookie)
+	if cookieStr != "" {
+		w.Header().Add("Set-Cookie", cookieStr)
+	}
+}
+
+func isChromeBrowser(req *http.Request) bool {
+	result := false
+	ua := req.UserAgent()
+
+	index := strings.Index(ua, chromeStr)
+	if index != -1 {
+		vIndex := index + chromeStrLen
+		dotIndex := strings.Index(ua[vIndex:], ".")
+		if dotIndex == -1 {
+			dotIndex = len(ua[vIndex:])
+		}
+		version, _ := strconv.Atoi(ua[vIndex : vIndex+dotIndex])
+		if version >= chromeMinVer {
+			result = true
+		}
+	}
+	return result
 }
 
 // Unsync removes the user's ID for the given family from this cookie.

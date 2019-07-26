@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/julienschmidt/httprouter"
 )
 
 func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
@@ -76,7 +76,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 			so.Success = true
 		}
 
-		pc.SetCookieOnResponse(w, cfg.Domain, cookieTTL)
+		pc.SetCookieOnResponse(w, r, cfg.Domain, cookieTTL)
 	})
 }
 

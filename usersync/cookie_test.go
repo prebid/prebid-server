@@ -353,7 +353,8 @@ func newSampleCookie() *PBSCookie {
 
 func writeThenRead(cookie *PBSCookie) *PBSCookie {
 	w := httptest.NewRecorder()
-	cookie.SetCookieOnResponse(w, "mock-domain", 90*24*time.Hour)
+	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
+	cookie.SetCookieOnResponse(w, req, "mock-domain", 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 
 	header := http.Header{}
