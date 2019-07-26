@@ -440,15 +440,15 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 
 func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
 
-	if videoRequest.Site.Page != "" {
-		bidRequest.Site = &videoRequest.Site
+	if videoRequest.Site != nil {
+		bidRequest.Site = videoRequest.Site
 		if &videoRequest.Content != nil {
 			bidRequest.Site.Content = &videoRequest.Content
 		}
 	}
 
-	if videoRequest.App.Domain != "" {
-		bidRequest.App = &videoRequest.App
+	if videoRequest.App != nil {
+		bidRequest.App = videoRequest.App
 		if &videoRequest.Content != nil {
 			bidRequest.App.Content = &videoRequest.Content
 		}
@@ -608,10 +608,20 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 			podErrors = append(podErrors, podErr)
 		}
 	}
-	if req.App.Domain == "" && req.Site.Page == "" {
+	if req.App == nil && req.Site == nil {
 		err := errors.New("request missing required field: site or app")
 		errL = append(errL, err)
+	} else if req.App != nil && req.Site != nil {
+		err := errors.New("request.site or request.app must be defined, but not both")
+		errL = append(errL, err)
+	} else if req.Site != nil && req.Site.ID == "" && req.Site.Page == "" {
+		err := errors.New("request.site missing required field: id or page")
+		errL = append(errL, err)
+	} else if req.App != nil && req.App.ID == "" && req.App.Bundle == "" {
+		err := errors.New("request.app missing required field: id or bundle")
+		errL = append(errL, err)
 	}
+
 	if len(req.Video.Mimes) == 0 {
 		err := errors.New("request missing required field: Video.Mimes")
 		errL = append(errL, err)
