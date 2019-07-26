@@ -6,17 +6,37 @@
   "properties": {
     "appId" : {
       "type": "string",
-      "description": "The id of an inventory target"
+      "description": "The id of an inventory target. This can only be used in requests that contain one media type. It will be applied to all imps in the request."
+    },
+    "appIds": {
+      "type" : "object",
+      "description": "The id of an inventory target. This will be applied to video imps in the mixed media request. It should not be used in single media type imps",
+      "properties": {
+        "video" : {
+          "type": "array",
+          "description": "An array of appIds that will be applied to video requests in this imp.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "banner" : {
+          "type": "array",
+          "description": "An array of appIds that will be applied to banner requests in this imp.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "bidfloor": {
       "type": "number",
       "description": "The price floor for the bid"
-    },
-    "forceBanner" : {
-      "type": "boolean",
-      "description": "If a request is made that includes both banner and video in the same imp, the default behavior is to make a video request. If this is set to true, a banner request will be used instead. Combined with an alias, this makes it possible to request both banner and video ads from beachfront for a single imp."
     }
   },
 
-  "required": ["appId", "bidfloor"]
+  "oneOf": [{
+      "required": ["appId"] }, {
+      "required": ["appIds"]
+    }],
+  "required": ["bidfloor"]
 }
