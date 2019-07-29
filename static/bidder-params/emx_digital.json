@@ -9,7 +9,7 @@
         "description": "The id of an inventory target"
       },
       "bidfloor": {
-        "type": "number",
+        "type": "string",
         "description": "The minimum price acceptable for a bid"
       }
     },

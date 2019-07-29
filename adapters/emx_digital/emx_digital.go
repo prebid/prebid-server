@@ -16,15 +16,16 @@ import (
 
 type EmxDigitalAdapter struct {
 	endpoint string
+	testing  bool
 }
 
-func buildEndpoint(endpoint string, timeout int64, requestID string) string {
+func buildEndpoint(endpoint string, testing bool, timeout int64) string {
 	if timeout == 0 {
 		timeout = 1000
 	}
-	if requestID == "some_test_auction" {
+	if testing {
 		// for passing validation tests
-		return "https://hb.emxdgt.com?t=1000&ts=2060541160"
+		return endpoint + "?t=1000&ts=2060541160"
 	}
 	return endpoint + "?t=" + strconv.FormatInt(timeout, 10) + "&ts=" + strconv.FormatInt(time.Now().Unix(), 10) + "&src=pbserver"
 }
@@ -54,6 +55,7 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+
 	if request.Device != nil {
 		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
 		addHeaderIfNonEmpty(headers, "X-Forwarded-For", request.Device.IP)
@@ -62,8 +64,11 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
 		}
 	}
+	if request.Site != nil {
+		addHeaderIfNonEmpty(headers, "Referer", request.Site.Page)
+	}
 
-	url := buildEndpoint(a.endpoint, request.TMax, request.ID)
+	url := buildEndpoint(a.endpoint, a.testing, request.TMax)
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
@@ -133,15 +138,23 @@ func buildImpBanner(imp *openrtb.Imp) error {
 }
 
 // Add EMX required properties to Imp object
-func addImpProps(imp *openrtb.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDigital) error {
+func addImpProps(imp *openrtb.Imp, secure *int8, emxExt *openrtb_ext.ExtImpEmxDigital) {
 	imp.TagID = emxExt.TagID
 	imp.Secure = secure
 
-	if emxExt.BidFloor > 0 {
-		imp.BidFloor = emxExt.BidFloor
-		imp.BidFloorCur = "USD"
+	if emxExt.BidFloor != "" {
+		bidFloor, err := strconv.ParseFloat(emxExt.BidFloor, 64)
+		if err != nil {
+			bidFloor = 0
+		}
+
+		if bidFloor > 0 {
+			imp.BidFloor = bidFloor
+			imp.BidFloorCur = "USD"
+		}
 	}
-	return nil
+
+	return
 }
 
 // Adding header fields to request header
@@ -171,10 +184,9 @@ func preprocess(request *openrtb.BidRequest) []error {
 			errors = append(errors, err)
 			continue
 		}
-		if err := addImpProps(&imp, &secure, emxExt); err != nil {
-			errors = append(errors, err)
-			continue
-		}
+
+		addImpProps(&imp, &secure, emxExt)
+
 		if err := buildImpBanner(&imp); err != nil {
 			errors = append(errors, err)
 			continue
@@ -191,13 +203,8 @@ func preprocess(request *openrtb.BidRequest) []error {
 func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 
 	if response.StatusCode == http.StatusNoContent {
+		// no bid response
 		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
@@ -234,5 +241,6 @@ func (a *EmxDigitalAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 func NewEmxDigitalBidder(endpoint string) *EmxDigitalAdapter {
 	return &EmxDigitalAdapter{
 		endpoint: endpoint,
+		testing:  false,
 	}
 }

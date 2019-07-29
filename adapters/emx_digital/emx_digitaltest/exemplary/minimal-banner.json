@@ -17,15 +17,40 @@
         }
       }
     }],
+    "device": {
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+      "ip": "123.123.123.123",
+      "dnt": 1
+    },
     "site": {
-      "domain": "www.celebuzz.com",
-      "page": "https://www.celebuzz.com/g/taylor-swift-debuts-red-hair-in-sugarland-video/"
+      "domain": "www.publisher.com",
+      "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
     }
   },
 
   "httpCalls": [{
     "expectedRequest": {
       "uri": "https://hb.emxdgt.com?t=1000&ts=2060541160",
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json;charset=utf-8"
+        ],
+        "X-Forwarded-For": [
+          "123.123.123.123"
+        ],
+        "Referer": [
+          "http://www.publisher.com/awesome/site?with=some&parameters=here"
+        ],
+        "Dnt": [
+          "1"
+        ],
+        "User-Agent": [
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36"
+        ]
+      },
       "body": {
         "id": "some_test_auction",
         "imp": [{
@@ -39,11 +64,16 @@
             "h": 250
           },
           "tagid": "25251",
-          "secure": 1
+          "secure": 0
         }],
         "site": {
-          "domain": "www.celebuzz.com",
-          "page": "https://www.celebuzz.com/g/taylor-swift-debuts-red-hair-in-sugarland-video/"
+          "domain": "www.publisher.com",
+          "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
+        },
+        "device": {
+          "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36",
+          "ip": "123.123.123.123",
+          "dnt": 1
         }
       }
     },
