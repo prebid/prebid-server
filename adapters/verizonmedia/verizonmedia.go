@@ -25,16 +25,14 @@ func (a *VerizonMediaAdapter) SkipNoCookies() bool {
 
 func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	errs := make([]error, 0, len(request.Imp))
+	errors := make([]error, 0, 1)
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
 			Message: "No impression in the bid request",
 		}
-		errs = append(errs, err)
-		return nil, errs
+		errors = append(errors, err)
+		return nil, errors
 	}
-
-	errors := make([]error, 0, 1)
 
 	var bidderExt adapters.ExtImpBidder
 	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
@@ -76,8 +74,8 @@ func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 	changeRequestForBidService(request, &verizonMediaExt)
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	thisURI := a.URI
@@ -104,28 +102,29 @@ func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d.", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Bad server response: %d. ", err),
+			Message: fmt.Sprintf("Bad server response: %d.", err),
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
-			if !impIDExists(bid.ImpID, internalRequest.Imp) {
+			exists, mediaTypeId := getImpInfo(bid.ImpID, internalRequest.Imp)
+			if !exists {
 				return nil, []error{&errortypes.BadServerResponse{
 					Message: fmt.Sprintf("Unknown ad unit code '%s'", bid.ImpID),
 				}}
 			}
 
-			if openrtb_ext.BidTypeBanner != getMediaTypeForImp(bid.ImpID, internalRequest.Imp) {
+			if openrtb_ext.BidTypeBanner != mediaTypeId {
 				//only banner is supported, anything else is ignored
 				continue
 			}
@@ -140,17 +139,19 @@ func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 	return bidResponse, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
+func getImpInfo(impId string, imps []openrtb.Imp) (bool, openrtb_ext.BidType) {
 	var mediaType openrtb_ext.BidType
+	var exists bool
 	for _, imp := range imps {
 		if imp.ID == impId {
+			exists = true
 			if imp.Banner != nil {
 				mediaType = openrtb_ext.BidTypeBanner
 			}
-			return mediaType
+			break
 		}
 	}
-	return mediaType
+	return exists, mediaType
 }
 
 func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) {
@@ -160,15 +161,6 @@ func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_
 	if request.Site.ID == "" {
 		request.Site.ID = extension.Dcn
 	}
-}
-
-func impIDExists(impId string, imps []openrtb.Imp) bool {
-	for _, imp := range imps {
-		if imp.ID == impId {
-			return true
-		}
-	}
-	return false
 }
 
 func NewVerizonMediaAdapter(config *adapters.HTTPAdapterConfig, uri string) *VerizonMediaAdapter {
