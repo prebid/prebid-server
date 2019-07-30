@@ -32,7 +32,7 @@ type BeachfrontAdapter struct {
 }
 
 type BeachfrontRequests struct {
-	Banner []BeachfrontBannerRequest
+	Banner BeachfrontBannerRequest
 	Video  BeachfrontVideoRequest
 	Audio  openrtb.Audio
 	Native openrtb.Native
@@ -175,20 +175,14 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	if(bannerImpCount > 0) {
+		bannerJSON, err = json.Marshal(beachfrontRequests.Banner)
 
-		for b := range(beachfrontRequests.Banner) {
-
-			bannerJSON, err = json.Marshal(beachfrontRequests.Banner[b])
-
-			reqs = append(reqs, &adapters.RequestData{
-				Method:  "POST",
-				Uri:     BannerEndpoint,
-				Body:    bannerJSON,
-				Headers: headers,
-			})
-
-		}
-
+		reqs = append(reqs, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     BannerEndpoint,
+			Body:    bannerJSON,
+			Headers: headers,
+		})
 	}
 
 	return reqs, errs
@@ -301,123 +295,84 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 	return beachfrontExt, err
 }
 
-func getBannerRequests(request *openrtb.BidRequest) ([]BeachfrontBannerRequest, []error) {
-	var beachfrontReqs []BeachfrontBannerRequest
+func getBannerRequests(request *openrtb.BidRequest) (BeachfrontBannerRequest, []error) {
+	var beachfrontReq BeachfrontBannerRequest
 	var errs = make([]error, 0, len(request.Imp))
 
 	var slotIndex = 0
 	var impIndex = 0
 
-	// step through the prebid request "imp" and inject into the beachfront request.
+	beachfrontReq = NewBeachfrontBannerRequest()
+
 	for _, imp := range request.Imp {
-		beachfrontReqs = append(beachfrontReqs, NewBeachfrontBannerRequest())
-		beachfrontReqs[impIndex].Slots = append(beachfrontReqs[impIndex].Slots, BeachfrontSlot{})
-		beachfrontReqs[impIndex].Slots[slotIndex].Sizes = append(beachfrontReqs[impIndex].Slots[slotIndex].Sizes, BeachfrontSize{})
-		slotIndex = 0
+		beachfrontReq.Slots = append(beachfrontReq.Slots, BeachfrontSlot{})
+		slotIndex = len(beachfrontReq.Slots) - 1
 
 		for j := range imp.Banner.Format {
-			if j > 0 {
-				beachfrontReqs[impIndex].Slots[slotIndex].Sizes = append(beachfrontReqs[impIndex].Slots[slotIndex].Sizes, BeachfrontSize{})
-			}
-			beachfrontReqs[impIndex].Slots[slotIndex].Sizes[j].H = imp.Banner.Format[j].H
-			beachfrontReqs[impIndex].Slots[slotIndex].Sizes[j].W = imp.Banner.Format[j].W
+			beachfrontReq.Slots[slotIndex].Sizes = append(beachfrontReq.Slots[slotIndex].Sizes, BeachfrontSize{})
+			beachfrontReq.Slots[slotIndex].Sizes[j].H = imp.Banner.Format[j].H
+			beachfrontReq.Slots[slotIndex].Sizes[j].W = imp.Banner.Format[j].W
 		}
 
 		if request.Device != nil {
-			beachfrontReqs[impIndex].IP = request.Device.IP
-			beachfrontReqs[impIndex].DeviceModel = request.Device.Model
-			beachfrontReqs[impIndex].DeviceOs = request.Device.OS
+			beachfrontReq.IP = request.Device.IP
+			beachfrontReq.DeviceModel = request.Device.Model
+			beachfrontReq.DeviceOs = request.Device.OS
 			if request.Device.DNT != nil {
-				beachfrontReqs[impIndex].Dnt = *request.Device.DNT
+				beachfrontReq.Dnt = *request.Device.DNT
 			}
 			if request.Device.UA != "" {
-				beachfrontReqs[impIndex].UA = request.Device.UA
+				beachfrontReq.UA = request.Device.UA
 			}
 		}
 
 		beachfrontExt, err := getBeachfrontExtension(imp)
 
 		if err == nil {
-			beachfrontReqs[impIndex].Slots[slotIndex].Bidfloor = beachfrontExt.BidFloor
-			beachfrontReqs[impIndex].Slots[slotIndex].Slot = fmt.Sprintf("%s-%d", request.Imp[impIndex].ID, slotIndex)
+			beachfrontReq.Slots[slotIndex].Bidfloor = beachfrontExt.BidFloor
+			beachfrontReq.Slots[slotIndex].Slot = request.Imp[impIndex].ID
 		} else {
 			errs = append(errs, err)
 			continue
 		}
 
-		// We got a string appId.
+
 		if beachfrontExt.AppId != "" {
-			beachfrontReqs[impIndex].Slots[slotIndex].Id = beachfrontExt.AppId
-
-			// Done, move on to next Imp
+			beachfrontReq.Slots[slotIndex].Id = beachfrontExt.AppId
 		} else {
-			/* If an array of appIds has been supplied, */
-
-			if len(beachfrontExt.AppIds.Banner) > 1 {
-				// We got a non-trivial array of appIds for banner. Step through it, clone the current slot
-				// and reset the appId.
-
-				j := 1
-				for _, appId := range beachfrontExt.AppIds.Banner {
-
-					beachfrontReqs[impIndex].Slots[slotIndex].Id = appId
-
-					// If there is another banner appId after this, append to the slots
-					if len(beachfrontExt.AppIds.Banner) > j {
-						beachfrontReqs[impIndex].Slots = append(beachfrontReqs[impIndex].Slots, BeachfrontSlot{})
-						/**
-						See note at start of 1st for loop (range request.Imp)
-						 */
-						slotIndex = len(beachfrontReqs[impIndex].Slots) - 1
-
-						beachfrontReqs[impIndex].Slots[slotIndex] = beachfrontReqs[impIndex].Slots[slotIndex- 1]
-						j++
-					}
-				}
-
-				// Done, move on to next Imp
-			} else {
-				// We got an array of length = 1
-				beachfrontReqs[impIndex].Slots[slotIndex].Id = beachfrontExt.AppIds.Banner[0]
-
-				// Done, move on to next Imp
-			}
+			beachfrontReq.Slots[slotIndex].Id = beachfrontExt.AppIds.Banner
 		}
-
-		beachfrontReqs[impIndex].RequestID = request.Imp[impIndex].ID
-
-		// Just take the last one... I guess?
-		if request.Imp[impIndex].Secure != nil {
-			beachfrontReqs[impIndex].Secure = *request.Imp[impIndex].Secure
-		}
-
-		if request.User != nil {
-			beachfrontReqs[impIndex].User.ID = request.User.ID
-			beachfrontReqs[impIndex].User.BuyerUID = request.User.BuyerUID
-		}
-
-		if request.App != nil {
-			beachfrontReqs[impIndex].Domain = request.App.Domain
-			beachfrontReqs[impIndex].Page = request.App.ID
-		} else {
-			protoUrl := strings.Split(request.Site.Page, "//")
-			var domainPage string
-			// Resolves a panic for any Site.Page that does not include the protocol
-			if len(protoUrl) > 1 {
-				domainPage = protoUrl[1]
-			} else {
-				domainPage = protoUrl[0]
-			}
-			beachfrontReqs[impIndex].Domain = strings.Split(domainPage, "/")[0]
-			beachfrontReqs[impIndex].Page = request.Site.Page
-		}
-
 		impIndex++
 	}
 
+	beachfrontReq.RequestID = request.ID
 
+	if request.Imp[0].Secure != nil {
+		beachfrontReq.Secure = *request.Imp[0].Secure
+	}
 
-	return beachfrontReqs, errs
+	if request.User != nil {
+		beachfrontReq.User.ID = request.User.ID
+		beachfrontReq.User.BuyerUID = request.User.BuyerUID
+	}
+
+	if request.App != nil {
+		beachfrontReq.Domain = request.App.Domain
+		beachfrontReq.Page = request.App.ID
+	} else {
+		protoUrl := strings.Split(request.Site.Page, "//")
+		var domainPage string
+		// Resolves a panic for any Site.Page that does not include the protocol
+		if len(protoUrl) > 1 {
+			domainPage = protoUrl[1]
+		} else {
+			domainPage = protoUrl[0]
+		}
+		beachfrontReq.Domain = strings.Split(domainPage, "/")[0]
+		beachfrontReq.Page = request.Site.Page
+	}
+
+	return beachfrontReq, errs
 }
 
 func getVideoRequest(request *openrtb.BidRequest, imps []openrtb.Imp) (BeachfrontVideoRequest, []error) {
@@ -576,7 +531,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 
 	// for i := o; i < len(response.Body)
 
-	return nil, nil
+	// return nil, nil
 
 	// if bidtype == openrtb_ext.BidTypeVideo {
 	if false {
@@ -592,25 +547,30 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 			return nil, errs
 		}
 
-		return postprocessBanner(beachfrontResp, id)
+		return postprocessBanner(beachfrontResp, externalRequest, id)
 	}
 }
 
-func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, id string) ([]openrtb.Bid, []error) {
+func postprocessBanner(beachfrontResp []BeachfrontResponseSlot, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
+	var xtrnal BeachfrontBannerRequest
 	var bids = make([]openrtb.Bid, len(beachfrontResp))
 	var errs = make([]error, 0)
 
-	for i := range beachfrontResp {
-		crid := extractBannerCrid(beachfrontResp[i].Adm)
+	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+		errs = append(errs, err)
+		return bids, errs
+	}
 
+
+	for i := range beachfrontResp {
 		bids[i] = openrtb.Bid{
-			CrID:  crid,
-			ImpID: beachfrontResp[i].Slot,
+			CrID:  beachfrontResp[i].CrID,
+			ImpID: xtrnal.RequestID,
 			Price: beachfrontResp[i].Price,
 			ID:    id,
 			AdM:   beachfrontResp[i].Adm,
 			H:     beachfrontResp[i].H,
-			W:     beachfrontResp[i].W,
+			W:     beachfrontResp[i].W
 		}
 	}
 

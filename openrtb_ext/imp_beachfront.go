@@ -7,6 +7,6 @@ type ExtImpBeachfront struct {
 }
 
 type ExtImpBeachfrontAppIds struct {
-	Video		[]string	`json:"video"`
-	Banner      []string	`json:"banner"`
+	Video		string	`json:"video"`
+	Banner      string	`json:"banner"`
 }

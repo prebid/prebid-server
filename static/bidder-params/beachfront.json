@@ -13,18 +13,12 @@
       "description": "The id of an inventory target. This will be applied to video imps in the mixed media request. It should not be used in single media type imps",
       "properties": {
         "video" : {
-          "type": "array",
-          "description": "An array of appIds that will be applied to video requests in this imp.",
-          "items": {
-            "type": "string"
-          }
+          "type": "string",
+          "description": "An array of appIds that will be applied to video requests in this imp."
         },
         "banner" : {
-          "type": "array",
-          "description": "An array of appIds that will be applied to banner requests in this imp.",
-          "items": {
-            "type": "string"
-          }
+          "type": "string",
+          "description": "An array of appIds that will be applied to banner requests in this imp."
         }
       }
     },
