@@ -85,6 +85,16 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
+	for _, impInRequest := range bidRequest.Imp {
+		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
+			BannerImps: impInRequest.Banner != nil,
+			VideoImps:  impInRequest.Video != nil,
+			AudioImps:  impInRequest.Audio != nil,
+			NativeImps: impInRequest.Native != nil,
+		}
+		e.me.RecordImps(impLabels)
+	}
+
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
 	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
