@@ -1,12 +1,12 @@
 package openrtb_ext
 
 type ExtImpBeachfront struct {
-	AppId       string  `json:"appId"`
-	AppIds		ExtImpBeachfrontAppIds `json:"appIds"`
-	BidFloor    float64 `json:"bidfloor"`
+	AppId    string                 `json:"appId"`
+	AppIds   ExtImpBeachfrontAppIds `json:"appIds"`
+	BidFloor float64                `json:"bidfloor"`
 }
 
 type ExtImpBeachfrontAppIds struct {
-	Video		string	`json:"video"`
-	Banner      string	`json:"banner"`
+	Video  string `json:"video"`
+	Banner string `json:"banner"`
 }
