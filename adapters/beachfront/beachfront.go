@@ -53,7 +53,6 @@ type BeachfrontVideoRequest struct {
 	Cur      []string              `json:"cur"`
 }
 
-// Soooo close, but not quite openRTB
 type BeachfrontVideoImp struct {
 	Video    BeachfrontSize `json:"video"`
 	Bidfloor float64        `json:"bidfloor"`
@@ -631,11 +630,6 @@ func getBidType(bid openrtb.Bid) openrtb_ext.BidType {
 	}
 
 	return ""
-}
-
-func extractBannerCrid(adm string) string {
-	chunky := strings.SplitAfter(adm, "\"")
-	return strings.TrimSuffix(chunky[1], "\"")
 }
 
 func extractVideoCrid(nurl string) string {
