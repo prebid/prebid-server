@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -106,8 +107,16 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			parsedReq.Bidders = append(parsedReq.Bidders, string(bidder))
 		}
 	}
+	isBrowserApplicable := usersync.IsBrowserApplicableForSameSite(r)
+	needSyncupForSameSite := false
+	if isBrowserApplicable {
+		sameSiteCookie, _ := r.Cookie(usersync.SameSiteCookieName)
+		if sameSiteCookie == nil || !strings.Contains(sameSiteCookie.String(), usersync.SameSiteCookieValue) {
+			needSyncupForSameSite = true
+		}
+	}
 
-	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
+	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie, needSyncupForSameSite)
 	adapterSyncs := make(map[openrtb_ext.BidderName]bool)
 	for _, b := range parsedReq.Bidders {
 		// assume all bidders will be GDPR blocked
@@ -193,7 +202,7 @@ type cookieSyncRequest struct {
 	Limit   int      `json:"limit"`
 }
 
-func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie) {
+func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {
 	for i := 0; i < len(req.Bidders); i++ {
 		thisBidder := req.Bidders[i]
 		//added hack to support to old wrapper versions having indexExchange as partner
@@ -201,7 +210,7 @@ func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderNa
 		if thisBidder == "indexExchange" {
 			thisBidder = "ix"
 		}
-		if syncer, isValid := valid[openrtb_ext.BidderName(thisBidder)]; !isValid || cookie.HasLiveSync(syncer.FamilyName()) {
+		if syncer, isValid := valid[openrtb_ext.BidderName(thisBidder)]; !isValid || (cookie.HasLiveSync(syncer.FamilyName()) && !needSyncupForSameSite) {
 			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
 			i--
 		}

@@ -13,12 +13,18 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 )
 
-// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
-const DEFAULT_TTL = 14 * 24 * time.Hour
-const UID_COOKIE_NAME = "uids"
-const chromeStr = "Chrome/"
-const chromeMinVer = 67
-const chromeStrLen = len(chromeStr)
+const (
+	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
+	DEFAULT_TTL         = 14 * 24 * time.Hour
+	UID_COOKIE_NAME     = "uids"
+	chromeStr           = "Chrome/"
+	chromeiOSStr        = "CriOS/"
+	chromeMinVer        = 67
+	chromeStrLen        = len(chromeStr)
+	chromeiOSStrLen     = len(chromeiOSStr)
+	SameSiteCookieName  = "SSCookie"
+	SameSiteCookieValue = "1"
+)
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -171,30 +177,46 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Requ
 		httpCookie.Domain = domain
 	}
 	cookieStr := httpCookie.String()
-	if isChromeBrowser(r) {
-		cookieStr += "; SameSite=none"
+	var sameSiteCookie *http.Cookie
+	if IsBrowserApplicableForSameSite(r) {
+		cookieStr += "; SameSite=None"
+		sameSiteCookie = &http.Cookie{
+			Name:    SameSiteCookieName,
+			Value:   SameSiteCookieValue,
+			Expires: time.Now().Add(ttl),
+			Path:    "/",
+		}
+		w.Header().Add("Set-Cookie", sameSiteCookie.String())
 	}
-	//http.SetCookie(w, httpCookie)
 	if cookieStr != "" {
 		w.Header().Add("Set-Cookie", cookieStr)
 	}
 }
 
-func isChromeBrowser(req *http.Request) bool {
+func IsBrowserApplicableForSameSite(req *http.Request) bool {
 	result := false
 	ua := req.UserAgent()
 
 	index := strings.Index(ua, chromeStr)
+	criOSIndex := strings.Index(ua, chromeiOSStr)
 	if index != -1 {
-		vIndex := index + chromeStrLen
-		dotIndex := strings.Index(ua[vIndex:], ".")
-		if dotIndex == -1 {
-			dotIndex = len(ua[vIndex:])
-		}
-		version, _ := strconv.Atoi(ua[vIndex : vIndex+dotIndex])
-		if version >= chromeMinVer {
-			result = true
-		}
+		result = checkChromeBrowserVersion(ua, index, chromeStrLen)
+	} else if criOSIndex != -1 {
+		result = checkChromeBrowserVersion(ua, criOSIndex, chromeiOSStrLen)
+	}
+	return result
+}
+
+func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
+	result := false
+	vIndex := index + chromeStrLength
+	dotIndex := strings.Index(ua[vIndex:], ".")
+	if dotIndex == -1 {
+		dotIndex = len(ua[vIndex:])
+	}
+	version, _ := strconv.Atoi(ua[vIndex : vIndex+dotIndex])
+	if version >= chromeMinVer {
+		result = true
 	}
 	return result
 }

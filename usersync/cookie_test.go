@@ -372,8 +372,8 @@ func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
 	cookie.SetCookieOnResponse(w, req, "mock-domain", 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 	t.Log("Set-Cookie is: ", writtenCookie)
-	if !strings.Contains(writtenCookie, "SameSite=none") {
-		t.Error("Set-Cookie should contain SameSite=none")
+	if !strings.Contains(writtenCookie, "SSCookie=1") {
+		t.Error("Set-Cookie should contain SSCookie=1")
 	}
 }
 
