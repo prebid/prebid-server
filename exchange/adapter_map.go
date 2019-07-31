@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/adapters/33across"
+	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
