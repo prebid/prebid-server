@@ -46,14 +46,7 @@ func cleanOpenRTBRequests(ctx context.Context,
 			// Fixes #820
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
-			var publisherID string
-			if bidReq.Site != nil && bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
-				publisherID = bidReq.Site.Publisher.ID
-			} else if bidReq.App != nil && bidReq.App.Publisher != nil {
-				publisherID = bidReq.App.Publisher.ID
-			} else {
-				publisherID = ""
-			}
+			var publisherID = labels.PubID
 			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent); !ok && err == nil {
 				cleanPI(bidReq, labels.RType == pbsmetrics.ReqTypeAMP)
 			}

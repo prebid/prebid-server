@@ -17,6 +17,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderAdform):         syncConfig,
 			string(openrtb_ext.BidderAdkernelAdn):    syncConfig,
 			string(openrtb_ext.BidderAdtelligent):    syncConfig,
+			string(openrtb_ext.BidderAdvangelists):   syncConfig,
 			string(openrtb_ext.BidderAppnexus):       syncConfig,
 			string(openrtb_ext.BidderBeachfront):     syncConfig,
 			string(openrtb_ext.BidderFacebook):       syncConfig,
@@ -48,6 +49,11 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderUnruly):         syncConfig,
 		},
 	}
+
+	adaptersWithoutSyncers := map[openrtb_ext.BidderName]bool{
+		openrtb_ext.BidderTappx: true,
+	}
+
 	for bidder, config := range cfg.Adapters {
 		delete(cfg.Adapters, bidder)
 		cfg.Adapters[strings.ToLower(string(bidder))] = config
@@ -55,7 +61,8 @@ func TestNewSyncerMap(t *testing.T) {
 
 	syncers := NewSyncerMap(cfg)
 	for _, bidderName := range openrtb_ext.BidderMap {
-		if _, ok := syncers[bidderName]; !ok {
+		_, adapterWithoutSyncer := adaptersWithoutSyncers[bidderName]
+		if _, ok := syncers[bidderName]; !ok && !adapterWithoutSyncer {
 			t.Errorf("No syncer exists for adapter: %s", bidderName)
 		}
 	}

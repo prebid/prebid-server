@@ -94,10 +94,8 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	numImps := 0
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, numImps)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
@@ -127,9 +125,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 	if req.App != nil {
 		labels.Source = pbsmetrics.DemandApp
 		labels.RType = pbsmetrics.ReqTypeORTB2App
-		if req.App.Publisher != nil && req.App.Publisher.ID != "" {
-			labels.PubID = req.App.Publisher.ID
-		}
+		labels.PubID = effectivePubID(req.App.Publisher)
 	} else { //req.Site != nil
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -137,12 +133,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if req.Site.Publisher != nil && req.Site.Publisher.ID != "" {
-			labels.PubID = req.Site.Publisher.ID
-		}
+		labels.PubID = effectivePubID(req.Site.Publisher)
 	}
 
-	numImps = len(req.Imp)
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
 	ao.Response = response
@@ -1178,4 +1171,21 @@ func fatalError(errL []error) bool {
 		}
 	}
 	return false
+}
+
+// Returns the effective publisher ID
+func effectivePubID(pub *openrtb.Publisher) string {
+	if pub != nil {
+		if pub.Ext != nil {
+			var pubExt openrtb_ext.ExtPublisher
+			err := json.Unmarshal(pub.Ext, &pubExt)
+			if err == nil && pubExt.ParentAccount != nil && *pubExt.ParentAccount != "" {
+				return *pubExt.ParentAccount
+			}
+		}
+		if pub.ID != "" {
+			return pub.ID
+		}
+	}
+	return pbsmetrics.PublisherUnknown
 }

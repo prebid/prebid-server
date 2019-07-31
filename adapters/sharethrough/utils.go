@@ -206,6 +206,10 @@ func (u Util) parseDomain(fullUrl string) string {
 		} else {
 			domain = uri.Host
 		}
+
+		if domain != "" {
+			domain = uri.Scheme + "://" + domain
+		}
 	}
 
 	return domain

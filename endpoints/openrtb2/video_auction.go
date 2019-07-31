@@ -79,10 +79,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
-	numImps := 0
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, numImps)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
@@ -190,9 +188,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
 	if bidReq.App != nil {
 		labels.Source = pbsmetrics.DemandApp
-		if bidReq.App.Publisher != nil && bidReq.App.Publisher.ID != "" {
-			labels.PubID = bidReq.App.Publisher.ID
-		}
+		labels.PubID = effectivePubID(bidReq.App.Publisher)
 	} else { // both bidReq.App == nil and bidReq.Site != nil are true
 		labels.Source = pbsmetrics.DemandWeb
 		if usersyncs.LiveSyncCount() == 0 {
@@ -200,12 +196,8 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		} else {
 			labels.CookieFlag = pbsmetrics.CookieFlagYes
 		}
-		if bidReq.Site.Publisher != nil && bidReq.Site.Publisher.ID != "" {
-			labels.PubID = bidReq.Site.Publisher.ID
-		}
+		labels.PubID = effectivePubID(bidReq.Site.Publisher)
 	}
-
-	numImps = len(bidReq.Imp)
 
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
@@ -448,15 +440,15 @@ func getVideoStoredRequestId(request []byte) (string, error) {
 
 func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.BidRequest) error {
 
-	if videoRequest.Site.Page != "" {
-		bidRequest.Site = &videoRequest.Site
+	if videoRequest.Site != nil {
+		bidRequest.Site = videoRequest.Site
 		if &videoRequest.Content != nil {
 			bidRequest.Site.Content = &videoRequest.Content
 		}
 	}
 
-	if videoRequest.App.Domain != "" {
-		bidRequest.App = &videoRequest.App
+	if videoRequest.App != nil {
+		bidRequest.App = videoRequest.App
 		if &videoRequest.Content != nil {
 			bidRequest.App.Content = &videoRequest.Content
 		}
@@ -473,6 +465,14 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 			Gender:   videoRequest.User.Gender,
 			Keywords: videoRequest.User.Keywords,
 		}
+	}
+
+	if len(videoRequest.BCat) != 0 {
+		bidRequest.BCat = videoRequest.BCat
+	}
+
+	if len(videoRequest.BAdv) != 0 {
+		bidRequest.BAdv = videoRequest.BAdv
 	}
 
 	bidExt, err := createBidExtension(videoRequest)
@@ -608,10 +608,20 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 			podErrors = append(podErrors, podErr)
 		}
 	}
-	if req.App.Domain == "" && req.Site.Page == "" {
+	if req.App == nil && req.Site == nil {
 		err := errors.New("request missing required field: site or app")
 		errL = append(errL, err)
+	} else if req.App != nil && req.Site != nil {
+		err := errors.New("request.site or request.app must be defined, but not both")
+		errL = append(errL, err)
+	} else if req.Site != nil && req.Site.ID == "" && req.Site.Page == "" {
+		err := errors.New("request.site missing required field: id or page")
+		errL = append(errL, err)
+	} else if req.App != nil && req.App.ID == "" && req.App.Bundle == "" {
+		err := errors.New("request.app missing required field: id or bundle")
+		errL = append(errL, err)
 	}
+
 	if len(req.Video.Mimes) == 0 {
 		err := errors.New("request missing required field: Video.Mimes")
 		errL = append(errL, err)
