@@ -31,7 +31,7 @@ const DefaultVideoHeight = 250
 type BeachfrontAdapter struct {
 }
 
-type BeachfrontRequests struct {
+type beachfrontRequests struct {
 	Banner beachfrontBannerRequest
 	Video  []beachfrontVideoRequest
 	Audio  openrtb.Audio
@@ -115,30 +115,20 @@ type beachfrontResponseSlot struct {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var beachfrontRequests BeachfrontRequests
-	var videoJSON []byte
-	var bannerJSON []byte
-	// var audioJSON []byte
-	// var nativeJSON []byte
+	var beachfrontRequests beachfrontRequests
 	var errs = make([]error, 0, len(request.Imp))
-	var err error
 
 	out, _ := json.Marshal(request)
 	glog.Info(fmt.Sprintf("\n -- Original request:\n %s", out))
 
-	beachfrontRequests, errs, bannerImpCount, videoImpCount, audioImpCount, nativeImpCount := preprocess(request)
+	beachfrontRequests, errs = preprocess(request)
 
-	// @todo add err to errs
-	// audioJSON, err = json.Marshal(beachfrontRequests.Banner)
-	// nativeJSON, err = json.Marshal(beachfrontRequests.Banner)
+	if  len(beachfrontRequests.Video) 			+
+		len(beachfrontRequests.Banner.Slots) 	+
+		len(beachfrontRequests.Audio.MIMEs) 	+
+		len(beachfrontRequests.Native.API)  	== 0 {
 
-	if videoImpCount+bannerImpCount+audioImpCount+nativeImpCount == 0 {
 		errs = append(errs, errors.New("no valid impressions were found"))
-		return nil, errs
-	}
-
-	if err != nil {
-		errs = append(errs, err)
 		return nil, errs
 	}
 
@@ -161,18 +151,16 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 	reqs := make([]*adapters.RequestData, 0)
 
-	if videoImpCount > 0 {
+	if len(beachfrontRequests.Video) > 0 {
+		for i := 0; i < len(beachfrontRequests.Video); i++ {
 
-		for i := 0; i < videoImpCount; i++ {
-			glog.Info(fmt.Sprintf("\n -- Adding a video request"))
-
-			videoJSON, err = json.Marshal(beachfrontRequests.Video[i])
+			bytes, err := json.Marshal(beachfrontRequests.Video[i])
 
 			if err == nil {
 				reqs = append(reqs, &adapters.RequestData{
 					Method:  "POST",
 					Uri:     VideoEndpoint + beachfrontRequests.Video[i].AppId + VideoEndpointSuffix,
-					Body:    videoJSON,
+					Body:    bytes,
 					Headers: headers,
 				})
 			} else {
@@ -181,17 +169,14 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	if bannerImpCount > 0 {
-
-		glog.Info(fmt.Sprintf("\n -- Adding a banner request"))
-
-		bannerJSON, err = json.Marshal(beachfrontRequests.Banner)
+	if len(beachfrontRequests.Banner.Slots) > 0 {
+		bytes, err := json.Marshal(beachfrontRequests.Banner)
 
 		if err == nil {
 			reqs = append(reqs, &adapters.RequestData{
 				Method:  "POST",
 				Uri:     BannerEndpoint,
-				Body:    bannerJSON,
+				Body:    bytes,
 				Headers: headers,
 			})
 		} // non fatal
@@ -200,13 +185,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	return reqs, errs
 }
 
-func preprocess(request *openrtb.BidRequest) (
-	beachfrontReqs BeachfrontRequests,
-	errs []error,
-	bannerImpCount,
-	videoImpCount,
-	audioImpCount,
-	nativeImpCount int) {
+func preprocess(request *openrtb.BidRequest) ( beachfrontReqs beachfrontRequests, errs []error ) {
 
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
@@ -216,50 +195,40 @@ func preprocess(request *openrtb.BidRequest) (
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
 			bannerImps = append(bannerImps, request.Imp[i])
-			// bannerImps[bannerImpCount].Video = nil
-			bannerImpCount++
 		}
 
 		if request.Imp[i].Video != nil {
 			videoImps = append(videoImps, request.Imp[i])
-			// videoImps[videoImpCount].Banner = nil
-			videoImpCount++
 		}
 
 		if request.Imp[i].Audio != nil {
 			audioImps = append(audioImps, request.Imp[i])
-			audioImpCount++
-
 			// @TODO -- handle audio
-			audioImpCount = 0
 		}
 
 		if request.Imp[i].Native != nil {
 			nativeImps = append(nativeImps, request.Imp[i])
-			nativeImpCount++
-
 			// @TODO -- handle native
-			nativeImpCount = 0
 		}
 	}
 
 	request.Imp = make([]openrtb.Imp, 0)
 
-	if bannerImpCount > 0 {
+	if len(bannerImps) > 0 {
 		request.Imp = bannerImps
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
-	if videoImpCount > 0 {
+	if len(videoImps) > 0 {
 		request.Imp = videoImps
 		beachfrontReqs.Video, errs = getVideoRequests(request)
 	}
 
-	if audioImpCount > 0 {
+	if len(audioImps) > 0 {
 		beachfrontReqs.Audio, errs = getAudioRequest(request, audioImps)
 	}
 
-	if nativeImpCount > 0 {
+	if len(nativeImps) > 0 {
 		beachfrontReqs.Native, errs = getNativeRequest(request, nativeImps)
 	}
 
