@@ -56,7 +56,7 @@ const (
 func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	// define the buckets for timers
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
-	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 20.0, 50.0}...)
+	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
 
 	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel}
 
