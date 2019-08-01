@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -118,17 +117,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var beachfrontRequests beachfrontRequests
 	var errs = make([]error, 0, len(request.Imp))
 
-	out, _ := json.Marshal(request)
-	glog.Info(fmt.Sprintf("\n -- Original request:\n %s", out))
-
 	beachfrontRequests, errs = preprocess(request)
 
-	if  len(beachfrontRequests.Video) 			+
-		len(beachfrontRequests.Banner.Slots) 	+
-		len(beachfrontRequests.Audio.MIMEs) 	+
-		len(beachfrontRequests.Native.API)  	== 0 {
-
-		errs = append(errs, errors.New("no valid impressions were found"))
+	if len(errs) > 0 {
 		return nil, errs
 	}
 
@@ -179,37 +170,34 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 				Body:    bytes,
 				Headers: headers,
 			})
-		} // non fatal
+		}
 	}
 
 	return reqs, errs
 }
 
-func preprocess(request *openrtb.BidRequest) ( beachfrontReqs beachfrontRequests, errs []error ) {
+func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests, errs []error) {
 
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
-	var audioImps = make([]openrtb.Imp, 0)
-	var nativeImps = make([]openrtb.Imp, 0)
+
+	var weGotNothing bool = true
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
+			weGotNothing = false
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
 
 		if request.Imp[i].Video != nil {
+			weGotNothing = false
 			videoImps = append(videoImps, request.Imp[i])
 		}
+	}
 
-		if request.Imp[i].Audio != nil {
-			audioImps = append(audioImps, request.Imp[i])
-			// @TODO -- handle audio
-		}
-
-		if request.Imp[i].Native != nil {
-			nativeImps = append(nativeImps, request.Imp[i])
-			// @TODO -- handle native
-		}
+	if weGotNothing {
+		errs = append(errs, errors.New("no valid impressions were found in the request"))
+		return
 	}
 
 	request.Imp = make([]openrtb.Imp, 0)
@@ -222,14 +210,6 @@ func preprocess(request *openrtb.BidRequest) ( beachfrontReqs beachfrontRequests
 	if len(videoImps) > 0 {
 		request.Imp = videoImps
 		beachfrontReqs.Video, errs = getVideoRequests(request)
-	}
-
-	if len(audioImps) > 0 {
-		beachfrontReqs.Audio, errs = getAudioRequest(request, audioImps)
-	}
-
-	if len(nativeImps) > 0 {
-		beachfrontReqs.Native, errs = getNativeRequest(request, nativeImps)
 	}
 
 	return
@@ -248,16 +228,6 @@ func newBeachfrontVideoRequest() beachfrontVideoRequest {
 	r.Cur = append(r.Cur, "USD")
 	r.IsPrebid = true
 
-	return r
-}
-
-func newBeachfrontAudioRequest() openrtb.Audio {
-	r := openrtb.Audio{}
-	return r
-}
-
-func newBeachfrontNativeRequest() openrtb.Native {
-	r := openrtb.Native{}
 	return r
 }
 
@@ -344,6 +314,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	if request.App != nil {
 		beachfrontReq.Domain = request.App.Domain
 		beachfrontReq.Page = request.App.ID
+		beachfrontReq.IsMobile = 1
 	} else {
 		protoUrl := strings.Split(request.Site.Page, "//")
 		var domainPage string
@@ -355,13 +326,15 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 		beachfrontReq.Domain = strings.Split(domainPage, "/")[0]
 		beachfrontReq.Page = request.Site.Page
+		beachfrontReq.IsMobile = 0
 	}
 
 	return beachfrontReq, errs
 }
 
 /*
-getVideoRequests, plural.
+getVideoRequests, plural. One request to the endpoint can have one appId, and can return one nurl,
+so each video imp is a call to the endpoint.
 */
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
 	var videoImpsIndex = 0
@@ -377,6 +350,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			if request.App.Domain != "" {
 				r.Site.Domain = request.App.Domain
 				r.Site.Page = request.App.ID
+				r.Site.Mobile = 1
 			}
 		} else {
 			if request.Site.Page != "" {
@@ -462,16 +436,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 	return beachfrontReqs, errs
 }
 
-func getAudioRequest(request *openrtb.BidRequest, imps []openrtb.Imp) (openrtb.Audio, []error) {
-	return newBeachfrontAudioRequest(), nil
-}
-
-func getNativeRequest(request *openrtb.BidRequest, imps []openrtb.Imp) (openrtb.Native, []error) {
-	return newBeachfrontNativeRequest(), nil
-}
-
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	glog.Info(fmt.Sprintf("\n -- MakeBids called"))
 	var bids []openrtb.Bid
 
 	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
@@ -515,13 +480,15 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 	var errs = make([]error, 0)
 	// var list = json.Unmarshal()
 
-	glog.Info(fmt.Sprintf("\n -- Response:\n %s", response.Body))
-
 	var openrtbResp openrtb.BidResponse
+
+	// try it as a video
 	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil {
 
+		// try it as a banner
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
-			errs = append(errs, err)
+			// it's neither. I'm not appending these errors
+			// errs = append(errs, err)
 			return nil, errs
 		} else {
 			return postprocessBanner(beachfrontResp, externalRequest, id)
@@ -531,8 +498,6 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 }
 
 func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
-
-	glog.Info(fmt.Sprintf("\n -- Postprocessig the banner response"))
 
 	var xtrnal beachfrontBannerRequest
 	var bids = make([]openrtb.Bid, len(beachfrontResp))
@@ -555,13 +520,10 @@ func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest 
 		}
 	}
 
-	// Am not adding any errors
 	return bids, errs
 }
 
 func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
-
-	glog.Info(fmt.Sprintf("\n -- Postprocessig a video response"))
 
 	var xtrnal beachfrontVideoRequest
 	var errs = make([]error, 0)

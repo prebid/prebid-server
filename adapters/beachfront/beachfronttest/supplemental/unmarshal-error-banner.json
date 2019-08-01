@@ -18,9 +18,7 @@
         "ext": {
           "bidder": {
             "bidfloor": 0.02,
-            "appId": {
-              "value": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
-            }
+            "appId": 123456789101112
           }
         }
       }
@@ -28,7 +26,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "json: cannot unmarshal object into Go struct field ExtImpBeachfront.appId of type string",
-    "no valid impressions were found"
+    "json: cannot unmarshal number into Go struct field ExtImpBeachfront.appId of type string"
   ]
 }

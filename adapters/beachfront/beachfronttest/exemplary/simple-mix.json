@@ -12,7 +12,10 @@
         "ext":{
           "bidder":{
             "bidfloor":0.01,
-            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+            "appIds": {
+              "video": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
+              "banner": "487cf244-5e95-43cb-e7b9-bb540873ca7e"
+            }
           }
         },
         "video":{
@@ -129,6 +132,59 @@
           ]
         }
       }
+    }, {
+      "expectedRequest": {
+        "uri": "https://display.bfmio.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "mix1",
+              "id": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
+              "bidfloor": 0.01,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "domain": "test.opposingviews.com",
+          "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
+          "referrer": "",
+          "search": "",
+          "secure": 0,
+          "deviceOs": "",
+          "deviceModel": "",
+          "isMobile": 0,
+          "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+          "dnt": 0,
+          "user": {
+            "id": "some-user",
+            "buyeruid": "some-buyer"
+          },
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "0.6.0",
+          "ip": "127.0.0.1",
+          "requestId": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+        }
+      } ,
+      "mockResponse": {
+        "status" : 200,
+        "body" :
+          [
+            {
+              "crid":"crid_1",
+              "price":9.5019655,
+              "w":300,
+              "h":250,
+              "slot":"mix1",
+              "adm":"<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+            }
+          ]
+      }
+
+
     }
   ],
 
@@ -150,6 +206,19 @@
             },
             "bidder":{
 
+            }
+          }
+        }, {
+          "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "impid": "mix1",
+          "price": 9.5019655,
+          "adm": "<div id=\"44861168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
+          "crid": "crid_1",
+          "w": 300,
+          "h": 250,
+          "ext": {
+            "prebid": {
+              "type": "banner"
             }
           }
         }

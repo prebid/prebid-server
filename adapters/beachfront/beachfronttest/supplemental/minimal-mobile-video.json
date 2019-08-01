@@ -56,6 +56,7 @@
           "isPrebid": true,
           "site": {
             "domain": "some.app.com",
+            "mobile" : 1,
             "page": "some-mobile-app"
           },
           "user": {
