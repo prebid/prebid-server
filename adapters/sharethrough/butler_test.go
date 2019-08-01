@@ -284,6 +284,7 @@ func TestBuildUri(t *testing.T) {
 				Iframe:             false,
 				Height:             20,
 				Width:              30,
+				TheTradeDeskUserId: "ttd123",
 			},
 			expected: []string{
 				"http://abc.com?",
@@ -297,6 +298,7 @@ func TestBuildUri(t *testing.T) {
 				"width=30",
 				"supplyId=FGMrCMMc",
 				"strVersion=" + strVersion,
+				"ttduid=ttd123",
 			},
 		},
 	}

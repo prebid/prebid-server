@@ -356,45 +356,30 @@ func TestGdprApplies(t *testing.T) {
 	}
 }
 
-func TestGdprConsentString(t *testing.T) {
-	bidRequestWithConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"consent": "abc"}`),
-		},
-	}
-	bidRequestWithEmptyConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"consent": ""}`),
-		},
-	}
-	bidRequestWithoutConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"other": "abc"}`),
-		},
-	}
-	bidRequestWithUserExt := openrtb.BidRequest{
-		User: &openrtb.User{},
-	}
-
+func TestParseUserExt(t *testing.T) {
 	tests := map[string]struct {
-		input    *openrtb.BidRequest
-		expected string
+		input    *openrtb.User
+		expected userInfo
 	}{
-		"Return consent string if provided": {
-			input:    &bidRequestWithConsent,
-			expected: "abc",
+		"Return empty strings if no User": {
+			input:    nil,
+			expected: userInfo{Consent: "", TtdUid: ""},
 		},
-		"Return empty string if consent string empty": {
-			input:    &bidRequestWithEmptyConsent,
-			expected: "",
+		"Return consent correctly": {
+			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc" }`)},
+			expected: userInfo{Consent: "abc", TtdUid: ""},
 		},
-		"Return empty string if no consent string provided": {
-			input:    &bidRequestWithoutConsent,
-			expected: "",
+		"Return ttd uid correctly": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: "abc123"},
 		},
-		"Return empty string if User set": {
-			input:    &bidRequestWithUserExt,
-			expected: "",
+		"Ignore non-trade-desk uid": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "something", "uids": [{"id": "xyz"}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: ""},
+		},
+		"Full test": {
+			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "abc", TtdUid: "abc123"},
 		},
 	}
 
@@ -402,9 +387,12 @@ func TestGdprConsentString(t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 
-		output := util.gdprConsentString(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %s, got %s\n", test.expected, output)
+		output := util.parseUserExt(test.input)
+		if output.Consent != test.expected.Consent {
+			t.Errorf("Consent mismatch, expected: %s, got %s\n", test.expected.Consent, output.Consent)
+		}
+		if output.TtdUid != test.expected.TtdUid {
+			t.Errorf("TtdUid mismatch, expected: %s, got %s\n", test.expected.TtdUid, output.TtdUid)
 		}
 	}
 }
