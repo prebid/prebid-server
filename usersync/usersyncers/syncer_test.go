@@ -47,6 +47,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderVisx):           syncConfig,
 			string(openrtb_ext.BidderGamoshi):        syncConfig,
 			string(openrtb_ext.BidderUnruly):         syncConfig,
+			string(openrtb_ext.BidderVerizonMedia):   syncConfig,
 		},
 	}
 
