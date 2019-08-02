@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -200,7 +201,8 @@ func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAd
 	if params.Host != "" {
 		reqHost = params.Host
 	}
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: params.PublisherID}
+	pubIDStr := strconv.Itoa(params.PublisherID)
+	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: pubIDStr}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 

@@ -1,0 +1,17 @@
+{
+    "mockBidRequest": {
+      "id": "some_test_auction",
+      "imp": [
+        {
+          "id": "test-imp-id",
+          "ext": {
+            "bidder": {
+              "tagid": "987654"
+            }
+          }
+        }
+      ]
+    },
+
+    "expectedMakeRequestsErrors": ["Request needs to include a Banner object","Error in preprocess of Imp, err: [Request needs to include a Banner object]"]
+  }
