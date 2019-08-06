@@ -24,6 +24,7 @@ const (
 	chromeiOSStrLen     = len(chromeiOSStr)
 	SameSiteCookieName  = "SSCookie"
 	SameSiteCookieValue = "1"
+	SameSiteAttribute   = "; SameSite=None"
 )
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
@@ -179,20 +180,23 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Requ
 	cookieStr := httpCookie.String()
 	var sameSiteCookie *http.Cookie
 	if IsBrowserApplicableForSameSite(r) {
-		cookieStr += "; SameSite=None"
+		cookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
 		}
-		w.Header().Add("Set-Cookie", sameSiteCookie.String())
+		sameSiteCookieStr := sameSiteCookie.String()
+		sameSiteCookieStr += SameSiteAttribute
+		w.Header().Add("Set-Cookie", sameSiteCookieStr)
 	}
 	if cookieStr != "" {
 		w.Header().Add("Set-Cookie", cookieStr)
 	}
 }
 
+// IsBrowserApplicableForSameSite function checks if browser is Chrome and browser version is greater than the minimum version for adding the SameSite attribute
 func IsBrowserApplicableForSameSite(req *http.Request) bool {
 	result := false
 	ua := req.UserAgent()
