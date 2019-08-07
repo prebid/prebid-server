@@ -452,7 +452,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID)
