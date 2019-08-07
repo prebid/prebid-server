@@ -39,6 +39,9 @@ type Configuration struct {
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequestsSlim `mapstructure:"stored_video_req"`
 
+	// Publisher Cache URL to to supply in the targeting parameters
+	PublisherCacheURL string `mapstructure:"publisher_cache_url"`
+
 	// Adapters should have a key for every openrtb_ext.BidderName, converted to lower-case.
 	// Se also: https://github.com/spf13/viper/issues/371#issuecomment-335388559
 	Adapters             map[string]Adapter `mapstructure:"adapters"`

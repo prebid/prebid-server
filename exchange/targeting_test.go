@@ -54,6 +54,9 @@ func TestTargetingCache(t *testing.T) {
 
 	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
+
+	assertKeyExists(t, bids["hb_cache_host"], string(openrtb_ext.HbConstantCacheHostKey), true)
+	assertKeyExists(t, bids["hb_cache_path"], string(openrtb_ext.HbConstantCacheHostKey), true)
 }
 
 func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) {
@@ -75,6 +78,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		me:                  &metricsConf.DummyMetricsEngine{},
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
+		PublisherCacheURL:   "http://www.pbcserver.com/pbcache/endpoint",
 		gDPR:                gdpr.AlwaysAllow{},
 		currencyConverter:   currencies.NewRateConverterDefault(),
 		UsersyncIfAmbiguous: false,

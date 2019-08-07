@@ -200,6 +200,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 
 	//execute auction logic
+	deps.ex.PublisherCacheURL = deps.cfg.PublisherCacheURL
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
 	ao.Request = bidReq
 	ao.Response = response

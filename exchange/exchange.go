@@ -42,6 +42,7 @@ type exchange struct {
 	me                  pbsmetrics.MetricsEngine
 	cache               prebid_cache_client.Client
 	cacheTime           time.Duration
+	PublisherCacheURL   string
 	gDPR                gdpr.Permissions
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
@@ -139,6 +140,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 	}
+	targData.cacheHost, targData.cachePath = e.parsePrebidCacheUrl()
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
@@ -589,4 +591,14 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
+}
+
+// parseCacheUrl splits the cache URL defined in the Configuration struct and returns the Hostname and the Escaped path using the official libraries
+func (e *exchange) parsePrebidCacheUrl() (string, string, error) {
+	var uriObj *url.URL
+	uriObj, err := url.Parse(e.PublisherCacheURL)
+	if err != nil {
+		return "", "", error{Message: fmt.Sprintf("Incorrect prebid-cache server url %s, specify valid url in configuration, please.", rawurl)}
+	}
+	return uriObj.Hostname(), uriObj.EscapedPath(), nil
 }

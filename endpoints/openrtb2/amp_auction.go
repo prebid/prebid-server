@@ -149,6 +149,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	labels.PubID = effectivePubID(req.Site.Publisher)
 
+	deps.ex.PublisherCacheURL = deps.cfg.PublisherCacheURL
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.AuctionResponse = response
 
