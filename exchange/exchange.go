@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 	"sort"
 	"time"
@@ -61,12 +62,13 @@ type bidResponseWrapper struct {
 	bidder       openrtb_ext.BidderName
 }
 
-func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter) Exchange {
+func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *config.Configuration, metricsEngine pbsmetrics.MetricsEngine, infos adapters.BidderInfos, gDPR gdpr.Permissions, currencyConverter *currencies.RateConverter, prebidCacheURL string) Exchange {
 	e := new(exchange)
 
 	e.adapterMap = newAdapterMap(client, cfg, infos)
 	e.cache = cache
 	e.cacheTime = time.Duration(cfg.CacheURL.ExpectedTimeMillis) * time.Millisecond
+	e.PublisherCacheURL = prebidCacheURL
 	e.me = metricsEngine
 	e.gDPR = gDPR
 	e.currencyConverter = currencyConverter
@@ -110,7 +112,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// Randomize the list of adapters to make the auction more fair
 	randomizeList(liveAdapters)
 	// Process the request to check for targeting parameters.
-	var targData *targetData
+	var targData *targetData = &targetData{}
 	shouldCacheBids := false
 	shouldCacheVAST := false
 	var bidAdjustmentFactors map[string]float64
@@ -594,11 +596,13 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 }
 
 // parseCacheUrl splits the cache URL defined in the Configuration struct and returns the Hostname and the Escaped path using the official libraries
-func (e *exchange) parsePrebidCacheUrl() (string, string, error) {
+func (e *exchange) parsePrebidCacheUrl() (string, string) {
 	var uriObj *url.URL
-	uriObj, err := url.Parse(e.PublisherCacheURL)
+	var err error
+	uriObj, err = url.Parse(e.PublisherCacheURL)
 	if err != nil {
-		return "", "", error{Message: fmt.Sprintf("Incorrect prebid-cache server url %s, specify valid url in configuration, please.", rawurl)}
+		return "", ""
 	}
-	return uriObj.Hostname(), uriObj.EscapedPath(), nil
+	//fmt.Printf("uriObj.Hostname() = %s, uriObj.EscapedPath() = %s \n", uriObj.Hostname(), uriObj.EscapedPath())
+	return uriObj.Hostname(), uriObj.EscapedPath()
 }
