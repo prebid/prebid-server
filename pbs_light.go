@@ -42,9 +42,7 @@ func main() {
 }
 
 func serve(revision string, cfg *config.Configuration) error {
-
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds)*time.Second)
-
 	r, err := router.New(cfg, currencyConverter)
 	if err != nil {
 		return err

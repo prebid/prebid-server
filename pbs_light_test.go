@@ -28,11 +28,10 @@ func forceEnv(t *testing.T, key string, val string) func() {
 				t.Fatalf("Error unsetting evnvironment %s", key)
 			}
 		}
-	} else {
-		return func() {
-			if os.Unsetenv(key) != nil {
-				t.Fatalf("Error unsetting evnvironment %s", key)
-			}
+	}
+	return func() {
+		if os.Unsetenv(key) != nil {
+			t.Fatalf("Error unsetting evnvironment %s", key)
 		}
 	}
 }
