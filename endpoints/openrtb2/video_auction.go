@@ -564,9 +564,6 @@ type PodError struct {
 func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo) ([]error, []PodError) {
 	errL := []error{}
 
-	if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
-		return []error{&errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}}, nil
-	}
 	if deps.cfg.VideoStoredRequestRequired && req.StoredRequestId == "" {
 		err := errors.New("request missing required field: storedrequestid")
 		errL = append(errL, err)
@@ -625,9 +622,19 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 	} else if req.Site != nil && req.Site.ID == "" && req.Site.Page == "" {
 		err := errors.New("request.site missing required field: id or page")
 		errL = append(errL, err)
-	} else if req.App != nil && req.App.ID == "" && req.App.Bundle == "" {
-		err := errors.New("request.app missing required field: id or bundle")
-		errL = append(errL, err)
+	} else if req.App != nil {
+		if req.App.ID != "" {
+			if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
+				err := &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
+				errL = append(errL, err)
+				return errL, podErrors
+			}
+		} else { // req.App.ID == ""
+			if req.App.Bundle == "" {
+				err := errors.New("request.app missing required field: id or bundle")
+				errL = append(errL, err)
+			}
+		}
 	}
 
 	if len(req.Video.Mimes) == 0 {
