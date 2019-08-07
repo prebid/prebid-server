@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 728, "h": 90}]
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": ["ext.bidder not provided"]
+}

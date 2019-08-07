@@ -18,7 +18,7 @@ func TestResolveMacros(t *testing.T) {
 		result    string
 		hasError  bool
 	}{
-		{aTemplate: *endpointTemplate, params: EndpointTemplateParams{Host: "SomeHost", PublisherID: 1}, result: "http://SomeHost/publisher/1", hasError: false},
+		{aTemplate: *endpointTemplate, params: EndpointTemplateParams{Host: "SomeHost", PublisherID: "1"}, result: "http://SomeHost/publisher/1", hasError: false},
 		{aTemplate: *endpointTemplate, params: UserSyncTemplateParams{GDPR: "SomeGDPR", GDPRConsent: "SomeGDPRConsent"}, result: "", hasError: true},
 	}
 
