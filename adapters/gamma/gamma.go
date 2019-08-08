@@ -153,7 +153,8 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 			}
 			errs = append(errs, errors...)
 		}
-	} else if len(request.Imp) == len(invalidImpIndex) { //only true if every Imp was not a Banner or a Video
+	} else if len(request.Imp) == len(invalidImpIndex) {
+		//only true if every Imp was not a Banner or a Video
 		err := &errortypes.BadInput{
 			Message: fmt.Sprintf("No valid impression in the bid request"),
 		}
