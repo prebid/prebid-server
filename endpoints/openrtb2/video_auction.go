@@ -633,7 +633,7 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 				errL = append(errL, err)
 				return errL, podErrors
 			}
-		} else { // req.App.ID == ""
+		} else {
 			if req.App.Bundle == "" {
 				err := errors.New("request.app missing required field: id or bundle")
 				errL = append(errL, err)
