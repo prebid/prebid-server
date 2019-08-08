@@ -14,7 +14,8 @@
 		  },
 		  "ext": {
 			"bidder": {
-			  "placement_id": 10433394
+			  "inventoryCode" : "aaw",
+              "floor" : 0.10
 			}
 		  }
 		}
@@ -24,17 +25,13 @@
 	"httpCalls": [
 	  {
 		"expectedRequest": {
-		  "uri": "http://ib.adnxs.com/openrtb2",
+		  "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
 		  "body": {
 			"id": "test-request-id",
-			"ext": {
-				"appnexus": {
-				  "hb_source": 5
-				},
-				"prebid": {}
-			},
 			"imp": [
 			  {
+                "tagid" : "aaw",
+                "bidfloor" : 0.10,
 				"id": "test-imp-id",
 				"video": {
 					"mimes": ["video/mp4"],
@@ -45,8 +42,9 @@
 					"h": 560
 				  },
 				"ext": {
-				  "appnexus": {
-					"placement_id": 10433394
+				  "bidder": {
+					"inventoryCode": "aaw",
+                    "floor" : 0.10
 				  }
 				}
 			  }
@@ -66,22 +64,14 @@
 				  "price": 0.500000,
 				  "adid": "29681110",
 				  "adm": "some-test-ad",
-				  "adomain": ["appnexus.com"],
-				  "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+				  "adomain": ["foo.com"],
+				  "iurl": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
 				  "cid": "958",
 				  "crid": "29681110",
 				  "h": 250,
-				  "w": 300,
-				  "ext": {
-					"appnexus": {
-					  "brand_id": 99,
-						"brand_category_id": 99,
-					  "auction_id": 8189378542222915032,
-					  "bid_ad_type": 1,
-					  "bidder_id": 2,
-					  "ranking_price": 0.000000
-					}
-				  }
+					"w": 300,
+					"cat": ["IAB9-1"],
+				  "ext": {"triplelift_pb":{"format":11}}
 				}]
 			  }
 			],
@@ -103,21 +93,17 @@
 			  "price": 0.5,
 			  "adm": "some-test-ad",
 			  "adid": "29681110",
-			  "adomain": ["appnexus.com"],
-			  "iurl": "http://nym1-ib.adnxs.com/cr?id=29681110",
+			  "adomain": ["foo.com"],
+			  "iurl": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
 			  "cid": "958",
 			  "crid": "29681110",
 			  "w": 300,
 			  "h": 250,
-			  "ext": {
-				"appnexus": {
-				  "brand_id": 99,
-					"brand_category_id": 99,
-				  "auction_id": 8189378542222915032,
-				  "bid_ad_type": 1,
-				  "bidder_id": 2,
-				  "ranking_price": 0.000000
-				}
+			  "cat": ["IAB9-1"],
+			  "ext": { 
+				"triplelift_pb": {
+				  "format": 11
+				} 
 			  }
 			},
 			"type": "video"

@@ -27,7 +27,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
 			returnEngine.GoMetrics.MetricsRegistry, // metrics registry
-			time.Second*10,                         // interval
+			time.Second*20,                         // interval
 			cfg.Metrics.Influxdb.Host,              // the InfluxDB url
 			cfg.Metrics.Influxdb.Database,          // your InfluxDB database
 			cfg.Metrics.Influxdb.Username,          // your InfluxDB user
