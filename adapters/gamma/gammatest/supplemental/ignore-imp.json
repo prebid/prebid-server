@@ -39,6 +39,19 @@
             "wid": "sample-web-id"
           }
         }
+      },
+      {
+        "id": "unsupported-audio-imp",
+        "audio": {
+          "mimes": ["audio/mp3"]
+        },
+        "ext": {
+          "bidder": {
+            "id": "sample-id",
+            "zid": "sample-zone-id",
+            "wid": "sample-web-id"
+          }
+        }
       }
     ]
   },
@@ -132,6 +145,6 @@
       },
       "type": "video"
     }
-  ]
-
+  ],
+  "expectedMakeRequestsErrors": ["Gamma only supports banner and video media types. Ignoring imp id=unsupported-audio-imp"]
 }

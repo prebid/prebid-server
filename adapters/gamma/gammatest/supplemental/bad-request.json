@@ -26,12 +26,6 @@
             }
           ]
         },
-        "video": {
-          "mimes": ["video/mp4"],
-          "protocols": [2, 5],
-          "w": 640,
-          "h": 480
-        },
         "ext":{
           "bidder":{
             "id": "sample-id",
@@ -49,41 +43,9 @@
         "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-id&hb=pbmobile&device_ip=test-device-ip&device_model=test-device-model&device_os=test-device-os&device_ua=test-device-ua&device_ifa=test-device-ifa&app_id=test-app-id&app_bundle=test-app-bundle&app_name=test-app-name"
       },
       "mockResponse": {
-        "status": 200,
-        "body": {
-          "id": "test-request-id",
-          "cur": "USD",
-          "seatbid": [
-            {
-              "seat": "gamma",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 0.500000,
-                "adm": "some-test-ad",
-                "crid": "crid_10",
-                "w": 640,
-                "h": 480
-              }]
-            }
-          ]
-        }
+        "status": 400
       }
     }
   ],
-
-  "expectedBids": [
-    {
-      "bid": {
-        "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-        "impid": "test-imp-id",
-        "price": 0.5,
-        "adm": "some-test-ad",
-        "crid": "crid_10",
-        "w": 640,
-        "h": 480
-      },
-      "type": "video"
-    }
-  ]
+  "expectedMakeBidsErrors": []
 }

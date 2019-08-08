@@ -183,15 +183,11 @@ func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalReq
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. ", response.StatusCode),
-		}}
+		return nil, nil
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
+		return nil, nil
 	}
 
 	var bidResp openrtb.BidResponse
