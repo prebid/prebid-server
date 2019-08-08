@@ -535,9 +535,9 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 		crid := extractVideoCrid(bids[i].NURL)
 
 		bids[i].CrID = crid
-		bids[i].ImpID = xtrnal.Imp[0].ImpId
-		bids[i].H = xtrnal.Imp[0].Video.H
-		bids[i].W = xtrnal.Imp[0].Video.W
+		bids[i].ImpID = xtrnal.Imp[i].ImpId
+		bids[i].H = xtrnal.Imp[i].Video.H
+		bids[i].W = xtrnal.Imp[i].Video.W
 		bids[i].ID = id
 	}
 
