@@ -1159,18 +1159,26 @@ func checkSafari(r *http.Request) (isSafari bool) {
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
 func writeError(errs []error, w http.ResponseWriter) bool {
-	if len(errs) > 0 {
-		if errortypes.DecodeError(errs[0]) == errortypes.BlacklistedAppCode {
-			w.WriteHeader(http.StatusServiceUnavailable)
+	var errorMessages []byte = make([]byte, 0)
+	var foundBlacklisted bool = false
+	for i := 0; i < len(errs); i++ {
+		if errortypes.DecodeError(errs[i]) == errortypes.BlacklistedAppCode {
+			foundBlacklisted = true
+			//append in the beginning
+			errorMessages = append([]byte(fmt.Sprintf("Invalid request: %s\n", errs[i].Error())), errorMessages...)
 		} else {
-			w.WriteHeader(http.StatusBadRequest)
+			//append at the end
+			errorMessages = append(errorMessages, []byte(fmt.Sprintf("Invalid request: %s\n", errs[i].Error()))...)
 		}
-		for _, err := range errs {
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
-		}
-		return true
 	}
-	return false
+	if foundBlacklisted {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write(errorMessages)
+	} else if len(errs) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errorMessages)
+	}
+	return len(errs) > 0
 }
 
 // Checks to see if an error in an error list is a fatal error

@@ -242,16 +242,20 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 
 func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
-	if errortypes.DecodeError(errL[0]) == errortypes.BlacklistedAppCode {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		ao.Status = http.StatusServiceUnavailable
-	} else {
+	var errors string
+	var foundBlacklisted bool = false
+	for _, er := range errL {
+		if errortypes.DecodeError(er) == errortypes.BlacklistedAppCode {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			ao.Status = http.StatusServiceUnavailable
+			errors = fmt.Sprintf("%s %s", er.Error(), errors)
+		} else {
+			errors = fmt.Sprintf("%s %s", errors, er.Error())
+		}
+	}
+	if !foundBlacklisted {
 		w.WriteHeader(http.StatusInternalServerError)
 		ao.Status = http.StatusInternalServerError
-	}
-	var errors string
-	for _, er := range errL {
-		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
