@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Holds binary revision string
+// Rev holds binary revision string
 // Set manually at build time using:
 //    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
 // Populated automatically at build / release time via .travis.yml
