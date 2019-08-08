@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -110,8 +109,8 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	isBrowserApplicable := usersync.IsBrowserApplicableForSameSite(r)
 	needSyncupForSameSite := false
 	if isBrowserApplicable {
-		sameSiteCookie, _ := r.Cookie(usersync.SameSiteCookieName)
-		if sameSiteCookie == nil || !strings.Contains(sameSiteCookie.String(), usersync.SameSiteCookieValue) {
+		_, err1 := r.Cookie(usersync.SameSiteCookieName)
+		if err1 == http.ErrNoCookie {
 			needSyncupForSameSite = true
 		}
 	}
