@@ -122,6 +122,53 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
+func TestConsentThroughEndpoint(t *testing.T) {
+	// gdpr consent string that will come inside our http.Request query
+	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
+
+	// Parse a valid request that comes with a gdpr consent string
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(validRequest(t, "gdpr.json")),
+	}
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	// Assert our bidRequest was a valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	// Assert our bidRequest had a valid "User" field
+	if !assert.NotNil(t, exchange.lastRequest.User) {
+		return
+	}
+	// Assert our bidRequest had a valid "User.Ext" field
+	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
+		return
+	}
+	// Assert the last request here must have a valid User object with a consent string equal to that on the URL query
+	var ue openrtb_ext.ExtUser = openrtb_ext.ExtUser{}
+	err := json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
+	assert.NoError(t, err)
+	assert.Equal(t, consentString, ue.Consent)
+	assert.NotEqual(t, consentString, "some-consent-string")
+}
+
 func TestAMPSiteExt(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
