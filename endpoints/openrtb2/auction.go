@@ -1159,33 +1159,21 @@ func checkSafari(r *http.Request) (isSafari bool) {
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
 func writeError(errs []error, w http.ResponseWriter) bool {
-	var errorMessages []byte = make([]byte, 0)
-	var foundBlacklisted bool = false
-	for i := 0; i < len(errs); i++ {
-		if errortypes.DecodeError(errs[i]) == errortypes.BlacklistedAppCode {
-			foundBlacklisted = true
-			//append in the beginning
-			errorMessages = append([]byte(fmt.Sprintf("Invalid request: %s\n", errs[i].Error())), errorMessages...)
-		} else {
-			//append at the end
-			errorMessages = append(errorMessages, []byte(fmt.Sprintf("Invalid request: %s\n", errs[i].Error()))...)
-		}
-	}
-	if foundBlacklisted {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write(errorMessages)
-	} else if len(errs) > 0 {
+	if len(errs) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(errorMessages)
+		for _, err := range errs {
+			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+		}
+		return true
 	}
-	return len(errs) > 0
+	return false
 }
 
 // Checks to see if an error in an error list is a fatal error
 func fatalError(errL []error) bool {
 	for _, err := range errL {
 		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode {
+		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode {
 			return true
 		}
 	}
