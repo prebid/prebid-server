@@ -19,20 +19,32 @@ type EngageBDRAdapter struct {
 
 func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
-	errors := make([]error, 0)
+	errors := make([]error, 0, len(request.Imp))
+
+	if request.Imp == nil || len(request.Imp) == 0 {
+		errors = append(errors, &errortypes.BadInput{
+			Message: fmt.Sprintf("Invalid BidRequest. No valid imp."),
+		})
+		return nil, errors
+	}
 
 	// EngageBDR uses different sspid parameters for banner and video.
 	sspidImps := make(map[string][]openrtb.Imp)
 	for _, imp := range request.Imp {
-		if imp.Native != nil {
-			// filter native imps from bid request
-			continue
+
+		if imp.Audio != nil {
+			errors = append(errors, &errortypes.BadInput{
+				Message: fmt.Sprintf("Invalid MediaType. EngageBDR only supports Banner, Video and Native. Ignoring imp id=%s", imp.ID),
+			})
+			return nil, errors
 		}
+
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
 			})
+			return nil, errors
 		}
 		impExt := openrtb_ext.ExtImpEngageBDR{}
 		err := json.Unmarshal(bidderExt.Bidder, &impExt)
@@ -40,11 +52,13 @@ func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
 			})
+			return nil, errors
 		}
 		if impExt.Sspid == "" {
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("Ignoring imp id=%s, no sspid present", imp.ID),
 			})
+			return nil, errors
 		}
 		sspidImps[impExt.Sspid] = append(sspidImps[impExt.Sspid], imp)
 	}
@@ -72,11 +86,6 @@ func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 			}
 			adapterRequests = append(adapterRequests, &adapterReq)
 		}
-	}
-
-	if len(adapterRequests) == 0 {
-		errors = append(errors, &errortypes.BadInput{Message: fmt.Sprintf("No imps present")})
-		return nil, errors
 	}
 
 	return adapterRequests, errors
@@ -121,8 +130,12 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Banner == nil && imp.Video != nil {
+			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Audio != nil {
+				mediaType = openrtb_ext.BidTypeAudio
+			} else if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			return mediaType
 		}

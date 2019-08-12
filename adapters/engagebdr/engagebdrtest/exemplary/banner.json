@@ -44,6 +44,21 @@
           "seatbid": [
             {
               "bid": [
+              {
+                  "id" : "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 9.81,
+                  "adid": "abcde-12345",
+                  "adm": "<div><img src=\"https://cdn0.bnmla.com/0b1c6e85e9376e3092df8c9fc8ab9095.gif\" width=350 height=250 /></div>",
+                  "adomain": [
+                      "advertiserdomain.com"
+                  ],
+                  "iurl": "http://match.bnmla.com/usersync?sspid=59&redir=",
+                  "cid": "campaign1",
+                  "crid": "abcde-12345",
+                  "w": 300,
+                  "h": 250
+              }
               ],
               "seat": "test-request-id"
             }
@@ -57,32 +72,25 @@
 
   "expectedBidResponses": [
   {
-      "id": "test-request-id",
-      "seatbid": [
+      "currency": "USD",
+      "bids": [
       {
-          "bid": [
-          {
+          "bid": {
               "id": "test-imp-id",
               "impid": "test-imp-id",
               "price": 9.81,
               "adid": "abcde-12345",
-              "adm": "<div><img src=\"https://cdn0.bnmla.com/0b1c6e85e9376e3092df8c9fc8ab9095.gif    \" width=350 height=250 /></div>",
-              "adomain":[
-                  "advertiserdomain.com"
-              ],
+              "adm": "<div><img src=\"https://cdn0.bnmla.com/0b1c6e85e9376e3092df8c9fc8ab9095.gif\" width=350 height=250 /></div>",
+              "adomain": ["advertiserdomain.com"],
               "iurl": "http://match.bnmla.com/usersync?sspid=59&redir=",
               "cid": "campaign1",
               "crid": "abcde-12345",
               "w": 300,
               "h": 250
-          }
-          ],
-          "seat": "test-request-id"
+          },
+          "type": "banner"
       }
-      ],
-      "bidid": "test-request-id",
-      "cur": "USD"
-
+      ]
   }
   ]
 }
