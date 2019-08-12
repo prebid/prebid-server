@@ -246,14 +246,14 @@ func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, 
 	var foundBlacklisted bool = false
 	for _, er := range errL {
 		if errortypes.DecodeError(er) == errortypes.BlacklistedAppCode {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			ao.Status = http.StatusServiceUnavailable
-			errors = fmt.Sprintf("%s %s", er.Error(), errors)
-		} else {
-			errors = fmt.Sprintf("%s %s", errors, er.Error())
+			foundBlacklisted = true
 		}
+		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
-	if !foundBlacklisted {
+	if foundBlacklisted {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		ao.Status = http.StatusServiceUnavailable
+	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 		ao.Status = http.StatusInternalServerError
 	}
