@@ -51,7 +51,7 @@ type Configuration struct {
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
 
-	// PBS-418 array of blacklisted apps and its correpondent hash table to be instantly accessed.
+	// Array of blacklisted apps and its correpondent hash table to be instantly accessed.
 	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
 	BlacklistedAppMap map[string]bool
 }
