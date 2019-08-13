@@ -193,9 +193,7 @@ func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.
 
 // Builds endpoint url based on adapter-specific pub settings from imp.ext
 func (adapter *adkernelAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAdkernel) (string, error) {
-	reqHost := params.Host
-	zoneIdStr := strconv.Itoa(params.ZoneId)
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost, ZoneID: zoneIdStr}
+	endpointParams := macros.EndpointTemplateParams{Host: params.Host, ZoneID: strconv.Itoa(params.ZoneId)}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
