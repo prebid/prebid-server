@@ -14,6 +14,9 @@
           "appnexus": "invalidParams"
         }
       }
-    ]
+    ],
+    "app": {
+      "id": "app_001"
+    }
   }
 }

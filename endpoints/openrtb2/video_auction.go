@@ -242,14 +242,23 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 
 func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
-	w.WriteHeader(http.StatusInternalServerError)
 	var errors string
+	var foundBlacklisted bool = false
 	for _, er := range errL {
+		if errortypes.DecodeError(er) == errortypes.BlacklistedAppCode {
+			foundBlacklisted = true
+		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
+	}
+	if foundBlacklisted {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		ao.Status = http.StatusServiceUnavailable
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		ao.Status = http.StatusInternalServerError
 	}
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
-	ao.Status = http.StatusInternalServerError
 	ao.Errors = append(ao.Errors, errL...)
 }
 
@@ -617,9 +626,19 @@ func (deps *endpointDeps) validateVideoRequest(req *openrtb_ext.BidRequestVideo)
 	} else if req.Site != nil && req.Site.ID == "" && req.Site.Page == "" {
 		err := errors.New("request.site missing required field: id or page")
 		errL = append(errL, err)
-	} else if req.App != nil && req.App.ID == "" && req.App.Bundle == "" {
-		err := errors.New("request.app missing required field: id or bundle")
-		errL = append(errL, err)
+	} else if req.App != nil {
+		if req.App.ID != "" {
+			if _, found := deps.cfg.BlacklistedAppMap[req.App.ID]; found {
+				err := &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", req.App.ID)}
+				errL = append(errL, err)
+				return errL, podErrors
+			}
+		} else {
+			if req.App.Bundle == "" {
+				err := errors.New("request.app missing required field: id or bundle")
+				errL = append(errL, err)
+			}
+		}
 	}
 
 	if len(req.Video.Mimes) == 0 {
