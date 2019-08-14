@@ -193,23 +193,23 @@ func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	return gdprApplies != 0
 }
 
-func (u Util) parseUserExt(user *openrtb.User) userInfo {
+func (u Util) parseUserExt(user *openrtb.User) (ui userInfo) {
 	var userExt userExt
-	var unifiedId string
-	var gdprConsentString string
 	if user != nil && user.Ext != nil {
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
-			gdprConsentString = userExt.Consent
+			ui.Consent = userExt.Consent
 			for i := 0; i < len(userExt.Eids); i++ {
-				if userExt.Eids[i].Source == "adserver.org" {
-					unifiedId = userExt.Eids[i].Uids[0].ID
+				if userExt.Eids[i].Source == "adserver.org" && len(userExt.Eids[i].Uids) > 0 {
+					if userExt.Eids[i].Uids[0].ID != "" {
+						ui.TtdUid = userExt.Eids[i].Uids[0].ID
+					}
 					break
 				}
 			}
 		}
 	}
 
-	return userInfo{Consent: gdprConsentString, TtdUid: unifiedId}
+	return ui
 }
 
 func (u Util) parseDomain(fullUrl string) string {
