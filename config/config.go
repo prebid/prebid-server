@@ -53,6 +53,10 @@ type Configuration struct {
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 
 	VideoStoredRequestRequired bool `mapstructure:"video_stored_request_required"`
+
+	// Array of blacklisted apps that is used to create the hash table BlacklistedAppMap so App.ID's can be instantly accessed.
+	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
+	BlacklistedAppMap map[string]bool
 }
 
 type HTTPClient struct {
@@ -396,6 +400,13 @@ func New(v *viper.Viper) (*Configuration, error) {
 	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
 		c.GDPR.NonStandardPublisherMap[c.GDPR.NonStandardPublishers[i]] = 1
 	}
+
+	// To look for a request's app_id in O(1) time, we fill this hash table located in the
+	// the BlacklistedApps field of the Configuration struct defined in this file
+	c.BlacklistedAppMap = make(map[string]bool)
+	for i := 0; i < len(c.BlacklistedApps); i++ {
+		c.BlacklistedAppMap[c.BlacklistedApps[i]] = true
+	}
 	return &c, nil
 }
 
@@ -422,6 +433,7 @@ func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
 func (cfg *Configuration) setDerivedDefaults() {
 	externalURL := cfg.ExternalURL
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.Bidder33Across, "https://ic.tynt.com/r/d?m=xch&rt=html&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ru="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3D33across%26uid%3D33XUSERID33X&id=zzz000000000002zzz")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdkernel, "https://sync.adkernel.com/user-sync?t=image&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadkernel%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdkernelAdn, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3DadkernelAdn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdtelligent, "https://sync.adtelligent.com/csync?t=p&ep=0&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadtelligent%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7Buid%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderAdform, "https://cm.adform.net/cookie?redirect_url="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dadform%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
@@ -608,6 +620,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.somoaudience.endpoint", "http://publisher-east.mobileadtrading.com/rtb/bid")
 	v.SetDefault("adapters.sovrn.endpoint", "http://ap.lijit.com/rtb/bid?src=prebid_server")
 	v.SetDefault("adapters.triplelift.endpoint", "https://tlx.3lift.com/s2s/auction?supplier_id=19")
+	v.SetDefault("adapters.adkernel.endpoint", "http://{{.Host}}/hb?zone={{.ZoneID}}")
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
 	v.SetDefault("adapters.33across.partner_id", "")
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
@@ -638,6 +651,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
+	v.SetDefault("blacklisted_apps", []string{""})
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

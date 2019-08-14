@@ -9,6 +9,7 @@ import (
 type EndpointTemplateParams struct {
 	Host        string
 	PublisherID string
+	ZoneID      string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template

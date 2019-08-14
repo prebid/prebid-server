@@ -271,22 +271,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
-	impIDs := make(map[string]int, len(req.Imp))
-	for index := range req.Imp {
-		imp := &req.Imp[index]
-		if firstIndex, ok := impIDs[imp.ID]; ok {
-			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
-		}
-		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index)
-		if len(errs) > 0 {
-			errL = append(errL, errs...)
-		}
-		if fatalError(errs) {
-			return errL
-		}
-	}
-
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
 		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
 		return errL
@@ -310,6 +294,22 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if err := validateRegs(req.Regs); err != nil {
 		errL = append(errL, err)
 		return errL
+	}
+
+	impIDs := make(map[string]int, len(req.Imp))
+	for index := range req.Imp {
+		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
+		errs := deps.validateImp(imp, aliases, index)
+		if len(errs) > 0 {
+			errL = append(errL, errs...)
+		}
+		if fatalError(errs) {
+			return errL
+		}
 	}
 
 	return errL
@@ -789,6 +789,12 @@ func (deps *endpointDeps) validateApp(app *openrtb.App) error {
 		return nil
 	}
 
+	if app.ID != "" {
+		if _, found := deps.cfg.BlacklistedAppMap[app.ID]; found {
+			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", app.ID)}
+		}
+	}
+
 	if len(app.Ext) > 0 {
 		var a openrtb_ext.ExtApp
 		if err := json.Unmarshal(app.Ext, &a); err != nil {
@@ -1166,7 +1172,8 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 // Checks to see if an error in an error list is a fatal error
 func fatalError(errL []error) bool {
 	for _, err := range errL {
-		if errortypes.DecodeError(err) != errortypes.BidderTemporarilyDisabledCode {
+		errCode := errortypes.DecodeError(err)
+		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode {
 			return true
 		}
 	}
