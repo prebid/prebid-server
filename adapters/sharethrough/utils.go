@@ -209,7 +209,7 @@ func (u Util) parseUserExt(user *openrtb.User) (ui userInfo) {
 		}
 	}
 
-	return ui
+	return
 }
 
 func (u Util) parseDomain(fullUrl string) string {
