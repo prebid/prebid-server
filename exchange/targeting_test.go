@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 // Using this set of bids in more than one test
@@ -55,8 +57,10 @@ func TestTargetingCache(t *testing.T) {
 	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
 
-	//assertKeyExists(t, bids["hb_cache_host"], string(openrtb_ext.HbConstantCacheHostKey), true)
-	//assertKeyExists(t, bids["hb_cache_path"], string(openrtb_ext.HbConstantCacheHostKey), true)
+	//assert hb_cache_host and hb_cache_path were included
+	assert.Equal(t, true, strings.Contains(string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCacheHostKey)) && strings.Contains(string(bids["winning-bid"].Ext), "www.pbcserver.com"))
+	assert.Equal(t, true, strings.Contains(string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCachePathKey)) && strings.Contains(string(bids["winning-bid"].Ext), "/pbcache/endpoint"))
+
 }
 
 func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) {

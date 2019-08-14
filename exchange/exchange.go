@@ -603,6 +603,5 @@ func (e *exchange) parsePrebidCacheUrl() (string, string) {
 	if err != nil {
 		return "", ""
 	}
-	//fmt.Printf("uriObj.Hostname() = %s, uriObj.EscapedPath() = %s \n", uriObj.Hostname(), uriObj.EscapedPath())
 	return uriObj.Hostname(), uriObj.EscapedPath()
 }
