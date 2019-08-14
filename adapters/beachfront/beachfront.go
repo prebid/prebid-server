@@ -223,8 +223,17 @@ func newBeachfrontBannerRequest() beachfrontBannerRequest {
 
 func newBeachfrontVideoRequest() beachfrontVideoRequest {
 	r := beachfrontVideoRequest{}
-	r.Cur = append(r.Cur, "USD")
 	r.IsPrebid = true
+
+	if len(r.Cur) > 0 {
+		for i := 0; i < len(r.Cur); i++ {
+			if r.Cur[i] == "USD" {
+				return r
+			}
+		}
+	}
+
+	r.Cur = append(r.Cur, "USD")
 
 	return r
 }
