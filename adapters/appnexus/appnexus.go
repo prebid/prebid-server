@@ -26,6 +26,7 @@ type AppNexusAdapter struct {
 	http           *adapters.HTTPAdapter
 	URI            string
 	iabCategoryMap map[string]string
+	hbSource       int
 }
 
 // used for cookies and such
@@ -96,6 +97,7 @@ type appnexusReqExtAppnexus struct {
 	IncludeBrandCategory    *bool `json:"include_brand_category,omitempty"`
 	BrandCategoryUniqueness *bool `json:"brand_category_uniqueness,omitempty"`
 	IsAMP                   int   `json:"is_amp,omitempty"`
+	HeaderBiddingSource     int   `json:"hb_source,omitempty"`
 }
 
 // Full request extension including appnexus extension object
@@ -327,43 +329,35 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	}
 
 	// Add Appnexus request level extension
-	var isAMP int
+	var isAMP, isVIDEO int
 	if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeAMP {
 		isAMP = 1
-	} else {
-		isAMP = 0
+	} else if reqInfo.PbsEntryPoint == pbsmetrics.ReqTypeVideo {
+		isVIDEO = 1
 	}
+
 	var reqExt appnexusReqExt
 	if len(request.Ext) > 0 {
-		if err := json.Unmarshal(request.Ext, &reqExt); err == nil {
-			includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer != 0
-			if includeBrandCategory {
-				if reqExt.Appnexus == nil {
-					reqExt.Appnexus = &appnexusReqExtAppnexus{}
-				}
-				reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
-				reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
-				reqExt.Appnexus.IsAMP = isAMP
-				request.Ext, err = json.Marshal(reqExt)
-				if err != nil {
-					errs = append(errs, err)
-					return nil, errs
-				}
-			}
-		} else {
+		if err := json.Unmarshal(request.Ext, &reqExt); err != nil {
 			errs = append(errs, err)
 			return nil, errs
 		}
-	} else if isAMP != 0 {
-		// if isAMP is 0, bidder doesn't need it included
-		var err error
+	}
+	if reqExt.Appnexus == nil {
 		reqExt.Appnexus = &appnexusReqExtAppnexus{}
-		reqExt.Appnexus.IsAMP = isAMP
-		request.Ext, err = json.Marshal(reqExt)
-		if err != nil {
-			errs = append(errs, err)
-			return nil, errs
-		}
+	}
+	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer != 0
+	if includeBrandCategory {
+		reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
+		reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory
+	}
+	reqExt.Appnexus.IsAMP = isAMP
+	reqExt.Appnexus.HeaderBiddingSource = a.hbSource + isVIDEO
+	var err error
+	request.Ext, err = json.Marshal(reqExt)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	imps := request.Imp
@@ -596,11 +590,11 @@ func appendMemberId(uri string, memberId string) string {
 	return uri + "?member_id=" + memberId
 }
 
-func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint string) *AppNexusAdapter {
-	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint)
+func NewAppNexusAdapter(config *adapters.HTTPAdapterConfig, endpoint, platformID string) *AppNexusAdapter {
+	return NewAppNexusBidder(adapters.NewHTTPAdapter(config).Client, endpoint, platformID)
 }
 
-func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
+func NewAppNexusBidder(client *http.Client, endpoint, platformID string) *AppNexusAdapter {
 	a := &adapters.HTTPAdapter{Client: client}
 
 	// Load custom options for our adapter (currently just a lookup table to convert appnexus => iab categories)
@@ -614,9 +608,17 @@ func NewAppNexusBidder(client *http.Client, endpoint string) *AppNexusAdapter {
 		}
 	}
 
+	platid := 5
+	if len(platformID) > 0 {
+		if val, err := strconv.Atoi(platformID); err == nil {
+			platid = val
+		}
+	}
+
 	return &AppNexusAdapter{
 		http:           a,
 		URI:            endpoint,
 		iabCategoryMap: catmap,
+		hbSource:       platid,
 	}
 }

@@ -1,9 +1,11 @@
 maintainer:
-  email: "adspaces@unrulygroup.com"
+  email: "prebid@triplelift.com"
 capabilities:
-  site:
-    mediaTypes:
-      - video
   app:
     mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
       - video
