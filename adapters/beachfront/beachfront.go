@@ -175,7 +175,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 }
 
 func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests, errs []error) {
-
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
 
@@ -263,12 +262,13 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	var errs = make([]error, 0, len(request.Imp))
 
 	var slotIndex = 0
-	var impIndex = 0
 
 	beachfrontReq = newBeachfrontBannerRequest()
+	beachfrontReq.Slots = append(beachfrontReq.Slots, beachfrontSlot{})
 
+	// The request that gets to here only has imps that contain a banner element. They may also contain
+	// a video element, but those are being ignored in this function.
 	for i := 0; i < len(request.Imp); i++ {
-		beachfrontReq.Slots = append(beachfrontReq.Slots, beachfrontSlot{})
 		slotIndex = len(beachfrontReq.Slots) - 1
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
@@ -291,20 +291,40 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
+		if(i == 3) {
+			err = errors.New("test error")
+		}
+
 		if err == nil {
 			beachfrontReq.Slots[slotIndex].Bidfloor = beachfrontExt.BidFloor
-			beachfrontReq.Slots[slotIndex].Slot = request.Imp[impIndex].ID
+			beachfrontReq.Slots[slotIndex].Slot = request.Imp[i].ID
+
+			if beachfrontExt.AppId != "" {
+				beachfrontReq.Slots[slotIndex].Id = beachfrontExt.AppId
+			} else {
+				beachfrontReq.Slots[slotIndex].Id = beachfrontExt.AppIds.Banner
+			}
+
+			// Do we have another Imp after this? Add another Slot.
+			if i != len(request.Imp) - 1 {
+				beachfrontReq.Slots = append(beachfrontReq.Slots, beachfrontSlot{})
+			}
 		} else {
+			/* Failed to extract the beachfrontExt. This slot is junk.  This should be caught
+			in validation, but just in case...
+			*/
+			if i != len(request.Imp) - 1 {
+				// Is this the last one? If not, just empty the current slot, and reuse it.
+				beachfrontReq.Slots[slotIndex] = beachfrontSlot{}
+			} else {
+				// last one, so remove it.
+				beachfrontReq.Slots = removeSlot(beachfrontReq.Slots, slotIndex)
+			}
+
 			errs = append(errs, err)
 			continue
 		}
 
-		if beachfrontExt.AppId != "" {
-			beachfrontReq.Slots[slotIndex].Id = beachfrontExt.AppId
-		} else {
-			beachfrontReq.Slots[slotIndex].Id = beachfrontExt.AppIds.Banner
-		}
-		impIndex++
 	}
 
 	beachfrontReq.RequestID = request.ID
@@ -386,12 +406,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		} else {
 			r.Imp[videoImpsIndex].Video.W = DefaultVideoWidth
 			r.Imp[videoImpsIndex].Video.H = DefaultVideoHeight
-		}
-
-		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(request.Imp[i].Ext, &bidderExt); err != nil {
-			errs = append(errs, err)
-			continue
 		}
 
 		r.Imp[videoImpsIndex].Id = videoImpsIndex
@@ -566,6 +580,11 @@ func getBidType(bid openrtb.Bid) openrtb_ext.BidType {
 func extractVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	return strings.TrimSuffix(chunky[2], ":")
+}
+
+func removeSlot(s []beachfrontSlot, i int) []beachfrontSlot {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }
 
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
