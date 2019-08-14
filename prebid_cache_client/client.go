@@ -23,9 +23,16 @@ type Client interface {
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
 	// logging any relevant errors to the app logs
 	PutJson(ctx context.Context, values []Cacheable) ([]string, []error)
+
+	// Serves the purpose of a getter that returns a string
+	//
+	// clientImpl defined below, the PrebidCacheURL global variable defined in this file.
+	GetPrebidCacheURL() string
 }
 
 type PayloadType string
+
+var PrebidCacheURL string = ""
 
 const (
 	TypeJSON PayloadType = "json"
@@ -40,6 +47,7 @@ type Cacheable struct {
 }
 
 func NewClient(conf *config.Cache) Client {
+	PrebidCacheURL = conf.GetBaseURL() + "/cache"
 	return &clientImpl{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -54,6 +62,10 @@ func NewClient(conf *config.Cache) Client {
 type clientImpl struct {
 	httpClient *http.Client
 	putUrl     string
+}
+
+func (c *clientImpl) GetPrebidCacheURL() string {
+	return PrebidCacheURL
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
