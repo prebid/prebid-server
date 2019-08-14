@@ -33,7 +33,7 @@ import (
 	"github.com/yudai/gojsondiff/formatter"
 )
 
-//const PREBID_CACHE_URL string = "http://www.pbcserver.com/pbcache/endpoint"
+const PREBID_CACHE_URL string = "http://www.pbcserver.com/pbcache/endpoint"
 
 func TestNewExchange(t *testing.T) {
 	respStatus := 200

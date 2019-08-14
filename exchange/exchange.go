@@ -599,7 +599,7 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 func (e *exchange) parsePrebidCacheUrl() (string, string) {
 	var uriObj *url.URL
 	var err error
-	uriObj, err = url.Parse(e.PublisherCacheURL)
+	uriObj, err = url.Parse(e.cache.putUrl)
 	if err != nil {
 		return "", ""
 	}

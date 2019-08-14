@@ -78,6 +78,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 			infos,
 			gdpr.AlwaysAllow{},
 			currencies.NewRateConverterDefault(),
+			"",
 		),
 		paramValidator,
 		empty_fetcher.EmptyFetcher{},
