@@ -119,10 +119,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	beachfrontRequests, errs = preprocess(request)
 
-	if len(errs) > 0 {
-		return nil, errs
-	}
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -291,6 +287,10 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
+
+		if i == 1 {
+			err = errors.New("test error")
+		}
 		if err == nil {
 			beachfrontReq.Slots[slotIndex].Bidfloor = beachfrontExt.BidFloor
 			beachfrontReq.Slots[slotIndex].Slot = request.Imp[i].ID
@@ -360,14 +360,46 @@ getVideoRequests, plural. One request to the endpoint can have one appId, and ca
 so each video imp is a call to the endpoint.
 */
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
-	var videoImpsIndex = 0
 	var beachfrontReqs = make([]beachfrontVideoRequest, 0)
 	var errs = make([]error, 0, len(request.Imp))
-	var appId string
-	var impCount = 0
 
 	for i := 0; i < len(request.Imp); i++ {
 		r := newBeachfrontVideoRequest()
+		r.Imp = append(r.Imp, beachfrontVideoImp{})
+
+		// The backend can take an array of Imps, but will only ever return
+		// a single seatbid with a single nurl, so videoIndex should always be 0,
+		// making one Imp per request.
+		var videoIndex = 0
+
+		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
+
+
+		if err == nil {
+			r.Imp[videoIndex].Bidfloor = beachfrontExt.BidFloor
+
+			if beachfrontExt.AppId != "" {
+				r.AppId = beachfrontExt.AppId
+			} else {
+				r.AppId = beachfrontExt.AppIds.Video
+			}
+		} else {
+			// Failed to extract the beachfrontExt, so this request is junk. A new
+			// empty r will be created on the next loop ( i = i + 1 ), and this r will
+			// not get appended, so videoIndex will not change as len(beachfrontReqs)
+			// will not change and the new r, if it passes this test, will be appended
+			// where this one would have been.
+			errs = append(errs, err)
+			continue
+		}
+
+		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
+			r.Imp[videoIndex].Video.W = request.Imp[i].Video.W
+			r.Imp[videoIndex].Video.H = request.Imp[i].Video.H
+		} else {
+			r.Imp[videoIndex].Video.W = DefaultVideoWidth
+			r.Imp[videoIndex].Video.H = DefaultVideoHeight
+		}
 
 		if request.App != nil {
 			if request.App.Domain != "" {
@@ -393,35 +425,10 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			}
 		}
 
-		r.Imp = append(r.Imp, beachfrontVideoImp{})
-		videoImpsIndex = len(r.Imp) - 1
 
-		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
-			r.Imp[videoImpsIndex].Video.W = request.Imp[i].Video.W
-			r.Imp[videoImpsIndex].Video.H = request.Imp[i].Video.H
-		} else {
-			r.Imp[videoImpsIndex].Video.W = DefaultVideoWidth
-			r.Imp[videoImpsIndex].Video.H = DefaultVideoHeight
-		}
+		r.Imp[videoIndex].Id = videoIndex
+		r.Imp[videoIndex].ImpId = request.Imp[i].ID
 
-		r.Imp[videoImpsIndex].Id = videoImpsIndex
-		r.Imp[videoImpsIndex].ImpId = request.Imp[i].ID
-
-		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
-
-		if beachfrontExt.AppId != "" {
-			appId = beachfrontExt.AppId
-		} else {
-			appId = beachfrontExt.AppIds.Video
-		}
-
-		if err == nil {
-			r.AppId = appId
-			r.Imp[videoImpsIndex].Bidfloor = beachfrontExt.BidFloor
-		} else {
-			errs = append(errs, err)
-			continue
-		}
 
 		if request.Device != nil {
 			r.Device.IP = request.Device.IP
@@ -446,7 +453,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		r.ID = request.ID
 
-		impCount++
 		beachfrontReqs = append(beachfrontReqs, r)
 	}
 
