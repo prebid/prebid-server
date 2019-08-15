@@ -416,10 +416,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			}
 		}
 
-
 		r.Imp[videoIndex].Id = videoIndex
 		r.Imp[videoIndex].ImpId = request.Imp[i].ID
-
 
 		if request.Device != nil {
 			r.Device.IP = request.Device.IP
