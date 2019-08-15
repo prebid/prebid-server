@@ -374,7 +374,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
-
 		if err == nil {
 			r.Imp[videoIndex].Bidfloor = beachfrontExt.BidFloor
 
@@ -384,11 +383,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 				r.AppId = beachfrontExt.AppIds.Video
 			}
 		} else {
-			// Failed to extract the beachfrontExt, so this request is junk. A new
-			// empty r will be created on the next loop ( i = i + 1 ), and this r will
-			// not get appended, so videoIndex will not change as len(beachfrontReqs)
-			// will not change and the new r, if it passes this test, will be appended
-			// where this one would have been.
+			// Failed to extract the beachfrontExt, so this request is junk.
 			errs = append(errs, err)
 			continue
 		}
