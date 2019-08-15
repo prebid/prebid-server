@@ -302,14 +302,14 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			}
 
 			// Do we have another Imp after this? Add another Slot.
-			if i != len(request.Imp) - 1 {
+			if i != len(request.Imp)-1 {
 				beachfrontReq.Slots = append(beachfrontReq.Slots, beachfrontSlot{})
 			}
 		} else {
 			/* Failed to extract the beachfrontExt. This slot is junk.  This should be caught
 			in validation, but just in case...
 			*/
-			if i != len(request.Imp) - 1 {
+			if i != len(request.Imp)-1 {
 				// Is this the last one? If not, just empty the current slot, and reuse it.
 				beachfrontReq.Slots[slotIndex] = beachfrontSlot{}
 			} else {
