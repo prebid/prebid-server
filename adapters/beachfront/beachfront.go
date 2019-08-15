@@ -291,10 +291,6 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
-		if(i == 3) {
-			err = errors.New("test error")
-		}
-
 		if err == nil {
 			beachfrontReq.Slots[slotIndex].Bidfloor = beachfrontExt.BidFloor
 			beachfrontReq.Slots[slotIndex].Slot = request.Imp[i].ID
