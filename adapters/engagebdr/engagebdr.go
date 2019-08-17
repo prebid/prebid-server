@@ -34,31 +34,31 @@ func (adapter *EngageBDRAdapter) MakeRequests(request *openrtb.BidRequest, reqIn
 
 		if imp.Audio != nil {
 			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid MediaType. EngageBDR only supports Banner, Video and Native. Ignoring imp id=%s", imp.ID),
+				Message: fmt.Sprintf("Ignoring imp id=%s, invalid MediaType. EngageBDR only supports Banner, Video and Native.", imp.ID),
 			})
-			return nil, errors
+			continue
 		}
 
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+				Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding extImpBidder, err: %s.", imp.ID, err),
 			})
-			return nil, errors
+			continue
 		}
 		impExt := openrtb_ext.ExtImpEngageBDR{}
 		err := json.Unmarshal(bidderExt.Bidder, &impExt)
 		if err != nil {
 			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s", imp.ID, err),
+				Message: fmt.Sprintf("Ignoring imp id=%s, error while decoding impExt, err: %s.", imp.ID, err),
 			})
-			return nil, errors
+			continue
 		}
 		if impExt.Sspid == "" {
 			errors = append(errors, &errortypes.BadInput{
-				Message: fmt.Sprintf("Ignoring imp id=%s, no sspid present", imp.ID),
+				Message: fmt.Sprintf("Ignoring imp id=%s, no sspid present.", imp.ID),
 			})
-			return nil, errors
+			continue
 		}
 		sspidImps[impExt.Sspid] = append(sspidImps[impExt.Sspid], imp)
 	}
@@ -132,8 +132,6 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 		if imp.ID == impId {
 			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				mediaType = openrtb_ext.BidTypeAudio
 			} else if imp.Native != nil {
 				mediaType = openrtb_ext.BidTypeNative
 			}

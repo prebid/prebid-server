@@ -13,7 +13,7 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Ignoring imp id=test-imp-id, error while decoding extImpBidder, err: unexpected end of JSON input"
+    "Ignoring imp id=test-imp-id, error while decoding extImpBidder, err: unexpected end of JSON input."
   ]
 }
 
