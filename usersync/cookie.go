@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"time"
 
@@ -46,33 +47,30 @@ type uidWithExpiry struct {
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
 func ParsePBSCookieFromRequest(r *http.Request, cookieHost *config.HostCookie) *PBSCookie {
-	if cookieHost.OptOutCookie.Name != "" {
-		//Since an OptOutCookie name is defined in our server configuration, let's make sure this cookie isn't it. If it is,
-		//we return a blank cookie
+	if cookieHost.OptOutCookie.Name != "" { //This is a cookie name, besides, "uids", stored in HostCookie
+		//Since an OptOutCookie name is defined in our server configuration, let's make sure this cookie isn't it. If it is, we return a blank cookie
 		optOutCookie, err1 := r.Cookie(cookieHost.OptOutCookie.Name) //returns a cookie inside the http.Request
 		if err1 == nil && optOutCookie.Value == cookieHost.OptOutCookie.Value {
-			pc := NewPBSCookie()
+			var pc *PBSCookie = NewPBSCookie() //The config.HostCookie cookie was found so, ignore it? Declare a new and blank PBSCookie
 			pc.SetPreference(false)
 			return pc
 		}
 	}
-	//There's nop OptOutCookie defined or at least our incoming request doesn't have that OptOutName nin any http.Request.Header
+	// There's no OptOutCookie defined or at least our incoming request doesn't have that OptOutName in any http.Request.Header
 	// Let's try to download the request's cookie data into a fresh PBSCookie
 	var parsed *PBSCookie
 	uidCookie, err2 := r.Cookie("uids") // hate the refactoring Mansi did, in real code that value is: UID_COOKIE_NAME
 	if err2 == nil {
-		//since we did find a cookie whose name is "uids", we'll try to base64.URLEncoding.DecodeString() its value and then
-		//unmarshal it into a PBSCookie:
+		//since we did find a cookie whose name is "uids", we'll base64.URLEncoding.DecodeString() its value and then unmarshal into a PBSCookie:
 		//   &PBSCookie{
 		//   	uids:     make(map[string]uidWithExpiry),
 		//   	birthday: timestamp(),
 		//   }
 		parsed = ParsePBSCookie(uidCookie)
 	} else {
-		//The uids cookie wasn't found. Declare a new and blank PBSCookie
-		parsed = NewPBSCookie()
+		parsed = NewPBSCookie() //The uids cookie wasn't found. Declare a new and blank PBSCookie
 	}
-	// Fixes #582. If ParsePBSCookie was called in the true branch of the if statement above, the http.Request was
+	// If ParsePBSCookie was called in the true branch of the if statement above, the http.Request was
 	// found to have a cookie with a value like (I think) this:
 	// *net/http.Request {
 	//         Method: "POST",
@@ -111,7 +109,6 @@ func ParsePBSCookieFromRequest(r *http.Request, cookieHost *config.HostCookie) *
 		//                 wall: 13785942585163955784,
 		//                 ext: 1209600006864565,
 		//                 loc: *(*time.Location)(0x1a36a60),},}
-
 		// But if we got inside this if statement, we didn't find a match for `cookieHost.Family`, therefore
 		// we'll set it in the hash map ourselves if a cookie by CookieName was found in the `http.Request`
 		if hostCookie, err := r.Cookie(cookieHost.CookieName); err == nil {
@@ -218,8 +215,30 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
+	var MAX_COOKIE_SIZE int = 1 << 15 // 32 KB
+	var now time.Time = time.Now()
+
 	if domain != "" {
 		httpCookie.Domain = domain
+	}
+
+	var currSize int = len([]byte(httpCookie.String()))
+	for currSize > MAX_COOKIE_SIZE {
+		var oldestElem string = ""
+		var oldestDate int64 = math.MaxInt64
+		for key, value := range cookie.uids {
+			var timeSince time.Duration = now.Sub(value.Expires)
+			if timeSince < time.Duration(oldestDate) {
+				oldestElem = key
+				oldestDate = int64(timeSince)
+			}
+		}
+		delete(cookie.uids, oldestElem)
+		httpCookie = cookie.ToHTTPCookie(ttl)
+		if domain != "" {
+			httpCookie.Domain = domain
+		}
+		currSize = len([]byte(httpCookie.String()))
 	}
 	http.SetCookie(w, httpCookie)
 }
