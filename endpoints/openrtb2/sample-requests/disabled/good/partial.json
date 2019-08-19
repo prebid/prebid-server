@@ -1,0 +1,52 @@
+{
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "pmp": {
+          "deals": [
+            {
+              "id": "some-deal-id"
+            }
+          ]
+        },
+        "ext": {
+          "appnexus": {
+            "placementId": 10433394
+          },
+          "rubicon": {
+            "accountId": 1001,
+            "siteId": 113932,
+            "zoneId": 535510
+          },
+          "openx": {
+            "unit": "539439964",
+            "delDomain": "se-demo-d.openx.net",
+            "customFloor": 0.1,
+            "customParams": {"foo": "bar"}
+          }              
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "targeting": {
+          "pricegranularity": "low"
+        },
+        "cache": {
+          "bids": {}
+        }
+      }
+    }
+  }

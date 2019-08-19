@@ -1031,15 +1031,29 @@ func TestOpenRTBRequest(t *testing.T) {
 		},
 		User: &openrtb.User{
 			Ext: json.RawMessage(`{"digitrust": {
-				"id": "some-digitrust-id",
-				"keyv": 1,
-				"pref": 0
-
-			}}`),
+                    "id": "some-digitrust-id",
+                    "keyv": 1,
+                    "pref": 0
+                },
+				"eids": [{
+                    "source": "adserver.org",
+                    "uids": [{
+                        "id": "3d50a262-bd8e-4be3-90b8-246291523907",
+                        "ext": {
+                            "rtiPartner": "TDID"
+                        }
+                    }]
+                },
+                {
+                    "source": "pubcid",
+                    "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+				}]
+            }`),
 		},
+		Ext: json.RawMessage(`{"prebid": {}}`),
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1064,6 +1078,12 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 		if len(rpRequest.Imp) != len(request.Imp) {
 			t.Fatalf("Wrong len(request.Imp). Expected %d, Got %d", len(request.Imp), len(rpRequest.Imp))
+		}
+		if rpRequest.Cur != nil {
+			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
+		}
+		if request.Ext != nil {
+			t.Fatalf("Wrong request.ext. Expected nil, Got %v", request.Ext)
 		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
@@ -1115,9 +1135,131 @@ func TestOpenRTBRequest(t *testing.T) {
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
 			}
+			if userExt.Eids == nil || len(userExt.Eids) != 2 {
+				t.Fatal("Eids values are not as expected!")
+			}
+			if userExt.TpID == nil || len(userExt.TpID) != 1 {
+				t.Fatal("TpID values are not as expected!")
+			}
 		} else {
 			t.Fatalf("User.Ext object should not be nil since it contains a valid digitrust object.")
 		}
+	}
+}
+
+func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Video: &openrtb.Video{
+				W:     640,
+				H:     360,
+				MIMEs: []string{"video/mp4"},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891,
+				"inventory": {"key1" : "val1"},
+				"visitor": {"key2" : "val2"}
+			}}`),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	if len(errs) > 0 {
+		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Errorf("Unexpected error while decoding request: %s", err)
+	}
+
+	if len(rubiconReq.Imp) != 1 {
+		t.Fatalf("Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+	}
+
+	if rubiconReq.Imp[0].Video != nil {
+		t.Error("Unexpected video object in request impression")
+	}
+
+	if rubiconReq.Imp[0].Banner == nil {
+		t.Error("Banner object must be in request impression")
+	}
+}
+
+func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Video: &openrtb.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
+				MaxDuration: 30,
+				Linearity:   1,
+				API:         []openrtb.APIFramework{},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891,
+				"inventory": {"key1" : "val1"},
+				"visitor": {"key2" : "val2"}
+			}}`),
+		}},
+	}
+
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	if len(errs) > 0 {
+		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
+	}
+	if len(reqs) != 1 {
+		t.Fatalf("Unexpected number of HTTP requests. Got %d. Expected %d", len(reqs), 1)
+	}
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Errorf("Unexpected error while decoding request: %s", err)
+	}
+
+	if len(rubiconReq.Imp) != 1 {
+		t.Fatalf("Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+	}
+
+	if rubiconReq.Imp[0].Banner != nil {
+		t.Error("Unexpected banner object in request impression")
+	}
+
+	if rubiconReq.Imp[0].Video == nil {
+		t.Error("Video object must be in request impression")
 	}
 }
 
@@ -1193,6 +1335,29 @@ func TestOpenRTBStandardResponse(t *testing.T) {
 	if bidResponse.Bids[0].BidType != openrtb_ext.BidTypeBanner {
 		t.Errorf("Expected a banner bid. Got: %s", bidResponse.Bids[0].BidType)
 	}
+	theBid := bidResponse.Bids[0].Bid
+	if theBid.ID != "1234567890" {
+		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
+	}
+}
+
+func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
+	request := &openrtb.BidRequest{
+		ID:  "test-request-id",
+		Imp: []openrtb.Imp{{}},
+	}
+
+	requestJson, _ := json.Marshal(request)
+	reqData := &adapters.RequestData{Body: requestJson}
+
+	httpResp := &adapters.ResponseData{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"id":"test-request-id","bidid":"1234567890","seatbid":[{"bid":[{"id":"0","price": 1}]}]}`),
+	}
+
+	bidder := new(RubiconAdapter)
+	bidResponse, _ := bidder.MakeBids(request, reqData, httpResp)
+
 	theBid := bidResponse.Bids[0].Bid
 	if theBid.ID != "1234567890" {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)

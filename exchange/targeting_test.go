@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/currencies"
+
 	"github.com/prebid/prebid-server/gdpr"
 
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -74,6 +76,7 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		cache:               &wellBehavedCache{},
 		cacheTime:           time.Duration(0),
 		gDPR:                gdpr.AlwaysAllow{},
+		currencyConverter:   currencies.NewRateConverterDefault(),
 		UsersyncIfAmbiguous: false,
 	}
 
@@ -89,7 +92,11 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb.Site{}
 	}
 
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{})
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
@@ -197,7 +204,7 @@ type mockTargetingBidder struct {
 	bids          []*openrtb.Bid
 }
 
-func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     m.mockServerURL,

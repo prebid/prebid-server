@@ -1,17 +1,72 @@
 package usersyncers
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-func TestSyncers(t *testing.T) {
-	cfg := &config.Configuration{}
+func TestNewSyncerMap(t *testing.T) {
+	syncConfig := config.Adapter{
+		UserSyncURL: "some-sync-url",
+	}
+	cfg := &config.Configuration{
+		Adapters: map[string]config.Adapter{
+			string(openrtb_ext.BidderAdform):         syncConfig,
+			string(openrtb_ext.BidderAdkernel):       syncConfig,
+			string(openrtb_ext.BidderAdkernelAdn):    syncConfig,
+			string(openrtb_ext.BidderAdtelligent):    syncConfig,
+			string(openrtb_ext.BidderAdvangelists):   syncConfig,
+			string(openrtb_ext.BidderAppnexus):       syncConfig,
+			string(openrtb_ext.BidderBeachfront):     syncConfig,
+			string(openrtb_ext.BidderFacebook):       syncConfig,
+			string(openrtb_ext.BidderBrightroll):     syncConfig,
+			string(openrtb_ext.BidderConsumable):     syncConfig,
+			string(openrtb_ext.BidderConversant):     syncConfig,
+			string(openrtb_ext.BidderEmxDigital):     syncConfig,
+			string(openrtb_ext.BidderEPlanning):      syncConfig,
+			string(openrtb_ext.BidderGrid):           syncConfig,
+			string(openrtb_ext.BidderGumGum):         syncConfig,
+			string(openrtb_ext.BidderImprovedigital): syncConfig,
+			string(openrtb_ext.BidderIx):             syncConfig,
+			string(openrtb_ext.BidderLifestreet):     syncConfig,
+			string(openrtb_ext.BidderMgid):           syncConfig,
+			string(openrtb_ext.BidderOpenx):          syncConfig,
+			string(openrtb_ext.BidderPubmatic):       syncConfig,
+			string(openrtb_ext.BidderPulsepoint):     syncConfig,
+			string(openrtb_ext.BidderRhythmone):      syncConfig,
+			string(openrtb_ext.BidderRTBHouse):       syncConfig,
+			string(openrtb_ext.BidderRubicon):        syncConfig,
+			string(openrtb_ext.BidderSharethrough):   syncConfig,
+			string(openrtb_ext.BidderSomoaudience):   syncConfig,
+			string(openrtb_ext.BidderSovrn):          syncConfig,
+			string(openrtb_ext.BidderTriplelift):     syncConfig,
+			string(openrtb_ext.Bidder33Across):       syncConfig,
+			string(openrtb_ext.BidderSonobi):         syncConfig,
+			string(openrtb_ext.BidderVrtcal):         syncConfig,
+			string(openrtb_ext.BidderYieldmo):        syncConfig,
+			string(openrtb_ext.BidderVisx):           syncConfig,
+			string(openrtb_ext.BidderGamoshi):        syncConfig,
+			string(openrtb_ext.BidderUnruly):         syncConfig,
+			string(openrtb_ext.BidderVerizonMedia):   syncConfig,
+		},
+	}
+
+	adaptersWithoutSyncers := map[openrtb_ext.BidderName]bool{
+		openrtb_ext.BidderTappx: true,
+	}
+
+	for bidder, config := range cfg.Adapters {
+		delete(cfg.Adapters, bidder)
+		cfg.Adapters[strings.ToLower(string(bidder))] = config
+	}
+
 	syncers := NewSyncerMap(cfg)
 	for _, bidderName := range openrtb_ext.BidderMap {
-		if _, ok := syncers[bidderName]; !ok {
+		_, adapterWithoutSyncer := adaptersWithoutSyncers[bidderName]
+		if _, ok := syncers[bidderName]; !ok && !adapterWithoutSyncer {
 			t.Errorf("No syncer exists for adapter: %s", bidderName)
 		}
 	}

@@ -23,7 +23,7 @@ func TestAppNotSupported(t *testing.T) {
 	constrained := adapters.EnforceBidderInfo(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		App: &openrtb.App{},
-	})
+	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
 	}
@@ -44,7 +44,7 @@ func TestSiteNotSupported(t *testing.T) {
 	constrained := adapters.EnforceBidderInfo(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Site: &openrtb.Site{},
-	})
+	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
 	}
@@ -86,7 +86,7 @@ func TestImpFiltering(t *testing.T) {
 			},
 		},
 		Site: &openrtb.Site{},
-	})
+	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 6) {
 		return
 	}
@@ -115,7 +115,7 @@ type mockBidder struct {
 	gotRequest *openrtb.BidRequest
 }
 
-func (m *mockBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (m *mockBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	m.gotRequest = request
 	return nil, []error{errors.New("mock MakeRequests error")}
 }

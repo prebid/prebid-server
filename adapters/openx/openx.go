@@ -11,7 +11,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-const config = "hb_pbs_1.0.0"
+const hbconfig = "hb_pbs_1.0.0"
 
 type OpenxAdapter struct {
 	endpoint string
@@ -26,7 +26,7 @@ type openxReqExt struct {
 	BidderConfig string `json:"bc"`
 }
 
-func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var bannerImps []openrtb.Imp
 	var videoImps []openrtb.Imp
@@ -67,7 +67,7 @@ func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.Re
 func (a *OpenxAdapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
 	var errs []error
 	var validImps []openrtb.Imp
-	reqExt := openxReqExt{BidderConfig: config}
+	reqExt := openxReqExt{BidderConfig: hbconfig}
 
 	for _, imp := range request.Imp {
 		if err := preprocess(&imp, &reqExt); err != nil {

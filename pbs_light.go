@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/currencies"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/router"
 	"github.com/prebid/prebid-server/server"
@@ -14,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Holds binary revision string
+// Rev holds binary revision string
 // Set manually at build time using:
 //    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
 // Populated automatically at build / release time via .travis.yml
@@ -40,7 +42,8 @@ func main() {
 }
 
 func serve(revision string, cfg *config.Configuration) error {
-	r, err := router.New(cfg)
+	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds)*time.Second)
+	r, err := router.New(cfg, currencyConverter)
 	if err != nil {
 		return err
 	}
@@ -48,7 +51,7 @@ func serve(revision string, cfg *config.Configuration) error {
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
 	// Add cors support
 	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision), r.MetricsEngine)
+	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision, currencyConverter), r.MetricsEngine)
 	r.Shutdown()
 	return nil
 }

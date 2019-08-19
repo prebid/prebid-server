@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -32,7 +33,7 @@ type InfoAwareBidder struct {
 	info parsedBidderInfo
 }
 
-func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
+func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
 	if request.Site != nil {
 		if !i.info.site.enabled {
@@ -58,7 +59,7 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestD
 		request.Imp = filteredImps
 		errs = append(errs, newErrs...)
 	}
-	reqs, delegateErrs := i.Bidder.MakeRequests(request)
+	reqs, delegateErrs := i.Bidder.MakeRequests(request, reqInfo)
 	return reqs, append(errs, delegateErrs...)
 }
 
@@ -166,6 +167,7 @@ func (infos BidderInfos) SupportsWebMediaType(bidder openrtb_ext.BidderName, med
 type BidderInfo struct {
 	Maintainer   *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
 	Capabilities *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
+	AliasOf      string            `json:"aliasOf,omitempty"`
 }
 
 type MaintainerInfo struct {
@@ -215,4 +217,8 @@ func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 		parsedInfo.site.banner, parsedInfo.site.video, parsedInfo.site.audio, parsedInfo.site.native = parseAllowedTypes(info.Capabilities.Site.MediaTypes)
 	}
 	return parsedInfo
+}
+
+type ExtraRequestInfo struct {
+	PbsEntryPoint pbsmetrics.RequestType
 }

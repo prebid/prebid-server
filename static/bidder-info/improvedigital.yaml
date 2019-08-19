@@ -1,0 +1,11 @@
+maintainer:
+  email: "hb@azerion.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

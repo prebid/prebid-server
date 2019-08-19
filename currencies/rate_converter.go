@@ -10,7 +10,7 @@ import (
 	"github.com/golang/glog"
 )
 
-// RateConverter holds the currencies conversion rates dictionnary
+// RateConverter holds the currencies conversion rates dictionary
 type RateConverter struct {
 	httpClient       httpClient
 	done             chan bool
@@ -19,6 +19,7 @@ type RateConverter struct {
 	syncSourceURL    string
 	rates            atomic.Value // Should only hold Rates struct
 	lastUpdated      atomic.Value // Should only hold time.Time
+	constantRates    Conversions
 }
 
 // NewRateConverter returns a new RateConverter
@@ -33,6 +34,13 @@ func NewRateConverter(
 		fetchingInterval,
 		nil, // no notifier channel specified, won't send any notifications
 	)
+}
+
+// NewRateConverterDefault returns a RateConverter with default values.
+// By default there will be no currencies conversions done.
+// `currencies.ConstantRate` will be used.
+func NewRateConverterDefault() *RateConverter {
+	return NewRateConverter(&http.Client{}, "", time.Duration(0))
 }
 
 // NewRateConverterWithNotifier returns a new RateConverter
@@ -58,6 +66,7 @@ func NewRateConverterWithNotifier(
 	// In case host do not want to support currency lookup
 	// we just stop here and do nothing
 	if rc.fetchingInterval == time.Duration(0) {
+		rc.constantRates = NewConstantRates()
 		return rc
 	}
 
@@ -149,14 +158,36 @@ func (rc *RateConverter) LastUpdated() time.Time {
 	return time.Time{}
 }
 
-// Rates returns current rates
-func (rc *RateConverter) Rates() *Rates {
+// Rates returns current conversions rates
+func (rc *RateConverter) Rates() Conversions {
+	if rc.constantRates != nil {
+		// Converter is not active, returning the constant rates
+		return rc.constantRates
+	}
 	if rates := rc.rates.Load(); rates != nil {
 		return rates.(*Rates)
 	}
 	return nil
 }
 
+// GetInfo returns setup information about the converter
+func (rc *RateConverter) GetInfo() ConverterInfo {
+	return converterInfo{
+		source:           rc.syncSourceURL,
+		fetchingInterval: rc.fetchingInterval,
+		lastUpdated:      rc.LastUpdated(),
+		rates:            rc.Rates().GetRates(),
+	}
+}
+
 type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
+}
+
+// Conversions allows to get a conversion rate between two currencies.
+// if one of the currency string is not a currency or if there is not conversion between those
+// currencies, then an err is returned and rate is 0.
+type Conversions interface {
+	GetRate(from string, to string) (float64, error)
+	GetRates() *map[string]map[string]float64
 }

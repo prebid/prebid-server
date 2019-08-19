@@ -6,8 +6,10 @@ const (
 	NoErrorCode = iota
 	TimeoutCode
 	BadInputCode
+	BlacklistedAppCode
 	BadServerResponseCode
 	FailedToRequestBidsCode
+	BidderTemporarilyDisabledCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -19,7 +21,7 @@ type Coder interface {
 }
 
 // Timeout should be used to flag that a bidder failed to return a response because the PBS timeout timer
-// expired before a result was recieved.
+// expired before a result was received.
 //
 // Timeouts will not be written to the app log, since it's not an actionable item for the Prebid Server hosts.
 type Timeout struct {
@@ -48,6 +50,22 @@ func (err *BadInput) Error() string {
 
 func (err *BadInput) Code() int {
 	return BadInputCode
+}
+
+// BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedApp struct {
+	Message string
+}
+
+func (err *BlacklistedApp) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedApp) Code() int {
+	return BlacklistedAppCode
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.
@@ -86,6 +104,21 @@ func (err *FailedToRequestBids) Error() string {
 
 func (err *FailedToRequestBids) Code() int {
 	return FailedToRequestBidsCode
+}
+
+// BidderTemporarilyDisabled is used at the request validation step, where we want to continue processing as best we
+// can rather than returning a 4xx, and still return an error message.
+// The initial usecase is to flag deprecated bidders.
+type BidderTemporarilyDisabled struct {
+	Message string
+}
+
+func (err *BidderTemporarilyDisabled) Error() string {
+	return err.Message
+}
+
+func (err *BidderTemporarilyDisabled) Code() int {
+	return BidderTemporarilyDisabledCode
 }
 
 // DecodeError provides the error code for an error, as defined above

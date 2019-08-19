@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/cache"
 	"github.com/prebid/prebid-server/config"
@@ -21,10 +24,6 @@ import (
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/prebid/prebid-server/usersync"
-
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
 )
 
 type bidResult struct {
@@ -33,20 +32,6 @@ type bidResult struct {
 }
 
 const defaultPriceGranularity = "med"
-
-// Constant keys for ad server targeting for responses to Prebid Mobile
-const hbpbConstantKey = "hb_pb"
-const hbCreativeLoadMethodConstantKey = "hb_creative_loadtype"
-const hbBidderConstantKey = "hb_bidder"
-const hbCacheIdConstantKey = "hb_cache_id"
-const hbDealIdConstantKey = "hb_deal"
-const hbSizeConstantKey = "hb_size"
-
-// hb_creative_loadtype key can be one of `demand_sdk` or `html`
-// default is `html` where the creative is loaded in the primary ad server's webview through AppNexus hosted JS
-// `demand_sdk` is for bidders who insist on their creatives being loaded in their own SDK's webview
-const hbCreativeLoadMethodHTML = "html"
-const hbCreativeLoadMethodDemandSDK = "demand_sdk"
 
 func min(x, y int) int {
 	if x < y {
@@ -112,11 +97,11 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	defer func() {
 		if req == nil {
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(labels, 0)
+			a.metricsEngine.RecordLegacyImps(labels, 0)
 		} else {
 			// handles the case that ParsePBSRequest returns an error, so req.Start is not defined
 			a.metricsEngine.RecordRequest(labels)
-			a.metricsEngine.RecordImps(labels, len(req.AdUnits))
+			a.metricsEngine.RecordLegacyImps(labels, len(req.AdUnits))
 			a.metricsEngine.RecordRequestTime(labels, time.Since(req.Start))
 		}
 	}()
@@ -193,7 +178,12 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					gdprApplies := req.ParseGDPR()
 					consent := req.ParseConsent()
 					if a.shouldUsersync(ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
-						bidder.UsersyncInfo = syncer.GetUsersyncInfo(gdprApplies, consent)
+						syncInfo, err := syncer.GetUsersyncInfo(gdprApplies, consent)
+						if err == nil {
+							bidder.UsersyncInfo = syncInfo
+						} else {
+							glog.Errorf("Failed to get usersync info for %s: %v", syncerCode, err)
+						}
 					}
 					blabels.CookieFlag = pbsmetrics.CookieFlagNo
 					if ex.SkipNoCookies() {
@@ -202,16 +192,17 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 				}
 			}
 			sentBids++
-			bidderRunner := recoverSafely(func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
+			bidderRunner := a.recoverSafely(func(bidder *pbs.PBSBidder, aLabels pbsmetrics.AdapterLabels) {
+
 				start := time.Now()
 				bidList, err := ex.Call(ctx, req, bidder)
-				a.metricsEngine.RecordAdapterTime(blabels, time.Since(start))
+				a.metricsEngine.RecordAdapterTime(aLabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
 				if err != nil {
 					var s struct{}
 					switch err {
 					case context.DeadlineExceeded:
-						blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
+						aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorTimeout: s}
 						bidder.Error = "Timed out"
 					case context.Canceled:
 						fallthrough
@@ -219,12 +210,12 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 						bidder.Error = err.Error()
 						switch err.(type) {
 						case *errortypes.BadInput:
-							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
+							aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadInput: s}
 						case *errortypes.BadServerResponse:
-							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
+							aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorBadServerResponse: s}
 						default:
 							glog.Warningf("Error from bidder %v. Ignoring all bids: %v", bidder.BidderCode, err)
-							blabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
+							aLabels.AdapterErrors = map[pbsmetrics.AdapterError]struct{}{pbsmetrics.AdapterErrorUnknown: s}
 						}
 					}
 				} else if bidList != nil {
@@ -232,18 +223,18 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					bidder.NumBids = len(bidList)
 					for _, bid := range bidList {
 						var cpm = float64(bid.Price * 1000)
-						a.metricsEngine.RecordAdapterPrice(blables, cpm)
+						a.metricsEngine.RecordAdapterPrice(aLabels, cpm)
 						switch bid.CreativeMediaType {
 						case "banner":
-							a.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(aLabels, openrtb_ext.BidTypeBanner, bid.Adm != "")
 						case "video":
-							a.metricsEngine.RecordAdapterBidReceived(blabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
+							a.metricsEngine.RecordAdapterBidReceived(aLabels, openrtb_ext.BidTypeVideo, bid.Adm != "")
 						}
 						bid.ResponseTime = bidder.ResponseTime
 					}
 				} else {
 					bidder.NoBid = true
-					blabels.AdapterBids = pbsmetrics.AdapterBidNone
+					aLabels.AdapterBids = pbsmetrics.AdapterBidNone
 				}
 
 				ch <- bidResult{
@@ -251,7 +242,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 					bidList: bidList,
 					// Bidder done, record bidder metrics
 				}
-				a.metricsEngine.RecordAdapterRequest(blabels)
+				a.metricsEngine.RecordAdapterRequest(aLabels)
 			})
 
 			go bidderRunner(bidder, blabels)
@@ -312,7 +303,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	enc.Encode(resp)
 }
 
-func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
+func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*pbs.PBSBidder, pbsmetrics.AdapterLabels) {
 	return func(bidder *pbs.PBSBidder, labels pbsmetrics.AdapterLabels) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -321,6 +312,7 @@ func recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLabels)) func(*p
 				} else {
 					glog.Errorf("Legacy auction recovered panic from Bidder %s: %v. Stack trace is: %v", bidder.BidderCode, r, string(debug.Stack()))
 				}
+				a.metricsEngine.RecordAdapterPanic(labels)
 			}
 		}()
 		inner(bidder, labels)
@@ -446,16 +438,16 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 				hbSize = width + "x" + height
 			}
 
-			hbPbBidderKey := hbpbConstantKey + "_" + bid.BidderCode
-			hbBidderBidderKey := hbBidderConstantKey + "_" + bid.BidderCode
-			hbCacheIdBidderKey := hbCacheIdConstantKey + "_" + bid.BidderCode
-			hbDealIdBidderKey := hbDealIdConstantKey + "_" + bid.BidderCode
-			hbSizeBidderKey := hbSizeConstantKey + "_" + bid.BidderCode
+			hbPbBidderKey := string(openrtb_ext.HbpbConstantKey) + "_" + bid.BidderCode
+			hbBidderBidderKey := string(openrtb_ext.HbBidderConstantKey) + "_" + bid.BidderCode
+			hbCacheIDBidderKey := string(openrtb_ext.HbCacheKey) + "_" + bid.BidderCode
+			hbDealIDBidderKey := string(openrtb_ext.HbDealIDConstantKey) + "_" + bid.BidderCode
+			hbSizeBidderKey := string(openrtb_ext.HbSizeConstantKey) + "_" + bid.BidderCode
 			if pbs_req.MaxKeyLength != 0 {
 				hbPbBidderKey = hbPbBidderKey[:min(len(hbPbBidderKey), int(pbs_req.MaxKeyLength))]
 				hbBidderBidderKey = hbBidderBidderKey[:min(len(hbBidderBidderKey), int(pbs_req.MaxKeyLength))]
-				hbCacheIdBidderKey = hbCacheIdBidderKey[:min(len(hbCacheIdBidderKey), int(pbs_req.MaxKeyLength))]
-				hbDealIdBidderKey = hbDealIdBidderKey[:min(len(hbDealIdBidderKey), int(pbs_req.MaxKeyLength))]
+				hbCacheIDBidderKey = hbCacheIDBidderKey[:min(len(hbCacheIDBidderKey), int(pbs_req.MaxKeyLength))]
+				hbDealIDBidderKey = hbDealIDBidderKey[:min(len(hbDealIDBidderKey), int(pbs_req.MaxKeyLength))]
 				hbSizeBidderKey = hbSizeBidderKey[:min(len(hbSizeBidderKey), int(pbs_req.MaxKeyLength))]
 			}
 
@@ -467,29 +459,24 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 
 			kvs[hbPbBidderKey] = roundedCpm
 			kvs[hbBidderBidderKey] = bid.BidderCode
-			kvs[hbCacheIdBidderKey] = bid.CacheID
+			kvs[hbCacheIDBidderKey] = bid.CacheID
 
 			if hbSize != "" {
 				kvs[hbSizeBidderKey] = hbSize
 			}
 			if bid.DealId != "" {
-				kvs[hbDealIdBidderKey] = bid.DealId
+				kvs[hbDealIDBidderKey] = bid.DealId
 			}
 			// For the top bid, we want to add the following additional keys
 			if i == 0 {
-				kvs[hbpbConstantKey] = roundedCpm
-				kvs[hbBidderConstantKey] = bid.BidderCode
-				kvs[hbCacheIdConstantKey] = bid.CacheID
+				kvs[string(openrtb_ext.HbpbConstantKey)] = roundedCpm
+				kvs[string(openrtb_ext.HbBidderConstantKey)] = bid.BidderCode
+				kvs[string(openrtb_ext.HbCacheKey)] = bid.CacheID
 				if bid.DealId != "" {
-					kvs[hbDealIdConstantKey] = bid.DealId
+					kvs[string(openrtb_ext.HbDealIDConstantKey)] = bid.DealId
 				}
 				if hbSize != "" {
-					kvs[hbSizeConstantKey] = hbSize
-				}
-				if bid.BidderCode == "audienceNetwork" {
-					kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodDemandSDK
-				} else {
-					kvs[hbCreativeLoadMethodConstantKey] = hbCreativeLoadMethodHTML
+					kvs[string(openrtb_ext.HbSizeConstantKey)] = hbSize
 				}
 			}
 		}

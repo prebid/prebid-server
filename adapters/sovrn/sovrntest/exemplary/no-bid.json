@@ -41,6 +41,9 @@
     {
       "expectedRequest":
       {
+        "Accept": [
+          "application/json"
+        ],
         "headers": {
           "Content-Type": [
             "application/json"
@@ -97,6 +100,7 @@
           "device": {
             "ua": "test-user-agent",
             "ip": "123.123.123.123",
+            "dnt": 0,
             "language": "en"
           }
         }
