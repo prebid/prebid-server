@@ -104,10 +104,9 @@ func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp)
 			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
 		}
 	}
-
-	addHeaderIfNonEmpty(headers, "Connection", "keep-alive")
-	addHeaderIfNonEmpty(headers, "cache-control", "no-cache")
-	addHeaderIfNonEmpty(headers, "Accept-Encoding", "gzip, deflate")
+	headers.Add("Connection", "keep-alive")
+	headers.Add("cache-control", "no-cache")
+	headers.Add("Accept-Encoding", "gzip, deflate")
 
 	return &adapters.RequestData{
 		Method:  "GET",
@@ -180,15 +179,22 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
+
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, nil
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, nil
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
 	}
 
 	var bidResp openrtb.BidResponse

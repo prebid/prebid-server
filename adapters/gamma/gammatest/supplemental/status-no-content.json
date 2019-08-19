@@ -43,11 +43,11 @@
         "uri": "https://hb.gammaplatform.com/adx/request/?id=sample-id&zid=sample-zone-id&wid=sample-web-id&bidid=test-imp-id&hb=pbmobile&device_ip=test-device-ip&device_model=test-device-model&device_os=test-device-os&device_ua=test-device-ua&device_ifa=test-device-ifa&app_id=test-app-id&app_bundle=test-app-bundle&app_name=test-app-name"
       },
       "mockResponse": {
-        "status": 400
+        "status": 204
       }
     }
   ],
   "expectedMakeBidsErrors": [
-    "Unexpected status code: 400. Run with request.debug = 1 for more info"
+    "Unexpected status code: 204. Run with request.debug = 1 for more info"
   ]
 }
