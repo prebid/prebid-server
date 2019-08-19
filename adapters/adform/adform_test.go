@@ -17,10 +17,10 @@ import (
 
 	"fmt"
 
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/mxmCherry/openrtb"
 )
 
 func TestJsonSamples(t *testing.T) {
@@ -198,7 +198,7 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	pbsCookie := usersync.ParsePBSCookieFromRequest(prebidHttpRequest, &config.HostCookie{})
 	pbsCookie.TrySync("adform", adformTestData.buyerUID)
 	fakeWriter := httptest.NewRecorder()
-	pbsCookie.SetCookieOnResponse(fakeWriter, "", time.Minute)
+	pbsCookie.SetCookieOnResponse(fakeWriter, prebidHttpRequest, "", time.Minute)
 	prebidHttpRequest.Header.Add("Cookie", fakeWriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

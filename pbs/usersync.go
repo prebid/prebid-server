@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go
@@ -95,7 +95,7 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
 	pc.SetPreference(optout == "")
 
-	pc.SetCookieOnResponse(w, deps.HostCookieConfig.Domain, deps.HostCookieConfig.TTLDuration())
+	pc.SetCookieOnResponse(w, r, deps.HostCookieConfig.Domain, deps.HostCookieConfig.TTLDuration())
 	if optout == "" {
 		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, 301)
 	} else {
