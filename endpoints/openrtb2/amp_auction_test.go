@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -127,9 +128,61 @@ func TestConsentThroughEndpoint(t *testing.T) {
 	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
 
 	// Parse a valid request that comes with a gdpr consent string
-	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(validRequest(t, "gdpr.json")),
+	userExt := openrtb_ext.ExtUser{
+		Consent: "some-consent-string",
+		DigiTrust: &openrtb_ext.ExtUserDigiTrust{
+			ID:   "digitrustId",
+			KeyV: 1,
+			Pref: 0,
+		},
 	}
+	userExtData, err := json.Marshal(userExt)
+	if err != nil {
+		t.Fatalf("Failed to marshal the openrtb_ext.ExtUser object %v", err)
+	}
+	var width uint64 = 300
+	var height uint64 = 300
+	bidRequest := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{
+			{
+				ID:  "/19968336/header-bid-tag-0",
+				Ext: json.RawMessage(`{"appnexus": { "placementId":10433394 }}`),
+				Banner: &openrtb.Banner{
+					Format: []openrtb.Format{
+						{
+							W: 300,
+							H: 250,
+						},
+						{
+							W: 300,
+							H: 240,
+						},
+					},
+					W: &width,
+					H: &height,
+				},
+			},
+		},
+		Site: &openrtb.Site{
+			ID:   "site-id",
+			Page: "some-page",
+		},
+		User: &openrtb.User{
+			ID:       "aUserId",
+			BuyerUID: "aBuyerID",
+			Ext:      userExtData,
+		},
+	}
+	fullMarshaledBidRequest, err := json.Marshal(bidRequest)
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(json.RawMessage(fullMarshaledBidRequest)),
+	}
+
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
 	exchange := &mockAmpExchange{}
 
@@ -162,11 +215,20 @@ func TestConsentThroughEndpoint(t *testing.T) {
 		return
 	}
 	// Assert the last request here must have a valid User object with a consent string equal to that on the URL query
-	var ue openrtb_ext.ExtUser = openrtb_ext.ExtUser{}
-	err := json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
+	var ue openrtb_ext.ExtUser
+	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
+
+	// Assert successful unmarshal
 	assert.NoError(t, err)
+
+	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
+	assert.NotEqual(t, consentString, "")
+	assert.NotEqual(t, consentString, userExt.Consent) //userExt.Consent
 	assert.Equal(t, consentString, ue.Consent)
-	assert.NotEqual(t, consentString, "some-consent-string")
+	assert.Equal(t, strings.Contains(string(request.URL.RawQuery), consentString), true)
+
+	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
+	assert.Equal(t, userExt.DigiTrust.ID, ue.DigiTrust.ID)
 }
 
 func TestAMPSiteExt(t *testing.T) {

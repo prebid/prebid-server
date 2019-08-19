@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -369,15 +370,15 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	//In the AMP endpoint the consent string found in the http.Request query overrides that of the prebid query
 	queryConsentString := httpRequest.FormValue("gdpr_consent")
 	if queryConsentString != "" {
+		jsonMsg := json.RawMessage(`{"consent":"` + queryConsentString + `"}`)
 		// If nil, initialize
 		if req.User == nil {
-			req.User = &openrtb.User{}
+			req.User = &openrtb.User{Ext: jsonMsg}
+		} else { // else, keep whatever is in there and only substitute the consent string
+			re := regexp.MustCompile("^(.*consent\":\"?)[^,]*(\",.*)$")
+			repStr := "${1}" + queryConsentString + "$2"
+			req.User.Ext = json.RawMessage(re.ReplaceAllString(string(req.User.Ext), repStr))
 		}
-		jsonMsg, err := json.Marshal(&openrtb_ext.ExtUser{Consent: queryConsentString})
-		if err != nil {
-			return err
-		}
-		req.User.Ext = jsonMsg
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
