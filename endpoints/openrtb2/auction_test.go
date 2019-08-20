@@ -112,43 +112,6 @@ func TestExplicitUserId(t *testing.T) {
 	}
 }
 
-// TestImplicitUserId makes sure that that bidrequest.user.id gets populated from the host cookie, if it wasn't sent explicitly.
-func TestImplicitUserId(t *testing.T) {
-	cookieName := "userid"
-	mockId := "12345"
-	cfg := &config.Configuration{
-		MaxRequestSize: maxSize,
-		HostCookie: config.HostCookie{
-			CookieName: cookieName,
-		},
-	}
-	ex := &mockExchange{}
-
-	request := httptest.NewRequest("POST", "/openrtb2/auction", strings.NewReader(validRequest(t, "site.json")))
-	request.AddCookie(&http.Cookie{
-		Name:  cookieName,
-		Value: mockId,
-	})
-	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
-	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-
-	endpoint, _ := NewEndpoint(ex, newParamsValidator(t), empty_fetcher.EmptyFetcher{}, empty_fetcher.EmptyFetcher{}, cfg, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), map[string]string{}, []byte{}, openrtb_ext.BidderMap)
-	endpoint(httptest.NewRecorder(), request, nil)
-
-	if ex.lastRequest == nil {
-		t.Fatalf("The request never made it into the Exchange.")
-	}
-
-	if ex.lastRequest.User == nil {
-		t.Fatalf("The exchange should have received a request with a non-nil user.")
-	}
-
-	if ex.lastRequest.User.ID != mockId {
-		t.Errorf("Bad User ID. Expected %s, got %s", mockId, ex.lastRequest.User.ID)
-	}
-}
-
 // TestGoodRequests makes sure we return 200s on good requests.
 func TestGoodRequests(t *testing.T) {
 	exemplary := &getResponseFromDirectory{
