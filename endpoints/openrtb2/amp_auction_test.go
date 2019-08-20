@@ -180,7 +180,7 @@ func TestConsentThroughEndpoint(t *testing.T) {
 	}
 
 	stored := map[string]json.RawMessage{
-		"1": json.RawMessage(json.RawMessage(fullMarshaledBidRequest)),
+		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())

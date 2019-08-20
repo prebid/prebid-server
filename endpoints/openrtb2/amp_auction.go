@@ -374,7 +374,9 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		// If nil, initialize
 		if req.User == nil {
 			req.User = &openrtb.User{Ext: jsonMsg}
-		} else { // else, keep whatever is in there and only substitute the consent string
+		} else if req.User.Ext == nil {
+			req.User.Ext = jsonMsg
+		} else { // req.User.Ext != nil, keep whatever is in there and only substitute the consent string
 			re := regexp.MustCompile("^(.*consent\":\"?)[^,]*(\",.*)$")
 			repStr := "${1}" + queryConsentString + "$2"
 			req.User.Ext = json.RawMessage(re.ReplaceAllString(string(req.User.Ext), repStr))
