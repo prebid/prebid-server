@@ -45,9 +45,6 @@ func (a *EmxDigitalAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		})
 	}
 
-	// usersync dev
-	fmt.Printf("request.User: %+v", request.User)
-
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
