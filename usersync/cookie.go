@@ -15,6 +15,7 @@ import (
 // DEFAULT_TTL is the default amount of time which a cookie is considered valid.
 const DEFAULT_TTL = 14 * 24 * time.Hour
 const UID_COOKIE_NAME = "uids"
+const MAX_COOKIE_SIZE int = 1 << 15 // 32 KB
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -46,78 +47,26 @@ type uidWithExpiry struct {
 }
 
 // ParsePBSCookieFromRequest parses the UserSyncMap from an HTTP Request.
-func ParsePBSCookieFromRequest(r *http.Request, cookieHost *config.HostCookie) *PBSCookie {
-	if cookieHost.OptOutCookie.Name != "" { //This is a cookie name, besides, "uids", stored in HostCookie
-		//Since an OptOutCookie name is defined in our server configuration, let's make sure this cookie isn't it. If it is, we return a blank cookie
-		optOutCookie, err1 := r.Cookie(cookieHost.OptOutCookie.Name) //returns a cookie inside the http.Request
-		if err1 == nil && optOutCookie.Value == cookieHost.OptOutCookie.Value {
-			var pc *PBSCookie = NewPBSCookie() //The config.HostCookie cookie was found so, ignore it? Declare a new and blank PBSCookie
+func ParsePBSCookieFromRequest(r *http.Request, cookie *config.HostCookie) *PBSCookie {
+	if cookie.OptOutCookie.Name != "" {
+		optOutCookie, err1 := r.Cookie(cookie.OptOutCookie.Name)
+		if err1 == nil && optOutCookie.Value == cookie.OptOutCookie.Value {
+			pc := NewPBSCookie()
 			pc.SetPreference(false)
 			return pc
 		}
 	}
-	// There's no OptOutCookie defined or at least our incoming request doesn't have that OptOutName in any http.Request.Header
-	// Let's try to download the request's cookie data into a fresh PBSCookie
 	var parsed *PBSCookie
-	uidCookie, err2 := r.Cookie("uids") // hate the refactoring Mansi did, in real code that value is: UID_COOKIE_NAME
+	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
 	if err2 == nil {
-		//since we did find a cookie whose name is "uids", we'll base64.URLEncoding.DecodeString() its value and then unmarshal into a PBSCookie:
-		//   &PBSCookie{
-		//   	uids:     make(map[string]uidWithExpiry),
-		//   	birthday: timestamp(),
-		//   }
 		parsed = ParsePBSCookie(uidCookie)
 	} else {
-		parsed = NewPBSCookie() //The uids cookie wasn't found. Declare a new and blank PBSCookie
+		parsed = NewPBSCookie()
 	}
-	// If ParsePBSCookie was called in the true branch of the if statement above, the http.Request was
-	// found to have a cookie with a value like (I think) this:
-	// *net/http.Request {
-	//         Method: "POST",
-	//             .
-	//             .
-	//             .
-	//         ProtoMinor: 1,
-	//         Header: net/http.Header [
-	//                 "uids": [
-	//                         "appnexus=DIMCHSAEadcvnwuiejd__-aej38456",
-	//                         "rubicon=8JO_-89ju8vhkas8f3JDVIArjaka45J",
-	//                 ],
-	//         ],
-	if uid, _, _ := parsed.GetUID(cookieHost.Family); uid == "" && cookieHost.CookieName != "" {
-		// *net/http.Request {
-		//         Header: net/http.Header [
-		//                 "uids": [
-		//                         "`cookieHost.Family`=8JO_-89ju8vhkas8f3JDVIArjaka45J",
-		//                 ],
-		//         ],
-		// This part: 8JO_-89ju8vhkas8f3JDVIArjaka45J", gets unmarshalled to a `uidWithExpiry` object
-		// (dlv) p cookie
-		// *github.com/prebid/prebid-server/usersync.PBSCookie {
-		//         uids: map[string]github.com/prebid/prebid-server/usersync.uidWithExpiry [
-		//                 "pulsepoint": (*"github.com/prebid/prebid-server/usersync.uidWithExpiry")(0xc0000d0808),
-		//         ],
-		//         optOut: false,
-		//         birthday: *time.Time {
-		//                 wall: 13784643787053639384,
-		//                 ext: 6859099,
-		//                 loc: *(*time.Location)(0x1a36a60),},}
-		// (dlv) p cookie.uids["pulsepoint"]
-		// github.com/prebid/prebid-server/usersync.uidWithExpiry {
-		//         UID: "1",
-		//         Expires: time.Time {
-		//                 wall: 13785942585163955784,
-		//                 ext: 1209600006864565,
-		//                 loc: *(*time.Location)(0x1a36a60),},}
-		// But if we got inside this if statement, we didn't find a match for `cookieHost.Family`, therefore
-		// we'll set it in the hash map ourselves if a cookie by CookieName was found in the `http.Request`
-		if hostCookie, err := r.Cookie(cookieHost.CookieName); err == nil {
-			parsed.TrySync(cookieHost.Family, hostCookie.Value)
-			// So now parsed.uids[cookieHost.Family] = uidWithExpiry{
-			//					UID:     uid,
-			//					Expires: getExpiry(familyName),
-			//				}
-			// Has just been added and will be returned.
+	// Fixes #582
+	if uid, _, _ := parsed.GetUID(cookie.Family); uid == "" && cookie.CookieName != "" {
+		if hostCookie, err := r.Cookie(cookie.CookieName); err == nil {
+			parsed.TrySync(cookie.Family, hostCookie.Value)
 		}
 	}
 	return parsed
@@ -215,7 +164,6 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
-	var MAX_COOKIE_SIZE int = 1 << 15 // 32 KB
 	var now time.Time = time.Now()
 
 	if domain != "" {
@@ -227,10 +175,10 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain strin
 		var oldestElem string = ""
 		var oldestDate int64 = math.MaxInt64
 		for key, value := range cookie.uids {
-			var timeSince time.Duration = now.Sub(value.Expires)
-			if timeSince < time.Duration(oldestDate) {
+			timeUntilExpiration := value.Expires.Sub(now)
+			if timeUntilExpiration < time.Duration(oldestDate) {
 				oldestElem = key
-				oldestDate = int64(timeSince)
+				oldestDate = int64(timeUntilExpiration)
 			}
 		}
 		delete(cookie.uids, oldestElem)
