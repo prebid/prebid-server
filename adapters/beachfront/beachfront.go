@@ -118,7 +118,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var errs = make([]error, 0, len(request.Imp))
 	var reqs = make([]*adapters.RequestData, len(beachfrontRequests.Video))
 
-
 	beachfrontRequests, errs = preprocess(request)
 
 	headers := http.Header{}
@@ -148,7 +147,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	if request.User != nil && request.User.BuyerUID != "" {
-		headers.Add("Cookie", "__io_cid=" + request.User.BuyerUID)
+		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
 	for i := 0; i < len(beachfrontRequests.Video); i++ {
@@ -174,7 +173,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
 
-
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
 			bannerImps = append(bannerImps, request.Imp[i])
@@ -190,16 +188,28 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 		return
 	}
 
-	request.Imp = make([]openrtb.Imp, 0)
-
 	if len(bannerImps) > 0 {
 		request.Imp = bannerImps
 		beachfrontReqs.Banner, errs = getBannerRequest(request)
 	}
 
+
 	if len(videoImps) > 0 {
 		request.Imp = videoImps
-		beachfrontReqs.Video, errs = getVideoRequests(request)
+
+		if errs != nil {
+			// getBannerRequest can only generate one error
+			bannerErr := errs[0]
+
+			beachfrontReqs.Video, errs = getVideoRequests(request)
+
+			if bannerErr != nil {
+				errs = append(errs, bannerErr)
+			}
+		} else {
+			beachfrontReqs.Video, errs = getVideoRequests(request)
+		}
+
 	}
 
 	return
@@ -246,7 +256,7 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 	return beachfrontExt, err
 }
 
-func getDomain(page string) (string) {
+func getDomain(page string) string {
 	protoUrl := strings.Split(page, "//")
 	var domainPage string
 
@@ -375,7 +385,6 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 	return bfBannerRequest, errs
 }
-
 
 /*
 getVideoRequests, plural. One request to the endpoint can have one appId, and can return one nurl,
