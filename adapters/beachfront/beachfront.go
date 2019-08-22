@@ -131,10 +131,25 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	if request.User != nil && request.User.BuyerUID != "" {
-		addHeaderIfNonEmpty(headers, "Cookie", "__io_cid="+request.User.BuyerUID)
-	}
 	reqs := make([]*adapters.RequestData, 0)
+
+	// I only ever have one banner request, and it does not need the cookie, so doing it first.
+	if len(beachfrontRequests.Banner.Slots) > 0 {
+		bytes, err := json.Marshal(beachfrontRequests.Banner)
+
+		if err == nil {
+			reqs = append(reqs, &adapters.RequestData{
+				Method:  "POST",
+				Uri:     BannerEndpoint,
+				Body:    bytes,
+				Headers: headers,
+			})
+		}
+	}
+
+	if request.User != nil && request.User.BuyerUID != "" {
+		headers.Add("Cookie", "__io_cid=" + request.User.BuyerUID)
+	}
 
 	if len(beachfrontRequests.Video) > 0 {
 		for i := 0; i < len(beachfrontRequests.Video); i++ {
@@ -154,18 +169,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	if len(beachfrontRequests.Banner.Slots) > 0 {
-		bytes, err := json.Marshal(beachfrontRequests.Banner)
-
-		if err == nil {
-			reqs = append(reqs, &adapters.RequestData{
-				Method:  "POST",
-				Uri:     BannerEndpoint,
-				Body:    bytes,
-				Headers: headers,
-			})
-		}
-	}
 
 	return reqs, errs
 }
