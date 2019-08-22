@@ -271,6 +271,7 @@ func getSite(request *openrtb.BidRequest) (site openrtb.Site) {
 			site.Domain = request.App.Domain
 		}
 
+		site.Page = request.App.Bundle
 		site.Mobile = 1
 	} else {
 		if request.Site.Page != "" {
@@ -304,20 +305,18 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 		slot := beachfrontSlot{}
 
-		if err == nil {
-
-			slot.Bidfloor = beachfrontExt.BidFloor
-			slot.Slot = request.Imp[i].ID
-
-			if beachfrontExt.AppId != "" {
-				slot.Id = beachfrontExt.AppId
-			} else {
-				slot.Id = beachfrontExt.AppIds.Banner
-			}
-
-		} else {
+		if err != nil {
 			errs = append(errs, err)
 			continue
+		}
+
+		slot.Bidfloor = beachfrontExt.BidFloor
+		slot.Slot = request.Imp[i].ID
+
+		if beachfrontExt.AppId != "" {
+			slot.Id = beachfrontExt.AppId
+		} else {
+			slot.Id = beachfrontExt.AppIds.Banner
 		}
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
@@ -386,6 +385,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		var imp = beachfrontVideoImp{}
+		imp.Id = i
+		imp.ImpId = request.Imp[i].ID
 		imp.Bidfloor = beachfrontExt.BidFloor
 
 		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
@@ -400,9 +401,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 				H: DefaultVideoHeight,
 			}
 		}
-
-		imp.Id = i
-		imp.ImpId = request.Imp[i].ID
 
 		bfVideoRequest := newBeachfrontVideoRequest()
 

@@ -7,6 +7,7 @@
     "imp": [
       {
         "bidfloor": 0.02,
+        "id": "fail",
         "banner": {
           "format": [
             {
@@ -26,6 +27,6 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "json: cannot unmarshal number into Go struct field ExtImpBeachfront.appId of type string"
+    "ignoring imp id=fail, error while decoding extImpBidder, err: json: cannot unmarshal number into Go struct field ExtImpBeachfront.appId of type string"
   ]
 }
