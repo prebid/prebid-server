@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -57,9 +56,13 @@ func TestTargetingCache(t *testing.T) {
 	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
 
-	//assert hb_cache_host and hb_cache_path were included
-	assert.Equal(t, true, strings.Contains(string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCacheHostKey)) && strings.Contains(string(bids["winning-bid"].Ext), "www.pbcserver.com"))
-	assert.Equal(t, true, strings.Contains(string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCachePathKey)) && strings.Contains(string(bids["winning-bid"].Ext), "/pbcache/endpoint"))
+	//assert hb_cache_host was included
+	assert.Contains(t, string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCacheHostKey))
+	assert.Contains(t, string(bids["winning-bid"].Ext), "www.pbcserver.com")
+
+	//assert hb_cache_path was included
+	assert.Contains(t, string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCachePathKey))
+	assert.Contains(t, string(bids["winning-bid"].Ext), "/pbcache/endpoint")
 
 }
 
