@@ -197,15 +197,12 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	if len(videoImps) > 0 {
 		request.Imp = videoImps
 
-		if errs != nil {
+		if len(errs) > 0 {
 			// getBannerRequest can only generate one error
 			bannerErr := errs[0]
 
 			beachfrontReqs.Video, errs = getVideoRequests(request)
-
-			if bannerErr != nil {
-				errs = append(errs, bannerErr)
-			}
+			errs = append(errs, bannerErr)
 		} else {
 			beachfrontReqs.Video, errs = getVideoRequests(request)
 		}
@@ -227,16 +224,7 @@ func newBeachfrontVideoRequest() beachfrontVideoRequest {
 	r := beachfrontVideoRequest{}
 	r.IsPrebid = true
 
-	if len(r.Cur) > 0 {
-		for i := 0; i < len(r.Cur); i++ {
-			if r.Cur[i] == "USD" {
-				return r
-			}
-		}
-	}
-
 	r.Cur = append(r.Cur, "USD")
-
 	return r
 }
 
@@ -246,11 +234,15 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 	var beachfrontExt openrtb_ext.ExtImpBeachfront
 
 	if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return beachfrontExt, err
+		return beachfrontExt , &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
 	}
 
 	if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
-		return beachfrontExt, err
+		return beachfrontExt , &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
 	}
 
 	return beachfrontExt, err
@@ -270,6 +262,32 @@ func getDomain(page string) string {
 
 }
 
+func getSite(request *openrtb.BidRequest) (site openrtb.Site) {
+
+		if request.App != nil {
+		if request.App.Domain != "" {
+			site.Domain = request.App.Domain
+		}
+		if request.App.Domain != "" {
+			site.Page = request.App.ID
+		}
+
+		site.Mobile = 1
+	} else {
+		if request.Site.Page != "" {
+			if request.Site.Domain == "" {
+				site.Domain = getDomain(request.Site.Page)
+			} else {
+				site.Domain = request.Site.Domain
+			}
+			site.Page = request.Site.Page
+		}
+
+		site.Mobile = 0
+	}
+	return site
+}
+
 /*
 getBannerRequest, singular. A "Slot" is an "imp," and each Slot can have an AppId, so just one
 request to the beachfront banner endpoint gets all banner Imps.
@@ -278,91 +296,62 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	var bfBannerRequest beachfrontBannerRequest
 	var errs = make([]error, 0, len(request.Imp))
 
-	var slotIndex = 0
-
 	bfBannerRequest = newBeachfrontBannerRequest()
-	bfBannerRequest.Slots = append(bfBannerRequest.Slots, beachfrontSlot{})
 
 	// The request that gets to here only has imps that contain a banner element. They may also contain
 	// a video element, but those are being ignored in this function.
 	for i := 0; i < len(request.Imp); i++ {
-		slotIndex = len(bfBannerRequest.Slots) - 1
 
 		// 1. Get the extension. Doing this first because if this fails, no need for the rest.
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
+		slot := beachfrontSlot{}
 
 		if err == nil {
-			bfBannerRequest.Slots[slotIndex].Bidfloor = beachfrontExt.BidFloor
-			bfBannerRequest.Slots[slotIndex].Slot = request.Imp[i].ID
+
+			slot.Bidfloor = beachfrontExt.BidFloor
+			slot.Slot = request.Imp[i].ID
 
 			if beachfrontExt.AppId != "" {
-				bfBannerRequest.Slots[slotIndex].Id = beachfrontExt.AppId
+				slot.Id = beachfrontExt.AppId
 			} else {
-				bfBannerRequest.Slots[slotIndex].Id = beachfrontExt.AppIds.Banner
+				slot.Id = beachfrontExt.AppIds.Banner
 			}
 
-			// Do we have another Imp after this? Add another Slot.
-			if i != len(request.Imp)-1 {
-				bfBannerRequest.Slots = append(bfBannerRequest.Slots, beachfrontSlot{})
-			}
 		} else {
-			/* Failed to extract the beachfrontExt. This slot is junk.  This should be caught
-			in validation, but just in case...
-			*/
-			if i != len(request.Imp)-1 {
-				// Is this the last one? If not, just empty the current slot, and reuse it.
-				bfBannerRequest.Slots[slotIndex] = beachfrontSlot{}
-			} else {
-				// last one, so remove it.
-				bfBannerRequest.Slots = removeSlot(bfBannerRequest.Slots, slotIndex)
-			}
-
 			errs = append(errs, err)
 			continue
 		}
 
 		// 2. sizes
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
-			bfBannerRequest.Slots[slotIndex].Sizes = append(bfBannerRequest.Slots[slotIndex].Sizes, beachfrontSize{})
-			bfBannerRequest.Slots[slotIndex].Sizes[j].H = request.Imp[i].Banner.Format[j].H
-			bfBannerRequest.Slots[slotIndex].Sizes[j].W = request.Imp[i].Banner.Format[j].W
+
+			slot.Sizes = append(slot.Sizes, beachfrontSize{
+				H: request.Imp[i].Banner.Format[j].H,
+				W: request.Imp[i].Banner.Format[j].W,
+			})
 		}
 
-		// 3. Device
-		if request.Device != nil {
-			bfBannerRequest.IP = request.Device.IP
-			bfBannerRequest.DeviceModel = request.Device.Model
-			bfBannerRequest.DeviceOs = request.Device.OS
-			if request.Device.DNT != nil {
-				bfBannerRequest.Dnt = *request.Device.DNT
-			}
-			if request.Device.UA != "" {
-				bfBannerRequest.UA = request.Device.UA
-			}
+		bfBannerRequest.Slots = append(bfBannerRequest.Slots, slot)
+	}
+
+	// 3. Device
+	if request.Device != nil {
+		bfBannerRequest.IP = request.Device.IP
+		bfBannerRequest.DeviceModel = request.Device.Model
+		bfBannerRequest.DeviceOs = request.Device.OS
+		if request.Device.DNT != nil {
+			bfBannerRequest.Dnt = *request.Device.DNT
+		}
+		if request.Device.UA != "" {
+			bfBannerRequest.UA = request.Device.UA
 		}
 	}
 
 	// 4. Domain / Page / Mobile
-	if request.App != nil {
-		if request.App.Domain != "" {
-			bfBannerRequest.Domain = request.App.Domain
-		}
-		if request.App.Domain != "" {
-			bfBannerRequest.Page = request.App.ID
-		}
-		bfBannerRequest.IsMobile = 1
-	} else {
-		if request.Site.Page != "" {
-			if request.Site.Domain == "" {
-				bfBannerRequest.Domain = getDomain(request.Site.Page)
-			} else {
-				bfBannerRequest.Domain = request.Site.Domain
-			}
-			bfBannerRequest.Page = request.Site.Page
-		}
-
-		bfBannerRequest.IsMobile = 0
-	}
+	site := getSite(request)
+	bfBannerRequest.IsMobile = site.Mobile
+	bfBannerRequest.Page = site.Page
+	bfBannerRequest.Domain = site.Domain
 
 	// 5. User
 	if request.User != nil {
@@ -398,16 +387,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfVideoRequest := newBeachfrontVideoRequest()
 		bfVideoRequest.Imp = append(bfVideoRequest.Imp, beachfrontVideoImp{})
 
-		// The backend can take an array of Imps, but will only ever return
-		// a single seatbid with a single nurl, so videoIndex should always be 0,
-		// making one Imp per request.
-		var videoIndex = 0
-
 		// 1. Extension
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
 		if err == nil {
-			bfVideoRequest.Imp[videoIndex].Bidfloor = beachfrontExt.BidFloor
+			bfVideoRequest.Imp[0].Bidfloor = beachfrontExt.BidFloor
 
 			if beachfrontExt.AppId != "" {
 				bfVideoRequest.AppId = beachfrontExt.AppId
@@ -422,11 +406,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		// 2. sizes
 		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
-			bfVideoRequest.Imp[videoIndex].Video.W = request.Imp[i].Video.W
-			bfVideoRequest.Imp[videoIndex].Video.H = request.Imp[i].Video.H
+			bfVideoRequest.Imp[0].Video.W = request.Imp[i].Video.W
+			bfVideoRequest.Imp[0].Video.H = request.Imp[i].Video.H
 		} else {
-			bfVideoRequest.Imp[videoIndex].Video.W = DefaultVideoWidth
-			bfVideoRequest.Imp[videoIndex].Video.H = DefaultVideoHeight
+			bfVideoRequest.Imp[0].Video.W = DefaultVideoWidth
+			bfVideoRequest.Imp[0].Video.H = DefaultVideoHeight
 		}
 
 		// 3. Device
@@ -437,26 +421,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		// 4. Domain / Page / Mobile
-		if request.App != nil {
-			if request.App.Domain != "" {
-				bfVideoRequest.Site.Domain = request.App.Domain
-			}
-			if request.App.Domain != "" {
-				bfVideoRequest.Site.Page = request.App.ID
-			}
-			bfVideoRequest.Site.Mobile = 1
-		} else {
-			if request.Site.Page != "" {
-				if request.Site.Domain == "" {
-					bfVideoRequest.Site.Domain = getDomain(request.Site.Page)
-				} else {
-					bfVideoRequest.Site.Domain = request.Site.Domain
-				}
-				bfVideoRequest.Site.Page = request.Site.Page
-			}
-
-			bfVideoRequest.Site.Mobile = 0
-		}
+		bfVideoRequest.Site = getSite(request)
 
 		// 5. User
 		if request.User != nil {
@@ -478,8 +443,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfVideoRequest.ID = request.ID
 
 		// 7. Unique to video
-		bfVideoRequest.Imp[videoIndex].Id = videoIndex
-		bfVideoRequest.Imp[videoIndex].ImpId = request.Imp[i].ID
+		bfVideoRequest.Imp[0].Id = 0
+		bfVideoRequest.Imp[0].ImpId = request.Imp[i].ID
 
 		beachfrontReqs = append(beachfrontReqs, bfVideoRequest)
 	}
