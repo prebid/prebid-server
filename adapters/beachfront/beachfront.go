@@ -406,11 +406,16 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		// 2. sizes
 		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
-			bfVideoRequest.Imp[0].Video.W = request.Imp[i].Video.W
-			bfVideoRequest.Imp[0].Video.H = request.Imp[i].Video.H
+			bfVideoRequest.Imp[0].Video = beachfrontSize{
+				W : request.Imp[i].Video.W,
+				H : request.Imp[i].Video.H,
+			}
+
 		} else {
-			bfVideoRequest.Imp[0].Video.W = DefaultVideoWidth
-			bfVideoRequest.Imp[0].Video.H = DefaultVideoHeight
+			bfVideoRequest.Imp[0].Video = beachfrontSize{
+				W : DefaultVideoWidth,
+				H : DefaultVideoHeight,
+			}
 		}
 
 		// 3. Device
