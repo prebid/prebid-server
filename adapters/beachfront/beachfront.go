@@ -116,6 +116,8 @@ type beachfrontResponseSlot struct {
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests beachfrontRequests
 	var errs = make([]error, 0, len(request.Imp))
+	var reqs = make([]*adapters.RequestData, len(beachfrontRequests.Video))
+
 
 	beachfrontRequests, errs = preprocess(request)
 
@@ -131,9 +133,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	reqs := make([]*adapters.RequestData, 0)
-
-	// I only ever have one banner request, and it does not need the cookie, so doing it first.
+	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		bytes, err := json.Marshal(beachfrontRequests.Banner)
 
@@ -151,24 +151,21 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid=" + request.User.BuyerUID)
 	}
 
-	if len(beachfrontRequests.Video) > 0 {
-		for i := 0; i < len(beachfrontRequests.Video); i++ {
+	for i := 0; i < len(beachfrontRequests.Video); i++ {
 
-			bytes, err := json.Marshal(beachfrontRequests.Video[i])
+		bytes, err := json.Marshal(beachfrontRequests.Video[i])
 
-			if err == nil {
-				reqs = append(reqs, &adapters.RequestData{
-					Method:  "POST",
-					Uri:     VideoEndpoint + beachfrontRequests.Video[i].AppId + VideoEndpointSuffix,
-					Body:    bytes,
-					Headers: headers,
-				})
-			} else {
-				continue
-			}
+		if err == nil {
+			reqs = append(reqs, &adapters.RequestData{
+				Method:  "POST",
+				Uri:     VideoEndpoint + beachfrontRequests.Video[i].AppId + VideoEndpointSuffix,
+				Body:    bytes,
+				Headers: headers,
+			})
+		} else {
+			continue
 		}
 	}
-
 
 	return reqs, errs
 }
@@ -177,21 +174,18 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var videoImps = make([]openrtb.Imp, 0)
 	var bannerImps = make([]openrtb.Imp, 0)
 
-	weGotNothing := true
 
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
-			weGotNothing = false
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
 
 		if request.Imp[i].Video != nil {
-			weGotNothing = false
 			videoImps = append(videoImps, request.Imp[i])
 		}
 	}
 
-	if weGotNothing {
+	if len(bannerImps) == 0 && len(videoImps) == 0 {
 		errs = append(errs, errors.New("no valid impressions were found in the request"))
 		return
 	}
