@@ -264,12 +264,12 @@ func getDomain(page string) string {
 
 func getSite(request *openrtb.BidRequest) (site openrtb.Site) {
 
-		if request.App != nil {
-		if request.App.Domain != "" {
+	if request.App != nil {
+
+		if request.App.Domain == "" {
+			site.Domain = getDomain(request.App.Domain)
+		} else {
 			site.Domain = request.App.Domain
-		}
-		if request.App.Domain != "" {
-			site.Page = request.App.ID
 		}
 
 		site.Mobile = 1
