@@ -12,7 +12,7 @@ import (
 )
 
 const supplyId = "FGMrCMMc"
-const strVersion = "1.0.2"
+const strVersion = "1.0.3"
 
 func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 	return &SharethroughAdapter{
