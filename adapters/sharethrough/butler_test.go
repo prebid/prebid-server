@@ -83,6 +83,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					UA: "Android Chome/60",
 					IP: "127.0.0.1",
 				},
+				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
@@ -93,6 +94,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					"Content-Type":    []string{"text/plain;charset=utf-8"},
 					"Accept":          []string{"application/json"},
 					"Origin":          []string{"http://a.domain.com"},
+					"Referer":         []string{"http://a.domain.com/page"},
 					"User-Agent":      []string{"Android Chome/60"},
 					"X-Forwarded-For": []string{"127.0.0.1"},
 				},
