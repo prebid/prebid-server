@@ -63,7 +63,7 @@
           ],
           "site": {
             "page": "http://example.com/whatever/something.html",
-            "domain": "test.opposingviews.com"
+            "domain": "example.com"
           },
           "device": {
             "js": "1",
