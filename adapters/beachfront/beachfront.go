@@ -33,8 +33,6 @@ type BeachfrontAdapter struct {
 type beachfrontRequests struct {
 	Banner beachfrontBannerRequest
 	Video  []beachfrontVideoRequest
-	Audio  openrtb.Audio
-	Native openrtb.Native
 }
 
 // ---------------------------------------------------
@@ -116,9 +114,9 @@ type beachfrontResponseSlot struct {
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests beachfrontRequests
 	var errs = make([]error, 0, len(request.Imp))
-	var reqs = make([]*adapters.RequestData, len(beachfrontRequests.Video))
 
 	beachfrontRequests, errs = preprocess(request)
+	var reqs = make([]*adapters.RequestData, len(beachfrontRequests.Video))
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -161,8 +159,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 				Body:    bytes,
 				Headers: headers,
 			})
-		} else {
-			continue
 		}
 	}
 
@@ -196,15 +192,11 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	if len(videoImps) > 0 {
 		request.Imp = videoImps
 
-		if len(errs) > 0 {
-			// getBannerRequest can only generate one error
-			bannerErr := errs[0]
+		var videoErrs []error
 
-			beachfrontReqs.Video, errs = getVideoRequests(request)
-			errs = append(errs, bannerErr)
-		} else {
-			beachfrontReqs.Video, errs = getVideoRequests(request)
-		}
+		beachfrontReqs.Video, videoErrs = getVideoRequests(request)
+		errs = append(errs, videoErrs...)
+
 
 	}
 
@@ -348,12 +340,12 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	bfBannerRequest.Domain = site.Domain
 
 	if request.User != nil {
-		if bfBannerRequest.User.ID == "" {
-			bfBannerRequest.User.ID = request.User.ID
+		if request.User.ID == "" {
+			request.User.ID = request.User.ID
 		}
 
-		if bfBannerRequest.User.BuyerUID == "" {
-			bfBannerRequest.User.BuyerUID = request.User.BuyerUID
+		if request.User.BuyerUID == "" {
+			request.User.BuyerUID = request.User.BuyerUID
 		}
 	}
 
@@ -371,7 +363,7 @@ getVideoRequests, plural. One request to the endpoint can have one appId, and ca
 so each video imp is a call to the endpoint.
 */
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
-	var beachfrontReqs = make([]beachfrontVideoRequest, 0)
+	var beachfrontReqs = make([]beachfrontVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
 
 	for i := 0; i < len(request.Imp); i++ {
@@ -559,11 +551,6 @@ func getBidType(bid openrtb.Bid) openrtb_ext.BidType {
 func extractVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	return strings.TrimSuffix(chunky[2], ":")
-}
-
-func removeSlot(s []beachfrontSlot, i int) []beachfrontSlot {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
 }
 
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
