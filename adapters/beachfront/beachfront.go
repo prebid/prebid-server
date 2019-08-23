@@ -116,7 +116,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	var errs = make([]error, 0, len(request.Imp))
 
 	beachfrontRequests, errs = preprocess(request)
-	var reqs = make([]*adapters.RequestData, len(beachfrontRequests.Video))
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -130,17 +129,24 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
+	var reqCount = len(beachfrontRequests.Video)
+	if len(beachfrontRequests.Banner.Slots) > 0 {
+		reqCount++
+	}
+
+	var reqs = make([]*adapters.RequestData, reqCount)
+
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		bytes, err := json.Marshal(beachfrontRequests.Banner)
 
 		if err == nil {
-			reqs = append(reqs, &adapters.RequestData{
+			reqs[0] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     BannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
-			})
+			}
 		}
 	}
 
@@ -148,17 +154,17 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-	for i := 0; i < len(beachfrontRequests.Video); i++ {
+	for i := reqCount - len(beachfrontRequests.Video); i < reqCount; i++ {
 
 		bytes, err := json.Marshal(beachfrontRequests.Video[i])
 
 		if err == nil {
-			reqs = append(reqs, &adapters.RequestData{
+			reqs[i] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     VideoEndpoint + beachfrontRequests.Video[i].AppId + VideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
-			})
+			}
 		}
 	}
 
@@ -196,7 +202,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 
 		beachfrontReqs.Video, videoErrs = getVideoRequests(request)
 		errs = append(errs, videoErrs...)
-
 
 	}
 
@@ -425,7 +430,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			bfVideoRequest.AppId = beachfrontExt.AppIds.Video
 		}
 
-		beachfrontReqs = append(beachfrontReqs, bfVideoRequest)
+		beachfrontReqs[i] = bfVideoRequest
 	}
 
 	return beachfrontReqs, errs

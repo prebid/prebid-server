@@ -29,7 +29,7 @@
       "publisher":{
         "id":"publisher1"
       },
-      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+      "page": "http://example.com/whatever/something.html"
     },
     "user": {
       "id": "some-user",
@@ -62,7 +62,7 @@
             }
           ],
           "site": {
-            "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
+            "page": "http://example.com/whatever/something.html",
             "domain": "test.opposingviews.com"
           },
           "device": {
