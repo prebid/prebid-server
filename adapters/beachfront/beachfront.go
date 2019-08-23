@@ -344,13 +344,13 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	bfBannerRequest.Page = site.Page
 	bfBannerRequest.Domain = site.Domain
 
-	if request.User.ID != "" {
+	if request.User != nil && request.User.ID != "" {
 		if bfBannerRequest.User.ID == "" {
 			bfBannerRequest.User.ID = request.User.ID
 		}
 	}
 
-	if request.User.BuyerUID != "" {
+	if request.User != nil && request.User.BuyerUID != "" {
 		if bfBannerRequest.User.BuyerUID == "" {
 			bfBannerRequest.User.BuyerUID = request.User.BuyerUID
 		}
