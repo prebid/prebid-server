@@ -83,7 +83,7 @@ func TestBadRequests(t *testing.T) {
 
 func TestOptedOut(t *testing.T) {
 	request := httptest.NewRequest("GET", "/setuid?bidder=pubmatic&uid=123", nil)
-	cookie := usersync.NewPBSCookie()
+	cookie := usersync.NewPBSCookie(0)
 	cookie.SetPreference(false)
 	addCookie(request, cookie)
 	response := doRequest(request, true, false)
@@ -111,7 +111,7 @@ func assertBadRequest(t *testing.T, uri string, errMsg string) {
 func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	request := httptest.NewRequest("GET", uri, nil)
 	if len(existingSyncs) > 0 {
-		pbsCookie := usersync.NewPBSCookie()
+		pbsCookie := usersync.NewPBSCookie(0)
 		for family, value := range existingSyncs {
 			pbsCookie.TrySync(family, value)
 		}
@@ -146,7 +146,7 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 		Name:  "uids",
 		Value: res[1],
 	}
-	return usersync.ParsePBSCookie(&httpCookie)
+	return usersync.ParsePBSCookie(&httpCookie, 0)
 }
 
 func assertIntsMatch(t *testing.T, expected int, actual int) {

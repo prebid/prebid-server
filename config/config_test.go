@@ -22,6 +22,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
+	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 32768)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
@@ -39,6 +40,7 @@ host_cookie:
   domain: cookies.prebid.org
   opt_out_url: http://prebid.org/optout
   opt_in_url: http://prebid.org/optin
+  max_cookie_size_bytes: 32768
 external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234

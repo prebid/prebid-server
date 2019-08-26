@@ -27,15 +27,16 @@ type Configuration struct {
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse  string             `mapstructure:"status_response"`
-	AuctionTimeouts AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
-	CacheURL        Cache              `mapstructure:"cache"`
-	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
-	HostCookie      HostCookie         `mapstructure:"host_cookie"`
-	Metrics         Metrics            `mapstructure:"metrics"`
-	DataCache       DataCache          `mapstructure:"datacache"`
-	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
-	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
+	StatusResponse     string             `mapstructure:"status_response"`
+	AuctionTimeouts    AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
+	CacheURL           Cache              `mapstructure:"cache"`
+	RecaptchaSecret    string             `mapstructure:"recaptcha_secret"`
+	HostCookie         HostCookie         `mapstructure:"host_cookie"`
+	MaxCookieSizeBytes int                `mapstructure:"max_cookie_size_bytes"`
+	Metrics            Metrics            `mapstructure:"metrics"`
+	DataCache          DataCache          `mapstructure:"datacache"`
+	StoredRequests     StoredRequests     `mapstructure:"stored_requests"`
+	CategoryMapping    StoredRequestsSlim `mapstructure:"category_mapping"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequestsSlim `mapstructure:"stored_video_req"`
 
@@ -168,12 +169,13 @@ type FileLogs struct {
 }
 
 type HostCookie struct {
-	Domain       string `mapstructure:"domain"`
-	Family       string `mapstructure:"family"`
-	CookieName   string `mapstructure:"cookie_name"`
-	OptOutURL    string `mapstructure:"opt_out_url"`
-	OptInURL     string `mapstructure:"opt_in_url"`
-	OptOutCookie Cookie `mapstructure:"optout_cookie"`
+	Domain             string `mapstructure:"domain"`
+	Family             string `mapstructure:"family"`
+	CookieName         string `mapstructure:"cookie_name"`
+	OptOutURL          string `mapstructure:"opt_out_url"`
+	OptInURL           string `mapstructure:"opt_in_url"`
+	MaxCookieSizeBytes int    `mapstructure:"max_cookie_size_bytes"`
+	OptOutCookie       Cookie `mapstructure:"optout_cookie"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
 }
@@ -500,6 +502,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
+	v.SetDefault("host_cookie.max_cookie_size_bytes", 32768)
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)

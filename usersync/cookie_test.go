@@ -69,10 +69,11 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		uids: map[string]uidWithExpiry{
 			"audienceNetwork": newTempId("0", 10),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut:       false,
+		birthday:     timestamp(),
+		maxSizeBytes: 0,
 	}
-	parsed := ParsePBSCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
+	parsed := ParsePBSCookie(raw.ToHTTPCookie(90*24*time.Hour), raw.maxSizeBytes)
 	if parsed.HasLiveSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
@@ -115,7 +116,7 @@ func TestParseCorruptedCookie(t *testing.T) {
 		Name:  "uids",
 		Value: "bad base64 encoding",
 	}
-	parsed := ParsePBSCookie(&raw)
+	parsed := ParsePBSCookie(&raw, 0)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -125,7 +126,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 		Name:  "uids",
 		Value: cookieData,
 	}
-	parsed := ParsePBSCookie(&raw)
+	parsed := ParsePBSCookie(&raw, 0)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -136,7 +137,7 @@ func TestParseNilSyncMap(t *testing.T) {
 		Name:  UID_COOKIE_NAME,
 		Value: cookieData,
 	}
-	parsed := ParsePBSCookie(&raw)
+	parsed := ParsePBSCookie(&raw, 0)
 	ensureEmptyMap(t, parsed)
 	ensureConsistency(t, parsed)
 }
@@ -318,7 +319,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		}
 	}
 
-	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie(90 * 24 * time.Hour))
+	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie(90*24*time.Hour), cookie.maxSizeBytes)
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
@@ -692,8 +693,9 @@ func newBigCookie() (*PBSCookie, int) {
 			"key298": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
 			"key299": newTempId("12345678901234567890123456789012345678901234567890", 7),
 		},
-		optOut:   false,
-		birthday: timestamp(),
+		optOut:       false,
+		birthday:     timestamp(),
+		maxSizeBytes: 1 << 15, // 32 KB
 	}
 	return bigCookie, len(bigCookie.uids)
 
