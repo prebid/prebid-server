@@ -77,7 +77,6 @@ func New(filename string) (*Cache, error) {
 }
 
 // Close does nothing
-// TODO: close the file
 func (c *Cache) Close() error {
 	return nil
 }
