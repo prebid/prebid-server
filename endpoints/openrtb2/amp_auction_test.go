@@ -214,8 +214,12 @@ func TestConsentThroughEndpoint(t *testing.T) {
 		return
 	}
 
-	// Assert string `consent` is found in the User.Ext at all
 	re := regexp.MustCompile(`\"consent\":\".*\"}$`)
+
+	// Assert string `consent` wasn't found in the `fullMarshaledBidRequest` at all
+	assert.Nil(t, re.Find(fullMarshaledBidRequest))
+
+	// Assert string `consent` is found in the User.Ext at all
 	assert.NotNil(t, re.Find([]byte(exchange.lastRequest.User.Ext)))
 
 	// Assert the last request has a valid User object with a consent string equal to that on the URL query
