@@ -5,15 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
-const DEFAULT_TTL = 14 * 24 * time.Hour
-const UID_COOKIE_NAME = "uids"
+const (
+	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
+	DEFAULT_TTL         = 14 * 24 * time.Hour
+	UID_COOKIE_NAME     = "uids"
+	chromeStr           = "Chrome/"
+	chromeiOSStr        = "CriOS/"
+	chromeMinVer        = 67
+	chromeStrLen        = len(chromeStr)
+	chromeiOSStrLen     = len(chromeiOSStr)
+	SameSiteCookieName  = "SSCookie"
+	SameSiteCookieValue = "1"
+	SameSiteAttribute   = "; SameSite=None"
+)
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -160,12 +172,57 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Request, domain string, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
-	http.SetCookie(w, httpCookie)
+	cookieStr := httpCookie.String()
+	var sameSiteCookie *http.Cookie
+	if IsBrowserApplicableForSameSite(r) {
+		cookieStr += SameSiteAttribute
+		sameSiteCookie = &http.Cookie{
+			Name:    SameSiteCookieName,
+			Value:   SameSiteCookieValue,
+			Expires: time.Now().Add(ttl),
+			Path:    "/",
+		}
+		sameSiteCookieStr := sameSiteCookie.String()
+		sameSiteCookieStr += SameSiteAttribute
+		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	}
+	if cookieStr != "" {
+		w.Header().Add("Set-Cookie", cookieStr)
+	}
+}
+
+// IsBrowserApplicableForSameSite function checks if browser is Chrome and browser version is greater than the minimum version for adding the SameSite attribute
+func IsBrowserApplicableForSameSite(req *http.Request) bool {
+	result := false
+	ua := req.UserAgent()
+
+	index := strings.Index(ua, chromeStr)
+	criOSIndex := strings.Index(ua, chromeiOSStr)
+	if index != -1 {
+		result = checkChromeBrowserVersion(ua, index, chromeStrLen)
+	} else if criOSIndex != -1 {
+		result = checkChromeBrowserVersion(ua, criOSIndex, chromeiOSStrLen)
+	}
+	return result
+}
+
+func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
+	result := false
+	vIndex := index + chromeStrLength
+	dotIndex := strings.Index(ua[vIndex:], ".")
+	if dotIndex == -1 {
+		dotIndex = len(ua[vIndex:])
+	}
+	version, _ := strconv.Atoi(ua[vIndex : vIndex+dotIndex])
+	if version >= chromeMinVer {
+		result = true
+	}
+	return result
 }
 
 // Unsync removes the user's ID for the given family from this cookie.
