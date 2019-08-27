@@ -353,7 +353,12 @@ func TestCacheVideoOnly(t *testing.T) {
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
+	var labels = &pbsmetrics.Labels{}
+	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
+		writeAuctionError(w, "Prebid cache failed", err)
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		return
+	}
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}

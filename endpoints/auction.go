@@ -78,20 +78,8 @@ func Auction(cfg *config.Configuration, syncers map[openrtb_ext.BidderName]users
 
 func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
-	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
-		RType:         pbsmetrics.ReqTypeLegacy,
-		PubID:         "",
-		Browser:       pbsmetrics.BrowserOther,
-		CookieFlag:    pbsmetrics.CookieFlagUnknown,
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
-	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
-		name, _ := ua.Browser()
-		if name == "Safari" {
-			labels.Browser = pbsmetrics.BrowserSafari
-		}
-	}
+	var labels = pbsmetrics.Labels{}
+	getDefaultLabels(r, &labels)
 	req, err := pbs.ParsePBSRequest(r, &a.cfg.AuctionTimeouts, a.dataCache, &(a.cfg.HostCookie))
 	// Defer here because we need req defined.
 	defer func() {
@@ -114,17 +102,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		return
 	}
 	status := "OK"
-	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
-	} else {
-		labels.Source = pbsmetrics.DemandWeb
-		if req.Cookie.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
-			status = "no_cookie"
-		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
-		}
-	}
+	setLabelValues(&labels, req, &status)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*time.Duration(req.TimeoutMillis))
 	defer cancel()
 	account, err := a.dataCache.Accounts().Get(req.AccountID)
@@ -150,7 +128,7 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			blabels := pbsmetrics.AdapterLabels{
 				Source:      labels.Source,
 				RType:       labels.RType,
-				Adapter:     openrtb_ext.BidderMap[bidder.BidderCode],
+				Adapter:     getAdapterValue(bidder),
 				PubID:       labels.PubID,
 				Browser:     labels.Browser,
 				CookieFlag:  labels.CookieFlag,
@@ -257,40 +235,10 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			resp.Bids = append(resp.Bids, bid)
 		}
 	}
-	if req.CacheMarkup == 1 {
-		cobjs := make([]*pbc.CacheObject, len(resp.Bids))
-		for i, bid := range resp.Bids {
-			if bid.CreativeMediaType == "video" {
-				cobjs[i] = &pbc.CacheObject{
-					Value:   bid.Adm,
-					IsVideo: true,
-				}
-			} else {
-				cobjs[i] = &pbc.CacheObject{
-					Value: &pbc.BidCache{
-						Adm:    bid.Adm,
-						NURL:   bid.NURL,
-						Width:  bid.Width,
-						Height: bid.Height,
-					},
-					IsVideo: false,
-				}
-			}
-		}
-		if err := pbc.Put(ctx, cobjs); err != nil {
-			writeAuctionError(w, "Prebid cache failed", err)
-			labels.RequestStatus = pbsmetrics.RequestStatusErr
-			return
-		}
-		for i, bid := range resp.Bids {
-			bid.CacheID = cobjs[i].UUID
-			bid.CacheURL = a.cfg.GetCachedAssetURL(bid.CacheID)
-			bid.NURL = ""
-			bid.Adm = ""
-		}
-	}
-	if req.CacheMarkup == 2 {
-		cacheVideoOnly(resp.Bids, ctx, w, a, &labels)
+	if err := cacheAccordingToMarkup(req, &resp, ctx, a, &labels); err != nil {
+		writeAuctionError(w, "Prebid cache failed", err)
+		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		return
 	}
 	if req.SortBids == 1 {
 		sortBidsAddKeywordsMobile(resp.Bids, req, account.PriceGranularity)
@@ -338,7 +286,7 @@ func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderN
 }
 
 // cache video bids only for Web
-func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWriter, deps *auction, labels *pbsmetrics.Labels) {
+func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, deps *auction, labels *pbsmetrics.Labels) error {
 	var cobjs []*pbc.CacheObject
 	for _, bid := range bids {
 		if bid.CreativeMediaType == "video" {
@@ -350,9 +298,7 @@ func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWr
 	}
 	err := pbc.Put(ctx, cobjs)
 	if err != nil {
-		writeAuctionError(w, "Prebid cache failed", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
-		return
+		return err
 	}
 	videoIndex := 0
 	for _, bid := range bids {
@@ -364,6 +310,7 @@ func cacheVideoOnly(bids pbs.PBSBidSlice, ctx context.Context, w http.ResponseWr
 			videoIndex++
 		}
 	}
+	return nil
 }
 
 // checkForValidBidSize goes through list of bids & find those which are banner mediaType and with height or width not defined
@@ -481,4 +428,87 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 			}
 		}
 	}
+}
+
+// PBS-431 p2
+func getDefaultLabels(r *http.Request, labels *pbsmetrics.Labels) {
+
+	labels.Source = pbsmetrics.DemandUnknown
+	labels.RType = pbsmetrics.ReqTypeLegacy
+	labels.PubID = ""
+	labels.Browser = pbsmetrics.BrowserOther
+	labels.CookieFlag = pbsmetrics.CookieFlagUnknown
+	labels.RequestStatus = pbsmetrics.RequestStatusOK
+
+	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
+		name, _ := ua.Browser()
+		if name == "Safari" {
+			labels.Browser = pbsmetrics.BrowserSafari
+		}
+	}
+	return
+}
+
+// PBS-431 p2
+func setLabelValues(labels *pbsmetrics.Labels, req *pbs.PBSRequest, status *string) {
+	// Other data from parsed PBSRequest
+	if req.App != nil {
+		labels.Source = pbsmetrics.DemandApp
+	} else {
+		labels.Source = pbsmetrics.DemandWeb
+		if req.Cookie.LiveSyncCount() == 0 {
+			labels.CookieFlag = pbsmetrics.CookieFlagNo
+			*status = "no_cookie"
+		} else {
+			labels.CookieFlag = pbsmetrics.CookieFlagYes
+		}
+	}
+	return
+}
+
+// PBS-431 p2
+func getAdapterValue(bidder *pbs.PBSBidder) openrtb_ext.BidderName {
+	if openrtb_ext.BidderMap[bidder.BidderCode] != "" {
+		return openrtb_ext.BidderMap[bidder.BidderCode]
+	} else {
+		// "districtm" is legal, but not in BidderMap. Other values will log errors in the go_metrics code
+		return openrtb_ext.BidderName(bidder.BidderCode)
+	}
+}
+
+// PBS-431 p2
+func cacheAccordingToMarkup(req *pbs.PBSRequest, resp *pbs.PBSResponse, ctx context.Context, a *auction, labels *pbsmetrics.Labels) error {
+	if req.CacheMarkup == 1 {
+		cobjs := make([]*pbc.CacheObject, len(resp.Bids))
+		for i, bid := range resp.Bids {
+			if bid.CreativeMediaType == "video" {
+				cobjs[i] = &pbc.CacheObject{
+					Value:   bid.Adm,
+					IsVideo: true,
+				}
+			} else {
+				cobjs[i] = &pbc.CacheObject{
+					Value: &pbc.BidCache{
+						Adm:    bid.Adm,
+						NURL:   bid.NURL,
+						Width:  bid.Width,
+						Height: bid.Height,
+					},
+					IsVideo: false,
+				}
+			}
+		}
+		if err := pbc.Put(ctx, cobjs); err != nil {
+			return err
+		}
+		for i, bid := range resp.Bids {
+			bid.CacheID = cobjs[i].UUID
+			bid.CacheURL = a.cfg.GetCachedAssetURL(bid.CacheID)
+			bid.NURL = ""
+			bid.Adm = ""
+		}
+	} else if req.CacheMarkup == 2 {
+		return cacheVideoOnly(resp.Bids, ctx, a, labels)
+	}
+	return nil
 }
