@@ -521,10 +521,9 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		} else {
 			return postprocessBanner(beachfrontResp, externalRequest, id)
 		}
-	} else {
-		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	}
 
+	return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 }
 
 func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
