@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -377,16 +376,11 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		} else if req.User.Ext == nil {
 			req.User.Ext = jsonMsg
 		} else { // req.User.Ext != nil, keep whatever is in there and only substitute the consent string
-			var re *regexp.Regexp
-			var repStr string
-			if strings.Contains(string(req.User.Ext), "consent") {
-				re = regexp.MustCompile("^(.*consent\":\"?)[^,]*(\",.*)$")
-				repStr = "${1}" + queryConsentString + "$2"
-			} else {
-				re = regexp.MustCompile("^(.*)}$")
-				repStr = "${1},\"consent\":\"" + queryConsentString + "\"}"
+			var parserErr error
+			req.User.Ext, parserErr = jsonparser.Set(req.User.Ext, []byte(`"`+queryConsentString+`"`), "consent")
+			if parserErr != nil {
+				return parserErr
 			}
-			req.User.Ext = json.RawMessage(re.ReplaceAllString(string(req.User.Ext), repStr))
 		}
 	}
 

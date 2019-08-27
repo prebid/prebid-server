@@ -127,53 +127,8 @@ func TestConsentThroughEndpoint(t *testing.T) {
 	// gdpr consent string that will come inside our http.Request query
 	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
 
-	// Parse a valid request that comes with a gdpr consent string
-	userExt := openrtb_ext.ExtUser{
-		DigiTrust: &openrtb_ext.ExtUserDigiTrust{
-			ID:   "digitrustId",
-			KeyV: 1,
-			Pref: 0,
-		},
-	}
-	userExtData, err := json.Marshal(userExt)
-	if err != nil {
-		t.Fatalf("Failed to marshal the openrtb_ext.ExtUser object %v", err)
-	}
-	var width uint64 = 300
-	var height uint64 = 300
-	bidRequest := &openrtb.BidRequest{
-		ID: "test-request-id",
-		Imp: []openrtb.Imp{
-			{
-				ID:  "/19968336/header-bid-tag-0",
-				Ext: json.RawMessage(`{"appnexus": { "placementId":10433394 }}`),
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{
-						{
-							W: 300,
-							H: 250,
-						},
-						{
-							W: 300,
-							H: 240,
-						},
-					},
-					W: &width,
-					H: &height,
-				},
-			},
-		},
-		Site: &openrtb.Site{
-			ID:   "site-id",
-			Page: "some-page",
-		},
-		User: &openrtb.User{
-			ID:       "aUserId",
-			BuyerUID: "aBuyerID",
-			Ext:      userExtData,
-		},
-	}
-	fullMarshaledBidRequest, err := json.Marshal(bidRequest)
+	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
+	fullMarshaledBidRequest, err := getTestBidRequest("", "digitrustId")
 	if err != nil {
 		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
 	}
@@ -232,61 +187,15 @@ func TestConsentThroughEndpoint(t *testing.T) {
 	assert.Equal(t, consentString, ue.Consent)
 
 	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, userExt.DigiTrust.ID, ue.DigiTrust.ID)
+	assert.Equal(t, "digitrustId", ue.DigiTrust.ID)
 }
 
 func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
 	// gdpr consent string that will come inside our http.Request query
 	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
 
-	// Parse a valid request that comes with a gdpr consent string
-	userExt := openrtb_ext.ExtUser{
-		Consent: "some-consent-string",
-		DigiTrust: &openrtb_ext.ExtUserDigiTrust{
-			ID:   "digitrustId",
-			KeyV: 1,
-			Pref: 0,
-		},
-	}
-	userExtData, err := json.Marshal(userExt)
-	if err != nil {
-		t.Fatalf("Failed to marshal the openrtb_ext.ExtUser object %v", err)
-	}
-	var width uint64 = 300
-	var height uint64 = 300
-	bidRequest := &openrtb.BidRequest{
-		ID: "test-request-id",
-		Imp: []openrtb.Imp{
-			{
-				ID:  "/19968336/header-bid-tag-0",
-				Ext: json.RawMessage(`{"appnexus": { "placementId":10433394 }}`),
-				Banner: &openrtb.Banner{
-					Format: []openrtb.Format{
-						{
-							W: 300,
-							H: 250,
-						},
-						{
-							W: 300,
-							H: 240,
-						},
-					},
-					W: &width,
-					H: &height,
-				},
-			},
-		},
-		Site: &openrtb.Site{
-			ID:   "site-id",
-			Page: "some-page",
-		},
-		User: &openrtb.User{
-			ID:       "aUserId",
-			BuyerUID: "aBuyerID",
-			Ext:      userExtData,
-		},
-	}
-	fullMarshaledBidRequest, err := json.Marshal(bidRequest)
+	// Generate a marshaled openrtb.BidRequest that comes with a gdpr consent string
+	fullMarshaledBidRequest, err := getTestBidRequest("some-consent-string", "digitrustId")
 	if err != nil {
 		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
 	}
@@ -336,7 +245,7 @@ func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
 	assert.Equal(t, consentString, ue.Consent)
 
 	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, userExt.DigiTrust.ID, ue.DigiTrust.ID)
+	assert.Equal(t, "digitrustId", ue.DigiTrust.ID)
 }
 
 func TestAMPSiteExt(t *testing.T) {
@@ -692,4 +601,66 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 	}
 
 	return response, nil
+}
+
+func getTestBidRequest(consent_string string, digitrust_ID string) ([]byte, error) {
+	var userExt openrtb_ext.ExtUser
+	if consent_string != "" {
+		userExt = openrtb_ext.ExtUser{
+			Consent: consent_string,
+			DigiTrust: &openrtb_ext.ExtUserDigiTrust{
+				ID:   digitrust_ID,
+				KeyV: 1,
+				Pref: 0,
+			},
+		}
+	} else {
+		userExt = openrtb_ext.ExtUser{
+			DigiTrust: &openrtb_ext.ExtUserDigiTrust{
+				ID:   digitrust_ID,
+				KeyV: 1,
+				Pref: 0,
+			},
+		}
+	}
+
+	userExtData, err := json.Marshal(userExt)
+	if err != nil {
+		return nil, err
+	}
+	var width uint64 = 300
+	var height uint64 = 300
+	bidRequest := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{
+			{
+				ID:  "/19968336/header-bid-tag-0",
+				Ext: json.RawMessage(`{"appnexus": { "placementId":10433394 }}`),
+				Banner: &openrtb.Banner{
+					Format: []openrtb.Format{
+						{
+							W: width,
+							H: 250,
+						},
+						{
+							W: width,
+							H: 240,
+						},
+					},
+					W: &width,
+					H: &height,
+				},
+			},
+		},
+		Site: &openrtb.Site{
+			ID:   "site-id",
+			Page: "some-page",
+		},
+		User: &openrtb.User{
+			ID:       "aUserId",
+			BuyerUID: "aBuyerID",
+			Ext:      userExtData,
+		},
+	}
+	return json.Marshal(bidRequest)
 }
