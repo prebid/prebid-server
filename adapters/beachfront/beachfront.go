@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -147,6 +148,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 				Body:    bytes,
 				Headers: headers,
 			}
+		} else {
+			errs = append(errs, err)
 		}
 	}
 
@@ -155,6 +158,9 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	for i := reqCount - len(beachfrontRequests.Video); i < reqCount; i++ {
+		if beachfrontRequests.Video[i].AppId == "" {
+			continue
+		}
 
 		bytes, err := json.Marshal(beachfrontRequests.Video[i])
 
@@ -165,6 +171,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 				Body:    bytes,
 				Headers: headers,
 			}
+		} else {
+			errs = append(errs, err)
 		}
 	}
 
@@ -295,26 +303,36 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 	bfBannerRequest = newBeachfrontBannerRequest()
 
-	// The request that gets to here only has imps that contain a banner element. They may also contain
-	// a video element, but those are being ignored in this function.
 	for i := 0; i < len(request.Imp); i++ {
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
-		slot := beachfrontSlot{}
 
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
+		var appid string
+
+		if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppId)) == "string" &&
+			beachfrontExt.AppId != "" {
+			appid = beachfrontExt.AppId
+		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "object" {
+			if beachfrontExt.AppIds.Banner != "" {
+				appid = beachfrontExt.AppIds.Banner
+			} else {
+				errs = append(errs, errors.New("unable to determine the appId from the supplied extension"))
+				continue
+			}
+		} else {
+			errs = append(errs, errors.New("unable to determine the appId from the supplied extension"))
+			continue
+		}
+
+		slot := beachfrontSlot{}
+		slot.Id = appid
 		slot.Bidfloor = beachfrontExt.BidFloor
 		slot.Slot = request.Imp[i].ID
-
-		if beachfrontExt.AppId != "" {
-			slot.Id = beachfrontExt.AppId
-		} else {
-			slot.Id = beachfrontExt.AppIds.Banner
-		}
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
@@ -325,6 +343,10 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 
 		bfBannerRequest.Slots = append(bfBannerRequest.Slots, slot)
+	}
+
+	if len(bfBannerRequest.Slots) == 0 {
+		return bfBannerRequest, errs
 	}
 
 	if request.Device != nil {
@@ -383,6 +405,43 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			continue
 		}
 
+		var appid string
+
+		if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppId)) == "string" &&
+			beachfrontExt.AppId != "" {
+
+			appid = beachfrontExt.AppId
+		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "object" &&
+			beachfrontExt.AppIds.Video != "" {
+			appid = beachfrontExt.AppIds.Video
+		} else {
+			errs = append(errs, errors.New("unable to determine the appId from the supplied extension"))
+			continue
+		}
+
+		bfVideoRequest := newBeachfrontVideoRequest()
+		bfVideoRequest.AppId = appid
+
+		bfVideoRequest.Site = getSite(request)
+
+		if request.Device != nil {
+			bfVideoRequest.Device.IP = request.Device.IP
+			bfVideoRequest.Device.UA = request.Device.UA
+			bfVideoRequest.Device.JS = "1"
+		}
+
+		if request.User != nil {
+			if request.User.ID != "" {
+				bfVideoRequest.User.ID = request.User.ID
+			}
+
+			if request.User.BuyerUID != "" {
+				bfVideoRequest.User.BuyerUID = request.User.BuyerUID
+			}
+		}
+
+		bfVideoRequest.ID = request.ID
+
 		var imp = beachfrontVideoImp{}
 		imp.Id = i
 		imp.ImpId = request.Imp[i].ID
@@ -393,7 +452,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 				W: request.Imp[i].Video.W,
 				H: request.Imp[i].Video.H,
 			}
-
 		} else {
 			imp.Video = beachfrontSize{
 				W: DefaultVideoWidth,
@@ -401,37 +459,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			}
 		}
 
-		bfVideoRequest := newBeachfrontVideoRequest()
-
-		if request.Device != nil {
-			bfVideoRequest.Device.IP = request.Device.IP
-			bfVideoRequest.Device.UA = request.Device.UA
-			bfVideoRequest.Device.JS = "1"
-		}
-
-		bfVideoRequest.Site = getSite(request)
-
-		if request.User != nil {
-			if request.User.ID != "" {
-				bfVideoRequest.User.ID = request.User.ID
-			}
-
-			if request.User.BuyerUID != "" {
-				bfVideoRequest.User.BuyerUID = request.User.BuyerUID
-			}
-
-		}
-
-		bfVideoRequest.ID = request.ID
-
 		bfVideoRequest.Imp = append(bfVideoRequest.Imp, imp)
-
-		if beachfrontExt.AppId != "" {
-			bfVideoRequest.AppId = beachfrontExt.AppId
-		} else {
-			bfVideoRequest.AppId = beachfrontExt.AppIds.Video
-		}
-
 		beachfrontReqs[i] = bfVideoRequest
 	}
 
@@ -488,12 +516,15 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 
 		// try it as a banner
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
+			errs = append(errs, err)
 			return nil, errs
 		} else {
 			return postprocessBanner(beachfrontResp, externalRequest, id)
 		}
+	} else {
+		return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 	}
-	return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
+
 }
 
 func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
