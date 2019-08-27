@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/stored_requests"
 	metrics "github.com/rcrowley/go-metrics"
 
@@ -40,6 +41,7 @@ type getResponseFromDirectory struct {
 	expectedCode    int
 	aliased         bool
 	disabledBidders []string
+	adaptersConfig  map[string]config.Adapter
 }
 
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
@@ -190,6 +192,10 @@ func TestDisabledBidders(t *testing.T) {
 		expectedCode:    http.StatusBadRequest,
 		aliased:         false,
 		disabledBidders: []string{"appnexus", "rubicon"},
+		adaptersConfig: map[string]config.Adapter{
+			"appnexus": {Disabled: true},
+			"rubicon":  {Disabled: true},
+		},
 	}
 	goodTests := &getResponseFromDirectory{
 		dir:             "sample-requests/disabled/good",
@@ -198,6 +204,10 @@ func TestDisabledBidders(t *testing.T) {
 		expectedCode:    http.StatusOK,
 		aliased:         false,
 		disabledBidders: []string{"appnexus", "rubicon"},
+		adaptersConfig: map[string]config.Adapter{
+			"appnexus": {Disabled: true},
+			"rubicon":  {Disabled: true},
+		},
 	}
 	badTests.assert(t)
 	goodTests.assert(t)
@@ -248,8 +258,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 	disabledBidders := map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
-	adapterCfg := blankAdapterConfig(openrtb_ext.BidderList(), gr.disabledBidders)
-	_, bidderMap := exchange.DisableBidders(adapterCfg, openrtb_ext.BidderList(), disabledBidders)
+	bidderMap := exchange.DisableBidders(getBidderInfos(gr.adaptersConfig, openrtb_ext.BidderList()), disabledBidders)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
@@ -281,8 +290,8 @@ func doBadAliasRequest(t *testing.T, filename string, expectMsg string) {
 	disabledBidders := map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
-	adapterCfg := blankAdapterConfig(openrtb_ext.BidderList(), []string{""})
-	_, bidderMap := exchange.DisableBidders(adapterCfg, openrtb_ext.BidderList(), disabledBidders)
+	adaptersConfigs := make(map[string]config.Adapter)
+	bidderMap := exchange.DisableBidders(getBidderInfos(adaptersConfigs, openrtb_ext.BidderList()), disabledBidders)
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
@@ -697,7 +706,9 @@ func TestDisabledBidder(t *testing.T) {
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: int64(len(reqBody))},
+		&config.Configuration{
+			MaxRequestSize: int64(len(reqBody)),
+		},
 		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList()),
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		map[string]string{"unknownbidder": "The biddder 'unknownbidder' has been disabled."},
@@ -1160,4 +1171,27 @@ func blankAdapterConfig(bidderList []openrtb_ext.BidderName, disabledBidders []s
 	}
 
 	return adapters
+}
+
+func getBidderInfos(cfg map[string]config.Adapter, biddersNames []openrtb_ext.BidderName) adapters.BidderInfos {
+	biddersInfos := make(adapters.BidderInfos)
+	for _, name := range biddersNames {
+		adapterConfig, ok := cfg[string(name)]
+		if !ok {
+			adapterConfig = config.Adapter{}
+		}
+		biddersInfos[string(name)] = newBidderInfo(adapterConfig)
+	}
+	return biddersInfos
+}
+
+func newBidderInfo(cfg config.Adapter) adapters.BidderInfo {
+	status := adapters.StatusActive
+	if cfg.Disabled == true {
+		status = adapters.StatusDisabled
+	}
+
+	return adapters.BidderInfo{
+		Status: status,
+	}
 }
