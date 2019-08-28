@@ -87,7 +87,7 @@
 
           },
           "adapterName":"BF_PREBID_S2S",
-          "adapterVersion":"0.6.0",
+          "adapterVersion":"0.7.0",
           "ip":"",
           "requestId":"763e3312-19d5-4b07-a61d-890147e863a1"
         }
