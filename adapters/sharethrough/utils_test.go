@@ -1,6 +1,9 @@
 package sharethrough
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -10,23 +13,23 @@ import (
 
 func TestGetAdMarkup(t *testing.T) {
 	tests := map[string]struct {
-		inputResponse   openrtb_ext.ExtImpSharethroughResponse
+		inputResponse   []byte
 		inputParams     *StrAdSeverParams
 		expectedSuccess []string
 		expectedError   error
 	}{
 		"Sets template variables": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
 				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid" />`,
 				`<div data-str-native-key="pkey" data-stx-response-name="str_response_bid"></div>`,
-				`<script>var str_response_bid = "eyJhZHNlcnZlclJlcXVlc3RJZCI6ImFyaWQiLCJiaWRJZCI6ImJpZCIsImNvb2tpZVN5bmNVcmxzIjpudWxsLCJjcmVhdGl2ZXMiOm51bGwsInBsYWNlbWVudCI6eyJhbGxvd19pbnN0YW50X3BsYXkiOmZhbHNlLCJhcnRpY2xlc19iZWZvcmVfZmlyc3RfYWQiOjAsImFydGljbGVzX2JldHdlZW5fYWRzIjowLCJsYXlvdXQiOiIiLCJtZXRhZGF0YSI6bnVsbCwicGxhY2VtZW50QXR0cmlidXRlcyI6eyJhZF9zZXJ2ZXJfa2V5IjoiIiwiYWRfc2VydmVyX3BhdGgiOiIiLCJhbGxvd19keW5hbWljX2Nyb3BwaW5nIjpmYWxzZSwiYXBwX3RoaXJkX3BhcnR5X3BhcnRuZXJzIjpudWxsLCJjdXN0b21fY2FyZF9jc3MiOiIiLCJkZnBfcGF0aCI6IiIsImRpcmVjdF9zZWxsX3Byb21vdGVkX2J5X3RleHQiOiIiLCJkb21haW4iOiIiLCJlbmFibGVfbGlua19yZWRpcmVjdGlvbiI6ZmFsc2UsImZlYXR1cmVkX2NvbnRlbnQiOm51bGwsIm1heF9oZWFkbGluZV9sZW5ndGgiOjAsIm11bHRpX2FkX3BsYWNlbWVudCI6ZmFsc2UsInByb21vdGVkX2J5X3RleHQiOiIiLCJwdWJsaXNoZXJfa2V5IjoiIiwicmVuZGVyaW5nX3BpeGVsX29mZnNldCI6MCwic2FmZV9mcmFtZV9zaXplIjpudWxsLCJzaXRlX2tleSI6IiIsInN0cl9vcHRfb3V0X3VybCI6IiIsInRlbXBsYXRlIjoiIiwidGhpcmRfcGFydHlfcGFydG5lcnMiOm51bGx9LCJzdGF0dXMiOiIifSwic3R4VXNlcklkIjoiIn0="</script>`,
+				fmt.Sprintf(`<script>var str_response_bid = "%s"</script>`, base64.StdEncoding.EncodeToString([]byte(`{"bidId": "bid", "adserverRequestId": "arid"}`))),
 			},
 			expectedError: nil,
 		},
 		"Includes sfp.js without iFrame busting logic if iFrame param is true": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey", Iframe: true},
 			expectedSuccess: []string{
 				`<script src="//native.sharethrough.com/assets/sfp.js"></script>`,
@@ -34,7 +37,7 @@ func TestGetAdMarkup(t *testing.T) {
 			expectedError: nil,
 		},
 		"Includes sfp.js with iFrame busting logic if iFrame param is false": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey", Iframe: false},
 			expectedSuccess: []string{
 				`<script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>`,
@@ -42,7 +45,7 @@ func TestGetAdMarkup(t *testing.T) {
 			expectedError: nil,
 		},
 		"Includes sfp.js with iFrame busting logic if iFrame param is not provided": {
-			inputResponse: openrtb_ext.ExtImpSharethroughResponse{BidID: "bid", AdServerRequestID: "arid"},
+			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
 				`<script src="//native.sharethrough.com/assets/sfp-set-targeting.js"></script>`,
@@ -55,7 +58,10 @@ func TestGetAdMarkup(t *testing.T) {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
-		outputSuccess, outputError := Util{}.getAdMarkup(test.inputResponse, test.inputParams)
+		var strResp openrtb_ext.ExtImpSharethroughResponse
+		_ = json.Unmarshal(test.inputResponse, &strResp)
+
+		outputSuccess, outputError := Util{}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
 		for _, markup := range test.expectedSuccess {
 			assert.Contains(outputSuccess, markup)
 		}

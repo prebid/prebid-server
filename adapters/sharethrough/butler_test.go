@@ -167,7 +167,7 @@ func assertBidderResponseEquals(t *testing.T, testName string, expected adapters
 func TestSuccessResponseToOpenRTB(t *testing.T) {
 	tests := map[string]struct {
 		inputButlerReq  *adapters.RequestData
-		inputStrResp    openrtb_ext.ExtImpSharethroughResponse
+		inputStrResp    []byte
 		expectedSuccess *adapters.BidderResponse
 		expectedErrors  []error
 	}{
@@ -175,18 +175,7 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 			inputButlerReq: &adapters.RequestData{
 				Uri: "http://uri.com?placement_key=pkey&bidId=bidid&height=20&width=30",
 			},
-			inputStrResp: openrtb_ext.ExtImpSharethroughResponse{
-				AdServerRequestID: "arid",
-				BidID:             "bid",
-				Creatives: []openrtb_ext.ExtImpSharethroughCreative{{
-					CPM: 10,
-					Metadata: openrtb_ext.ExtImpSharethroughCreativeMetadata{
-						CampaignKey: "cmpKey",
-						CreativeKey: "creaKey",
-						DealID:      "dealId",
-					},
-				}},
-			},
+			inputStrResp: []byte(`{ "adserverRequestId": "arid", "bidId": "bid", "creatives": [{"cpm": 10, "creative": {"campaign_key": "cmpKey", "creative_key": "creaKey", "deal_id": "dealId"}}] }`),
 			expectedSuccess: &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{{
 					BidType: openrtb_ext.BidTypeNative,
@@ -220,15 +209,13 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 func TestFailResponseToOpenRTB(t *testing.T) {
 	tests := map[string]struct {
 		inputButlerReq  *adapters.RequestData
-		inputStrResp    openrtb_ext.ExtImpSharethroughResponse
+		inputStrResp    []byte
 		expectedSuccess *adapters.BidderResponse
 		expectedErrors  []error
 	}{
 		"Returns nil if no creatives provided": {
-			inputButlerReq: &adapters.RequestData{},
-			inputStrResp: openrtb_ext.ExtImpSharethroughResponse{
-				Creatives: []openrtb_ext.ExtImpSharethroughCreative{},
-			},
+			inputButlerReq:  &adapters.RequestData{},
+			inputStrResp:    []byte(`{}`),
 			expectedSuccess: nil,
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "No creative provided"},
@@ -238,12 +225,18 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 			inputButlerReq: &adapters.RequestData{
 				Uri: "wrong format url",
 			},
-			inputStrResp: openrtb_ext.ExtImpSharethroughResponse{
-				Creatives: []openrtb_ext.ExtImpSharethroughCreative{{}},
-			},
+			inputStrResp:    []byte(`{ "creatives": [{"creative": {}}] }`),
 			expectedSuccess: nil,
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: `strconv.ParseUint: parsing "": invalid syntax`},
+			},
+		},
+		"Returns error if failed parsing body": {
+			inputButlerReq:  &adapters.RequestData{},
+			inputStrResp:    []byte(`{ wrong json`),
+			expectedSuccess: nil,
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Unable to parse response JSON"},
 			},
 		},
 	}

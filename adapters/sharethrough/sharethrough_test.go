@@ -5,7 +5,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"testing"
 )
@@ -21,7 +20,7 @@ func (m MockStrAdServer) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.Bi
 	return m.mockRequestFromOpenRTB()
 }
 
-func (m MockStrAdServer) responseToOpenRTB(strResp openrtb_ext.ExtImpSharethroughResponse, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
+func (m MockStrAdServer) responseToOpenRTB(strRawResp []byte, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
 	return m.mockResponseToOpenRTB()
 }
 
@@ -208,13 +207,6 @@ func TestFailureMakeBids(t *testing.T) {
 				StatusCode: http.StatusInternalServerError,
 			},
 			expected: []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", http.StatusInternalServerError)},
-		},
-		"Returns error if failed parsing body": {
-			inputResponse: &adapters.ResponseData{
-				StatusCode: http.StatusOK,
-				Body:       []byte(`{ wrong json`),
-			},
-			expected: []error{fmt.Errorf("invalid character 'w' looking for beginning of object key string")},
 		},
 		"Passes by errors from responseToOpenRTB": {
 			inputResponse: &adapters.ResponseData{
