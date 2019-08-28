@@ -23,7 +23,7 @@ const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.6.0"
+const beachfrontAdapterVersion = "0.7.0"
 
 const DefaultVideoWidth = 300
 const DefaultVideoHeight = 250
