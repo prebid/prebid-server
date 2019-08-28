@@ -27,16 +27,15 @@ type Configuration struct {
 	EnableGzip  bool       `mapstructure:"enable_gzip"`
 	// StatusResponse is the string which will be returned by the /status endpoint when things are OK.
 	// If empty, it will return a 204 with no content.
-	StatusResponse     string             `mapstructure:"status_response"`
-	AuctionTimeouts    AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
-	CacheURL           Cache              `mapstructure:"cache"`
-	RecaptchaSecret    string             `mapstructure:"recaptcha_secret"`
-	HostCookie         HostCookie         `mapstructure:"host_cookie"`
-	MaxCookieSizeBytes int                `mapstructure:"max_cookie_size_bytes"`
-	Metrics            Metrics            `mapstructure:"metrics"`
-	DataCache          DataCache          `mapstructure:"datacache"`
-	StoredRequests     StoredRequests     `mapstructure:"stored_requests"`
-	CategoryMapping    StoredRequestsSlim `mapstructure:"category_mapping"`
+	StatusResponse  string             `mapstructure:"status_response"`
+	AuctionTimeouts AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
+	CacheURL        Cache              `mapstructure:"cache"`
+	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
+	HostCookie      HostCookie         `mapstructure:"host_cookie"`
+	Metrics         Metrics            `mapstructure:"metrics"`
+	DataCache       DataCache          `mapstructure:"datacache"`
+	StoredRequests  StoredRequests     `mapstructure:"stored_requests"`
+	CategoryMapping StoredRequestsSlim `mapstructure:"category_mapping"`
 	// Note that StoredVideo refers to stored video requests, and has nothing to do with caching video creatives.
 	StoredVideo StoredRequestsSlim `mapstructure:"stored_video_req"`
 
