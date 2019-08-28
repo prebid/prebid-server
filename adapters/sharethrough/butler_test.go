@@ -85,6 +85,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					IP: "127.0.0.1",
 				},
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
+				User: &openrtb.User{},
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
