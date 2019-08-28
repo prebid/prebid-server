@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -213,6 +214,19 @@ func TestDisabledBidders(t *testing.T) {
 	goodTests.assert(t)
 }
 
+// TestBlacklistRequests makes sure we return 400s on blacklisted requests.
+func TestBlacklistRequests(t *testing.T) {
+	// Need to turn off aliases for bad requests as applying the alias can fail on a bad request before the expected error is reached.
+	tests := &getResponseFromDirectory{
+		dir:           "sample-requests/blacklisted",
+		payloadGetter: getRequestPayload,
+		messageGetter: getMessage,
+		expectedCode:  http.StatusBadRequest,
+		aliased:       false,
+	}
+	tests.assert(t)
+}
+
 // assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
 // from the /openrtb2/auction endpoint.
 func (gr *getResponseFromDirectory) assert(t *testing.T) {
@@ -222,6 +236,7 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 		filename := gr.dir + "/" + fileInfo.Name()
 		fileData := readFile(t, filename)
 		code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
+		fmt.Printf("Processing %s\n", filename)
 		assertResponseCode(t, filename, code, gr.expectedCode, msg)
 
 		expectMsg := gr.messageGetter(t, fileData)
@@ -263,7 +278,18 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
-	endpoint, _ := NewEndpoint(&nobidExchange{}, newParamsValidator(t), &mockStoredReqFetcher{}, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}), disabledBidders, aliasJSON, bidderMap)
+	endpoint, _ := NewEndpoint(
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		disabledBidders,
+		aliasJSON,
+		bidderMap,
+	)
 
 	request := httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(requestData))
 	recorder := httptest.NewRecorder()
