@@ -1,0 +1,368 @@
+{
+  "mockBidRequest": {
+    "id": "multi-mix-test",
+    "tmax": 800,
+    "site": {
+      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+    },
+    "user": {
+      "id": "some-user",
+      "buyeruid": "some-buyer"
+    },
+    "device": {
+      "ip": "127.0.0.1",
+      "model": "MacBookPro",
+      "OS": "macOS Sierra 10.12.6",
+      "dnt": 1,
+      "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
+    },
+    "imp": [
+      {
+        "id": "banner1",
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
+          }
+        }
+      }, {
+        "id":"video1",
+        "ext":{
+          "bidder":{
+            "bidfloor":0.01,
+            "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
+          }
+        },
+        "video":{
+          "mimes":[
+            "video/mp4"
+          ],
+          "context":"instream",
+          "w":300,
+          "h":250
+        }
+      }, {
+        "id":"mix1",
+        "ext":{
+          "bidder":{
+            "bidfloor":0.01,
+            "appIds": {
+              "video": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
+              "banner": "487cf244-5e95-43cb-e7b9-bb540873ca7e"
+            }
+          }
+        },
+        "video":{
+          "mimes":[
+            "video/mp4"
+          ],
+          "context":"instream",
+          "w":300,
+          "h":250
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+
+
+
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri" : "https://display.bfmio.com/prebid_display",
+        "body" : {
+          "slots":[
+            {
+              "slot":"banner1",
+              "id":"3b16770b-17af-4d22-daff-9606bdf2c9c3",
+              "bidfloor":0.02,
+              "sizes":[
+                {
+                  "w":300,
+                  "h":250
+                }
+              ]
+            },
+            {
+              "slot":"mix1",
+              "id":"487cf244-5e95-43cb-e7b9-bb540873ca7e",
+              "bidfloor":0.01,
+              "sizes":[
+                {
+                  "w":300,
+                  "h":250
+                }
+              ]
+            }
+          ],
+          "domain":"test.opposingviews.com",
+          "page":"https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
+          "referrer":"",
+          "search":"",
+          "secure":0,
+          "deviceOs":"macOS Sierra 10.12.6",
+          "deviceModel":"MacBookPro",
+          "isMobile":0,
+          "ua":"Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+          "dnt":1,
+          "user":{
+            "id":"some-user",
+            "buyeruid":"some-buyer"
+          },
+          "adapterName":"BF_PREBID_S2S",
+          "adapterVersion":"0.7.0",
+          "ip":"127.0.0.1",
+          "requestId":"multi-mix-test"
+        }
+
+      },
+
+      "mockResponse": {
+        "status" : 200,
+        "body" :
+        [
+          {
+            "crid":"crid_1",
+            "price":9.5019655,
+            "w":300,
+            "h":250,
+            "slot":"mix1",
+            "adm":"<div id=\"448672368\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          }, {
+            "crid":"crid_1",
+            "price":9.5019655,
+            "w":300,
+            "h":250,
+            "slot":"banner1",
+            "adm":"<div id=\"448617168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>"
+          }
+        ]
+      }
+
+    }, {
+      "expectedRequest": {
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "body": {
+          "isPrebid":true,
+          "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76",
+          "id":"multi-mix-test",
+          "imp":[
+            {
+              "video":{
+                "w":300,
+                "h":250
+              },
+              "bidfloor":0.01,
+              "id":0,
+              "impid":"video1",
+              "secure":0
+            }
+          ],
+          "site":{
+            "domain":"test.opposingviews.com",
+            "page":"https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+          },
+          "device":{
+            "ua":"Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+            "ip":"127.0.0.1",
+            "js":"1"
+          },
+          "user":{
+            "id":"some-user",
+            "buyeruid":"some-buyer"
+          },
+          "cur":[
+            "USD"
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id":"multi-mix-test",
+          "seatBid":[
+            {
+              "bid":[
+                {
+                  "id":"0",
+                  "price":20.0,
+                  "nurl":"https://useast.bfmio.com/getBids?aid=bid:0301307b-c336-4916-8f1c-e808be3d912b:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d41f8254a6068cc71429487,0.01&i_type=pre",
+                  "adomain":[
+
+                  ],
+                  "cat":[
+
+                  ],
+                  "attr":[
+
+                  ],
+                  "w":0,
+                  "h":0,
+                  "ext":{
+
+                  }
+                }
+              ],
+              "group":0,
+              "ext":{
+
+              }
+            }
+          ]
+        }
+      }
+    } , {
+      "expectedRequest": {
+        "uri" : "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "body" :
+        {
+          "isPrebid":true,
+          "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76",
+          "id":"multi-mix-test",
+          "imp":[
+            {
+              "video":{
+                "w":300,
+                "h":250
+              },
+              "bidfloor":0.01,
+              "id":1,
+              "impid":"mix1",
+              "secure":0
+            }
+          ],
+          "site":{
+            "domain":"test.opposingviews.com",
+            "page":"https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+          },
+          "device":{
+            "ua":"Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
+            "ip":"127.0.0.1",
+            "js":"1"
+          },
+          "user":{
+            "id":"some-user",
+            "buyeruid":"some-buyer"
+          },
+          "cur":[
+            "USD"
+          ]
+        }
+
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-mix-test",
+          "seatBid": [
+            {
+              "bid": [
+                {
+                  "id": "0",
+                  "price": 20.0,
+                  "nurl": "https://useast.bfmio.com/getBids?aid=bid:923158b0-79b6-42d0-bc91-aa22cf2b4405:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d41f825272d8d4926d3929f,0.01&i_type=pre",
+                  "adomain": [
+                  ],
+                  "cat": [
+                  ],
+                  "attr": [
+                  ],
+                  "w": 0,
+                  "h": 0,
+                  "ext": {
+                  }
+                }
+              ],
+              "group": 0,
+              "ext": {
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBids": [
+    {
+      "bid": [
+        {
+          "id": "multi-mix-test",
+          "impid": "video1",
+          "price": 20,
+          "nurl": "https://useast.bfmio.com/getBids?aid=bid:0301307b-c336-4916-8f1c-e808be3d912b:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d41f8254a6068cc71429487,0.01&i_type=pre",
+          "crid": "0301307b-c336-4916-8f1c-e808be3d912b",
+          "w": 300,
+          "h": 250,
+          "ext": {
+            "prebid": {
+              "type": "video"
+            },
+            "bidder": {}
+          }
+        },
+        {
+          "id": "multi-mix-test",
+          "impid": "mix1",
+          "price": 20,
+          "nurl": "https://useast.bfmio.com/getBids?aid=bid:923158b0-79b6-42d0-bc91-aa22cf2b4405:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d41f825272d8d4926d3929f,0.01&i_type=pre",
+          "crid": "923158b0-79b6-42d0-bc91-aa22cf2b4405",
+          "w": 300,
+          "h": 250,
+          "ext": {
+            "prebid": {
+              "type": "video"
+            },
+            "bidder": {}
+          }
+        },
+        {
+          "id": "multi-mix-test",
+          "impid": "banner1",
+          "price": 9.507253,
+          "adm": "<div id=\"448617168\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
+          "crid": "crid_1",
+          "w": 300,
+          "h": 250,
+          "ext": {
+            "prebid": {
+              "type": "banner"
+            }
+          }
+        },
+        {
+          "id": "multi-mix-test",
+          "impid": "mix1",
+          "price": 9.522232,
+          "adm": "<div id=\"448672368\"><script>!function(){console.log\"Hello, ad.\";}();<\/script><\/div>",
+          "crid": "crid_1",
+          "w": 300,
+          "h": 250,
+          "ext": {
+            "prebid": {
+              "type": "banner"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

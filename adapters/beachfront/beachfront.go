@@ -130,12 +130,15 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
+	// estimate reqs length. This will change in particular if I got in mixed impressions
 	var reqCount = len(beachfrontRequests.Video)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
 	}
 
 	var reqs = make([]*adapters.RequestData, reqCount)
+
+	var bannerBump = 0
 
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
@@ -151,23 +154,22 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		} else {
 			errs = append(errs, err)
 		}
+
+		reqCount--
+		bannerBump++
 	}
 
 	if request.User != nil && request.User.BuyerUID != "" {
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-	for i := reqCount - len(beachfrontRequests.Video); i < reqCount; i++ {
-		if beachfrontRequests.Video[i].AppId == "" {
-			continue
-		}
-
-		bytes, err := json.Marshal(beachfrontRequests.Video[i])
+	for j := 0; j < reqCount; j++ {
+		bytes, err := json.Marshal(beachfrontRequests.Video[j])
 
 		if err == nil {
-			reqs[i] = &adapters.RequestData{
+			reqs[j+bannerBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     VideoEndpoint + beachfrontRequests.Video[i].AppId + VideoEndpointSuffix,
+				Uri:     VideoEndpoint + beachfrontRequests.Video[j].AppId + VideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -317,15 +319,15 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppId)) == "string" &&
 			beachfrontExt.AppId != "" {
 			appid = beachfrontExt.AppId
-		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "object" {
+		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
 			if beachfrontExt.AppIds.Banner != "" {
 				appid = beachfrontExt.AppIds.Banner
 			} else {
-				errs = append(errs, errors.New("unable to determine the appId from the supplied extension"))
+				errs = append(errs, errors.New("unable to determine the appId from the supplied extension (0)"))
 				continue
 			}
 		} else {
-			errs = append(errs, errors.New("unable to determine the appId from the supplied extension"))
+			errs = append(errs, errors.New("unable to determine the appId from the supplied extension (1)"))
 			continue
 		}
 
@@ -411,11 +413,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			beachfrontExt.AppId != "" {
 
 			appid = beachfrontExt.AppId
-		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "object" &&
+		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" &&
 			beachfrontExt.AppIds.Video != "" {
 			appid = beachfrontExt.AppIds.Video
 		} else {
-			errs = append(errs, errors.New("unable to determine the appId from the supplied extension"))
+			errs = append(errs, errors.New("unable to determine the appId from the supplied extension (2)"))
 			continue
 		}
 
