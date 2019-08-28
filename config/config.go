@@ -501,7 +501,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
-	v.SetDefault("host_cookie.max_cookie_size_bytes", 32768)
+	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)

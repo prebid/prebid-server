@@ -263,6 +263,17 @@ func TestGetUIDsWithNilCookie(t *testing.T) {
 	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for a nil cookie")
 }
 
+func TestUnlimitedSizeCookie(t *testing.T) {
+	var cookie *PBSCookie
+	var bigCookieLen int
+	cookie, bigCookieLen = newBigCookie()
+	cookie.maxSizeBytes = 0 //When equal to zero, unlimited size
+
+	var received *PBSCookie = writeThenRead(cookie)
+
+	assert.Equal(t, bigCookieLen, len(received.uids), "Cookie bigger than 32 KB in size was not supposed to be reduced in size")
+}
+
 func TestTrimBigCookie(t *testing.T) {
 	var cookie *PBSCookie
 	var bigCookieLen int
