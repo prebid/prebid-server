@@ -23,6 +23,7 @@ type StrAdSeverParams struct {
 	Height             uint64
 	Width              uint64
 	TheTradeDeskUserId string
+	SharethroughUserId string
 }
 
 type StrOpenRTBInterface interface {
@@ -91,6 +92,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			Width:              width,
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
 			TheTradeDeskUserId: userInfo.TtdUid,
+			SharethroughUserId: request.User.BuyerUID,
 		}),
 		Body:    nil,
 		Headers: headers,
@@ -150,6 +152,9 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	if params.TheTradeDeskUserId != "" {
 		v.Set("ttduid", params.TheTradeDeskUserId)
 	}
+	if params.SharethroughUserId != "" {
+		v.Set("stxuid", params.SharethroughUserId)
+	}
 
 	v.Set("instant_play_capable", fmt.Sprintf("%t", params.InstantPlayCapable))
 	v.Set("stayInIframe", fmt.Sprintf("%t", params.Iframe))
@@ -157,7 +162,7 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
 	v.Set("supplyId", supplyId)
-	v.Set("strVersion", strVersion)
+	v.Set("strVersion", strconv.FormatInt(strVersion, 10))
 
 	return h.BaseURI + "?" + v.Encode()
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -84,6 +85,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					IP: "127.0.0.1",
 				},
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
+				User: &openrtb.User{},
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
@@ -287,6 +289,7 @@ func TestBuildUri(t *testing.T) {
 				Height:             20,
 				Width:              30,
 				TheTradeDeskUserId: "ttd123",
+				SharethroughUserId: "stx123",
 			},
 			expected: []string{
 				"http://abc.com?",
@@ -299,8 +302,9 @@ func TestBuildUri(t *testing.T) {
 				"height=20",
 				"width=30",
 				"supplyId=FGMrCMMc",
-				"strVersion=" + strVersion,
+				"strVersion=" + strconv.FormatInt(strVersion, 10),
 				"ttduid=ttd123",
+				"stxuid=stx123",
 			},
 		},
 	}
