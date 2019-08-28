@@ -15,7 +15,6 @@ import (
 // DEFAULT_TTL is the default amount of time which a cookie is considered valid.
 const DEFAULT_TTL = 14 * 24 * time.Hour
 const UID_COOKIE_NAME = "uids"
-const MAX_COOKIE_SIZE int = 1 << 15 // 32 KB
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
