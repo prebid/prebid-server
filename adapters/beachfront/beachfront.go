@@ -34,6 +34,7 @@ type BeachfrontAdapter struct {
 type beachfrontRequests struct {
 	Banner beachfrontBannerRequest
 	Video  []beachfrontVideoRequest
+	RTBVideo openrtb.BidRequest
 }
 
 // ---------------------------------------------------
@@ -114,7 +115,7 @@ type beachfrontResponseSlot struct {
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests beachfrontRequests
-	var errs = make([]error, 0, len(request.Imp))
+	var errs= make([]error, 0, len(request.Imp))
 
 	beachfrontRequests, errs = preprocess(request)
 
@@ -131,14 +132,18 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	// estimate reqs length. This will change in particular if I got in mixed impressions
-	var reqCount = len(beachfrontRequests.Video)
+	var reqCount= len(beachfrontRequests.Video)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
 	}
 
-	var reqs = make([]*adapters.RequestData, reqCount)
+	if len(beachfrontRequests.RTBVideo.Imp) > 0 {
+		reqCount++
+	}
 
-	var bannerBump = 0
+	var reqs= make([]*adapters.RequestData, reqCount)
+
+	var bump = 0
 
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
@@ -156,18 +161,37 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 
 		reqCount--
-		bannerBump++
+		bump++
 	}
 
 	if request.User != nil && request.User.BuyerUID != "" {
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
+	if len(beachfrontRequests.RTBVideo.Imp) > 0 {
+		bytes, err := json.Marshal(beachfrontRequests.RTBVideo)
+
+		if err == nil {
+			reqs[bump] = &adapters.RequestData{
+				Method:  "POST",
+				Uri:     VideoEndpoint + beachfrontRequests.RTBVideo.Ext. + VideoEndpointSuffix,
+				Body:    bytes,
+				Headers: headers,
+			}
+		} else {
+			errs = append(errs, err)
+		}
+
+		reqCount--
+		bump++
+
+	}
+
 	for j := 0; j < reqCount; j++ {
 		bytes, err := json.Marshal(beachfrontRequests.Video[j])
 
 		if err == nil {
-			reqs[j+bannerBump] = &adapters.RequestData{
+			reqs[j + bump] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     VideoEndpoint + beachfrontRequests.Video[j].AppId + VideoEndpointSuffix,
 				Body:    bytes,
@@ -210,7 +234,11 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 
 		var videoErrs []error
 
-		beachfrontReqs.Video, videoErrs = getVideoRequests(request)
+		if fmt.Sprintf("%s", reflect.TypeOf(request)) == "openrtb.BidRequest" {
+			beachfrontReqs.RTBVideo, videoErrs = getVideoRequestsRTB(request)
+		} else {
+			beachfrontReqs.Video, videoErrs = getVideoRequests(request)
+		}
 		errs = append(errs, videoErrs...)
 
 	}
@@ -387,6 +415,21 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	}
 
 	return bfBannerRequest, errs
+}
+
+
+func getVideoRequestsRTB(request *openrtb.BidRequest) (openrtb.BidRequest, []error) {
+	var errs = make([]error, 0, len(request.Imp))
+
+	beachfrontExt, err := getBeachfrontExtension(request.Imp[0])
+
+	if err != nil {
+		// Failed to extract the beachfrontExt, so this request is junk.
+		errs = append(errs, err)
+		return *request, errs
+	}
+	return *request, errs
+
 }
 
 /*
