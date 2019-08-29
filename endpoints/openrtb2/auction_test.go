@@ -43,6 +43,7 @@ type getResponseFromDirectory struct {
 	aliased         bool
 	disabledBidders []string
 	adaptersConfig  map[string]config.Adapter
+	accountReq      bool
 }
 
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
@@ -227,6 +228,54 @@ func TestBlacklistRequests(t *testing.T) {
 	tests.assert(t)
 }
 
+// TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id
+// if the `AccountRequired` field in the `config.Configuration` structure is set to true
+func TestRejectAccountRequired(t *testing.T) {
+	tests := &getResponseFromDirectory{
+		messageGetter: func(*testing.T, []byte) []byte {
+			return []byte("Invalid request: Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.\n")
+		},
+		expectedCode: http.StatusBadRequest,
+		accountReq:   true,
+	}
+
+	// No user id nor app id has been specified
+	req := []byte(`{
+		"id": "some-request-id",
+		"site": {
+			"page": "test.somepage.com"
+		},
+		"user": { },
+		"imp": [
+			{
+				"id": "my-imp-id",
+				"banner": {
+					"format": [
+						{
+							"w": 300,
+							"h": 600
+						}
+					]
+				},
+				"pmp": {
+					"deals": [
+						{
+							"id": "some-deal-id"
+						}
+					]
+				},
+				"ext": {
+					"appnexus": {
+						"placementId": 10433394
+					}
+				}
+			}
+		]
+	}`)
+	code, msg := tests.doRequest(t, req)
+	assertResponseCode(t, "", code, tests.expectedCode, msg)
+}
+
 // assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
 // from the /openrtb2/auction endpoint.
 func (gr *getResponseFromDirectory) assert(t *testing.T) {
@@ -283,7 +332,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}},
+		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: gr.accountReq},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,

@@ -198,10 +198,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		labels.PubID = effectivePubID(bidReq.Site.Publisher)
 	}
-	// Blacklist account now that we have resolved the value
-	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
-		errL := []error{&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)}}
-		handleError(labels, w, errL, ao)
+
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
+		writeError(errL, w)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
 	}
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
