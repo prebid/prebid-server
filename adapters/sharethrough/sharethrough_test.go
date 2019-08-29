@@ -5,7 +5,9 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/stretchr/testify/assert"
 	"net/http"
+	"regexp"
 	"testing"
 )
 
@@ -37,6 +39,36 @@ func (m MockStrUriHelper) buildUri(params StrAdSeverParams) string {
 
 func (m MockStrUriHelper) parseUri(uri string) (*StrAdSeverParams, error) {
 	return m.mockParseUri()
+}
+
+func TestNewSharethroughBidder(t *testing.T) {
+	tests := map[string]struct {
+		input  string
+		output SharethroughAdapter
+	}{
+		"Creates Sharethrough adapter": {
+			input: "test endpoint",
+			output: SharethroughAdapter{
+				AdServer: StrOpenRTBTranslator{
+					UriHelper: StrUriHelper{BaseURI: "test endpoint"},
+					Util:      Util{},
+					UserAgentParsers: UserAgentParsers{
+						ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+						ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+						SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+					},
+				},
+			},
+		},
+	}
+
+	assert := assert.New(t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		actual := NewSharethroughBidder(test.input)
+		assert.Equal(actual, &test.output)
+	}
 }
 
 func TestSuccessMakeRequests(t *testing.T) {
