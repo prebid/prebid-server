@@ -360,7 +360,6 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 	}
 }
 
-// PBS-431 p2
 func getDefaultLabels(r *http.Request, labels *pbsmetrics.Labels) {
 
 	labels.Source = pbsmetrics.DemandUnknown
@@ -379,7 +378,6 @@ func getDefaultLabels(r *http.Request, labels *pbsmetrics.Labels) {
 	return
 }
 
-// PBS-431 p2
 func setLabelValues(labels *pbsmetrics.Labels, req *pbs.PBSRequest, status *string) {
 	// Other data from parsed PBSRequest
 	if req.App != nil {
@@ -396,7 +394,6 @@ func setLabelValues(labels *pbsmetrics.Labels, req *pbs.PBSRequest, status *stri
 	return
 }
 
-// PBS-431 p2
 func getAdapterValue(bidder *pbs.PBSBidder) openrtb_ext.BidderName {
 	if openrtb_ext.BidderMap[bidder.BidderCode] != "" {
 		return openrtb_ext.BidderMap[bidder.BidderCode]
@@ -406,7 +403,6 @@ func getAdapterValue(bidder *pbs.PBSBidder) openrtb_ext.BidderName {
 	}
 }
 
-// PBS-431 p2
 func cacheAccordingToMarkup(req *pbs.PBSRequest, resp *pbs.PBSResponse, ctx context.Context, a *auction, labels *pbsmetrics.Labels) error {
 	if req.CacheMarkup == 1 {
 		cobjs := make([]*pbc.CacheObject, len(resp.Bids))
