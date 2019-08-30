@@ -17,6 +17,24 @@ type GammaAdapter struct {
 	URI string
 }
 
+func checkParams(gammaExt openrtb_ext.ExtImpGamma) error {
+	if gammaExt.PartnerID == "" {
+		return &errortypes.BadInput{
+			Message: "PartnerID is empty",
+		}
+	}
+	if gammaExt.ZoneID == "" {
+		return &errortypes.BadInput{
+			Message: "ZoneID is empty",
+		}
+	}
+	if gammaExt.WebID == "" {
+		return &errortypes.BadInput{
+			Message: "WebID is empty",
+		}
+	}
+	return nil
+}
 func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp) (*adapters.RequestData, []error) {
 	var errors []error
 
@@ -38,27 +56,12 @@ func (a *GammaAdapter) makeRequest(request *openrtb.BidRequest, imp openrtb.Imp)
 		errors = append(errors, err)
 		return nil, errors
 	}
-	if gammaExt.PartnerID == "" {
-		err = &errortypes.BadInput{
-			Message: "PartnerID is empty",
-		}
+	err = checkParams(gammaExt)
+	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
 	}
-	if gammaExt.ZoneID == "" {
-		err = &errortypes.BadInput{
-			Message: "ZoneID is empty",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
-	if gammaExt.WebID == "" {
-		err = &errortypes.BadInput{
-			Message: "WebID is empty",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
+
 	thisURI := a.URI
 	thisURI = thisURI + "?id=" + gammaExt.PartnerID
 	thisURI = thisURI + "&zid=" + gammaExt.ZoneID
@@ -179,10 +182,7 @@ func (a *GammaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 func (a *GammaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
-
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
-		}}
+		return nil, nil
 	}
 
 	if response.StatusCode == http.StatusBadRequest {

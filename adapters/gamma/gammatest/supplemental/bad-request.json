@@ -8,8 +8,8 @@
     },
 
     "device":{
-    	"ua":"test-device-ua",
-    	"ip":"test-device-ip",
+      "ua":"test-device-ua",
+      "ip":"test-device-ip",
       "ifa":"test-device-ifa",
       "model":"test-device-model",
       "os":"test-device-os",
