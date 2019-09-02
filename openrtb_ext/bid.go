@@ -16,12 +16,19 @@ type ExtBidPrebid struct {
 	Cache     *ExtBidPrebidCache `json:"cache,omitempty"`
 	Targeting map[string]string  `json:"targeting,omitempty"`
 	Type      BidType            `json:"type"`
+	Video     *ExtBidPrebidVideo `json:"video,omitempty"`
 }
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
 type ExtBidPrebidCache struct {
 	Key string `json:"key"`
 	Url string `json:"url"`
+}
+
+// ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
+type ExtBidPrebidVideo struct {
+	Duration        int    `json:"duration"`
+	PrimaryCategory string `json:"primary_category"`
 }
 
 // BidType describes the allowed values for bidresponse.seatbid.bid[i].ext.prebid.type
@@ -80,7 +87,7 @@ const (
 	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"
-	HbDealIdConstantKey TargetingKey = "hb_deal"
+	HbDealIDConstantKey TargetingKey = "hb_deal"
 
 	// HbCacheKey and HbVastCacheKey store UUIDs which can be used to fetch things from prebid cache.
 	// Callers should *never* assume that either of these exist, since the call to the cache may always fail.
@@ -92,6 +99,8 @@ const (
 
 	// This is not a key, but values used by the HbEnvKey
 	HbEnvKeyApp string = "mobile-app"
+
+	HbCategoryDurationKey TargetingKey = "hb_pb_cat_dur"
 )
 
 func (key TargetingKey) BidderKey(bidder BidderName, maxLength int) string {

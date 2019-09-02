@@ -14,7 +14,7 @@ type GumGumAdapter struct {
 	URI string
 }
 
-func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (g *GumGumAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var validImps []openrtb.Imp
 	var trackingId string
 

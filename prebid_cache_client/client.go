@@ -36,6 +36,7 @@ type Cacheable struct {
 	Type       PayloadType
 	Data       json.RawMessage
 	TTLSeconds int64
+	Key        string
 }
 
 func NewClient(conf *config.Cache) Client {
@@ -94,7 +95,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	}
 
 	currentIndex := 0
-	processResponse := func(uuidObj []byte, dataType jsonparser.ValueType, offset int, err error) {
+	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
 		if uuid, valueType, _, err := jsonparser.Get(uuidObj, "uuid"); err != nil {
 			glog.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody))
 			errs = append(errs, fmt.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody)))
@@ -149,6 +150,11 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteString(`","value":`)
 	}
 	buffer.Write(value.Data)
+	if len(value.Key) > 0 {
+		buffer.WriteString(`,"key":"`)
+		buffer.WriteString(string(value.Key))
+		buffer.WriteString(`"`)
+	}
 	buffer.WriteByte('}')
 	return nil
 }

@@ -6,9 +6,11 @@ const (
 	NoErrorCode = iota
 	TimeoutCode
 	BadInputCode
+	BlacklistedAppCode
 	BadServerResponseCode
 	FailedToRequestBidsCode
 	BidderTemporarilyDisabledCode
+	BlacklistedAcctCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -20,7 +22,7 @@ type Coder interface {
 }
 
 // Timeout should be used to flag that a bidder failed to return a response because the PBS timeout timer
-// expired before a result was recieved.
+// expired before a result was received.
 //
 // Timeouts will not be written to the app log, since it's not an actionable item for the Prebid Server hosts.
 type Timeout struct {
@@ -49,6 +51,38 @@ func (err *BadInput) Error() string {
 
 func (err *BadInput) Code() int {
 	return BadInputCode
+}
+
+// BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedApp struct {
+	Message string
+}
+
+func (err *BlacklistedApp) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedApp) Code() int {
+	return BlacklistedAppCode
+}
+
+// BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedAcct struct {
+	Message string
+}
+
+func (err *BlacklistedAcct) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedAcct) Code() int {
+	return BlacklistedAcctCode
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.

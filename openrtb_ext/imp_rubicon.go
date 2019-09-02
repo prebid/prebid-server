@@ -9,8 +9,8 @@ type ExtImpRubicon struct {
 	AccountId int                `json:"accountId"`
 	SiteId    int                `json:"siteId"`
 	ZoneId    int                `json:"zoneId"`
-	Inventory json.RawMessage    `json:"inventory"`
-	Visitor   json.RawMessage    `json:"visitor"`
+	Inventory json.RawMessage    `json:"inventory,omitempty"`
+	Visitor   json.RawMessage    `json:"visitor,omitempty"`
 	Video     rubiconVideoParams `json:"video"`
 }
 

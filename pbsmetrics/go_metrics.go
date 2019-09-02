@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
@@ -17,20 +17,32 @@ type Metrics struct {
 	ConnectionAcceptErrorMeter metrics.Meter
 	ConnectionCloseErrorMeter  metrics.Meter
 	ImpMeter                   metrics.Meter
+	LegacyImpMeter             metrics.Meter
 	AppRequestMeter            metrics.Meter
 	NoCookieMeter              metrics.Meter
 	SafariRequestMeter         metrics.Meter
 	SafariNoCookieMeter        metrics.Meter
 	RequestTimer               metrics.Timer
+	StoredReqCacheMeter        map[CacheResult]metrics.Meter
+	StoredImpCacheMeter        map[CacheResult]metrics.Meter
+
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
-	RequestStatuses     map[RequestType]map[RequestStatus]metrics.Meter
-	AmpNoCookieMeter    metrics.Meter
-	CookieSyncMeter     metrics.Meter
-	userSyncOptout      metrics.Meter
-	userSyncBadRequest  metrics.Meter
-	userSyncSet         map[openrtb_ext.BidderName]metrics.Meter
-	userSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
+	RequestStatuses       map[RequestType]map[RequestStatus]metrics.Meter
+	AmpNoCookieMeter      metrics.Meter
+	CookieSyncMeter       metrics.Meter
+	CookieSyncGen         map[openrtb_ext.BidderName]metrics.Meter
+	CookieSyncGDPRPrevent map[openrtb_ext.BidderName]metrics.Meter
+	userSyncOptout        metrics.Meter
+	userSyncBadRequest    metrics.Meter
+	userSyncSet           map[openrtb_ext.BidderName]metrics.Meter
+	userSyncGDPRPrevent   map[openrtb_ext.BidderName]metrics.Meter
+
+	// Media types found in the "imp" JSON object
+	ImpsTypeBanner metrics.Meter
+	ImpsTypeVideo  metrics.Meter
+	ImpsTypeAudio  metrics.Meter
+	ImpsTypeNative metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -50,6 +62,7 @@ type AdapterMetrics struct {
 	RequestTimer      metrics.Timer
 	PriceHistogram    metrics.Histogram
 	BidsReceivedMeter metrics.Meter
+	PanicMeter        metrics.Meter
 	MarkupMetrics     map[openrtb_ext.BidType]*MarkupDeliveryMetrics
 }
 
@@ -85,17 +98,27 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ConnectionAcceptErrorMeter: blankMeter,
 		ConnectionCloseErrorMeter:  blankMeter,
 		ImpMeter:                   blankMeter,
+		LegacyImpMeter:             blankMeter,
 		AppRequestMeter:            blankMeter,
 		NoCookieMeter:              blankMeter,
 		SafariRequestMeter:         blankMeter,
 		SafariNoCookieMeter:        blankMeter,
 		RequestTimer:               &metrics.NilTimer{},
+		StoredReqCacheMeter:        make(map[CacheResult]metrics.Meter),
+		StoredImpCacheMeter:        make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:           blankMeter,
 		CookieSyncMeter:            blankMeter,
+		CookieSyncGen:              make(map[openrtb_ext.BidderName]metrics.Meter),
+		CookieSyncGDPRPrevent:      make(map[openrtb_ext.BidderName]metrics.Meter),
 		userSyncOptout:             blankMeter,
 		userSyncBadRequest:         blankMeter,
 		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
 		userSyncGDPRPrevent:        make(map[openrtb_ext.BidderName]metrics.Meter),
+
+		ImpsTypeBanner: blankMeter,
+		ImpsTypeVideo:  blankMeter,
+		ImpsTypeAudio:  blankMeter,
+		ImpsTypeNative: blankMeter,
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
@@ -127,6 +150,13 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
+	newMetrics.LegacyImpMeter = metrics.GetOrRegisterMeter("legacy_imps_requested", registry)
+
+	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
+	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
+	newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
+	newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
+
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
@@ -137,6 +167,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
 	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
 	for _, a := range exchanges {
+		newMetrics.CookieSyncGen[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gen", string(a)), registry)
+		newMetrics.CookieSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gdpr_prevent", string(a)), registry)
 		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
 		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
@@ -146,6 +178,11 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 			statusMap[stat] = metrics.GetOrRegisterMeter("requests."+string(stat)+"."+string(typ), registry)
 		}
 	}
+	for _, cacheRes := range CacheResults() {
+		newMetrics.StoredReqCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_request_cache_%s", string(cacheRes)), registry)
+		newMetrics.StoredImpCacheMeter[cacheRes] = metrics.GetOrRegisterMeter(fmt.Sprintf("stored_imp_cache_%s", string(cacheRes)), registry)
+	}
+
 	newMetrics.userSyncSet[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.sets", registry)
 	newMetrics.userSyncGDPRPrevent[unknownBidder] = metrics.GetOrRegisterMeter("usersync.unknown.gdpr_prevent", registry)
 	return newMetrics
@@ -162,6 +199,7 @@ func makeBlankAdapterMetrics() *AdapterMetrics {
 		RequestTimer:      &metrics.NilTimer{},
 		PriceHistogram:    &metrics.NilHistogram{},
 		BidsReceivedMeter: blankMeter,
+		PanicMeter:        blankMeter,
 		MarkupMetrics:     makeBlankBidMarkupMetrics(),
 	}
 	for _, err := range AdapterErrors() {
@@ -204,6 +242,7 @@ func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, 
 	if adapterOrAccount != "adapter" {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
+	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
 }
 
 func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
@@ -278,8 +317,24 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	am.requestMeter.Mark(1)
 }
 
-func (me *Metrics) RecordImps(labels Labels, numImps int) {
-	me.ImpMeter.Mark(int64(numImps))
+func (me *Metrics) RecordImps(labels ImpLabels) {
+	me.ImpMeter.Mark(int64(1))
+	if labels.BannerImps {
+		me.ImpsTypeBanner.Mark(int64(1))
+	}
+	if labels.VideoImps {
+		me.ImpsTypeVideo.Mark(int64(1))
+	}
+	if labels.AudioImps {
+		me.ImpsTypeAudio.Mark(int64(1))
+	}
+	if labels.NativeImps {
+		me.ImpsTypeNative.Mark(int64(1))
+	}
+}
+
+func (me *Metrics) RecordLegacyImps(labels Labels, numImps int) {
+	me.LegacyImpMeter.Mark(int64(numImps))
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {
@@ -305,6 +360,16 @@ func (me *Metrics) RecordRequestTime(labels Labels, length time.Duration) {
 	if labels.RequestStatus == RequestStatusOK {
 		me.RequestTimer.Update(length)
 	}
+}
+
+// RecordAdapterPanic implements a part of the MetricsEngine interface
+func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
+	am, ok := me.AdapterMetrics[labels.Adapter]
+	if !ok {
+		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
+		return
+	}
+	am.PanicMeter.Mark(1)
 }
 
 // RecordAdapterRequest implements a part of the MetricsEngine interface
@@ -395,6 +460,14 @@ func (me *Metrics) RecordCookieSync(labels Labels) {
 	me.CookieSyncMeter.Mark(1)
 }
 
+// RecordAdapterCookieSync implements a part of the MetricsEngine interface. Records a cookie sync adpter sync request and gdpr status
+func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	me.CookieSyncGen[adapter].Mark(1)
+	if gdprBlocked {
+		me.CookieSyncGDPRPrevent[adapter].Mark(1)
+	}
+}
+
 // RecordUserIDSet implements a part of the MetricsEngine interface. Records a cookie setuid request
 func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
 	switch userLabels.Action {
@@ -407,6 +480,16 @@ func (me *Metrics) RecordUserIDSet(userLabels UserLabels) {
 	case RequestActionGDPR:
 		doMark(userLabels.Bidder, me.userSyncGDPRPrevent)
 	}
+}
+
+// RecordStoredReqCacheResult implements a part of the MetricsEngine interface. Records the
+// cache hits and misses when looking up stored requests
+func (me *Metrics) RecordStoredReqCacheResult(cacheResult CacheResult, inc int) {
+	me.StoredReqCacheMeter[cacheResult].Mark(int64(inc))
+}
+
+func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) {
+	me.StoredImpCacheMeter[cacheResult].Mark(int64(inc))
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

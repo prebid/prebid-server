@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-request-imp",
+        "video": {
+          "mimes": ["video/mp4"]
+        },
+        "ext": {
+          "bidder": {
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    "supplyPartnerId is empty"
+  ]
+}

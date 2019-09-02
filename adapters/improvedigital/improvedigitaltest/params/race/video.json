@@ -1,0 +1,12 @@
+{
+    "placementId": 123,
+    "publisherId": 321,
+    "placementKey": "uniq_name",
+    "size": {
+        "w": 100,
+        "h": 100
+    },
+    "keyValues": {
+        "testKey1": ["testValueA", "testValueB"]
+    }
+}

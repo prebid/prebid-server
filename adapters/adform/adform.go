@@ -1,6 +1,7 @@
 package adform
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -40,6 +41,7 @@ type adformRequest struct {
 	gdprApplies   string
 	consent       string
 	digitrust     *adformDigitrust
+	currency      string
 }
 
 type adformDigitrust struct {
@@ -56,6 +58,8 @@ type adformDigitrustPrivacy struct {
 type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
 	PriceType   string      `json:"priceType,omitempty"`
+	KeyValues   string      `json:"mkv,omitempty"`
+	KeyWords    string      `json:"mkw,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -74,6 +78,7 @@ type adformBid struct {
 
 const priceTypeGross = "gross"
 const priceTypeNet = "net"
+const defaultCurrency = "USD"
 
 func isPriceTypeValid(priceType string) (string, bool) {
 	pt := strings.ToLower(priceType)
@@ -223,6 +228,7 @@ func pbsRequestToAdformRequest(a *AdformAdapter, request *pbs.PBSRequest, bidder
 		gdprApplies:   gdprApplies,
 		consent:       consent,
 		digitrust:     digitrust,
+		currency:      defaultCurrency,
 	}, nil
 }
 
@@ -284,8 +290,15 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s", adUnit.MasterTagId)
-		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
+		var buffer bytes.Buffer
+		buffer.WriteString(fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.currency))
+		if adUnit.KeyValues != "" {
+			buffer.WriteString(fmt.Sprintf("&mkv=%s", adUnit.KeyValues))
+		}
+		if adUnit.KeyWords != "" {
+			buffer.WriteString(fmt.Sprintf("&mkw=%s", adUnit.KeyWords))
+		}
+		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(buffer.Bytes()))
 	}
 
 	return fmt.Sprintf("%s&%s", uri, strings.Join(adUnitsParams, "&"))
@@ -364,11 +377,11 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	return &AdformAdapter{
 		http:    a,
 		URL:     uriObj,
-		version: "0.1.2",
+		version: "0.1.3",
 	}
 }
 
-func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	adformRequest, errors := openRtbToAdformRequest(request)
 	if len(adformRequest.adUnits) == 0 {
 		return nil, errors
@@ -473,6 +486,20 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		}
 	}
 
+	requestCurrency := defaultCurrency
+	if len(request.Cur) != 0 {
+		hasDefaultCurrency := false
+		for _, c := range request.Cur {
+			if defaultCurrency == c {
+				hasDefaultCurrency = true
+				break
+			}
+		}
+		if !hasDefaultCurrency {
+			requestCurrency = request.Cur[0]
+		}
+	}
+
 	return &adformRequest{
 		adUnits:       adUnits,
 		ip:            getIPSafely(request.Device),
@@ -485,6 +512,7 @@ func openRtbToAdformRequest(request *openrtb.BidRequest) (*adformRequest, []erro
 		gdprApplies:   gdprApplies,
 		consent:       consent,
 		digitrust:     digitrust,
+		currency:      requestCurrency,
 	}, errors
 }
 
@@ -545,6 +573,11 @@ func (a *AdformAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRe
 
 func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapters.BidderResponse {
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(adformBids))
+	currency := bidResponse.Currency
+
+	if len(adformBids) > 0 {
+		bidResponse.Currency = adformBids[0].Currency
+	}
 
 	for i, bid := range adformBids {
 		if bid.Banner == "" || bid.ResponseType != "banner" {
@@ -562,7 +595,10 @@ func toOpenRtbBidResponse(adformBids []*adformBid, r *openrtb.BidRequest) *adapt
 		}
 
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{Bid: &openRtbBid, BidType: openrtb_ext.BidTypeBanner})
+		currency = bid.Currency
 	}
+
+	bidResponse.Currency = currency
 
 	return bidResponse
 }

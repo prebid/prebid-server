@@ -29,7 +29,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://display.bfmio.com/prebid_display",
+        "uri": "https://display.bfmio.com/prebid_display",
         "body": {
           "slots": [
             {
@@ -57,7 +57,7 @@
           "dnt": 0,
           "ua": "",
           "adapterName": "BF_PREBID_S2S",
-          "adapterVersion": "0.2.1",
+          "adapterVersion": "0.3.0",
           "user": {
           }
         }

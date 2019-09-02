@@ -16,6 +16,8 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+type saveVendors func(uint16, vendorlist.VendorList)
+
 // This file provides the vendorlist-fetching function for Prebid Server.
 //
 // For more info, see https://github.com/prebid/prebid-server/issues/504
@@ -47,7 +49,7 @@ func newVendorListFetcher(initCtx context.Context, cfg config.GDPR, client *http
 }
 
 // populateCache saves all the known versions of the vendor list for future use.
-func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16) string, saver func(id uint16, list vendorlist.VendorList)) {
+func populateCache(ctx context.Context, client *http.Client, urlMaker func(uint16) string, saver saveVendors) {
 	latestVersion := saveOne(ctx, client, urlMaker(0), saver)
 
 	for i := uint16(1); i < latestVersion; i++ {
@@ -69,11 +71,11 @@ func vendorListURLMaker(version uint16) string {
 // The goal here is to update quickly when new versions of the VendorList are released, but not wreck
 // server performance if a bad CMP starts sending us malformed consent strings that advertize a version
 // that doesn't exist yet.
-func newOccasionalSaver(timeout time.Duration) func(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) {
+func newOccasionalSaver(timeout time.Duration) func(ctx context.Context, client *http.Client, url string, saver saveVendors) {
 	lastSaved := &atomic.Value{}
 	lastSaved.Store(time.Time{})
 
-	return func(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) {
+	return func(ctx context.Context, client *http.Client, url string, saver saveVendors) {
 		now := time.Now()
 		if now.Sub(lastSaved.Load().(time.Time)).Minutes() > 10 {
 			withTimeout, cancel := context.WithTimeout(ctx, timeout)
@@ -84,7 +86,7 @@ func newOccasionalSaver(timeout time.Duration) func(ctx context.Context, client 
 	}
 }
 
-func saveOne(ctx context.Context, client *http.Client, url string, saver func(id uint16, list vendorlist.VendorList)) uint16 {
+func saveOne(ctx context.Context, client *http.Client, url string, saver saveVendors) uint16 {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		glog.Errorf("Failed to build GET %s request. Cookie syncs may be affected: %v", url, err)

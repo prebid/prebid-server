@@ -111,7 +111,6 @@ func TestUnMarshallRates(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		// Execute:
 		updatedRates := currencies.Rates{}
 		err := json.Unmarshal([]byte(tc.ratesJSON), &updatedRates)
@@ -149,10 +148,11 @@ func TestGetRate(t *testing.T) {
 		{from: "", to: "", expectedRate: 0, hasError: true},
 	}
 
-	// Verify:
 	for _, tc := range testCases {
+		// Execute:
 		rate, err := rates.GetRate(tc.from, tc.to)
 
+		// Verify:
 		if tc.hasError {
 			assert.NotNil(t, err, "err shouldn't be nil")
 			assert.Equal(t, float64(0), rate, "rate should be 0")
@@ -168,9 +168,40 @@ func TestGetRate_EmptyRates(t *testing.T) {
 	// Setup:
 	rates := currencies.NewRates(time.Time{}, nil)
 
-	// Verify:
+	// Execute:
 	rate, err := rates.GetRate("USD", "EUR")
 
+	// Verify:
 	assert.NotNil(t, err, "err shouldn't be nil")
 	assert.Equal(t, float64(0), rate, "rate should be 0")
+}
+
+func TestGetRate_NotValidISOCurrency(t *testing.T) {
+
+	// Setup:
+	rates := currencies.NewRates(time.Time{}, nil)
+
+	testCases := []struct {
+		from         string
+		to           string
+		expectedRate float64
+		hasError     bool
+	}{
+		{from: "foo", to: "foo", expectedRate: 0, hasError: true},
+		{from: "bar", to: "foo", expectedRate: 0, hasError: true},
+	}
+
+	for _, tc := range testCases {
+		// Execute:
+		rate, err := rates.GetRate(tc.from, tc.to)
+
+		// Verify:
+		if tc.hasError {
+			assert.NotNil(t, err, "err shouldn't be nil")
+			assert.Equal(t, float64(0), rate, "rate should be 0")
+		} else {
+			assert.Nil(t, err, "err should be nil")
+			assert.Equal(t, tc.expectedRate, rate, "rate doesn't match the expected one")
+		}
+	}
 }
