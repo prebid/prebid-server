@@ -18,6 +18,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -148,6 +149,17 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
 	labels.PubID = effectivePubID(req.Site.Publisher)
+	// Blacklist account now that we have resolved the value
+	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
+		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
+		w.WriteHeader(http.StatusBadRequest)
+		for _, err := range errL {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
+		ao.Errors = append(ao.Errors, errL...)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
+	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.AuctionResponse = response

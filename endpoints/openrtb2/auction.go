@@ -135,6 +135,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 		labels.PubID = effectivePubID(req.Site.Publisher)
 	}
+	// Blacklist account now that we have resolved the value
+	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
+		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
+		writeError(errL, w)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
+	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
@@ -894,7 +901,6 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 	setImpsImplicitly(httpReq, bidReq.Imp)
 
-	deps.setUserImplicitly(httpReq, bidReq)
 	setAuctionTypeImplicitly(bidReq)
 }
 
@@ -1098,20 +1104,6 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 	return string(value), true, nil
 }
 
-// setUserImplicitly uses implicit info from httpReq to populate bidReq.User
-func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.User == nil || bidReq.User.ID == "" {
-		if id, ok := parseUserID(deps.cfg, httpReq); ok {
-			if bidReq.User == nil {
-				bidReq.User = &openrtb.User{}
-			}
-			if bidReq.User.ID == "" {
-				bidReq.User.ID = id
-			}
-		}
-	}
-}
-
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
 func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.Device == nil || bidReq.Device.IP == "" {
@@ -1133,15 +1125,6 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			}
 			bidReq.Device.UA = ua
 		}
-	}
-}
-
-// parseUserId gets this user's ID  for the host machine, if it exists.
-func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
-	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
-		return hostCookie.Value, true
-	} else {
-		return "", false
 	}
 }
 
@@ -1173,7 +1156,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 func fatalError(errL []error) bool {
 	for _, err := range errL {
 		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode {
+		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
 			return true
 		}
 	}
