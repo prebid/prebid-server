@@ -280,7 +280,7 @@ func TestBuildBody(t *testing.T) {
 			expectedJson:  []byte(`{}`),
 			expectedError: nil,
 		},
-		"Sets badomain as list of domains according to Badv": {
+		"Sets badv as list of domains according to Badv": {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
