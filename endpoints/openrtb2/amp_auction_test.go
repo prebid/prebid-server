@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
-	"regexp"
 	"strconv"
 	"testing"
 
@@ -126,9 +125,10 @@ func TestAMPPageInfo(t *testing.T) {
 func TestConsentThroughEndpoint(t *testing.T) {
 	// gdpr consent string that will come inside our http.Request query
 	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
+	const DigiTurstID = "digitrustId"
 
 	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest("", "digitrustId")
+	fullMarshaledBidRequest, err := getTestBidRequest(false, false, "", DigiTurstID)
 	if err != nil {
 		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
 	}
@@ -169,13 +169,8 @@ func TestConsentThroughEndpoint(t *testing.T) {
 		return
 	}
 
-	re := regexp.MustCompile(`\"consent\":\".*\"}$`)
-
-	// Assert string `consent` wasn't found in the `fullMarshaledBidRequest` at all
-	assert.Nil(t, re.Find(fullMarshaledBidRequest))
-
 	// Assert string `consent` is found in the User.Ext at all
-	assert.NotNil(t, re.Find([]byte(exchange.lastRequest.User.Ext)))
+	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("Expected bid request to contain consent string %s \n", consentString))
 
 	// Assert the last request has a valid User object with a consent string equal to that on the URL query
 	var ue openrtb_ext.ExtUser
@@ -187,15 +182,136 @@ func TestConsentThroughEndpoint(t *testing.T) {
 	assert.Equal(t, consentString, ue.Consent)
 
 	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, "digitrustId", ue.DigiTrust.ID)
+	assert.Equal(t, DigiTurstID, ue.DigiTrust.ID)
+}
+
+func TestConsentThroughEndpointNilUser(t *testing.T) {
+	// gdpr consent string that will come inside our http.Request query
+	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
+	const DigiTurstID = "digitrustId"
+
+	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
+	fullMarshaledBidRequest, err := getTestBidRequest(true, false, "", DigiTurstID)
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(fullMarshaledBidRequest),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	// Assert our bidRequest was valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	// Assert our bidRequest had a valid "User" field
+	if !assert.NotNil(t, exchange.lastRequest.User) {
+		return
+	}
+	// Assert our bidRequest had a valid "User.Ext" field
+	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
+		return
+	}
+
+	// Assert string `consent` is found in the User.Ext at all
+	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("Expected bid request to contain consent string %s \n", consentString))
+
+	// Assert the last request has a valid User object with a consent string equal to that on the URL query
+	var ue openrtb_ext.ExtUser
+	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
+	assert.NoError(t, err)
+
+	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
+	assert.Contains(t, string(request.URL.RawQuery), consentString)
+	assert.Equal(t, consentString, ue.Consent)
+}
+
+func TestConsentThroughEndpointNilUserExt(t *testing.T) {
+	// gdpr consent string that will come inside our http.Request query
+	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
+	const DigiTurstID = "digitrustId"
+
+	// Generate a marshaled openrtb.BidRequest that DOESN'T come with a gdpr consent string
+	fullMarshaledBidRequest, err := getTestBidRequest(false, true, "some-consent-string", DigiTurstID)
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	stored := map[string]json.RawMessage{
+		"1": json.RawMessage(fullMarshaledBidRequest),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{stored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+	request := httptest.NewRequest("GET", fmt.Sprintf("/openrtb2/auction/amp?tag_id=1&gdpr_consent=%s", consentString), nil)
+	recorder := httptest.NewRecorder()
+	endpoint(recorder, request, nil)
+
+	// Assert our bidRequest was valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", recorder.Code, recorder.Body.String()) {
+		return
+	}
+	// Assert our bidRequest had a valid "User" field
+	if !assert.NotNil(t, exchange.lastRequest.User) {
+		return
+	}
+	// Assert our bidRequest had a valid "User.Ext" field
+	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
+		return
+	}
+
+	// Assert string `consent` is found in the User.Ext at all
+	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("Expected bid request to contain consent string %s \n", consentString))
+
+	// Assert the last request has a valid User object with a consent string equal to that on the URL query
+	var ue openrtb_ext.ExtUser
+	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
+	assert.NoError(t, err)
+
+	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
+	assert.Contains(t, string(request.URL.RawQuery), consentString)
+	assert.Equal(t, consentString, ue.Consent)
 }
 
 func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
 	// gdpr consent string that will come inside our http.Request query
 	const consentString = "BOa71ZYOa71ZYAbABBENA8-AAAAbN7_______9______9uz_Gv_r_f__33e8_39v_h_7_-___m_-3zV4-_lvR11yPA1OrfIrwFhiAw"
+	const DigiTurstID = "digitrustId"
 
 	// Generate a marshaled openrtb.BidRequest that comes with a gdpr consent string
-	fullMarshaledBidRequest, err := getTestBidRequest("some-consent-string", "digitrustId")
+	fullMarshaledBidRequest, err := getTestBidRequest(false, false, "some-consent-string", "digitrustId")
 	if err != nil {
 		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
 	}
@@ -245,7 +361,7 @@ func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
 	assert.Equal(t, consentString, ue.Consent)
 
 	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, "digitrustId", ue.DigiTrust.ID)
+	assert.Equal(t, DigiTurstID, ue.DigiTrust.ID)
 }
 
 func TestAMPSiteExt(t *testing.T) {
@@ -603,8 +719,11 @@ func (m *mockAmpExchange) HoldAuction(ctx context.Context, bidRequest *openrtb.B
 	return response, nil
 }
 
-func getTestBidRequest(consent_string string, digitrust_ID string) ([]byte, error) {
+func getTestBidRequest(nil_user bool, nil_ext bool, consent_string string, digitrust_ID string) ([]byte, error) {
 	var userExt openrtb_ext.ExtUser
+	var userExtData []byte
+	var err error
+
 	if consent_string != "" {
 		userExt = openrtb_ext.ExtUser{
 			Consent: consent_string,
@@ -624,10 +743,15 @@ func getTestBidRequest(consent_string string, digitrust_ID string) ([]byte, erro
 		}
 	}
 
-	userExtData, err := json.Marshal(userExt)
-	if err != nil {
-		return nil, err
+	if !nil_ext {
+		userExtData, err = json.Marshal(userExt)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		userExtData = []byte("")
 	}
+
 	var width uint64 = 300
 	var height uint64 = 300
 	bidRequest := &openrtb.BidRequest{
@@ -656,11 +780,13 @@ func getTestBidRequest(consent_string string, digitrust_ID string) ([]byte, erro
 			ID:   "site-id",
 			Page: "some-page",
 		},
-		User: &openrtb.User{
+	}
+	if !nil_user {
+		bidRequest.User = &openrtb.User{
 			ID:       "aUserId",
 			BuyerUID: "aBuyerID",
 			Ext:      userExtData,
-		},
+		}
 	}
 	return json.Marshal(bidRequest)
 }
