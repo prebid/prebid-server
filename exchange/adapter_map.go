@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
 	"github.com/prebid/prebid-server/adapters/adform"
+	"github.com/prebid/prebid-server/adapters/adkernel"
 	"github.com/prebid/prebid-server/adapters/adkernelAdn"
 	"github.com/prebid/prebid-server/adapters/adtelligent"
 	"github.com/prebid/prebid-server/adapters/advangelists"
@@ -53,6 +54,7 @@ import (
 func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapters.BidderInfos) map[openrtb_ext.BidderName]adaptedBidder {
 	ortbBidders := map[openrtb_ext.BidderName]adapters.Bidder{
 		openrtb_ext.BidderAdform:       adform.NewAdformBidder(client, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
+		openrtb_ext.BidderAdkernel:     adkernel.NewAdkernelAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernel))].Endpoint),
 		openrtb_ext.BidderAdkernelAdn:  adkernelAdn.NewAdkernelAdnAdapter(cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].Endpoint),
 		openrtb_ext.BidderAdtelligent:  adtelligent.NewAdtelligentBidder(cfg.Adapters[string(openrtb_ext.BidderAdtelligent)].Endpoint),
 		openrtb_ext.BidderAdvangelists: advangelists.NewAdvangelistsBidder(cfg.Adapters[string(openrtb_ext.BidderAdvangelists)].Endpoint),
@@ -111,13 +113,13 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	// itself with the differences.
 	for name, bidder := range legacyBidders {
 		// Clean out any disabled bidders
-		if isEnabledBidder(cfg.Adapters, string(name)) {
+		if infos[string(name)].Status == adapters.StatusActive {
 			allBidders[name] = adaptLegacyAdapter(bidder)
 		}
 	}
 	for name, bidder := range ortbBidders {
 		// Clean out any disabled bidders
-		if isEnabledBidder(cfg.Adapters, string(name)) {
+		if infos[string(name)].Status == adapters.StatusActive {
 			allBidders[name] = adaptBidder(adapters.EnforceBidderInfo(bidder, infos[string(name)]), client)
 		}
 	}
@@ -130,31 +132,18 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 	return allBidders
 }
 
-// isEnabledBidder Checks that a bidder config exists and is not disabled
-func isEnabledBidder(cfg map[string]config.Adapter, bidder string) bool {
-	a, ok := cfg[strings.ToLower(bidder)]
-	return ok && !a.Disabled
-}
-
-func DisableBidders(cfg map[string]config.Adapter, origBidderList []openrtb_ext.BidderName, disabledBidders map[string]string) (bidderList []openrtb_ext.BidderName, bidderMap map[string]openrtb_ext.BidderName) {
+// DisableBidders get all bidders but disabled ones
+func DisableBidders(biddersInfo adapters.BidderInfos, disabledBidders map[string]string) (bidderMap map[string]openrtb_ext.BidderName) {
 	bidderMap = make(map[string]openrtb_ext.BidderName)
-	bidderList = origBidderList
-	for k, v := range openrtb_ext.BidderMap {
-		bidderMap[k] = v
-	}
+
 	// Set up error messages for disabled bidders
-	for a := range openrtb_ext.BidderMap {
-		if !isEnabledBidder(cfg, a) {
-			disabledBidders[a] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", a)
-			delete(bidderMap, a)
-			// remove this bidder from the bidderList
-			// This could break if an adapter appears on the bidderList more than once, but in that case something else is very broken.
-			for i, b := range bidderList {
-				if string(b) == a {
-					bidderList = append(bidderList[:i], bidderList[i+1:]...)
-				}
-			}
+	for name, infos := range biddersInfo {
+		if infos.Status == adapters.StatusDisabled {
+			disabledBidders[name] = fmt.Sprintf("Bidder \"%s\" has been disabled on this instance of Prebid Server. Please work with the PBS host to enable this bidder again.", name)
+		} else {
+			bidderMap[name] = openrtb_ext.BidderName(name)
 		}
 	}
-	return bidderList, bidderMap
+
+	return bidderMap
 }

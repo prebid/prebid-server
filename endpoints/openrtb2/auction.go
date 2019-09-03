@@ -135,6 +135,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 		labels.PubID = effectivePubID(req.Site.Publisher)
 	}
+	// Blacklist account now that we have resolved the value
+	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
+		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
+		writeError(errL, w)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
+	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
@@ -271,22 +278,6 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		}
 	}
 
-	impIDs := make(map[string]int, len(req.Imp))
-	for index := range req.Imp {
-		imp := &req.Imp[index]
-		if firstIndex, ok := impIDs[imp.ID]; ok {
-			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
-		}
-		impIDs[imp.ID] = index
-		errs := deps.validateImp(imp, aliases, index)
-		if len(errs) > 0 {
-			errL = append(errL, errs...)
-		}
-		if fatalError(errs) {
-			return errL
-		}
-	}
-
 	if (req.Site == nil && req.App == nil) || (req.Site != nil && req.App != nil) {
 		errL = append(errL, errors.New("request.site or request.app must be defined, but not both."))
 		return errL
@@ -310,6 +301,22 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if err := validateRegs(req.Regs); err != nil {
 		errL = append(errL, err)
 		return errL
+	}
+
+	impIDs := make(map[string]int, len(req.Imp))
+	for index := range req.Imp {
+		imp := &req.Imp[index]
+		if firstIndex, ok := impIDs[imp.ID]; ok {
+			errL = append(errL, fmt.Errorf(`request.imp[%d].id and request.imp[%d].id are both "%s". Imp IDs must be unique.`, firstIndex, index, imp.ID))
+		}
+		impIDs[imp.ID] = index
+		errs := deps.validateImp(imp, aliases, index)
+		if len(errs) > 0 {
+			errL = append(errL, errs...)
+		}
+		if fatalError(errs) {
+			return errL
+		}
 	}
 
 	return errL
@@ -789,6 +796,12 @@ func (deps *endpointDeps) validateApp(app *openrtb.App) error {
 		return nil
 	}
 
+	if app.ID != "" {
+		if _, found := deps.cfg.BlacklistedAppMap[app.ID]; found {
+			return &errortypes.BlacklistedApp{Message: fmt.Sprintf("Prebid-server does not process requests from App ID: %s", app.ID)}
+		}
+	}
+
 	if len(app.Ext) > 0 {
 		var a openrtb_ext.ExtApp
 		if err := json.Unmarshal(app.Ext, &a); err != nil {
@@ -888,7 +901,6 @@ func (deps *endpointDeps) setFieldsImplicitly(httpReq *http.Request, bidReq *ope
 	}
 	setImpsImplicitly(httpReq, bidReq.Imp)
 
-	deps.setUserImplicitly(httpReq, bidReq)
 	setAuctionTypeImplicitly(bidReq)
 }
 
@@ -1092,20 +1104,6 @@ func getStoredRequestId(data []byte) (string, bool, error) {
 	return string(value), true, nil
 }
 
-// setUserImplicitly uses implicit info from httpReq to populate bidReq.User
-func (deps *endpointDeps) setUserImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
-	if bidReq.User == nil || bidReq.User.ID == "" {
-		if id, ok := parseUserID(deps.cfg, httpReq); ok {
-			if bidReq.User == nil {
-				bidReq.User = &openrtb.User{}
-			}
-			if bidReq.User.ID == "" {
-				bidReq.User.ID = id
-			}
-		}
-	}
-}
-
 // setIPImplicitly sets the IP address on bidReq, if it's not explicitly defined and we can figure it out.
 func setIPImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	if bidReq.Device == nil || bidReq.Device.IP == "" {
@@ -1127,15 +1125,6 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 			}
 			bidReq.Device.UA = ua
 		}
-	}
-}
-
-// parseUserId gets this user's ID  for the host machine, if it exists.
-func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
-	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
-		return hostCookie.Value, true
-	} else {
-		return "", false
 	}
 }
 
@@ -1166,7 +1155,8 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 // Checks to see if an error in an error list is a fatal error
 func fatalError(errL []error) bool {
 	for _, err := range errL {
-		if errortypes.DecodeError(err) != errortypes.BidderTemporarilyDisabledCode {
+		errCode := errortypes.DecodeError(err)
+		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
 			return true
 		}
 	}
