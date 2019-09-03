@@ -42,6 +42,10 @@ type UserAgentParsers struct {
 	SafariVersion    *regexp.Regexp
 }
 
+type ButlerRequestBody struct {
+	BlockedAdvDomains []string `json:"badv,omitempty"`
+}
+
 type StrUriHelper struct {
 	BaseURI string
 }
@@ -54,7 +58,7 @@ type StrOpenRTBTranslator struct {
 
 func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
 	headers := http.Header{}
-	headers.Add("Content-Type", "text/plain;charset=utf-8")
+	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("Origin", domain)
 	headers.Add("Referer", request.Site.Page)
@@ -80,6 +84,11 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 		height, width = s.Util.getPlacementSize(imp.Banner.Format)
 	}
 
+	jsonBody, err := buildBody(request)
+	if err != nil {
+		return nil, err
+	}
+
 	return &adapters.RequestData{
 		Method: "POST",
 		Uri: s.UriHelper.buildUri(StrAdSeverParams{
@@ -94,7 +103,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			TheTradeDeskUserId: userInfo.TtdUid,
 			SharethroughUserId: userInfo.StxUid,
 		}),
-		Body:    nil,
+		Body:    jsonBody,
 		Headers: headers,
 	}, nil
 }
@@ -146,6 +155,14 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	bidResponse.Bids = append(bidResponse.Bids, typedBid)
 
 	return bidResponse, errs
+}
+
+func buildBody(request *openrtb.BidRequest) (body []byte, err error) {
+	body, err = json.Marshal(ButlerRequestBody{
+		BlockedAdvDomains: request.BAdv,
+	})
+
+	return
 }
 
 func (h StrUriHelper) buildUri(params StrAdSeverParams) string {

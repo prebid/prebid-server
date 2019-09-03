@@ -6,6 +6,7 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -86,14 +87,15 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				},
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
 				User: &openrtb.User{},
+				BAdv: []string{"domain1.com", "domain2.com"},
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
-				Body:   nil,
+				Body:   []byte(`{"badomain":["domain1.com","domain2.com"]}`),
 				Headers: http.Header{
-					"Content-Type":    []string{"text/plain;charset=utf-8"},
+					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
 					"Origin":          []string{"http://a.domain.com"},
 					"Referer":         []string{"http://a.domain.com/page"},
@@ -262,6 +264,38 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 				t.Errorf("Expected error %s, got %s\n", expectedError.Error(), outputErrors[index].Error())
 			}
 		}
+	}
+}
+
+func TestBuildBody(t *testing.T) {
+	tests := map[string]struct {
+		inputRequest  *openrtb.BidRequest
+		expectedJson  []byte
+		expectedError error
+	}{
+		"Returns empty body if no Badv in request": {
+			inputRequest: &openrtb.BidRequest{
+				BAdv: nil,
+			},
+			expectedJson:  []byte(`{}`),
+			expectedError: nil,
+		},
+		"Sets badomain as list of domains according to Badv": {
+			inputRequest: &openrtb.BidRequest{
+				BAdv: []string{"dom1.com", "dom2.com"},
+			},
+			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"]}`),
+			expectedError: nil,
+		},
+	}
+
+	assert := assert.New(t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		outputJson, outputError := buildBody(test.inputRequest)
+
+		assert.JSONEq(string(test.expectedJson), string(outputJson))
+		assert.Equal(test.expectedError, outputError)
 	}
 }
 
