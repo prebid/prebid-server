@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/prebid/prebid-server/config"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -111,6 +112,41 @@ func TestEncodeValueToBuffer(t *testing.T) {
 	_ = encodeValueToBuffer(testCache, false, buf)
 	actual := buf.String()
 	assertStringEqual(t, expected, actual)
+}
+
+func TestStripCacheHostAndPath(t *testing.T) {
+	type pairString struct {
+		sampleHost string
+		samplePath string
+	}
+	testInput := []string{
+		"www.pbcserver.com/pbcache/endpoint",
+		"www.pbcserver.com/",
+		"www.pbcserver.com",
+		"a",
+		"",
+	}
+	expectedOutput := []pairString{
+		{sampleHost: "www.pbcserver.com", samplePath: "/pbcache/endpoint"},
+		{sampleHost: "www.pbcserver.com", samplePath: "/"},
+		{sampleHost: "www.pbcserver.com", samplePath: "/"},
+		{sampleHost: "a", samplePath: "/"},
+		{sampleHost: "", samplePath: ""},
+	}
+	for i, config_host_url := range testInput {
+		cache := &config.Cache{
+			Scheme:             "https",
+			Host:               config_host_url,
+			Query:              "uuid=%PBS_CACHE_UUID%",
+			ExpectedTimeMillis: 100,
+		}
+		client := NewClient(cache)
+		cache_host, cache_path := client.GetPrebidCacheSplitURL()
+
+		//assert NewClient extracts the Host and the Path correctly out of the configuration
+		assertStringEqual(t, expectedOutput[i].sampleHost, cache_host)
+		assertStringEqual(t, expectedOutput[i].samplePath, cache_path)
+	}
 }
 
 func assertIntEqual(t *testing.T, expected, actual int) {

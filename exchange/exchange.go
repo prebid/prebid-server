@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"runtime/debug"
 	"sort"
 	"time"
@@ -140,7 +139,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 	}
-	targData.cacheHost, targData.cachePath = e.parsePrebidCacheUrl()
+	targData.cacheHost, targData.cachePath = e.cache.GetPrebidCacheSplitURL()
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
@@ -591,15 +590,4 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
-}
-
-// parseCacheUrl splits the cache URL defined in the Configuration struct and returns the Hostname and the Escaped path using the official libraries
-func (e *exchange) parsePrebidCacheUrl() (string, string) {
-	var uriObj *url.URL
-	var err error
-	uriObj, err = url.Parse(e.cache.GetPrebidCacheURL())
-	if err != nil {
-		return "", ""
-	}
-	return uriObj.Hostname(), uriObj.EscapedPath()
 }

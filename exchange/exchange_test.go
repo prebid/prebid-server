@@ -859,8 +859,8 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 
 type wellBehavedCache struct{}
 
-func (c *wellBehavedCache) GetPrebidCacheURL() string {
-	return "http://www.pbcserver.com/pbcache/endpoint"
+func (c *wellBehavedCache) GetPrebidCacheSplitURL() (string, string) {
+	return "www.pbcserver.com", "/pbcache/endpoint"
 }
 
 func (c *wellBehavedCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {

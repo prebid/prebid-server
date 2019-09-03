@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -27,12 +28,10 @@ type Client interface {
 	// Serves the purpose of a getter that returns a string
 	//
 	// clientImpl defined below, the PrebidCacheURL global variable defined in this file.
-	GetPrebidCacheURL() string
+	GetPrebidCacheSplitURL() (string, string)
 }
 
 type PayloadType string
-
-var PrebidCacheURL string = ""
 
 const (
 	TypeJSON PayloadType = "json"
@@ -47,7 +46,15 @@ type Cacheable struct {
 }
 
 func NewClient(conf *config.Cache) Client {
-	PrebidCacheURL = conf.GetBaseURL() + "/cache"
+	var firstSlashIndex int = strings.Index(conf.Host, "/")
+	var PrebidCacheHost, PrebidCachePath string = "", ""
+	if firstSlashIndex == -1 && len(conf.Host) > 0 {
+		PrebidCacheHost = conf.Host
+		PrebidCachePath = "/"
+	} else if firstSlashIndex > 0 {
+		PrebidCacheHost = string(conf.Host[:firstSlashIndex])
+		PrebidCachePath = string(conf.Host[firstSlashIndex:len(conf.Host)])
+	}
 	return &clientImpl{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -55,17 +62,23 @@ func NewClient(conf *config.Cache) Client {
 				IdleConnTimeout: 65,
 			},
 		},
-		putUrl: conf.GetBaseURL() + "/cache",
+		putUrl:  conf.GetBaseURL() + "/cache",
+		urlHost: PrebidCacheHost,
+		urlPath: PrebidCachePath,
 	}
 }
 
 type clientImpl struct {
 	httpClient *http.Client
 	putUrl     string
+	urlHost    string
+	urlPath    string
 }
 
-func (c *clientImpl) GetPrebidCacheURL() string {
-	return PrebidCacheURL
+func (c *clientImpl) GetPrebidCacheSplitURL() (string, string) {
+	host := c.urlHost
+	path := c.urlPath
+	return host, path
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
