@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/endpoints/info"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	yaml "gopkg.in/yaml.v2"
@@ -65,25 +66,58 @@ func testGetBidders(t *testing.T, aliases map[string]string) {
 
 // TestGetSpecificBidders validates all the GET /info/bidders/{bidderName} endpoints
 func TestGetSpecificBidders(t *testing.T) {
-	bidderInfos := adapters.ParseBidderInfos("../../static/bidder-info", openrtb_ext.BidderList())
-	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
+	// Setup:
+	testCases := []struct {
+		bidderDisabled bool
+		description    string
+	}{
+		{
+			bidderDisabled: false,
+			description:    "case 1 - bidder status is active",
+		},
+		{
+			bidderDisabled: true,
+			description:    "case 2 - bidder status is disabled",
+		},
+	}
 
-	for bidderName := range openrtb_ext.BidderMap {
-		req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
-		if err != nil {
-			t.Errorf("Failed to create a GET /info/bidders request: %v", err)
-			continue
+	for _, tc := range testCases {
+		cfg := blankAdapterConfigWithStatus(openrtb_ext.BidderList(), tc.bidderDisabled)
+		bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderList())
+		endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
+
+		for bidderName := range openrtb_ext.BidderMap {
+			req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/"+bidderName, strings.NewReader(""))
+			if err != nil {
+				t.Errorf("Failed to create a GET /info/bidders request: %v", err)
+				continue
+			}
+			params := []httprouter.Param{{
+				Key:   "bidderName",
+				Value: bidderName,
+			}}
+			r := httptest.NewRecorder()
+
+			// Execute:
+			endpoint(r, req, params)
+
+			// Verify:
+			assert.Equal(t, http.StatusOK, r.Code, "GET /info/bidders/"+bidderName+" returned a %d. Expected 200", r.Code, tc.description)
+			assert.Equal(t, "application/json", r.HeaderMap.Get("Content-Type"), "GET /info/bidders/"+bidderName+" returned Content-Type %s. Expected application/json", r.HeaderMap.Get("Content-Type"), tc.description)
+
+			var resBidderInfo adapters.BidderInfo
+			if err := json.Unmarshal(r.Body.Bytes(), &resBidderInfo); err != nil {
+				assert.FailNow(t, "Failed to unmarshal JSON from endpoints/info/bidders/%s: %v", bidderName, err, tc.description)
+			}
+
+			var expectedBidderStatus adapters.BidderStatus
+			if tc.bidderDisabled {
+				expectedBidderStatus = adapters.StatusDisabled
+			} else {
+				expectedBidderStatus = adapters.StatusActive
+			}
+			assert.Equal(t, expectedBidderStatus, resBidderInfo.Status, tc.description)
 		}
-		params := []httprouter.Param{{
-			Key:   "bidderName",
-			Value: bidderName,
-		}}
-		r := httptest.NewRecorder()
-
-		endpoint(r, req, params)
-
-		assert.Equal(t, http.StatusOK, r.Code, "GET /info/bidders/"+bidderName+" returned a %d. Expected 200", r.Code)
-		assert.Equal(t, "application/json", r.HeaderMap.Get("Content-Type"), "GET /info/bidders/"+bidderName+" returned Content-Type %s. Expected application/json", r.HeaderMap.Get("Content-Type"))
 	}
 }
 
@@ -97,7 +131,8 @@ func TestGetBidderAccuracyAliases(t *testing.T) {
 
 // TestGetBidderAccuracyAlias validates the output for an alias of a known file.
 func testGetBidderAccuracy(t *testing.T, alias string) {
-	bidderInfos := adapters.ParseBidderInfos("../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
+	cfg := blankAdapterConfig(openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos(cfg, "../../adapters/adapterstest/bidder-info", []openrtb_ext.BidderName{openrtb_ext.BidderName("someBidder")})
 
 	aliases := map[string]string{}
 	bidder := "someBidder"
@@ -155,7 +190,8 @@ func TestGetUnknownBidder(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, r.Code, "GET /info/bidders/* should return a 404 on unknown bidders. Got %d", r.Code)
 }
 func TestGetAllBidders(t *testing.T) {
-	bidderInfos := adapters.ParseBidderInfos("../../static/bidder-info", openrtb_ext.BidderList())
+	cfg := blankAdapterConfig(openrtb_ext.BidderList())
+	bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderList())
 	endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 	req, err := http.NewRequest("GET", "http://prebid-server.com/info/bidders/all", strings.NewReader(""))
 	if err != nil {
@@ -268,4 +304,18 @@ func validateMaintainer(info *adapters.MaintainerInfo) error {
 		return errors.New("missing required field: maintainer.email")
 	}
 	return nil
+}
+
+func blankAdapterConfig(bidderList []openrtb_ext.BidderName) map[string]config.Adapter {
+	return blankAdapterConfigWithStatus(bidderList, false)
+}
+
+func blankAdapterConfigWithStatus(bidderList []openrtb_ext.BidderName, biddersAreDisabled bool) map[string]config.Adapter {
+	adapters := make(map[string]config.Adapter)
+	for _, b := range bidderList {
+		adapters[strings.ToLower(string(b))] = config.Adapter{
+			Disabled: biddersAreDisabled,
+		}
+	}
+	return adapters
 }

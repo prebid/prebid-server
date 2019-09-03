@@ -20,7 +20,7 @@ const minSafariVersion = 10
 
 type UtilityInterface interface {
 	gdprApplies(*openrtb.BidRequest) bool
-	gdprConsentString(*openrtb.BidRequest) string
+	parseUserExt(*openrtb.User) userInfo
 
 	getAdMarkup(openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
 	getPlacementSize([]openrtb.Format) (uint64, uint64)
@@ -35,6 +35,16 @@ type UtilityInterface interface {
 }
 
 type Util struct{}
+
+type userExt struct {
+	Consent string                   `json:"consent,omitempty"`
+	Eids    []openrtb_ext.ExtUserEid `json:"eids,omitempty"`
+}
+
+type userInfo struct {
+	Consent string
+	TtdUid  string
+}
 
 func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
@@ -183,17 +193,23 @@ func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	return gdprApplies != 0
 }
 
-func (u Util) gdprConsentString(request *openrtb.BidRequest) string {
-	var consentString string
-
-	if request.User != nil {
-		if jsonExtUser, err := request.User.Ext.MarshalJSON(); err == nil {
-			// empty string is the return value if error, so no need to handle
-			consentString, _ = jsonparser.GetString(jsonExtUser, "consent")
+func (u Util) parseUserExt(user *openrtb.User) (ui userInfo) {
+	var userExt userExt
+	if user != nil && user.Ext != nil {
+		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
+			ui.Consent = userExt.Consent
+			for i := 0; i < len(userExt.Eids); i++ {
+				if userExt.Eids[i].Source == "adserver.org" && len(userExt.Eids[i].Uids) > 0 {
+					if userExt.Eids[i].Uids[0].ID != "" {
+						ui.TtdUid = userExt.Eids[i].Uids[0].ID
+					}
+					break
+				}
+			}
 		}
 	}
 
-	return consentString
+	return
 }
 
 func (u Util) parseDomain(fullUrl string) string {

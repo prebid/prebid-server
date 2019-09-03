@@ -3,8 +3,8 @@ package sharethrough
 import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 	"regexp"
-	"strings"
 	"testing"
 )
 
@@ -51,19 +51,15 @@ func TestGetAdMarkup(t *testing.T) {
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		outputSuccess, outputError := util.getAdMarkup(test.inputResponse, test.inputParams)
+		outputSuccess, outputError := Util{}.getAdMarkup(test.inputResponse, test.inputParams)
 		for _, markup := range test.expectedSuccess {
-			if !strings.Contains(outputSuccess, markup) {
-				t.Errorf("Expected Ad Markup to contain: %s, got %s\n", markup, outputSuccess)
-			}
+			assert.Contains(outputSuccess, markup)
 		}
-		if outputError != test.expectedError {
-			t.Errorf("Expected Error to be: %s, got %s\n", test.expectedError, outputError)
-		}
+		assert.Equal(outputError, test.expectedError)
 	}
 }
 
@@ -90,17 +86,13 @@ func TestGetPlacementSize(t *testing.T) {
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		outputHeight, outputWidth := util.getPlacementSize(test.input)
-		if outputHeight != test.expectedHeight {
-			t.Errorf("Expected Height: %d, got %d\n", test.expectedHeight, outputHeight)
-		}
-		if outputWidth != test.expectedWidth {
-			t.Errorf("Expected Width: %d, got %d\n", test.expectedWidth, outputWidth)
-		}
+		outputHeight, outputWidth := Util{}.getPlacementSize(test.input)
+		assert.Equal(outputHeight, test.expectedHeight)
+		assert.Equal(outputWidth, test.expectedWidth)
 	}
 }
 
@@ -112,11 +104,10 @@ type userAgentTest struct {
 func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := fn(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(output, test.expected)
 	}
 }
 
@@ -155,11 +146,10 @@ func TestCanAutoPlayVideo(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.canAutoPlayVideo(test.input, uaParsers)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(output, test.expected)
 	}
 }
 
@@ -233,11 +223,10 @@ func TestIsAtMinChromeVersion(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(output, test.expected)
 	}
 }
 
@@ -264,11 +253,10 @@ func TestIsAtMinChromeIosVersion(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(output, test.expected)
 	}
 }
 
@@ -295,11 +283,10 @@ func TestIsAtMinSafariVersion(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.isAtMinSafariVersion(test.input, regex)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		assert.Equal(output, test.expected)
 	}
 }
 
@@ -345,67 +332,57 @@ func TestGdprApplies(t *testing.T) {
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		output := util.gdprApplies(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %t, got %t\n", test.expected, output)
-		}
+		output := Util{}.gdprApplies(test.input)
+		assert.Equal(output, test.expected)
 	}
 }
 
-func TestGdprConsentString(t *testing.T) {
-	bidRequestWithConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"consent": "abc"}`),
-		},
-	}
-	bidRequestWithEmptyConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"consent": ""}`),
-		},
-	}
-	bidRequestWithoutConsent := openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: []byte(`{"other": "abc"}`),
-		},
-	}
-	bidRequestWithUserExt := openrtb.BidRequest{
-		User: &openrtb.User{},
-	}
-
+func TestParseUserExt(t *testing.T) {
 	tests := map[string]struct {
-		input    *openrtb.BidRequest
-		expected string
+		input    *openrtb.User
+		expected userInfo
 	}{
-		"Return consent string if provided": {
-			input:    &bidRequestWithConsent,
-			expected: "abc",
+		"Return empty strings if no User": {
+			input:    nil,
+			expected: userInfo{Consent: "", TtdUid: ""},
 		},
-		"Return empty string if consent string empty": {
-			input:    &bidRequestWithEmptyConsent,
-			expected: "",
+		"Return empty strings if no uids": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": []}] }`)},
+			expected: userInfo{Consent: "", TtdUid: ""},
 		},
-		"Return empty string if no consent string provided": {
-			input:    &bidRequestWithoutConsent,
-			expected: "",
+		"Return empty strings if ID is not defined or empty string": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": null}]}, {"source": "adserver.org", "uids": [{"id": ""}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: ""},
 		},
-		"Return empty string if User set": {
-			input:    &bidRequestWithUserExt,
-			expected: "",
+		"Return consent correctly": {
+			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc" }`)},
+			expected: userInfo{Consent: "abc", TtdUid: ""},
+		},
+		"Return ttd uid correctly": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: "abc123"},
+		},
+		"Ignore non-trade-desk uid": {
+			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "something", "uids": [{"id": "xyz"}]}] }`)},
+			expected: userInfo{Consent: "", TtdUid: ""},
+		},
+		"Full test": {
+			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "abc", TtdUid: "abc123"},
 		},
 	}
 
-	util := Util{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
-		output := util.gdprConsentString(test.input)
-		if output != test.expected {
-			t.Errorf("Expected: %s, got %s\n", test.expected, output)
-		}
+		output := Util{}.parseUserExt(test.input)
+		assert.Equal(output.Consent, test.expected.Consent)
+		assert.Equal(output.TtdUid, test.expected.TtdUid)
 	}
 }
 
@@ -430,12 +407,9 @@ func TestParseDomain(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
 
 		output := Util{}.parseDomain(test.input)
-
-		if output != test.expected {
-			t.Errorf("Expected parsed url %s, got %s\n", test.expected, output)
-			return
-		}
+		assert.Equal(output, test.expected)
 	}
 }
