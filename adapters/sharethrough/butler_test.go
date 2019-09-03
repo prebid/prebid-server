@@ -93,7 +93,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
-				Body:   []byte(`{"badomain":["domain1.com","domain2.com"]}`),
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"]}`),
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
