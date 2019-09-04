@@ -163,8 +163,7 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
 func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
-	var now time.Time = time.Now()
-	var domain int = cfg.Domain
+	var domain string = cfg.Domain
 
 	if domain != "" {
 		httpCookie.Domain = domain
@@ -175,7 +174,7 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.
 		var oldestElem string = ""
 		var oldestDate int64 = math.MaxInt64
 		for key, value := range cookie.uids {
-			timeUntilExpiration := value.Expires.Sub(now)
+			timeUntilExpiration := time.Until(value.Expires)
 			if timeUntilExpiration < time.Duration(oldestDate) {
 				oldestElem = key
 				oldestDate = int64(timeUntilExpiration)
