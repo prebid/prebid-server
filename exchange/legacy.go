@@ -100,7 +100,7 @@ func (bidder *adaptedAdapter) toLegacyRequest(req *openrtb.BidRequest) (*pbs.PBS
 		domain = req.Site.Domain
 	}
 
-	cookie := usersync.NewPBSCookie(0)
+	cookie := usersync.NewPBSCookie()
 	if req.User != nil {
 		if req.User.BuyerUID != "" {
 			cookie.TrySync(bidder.adapter.Name(), req.User.BuyerUID)

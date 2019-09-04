@@ -31,10 +31,9 @@ var bidderToFamilyNames = map[openrtb_ext.BidderName]string{
 // To get an instance of this from a request, use ParsePBSCookieFromRequest.
 // To write an instance onto a response, use SetCookieOnResponse.
 type PBSCookie struct {
-	uids         map[string]uidWithExpiry
-	optOut       bool
-	birthday     *time.Time
-	maxSizeBytes int
+	uids     map[string]uidWithExpiry
+	optOut   bool
+	birthday *time.Time
 }
 
 // uidWithExpiry bundles the UID with an Expiration date.
@@ -51,7 +50,7 @@ func ParsePBSCookieFromRequest(r *http.Request, cookie *config.HostCookie) *PBSC
 	if cookie.OptOutCookie.Name != "" {
 		optOutCookie, err1 := r.Cookie(cookie.OptOutCookie.Name)
 		if err1 == nil && optOutCookie.Value == cookie.OptOutCookie.Value {
-			pc := NewPBSCookie(cookie.MaxCookieSizeBytes)
+			pc := NewPBSCookie()
 			pc.SetPreference(false)
 			return pc
 		}
@@ -59,9 +58,9 @@ func ParsePBSCookieFromRequest(r *http.Request, cookie *config.HostCookie) *PBSC
 	var parsed *PBSCookie
 	uidCookie, err2 := r.Cookie(UID_COOKIE_NAME)
 	if err2 == nil {
-		parsed = ParsePBSCookie(uidCookie, cookie.MaxCookieSizeBytes)
+		parsed = ParsePBSCookie(uidCookie)
 	} else {
-		parsed = NewPBSCookie(cookie.MaxCookieSizeBytes)
+		parsed = NewPBSCookie()
 	}
 	// Fixes #582
 	if uid, _, _ := parsed.GetUID(cookie.Family); uid == "" && cookie.CookieName != "" {
@@ -73,8 +72,8 @@ func ParsePBSCookieFromRequest(r *http.Request, cookie *config.HostCookie) *PBSC
 }
 
 // ParsePBSCookie parses the UserSync cookie from a raw HTTP cookie.
-func ParsePBSCookie(uidCookie *http.Cookie, MaxSizeBytes int) *PBSCookie {
-	pc := NewPBSCookie(MaxSizeBytes)
+func ParsePBSCookie(uidCookie *http.Cookie) *PBSCookie {
+	pc := NewPBSCookie()
 
 	j, err := base64.URLEncoding.DecodeString(uidCookie.Value)
 	if err != nil {
@@ -89,11 +88,10 @@ func ParsePBSCookie(uidCookie *http.Cookie, MaxSizeBytes int) *PBSCookie {
 }
 
 // NewPBSCookie returns an empty PBSCookie
-func NewPBSCookie(MaxSizeBytes int) *PBSCookie {
+func NewPBSCookie() *PBSCookie {
 	return &PBSCookie{
-		uids:         make(map[string]uidWithExpiry),
-		birthday:     timestamp(),
-		maxSizeBytes: MaxSizeBytes,
+		uids:     make(map[string]uidWithExpiry),
+		birthday: timestamp(),
 	}
 }
 
@@ -163,16 +161,17 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
 	var now time.Time = time.Now()
+	var domain int = cfg.Domain
 
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
 
 	var currSize int = len([]byte(httpCookie.String()))
-	for cookie.maxSizeBytes > 0 && currSize > cookie.maxSizeBytes {
+	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes {
 		var oldestElem string = ""
 		var oldestDate int64 = math.MaxInt64
 		for key, value := range cookie.uids {

@@ -127,7 +127,7 @@ func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostCo
 	router.POST("/cookie_sync", endpoint)
 	req, _ := http.NewRequest("POST", "/cookie_sync", strings.NewReader(body))
 	if len(existingSyncs) > 0 {
-		pcs := usersync.NewPBSCookie(0)
+		pcs := usersync.NewPBSCookie()
 		for bidder, uid := range existingSyncs {
 			pcs.TrySync(bidder, uid)
 		}

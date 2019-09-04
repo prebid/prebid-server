@@ -69,11 +69,10 @@ func TestRejectAudienceNetworkCookie(t *testing.T) {
 		uids: map[string]uidWithExpiry{
 			"audienceNetwork": newTempId("0", 10),
 		},
-		optOut:       false,
-		birthday:     timestamp(),
-		maxSizeBytes: 0,
+		optOut:   false,
+		birthday: timestamp(),
 	}
-	parsed := ParsePBSCookie(raw.ToHTTPCookie(90*24*time.Hour), raw.maxSizeBytes)
+	parsed := ParsePBSCookie(raw.ToHTTPCookie(90 * 24 * time.Hour))
 	if parsed.HasLiveSync("audienceNetwork") {
 		t.Errorf("Cookie serializing and deserializing should delete audienceNetwork values of 0")
 	}
@@ -116,7 +115,7 @@ func TestParseCorruptedCookie(t *testing.T) {
 		Name:  "uids",
 		Value: "bad base64 encoding",
 	}
-	parsed := ParsePBSCookie(&raw, 0)
+	parsed := ParsePBSCookie(&raw)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -126,7 +125,7 @@ func TestParseCorruptedCookieJSON(t *testing.T) {
 		Name:  "uids",
 		Value: cookieData,
 	}
-	parsed := ParsePBSCookie(&raw, 0)
+	parsed := ParsePBSCookie(&raw)
 	ensureEmptyMap(t, parsed)
 }
 
@@ -137,7 +136,7 @@ func TestParseNilSyncMap(t *testing.T) {
 		Name:  UID_COOKIE_NAME,
 		Value: cookieData,
 	}
-	parsed := ParsePBSCookie(&raw, 0)
+	parsed := ParsePBSCookie(&raw)
 	ensureEmptyMap(t, parsed)
 	ensureConsistency(t, parsed)
 }
@@ -163,7 +162,7 @@ func TestParseOtherCookie(t *testing.T) {
 func TestCookieReadWrite(t *testing.T) {
 	cookie := newSampleCookie()
 
-	received := writeThenRead(cookie)
+	received := writeThenRead(cookie, 0)
 	uid, exists, isLive := received.GetUID("adnxs")
 	if !exists || !isLive || uid != "123" {
 		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
@@ -267,9 +266,9 @@ func TestUnlimitedSizeCookie(t *testing.T) {
 	var cookie *PBSCookie
 	var bigCookieLen int
 	cookie, bigCookieLen = newBigCookie()
-	cookie.maxSizeBytes = 0 //When equal to zero, unlimited size
+	//cookie.maxSizeBytes = 0 //When equal to zero, unlimited size
 
-	var received *PBSCookie = writeThenRead(cookie)
+	var received *PBSCookie = writeThenRead(cookie, 0)
 
 	assert.Equal(t, bigCookieLen, len(received.uids), "Cookie bigger than 32 KB in size was not supposed to be reduced in size")
 }
@@ -277,9 +276,10 @@ func TestUnlimitedSizeCookie(t *testing.T) {
 func TestTrimBigCookie(t *testing.T) {
 	var cookie *PBSCookie
 	var bigCookieLen int
+	var maxCookieSize int = 1 << 15 // 32768 bytes = 32 KB
 	cookie, bigCookieLen = newBigCookie()
 
-	var received *PBSCookie = writeThenRead(cookie)
+	var received *PBSCookie = writeThenRead(cookie, maxCookieSize)
 
 	assert.Equal(t, bigCookieLen > len(received.uids), true, "Cookie bigger than 32 KB in size was not reduced according to date")
 }
@@ -330,7 +330,7 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 		}
 	}
 
-	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie(90*24*time.Hour), cookie.maxSizeBytes)
+	copiedCookie := ParsePBSCookie(cookie.ToHTTPCookie(90 * 24 * time.Hour))
 	if copiedCookie.AllowSyncs() != cookie.AllowSyncs() {
 		t.Error("The PBSCookie interface shouldn't let modifications happen if the user has opted out")
 	}
@@ -704,21 +704,21 @@ func newBigCookie() (*PBSCookie, int) {
 			"key298": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
 			"key299": newTempId("12345678901234567890123456789012345678901234567890", 7),
 		},
-		optOut:       false,
-		birthday:     timestamp(),
-		maxSizeBytes: 1 << 15, // 32 KB
+		optOut:   false,
+		birthday: timestamp(),
 	}
 	return bigCookie, len(bigCookie.uids)
 
 }
 
-func writeThenRead(cookie *PBSCookie) *PBSCookie {
+func writeThenRead(cookie *PBSCookie, maxCookieSize int) *PBSCookie {
 	w := httptest.NewRecorder()
-	cookie.SetCookieOnResponse(w, "mock-domain", 90*24*time.Hour)
+	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
+	cookie.SetCookieOnResponse(w, hostCookie, 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request, &config.HostCookie{})
+	return ParsePBSCookieFromRequest(&request, hostCookie)
 }
