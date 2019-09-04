@@ -88,12 +88,13 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
 				User: &openrtb.User{},
 				BAdv: []string{"domain1.com", "domain2.com"},
+				TMax: 500,
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
-				Body:   []byte(`{"badv":["domain1.com","domain2.com"]}`),
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":500}`),
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
@@ -273,7 +274,7 @@ func TestBuildBody(t *testing.T) {
 		expectedJson  []byte
 		expectedError error
 	}{
-		"Returns empty body if no Badv in request": {
+		"Returns empty body if nothing relevant in request": {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: nil,
 			},
@@ -285,6 +286,13 @@ func TestBuildBody(t *testing.T) {
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
 			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"]}`),
+			expectedError: nil,
+		},
+		"Sets tmax according to Tmax": {
+			inputRequest: &openrtb.BidRequest{
+				TMax: 500,
+			},
+			expectedJson:  []byte(`{"tmax": 500}`),
 			expectedError: nil,
 		},
 	}
