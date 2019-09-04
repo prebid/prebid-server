@@ -670,3 +670,22 @@ func TestPubmaticSampleRequest(t *testing.T) {
 		t.Fatalf("Error when parsing request: %v", err)
 	}
 }
+
+func TestGetBidType(t *testing.T) {
+	extJSON := `{"bidType":"video"}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	if actualBidTypeValue != "video" {
+		t.Errorf("Expected Bid Type value was: video, actual value is: %v", actualBidTypeValue)
+	}
+}
+
+func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
+	extJSON := `{}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	// banner is the default bid type when no bidType key is present in the bid.ext
+	if actualBidTypeValue != "banner" {
+		t.Errorf("Expected Bid Type value was: banner, actual value is: %v", actualBidTypeValue)
+	}
+}

@@ -21,6 +21,7 @@ import (
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
+const bidTypeExtKey = "bidType"
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -288,7 +289,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				DealId:      bid.DealID,
 			}
 
-			mediaType := getMediaTypeForImp(bid.ImpID, pbReq.Imp)
+			mediaType := getBidType(bid.Ext)
 			pbid.CreativeMediaType = string(mediaType)
 
 			bids = append(bids, &pbid)
@@ -550,7 +551,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			bid := sb.Bid[i]
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: getBidType(bid.Ext),
 			})
 
 		}
@@ -558,22 +559,22 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	return bidResponse, errs
 }
 
-// getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				mediaType = openrtb_ext.BidTypeAudio
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
+// getBidType returns the bid type specified in the response bid.ext
+func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
+	// setting "banner" as the default bid type
+	bidType := openrtb_ext.BidTypeBanner
+	if bidExt != nil {
+		bidExtMap := make(map[string]interface{})
+		extbyte, err := json.Marshal(bidExt)
+		if err == nil {
+			err = json.Unmarshal(extbyte, &bidExtMap)
+			if err == nil && bidExtMap[bidTypeExtKey] != nil {
+				bidTypeStr := bidExtMap[bidTypeExtKey].(string)
+				bidType = openrtb_ext.BidType(bidTypeStr)
 			}
-			return mediaType
 		}
 	}
-	return mediaType
+	return bidType
 }
 
 func logf(msg string, args ...interface{}) {
