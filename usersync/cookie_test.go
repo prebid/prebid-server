@@ -284,6 +284,36 @@ func TestTrimBigCookie(t *testing.T) {
 	assert.Equal(t, bigCookieLen > len(received.uids), true, "Cookie bigger than 32 KB in size was not reduced according to date")
 }
 
+func TestDeleteClosestExpirationFromCookie(t *testing.T) {
+	cookieToSend, cookieToSendLen := newTestCookie()
+	type aTest struct {
+		maxCookieSize int
+		expAction     string
+	}
+	testCases := []aTest{
+		{maxCookieSize: 2000, expAction: "equal"}, //1 don't trim, set
+		{maxCookieSize: 0, expAction: "equal"},    //2 unlimited size: don't trim, set
+		{maxCookieSize: 500, expAction: "trim"},   //3 trim to size and set
+		{maxCookieSize: 200, expAction: "empty"},  //4 insufficient size, trim to zero lenght and set
+		{maxCookieSize: -100, expAction: "empty"}, //5 invalid size, trim to zero lenght and set
+	}
+	for i, _ := range testCases {
+		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
+		switch testCases[i].expAction {
+		case "equal":
+			assert.Equal(t, cookieToSendLen, len(processedCookie.uids), "[Test %d] MaxCookieSizeBytes equal to zero or bigger than %d bytes should be snough to set and remain cookie unchanged \n", i+1, len(processedCookie.uids))
+			_, oldestFound := processedCookie.uids["key7"]
+			assert.Equal(t, oldestFound, true, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
+		case "trim":
+			assert.Equal(t, cookieToSendLen > len(processedCookie.uids), true, "[Test %d] MaxCookieSizeBytes of %d is smaller than %d bytes and cookie entries should have been removed\n", i+1, testCases[i].maxCookieSize, cookieToSendLen)
+			_, oldestFound := processedCookie.uids["key7"]
+			assert.Equal(t, oldestFound, false, "[Test %d] Oldest entry in cookie was not eliminated", i+1)
+		case "empty":
+			assert.Equal(t, len(processedCookie.uids), 0, "[Test %d] MaxCookieSizeBytes of %d is too small, processedCookie.uids should be empty\n", i+1)
+		}
+	}
+}
+
 func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
@@ -371,6 +401,23 @@ func newSampleCookie() *PBSCookie {
 		optOut:   false,
 		birthday: timestamp(),
 	}
+}
+
+func newTestCookie() (*PBSCookie, int) {
+	var mediumSizeCookie *PBSCookie = &PBSCookie{
+		uids: map[string]uidWithExpiry{
+			"key1": newTempId("12345678901234567890123456789012345678901234567890", 7),
+			"key2": newTempId("abcdefghijklmnopqrstuvwxyz", 6),
+			"key3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"key4": newTempId("12345678901234567890123456789612345678901234567890", 5),
+			"key5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"key6": newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"key7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
+		},
+		optOut:   false,
+		birthday: timestamp(),
+	}
+	return mediumSizeCookie, len(mediumSizeCookie.uids)
 }
 
 func newBigCookie() (*PBSCookie, int) {

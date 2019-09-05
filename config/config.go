@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -58,6 +59,8 @@ type Configuration struct {
 	BlacklistedAccts   []string `mapstructure:"blacklisted_accts,flow"`
 	BlacklistedAcctMap map[string]bool
 }
+
+const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
 	MaxIdleConns        int `mapstructure:"max_idle_connections"`
@@ -395,7 +398,7 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return &c, errs
 	}
 
-	// To look for a request's publisher_id into the NonStandardPublishers in
+	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
 	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
@@ -415,6 +418,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 	for i := 0; i < len(c.BlacklistedAccts); i++ {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
 	}
+
+	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
+		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		return nil, err
+	}
+
 	return &c, nil
 }
 
@@ -680,4 +689,13 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
+}
+
+func isValidCookieSize(maxCookieSize int) error {
+	// If a non-zero-less-than-500-byte "host_cookie.max_cookie_size_bytes" value was specified in the
+	// environment configuration of prebid-server, default to 500 bytes
+	if maxCookieSize != 0 && maxCookieSize < MIN_COOKIE_SIZE_BYTES {
+		return errors.New("Configured cookie size is less than allowed minimum size")
+	}
+	return nil
 }
