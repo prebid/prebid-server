@@ -388,11 +388,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 	c.setDerivedDefaults()
-	glog.Info("Logging the resolved configuration:")
-	logGeneral(reflect.ValueOf(c), "  \t")
-	if errs := c.validate(); len(errs) > 0 {
-		return &c, errs
-	}
 
 	// To look for a request's publisher_id into the NonStandardPublishers in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
@@ -414,6 +409,13 @@ func New(v *viper.Viper) (*Configuration, error) {
 	for i := 0; i < len(c.BlacklistedAccts); i++ {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
 	}
+
+	glog.Info("Logging the resolved configuration:")
+	logGeneral(reflect.ValueOf(c), "  \t")
+	if errs := c.validate(); len(errs) > 0 {
+		return &c, errs
+	}
+
 	return &c, nil
 }
 
