@@ -44,7 +44,7 @@ type UserAgentParsers struct {
 
 type ButlerRequestBody struct {
 	BlockedAdvDomains []string `json:"badv,omitempty"`
-	MaxTime           int64    `json:"tmax,omitempty"`
+	MaxTimeout        int64    `json:"tmax,omitempty"`
 }
 
 type StrUriHelper struct {
@@ -161,7 +161,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 func buildBody(request *openrtb.BidRequest) (body []byte, err error) {
 	body, err = json.Marshal(ButlerRequestBody{
 		BlockedAdvDomains: request.BAdv,
-		MaxTime:           request.TMax,
+		MaxTimeout:        request.TMax,
 	})
 
 	return
