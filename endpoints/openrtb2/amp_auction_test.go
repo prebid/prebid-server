@@ -161,11 +161,11 @@ func TestConsentThroughEndpoint(t *testing.T) {
 		return
 	}
 	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User) {
+	if !assert.NotNil(t, exchange.lastRequest.User, "Resulting bid request should have a valid User field after passing consent string through endpoint") {
 		return
 	}
 	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
+	if !assert.NotNil(t, exchange.lastRequest.User.Ext, "Resulting bid request should have a valid Ext field after passing consent string through endpoint") {
 		return
 	}
 
@@ -175,14 +175,14 @@ func TestConsentThroughEndpoint(t *testing.T) {
 	// Assert the last request has a valid User object with a consent string equal to that on the URL query
 	var ue openrtb_ext.ExtUser
 	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Error unmarshalling last processed request")
 
 	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString)
-	assert.Equal(t, consentString, ue.Consent)
+	assert.Contains(t, string(request.URL.RawQuery), consentString, "http.Request should come with a consent string in its query")
+	assert.Equal(t, consentString, ue.Consent, "Consent string unsuccessfully passed to bid request through AMP endpoint")
 
 	// Assert other user properties found originally in our bid request such as `DigiTrust` were not overwritten
-	assert.Equal(t, DigiTurstID, ue.DigiTrust.ID)
+	assert.Equal(t, DigiTurstID, ue.DigiTrust.ID, "Passing GDPR consent through endpoint should not override http.Request ExtUser fields other than consent")
 }
 
 func TestConsentThroughEndpointNilUser(t *testing.T) {
@@ -224,25 +224,25 @@ func TestConsentThroughEndpointNilUser(t *testing.T) {
 		return
 	}
 	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User) {
+	if !assert.NotNil(t, exchange.lastRequest.User, "Resulting bid request should have a valid User field after passing consent string through endpoint") {
 		return
 	}
 	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
+	if !assert.NotNil(t, exchange.lastRequest.User.Ext, "Resulting bid request should have a valid User.Ext field after passing consent string through endpoint") {
 		return
 	}
 
 	// Assert string `consent` is found in the User.Ext at all
-	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("Expected bid request to contain consent string %s \n", consentString))
+	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("This bid request should not contain a consent string. It will be passed the one in the http.Request endpoint\n"))
 
 	// Assert the last request has a valid User object with a consent string equal to that on the URL query
 	var ue openrtb_ext.ExtUser
 	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Error unmarshalling last processed request")
 
 	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString)
-	assert.Equal(t, consentString, ue.Consent)
+	assert.Contains(t, string(request.URL.RawQuery), consentString, "http.Request should come with a consent string in its query")
+	assert.Equal(t, consentString, ue.Consent, "Consent string unsuccessfully passed to bid request through AMP endpoint")
 }
 
 func TestConsentThroughEndpointNilUserExt(t *testing.T) {
@@ -284,25 +284,25 @@ func TestConsentThroughEndpointNilUserExt(t *testing.T) {
 		return
 	}
 	// Assert our bidRequest had a valid "User" field
-	if !assert.NotNil(t, exchange.lastRequest.User) {
+	if !assert.NotNil(t, exchange.lastRequest.User, "Resulting bid request should have a valid User field after passing consent string through endpoint") {
 		return
 	}
 	// Assert our bidRequest had a valid "User.Ext" field
-	if !assert.NotNil(t, exchange.lastRequest.User.Ext) {
+	if !assert.NotNil(t, exchange.lastRequest.User.Ext, "Resulting bid request should have a valid Ext field after passing consent string through endpoint") {
 		return
 	}
 
 	// Assert string `consent` is found in the User.Ext at all
-	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("Expected bid request to contain consent string %s \n", consentString))
+	assert.NotContainsf(t, fullMarshaledBidRequest, "consent:"+consentString, fmt.Sprintf("This bid request should not contain a consent string. It will be passed the one in the http.Request endpoint\n"))
 
 	// Assert the last request has a valid User object with a consent string equal to that on the URL query
 	var ue openrtb_ext.ExtUser
 	err = json.Unmarshal(exchange.lastRequest.User.Ext, &ue)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "Error unmarshalling last processed request")
 
 	// Assert consent string found in `http.Request` was passed correctly to the `User.Ext` object
-	assert.Contains(t, string(request.URL.RawQuery), consentString)
-	assert.Equal(t, consentString, ue.Consent)
+	assert.Contains(t, string(request.URL.RawQuery), consentString, "http.Request should come with a consent string in its query")
+	assert.Equal(t, consentString, ue.Consent, "Consent string unsuccessfully passed to bid request through AMP endpoint")
 }
 
 func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
