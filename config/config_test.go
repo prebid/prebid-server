@@ -309,13 +309,13 @@ func TestCookieSizeError(t *testing.T) {
 		expectError bool
 	}
 	testCases := []aTest{
-		aTest{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
-		aTest{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
-		aTest{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
-		aTest{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
-		aTest{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
 	}
-	for i, _ := range testCases {
+	for i := range testCases {
 		if testCases[i].expectError {
 			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
 		} else {

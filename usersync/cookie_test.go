@@ -297,7 +297,7 @@ func TestDeleteClosestExpirationFromCookie(t *testing.T) {
 		{maxCookieSize: 200, expAction: "empty"},  //4 insufficient size, trim to zero lenght and set
 		{maxCookieSize: -100, expAction: "empty"}, //5 invalid size, trim to zero lenght and set
 	}
-	for i, _ := range testCases {
+	for i := range testCases {
 		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
 		switch testCases[i].expAction {
 		case "equal":

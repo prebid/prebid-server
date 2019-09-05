@@ -161,7 +161,7 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.HostCookie, ttl time.Duration) error {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
 	var domain string = cfg.Domain
 
