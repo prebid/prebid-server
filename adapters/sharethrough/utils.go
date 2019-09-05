@@ -20,7 +20,7 @@ const minSafariVersion = 10
 
 type UtilityInterface interface {
 	gdprApplies(*openrtb.BidRequest) bool
-	parseUserExt(*openrtb.User) userInfo
+	parseUserInfo(*openrtb.User) userInfo
 
 	getAdMarkup([]byte, openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
 	getPlacementSize([]openrtb.Format) (uint64, uint64)
@@ -44,6 +44,7 @@ type userExt struct {
 type userInfo struct {
 	Consent string
 	TtdUid  string
+	StxUid  string
 }
 
 func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
@@ -189,9 +190,15 @@ func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	return gdprApplies != 0
 }
 
-func (u Util) parseUserExt(user *openrtb.User) (ui userInfo) {
+func (u Util) parseUserInfo(user *openrtb.User) (ui userInfo) {
+	if user == nil {
+		return
+	}
+
+	ui.StxUid = user.BuyerUID
+
 	var userExt userExt
-	if user != nil && user.Ext != nil {
+	if user.Ext != nil {
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
 			ui.Consent = userExt.Consent
 			for i := 0; i < len(userExt.Eids); i++ {

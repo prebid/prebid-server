@@ -347,38 +347,42 @@ func TestGdprApplies(t *testing.T) {
 	}
 }
 
-func TestParseUserExt(t *testing.T) {
+func TestParseUserInfo(t *testing.T) {
 	tests := map[string]struct {
 		input    *openrtb.User
 		expected userInfo
 	}{
 		"Return empty strings if no User": {
 			input:    nil,
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
 		"Return empty strings if no uids": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": []}] }`)},
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
 		"Return empty strings if ID is not defined or empty string": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": null}]}, {"source": "adserver.org", "uids": [{"id": ""}]}] }`)},
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
 		"Return consent correctly": {
 			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc" }`)},
-			expected: userInfo{Consent: "abc", TtdUid: ""},
+			expected: userInfo{Consent: "abc", TtdUid: "", StxUid: ""},
 		},
 		"Return ttd uid correctly": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
-			expected: userInfo{Consent: "", TtdUid: "abc123"},
+			expected: userInfo{Consent: "", TtdUid: "abc123", StxUid: ""},
 		},
 		"Ignore non-trade-desk uid": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "something", "uids": [{"id": "xyz"}]}] }`)},
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
+		},
+		"Returns STX user id from buyer id": {
+			input:    &openrtb.User{BuyerUID: "myid"},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: "myid"},
 		},
 		"Full test": {
-			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
-			expected: userInfo{Consent: "abc", TtdUid: "abc123"},
+			input:    &openrtb.User{BuyerUID: "myid", Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "abc", TtdUid: "abc123", StxUid: "myid"},
 		},
 	}
 
@@ -386,9 +390,10 @@ func TestParseUserExt(t *testing.T) {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
-		output := Util{}.parseUserExt(test.input)
+		output := Util{}.parseUserInfo(test.input)
 		assert.Equal(output.Consent, test.expected.Consent)
 		assert.Equal(output.TtdUid, test.expected.TtdUid)
+		assert.Equal(output.StxUid, test.expected.StxUid)
 	}
 }
 

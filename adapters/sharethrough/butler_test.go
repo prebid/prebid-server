@@ -70,7 +70,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		inputDom string
 		expected *adapters.RequestData
 	}{
-		"Generates the correct AdServer request from Imp": {
+		"Generates the correct AdServer request from Imp (no user provided)": {
 			inputImp: openrtb.Imp{
 				ID:  "abc",
 				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]} }`),
@@ -85,7 +85,6 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					IP: "127.0.0.1",
 				},
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
-				User: &openrtb.User{},
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
