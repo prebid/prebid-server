@@ -18,7 +18,7 @@ const Seat = "beachfront"
 const BidCapacity = 5
 
 const BannerEndpoint = "https://display.bfmio.com/prebid_display"
-const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id="
+const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 
 const VideoEndpointSuffix = "&prebidserver"
 
@@ -32,15 +32,19 @@ type BeachfrontAdapter struct {
 }
 
 type beachfrontRequests struct {
-	Banner beachfrontBannerRequest
-	Video  []beachfrontVideoRequest
-	RTBVideo openrtb.BidRequest
+	Banner   beachfrontBannerRequest
+	Video    []beachfrontVideoRequest
+	RTBVideo []beachfrontRTBVideoRequest
 }
 
 // ---------------------------------------------------
 //              Video
 // ---------------------------------------------------
 
+type beachfrontRTBVideoRequest struct {
+	AppId   string             `json:"appId"`
+	Request openrtb.BidRequest `json:"request"`
+}
 type beachfrontVideoRequest struct {
 	IsPrebid bool                  `json:"isPrebid"`
 	AppId    string                `json:"appId"`
@@ -115,7 +119,7 @@ type beachfrontResponseSlot struct {
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests beachfrontRequests
-	var errs= make([]error, 0, len(request.Imp))
+	var errs = make([]error, 0, len(request.Imp))
 
 	beachfrontRequests, errs = preprocess(request)
 
@@ -132,16 +136,14 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	}
 
 	// estimate reqs length. This will change in particular if I got in mixed impressions
-	var reqCount= len(beachfrontRequests.Video)
+	var reqCount = len(beachfrontRequests.Video)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
 	}
 
-	if len(beachfrontRequests.RTBVideo.Imp) > 0 {
-		reqCount++
-	}
+	reqCount += len(beachfrontRequests.RTBVideo)
 
-	var reqs= make([]*adapters.RequestData, reqCount)
+	var reqs = make([]*adapters.RequestData, reqCount)
 
 	var bump = 0
 
@@ -164,42 +166,41 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		bump++
 	}
 
-	if request.User != nil && request.User.BuyerUID != "" {
+	if request.User != nil && request.User.BuyerUID != "" && reqCount > 0 {
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-	if len(beachfrontRequests.RTBVideo.Imp) > 0 {
-		bytes, err := json.Marshal(beachfrontRequests.RTBVideo)
+	for j := 0; j < len(beachfrontRequests.RTBVideo); j++ {
+		bytes, err := json.Marshal(beachfrontRequests.RTBVideo[j].Request)
 
 		if err == nil {
-			reqs[bump] = &adapters.RequestData{
+			reqs[j+bump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     VideoEndpoint + beachfrontRequests.RTBVideo.Ext. + VideoEndpointSuffix,
+				Uri:     VideoEndpoint + "=" + beachfrontRequests.RTBVideo[j].AppId + VideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
 			}
+
 		} else {
 			errs = append(errs, err)
 		}
-
-		reqCount--
-		bump++
-
 	}
 
-	for j := 0; j < reqCount; j++ {
+	for j := 0; j < len(beachfrontRequests.Video); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.Video[j])
 
 		if err == nil {
-			reqs[j + bump] = &adapters.RequestData{
+			reqs[j+bump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     VideoEndpoint + beachfrontRequests.Video[j].AppId + VideoEndpointSuffix,
+				Uri:     VideoEndpoint + "=" + beachfrontRequests.Video[j].AppId + VideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
 			}
 		} else {
 			errs = append(errs, err)
 		}
+
+		bump++
 	}
 
 	return reqs, errs
@@ -234,8 +235,8 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 
 		var videoErrs []error
 
-		if fmt.Sprintf("%s", reflect.TypeOf(request)) == "openrtb.BidRequest" {
-			beachfrontReqs.RTBVideo, videoErrs = getVideoRequestsRTB(request)
+		if fmt.Sprintf("%s", reflect.TypeOf(request)) == "*openrtb.BidRequest" {
+			beachfrontReqs.RTBVideo, videoErrs = getRTBVideoRequests(request)
 		} else {
 			beachfrontReqs.Video, videoErrs = getVideoRequests(request)
 		}
@@ -259,6 +260,12 @@ func newBeachfrontVideoRequest() beachfrontVideoRequest {
 	r.IsPrebid = true
 
 	r.Cur = append(r.Cur, "USD")
+	return r
+}
+
+func newBeachfrontRTBVideoRequest() beachfrontRTBVideoRequest {
+	r := beachfrontRTBVideoRequest{}
+
 	return r
 }
 
@@ -342,26 +349,21 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			continue
 		}
 
-		var appid string
+		appid, err := getBannerAppId(beachfrontExt)
 
-		if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppId)) == "string" &&
-			beachfrontExt.AppId != "" {
-			appid = beachfrontExt.AppId
-		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
-			if beachfrontExt.AppIds.Banner != "" {
-				appid = beachfrontExt.AppIds.Banner
-			} else {
-				errs = append(errs, errors.New("unable to determine the appId from the supplied extension (0)"))
-				continue
-			}
-		} else {
-			errs = append(errs, errors.New("unable to determine the appId from the supplied extension (1)"))
+		if err != nil {
+			// Failed to get an appid, so this request is junk.
+			errs = append(errs, err)
 			continue
 		}
 
 		slot := beachfrontSlot{}
 		slot.Id = appid
-		slot.Bidfloor = beachfrontExt.BidFloor
+		if request.Imp[i].BidFloor == 0 {
+			slot.Bidfloor = request.Imp[i].BidFloor
+		} else {
+			slot.Bidfloor = beachfrontExt.BidFloor
+		}
 		slot.Slot = request.Imp[i].ID
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
@@ -417,18 +419,82 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	return bfBannerRequest, errs
 }
 
+func getBannerAppId(ext openrtb_ext.ExtImpBeachfront) (string, error) {
+	var appid string
+	var error error
 
-func getVideoRequestsRTB(request *openrtb.BidRequest) (openrtb.BidRequest, []error) {
+	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" &&
+		ext.AppId != "" {
+
+		appid = ext.AppId
+	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" &&
+		ext.AppIds.Banner != "" {
+		appid = ext.AppIds.Banner
+	} else {
+		error = errors.New("unable to determine the banner appId from the supplied extension")
+	}
+
+	return appid, error
+}
+
+func getVideoAppId(ext openrtb_ext.ExtImpBeachfront) (string, error) {
+	var appid string
+	var error error
+
+	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" &&
+		ext.AppId != "" {
+
+		appid = ext.AppId
+	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" &&
+		ext.AppIds.Video != "" {
+		appid = ext.AppIds.Video
+	} else {
+		error = errors.New("unable to determine the video appId from the supplied extension")
+	}
+
+	return appid, error
+}
+
+/*
+Yeah, beachfront got an openRTB video endpoint up, but it still only takes requests with one Imp
+and returns one Imp, so gotta stack it.
+*/
+func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoRequest, []error) {
+	var beachfrontReqs = make([]beachfrontRTBVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
 
-	beachfrontExt, err := getBeachfrontExtension(request.Imp[0])
+	for i := 0; i < len(request.Imp); i++ {
+		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
-	if err != nil {
-		// Failed to extract the beachfrontExt, so this request is junk.
-		errs = append(errs, err)
-		return *request, errs
+		if err != nil {
+			// Failed to extract the beachfrontExt, so this request is junk.
+			errs = append(errs, err)
+			continue
+		}
+
+		appid, err := getVideoAppId(beachfrontExt)
+
+		if err != nil {
+			// Failed to get an appid, so this request is junk.
+			errs = append(errs, err)
+			continue
+		}
+
+		bfRTBVideoRequest := newBeachfrontRTBVideoRequest()
+		bfRTBVideoRequest.AppId = appid
+
+		imp := openrtb.Imp{}
+		imp = request.Imp[i]
+
+		r := *request
+		r.Imp = make([]openrtb.Imp, 1, 1)
+		r.Imp[0] = imp
+
+		bfRTBVideoRequest.Request = r
+		beachfrontReqs[i] = bfRTBVideoRequest
+
 	}
-	return *request, errs
+	return beachfrontReqs, errs
 
 }
 
@@ -492,6 +558,12 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		imp.ImpId = request.Imp[i].ID
 		imp.Bidfloor = beachfrontExt.BidFloor
 
+		if request.Imp[i].BidFloor == 0 {
+			imp.Bidfloor = request.Imp[i].BidFloor
+		} else {
+			imp.Bidfloor = beachfrontExt.BidFloor
+		}
+
 		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
 			imp.Video = beachfrontSize{
 				W: request.Imp[i].Video.W,
@@ -543,7 +615,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	for i := 0; i < len(bids); i++ {
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bids[i],
-			BidType: getBidType(bids[i]),
+			BidType: getBidType(externalRequest),
 		})
 	}
 
@@ -602,32 +674,36 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 	var xtrnal beachfrontVideoRequest
 	var errs = make([]error, 0)
 
-	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
-		errs = append(errs, err)
+	if xtrnal.IsPrebid {
+
+		if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+			errs = append(errs, err)
+			return bids, errs
+		}
+
+		for i := 0; i < len(bids); i++ {
+			crid := extractVideoCrid(bids[i].NURL)
+
+			bids[i].CrID = crid
+			bids[i].ImpID = xtrnal.Imp[i].ImpId
+			bids[i].H = xtrnal.Imp[i].Video.H
+			bids[i].W = xtrnal.Imp[i].Video.W
+			bids[i].ID = id
+		}
+	} else {
 		return bids, errs
-	}
-
-	for i := 0; i < len(bids); i++ {
-		crid := extractVideoCrid(bids[i].NURL)
-
-		bids[i].CrID = crid
-		bids[i].ImpID = xtrnal.Imp[i].ImpId
-		bids[i].H = xtrnal.Imp[i].Video.H
-		bids[i].W = xtrnal.Imp[i].Video.W
-		bids[i].ID = id
 	}
 
 	return bids, errs
 }
 
-func getBidType(bid openrtb.Bid) openrtb_ext.BidType {
-	if bid.AdM != "" {
-		return openrtb_ext.BidTypeBanner
-	} else if bid.NURL != "" {
+func getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {
+	t := strings.Split(externalRequest.Uri, "=")[0]
+	if t == VideoEndpoint {
 		return openrtb_ext.BidTypeVideo
 	}
 
-	return ""
+	return openrtb_ext.BidTypeBanner
 }
 
 func extractVideoCrid(nurl string) string {
