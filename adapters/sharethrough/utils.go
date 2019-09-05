@@ -22,7 +22,7 @@ type UtilityInterface interface {
 	gdprApplies(*openrtb.BidRequest) bool
 	parseUserExt(*openrtb.User) userInfo
 
-	getAdMarkup(openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
+	getAdMarkup([]byte, openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
 	getPlacementSize([]openrtb.Format) (uint64, uint64)
 
 	canAutoPlayVideo(string, UserAgentParsers) bool
@@ -46,12 +46,8 @@ type userInfo struct {
 	TtdUid  string
 }
 
-func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
+func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
-	jsonPayload, err := json.Marshal(strResp)
-	if err != nil {
-		return "", err
-	}
 
 	tmplBody := `
 		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}" />
@@ -93,7 +89,7 @@ func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params
 	var buf []byte
 	templatedBuf := bytes.NewBuffer(buf)
 
-	b64EncodedJson := base64.StdEncoding.EncodeToString(jsonPayload)
+	b64EncodedJson := base64.StdEncoding.EncodeToString(strRawResp)
 	err = tmpl.Execute(templatedBuf, struct {
 		Arid           template.JS
 		Pkey           string
