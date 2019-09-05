@@ -578,11 +578,8 @@ func TestCategoryMapping(t *testing.T) {
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
-	durationRange := make([]int, 0)
-	durationRange = append(durationRange, 15)
-	durationRange = append(durationRange, 30)
-	durationRange = append(durationRange, 50)
-	requestExt.Prebid.Targeting.DurationRangeSec = durationRange
+
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 
@@ -635,11 +632,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
-	durationRange := make([]int, 0)
-	durationRange = append(durationRange, 15)
-	durationRange = append(durationRange, 30)
-	durationRange = append(durationRange, 50)
-	requestExt.Prebid.Targeting.DurationRangeSec = durationRange
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 
