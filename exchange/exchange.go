@@ -361,7 +361,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
-	var includeBrandCategory = brandCatExt != openrtb_ext.ExtIncludeBrandCategory{} //if not present - category will no be appended
+	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
 
 	var primaryAdServer string
 	var publisher string

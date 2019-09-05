@@ -123,6 +123,7 @@
                 "targeting": {
                   "hb_bidder_audienceNe": "audienceNetwork",
                   "hb_pb_audienceNetwor": "0.50",
+                  "hb_pb_cat_dur_audien": "0.50_0s",
                   "hb_size_audienceNetw": "200x250"
                 }
               }
@@ -146,6 +147,8 @@
                   "hb_bidder_appnexus": "appnexus",
                   "hb_pb": "0.70",
                   "hb_pb_appnexus": "0.70",
+                  "hb_pb_cat_dur": "0.70_0s",
+                  "hb_pb_cat_dur_appnex": "0.70_0s",
                   "hb_size": "200x250",
                   "hb_size_appnexus": "200x250"
                 }
@@ -180,6 +183,8 @@
                   "hb_bidder_appnexus": "appnexus",
                   "hb_pb": "0.60",
                   "hb_pb_appnexus": "0.60",
+                  "hb_pb_cat_dur": "0.60_0s",
+                  "hb_pb_cat_dur_appnex": "0.60_0s",
                   "hb_size": "300x500",
                   "hb_size_appnexus": "300x500"
                 }

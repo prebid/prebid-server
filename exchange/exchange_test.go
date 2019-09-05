@@ -531,7 +531,7 @@ func newExtRequest() openrtb_ext.ExtRequest {
 	reqExt := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     priceGran,
 		IncludeWinners:       true,
-		IncludeBrandCategory: brandCat,
+		IncludeBrandCategory: &brandCat,
 	}
 
 	return openrtb_ext.ExtRequest{
@@ -651,20 +651,17 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
-	bid5 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 10.0000, Cat: cats3, W: 1, H: 1}
 
 	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
 	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
 	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}}
 	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_5 := pbsOrtbBid{&bid5, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
 
 	innerBids := []*pbsOrtbBid{
 		&bid1_1,
 		&bid1_2,
 		&bid1_3,
 		&bid1_4,
-		&bid1_5,
 	}
 
 	seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
@@ -677,7 +674,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, "10.00_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
-	assert.Equal(t, "20.00_30s", bidCategory["bid_id3"], "Category mapping override from adapter didn't take")
+	assert.Equal(t, "20.00_30s", bidCategory["bid_id3"], "Category mapping doesn't match")
 	assert.Equal(t, 3, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
 	assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
 }

@@ -25,18 +25,18 @@ var mockBids = map[openrtb_ext.BidderName][]*openrtb.Bid{
 	openrtb_ext.BidderAppnexus: {{
 		ID:    "losing-bid",
 		ImpID: "some-imp",
-		Price: 0.5,
+		Price: 0.3,
 		CrID:  "1",
 	}, {
 		ID:    "winning-bid",
 		ImpID: "some-imp",
-		Price: 0.7,
+		Price: 0.9,
 		CrID:  "2",
 	}},
 	openrtb_ext.BidderRubicon: {{
 		ID:    "contending-bid",
 		ImpID: "some-imp",
-		Price: 0.6,
+		Price: 0.5,
 		CrID:  "3",
 	}},
 }

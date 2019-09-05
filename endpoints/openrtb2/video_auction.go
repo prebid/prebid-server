@@ -510,10 +510,14 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 
 func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, error) {
 
-	inclBrandCat := openrtb_ext.ExtIncludeBrandCategory{
-		PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
-		Publisher:       videoRequest.IncludeBrandCategory.Publisher,
+	var inclBrandCat *openrtb_ext.ExtIncludeBrandCategory
+	if videoRequest.IncludeBrandCategory != nil {
+		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
+			PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
+			Publisher:       videoRequest.IncludeBrandCategory.Publisher,
+		}
 	}
+
 	var durationRangeSec []int
 	if !videoRequest.PodConfig.RequireExactDuration {
 		durationRangeSec = videoRequest.PodConfig.DurationRangeSec
