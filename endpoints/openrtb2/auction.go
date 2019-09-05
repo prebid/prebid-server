@@ -1184,13 +1184,11 @@ func validateAccount(cfg *config.Configuration, pubID string) error {
 	var err error = nil
 	// If specified in the configuration, discard requests that don't come with an account ID.
 	if cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
-		//return errortypes.AcctRequired{Message: fmt.Sprintf("Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.")}
 		err = error(&errortypes.AcctRequired{Message: fmt.Sprintf("Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.")})
 	}
 
 	// Blacklist account now that we have resolved the value
 	if _, found := cfg.BlacklistedAcctMap[pubID]; found {
-		//return errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", labels.PubID)}
 		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
 	}
 	return err
