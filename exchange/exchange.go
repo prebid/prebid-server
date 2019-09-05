@@ -390,25 +390,23 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				duration = bid.bidVideo.Duration
 				category = bid.bidVideo.PrimaryCategory
 			}
-			if includeBrandCategory {
-				if category == "" {
-					bidIabCat := bid.bid.Cat
-					if len(bidIabCat) != 1 {
-						//TODO: add metrics
-						//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
-						bidsToRemove = append(bidsToRemove, bidInd)
-						continue
-					} else {
-						//if unique IAB category is present then translate it to the adserver category based on mapping file
-						category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
-						if err != nil || category == "" {
-							//TODO: add metrics
-							//if mapping required but no mapping file is found then discard the bid
-							bidsToRemove = append(bidsToRemove, bidInd)
-							continue
-						}
-					}
+			if includeBrandCategory && category == "" {
+				bidIabCat := bid.bid.Cat
+				if len(bidIabCat) != 1 {
+					//TODO: add metrics
+					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
 				}
+				//if unique IAB category is present then translate it to the adserver category based on mapping file
+				category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
+				if err != nil || category == "" {
+					//TODO: add metrics
+					//if mapping required but no mapping file is found then discard the bid
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				}
+
 			}
 
 			// TODO: consider should we remove bids with zero duration here?
