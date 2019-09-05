@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://example.com/whatever"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.02,
+        "id": "looser",
+        "video":{
+          "mimes":[
+            "video/mp4"
+          ],
+          "context":"instream",
+          "w":300,
+          "h":250
+        },
+        "ext": {
+          "bidder": {
+            "some": "other thing",
+            "bidfloor": "One MILLION dollars, ha, ha ha, ha, ha ha!",
+            "appId": {
+              "not": "the object",
+              "you": "were looking for"
+            }
+          }
+        }
+      }
+    ]
+  },
+
+
+
+  "expectedMakeRequestsErrors": [
+    "ignoring imp id=looser, error while decoding extImpBidder, err: json: cannot unmarshal string into Go struct field ExtImpBeachfront.bidfloor of type float64"
+  ]
+}

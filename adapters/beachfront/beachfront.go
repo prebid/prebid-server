@@ -130,7 +130,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	// estimate reqs length. This will change in particular if I got in mixed impressions
 	var reqCount = len(beachfrontRequests.Video)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
@@ -389,6 +388,10 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	return bfBannerRequest, errs
 }
 
+func remove(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
+	return append(slice[:s], slice[s+1:]...)
+}
+
 /*
 getVideoRequests, plural. One request to the endpoint can have one appId, and can return one nurl,
 so each video imp is a call to the endpoint.
@@ -396,13 +399,17 @@ so each video imp is a call to the endpoint.
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
 	var beachfrontReqs = make([]beachfrontVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
+	var bad = make([]int, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
+		// Parameter validation should always catch this, but just checking.
 		if err != nil {
 			// Failed to extract the beachfrontExt, so this request is junk.
+			bad = append(bad, i)
+
 			errs = append(errs, err)
 			continue
 		}
@@ -417,6 +424,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			beachfrontExt.AppIds.Video != "" {
 			appid = beachfrontExt.AppIds.Video
 		} else {
+			bad = append(bad, i)
 			errs = append(errs, errors.New("unable to determine the appId from the supplied extension (2)"))
 			continue
 		}
@@ -463,6 +471,14 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		bfVideoRequest.Imp = append(bfVideoRequest.Imp, imp)
 		beachfrontReqs[i] = bfVideoRequest
+	}
+
+	// Strip out any failed requests
+	if len(bad) > 0 {
+		for i := 0; i < len(bad); i++ {
+			beachfrontReqs = remove(beachfrontReqs, bad[i])
+		}
+
 	}
 
 	return beachfrontReqs, errs
