@@ -128,14 +128,19 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	headers.Add("Accept", "application/json")
 
 	if request.Device != nil {
-		addHeaderIfNonEmpty(headers, "User-Agent", request.Device.UA)
-		addHeaderIfNonEmpty(headers, "Accept-Language", request.Device.Language)
+		if request.Device.UA != "" {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if request.Device.Language != "" {
+			headers.Add("Accept-Language", request.Device.Language)
+		}
+
 		if request.Device.DNT != nil {
-			addHeaderIfNonEmpty(headers, "DNT", strconv.Itoa(int(*request.Device.DNT)))
+			headers.Add("DNT", strconv.Itoa(int(*request.Device.DNT)))
 		}
 	}
 
-	// estimate reqs length. This will change in particular if I got in mixed impressions
 	var reqCount = len(beachfrontRequests.Video)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
@@ -359,7 +364,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 		slot := beachfrontSlot{}
 		slot.Id = appid
-		if request.Imp[i].BidFloor == 0 {
+		if request.Imp[i].BidFloor != 0 {
 			slot.Bidfloor = request.Imp[i].BidFloor
 		} else {
 			slot.Bidfloor = beachfrontExt.BidFloor
@@ -462,12 +467,14 @@ and returns one Imp, so gotta stack it.
 func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoRequest, []error) {
 	var beachfrontReqs = make([]beachfrontRTBVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
+	var bad = make([]int, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
 		if err != nil {
 			// Failed to extract the beachfrontExt, so this request is junk.
+			bad = append(bad, i)
 			errs = append(errs, err)
 			continue
 		}
@@ -476,6 +483,7 @@ func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoReque
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
+			bad = append(bad, i)
 			errs = append(errs, err)
 			continue
 		}
@@ -494,8 +502,15 @@ func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoReque
 		beachfrontReqs[i] = bfRTBVideoRequest
 
 	}
-	return beachfrontReqs, errs
 
+	// Strip out any failed requests
+	if len(bad) > 0 {
+		for i := 0; i < len(bad); i++ {
+			beachfrontReqs = removeRTBVideoElement(beachfrontReqs, bad[i])
+		}
+
+	}
+	return beachfrontReqs, errs
 }
 
 /*
@@ -505,28 +520,27 @@ so each video imp is a call to the endpoint.
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
 	var beachfrontReqs = make([]beachfrontVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
+	var bad = make([]int, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
+		// Parameter validation should always catch this, but just checking.
 		if err != nil {
 			// Failed to extract the beachfrontExt, so this request is junk.
+			bad = append(bad, i)
+
 			errs = append(errs, err)
 			continue
 		}
 
-		var appid string
+		appid, err := getVideoAppId(beachfrontExt)
 
-		if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppId)) == "string" &&
-			beachfrontExt.AppId != "" {
-
-			appid = beachfrontExt.AppId
-		} else if fmt.Sprintf("%s", reflect.TypeOf(beachfrontExt.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" &&
-			beachfrontExt.AppIds.Video != "" {
-			appid = beachfrontExt.AppIds.Video
-		} else {
-			errs = append(errs, errors.New("unable to determine the appId from the supplied extension (2)"))
+		if err != nil {
+			// Failed to get an appid, so this request is junk.
+			bad = append(bad, i)
+			errs = append(errs, err)
 			continue
 		}
 
@@ -578,6 +592,14 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		bfVideoRequest.Imp = append(bfVideoRequest.Imp, imp)
 		beachfrontReqs[i] = bfVideoRequest
+	}
+
+	// Strip out any failed requests
+	if len(bad) > 0 {
+		for i := 0; i < len(bad); i++ {
+			beachfrontReqs = removeVideoElement(beachfrontReqs, bad[i])
+		}
+
 	}
 
 	return beachfrontReqs, errs
@@ -711,10 +733,12 @@ func extractVideoCrid(nurl string) string {
 	return strings.TrimSuffix(chunky[2], ":")
 }
 
-func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
-	if len(headerValue) > 0 {
-		headers.Add(headerName, headerValue)
-	}
+func removeVideoElement(slice []beachfrontVideoRequest, s int) []beachfrontVideoRequest {
+	return append(slice[:s], slice[s+1:]...)
+}
+
+func removeRTBVideoElement(slice []beachfrontRTBVideoRequest, s int) []beachfrontRTBVideoRequest {
+	return append(slice[:s], slice[s+1:]...)
 }
 
 func NewBeachfrontBidder() *BeachfrontAdapter {
