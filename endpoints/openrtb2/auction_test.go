@@ -37,6 +37,7 @@ const maxSize = 1024 * 256
 // Struct of data for the general purpose auction tester
 type getResponseFromDirectory struct {
 	dir             string
+	file            string
 	payloadGetter   func(*testing.T, []byte) []byte
 	messageGetter   func(*testing.T, []byte) []byte
 	expectedCode    int
@@ -231,49 +232,44 @@ func TestBlacklistRequests(t *testing.T) {
 // TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id
 // if the `AccountRequired` field in the `config.Configuration` structure is set to true
 func TestRejectAccountRequired(t *testing.T) {
-	tests := &getResponseFromDirectory{
-		messageGetter: func(*testing.T, []byte) []byte {
-			return []byte("Invalid request: Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.\n")
+	tests := map[string]*getResponseFromDirectory{
+		"8.1) Not required and not provided. Since not provided, not blacklisted": {
+			dir:           "sample-requests/account-required",
+			file:          "no-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: nilReturner,
+			expectedCode:  http.StatusOK,
+			accountReq:    false,
 		},
-		expectedCode: http.StatusBadRequest,
-		accountReq:   true,
+		"8.2) Required, not provided and in consequence, not blacklisted": {
+			dir:           "sample-requests/account-required",
+			file:          "no-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: getMessage,
+			expectedCode:  http.StatusBadRequest,
+			accountReq:    true,
+		},
+		"8.3) Required, provided and not blacklisted": {
+			dir:           "sample-requests/account-required",
+			file:          "with-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: nilReturner,
+			expectedCode:  http.StatusOK,
+			aliased:       true,
+			accountReq:    true,
+		},
+		"8.4) Required, provided and blacklisted": {
+			dir:           "sample-requests/blacklisted",
+			file:          "blacklisted-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: getMessage,
+			expectedCode:  http.StatusBadRequest,
+			accountReq:    true,
+		},
 	}
-
-	// No user id nor app id has been specified
-	req := []byte(`{
-		"id": "some-request-id",
-		"site": {
-			"page": "test.somepage.com"
-		},
-		"user": { },
-		"imp": [
-			{
-				"id": "my-imp-id",
-				"banner": {
-					"format": [
-						{
-							"w": 300,
-							"h": 600
-						}
-					]
-				},
-				"pmp": {
-					"deals": [
-						{
-							"id": "some-deal-id"
-						}
-					]
-				},
-				"ext": {
-					"appnexus": {
-						"placementId": 10433394
-					}
-				}
-			}
-		]
-	}`)
-	code, msg := tests.doRequest(t, req)
-	assertResponseCode(t, "", code, tests.expectedCode, msg)
+	for _, test := range tests {
+		test.assert(t)
+	}
 }
 
 // assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
@@ -281,11 +277,26 @@ func TestRejectAccountRequired(t *testing.T) {
 func (gr *getResponseFromDirectory) assert(t *testing.T) {
 	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
 	t.Helper()
-	for _, fileInfo := range fetchFiles(t, gr.dir) {
-		filename := gr.dir + "/" + fileInfo.Name()
-		fileData := readFile(t, filename)
+	var filename string
+	var fileData []byte
+	if gr.file == "" {
+		for _, fileInfo := range fetchFiles(t, gr.dir) {
+			filename = gr.dir + "/" + fileInfo.Name()
+			fileData = readFile(t, filename)
+			code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
+			fmt.Printf("Processing %s\n", filename)
+			assertResponseCode(t, filename, code, gr.expectedCode, msg)
+
+			expectMsg := gr.messageGetter(t, fileData)
+			if len(expectMsg) > 0 {
+				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+			}
+		}
+	} else {
+		filename = gr.dir + "/" + gr.file
+		fileData = readFile(t, filename)
 		code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
-		fmt.Printf("Processing %s\n", filename)
+		fmt.Printf("Single file processing %s\n", filename)
 		assertResponseCode(t, filename, code, gr.expectedCode, msg)
 
 		expectMsg := gr.messageGetter(t, fileData)
