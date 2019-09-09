@@ -181,7 +181,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		if err == nil {
 			reqs[j+bump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     VideoEndpoint + "=" + beachfrontRequests.RTBVideo[j].AppId + VideoEndpointSuffix,
+				Uri:     VideoEndpoint + "=" + beachfrontRequests.RTBVideo[j].AppId,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -239,14 +239,9 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 		request.Imp = videoImps
 
 		var videoErrs []error
-
-		if fmt.Sprintf("%s", reflect.TypeOf(request)) == "*openrtb.BidRequest" {
-			beachfrontReqs.RTBVideo, videoErrs = getRTBVideoRequests(request)
-		} else {
-			beachfrontReqs.Video, videoErrs = getVideoRequests(request)
-		}
+		t beachfrontReqs.RTBVideo, videoErrs = getRTBVideoRequests(request)
+		// beachfrontReqs.Video, videoErrs = getVideoRequests(request)
 		errs = append(errs, videoErrs...)
-
 	}
 
 	return
@@ -498,6 +493,10 @@ func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoReque
 		r.Imp = make([]openrtb.Imp, 1, 1)
 		r.Imp[0] = imp
 
+		if beachfrontExt.BidFloor != 0 {
+			r.Imp[0].BidFloor = beachfrontExt.BidFloor
+		}
+
 		bfRTBVideoRequest.Request = r
 		beachfrontReqs[i] = bfRTBVideoRequest
 
@@ -547,7 +546,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfVideoRequest := newBeachfrontVideoRequest()
 		bfVideoRequest.AppId = appid
 
-		bfVideoRequest.Site = getSite(request)
+		bfVideoRequest.Site = getSite(request);
 
 		if request.Device != nil {
 			bfVideoRequest.Device.IP = request.Device.IP
@@ -570,9 +569,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		var imp = beachfrontVideoImp{}
 		imp.Id = i
 		imp.ImpId = request.Imp[i].ID
-		imp.Bidfloor = beachfrontExt.BidFloor
 
-		if request.Imp[i].BidFloor == 0 {
+		if request.Imp[i].BidFloor != 0 {
 			imp.Bidfloor = request.Imp[i].BidFloor
 		} else {
 			imp.Bidfloor = beachfrontExt.BidFloor
