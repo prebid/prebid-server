@@ -21,7 +21,7 @@ import (
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
-const bidTypeExtKey = "bidType"
+const bidTypeExtKey = "BidType"
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -569,8 +569,18 @@ func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
 		if err == nil {
 			err = json.Unmarshal(extbyte, &bidExtMap)
 			if err == nil && bidExtMap[bidTypeExtKey] != nil {
-				bidTypeStr := bidExtMap[bidTypeExtKey].(string)
-				bidType = openrtb_ext.BidType(bidTypeStr)
+				bidTypeVal := int(bidExtMap[bidTypeExtKey].(float64))
+				switch bidTypeVal {
+				case 0:
+					bidType = openrtb_ext.BidTypeBanner
+				case 1:
+					bidType = openrtb_ext.BidTypeVideo
+				case 2:
+					bidType = openrtb_ext.BidTypeNative
+				default:
+					// default value is banner
+					bidType = openrtb_ext.BidTypeBanner
+				}
 			}
 		}
 	}

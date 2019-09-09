@@ -672,7 +672,7 @@ func TestPubmaticSampleRequest(t *testing.T) {
 }
 
 func TestGetBidType(t *testing.T) {
-	extJSON := `{"bidType":"video"}`
+	extJSON := `{"BidType":1}`
 	extrm := json.RawMessage(extJSON)
 	actualBidTypeValue := getBidType(extrm)
 	if actualBidTypeValue != "video" {
