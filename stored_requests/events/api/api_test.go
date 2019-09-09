@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/stored_requests/caches/memory"
-	"github.com/prebid/prebid-server/stored_requests/events"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/caches/memory"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/events"
 )
 
 func TestGoodRequests(t *testing.T) {

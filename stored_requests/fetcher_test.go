@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

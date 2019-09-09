@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
-[![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
+[![Go Report Card](https://goreportcard.com/badge/github.com/PubMatic-OpenWrap/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/PubMatic-OpenWrap/prebid-server)
 
 # Prebid Server
 
@@ -29,8 +29,8 @@ Then download and prepare Prebid Server:
 
 ```bash
 cd $GOPATH
-git clone https://github.com/prebid/prebid-server src/github.com/prebid/prebid-server
-cd src/github.com/prebid/prebid-server
+git clone https://github.com/PubMatic-OpenWrap/prebid-server src/github.com/PubMatic-OpenWrap/prebid-server
+cd src/github.com/PubMatic-OpenWrap/prebid-server
 dep ensure
 ```
 
@@ -57,6 +57,6 @@ Want to [add an adapter](docs/developers/add-new-bidder.md)? Found a bug? Great!
 This project is in its infancy, and many things can be improved.
 
 
-Report bugs, request features, and suggest improvements [on Github](https://github.com/prebid/prebid-server/issues).
+Report bugs, request features, and suggest improvements [on Github](https://github.com/PubMatic-OpenWrap/prebid-server/issues).
 
-Or better yet, [open a pull request](https://github.com/prebid/prebid-server/compare) with the changes you'd like to see.
+Or better yet, [open a pull request](https://github.com/PubMatic-OpenWrap/prebid-server/compare) with the changes you'd like to see.

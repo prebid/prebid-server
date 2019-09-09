@@ -3,7 +3,7 @@ package pbsmetrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 

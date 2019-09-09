@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
-	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
-	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 )
 
 func TestNormalSet(t *testing.T) {

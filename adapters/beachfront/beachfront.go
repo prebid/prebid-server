@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/prebid/prebid-server/errortypes"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	"github.com/mxmCherry/openrtb"
 )

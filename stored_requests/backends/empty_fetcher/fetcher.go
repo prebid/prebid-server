@@ -3,7 +3,7 @@ package empty_fetcher
 import (
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 )
 
 // EmptyFetcher is a nil-object which has no Stored Requests.

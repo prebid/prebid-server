@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"html/template"
 	"net"
 	"net/url"

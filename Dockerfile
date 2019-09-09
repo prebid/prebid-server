@@ -6,7 +6,7 @@ RUN cd /tmp && \
     wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz && \
     tar -xf go1.12.7.linux-amd64.tar.gz && \
     mv go /usr/local
-WORKDIR /go/src/github.com/prebid/prebid-server/
+WORKDIR /go/src/github.com/PubMatic-OpenWrap/prebid-server/
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:$GOROOT/bin:$PATH
@@ -21,7 +21,7 @@ RUN dep ensure && \
 FROM ubuntu:18.04 AS release
 LABEL maintainer="hans.hjort@xandr.com" 
 WORKDIR /usr/local/bin/
-COPY --from=build /go/src/github.com/prebid/prebid-server/prebid-server .
+COPY --from=build /go/src/github.com/PubMatic-OpenWrap/prebid-server/prebid-server .
 COPY static static/
 COPY stored_requests/data stored_requests/data
 RUN apt-get update && \

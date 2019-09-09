@@ -2,7 +2,7 @@ package analytics
 
 import (
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
 
 /*

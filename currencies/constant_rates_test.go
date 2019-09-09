@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/prebid/prebid-server/currencies"
+	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 )
 
 func TestGetRate_ConstantRates(t *testing.T) {
