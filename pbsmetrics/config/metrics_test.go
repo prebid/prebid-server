@@ -86,6 +86,27 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 	}
+	labels_blacklist := []pbsmetrics.Labels{
+		{
+			Source:        pbsmetrics.DemandWeb,
+			RType:         pbsmetrics.ReqTypeAMP,
+			PubID:         "test2",
+			Browser:       pbsmetrics.BrowserChrome,
+			CookieFlag:    pbsmetrics.CookieFlagYes,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
+		},
+		{
+			Source:        pbsmetrics.DemandWeb,
+			RType:         pbsmetrics.ReqTypeVideo,
+			PubID:         "test2",
+			Browser:       pbsmetrics.BrowserChrome,
+			CookieFlag:    pbsmetrics.CookieFlagNo,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
+		},
+	}
+	for i := 0; i < 2; i++ {
+		metricsEngine.RecordRequest(labels_blacklist[i])
+	}
 	impTypeLabels.BannerImps = false
 	impTypeLabels.VideoImps = true
 	impTypeLabels.AudioImps = false
@@ -97,11 +118,14 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeLegacy][pbsmetrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeAMP][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[pbsmetrics.ReqTypeAMP][pbsmetrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.Video.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.BlacklistedAcctOrApp", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlacklistedAcctOrApp", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBlacklisted].Count(), 0)
 
 	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)

@@ -107,8 +107,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	req, errL := deps.parseRequest(r)
 
-	if fatalError(errL) && writeError(errL, w) {
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+	if fatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -138,8 +137,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
-		writeError(errL, w)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		writeError(errL, w, &labels)
 		return
 	}
 
@@ -1141,12 +1139,20 @@ func checkSafari(r *http.Request) (isSafari bool) {
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, w http.ResponseWriter) bool {
+func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) bool {
 	if len(errs) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
+		httpStatus := http.StatusBadRequest
+		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
+			erVal := errortypes.DecodeError(err)
+			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+				httpStatus = http.StatusServiceUnavailable
+				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+			}
 			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
+		w.WriteHeader(httpStatus)
+		labels.RequestStatus = metricsStatus
 		return true
 	}
 	return false
@@ -1182,13 +1188,11 @@ func effectivePubID(pub *openrtb.Publisher) string {
 
 func validateAccount(cfg *config.Configuration, pubID string) error {
 	var err error = nil
-	// If specified in the configuration, discard requests that don't come with an account ID.
 	if cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
+		// If specified in the configuration, discard requests that don't come with an account ID.
 		err = error(&errortypes.AcctRequired{Message: fmt.Sprintf("Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.")})
-	}
-
-	// Blacklist account now that we have resolved the value
-	if _, found := cfg.BlacklistedAcctMap[pubID]; found {
+	} else if _, found := cfg.BlacklistedAcctMap[pubID]; found {
+		// Blacklist account now that we have resolved the value
 		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
 	}
 	return err

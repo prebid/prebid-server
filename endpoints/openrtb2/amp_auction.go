@@ -18,6 +18,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -151,12 +152,18 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	// Blacklist account now that we have resolved the value
 	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
 		errL = append(errL, acctIdErr)
-		w.WriteHeader(http.StatusBadRequest)
+		erVal := errortypes.DecodeError(acctIdErr)
+		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
+		} else { //erVal == errortypes.AcctRequiredCode
+			w.WriteHeader(http.StatusBadRequest)
+			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		}
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		ao.Errors = append(ao.Errors, errL...)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 

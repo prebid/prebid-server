@@ -223,7 +223,7 @@ func TestBlacklistRequests(t *testing.T) {
 		dir:           "sample-requests/blacklisted",
 		payloadGetter: getRequestPayload,
 		messageGetter: getMessage,
-		expectedCode:  http.StatusBadRequest,
+		expectedCode:  http.StatusServiceUnavailable,
 		aliased:       false,
 	}
 	tests.assert(t)
@@ -263,7 +263,7 @@ func TestRejectAccountRequired(t *testing.T) {
 			file:          "blacklisted-acct.json",
 			payloadGetter: getRequestPayload,
 			messageGetter: getMessage,
-			expectedCode:  http.StatusBadRequest,
+			expectedCode:  http.StatusServiceUnavailable,
 			accountReq:    true,
 		},
 	}
