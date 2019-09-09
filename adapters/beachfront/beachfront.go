@@ -239,7 +239,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 		request.Imp = videoImps
 
 		var videoErrs []error
-		t beachfrontReqs.RTBVideo, videoErrs = getRTBVideoRequests(request)
+		beachfrontReqs.RTBVideo, videoErrs = getRTBVideoRequests(request)
 		// beachfrontReqs.Video, videoErrs = getVideoRequests(request)
 		errs = append(errs, videoErrs...)
 	}
