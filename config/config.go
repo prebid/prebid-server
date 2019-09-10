@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -695,7 +694,7 @@ func isValidCookieSize(maxCookieSize int) error {
 	// If a non-zero-less-than-500-byte "host_cookie.max_cookie_size_bytes" value was specified in the
 	// environment configuration of prebid-server, default to 500 bytes
 	if maxCookieSize != 0 && maxCookieSize < MIN_COOKIE_SIZE_BYTES {
-		return errors.New("Configured cookie size is less than allowed minimum size")
+		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
 	}
 	return nil
 }

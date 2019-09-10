@@ -310,6 +310,7 @@ func TestCookieSizeError(t *testing.T) {
 	}
 	testCases := []aTest{
 		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
 		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
 		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
 		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
