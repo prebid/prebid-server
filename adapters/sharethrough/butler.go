@@ -23,11 +23,12 @@ type StrAdSeverParams struct {
 	Height             uint64
 	Width              uint64
 	TheTradeDeskUserId string
+	SharethroughUserId string
 }
 
 type StrOpenRTBInterface interface {
 	requestFromOpenRTB(openrtb.Imp, *openrtb.BidRequest, string) (*adapters.RequestData, error)
-	responseToOpenRTB(openrtb_ext.ExtImpSharethroughResponse, *adapters.RequestData) (*adapters.BidderResponse, []error)
+	responseToOpenRTB([]byte, *adapters.RequestData) (*adapters.BidderResponse, []error)
 }
 
 type StrAdServerUriInterface interface {
@@ -64,7 +65,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {
 		return nil, err
 	}
-	var strImpParams openrtb_ext.ExtImpSharethroughExt
+	var strImpParams openrtb_ext.ExtImpSharethrough
 	if err := json.Unmarshal(strImpExt.Bidder, &strImpParams); err != nil {
 		return nil, err
 	}
@@ -91,14 +92,20 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			Width:              width,
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
 			TheTradeDeskUserId: userInfo.TtdUid,
+			SharethroughUserId: request.User.BuyerUID,
 		}),
 		Body:    nil,
 		Headers: headers,
 	}, nil
 }
 
-func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharethroughResponse, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
+func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
 	var errs []error
+
+	var strResp openrtb_ext.ExtImpSharethroughResponse
+	if err := json.Unmarshal(strRawResp, &strResp); err != nil {
+		return nil, []error{&errortypes.BadInput{Message: "Unable to parse response JSON"}}
+	}
 	bidResponse := adapters.NewBidderResponse()
 
 	bidResponse.Currency = "USD"
@@ -116,7 +123,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharet
 		return nil, errs
 	}
 
-	adm, admErr := s.Util.getAdMarkup(strResp, btlrParams)
+	adm, admErr := s.Util.getAdMarkup(strRawResp, strResp, btlrParams)
 	if admErr != nil {
 		errs = append(errs, &errortypes.BadServerResponse{Message: admErr.Error()})
 		return nil, errs
@@ -150,6 +157,9 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	if params.TheTradeDeskUserId != "" {
 		v.Set("ttduid", params.TheTradeDeskUserId)
 	}
+	if params.SharethroughUserId != "" {
+		v.Set("stxuid", params.SharethroughUserId)
+	}
 
 	v.Set("instant_play_capable", fmt.Sprintf("%t", params.InstantPlayCapable))
 	v.Set("stayInIframe", fmt.Sprintf("%t", params.Iframe))
@@ -157,7 +167,7 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
 	v.Set("supplyId", supplyId)
-	v.Set("strVersion", strVersion)
+	v.Set("strVersion", strconv.FormatInt(strVersion, 10))
 
 	return h.BaseURI + "?" + v.Encode()
 }

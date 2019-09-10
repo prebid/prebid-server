@@ -283,12 +283,10 @@ func TestTrimCookiesClosestExpirationDates(t *testing.T) {
 		switch testCases[i].expAction {
 		case "equal":
 			assert.Equal(t, cookieToSendLen, len(processedCookie.uids), "[Test %d] MaxCookieSizeBytes equal to zero or bigger than %d bytes should be enough to set and remain cookie unchanged \n", i+1, len(processedCookie.uids))
-			_, oldestFound := processedCookie.uids[closestToExpirationDate]
-			assert.Equal(t, oldestFound, true, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
+			assert.Containsf(t, processedCookie.uids, closestToExpirationDate, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
 		case "trim":
 			assert.Equal(t, cookieToSendLen > len(processedCookie.uids), true, "[Test %d] MaxCookieSizeBytes of %d is smaller than %d bytes and cookie entries should have been removed\n", i+1, testCases[i].maxCookieSize, cookieToSendLen)
-			_, oldestFound := processedCookie.uids[closestToExpirationDate]
-			assert.Equal(t, oldestFound, false, "[Test %d] Oldest entry in cookie was not eliminated", i+1)
+			assert.NotContainsf(t, processedCookie.uids, closestToExpirationDate, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
 		case "empty":
 			assert.Equal(t, len(processedCookie.uids), 0, "[Test %d] MaxCookieSizeBytes of %d is too small, processedCookie.uids should be empty\n", i+1)
 		}
