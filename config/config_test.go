@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
+	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
@@ -39,6 +41,7 @@ host_cookie:
   domain: cookies.prebid.org
   opt_out_url: http://prebid.org/optout
   opt_in_url: http://prebid.org/optin
+  max_cookie_size_bytes: 32768
 external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
@@ -298,6 +301,28 @@ func TestLimitTimeout(t *testing.T) {
 	doTimeoutTest(t, 5, 5, 10, 0)
 	doTimeoutTest(t, 15, 15, 0, 0)
 	doTimeoutTest(t, 15, 0, 20, 15)
+}
+
+func TestCookieSizeError(t *testing.T) {
+	type aTest struct {
+		cookieHost  *HostCookie
+		expectError bool
+	}
+	testCases := []aTest{
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
+	}
+	for i := range testCases {
+		if testCases[i].expectError {
+			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+		} else {
+			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+		}
+	}
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {
