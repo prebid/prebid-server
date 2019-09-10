@@ -168,6 +168,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 
 		reqCount--
+
 		bump++
 	}
 
