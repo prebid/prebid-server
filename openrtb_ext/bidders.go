@@ -34,6 +34,7 @@ const (
 	BidderEmxDigital     BidderName = "emx_digital"
 	BidderEPlanning      BidderName = "eplanning"
 	BidderFacebook       BidderName = "audienceNetwork"
+	BidderGamma          BidderName = "gamma"
 	BidderGamoshi        BidderName = "gamoshi"
 	BidderGrid           BidderName = "grid"
 	BidderGumGum         BidderName = "gumgum"
@@ -76,6 +77,7 @@ var BidderMap = map[string]BidderName{
 	"conversant":      BidderConversant,
 	"emx_digital":     BidderEmxDigital,
 	"eplanning":       BidderEPlanning,
+	"gamma":           BidderGamma,
 	"gamoshi":         BidderGamoshi,
 	"grid":            BidderGrid,
 	"gumgum":          BidderGumGum,

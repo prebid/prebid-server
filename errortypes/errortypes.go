@@ -10,6 +10,7 @@ const (
 	BadServerResponseCode
 	FailedToRequestBidsCode
 	BidderTemporarilyDisabledCode
+	BlacklistedAcctCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -66,6 +67,22 @@ func (err *BlacklistedApp) Error() string {
 
 func (err *BlacklistedApp) Code() int {
 	return BlacklistedAppCode
+}
+
+// BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedAcct struct {
+	Message string
+}
+
+func (err *BlacklistedAcct) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedAcct) Code() int {
+	return BlacklistedAcctCode
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.
