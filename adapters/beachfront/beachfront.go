@@ -494,9 +494,18 @@ func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoReque
 		r.Imp = make([]openrtb.Imp, 1, 1)
 		r.Imp[0] = imp
 
+		// This will only effect testing. The backend will return "" for localhost IPs,
+		// and seems not to know what IPv6 is, so just setting it to one that is not likely to
+		// be used.
+		if r.Device.IP == "::1" || r.Device.IP == "127.0.0.1" {
+			r.Device.IP = "192.168.255.255"
+		}
+
 		if beachfrontExt.BidFloor != 0 {
 			r.Imp[0].BidFloor = beachfrontExt.BidFloor
 		}
+
+		r.Ext = nil
 
 		bfRTBVideoRequest.Request = r
 		beachfrontReqs[i] = bfRTBVideoRequest
@@ -513,96 +522,7 @@ func getRTBVideoRequests(request *openrtb.BidRequest) ([]beachfrontRTBVideoReque
 	return beachfrontReqs, errs
 }
 
-/*
-getVideoRequests, plural. One request to the endpoint can have one appId, and can return one nurl,
-so each video imp is a call to the endpoint.
-*/
-func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
-	var beachfrontReqs = make([]beachfrontVideoRequest, len(request.Imp))
-	var errs = make([]error, 0, len(request.Imp))
-	var bad = make([]int, 0)
 
-	for i := 0; i < len(request.Imp); i++ {
-
-		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
-
-		// Parameter validation should always catch this, but just checking.
-		if err != nil {
-			// Failed to extract the beachfrontExt, so this request is junk.
-			bad = append(bad, i)
-
-			errs = append(errs, err)
-			continue
-		}
-
-		appid, err := getVideoAppId(beachfrontExt)
-
-		if err != nil {
-			// Failed to get an appid, so this request is junk.
-			bad = append(bad, i)
-			errs = append(errs, err)
-			continue
-		}
-
-		bfVideoRequest := newBeachfrontVideoRequest()
-		bfVideoRequest.AppId = appid
-
-		bfVideoRequest.Site = getSite(request);
-
-		if request.Device != nil {
-			bfVideoRequest.Device.IP = request.Device.IP
-			bfVideoRequest.Device.UA = request.Device.UA
-			bfVideoRequest.Device.JS = "1"
-		}
-
-		if request.User != nil {
-			if request.User.ID != "" {
-				bfVideoRequest.User.ID = request.User.ID
-			}
-
-			if request.User.BuyerUID != "" {
-				bfVideoRequest.User.BuyerUID = request.User.BuyerUID
-			}
-		}
-
-		bfVideoRequest.ID = request.ID
-
-		var imp = beachfrontVideoImp{}
-		imp.Id = i
-		imp.ImpId = request.Imp[i].ID
-
-		if request.Imp[i].BidFloor != 0 {
-			imp.Bidfloor = request.Imp[i].BidFloor
-		} else {
-			imp.Bidfloor = beachfrontExt.BidFloor
-		}
-
-		if request.Imp[i].Video.H != 0 && request.Imp[i].Video.W != 0 {
-			imp.Video = beachfrontSize{
-				W: request.Imp[i].Video.W,
-				H: request.Imp[i].Video.H,
-			}
-		} else {
-			imp.Video = beachfrontSize{
-				W: DefaultVideoWidth,
-				H: DefaultVideoHeight,
-			}
-		}
-
-		bfVideoRequest.Imp = append(bfVideoRequest.Imp, imp)
-		beachfrontReqs[i] = bfVideoRequest
-	}
-
-	// Strip out any failed requests
-	if len(bad) > 0 {
-		for i := 0; i < len(bad); i++ {
-			beachfrontReqs = removeVideoElement(beachfrontReqs, bad[i])
-		}
-
-	}
-
-	return beachfrontReqs, errs
-}
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
