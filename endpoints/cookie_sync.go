@@ -106,9 +106,9 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			parsedReq.Bidders = append(parsedReq.Bidders, string(bidder))
 		}
 	}
-	isBrowserApplicable := usersync.IsBrowserApplicableForSameSite(r)
+	setSiteCookie := siteCookieCheck(r.UserAgent())
 	needSyncupForSameSite := false
-	if isBrowserApplicable {
+	if setSiteCookie {
 		_, err1 := r.Cookie(usersync.SameSiteCookieName)
 		if err1 == http.ErrNoCookie {
 			needSyncupForSameSite = true
