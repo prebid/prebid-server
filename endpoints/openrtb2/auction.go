@@ -1141,6 +1141,7 @@ func checkSafari(r *http.Request) (isSafari bool) {
 // Write(return) errors to the client, if any. Returns true if errors were found.
 func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) bool {
 	if len(errs) > 0 {
+		var accumErrors []byte
 		httpStatus := http.StatusBadRequest
 		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
@@ -1149,10 +1150,12 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = pbsmetrics.RequestStatusBlacklisted
 			}
-			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
+			accumErrors = append(accumErrors, []byte(fmt.Sprintf("Invalid request: %s\n", err.Error()))...)
 		}
 		w.WriteHeader(httpStatus)
 		labels.RequestStatus = metricsStatus
+		w.Write(accumErrors)
+
 		return true
 	}
 	return false

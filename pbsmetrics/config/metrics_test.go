@@ -91,7 +91,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 			Source:        pbsmetrics.DemandWeb,
 			RType:         pbsmetrics.ReqTypeAMP,
 			PubID:         "test2",
-			Browser:       pbsmetrics.BrowserChrome,
+			Browser:       pbsmetrics.BrowserOther,
 			CookieFlag:    pbsmetrics.CookieFlagYes,
 			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
 		},
@@ -99,8 +99,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 			Source:        pbsmetrics.DemandWeb,
 			RType:         pbsmetrics.ReqTypeVideo,
 			PubID:         "test2",
-			Browser:       pbsmetrics.BrowserChrome,
-			CookieFlag:    pbsmetrics.CookieFlagNo,
+			Browser:       pbsmetrics.BrowserOther,
+			CookieFlag:    pbsmetrics.CookieFlagYes,
 			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
 		},
 	}
@@ -149,6 +149,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
 	if expected != actual {
-		t.Errorf("Error in metric %s: expected %d, got %d.", name, expected, actual)
+		t.Errorf("Error in metric %s: got %d, expected %d.", name, expected, actual)
 	}
 }
