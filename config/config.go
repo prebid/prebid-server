@@ -391,11 +391,6 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 	c.setDerivedDefaults()
-	glog.Info("Logging the resolved configuration:")
-	logGeneral(reflect.ValueOf(c), "  \t")
-	if errs := c.validate(); len(errs) > 0 {
-		return &c, errs
-	}
 
 	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
@@ -421,6 +416,12 @@ func New(v *viper.Viper) (*Configuration, error) {
 	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
 		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
 		return nil, err
+	}
+
+	glog.Info("Logging the resolved configuration:")
+	logGeneral(reflect.ValueOf(c), "  \t")
+	if errs := c.validate(); len(errs) > 0 {
+		return &c, errs
 	}
 
 	return &c, nil
