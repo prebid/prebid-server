@@ -71,7 +71,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	}
 
 	pKey := strImpParams.Pkey
-	userInfo := s.Util.parseUserExt(request.User)
+	userInfo := s.Util.parseUserInfo(request.User)
 
 	var height, width uint64
 	if len(strImpParams.IframeSize) >= 2 {
@@ -92,7 +92,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			Width:              width,
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
 			TheTradeDeskUserId: userInfo.TtdUid,
-			SharethroughUserId: request.User.BuyerUID,
+			SharethroughUserId: userInfo.StxUid,
 		}),
 		Body:    nil,
 		Headers: headers,
