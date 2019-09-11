@@ -1142,7 +1142,6 @@ func checkSafari(r *http.Request) (isSafari bool) {
 func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) bool {
 	if len(errs) > 0 {
 		httpStatus := http.StatusBadRequest
-		metricsStatus := pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
 			erVal := errortypes.DecodeError(err)
 			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
@@ -1150,7 +1149,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 			}
 		}
 		w.WriteHeader(httpStatus)
-		labels.RequestStatus = metricsStatus
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		for _, err := range errs {
 			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
