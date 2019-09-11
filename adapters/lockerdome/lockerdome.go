@@ -10,6 +10,8 @@ import (
 	"github.com/prebid/prebid-server/errortypes"
 )
 
+const unexpectedStatusCodeMessage = "Unexpected status code: %d. Run with request.debug = 1 for more info"
+
 // Implements Bidder interface.
 type LockerDomeAdapter struct {
 	endpoint string
@@ -41,8 +43,6 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 	return requestsToBidder, errs
 }
 
-const unexpectedStatusCodeMessage = "Unexpected status code: %d. Run with request.debug = 1 for more info"
-
 // MakeBids unpacks the server's response into Bids.
 func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
 
@@ -64,20 +64,20 @@ func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb.BidRequest, r
 
 	var openRTBBidderResponse openrtb.BidResponse
 	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
-		return nil, []error{err}
+		return nil, []error{
+			fmt.Errorf("Error unmarshaling LockerDome bid response - %s", err.Error()),
+		}
 	}
 
 	if len(openRTBBidderResponse.SeatBid) == 0 {
 		return nil, nil
 	}
 
-	bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
-	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
+	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(len(openRTBBidderResponse.SeatBid[0].Bid))
 
-	var typedBid adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for i := range seatBid.Bid {
-			typedBid = adapters.TypedBid{Bid: &seatBid.Bid[i], BidType: "banner"}
+			typedBid := adapters.TypedBid{Bid: &seatBid.Bid[i], BidType: "banner"}
 			bidderResponse.Bids = append(bidderResponse.Bids, &typedBid)
 		}
 	}

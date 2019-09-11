@@ -55,6 +55,6 @@
   ],
 
   "expectedMakeBidsErrors": [
-    "json: cannot unmarshal string into Go value of type openrtb.BidResponse"
+    "Error unmarshaling LockerDome bid response - json: cannot unmarshal string into Go value of type openrtb.BidResponse"
   ]
 }
