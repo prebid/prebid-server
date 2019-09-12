@@ -67,7 +67,7 @@ func TestBidderNameGets(t *testing.T) {
 func TestRejectAudienceNetworkCookie(t *testing.T) {
 	raw := &PBSCookie{
 		uids: map[string]uidWithExpiry{
-			"audienceNetwork": newTempId("0"),
+			"audienceNetwork": newTempId("0", 10),
 		},
 		optOut:   false,
 		birthday: timestamp(),
@@ -162,7 +162,7 @@ func TestParseOtherCookie(t *testing.T) {
 func TestCookieReadWrite(t *testing.T) {
 	cookie := newSampleCookie()
 
-	received := writeThenRead(cookie)
+	received := writeThenRead(cookie, 0)
 	uid, exists, isLive := received.GetUID("adnxs")
 	if !exists || !isLive || uid != "123" {
 		t.Errorf("Received cookie should have the adnxs ID=123. Got %s", uid)
@@ -262,6 +262,37 @@ func TestGetUIDsWithNilCookie(t *testing.T) {
 	assert.Len(t, uids, 0, "GetUIDs shouldn't return any user syncs for a nil cookie")
 }
 
+func TestTrimCookiesClosestExpirationDates(t *testing.T) {
+	cookieToSend, cookieToSendLen := newTestCookie()
+	closestToExpirationDate := "key7"
+
+	type aTest struct {
+		maxCookieSize int
+		expAction     string
+	}
+	testCases := []aTest{
+		{maxCookieSize: 2000, expAction: "equal"}, //1 don't trim, set
+		{maxCookieSize: 0, expAction: "equal"},    //2 unlimited size: don't trim, set
+		{maxCookieSize: 800, expAction: "trim"},   //3 trim to size and set
+		{maxCookieSize: 500, expAction: "trim"},   //4 trim to size and set
+		{maxCookieSize: 200, expAction: "empty"},  //5 insufficient size, trim to zero lenght and set
+		{maxCookieSize: -100, expAction: "empty"}, //6 invalid size, trim to zero lenght and set
+	}
+	for i := range testCases {
+		processedCookie := writeThenRead(cookieToSend, testCases[i].maxCookieSize)
+		switch testCases[i].expAction {
+		case "equal":
+			assert.Equal(t, cookieToSendLen, len(processedCookie.uids), "[Test %d] MaxCookieSizeBytes equal to zero or bigger than %d bytes should be enough to set and remain cookie unchanged \n", i+1, len(processedCookie.uids))
+			assert.Containsf(t, processedCookie.uids, closestToExpirationDate, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
+		case "trim":
+			assert.Equal(t, cookieToSendLen > len(processedCookie.uids), true, "[Test %d] MaxCookieSizeBytes of %d is smaller than %d bytes and cookie entries should have been removed\n", i+1, testCases[i].maxCookieSize, cookieToSendLen)
+			assert.NotContainsf(t, processedCookie.uids, closestToExpirationDate, "[Test %d] Oldest entry in cookie should not have been eliminated", i+1)
+		case "empty":
+			assert.Equal(t, len(processedCookie.uids), 0, "[Test %d] MaxCookieSizeBytes of %d is too small, processedCookie.uids should be empty\n", i+1)
+		}
+	}
+}
+
 func ensureEmptyMap(t *testing.T, cookie *PBSCookie) {
 	if !cookie.AllowSyncs() {
 		t.Error("Empty cookies should allow user syncs.")
@@ -333,31 +364,49 @@ func ensureConsistency(t *testing.T, cookie *PBSCookie) {
 	}
 }
 
-func newTempId(uid string) uidWithExpiry {
+func newTempId(uid string, offset int) uidWithExpiry {
 	return uidWithExpiry{
 		UID:     uid,
-		Expires: time.Now().Add(10 * time.Minute),
+		Expires: time.Now().Add(time.Duration(offset) * time.Minute),
 	}
 }
 
 func newSampleCookie() *PBSCookie {
 	return &PBSCookie{
 		uids: map[string]uidWithExpiry{
-			"adnxs":   newTempId("123"),
-			"rubicon": newTempId("456"),
+			"adnxs":   newTempId("123", 10),
+			"rubicon": newTempId("456", 10),
 		},
 		optOut:   false,
 		birthday: timestamp(),
 	}
 }
 
-func writeThenRead(cookie *PBSCookie) *PBSCookie {
+func newTestCookie() (*PBSCookie, int) {
+	var mediumSizeCookie *PBSCookie = &PBSCookie{
+		uids: map[string]uidWithExpiry{
+			"key1": newTempId("12345678901234567890123456789012345678901234567890", 7),
+			"key2": newTempId("abcdefghijklmnopqrstuvwxyz", 6),
+			"key3": newTempId("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6),
+			"key4": newTempId("12345678901234567890123456789612345678901234567890", 5),
+			"key5": newTempId("aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ", 4),
+			"key6": newTempId("12345678901234567890123456789012345678901234567890", 3),
+			"key7": newTempId("abcdefghijklmnopqrstuvwxyz", 2),
+		},
+		optOut:   false,
+		birthday: timestamp(),
+	}
+	return mediumSizeCookie, len(mediumSizeCookie.uids)
+}
+
+func writeThenRead(cookie *PBSCookie, maxCookieSize int) *PBSCookie {
 	w := httptest.NewRecorder()
-	cookie.SetCookieOnResponse(w, "mock-domain", 90*24*time.Hour)
+	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
+	cookie.SetCookieOnResponse(w, hostCookie, 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
-	return ParsePBSCookieFromRequest(&request, &config.HostCookie{})
+	return ParsePBSCookieFromRequest(&request, hostCookie)
 }

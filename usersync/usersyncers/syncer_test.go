@@ -15,6 +15,7 @@ func TestNewSyncerMap(t *testing.T) {
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
 			string(openrtb_ext.BidderAdform):         syncConfig,
+			string(openrtb_ext.BidderAdkernel):       syncConfig,
 			string(openrtb_ext.BidderAdkernelAdn):    syncConfig,
 			string(openrtb_ext.BidderAdtelligent):    syncConfig,
 			string(openrtb_ext.BidderAdvangelists):   syncConfig,
@@ -24,6 +25,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderBrightroll):     syncConfig,
 			string(openrtb_ext.BidderConsumable):     syncConfig,
 			string(openrtb_ext.BidderConversant):     syncConfig,
+			string(openrtb_ext.BidderEmxDigital):     syncConfig,
 			string(openrtb_ext.BidderEPlanning):      syncConfig,
 			string(openrtb_ext.BidderGrid):           syncConfig,
 			string(openrtb_ext.BidderGumGum):         syncConfig,
@@ -40,13 +42,17 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderSharethrough):   syncConfig,
 			string(openrtb_ext.BidderSomoaudience):   syncConfig,
 			string(openrtb_ext.BidderSovrn):          syncConfig,
+			string(openrtb_ext.BidderTriplelift):     syncConfig,
 			string(openrtb_ext.Bidder33Across):       syncConfig,
 			string(openrtb_ext.BidderSonobi):         syncConfig,
 			string(openrtb_ext.BidderVrtcal):         syncConfig,
 			string(openrtb_ext.BidderYieldmo):        syncConfig,
+			string(openrtb_ext.BidderGamma):          syncConfig,
 			string(openrtb_ext.BidderVisx):           syncConfig,
 			string(openrtb_ext.BidderGamoshi):        syncConfig,
 			string(openrtb_ext.BidderUnruly):         syncConfig,
+			string(openrtb_ext.BidderVerizonMedia):   syncConfig,
+			string(openrtb_ext.BidderEngageBDR):      syncConfig,
 		},
 	}
 

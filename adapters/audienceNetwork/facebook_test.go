@@ -209,7 +209,7 @@ func GenerateBidRequestForTestData(fbdata bidInfo, url string) (*pbs.PBSRequest,
 	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("audienceNetwork", fbdata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
+	pc.SetCookieOnResponse(fakewriter, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
