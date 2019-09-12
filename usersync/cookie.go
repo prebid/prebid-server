@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"time"
 
@@ -165,15 +166,37 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, domain string, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
+	var domain string = cfg.Domain
+
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
-	cookieStr := httpCookie.String()
+
+	var currSize int = len([]byte(httpCookie.String()))
+	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
+		var oldestElem string = ""
+		var oldestDate int64 = math.MaxInt64
+		for key, value := range cookie.uids {
+			timeUntilExpiration := time.Until(value.Expires)
+			if timeUntilExpiration < time.Duration(oldestDate) {
+				oldestElem = key
+				oldestDate = int64(timeUntilExpiration)
+			}
+		}
+		delete(cookie.uids, oldestElem)
+		httpCookie = cookie.ToHTTPCookie(ttl)
+		if domain != "" {
+			httpCookie.Domain = domain
+		}
+		currSize = len([]byte(httpCookie.String()))
+	}
+
+	uidsCookieStr := httpCookie.String()
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
-		cookieStr += SameSiteAttribute
+		uidsCookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
 			Value:   SameSiteCookieValue,
@@ -183,9 +206,8 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)
-	} else if cookieStr != "" {
-		w.Header().Add("Set-Cookie", cookieStr)
 	}
+	w.Header().Add("Set-Cookie", uidsCookieStr)
 }
 
 // Unsync removes the user's ID for the given family from this cookie.

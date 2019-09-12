@@ -135,6 +135,13 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 		labels.PubID = effectivePubID(req.Site.Publisher)
 	}
+	// Blacklist account now that we have resolved the value
+	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
+		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
+		writeError(errL, w)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
+	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.Request = req
@@ -1149,7 +1156,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 func fatalError(errL []error) bool {
 	for _, err := range errL {
 		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode {
+		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
 			return true
 		}
 	}

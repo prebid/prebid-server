@@ -54,7 +54,12 @@ type Configuration struct {
 	// Array of blacklisted apps that is used to create the hash table BlacklistedAppMap so App.ID's can be instantly accessed.
 	BlacklistedApps   []string `mapstructure:"blacklisted_apps,flow"`
 	BlacklistedAppMap map[string]bool
+	// Array of blacklisted accounts that is used to create the hash table BlacklistedAcctMap so Account.ID's can be instantly accessed.
+	BlacklistedAccts   []string `mapstructure:"blacklisted_accts,flow"`
+	BlacklistedAcctMap map[string]bool
 }
+
+const MIN_COOKIE_SIZE_BYTES = 500
 
 type HTTPClient struct {
 	MaxIdleConns        int `mapstructure:"max_idle_connections"`
@@ -172,12 +177,13 @@ type FileLogs struct {
 }
 
 type HostCookie struct {
-	Domain       string `mapstructure:"domain"`
-	Family       string `mapstructure:"family"`
-	CookieName   string `mapstructure:"cookie_name"`
-	OptOutURL    string `mapstructure:"opt_out_url"`
-	OptInURL     string `mapstructure:"opt_in_url"`
-	OptOutCookie Cookie `mapstructure:"optout_cookie"`
+	Domain             string `mapstructure:"domain"`
+	Family             string `mapstructure:"family"`
+	CookieName         string `mapstructure:"cookie_name"`
+	OptOutURL          string `mapstructure:"opt_out_url"`
+	OptInURL           string `mapstructure:"opt_in_url"`
+	MaxCookieSizeBytes int    `mapstructure:"max_cookie_size_bytes"`
+	OptOutCookie       Cookie `mapstructure:"optout_cookie"`
 	// Cookie timeout in days
 	TTL int64 `mapstructure:"ttl_days"`
 }
@@ -385,13 +391,8 @@ func New(v *viper.Viper) (*Configuration, error) {
 		return nil, fmt.Errorf("viper failed to unmarshal app config: %v", err)
 	}
 	c.setDerivedDefaults()
-	glog.Info("Logging the resolved configuration:")
-	logGeneral(reflect.ValueOf(c), "  \t")
-	if errs := c.validate(); len(errs) > 0 {
-		return &c, errs
-	}
 
-	// To look for a request's publisher_id into the NonStandardPublishers in
+	// To look for a request's publisher_id in the NonStandardPublishers list in
 	// O(1) time, we fill this hash table located in the NonStandardPublisherMap field of GDPR
 	c.GDPR.NonStandardPublisherMap = make(map[string]int)
 	for i := 0; i < len(c.GDPR.NonStandardPublishers); i++ {
@@ -404,6 +405,25 @@ func New(v *viper.Viper) (*Configuration, error) {
 	for i := 0; i < len(c.BlacklistedApps); i++ {
 		c.BlacklistedAppMap[c.BlacklistedApps[i]] = true
 	}
+
+	// To look for a request's account id in O(1) time, we fill this hash table located in the
+	// the BlacklistedAccts field of the Configuration struct defined in this file
+	c.BlacklistedAcctMap = make(map[string]bool)
+	for i := 0; i < len(c.BlacklistedAccts); i++ {
+		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
+	}
+
+	if err := isValidCookieSize(c.HostCookie.MaxCookieSizeBytes); err != nil {
+		glog.Fatal(fmt.Printf("Max cookie size %d cannot be less than %d \n", c.HostCookie.MaxCookieSizeBytes, MIN_COOKIE_SIZE_BYTES))
+		return nil, err
+	}
+
+	glog.Info("Logging the resolved configuration:")
+	logGeneral(reflect.ValueOf(c), "  \t")
+	if errs := c.validate(); len(errs) > 0 {
+		return &c, errs
+	}
+
 	return &c, nil
 }
 
@@ -443,6 +463,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderEmxDigital, "https://cs.emxdgt.com/um?ssp=pbs&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Demx_digital%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderEPlanning, "https://ads.us.e-planning.net/uspd/1/?du=https%3A%2F%2Fads.us.e-planning.net%2Fgetuid%2F1%2F5a1ad71d2d53a0f5%3F"+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Deplanning%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	// openrtb_ext.BidderFacebook doesn't have a good default.
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderGamma, "https://hb.gammaplatform.com/adx/sync/?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dgamma%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderGrid, "https://grid.bidswitch.net/sp_sync?sp_id=prebid&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dgrid%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderGumGum, "https://rtb.gumgum.com/usync/prbds2s?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dgumgum%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderImprovedigital, "https://ad.360yield.com/server_match?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dimprovedigital%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%7BPUB_USER_ID%7D")
@@ -454,7 +475,7 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderRhythmone, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	// openrtb_ext.BidderRTBHouse doesn't have a good default.
 	// openrtb_ext.BidderRubicon doesn't have a good default.
-	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSharethrough, "https://sharethrough.adnxs.com/getuid?"+url.QueryEscape(externalURL)+"/setuid?bidder=sharethrough&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&uid=$UID")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSharethrough, "https://match.sharethrough.com/FGMrCMMc/v1?redirectUri="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsharethrough%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSomoaudience, "https://publisher-east.mobileadtrading.com/usersync?ru="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsomoaudience%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUID%7D")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSovrn, "https://ap.lijit.com/pixel?redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsovrn%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderSonobi, "https://sync.go.sonobi.com/us.gif?loc="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dsonobi%26consent_string%3D{{.GDPR}}%26gdpr%3D{{.GDPRConsent}}%26uid%3D%5BUID%5D")
@@ -465,6 +486,8 @@ func (cfg *Configuration) setDerivedDefaults() {
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderTriplelift, "https://eb2.3lift.com/sync?gpdr={{.GDPR}}&cmp_cs={{.GDPRConsent}}")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderUnruly, "https://usermatch.targeting.unrulymedia.com/pbsync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&rurl="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dunruly%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID")
 	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderVisx, "https://t.visx.net/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dvisx%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUUID%7D")
+	setDefaultUsersync(cfg.Adapters, openrtb_ext.BidderEngageBDR, "https://match.bnmla.com/usersync/s2s_sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r="+url.QueryEscape(externalURL)+"%2Fsetuid%3Fbidder%3Dvisx%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24%7BUUID%7D")
+
 	// openrtb_ext.BidderTappx doesn't have a good default.
 }
 
@@ -512,6 +535,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("host_cookie.optout_cookie.name", "")
 	v.SetDefault("host_cookie.value", "")
 	v.SetDefault("host_cookie.ttl_days", 90)
+	v.SetDefault("host_cookie.max_cookie_size_bytes", 0)
 	v.SetDefault("http_client.max_idle_connections", 400)
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
@@ -603,6 +627,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
+	v.SetDefault("adapters.engagebdr.endpoint", "http://dsp.bnmla.com/hb")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
 	v.SetDefault("adapters.eplanning.endpoint", "http://ads.us.e-planning.net/hb/1")
@@ -630,6 +655,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.vrtcal.endpoint", "http://rtb.vrtcal.com/bidder_prebid.vap?ssp=1804")
 	v.SetDefault("adapters.yieldmo.endpoint", "http://ads.yieldmo.com/exchange/prebid-server")
 	v.SetDefault("adapters.gamoshi.endpoint", "https://rtb.gamoshi.io")
+	v.SetDefault("adapters.gamma.endpoint", "https://hb.gammaplatform.com/adx/request/")
 	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
 	v.SetDefault("adapters.verizonmedia.disabled", true)
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard")
@@ -649,6 +675,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("default_request.file.name", "")
 	v.SetDefault("default_request.alias_info", false)
 	v.SetDefault("blacklisted_apps", []string{""})
+	v.SetDefault("blacklisted_accts", []string{""})
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -667,4 +694,13 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
+}
+
+func isValidCookieSize(maxCookieSize int) error {
+	// If a non-zero-less-than-500-byte "host_cookie.max_cookie_size_bytes" value was specified in the
+	// environment configuration of prebid-server, default to 500 bytes
+	if maxCookieSize != 0 && maxCookieSize < MIN_COOKIE_SIZE_BYTES {
+		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
+	}
+	return nil
 }

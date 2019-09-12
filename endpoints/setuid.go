@@ -87,7 +87,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
-		pc.SetCookieOnResponse(w, setSiteCookie, cfg.Domain, cookieTTL)
+		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
 	})
 }
 

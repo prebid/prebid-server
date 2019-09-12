@@ -34,6 +34,7 @@ const (
 	BidderEmxDigital     BidderName = "emx_digital"
 	BidderEPlanning      BidderName = "eplanning"
 	BidderFacebook       BidderName = "audienceNetwork"
+	BidderGamma          BidderName = "gamma"
 	BidderGamoshi        BidderName = "gamoshi"
 	BidderGrid           BidderName = "grid"
 	BidderGumGum         BidderName = "gumgum"
@@ -58,6 +59,7 @@ const (
 	BidderYieldmo        BidderName = "yieldmo"
 	BidderVisx           BidderName = "visx"
 	BidderTappx          BidderName = "tappx"
+	BidderEngageBDR      BidderName = "engagebdr"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -76,6 +78,7 @@ var BidderMap = map[string]BidderName{
 	"conversant":      BidderConversant,
 	"emx_digital":     BidderEmxDigital,
 	"eplanning":       BidderEPlanning,
+	"gamma":           BidderGamma,
 	"gamoshi":         BidderGamoshi,
 	"grid":            BidderGrid,
 	"gumgum":          BidderGumGum,
@@ -100,6 +103,7 @@ var BidderMap = map[string]BidderName{
 	"yieldmo":         BidderYieldmo,
 	"visx":            BidderVisx,
 	"tappx":           BidderTappx,
+	"engagebdr":       BidderEngageBDR,
 }
 
 // BidderList returns the values of the BidderMap
