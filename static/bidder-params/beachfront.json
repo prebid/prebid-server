@@ -24,10 +24,11 @@
     },
     "bidfloor": {
       "type": "number",
-      "description": "The price floor for the bid.  Deprecated in favor of the Imp.bidfloor"
+      "description": "The price floor for the bid."
     }
   },
 
+  "required": ["bidfloor"],
   "oneOf": [{
       "required": ["appId"] }, {
       "required": ["appIds"]
