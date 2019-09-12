@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
@@ -24,6 +23,9 @@ type Client interface {
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
 	// logging any relevant errors to the app logs
 	PutJson(ctx context.Context, values []Cacheable) ([]string, []error)
+
+	// Serves the purpose of a getter that returns the host and the cache of the prebid-server URL
+	GetPrebidCacheSplitURL() (string, string)
 }
 
 type PayloadType string
@@ -48,13 +50,21 @@ func NewClient(conf *config.Cache) Client {
 				IdleConnTimeout: 65,
 			},
 		},
-		putUrl: conf.GetBaseURL(true, false),
+		putUrl:  conf.GetBaseURL(true, false),
+		urlHost: conf.GetHost(),
+		urlPath: conf.GetPath(),
 	}
 }
 
 type clientImpl struct {
 	httpClient *http.Client
 	putUrl     string
+	urlHost    string
+	urlPath    string
+}
+
+func (c *clientImpl) GetPrebidCacheSplitURL() (string, string) {
+	return c.urlHost, c.urlPath
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {

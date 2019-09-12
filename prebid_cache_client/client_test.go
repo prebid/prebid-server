@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/prebid/prebid-server/config"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -112,6 +114,57 @@ func TestEncodeValueToBuffer(t *testing.T) {
 	_ = encodeValueToBuffer(testCache, false, buf)
 	actual := buf.String()
 	assertStringEqual(t, expected, actual)
+}
+
+func TestStripCacheHostAndPath(t *testing.T) {
+	type aTest struct {
+		inConfig     []byte
+		expectedHost string
+		expectedPath string
+	}
+	testInput := []aTest{
+		{inConfig: []byte(`
+cache:
+  scheme: http
+  host: prebid-server.prebid.org
+  path: pbcache/endpoint
+`), expectedHost: "prebid-server.prebid.org", expectedPath: "pbcache/endpoint"},
+		{inConfig: []byte(`
+cache:
+  scheme: http
+  host: prebidcache.net
+  query: uuid=%PBS_CACHE_UUID%
+`), expectedHost: "prebidcache.net", expectedPath: "cache"},
+		{inConfig: []byte(`
+cache:
+  scheme: http
+  host: prebid-server.prebid.org
+`), expectedHost: "prebid-server.prebid.org", expectedPath: "cache"},
+		{inConfig: []byte(``), expectedHost: "", expectedPath: ""},
+		/*
+			cache:
+			  scheme: http
+			  host: prebidcache.net
+			  query: uuid=%PBS_CACHE_UUID%
+		*/
+	}
+	for i, test := range testInput {
+		//start viper
+		v := viper.New()
+		config.SetupViper(v, "")
+		v.SetConfigType("yaml")
+		//parse testst config into a config object
+		v.ReadConfig(bytes.NewBuffer(test.inConfig))
+		cfg, _ := config.New(v)
+
+		//start client
+		cacheClient := NewClient(&cfg.CacheURL)
+		cHost, cPath := cacheClient.GetPrebidCacheSplitURL()
+
+		//assert
+		assert.Equal(t, test.expectedHost, cHost, "TestStripCacheHostAndPath %d failed. Expected host '%s', got '%s' \n", i+1, test.expectedHost, cHost)
+		assert.Equal(t, test.expectedPath, cPath, "TestStripCacheHostAndPath %d failed. Expected path '%s', got '%s' \n", i+1, test.expectedPath, cPath)
+	}
 }
 
 func assertIntEqual(t *testing.T, expected, actual int) {

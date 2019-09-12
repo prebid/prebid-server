@@ -245,6 +245,7 @@ func TestGetBaseURL(t *testing.T) {
 		{cacheObj: &Cache{Scheme: "", Host: "", Path: "", Query: ""}, resultStringURL: "", printPath: true, printQuery: true},
 	}
 	for i, test := range testInput {
+		test.cacheObj.initCompleteCacheURLObject()
 		testUrl := test.cacheObj.GetBaseURL(test.printPath, test.printQuery)
 		assert.Equal(t, test.resultStringURL, testUrl, "Error handling the cfg.cacheHost object. Test number %d \n", i+1)
 	}

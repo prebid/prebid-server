@@ -361,6 +361,7 @@ type Cache struct {
 	ExpectedTimeMillis int `mapstructure:"expected_millis"`
 
 	DefaultTTLs DefaultTTLs `mapstructure:"default_ttl_seconds"`
+	CompleteURL *url.URL
 }
 
 // Default TTLs to use to cache bids for different types of imps.
@@ -421,37 +422,64 @@ func New(v *viper.Viper) (*Configuration, error) {
 	for i := 0; i < len(c.BlacklistedAccts); i++ {
 		c.BlacklistedAcctMap[c.BlacklistedAccts[i]] = true
 	}
+
+	// Init Prebid-Cache URL object
+	c.CacheURL.initCompleteCacheURLObject()
+
 	return &c, nil
 }
 
 //Allows for protocol relative URL if scheme is empty
-func (cfg *Cache) GetBaseURL(printPath bool, printQuery bool) string {
-	var cacheScheme, cachePath, cacheQuery string = cfg.Scheme, cfg.Path, ""
-	var rstring string = ""
+func (cfg *Cache) initCompleteCacheURLObject() {
+	var cacheScheme string = cfg.Scheme
+	var cachePath string = cfg.Path
+	cfg.CompleteURL = &url.URL{}
 
 	if cfg.Host != "" || cachePath != "" {
 		if cacheScheme != HTTP_SCHEME && cacheScheme != HTTPS_SCHEME && cacheScheme != "" {
 			cacheScheme = ""
 		}
-		if printPath {
-			if cachePath == "" {
-				cachePath = DEFAULT_PREBID_CACHE_PATH
-			}
-		} else {
-			cachePath = ""
+		if cachePath == "" {
+			cachePath = DEFAULT_PREBID_CACHE_PATH
 		}
-		if printQuery {
-			cacheQuery = cfg.Query
+		cfg.CompleteURL.Scheme = cacheScheme
+		cfg.CompleteURL.Host = cfg.Host
+		cfg.CompleteURL.Path = cachePath
+		cfg.CompleteURL.RawQuery = cfg.Query
+	}
+	return
+}
+
+//Allows for protocol relative URL if scheme is empty
+func (cfg *Cache) GetBaseURL(printPath bool, printQuery bool) string {
+	var rstring string = ""
+
+	if cfg.CompleteURL != nil {
+		copyURL := &url.URL{
+			Scheme:   cfg.CompleteURL.Scheme,
+			Host:     cfg.CompleteURL.Host,
+			Path:     cfg.CompleteURL.Path,
+			RawQuery: cfg.CompleteURL.RawQuery,
 		}
-		builtURL := &url.URL{
-			Scheme:   cacheScheme,
-			Host:     cfg.Host,
-			Path:     cachePath,
-			RawQuery: cacheQuery,
+		if !printPath {
+			copyURL.Path = ""
 		}
-		rstring = builtURL.String()
+		if !printQuery {
+			copyURL.RawQuery = ""
+		}
+		rstring = copyURL.String()
 	}
 	return rstring
+}
+
+// Getter for the Cache structure Path field
+func (cfg *Cache) GetPath() string {
+	return cfg.CompleteURL.Path
+}
+
+// Getter for the Cache structure Host field
+func (cfg *Cache) GetHost() string {
+	return cfg.CompleteURL.Host
 }
 
 func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
