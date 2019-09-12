@@ -263,78 +263,7 @@ func newBeachfrontADMVideoRequest() beachfrontADMVideoRequest {
 	return r
 }
 
-func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
-	var err error
-	var bidderExt adapters.ExtImpBidder
-	var beachfrontExt openrtb_ext.ExtImpBeachfront
-
-	if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return beachfrontExt, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
-		}
-	}
-
-	if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
-		return beachfrontExt, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
-		}
-	}
-
-	return beachfrontExt, err
-}
-
-func getDomain(page string) string {
-	protoUrl := strings.Split(page, "//")
-	var domainPage string
-
-	if len(protoUrl) > 1 {
-		domainPage = protoUrl[1]
-	} else {
-		domainPage = protoUrl[0]
-	}
-
-	return strings.Split(domainPage, "/")[0]
-
-}
-
-func getSite(request *openrtb.BidRequest) (site openrtb.Site) {
-
-	if request.App != nil {
-
-		if request.App.Domain == "" {
-			site.Domain = getDomain(request.App.Domain)
-		} else {
-			site.Domain = request.App.Domain
-		}
-
-		site.Page = request.App.Bundle
-		site.Mobile = 1
-	} else {
-		if request.Site.Page != "" {
-			if request.Site.Domain == "" {
-				site.Domain = getDomain(request.Site.Page)
-			} else {
-				site.Domain = request.Site.Domain
-			}
-			site.Page = request.Site.Page
-		}
-
-		site.Mobile = 0
-	}
-	return site
-}
-
-func getIP(ip string) string {
-		// This will only effect testing. The backend will return "" for localhost IPs,
-		// and seems not to know what IPv6 is, so just setting it to one that is not likely to
-		// be used.
-		if ip == "::1" || ip == "127.0.0.1" {
-			return "192.168.255.255"
-		}
-	return ip
-}
-
-func getBannerAppId(ext openrtb_ext.ExtImpBeachfront) (string, error) {
+func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
 	var appid string
 	var error error
 
@@ -342,29 +271,14 @@ func getBannerAppId(ext openrtb_ext.ExtImpBeachfront) (string, error) {
 		ext.AppId != "" {
 
 		appid = ext.AppId
-	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" &&
-		ext.AppIds.Banner != "" {
-		appid = ext.AppIds.Banner
+	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
+		if media == openrtb_ext.BidTypeVideo && ext.AppIds.Video != "" {
+			appid = ext.AppIds.Video
+		} else if media == openrtb_ext.BidTypeBanner && ext.AppIds.Banner != "" {
+			appid = ext.AppIds.Banner
+		}
 	} else {
 		error = errors.New("unable to determine the banner appId from the supplied extension")
-	}
-
-	return appid, error
-}
-
-func getVideoAppId(ext openrtb_ext.ExtImpBeachfront) (string, error) {
-	var appid string
-	var error error
-
-	if fmt.Sprintf("%s", reflect.TypeOf(ext.AppId)) == "string" &&
-		ext.AppId != "" {
-
-		appid = ext.AppId
-	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" &&
-		ext.AppIds.Video != "" {
-		appid = ext.AppIds.Video
-	} else {
-		error = errors.New("unable to determine the video appId from the supplied extension")
 	}
 
 	return appid, error
@@ -389,7 +303,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			continue
 		}
 
-		appid, err := getBannerAppId(beachfrontExt)
+		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeBanner)
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
@@ -475,7 +389,7 @@ func getADMVideoRequests(request *openrtb.BidRequest) ([]beachfrontADMVideoReque
 			continue
 		}
 
-		appid, err := getVideoAppId(beachfrontExt)
+		appid, err := getAppId(beachfrontExt, openrtb_ext.BidTypeVideo)
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
@@ -628,6 +542,76 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 	}
 
 	return bids, errs
+}
+func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
+	var err error
+	var bidderExt adapters.ExtImpBidder
+	var beachfrontExt openrtb_ext.ExtImpBeachfront
+
+	if err = json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		return beachfrontExt, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
+	}
+
+	if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
+		return beachfrontExt, &errortypes.BadInput{
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+		}
+	}
+
+	return beachfrontExt, err
+}
+
+func getDomain(page string) string {
+	protoUrl := strings.Split(page, "//")
+	var domainPage string
+
+	if len(protoUrl) > 1 {
+		domainPage = protoUrl[1]
+	} else {
+		domainPage = protoUrl[0]
+	}
+
+	return strings.Split(domainPage, "/")[0]
+
+}
+
+func getSite(request *openrtb.BidRequest) (site openrtb.Site) {
+
+	if request.App != nil {
+
+		if request.App.Domain == "" {
+			site.Domain = getDomain(request.App.Domain)
+		} else {
+			site.Domain = request.App.Domain
+		}
+
+		site.Page = request.App.Bundle
+		site.Mobile = 1
+	} else {
+		if request.Site.Page != "" {
+			if request.Site.Domain == "" {
+				site.Domain = getDomain(request.Site.Page)
+			} else {
+				site.Domain = request.Site.Domain
+			}
+			site.Page = request.Site.Page
+		}
+
+		site.Mobile = 0
+	}
+	return site
+}
+
+func getIP(ip string) string {
+		// This will only effect testing. The backend will return "" for localhost IPs,
+		// and seems not to know what IPv6 is, so just setting it to one that is not likely to
+		// be used.
+		if ip == "::1" || ip == "127.0.0.1" {
+			return "192.168.255.255"
+		}
+	return ip
 }
 
 func getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {
