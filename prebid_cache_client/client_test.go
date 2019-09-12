@@ -141,12 +141,6 @@ cache:
   host: prebid-server.prebid.org
 `), expectedHost: "prebid-server.prebid.org", expectedPath: "cache"},
 		{inConfig: []byte(``), expectedHost: "", expectedPath: ""},
-		/*
-			cache:
-			  scheme: http
-			  host: prebidcache.net
-			  query: uuid=%PBS_CACHE_UUID%
-		*/
 	}
 	for i, test := range testInput {
 		//start viper
@@ -162,8 +156,8 @@ cache:
 		cHost, cPath := cacheClient.GetPrebidCacheSplitURL()
 
 		//assert
-		assert.Equal(t, test.expectedHost, cHost, "TestStripCacheHostAndPath %d failed. Expected host '%s', got '%s' \n", i+1, test.expectedHost, cHost)
-		assert.Equal(t, test.expectedPath, cPath, "TestStripCacheHostAndPath %d failed. Expected path '%s', got '%s' \n", i+1, test.expectedPath, cPath)
+		assert.Equal(t, test.expectedHost, cHost, "Expected host '%s', got '%s' \n", i+1, test.expectedHost, cHost)
+		assert.Equal(t, test.expectedPath, cPath, "Expected path '%s', got '%s' \n", i+1, test.expectedPath, cPath)
 	}
 }
 
