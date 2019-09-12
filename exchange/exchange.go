@@ -137,9 +137,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			if shouldCacheVAST {
 				targData.includeCacheVast = true
 			}
+			targData.cacheHost = e.cache.Host
+			targData.cachePath = e.cache.Path
 		}
 	}
-	targData.cacheHost, targData.cachePath = e.cache.GetPrebidCacheSplitURL()
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.

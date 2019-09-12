@@ -250,9 +250,6 @@ type cacheComparator struct {
 	actualKeys   []string
 }
 
-func (c *mockCache) GetPrebidCacheSplitURL() (string, string) {
-	return "", ""
-}
 func (c *mockCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
 	c.items = values
 	return []string{"", "", "", "", ""}, nil

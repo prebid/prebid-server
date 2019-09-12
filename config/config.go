@@ -67,6 +67,12 @@ type HTTPClient struct {
 
 type configErrors []error
 
+const (
+	HTTP_SCHEME               string = "https"
+	HTTPS_SCHEME              string = "http"
+	DEFAULT_PREBID_CACHE_PATH string = "cache"
+)
+
 func (c configErrors) Error() string {
 	if len(c) == 0 {
 		return ""
@@ -340,6 +346,7 @@ type DataCache struct {
 type Cache struct {
 	Scheme string `mapstructure:"scheme"`
 	Host   string `mapstructure:"host"`
+	Path   string `mapstructure:"path"`
 	Query  string `mapstructure:"query"`
 
 	// A static timeout here is not ideal. This is a hack because we have some aggressive timelines for OpenRTB support.
@@ -418,19 +425,37 @@ func New(v *viper.Viper) (*Configuration, error) {
 }
 
 //Allows for protocol relative URL if scheme is empty
-func (cfg *Cache) GetBaseURL() string {
-	cfg.Scheme = strings.ToLower(cfg.Scheme)
-	if strings.Contains(cfg.Scheme, "https") {
-		return fmt.Sprintf("https://%s", cfg.Host)
+func (cfg *Cache) GetBaseURL(printPath bool, printQuery bool) string {
+	var cacheScheme, cachePath, cacheQuery string = cfg.Scheme, cfg.Path, ""
+	var rstring string = ""
+
+	if cfg.Host != "" || cachePath != "" {
+		if cacheScheme != HTTP_SCHEME && cacheScheme != HTTPS_SCHEME && cacheScheme != "" {
+			cacheScheme = ""
+		}
+		if printPath {
+			if cachePath == "" {
+				cachePath = DEFAULT_PREBID_CACHE_PATH
+			}
+		} else {
+			cachePath = ""
+		}
+		if printQuery {
+			cacheQuery = cfg.Query
+		}
+		builtURL := &url.URL{
+			Scheme:   cacheScheme,
+			Host:     cfg.Host,
+			Path:     cachePath,
+			RawQuery: cacheQuery,
+		}
+		rstring = builtURL.String()
 	}
-	if strings.Contains(cfg.Scheme, "http") {
-		return fmt.Sprintf("http://%s", cfg.Host)
-	}
-	return fmt.Sprintf("//%s", cfg.Host)
+	return rstring
 }
 
 func (cfg *Configuration) GetCachedAssetURL(uuid string) string {
-	return fmt.Sprintf("%s/cache?%s", cfg.CacheURL.GetBaseURL(), strings.Replace(cfg.CacheURL.Query, "%PBS_CACHE_UUID%", uuid, 1))
+	return strings.Replace(cfg.CacheURL.GetBaseURL(true, true), "%PBS_CACHE_UUID%", uuid, 1)
 }
 
 // Initialize any default config values which have sensible defaults, but those defaults depend on other config values.
