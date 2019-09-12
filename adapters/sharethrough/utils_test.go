@@ -22,7 +22,7 @@ func TestGetAdMarkup(t *testing.T) {
 			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
-				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid" />`,
+				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid&adReceivedAt=2019-09-12T11%3a29%3a00.000123456Z" />`,
 				`<div data-str-native-key="pkey" data-stx-response-name="str_response_bid"></div>`,
 				fmt.Sprintf(`<script>var str_response_bid = "%s"</script>`, base64.StdEncoding.EncodeToString([]byte(`{"bidId": "bid", "adserverRequestId": "arid"}`))),
 			},
@@ -61,7 +61,7 @@ func TestGetAdMarkup(t *testing.T) {
 		var strResp openrtb_ext.ExtImpSharethroughResponse
 		_ = json.Unmarshal(test.inputResponse, &strResp)
 
-		outputSuccess, outputError := Util{}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
+		outputSuccess, outputError := Util{Clock: MockClock{}}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
 		for _, markup := range test.expectedSuccess {
 			assert.Contains(outputSuccess, markup)
 		}

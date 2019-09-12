@@ -12,18 +12,18 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 type MockUtil struct {
-	mockCanAutoPlayVideo  func() bool
-	mockGdprApplies       func() bool
-	mockGdprConsentString func() string
-	mockGenerateHBUri     func() string
-	mockGetPlacementSize  func() (uint64, uint64)
+	mockCanAutoPlayVideo func() bool
+	mockGdprApplies      func() bool
+	mockGetPlacementSize func() (uint64, uint64)
+	mockParseUserInfo    func() userInfo
 	UtilityInterface
 }
 
-func (m MockUtil) canAutoPlayVideo(userAgent string) bool {
+func (m MockUtil) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) bool {
 	return m.mockCanAutoPlayVideo()
 }
 
@@ -31,16 +31,24 @@ func (m MockUtil) gdprApplies(request *openrtb.BidRequest) bool {
 	return m.mockGdprApplies()
 }
 
-func (m MockUtil) gdprConsentString(bidRequest *openrtb.BidRequest) string {
-	return m.mockGdprConsentString()
-}
-
-func (m MockUtil) generateHBUri(baseUrl string, params StrAdSeverParams, app *openrtb.App) string {
-	return m.mockGenerateHBUri()
-}
-
 func (m MockUtil) getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
 	return m.mockGetPlacementSize()
+}
+
+func (m MockUtil) parseUserInfo(user *openrtb.User) (ui userInfo) {
+	return m.mockParseUserInfo()
+}
+
+func (m MockUtil) getClock() ClockInterface {
+	return MockClock{}
+}
+
+type MockClock struct {
+	ClockInterface
+}
+
+func (m MockClock) now() time.Time {
+	return time.Date(2019, 9, 12, 11, 29, 0, 123456, time.UTC)
 }
 
 func assertRequestDataEquals(t *testing.T, testName string, expected *adapters.RequestData, actual *adapters.RequestData) {
@@ -88,13 +96,13 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
 				User: &openrtb.User{},
 				BAdv: []string{"domain1.com", "domain2.com"},
-				TMax: 500,
+				TMax: 700,
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
-				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":500}`),
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":700,"deadline":"2019-09-12T11:29:00.700123456Z"}`),
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
@@ -113,7 +121,14 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		},
 	}
 
-	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: Util{}, UserAgentParsers: UserAgentParsers{
+	mockUtil := MockUtil{
+		mockCanAutoPlayVideo: func() bool { return true },
+		mockGdprApplies:      func() bool { return true },
+		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
+		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
+	}
+
+	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: mockUtil, UserAgentParsers: UserAgentParsers{
 		ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
 		ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
 		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
@@ -199,7 +214,7 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 		},
 	}
 
-	adServer := StrOpenRTBTranslator{Util: Util{}, UriHelper: StrUriHelper{}}
+	adServer := StrOpenRTBTranslator{Util: Util{Clock: MockClock{}}, UriHelper: StrUriHelper{}}
 	for testName, test := range tests {
 		outputSuccess, outputErrors := adServer.responseToOpenRTB(test.inputStrResp, test.inputButlerReq)
 		assertBidderResponseEquals(t, testName, *test.expectedSuccess, *outputSuccess)
@@ -274,33 +289,35 @@ func TestBuildBody(t *testing.T) {
 		expectedJson  []byte
 		expectedError error
 	}{
-		"Returns empty body if nothing relevant in request": {
+		"Skip badomains if none, tmax default to 10 sec": {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: nil,
 			},
-			expectedJson:  []byte(`{}`),
+			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
 		"Sets badv as list of domains according to Badv": {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
-			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"]}`),
+			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"], "tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
-		"Sets tmax according to Tmax": {
+		"Sets tmax and deadline according to Tmax": {
 			inputRequest: &openrtb.BidRequest{
 				TMax: 500,
 			},
-			expectedJson:  []byte(`{"tmax": 500}`),
+			expectedJson:  []byte(`{"tmax": 500, "deadline":"2019-09-12T11:29:00.500123456Z"}`),
 			expectedError: nil,
 		},
 	}
 
 	assert := assert.New(t)
+	helper := StrBodyHelper{Clock: MockClock{}}
+
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
-		outputJson, outputError := buildBody(test.inputRequest)
+		outputJson, outputError := helper.buildBody(test.inputRequest)
 
 		assert.JSONEq(string(test.expectedJson), string(outputJson))
 		assert.Equal(test.expectedError, outputError)
@@ -340,11 +357,12 @@ func TestBuildUri(t *testing.T) {
 				"strVersion=" + strconv.FormatInt(strVersion, 10),
 				"ttduid=ttd123",
 				"stxuid=stx123",
+				"adRequestAt=2019-09-12T11%3A29%3A00.000123456Z",
 			},
 		},
 	}
 
-	uriHelper := StrUriHelper{BaseURI: "http://abc.com"}
+	uriHelper := StrUriHelper{BaseURI: "http://abc.com", Clock: MockClock{}}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 		output := uriHelper.buildUri(test.inputParams)

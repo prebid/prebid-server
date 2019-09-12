@@ -11,7 +11,10 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
+
+const defaultTmax = 10000 // 10 sec
 
 type StrAdSeverParams struct {
 	Pkey               string
@@ -44,11 +47,17 @@ type UserAgentParsers struct {
 
 type ButlerRequestBody struct {
 	BlockedAdvDomains []string `json:"badv,omitempty"`
-	MaxTimeout        int64    `json:"tmax,omitempty"`
+	MaxTimeout        int64    `json:"tmax"`
+	Deadline          string   `json:"deadline"`
 }
 
 type StrUriHelper struct {
 	BaseURI string
+	Clock   ClockInterface
+}
+
+type StrBodyHelper struct {
+	Clock ClockInterface
 }
 
 type StrOpenRTBTranslator struct {
@@ -85,7 +94,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 		height, width = s.Util.getPlacementSize(imp.Banner.Format)
 	}
 
-	jsonBody, err := buildBody(request)
+	jsonBody, err := (StrBodyHelper{Clock: s.Util.getClock()}).buildBody(request)
 	if err != nil {
 		return nil, err
 	}
@@ -158,10 +167,16 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	return bidResponse, errs
 }
 
-func buildBody(request *openrtb.BidRequest) (body []byte, err error) {
+func (h StrBodyHelper) buildBody(request *openrtb.BidRequest) (body []byte, err error) {
+	timeout := request.TMax
+	if timeout == 0 {
+		timeout = defaultTmax
+	}
+
 	body, err = json.Marshal(ButlerRequestBody{
 		BlockedAdvDomains: request.BAdv,
-		MaxTimeout:        request.TMax,
+		MaxTimeout:        timeout,
+		Deadline:          h.Clock.now().Add(time.Duration(timeout) * time.Millisecond).Format(time.RFC3339Nano),
 	})
 
 	return
@@ -185,6 +200,7 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
+	v.Set("adRequestAt", h.Clock.now().Format(time.RFC3339Nano))
 	v.Set("supplyId", supplyId)
 	v.Set("strVersion", strconv.FormatInt(strVersion, 10))
 
