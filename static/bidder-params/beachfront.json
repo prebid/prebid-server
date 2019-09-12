@@ -26,9 +26,9 @@
       "type": "number",
       "description": "The price floor for the bid."
     },
-    "nurlvideo": {
-      "type": "boolean",
-      "description": "By default the video response will be ADM / VAST, but if you want a nurl, set this to true."
+    "videoResponseType": {
+      "type": "string",
+      "description": "By default the video response will be ADM / VAST, but if you want a nurl, set this to 'nurl'. If you want both set it to 'both'. Setting it to any other string will have no effect and the default format will be returned"
     }
   },
 
