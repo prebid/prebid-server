@@ -120,16 +120,16 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 	}
 
-	var reqCount = len(beachfrontRequests.NurlVideo)
+	var reqCount = len(beachfrontRequests.ADMVideo) + len(beachfrontRequests.NurlVideo)
 	if len(beachfrontRequests.Banner.Slots) > 0 {
 		reqCount++
 	}
 
-	reqCount += len(beachfrontRequests.ADMVideo)
 
 	var reqs = make([]*adapters.RequestData, reqCount)
 
-	var bump = 0
+	var nurlBump = 0
+	var admBump =0
 
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
@@ -142,29 +142,30 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 				Body:    bytes,
 				Headers: headers,
 			}
+
+			nurlBump++
+			admBump++
 		} else {
 			errs = append(errs, err)
 		}
-
-		reqCount--
-
-		bump++
 	}
 
 	if request.User != nil && request.User.BuyerUID != "" && reqCount > 0 {
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
+
 	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
-
 		if err == nil {
-			reqs[j+bump] = &adapters.RequestData{
+			reqs[j+nurlBump] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
 				Body:    bytes,
 				Headers: headers,
 			}
+
+			admBump++
 
 		} else {
 			errs = append(errs, err)
@@ -177,7 +178,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		bytes = append([]byte(`{"isPrebid":"true",`), bytes[1:]...)
 
 		if err == nil {
-			reqs[j+bump] = &adapters.RequestData{
+			reqs[j+admBump] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + VideoEndpointSuffix,
 				Body:    bytes,
@@ -186,8 +187,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		} else {
 			errs = append(errs, err)
 		}
-
-		bump++
 	}
 
 	return reqs, errs
@@ -305,7 +304,9 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		slot := beachfrontSlot{}
 		slot.Id = appid
 
-		if beachfrontExt.BidFloor > minBidFloor {
+		if beachfrontExt.BidFloor <= minBidFloor {
+			slot.Bidfloor = 0
+		} else {
 			slot.Bidfloor = beachfrontExt.BidFloor
 		}
 
@@ -403,7 +404,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		imp.Banner = nil
 		imp.Ext = nil
 
-		if beachfrontExt.BidFloor > minBidFloor {
+		// @TODO - ask Alex - when bid floor gets set to 0 here, the request is sent with no bidfloor key. Is that
+		// what we want?
+		if beachfrontExt.BidFloor <= minBidFloor {
+			imp.BidFloor = 0
+		} else {
 			imp.BidFloor = beachfrontExt.BidFloor
 		}
 
@@ -494,7 +499,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 		}
 	}
 
-	return openrtbResp.SeatBid[0].Bid, errs
+	return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
 }
 
 func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
@@ -521,6 +526,37 @@ func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest 
 	}
 
 	return bids, errs
+}
+func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
+
+	var xtrnal openrtb.BidRequest
+	var errs = make([]error, 0)
+
+	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+		errs = append(errs, err)
+		return bids, errs
+	}
+
+	if externalRequest.Uri[len(externalRequest.Uri) - 13:len(externalRequest.Uri)] == VideoEndpointSuffix {
+
+		for i := 0; i < len(bids); i++ {
+			crid := extractVideoCrid(bids[i].NURL)
+
+			bids[i].CrID = crid
+			bids[i].ImpID = xtrnal.Imp[i].ID
+			bids[i].H = xtrnal.Imp[i].Video.H
+			bids[i].W = xtrnal.Imp[i].Video.W
+			bids[i].ID = id
+		}
+
+	}
+	return bids, errs
+}
+
+
+func extractVideoCrid(nurl string) string {
+	chunky := strings.SplitAfter(nurl, ":")
+	return strings.TrimSuffix(chunky[2], ":")
 }
 
 func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
