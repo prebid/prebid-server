@@ -39,9 +39,6 @@
       }
     ],
     "site":{
-      "publisher":{
-        "id":"publisher1"
-      },
       "page": "http://example.com/somepage.html"
     },
     "user": {
@@ -49,7 +46,7 @@
       "buyeruid": "some-buyer"
     },
     "device": {
-      "ip": "127.0.0.1",
+      "ip": "192.168.255.255",
       "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
     }
   },
@@ -63,7 +60,7 @@
             {
               "slot": "mix1",
               "id": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
-              "bidfloor": 0.01,
+              "bidfloor": 0,
               "sizes": [
                 {
                   "w": 300,
@@ -88,7 +85,7 @@
           },
           "adapterName": "BF_PREBID_S2S",
           "adapterVersion": "0.7.0",
-          "ip": "127.0.0.1",
+          "ip": "192.168.255.255",
           "requestId": "61b87329-8790-47b7-90dd-c53ae7ce1723"
         }
       } ,
@@ -110,20 +107,22 @@
 
     }, {
       "expectedRequest": {
-        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
+        "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76",
         "body": {
-          "isPrebid": true,
-          "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
           "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
           "imp": [
             {
               "video": {
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "mimes": [
+                  "video/mp4"
+                ]
+
               },
               "bidfloor": 0.01,
               "secure" : 0,
-              "id": 0,
+              "id": "mix1",
               "impid": "mix1"
             }
           ],
@@ -131,14 +130,17 @@
             "page": "http://example.com/somepage.html",
             "domain": "example.com"
           },
+          "source": {
+            "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+          },
           "device": {
-            "js": "1",
             "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "127.0.0.1"
+            "ip": "192.168.255.255"
           },
           "cur": [
             "USD"
           ],
+          "tmax": 1000,
           "user": {
             "id": "some-user",
             "buyeruid": "some-buyer"
