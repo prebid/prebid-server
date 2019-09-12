@@ -1,18 +1,16 @@
 package sharethrough
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"regexp"
 )
 
 const supplyId = "FGMrCMMc"
-const strVersion = "1.0.3"
+const strVersion = 4
 
 func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 	return &SharethroughAdapter{
@@ -68,10 +66,5 @@ func (a SharethroughAdapter) MakeBids(internalRequest *openrtb.BidRequest, exter
 		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
 	}
 
-	var strBidResp openrtb_ext.ExtImpSharethroughResponse
-	if err := json.Unmarshal(response.Body, &strBidResp); err != nil {
-		return nil, []error{err}
-	}
-
-	return a.AdServer.responseToOpenRTB(strBidResp, externalRequest)
+	return a.AdServer.responseToOpenRTB(response.Body, externalRequest)
 }

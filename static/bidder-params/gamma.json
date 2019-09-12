@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Gamma Adapter Params",
+  "description": "A schema which validates params accepted by Gamma adapter",
+  "type": "object",
+  "properties": {
+      "id": {
+        "type": "string",
+        "description": "Partner ID"
+    },
+    "zid": {
+      "type": "string",
+      "description": "Zone ID"
+    },
+    "wid": {
+      "type": "string",
+      "description": "Web ID"
+    }
+  },
+  "required": ["id", "zid","wid"]
+}
