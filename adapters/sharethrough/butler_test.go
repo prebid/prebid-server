@@ -289,14 +289,14 @@ func TestBuildBody(t *testing.T) {
 		expectedJson  []byte
 		expectedError error
 	}{
-		"Skip badomains if none, tmax default to 10 sec": {
+		"Empty input: skips badomains, tmax default to 10 sec and sets deadline accordingly": {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: nil,
 			},
 			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
-		"Sets badv as list of domains according to Badv": {
+		"Sets badv as list of domains according to Badv (tmax default to 10 sec and sets deadline accordingly)": {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
