@@ -11,7 +11,7 @@
         "id":"mix1",
         "ext":{
           "bidder":{
-            "bidfloor":0.01,
+            "bidfloor":0.41,
             "appIds": {
               "banner": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
               "video": "11bc5dd5-7421-4dd8-c926-40fa653bec76"
@@ -60,7 +60,7 @@
             {
               "slot": "mix1",
               "id": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
-              "bidfloor": 0,
+              "bidfloor": 0.41,
               "sizes": [
                 {
                   "w": 300,
@@ -120,10 +120,8 @@
                 ]
 
               },
-              "bidfloor": 0.01,
-              "secure" : 0,
-              "id": "mix1",
-              "impid": "mix1"
+              "bidfloor": 0.41,
+              "id": "mix1"
             }
           ],
           "site": {

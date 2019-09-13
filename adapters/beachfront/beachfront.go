@@ -44,9 +44,9 @@ type beachfrontRequests struct {
 // ---------------------------------------------------
 
 type beachfrontVideoRequest struct {
-	AppId   string             `json:"appId"`
-	VideoResponseType string				`json:"videoResponseType"`
-	Request openrtb.BidRequest `json:"request"`
+	AppId             string             `json:"appId"`
+	VideoResponseType string             `json:"videoResponseType"`
+	Request           openrtb.BidRequest `json:"request"`
 }
 
 // ---------------------------------------------------
@@ -125,11 +125,10 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		reqCount++
 	}
 
-
 	var reqs = make([]*adapters.RequestData, reqCount)
 
 	var nurlBump = 0
-	var admBump =0
+	var admBump = 0
 
 	// At most, I only ever have one banner request, and it does not need the cookie, so doing it first.
 	if len(beachfrontRequests.Banner.Slots) > 0 {
@@ -154,7 +153,6 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		headers.Add("Cookie", "__io_cid="+request.User.BuyerUID)
 	}
 
-
 	for j := 0; j < len(beachfrontRequests.ADMVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.ADMVideo[j].Request)
 		if err == nil {
@@ -175,6 +173,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
+		// Chop off the leading "{" and add the nurl flag
 		bytes = append([]byte(`{"isPrebid":"true",`), bytes[1:]...)
 
 		if err == nil {
@@ -230,7 +229,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 				beachfrontReqs.NurlVideo = append(beachfrontReqs.NurlVideo, videoList[i])
 			}
 
-			if videoList[i].VideoResponseType == "adm" || videoList[i].VideoResponseType == "both"{
+			if videoList[i].VideoResponseType == "adm" || videoList[i].VideoResponseType == "both" {
 				beachfrontReqs.ADMVideo = append(beachfrontReqs.ADMVideo, videoList[i])
 			}
 		}
@@ -397,7 +396,11 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		} else {
 			bfReqs[i].VideoResponseType = "adm"
 		}
+
+		site := getSite(request)
+
 		bfReqs[i].Request = *request
+		bfReqs[i].Request.Site = &site
 
 		imp := request.Imp[i]
 
@@ -426,7 +429,9 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		bfReqs[i].Request.Imp = make([]openrtb.Imp, 1, 1)
 		bfReqs[i].Request.Imp[0] = imp
 
-		bfReqs[i].Request.Device.IP = getIP(bfReqs[i].Request.Device.IP)
+		if bfReqs[i].Request.Device != nil && bfReqs[i].Request.Device.IP != "" {
+			bfReqs[i].Request.Device.IP = getIP(bfReqs[i].Request.Device.IP)
+		}
 	}
 
 	// Strip out any failed requests
@@ -438,9 +443,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 	}
 	return bfReqs, errs
 }
-
-
-
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
@@ -537,7 +539,7 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 		return bids, errs
 	}
 
-	if externalRequest.Uri[len(externalRequest.Uri) - 13:len(externalRequest.Uri)] == VideoEndpointSuffix {
+	if externalRequest.Uri[len(externalRequest.Uri)-13:len(externalRequest.Uri)] == VideoEndpointSuffix {
 
 		for i := 0; i < len(bids); i++ {
 			crid := extractVideoCrid(bids[i].NURL)
@@ -552,7 +554,6 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 	}
 	return bids, errs
 }
-
 
 func extractVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
@@ -593,7 +594,7 @@ func getDomain(page string) string {
 
 }
 
-func getSite(request *openrtb.BidRequest) (openrtb.Site) {
+func getSite(request *openrtb.BidRequest) openrtb.Site {
 	var site = request.Site
 
 	if request.App != nil {
