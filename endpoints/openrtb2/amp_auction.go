@@ -18,6 +18,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/analytics"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
@@ -98,7 +99,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, 1)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAmpObject(&ao)
 	}()
@@ -149,6 +149,17 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
 	labels.PubID = effectivePubID(req.Site.Publisher)
+	// Blacklist account now that we have resolved the value
+	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
+		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
+		w.WriteHeader(http.StatusBadRequest)
+		for _, err := range errL {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
+		ao.Errors = append(ao.Errors, errL...)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
+	}
 
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.AuctionResponse = response
@@ -320,12 +331,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	deps.overrideWithParams(httpRequest, req)
+	err := deps.overrideWithParams(httpRequest, req)
+	if err != nil {
+		errs = []error{err}
+	}
 
 	return
 }
 
-func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) error {
 	if req.Site == nil {
 		req.Site = &openrtb.Site{}
 	}
@@ -364,9 +378,29 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
+	//In the AMP endpoint the consent string found in the http.Request query overrides that of the prebid query
+	queryConsentString := httpRequest.FormValue("gdpr_consent")
+	if queryConsentString != "" {
+		jsonMsg := json.RawMessage(`{"consent":"` + queryConsentString + `"}`)
+		// If nil, initialize
+		if req.User == nil {
+			req.User = &openrtb.User{Ext: jsonMsg}
+		} else if req.User.Ext == nil {
+			req.User.Ext = jsonMsg
+		} else { // req.User.Ext != nil, keep whatever is in there and only substitute the consent string
+			var parserErr error
+			req.User.Ext, parserErr = jsonparser.Set(req.User.Ext, []byte(`"`+queryConsentString+`"`), "consent")
+			if parserErr != nil {
+				return parserErr
+			}
+		}
+	}
+
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
 		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
+
+	return nil
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {

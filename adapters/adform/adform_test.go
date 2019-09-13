@@ -185,7 +185,7 @@ func preparePrebidRequest(serverUrl string, t *testing.T) *pbs.PBSRequest {
 	pbsCookie := usersync.ParsePBSCookieFromRequest(prebidHttpRequest, &config.HostCookie{})
 	pbsCookie.TrySync("adform", adformTestData.buyerUID)
 	fakeWriter := httptest.NewRecorder()
-	pbsCookie.SetCookieOnResponse(fakeWriter, "", time.Minute)
+	pbsCookie.SetCookieOnResponse(fakeWriter, &config.HostCookie{Domain: ""}, time.Minute)
 	prebidHttpRequest.Header.Add("Cookie", fakeWriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

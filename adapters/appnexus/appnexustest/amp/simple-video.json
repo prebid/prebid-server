@@ -28,7 +28,8 @@
 		  "body": {
 			"ext": {
 				"appnexus": {
-					"is_amp": 1
+					"is_amp": 1,
+					"hb_source": 5
 				},
 				"prebid": {
 				}
