@@ -11,8 +11,6 @@ import (
 	"github.com/mxmCherry/openrtb"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
-	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
-	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	"golang.org/x/text/currency"
 )
