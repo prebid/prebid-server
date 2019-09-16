@@ -10,15 +10,15 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
@@ -106,8 +106,16 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			parsedReq.Bidders = append(parsedReq.Bidders, string(bidder))
 		}
 	}
+	isBrowserApplicable := usersync.IsBrowserApplicableForSameSite(r)
+	needSyncupForSameSite := false
+	if isBrowserApplicable {
+		_, err1 := r.Cookie(usersync.SameSiteCookieName)
+		if err1 == http.ErrNoCookie {
+			needSyncupForSameSite = true
+		}
+	}
 
-	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie)
+	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie, needSyncupForSameSite)
 	adapterSyncs := make(map[openrtb_ext.BidderName]bool)
 	for _, b := range parsedReq.Bidders {
 		// assume all bidders will be GDPR blocked
@@ -129,7 +137,14 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
+
+		//added hack to support to old wrapper versions having indexExchange as partner
+		//TODO: Remove when a stable version is released
+		newBidder := bidder
+		if bidder == "indexExchange" {
+			newBidder = "ix"
+		}
+		syncInfo, err := deps.syncers[openrtb_ext.BidderName(newBidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
 		if err == nil {
 			newSync := &usersync.CookieSyncBidders{
 				BidderCode:   bidder,
@@ -138,7 +153,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			}
 			csResp.BidderStatus = append(csResp.BidderStatus, newSync)
 		} else {
-			glog.Errorf("Failed to get usersync info for %s: %v", bidder, err)
+			glog.Errorf("Failed to get usersync info for %s: %v", newBidder, err)
 		}
 	}
 
@@ -176,6 +191,9 @@ func cookieSyncStatus(syncCount int) string {
 	return "ok"
 }
 
+type CookieSyncReq cookieSyncRequest
+type CookieSyncResp cookieSyncResponse
+
 type cookieSyncRequest struct {
 	Bidders []string `json:"bidders"`
 	GDPR    *int     `json:"gdpr"`
@@ -183,10 +201,15 @@ type cookieSyncRequest struct {
 	Limit   int      `json:"limit"`
 }
 
-func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie) {
+func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {
 	for i := 0; i < len(req.Bidders); i++ {
 		thisBidder := req.Bidders[i]
-		if syncer, isValid := valid[openrtb_ext.BidderName(thisBidder)]; !isValid || cookie.HasLiveSync(syncer.FamilyName()) {
+		//added hack to support to old wrapper versions having indexExchange as partner
+		//TODO: Remove when a stable version is released
+		if thisBidder == "indexExchange" {
+			thisBidder = "ix"
+		}
+		if syncer, isValid := valid[openrtb_ext.BidderName(thisBidder)]; !isValid || (cookie.HasLiveSync(syncer.FamilyName()) && !needSyncupForSameSite) {
 			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
 			i--
 		}

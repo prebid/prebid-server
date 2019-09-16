@@ -12,14 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/buger/jsonparser"
-	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
-	"github.com/mssola/user_agent"
-	"github.com/mxmCherry/openrtb"
-	"github.com/mxmCherry/openrtb/native"
-	nativeRequests "github.com/mxmCherry/openrtb/native/request"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
@@ -30,6 +22,15 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/buger/jsonparser"
+	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
+	"github.com/mssola/user_agent"
+	"github.com/mxmCherry/openrtb"
+	"github.com/mxmCherry/openrtb/native"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -708,6 +709,7 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 
 	/* Process all the bidder exts in the request */
 	disabledBidders := []string{}
+	validationFailedBidders := []string{}
 	for bidder, ext := range bidderExts {
 		if bidder != openrtb_ext.PrebidExtKey {
 			coreBidder := bidder
@@ -716,7 +718,10 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 			}
 			if bidderName, isValid := deps.bidderMap[coreBidder]; isValid {
 				if err := deps.paramsValidator.Validate(bidderName, ext); err != nil {
-					return []error{fmt.Errorf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)}
+					validationFailedBidders = append(validationFailedBidders, bidder)
+					msg := fmt.Sprintf("request.imp[%d].ext.%s failed validation.\n%v", impIndex, coreBidder, err)
+					glog.Errorf("BidderSchemaValidationError: %s", msg)
+					errL = append(errL, &errortypes.BidderFailedSchemaValidation{Message: msg})
 				}
 			} else {
 				if msg, isDisabled := deps.disabledBidders[bidder]; isDisabled {
@@ -734,16 +739,23 @@ func (deps *endpointDeps) validateImpExt(imp *openrtb.Imp, aliases map[string]st
 		for _, bidder := range disabledBidders {
 			delete(bidderExts, bidder)
 		}
-		extJSON, err := json.Marshal(bidderExts)
-		if err != nil {
-			return []error{err}
-		}
-		imp.Ext = extJSON
 	}
+
+	if len(validationFailedBidders) > 0 {
+		for _, bidder := range validationFailedBidders {
+			delete(bidderExts, bidder)
+		}
+	}
+
+	extJSON, err := json.Marshal(bidderExts)
+	if err != nil {
+		return []error{err}
+	}
+	imp.Ext = extJSON
 
 	// TODO #713 Fix this here
 	if len(bidderExts) < 1 {
-		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder", impIndex))
+		errL = append(errL, fmt.Errorf("request.imp[%d].ext must contain at least one bidder with valid parameters", impIndex))
 		return errL
 	}
 
@@ -1156,7 +1168,7 @@ func writeError(errs []error, w http.ResponseWriter) bool {
 func fatalError(errL []error) bool {
 	for _, err := range errL {
 		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
+		if (errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.BidderFailedSchemaValidationCode) || errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
 			return true
 		}
 	}
