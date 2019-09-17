@@ -360,6 +360,10 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
+	//If includebrandcategory is present in ext then CE feature is on.
+	if requestExt.Prebid.Targeting == nil {
+		return res, seatBids, nil
+	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
@@ -368,14 +372,22 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	var primaryAdServer string
 	var publisher string
 	var err error
+	var translateCategories = true
 
 	if includeBrandCategory && brandCatExt.WithCategory {
-		//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
-		primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
-		if err != nil {
-			return res, seatBids, err
+		//if TranslateCategories is nil, default category translation to enabled
+		if brandCatExt.TranslateCategories != nil {
+			translateCategories = *brandCatExt.TranslateCategories
 		}
-		publisher = brandCatExt.Publisher
+		//if translateCategories is set to false, ignore checking primaryAdServer and publisher
+		if translateCategories {
+			//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
+			primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
+			if err != nil {
+				return res, seatBids, err
+			}
+			publisher = brandCatExt.Publisher
+		}
 	}
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
@@ -400,15 +412,19 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
 				}
-				//if unique IAB category is present then translate it to the adserver category based on mapping file
-				category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
-				if err != nil || category == "" {
-					//TODO: add metrics
-					//if mapping required but no mapping file is found then discard the bid
-					bidsToRemove = append(bidsToRemove, bidInd)
-					continue
+				if translateCategories {
+					//if unique IAB category is present then translate it to the adserver category based on mapping file
+					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
+					if err != nil || category == "" {
+						//TODO: add metrics
+						//if mapping required but no mapping file is found then discard the bid
+						bidsToRemove = append(bidsToRemove, bidInd)
+						continue
+					}
+				} else {
+					//category translation is disabled, continue with IAB category
+					category = bidIabCat[0]
 				}
-
 			}
 
 			// TODO: consider should we remove bids with zero duration here?
