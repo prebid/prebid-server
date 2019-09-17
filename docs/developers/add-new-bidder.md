@@ -38,7 +38,7 @@ If bidder is going to support long form video make sure bidder returns:
 
 - single [IAB subcategory](https://iabtechlab.com/standards/content-taxonomy/) for each bid in `TypedBid.bid.Cat` field
 - ad duration in seconds in `TypedBid.BidVideo.Duration` field
-- bid price in `bid.bid.Price`
+- bid price in `TypedBid.bid.Price`
 
 ## Test Your Bidder
 
