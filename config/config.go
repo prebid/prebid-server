@@ -646,6 +646,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.adkerneladn.endpoint", "http://{{.Host}}/rtbpub?account={{.PublisherID}}")
 	v.SetDefault("adapters.33across.partner_id", "")
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
+	v.SetDefault("adapters.adpone.endpoint", "http://rtb.adpone.com")
 	v.SetDefault("adapters.rhythmone.endpoint", "http://tag.1rx.io/rmp")
 	v.SetDefault("adapters.gumgum.endpoint", "https://g2.gumgum.com/providers/prbds2s/bid")
 	v.SetDefault("adapters.grid.endpoint", "http://grid.bidswitch.net/sp_bid?sp=prebid")
