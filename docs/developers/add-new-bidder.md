@@ -31,7 +31,8 @@ Bidder implementations are scattered throughout several files.
 - `static/bidder-params/{bidder}.json`: A [draft-4 json-schema](https://spacetelescope.github.io/understanding-json-schema/) which [validates your Bidder's params](https://www.jsonschemavalidator.net/).
 - `static/bidder-info/{bidder}.yaml`: contains metadata (e.g. contact email, platform & media type support) about the adapter
 
-Bidder implementations may assume that any params have already been validated against the defined json-schema.
+Bidder implementations may assume that any params have already been validated against the defined json-schema.<br/>
+If bidder is going to support long form video, make sure to return only a single category for each bid when `includeBrandCategory` is present in request.
 
 ## Test Your Bidder
 
