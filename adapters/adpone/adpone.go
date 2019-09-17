@@ -15,12 +15,10 @@ func NewAdponeBidder(endpoint string) *adponeAdapter {
 	return &adponeAdapter{endpoint: endpoint}
 }
 
-// Implements Bidder interface.
 type adponeAdapter struct {
 	endpoint string
 }
 
-// MakeRequests prepares the HTTP requests which should be made to fetch bids.
 func (adapter *adponeAdapter) MakeRequests(
 	openRTBRequest *openrtb.BidRequest,
 	reqInfo *adapters.ExtraRequestInfo,
@@ -28,7 +26,7 @@ func (adapter *adponeAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-	var ttxExt openrtb_ext.ExtAdpone
+	var ttxExt openrtb_ext.EXTAdpone
 	var bidderExt adapters.ExtImpBidder
 	_ = json.Unmarshal(bidderExt.Bidder, &ttxExt)
 	impExtJSON, err := json.Marshal(ttxExt)
@@ -55,7 +53,6 @@ func (adapter *adponeAdapter) MakeRequests(
 const unexpectedStatusCodeFormat = "" +
 	"Unexpected status code: %d. Run with request.debug = 1 for more info"
 
-// MakeBids unpacks the server's response into Bids.
 func (adapter *adponeAdapter) MakeBids(
 	openRTBRequest *openrtb.BidRequest,
 	requestToBidder *adapters.RequestData,
@@ -91,7 +88,7 @@ func (adapter *adponeAdapter) MakeBids(
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
+			bid := bid
 			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
 			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
 		}
