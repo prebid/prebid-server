@@ -632,7 +632,7 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
 		includeWinners:   true,
 	}
-	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 40, 50}
 
 	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
 
@@ -666,10 +666,11 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
 	assert.Equal(t, "10.00_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
-	assert.Equal(t, "20.00_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
+	assert.Equal(t, "20.00_40s", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_30s", bidCategory["bid_id3"], "Category mapping doesn't match")
-	assert.Equal(t, 3, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
-	assert.Equal(t, 3, len(bidCategory), "Bidders category mapping doesn't match")
+	assert.Equal(t, "20.00_50s", bidCategory["bid_id4"], "Category mapping doesn't match")
+	assert.Equal(t, 4, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
+	assert.Equal(t, 4, len(bidCategory), "Bidders category mapping doesn't match")
 }
 
 func TestCategoryDedupe(t *testing.T) {
