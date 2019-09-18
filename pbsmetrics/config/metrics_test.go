@@ -147,7 +147,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
 }
 
-func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
+func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {
 	if expected != actual {
 		t.Errorf("Error in metric %s: got %d, expected %d.", name, expected, actual)
 	}
