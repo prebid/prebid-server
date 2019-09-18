@@ -128,7 +128,7 @@
             "buyeruid":"some-buyer"
           },
           "adapterName":"BF_PREBID_S2S",
-          "adapterVersion":"0.7.0",
+          "adapterVersion":"0.8.0",
           "ip":"127.0.0.1",
           "requestId":"multi-mix-test"
         }

@@ -23,7 +23,7 @@ const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 const VideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
-const beachfrontAdapterVersion = "0.7.0"
+const beachfrontAdapterVersion = "0.8.0"
 
 const minBidFloor = 0.01
 
@@ -174,7 +174,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
 		// Chop off the leading "{" and add the nurl flag
-		bytes = append([]byte(`{"isPrebid":"true",`), bytes[1:]...)
+		bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
 
 		if err == nil {
 			reqs[j+admBump] = &adapters.RequestData{
@@ -238,20 +238,6 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	return
 }
 
-func newBeachfrontBannerRequest() beachfrontBannerRequest {
-	r := beachfrontBannerRequest{}
-	r.AdapterName = beachfrontAdapterName
-	r.AdapterVersion = beachfrontAdapterVersion
-
-	return r
-}
-
-func newBeachfrontVideoRequest() beachfrontVideoRequest {
-	r := beachfrontVideoRequest{}
-
-	return r
-}
-
 func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (string, error) {
 	var appid string
 	var error error
@@ -280,8 +266,6 @@ request to the beachfront banner endpoint gets all banner Imps.
 func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []error) {
 	var bfr beachfrontBannerRequest
 	var errs = make([]error, 0, len(request.Imp))
-
-	bfr = newBeachfrontBannerRequest()
 
 	for i := 0; i < len(request.Imp); i++ {
 
@@ -356,12 +340,24 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	}
 
 	bfr.RequestID = request.ID
+	bfr.AdapterName = beachfrontAdapterName
+	bfr.AdapterVersion = beachfrontAdapterVersion
 
 	if request.Imp[0].Secure != nil {
 		bfr.Secure = *request.Imp[0].Secure
 	}
 
 	return bfr, errs
+}
+
+// @TODO lots of room for improvment. Maybe look at the UA
+func guessDeviceType(request *openrtb.BidRequest) (openrtb.DeviceType){
+	if request.App == nil {
+		return openrtb.DeviceTypePersonalComputer
+	}
+
+	return openrtb.DeviceTypeMobileTablet
+
 }
 
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
@@ -388,7 +384,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			continue
 		}
 
-		bfReqs[i] = newBeachfrontVideoRequest()
 		bfReqs[i].AppId = appid
 
 		if beachfrontExt.VideoResponseType != "" {
@@ -397,10 +392,27 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 			bfReqs[i].VideoResponseType = "adm"
 		}
 
-		site := getSite(request)
-
 		bfReqs[i].Request = *request
-		bfReqs[i].Request.Site = &site
+
+		if bfReqs[i].Request.Site != nil && bfReqs[i].Request.Site.Domain == "" && bfReqs[i].Request.Site.Page != "" {
+			bfReqs[i].Request.Site.Domain = getDomain(bfReqs[i].Request.Site.Page)
+		}
+
+		if bfReqs[i].Request.App != nil && bfReqs[i].Request.App.Domain == "" && bfReqs[i].Request.App.Bundle != "" {
+			if bfReqs[i].Request.App.Bundle != "" {
+				var chunks = strings.Split(strings.Trim(bfReqs[i].Request.App.Bundle, "_"), ".")
+
+				if len(chunks) > 1 {
+					bfReqs[i].Request.App.Domain =
+						fmt.Sprintf("%s.%s", chunks[len(chunks)-(len(chunks)-1)], chunks[0])
+				}
+			}
+
+		}
+
+		if bfReqs[i].Request.Device.DeviceType == 0 {
+			bfReqs[i].Request.Device.DeviceType = guessDeviceType(request)
+			}
 
 		imp := request.Imp[i]
 
@@ -491,6 +503,7 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 
 	// try it as a video
 	if err := json.Unmarshal(response.Body, &openrtbResp); err != nil {
+		errs = append(errs, err)
 
 		// try it as a banner
 		if err := json.Unmarshal(response.Body, &beachfrontResp); err != nil {
@@ -520,7 +533,7 @@ func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest 
 			CrID:  beachfrontResp[i].CrID,
 			ImpID: beachfrontResp[i].Slot,
 			Price: beachfrontResp[i].Price,
-			ID:    id,
+			ID:    fmt.Sprintf("%sBanner",beachfrontResp[i].Slot),
 			AdM:   beachfrontResp[i].Adm,
 			H:     beachfrontResp[i].H,
 			W:     beachfrontResp[i].W,
@@ -529,6 +542,7 @@ func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest 
 
 	return bids, errs
 }
+
 func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
 
 	var xtrnal openrtb.BidRequest
@@ -539,23 +553,28 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 		return bids, errs
 	}
 
-	if externalRequest.Uri[len(externalRequest.Uri)-13:len(externalRequest.Uri)] == VideoEndpointSuffix {
+	if externalRequest.Uri[len(externalRequest.Uri)-len(VideoEndpointSuffix):len(externalRequest.Uri)] == VideoEndpointSuffix {
 
 		for i := 0; i < len(bids); i++ {
-			crid := extractVideoCrid(bids[i].NURL)
+			crid := extractNurlVideoCrid(bids[i].NURL)
 
 			bids[i].CrID = crid
 			bids[i].ImpID = xtrnal.Imp[i].ID
 			bids[i].H = xtrnal.Imp[i].Video.H
 			bids[i].W = xtrnal.Imp[i].Video.W
-			bids[i].ID = id
+			bids[i].ID = fmt.Sprintf("%sNurlVideo", xtrnal.Imp[i].ID)
+		}
+
+	} else {
+		for i := 0; i < len(bids); i++ {
+			bids[i].ID = fmt.Sprintf("%sAdmVideo", bids[i].ImpID)
 		}
 
 	}
 	return bids, errs
 }
 
-func extractVideoCrid(nurl string) string {
+func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	return strings.TrimSuffix(chunky[2], ":")
 }
@@ -594,8 +613,15 @@ func getDomain(page string) string {
 
 }
 
+/*In the case of a mobile banner, the endpoint has a Site field, but no App field, so building a reasonable
+Site object from the App.
+*/
 func getSite(request *openrtb.BidRequest) openrtb.Site {
 	var site = request.Site
+
+	if site == nil {
+		site = new(openrtb.Site)
+	}
 
 	if request.App != nil {
 
