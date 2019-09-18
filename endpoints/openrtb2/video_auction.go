@@ -515,6 +515,11 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
 			PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
 			Publisher:       videoRequest.IncludeBrandCategory.Publisher,
+			WithCategory:    true,
+		}
+	} else {
+		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
+			WithCategory: false,
 		}
 	}
 

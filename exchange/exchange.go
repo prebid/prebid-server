@@ -151,9 +151,15 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	if anyBidsReturned {
-		bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
-		if err != nil {
-			return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+
+		var bidCategory map[string]string
+		//If includebrandcategory is present in ext then CE feature is on.
+		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
+			var err error
+			bidCategory, adapterBids, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			if err != nil {
+				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+			}
 		}
 
 		auc := newAuction(adapterBids, len(bidRequest.Imp))
@@ -354,10 +360,6 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
-	//If includebrandcategory is present in ext then CE feature is on.
-	if requestExt.Prebid.Targeting == nil {
-		return res, seatBids, nil
-	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
@@ -367,7 +369,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	var publisher string
 	var err error
 
-	if includeBrandCategory {
+	if includeBrandCategory && brandCatExt.WithCategory {
 		//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
 		primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
 		if err != nil {
@@ -390,7 +392,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				duration = bid.bidVideo.Duration
 				category = bid.bidVideo.PrimaryCategory
 			}
-			if includeBrandCategory && category == "" {
+			if brandCatExt.WithCategory && category == "" {
 				bidIabCat := bid.bid.Cat
 				if len(bidIabCat) != 1 {
 					//TODO: add metrics
@@ -431,7 +433,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 			}
 
 			var categoryDuration string
-			if includeBrandCategory {
+			if brandCatExt.WithCategory {
 				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
 			} else {
 				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
