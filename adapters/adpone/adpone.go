@@ -3,7 +3,6 @@ package adpone
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
@@ -26,11 +25,6 @@ func (adapter *adponeAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-	var ttxExt openrtb_ext.ExtAdpone
-	var bidderExt adapters.ExtImpBidder
-	_ = json.Unmarshal(bidderExt.Bidder, &ttxExt)
-	impExtJSON, err := json.Marshal(ttxExt)
-	openRTBRequest.Ext = impExtJSON
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		errs = append(errs, err)
