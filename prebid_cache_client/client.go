@@ -50,9 +50,9 @@ func NewClient(conf *config.Cache) Client {
 				IdleConnTimeout: 65,
 			},
 		},
-		putUrl:  conf.GetBaseURL(true, false),
-		urlHost: conf.GetHost(),
-		urlPath: conf.GetPath(),
+		putUrl:  conf.GetBaseURL() + "/cache",
+		urlHost: conf.Host,
+		urlPath: conf.Path,
 	}
 }
 

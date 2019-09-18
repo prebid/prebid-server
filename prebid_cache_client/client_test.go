@@ -116,6 +116,8 @@ func TestEncodeValueToBuffer(t *testing.T) {
 	assertStringEqual(t, expected, actual)
 }
 
+// The following test asserts that the cache client's GetPrebidCacheSplitURL() implementation is able to pull return the exact Path and Host that were
+// specified in Prebid-Server's configuration, no substitutions nor default values.
 func TestStripCacheHostAndPath(t *testing.T) {
 	type aTest struct {
 		inConfig     []byte
@@ -134,13 +136,7 @@ cache:
   scheme: http
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
-`), expectedHost: "prebidcache.net", expectedPath: "cache"},
-		{inConfig: []byte(`
-cache:
-  scheme: http
-  host: prebid-server.prebid.org
-`), expectedHost: "prebid-server.prebid.org", expectedPath: "cache"},
-		{inConfig: []byte(``), expectedHost: "", expectedPath: ""},
+`), expectedHost: "prebidcache.net", expectedPath: ""},
 	}
 	for i, test := range testInput {
 		//start viper

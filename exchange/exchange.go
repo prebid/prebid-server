@@ -109,7 +109,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	// Randomize the list of adapters to make the auction more fair
 	randomizeList(liveAdapters)
 	// Process the request to check for targeting parameters.
-	var targData *targetData = &targetData{}
+	var targData *targetData
 	shouldCacheBids := false
 	shouldCacheVAST := false
 	var bidAdjustmentFactors map[string]float64
