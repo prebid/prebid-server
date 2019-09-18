@@ -26,7 +26,7 @@ func (adapter *adponeAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
-	var ttxExt openrtb_ext.EXTAdpone
+	var ttxExt openrtb_ext.ExtAdpone
 	var bidderExt adapters.ExtImpBidder
 	_ = json.Unmarshal(bidderExt.Bidder, &ttxExt)
 	impExtJSON, err := json.Marshal(ttxExt)
