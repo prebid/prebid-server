@@ -14,6 +14,7 @@
         },
         "ext": {
           "bidder": {
+            "placementId": "fake-placement-id"
           }
         }
       }
