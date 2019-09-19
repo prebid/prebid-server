@@ -19,7 +19,6 @@ func NewConstantRates() *ConstantRates {
 // GetRate returns 1 if both currencies are the same.
 // If not, it will return an error.
 func (r *ConstantRates) GetRate(from string, to string) (float64, error) {
-	fmt.Printf("\nInside constant_rates.go.GetRate(), from curr is: %v, to curr is: %v\n", from, to)
 	fromUnit, err := currency.ParseISO(from)
 	if err != nil {
 		return 0, err

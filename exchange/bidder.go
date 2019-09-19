@@ -147,8 +147,6 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 				var conversionRate float64
 				var err error
 				for _, bidReqCur := range request.Cur {
-					fmt.Printf("\nConversions is: %v\n", conversions)
-					fmt.Printf("\nresp curr is: %v, req curr is: %v\n", bidResponse.Currency, bidReqCur)
 					if conversionRate, err = conversions.GetRate(bidResponse.Currency, bidReqCur); err == nil {
 						seatBid.currency = bidReqCur
 						break
