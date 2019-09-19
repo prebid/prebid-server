@@ -8,6 +8,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
+	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
 const unexpectedStatusCodeMessage = "Unexpected status code: %d. Run with request.debug = 1 for more info"
@@ -19,6 +20,52 @@ type LockerDomeAdapter struct {
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids [from the bidder, in this case, LockerDome]
 func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidRequest, extraReqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
+
+	numberOfImps := len(openRTBRequest.Imp)
+
+	if openRTBRequest.Imp == nil || numberOfImps == 0 { // lockerdometest/supplemental/empty_imps.json
+		err := &errortypes.BadInput{
+			Message: "No valid impressions in the bid request.",
+		}
+		errs = append(errs, err)
+		return nil, errs
+	}
+
+	for i := 0; i < numberOfImps; i++ {
+		// LockerDome currently only supports banner impressions, and requires data in the ext field.
+		if openRTBRequest.Imp[i].Banner == nil { // lockerdometest/supplemental/unsupported_imp_type.json
+			err := &errortypes.BadInput{
+				Message: "LockerDome does not currently support non-banner types.",
+			}
+			errs = append(errs, err)
+			return nil, errs
+		}
+		var bidderExt adapters.ExtImpBidder
+		err := json.Unmarshal(openRTBRequest.Imp[i].Ext, &bidderExt)
+		if err != nil { // lockerdometest/supplemental/no_ext.json
+			err = &errortypes.BadInput{
+				Message: "ext was not provided.",
+			}
+			errs = append(errs, err)
+			return nil, errs
+		}
+		var lockerdomeExt openrtb_ext.ExtImpLockerDome
+		err = json.Unmarshal(bidderExt.Bidder, &lockerdomeExt)
+		if err != nil { // lockerdometest/supplemental/no_adUnitId_param.json
+			err = &errortypes.BadInput{
+				Message: "ext.bidder.adUnitId was not provided.",
+			}
+			errs = append(errs, err)
+			return nil, errs
+		}
+		if lockerdomeExt.AdUnitId == "" { // lockerdometest/supplemental/empty_adUnitId_param.json
+			err := &errortypes.BadInput{
+				Message: "ext.bidder.adUnitId is empty.",
+			}
+			errs = append(errs, err)
+			return nil, errs
+		}
+	}
 
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
@@ -40,7 +87,8 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 
 	requestsToBidder = append(requestsToBidder, requestToBidder)
 
-	return requestsToBidder, errs
+	return requestsToBidder, nil
+
 }
 
 // MakeBids unpacks the server's response into Bids.
@@ -77,7 +125,7 @@ func (adapter *LockerDomeAdapter) MakeBids(openRTBRequest *openrtb.BidRequest, r
 
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
 		for i := range seatBid.Bid {
-			typedBid := adapters.TypedBid{Bid: &seatBid.Bid[i], BidType: "banner"}
+			typedBid := adapters.TypedBid{Bid: &seatBid.Bid[i], BidType: openrtb_ext.BidTypeBanner}
 			bidderResponse.Bids = append(bidderResponse.Bids, &typedBid)
 		}
 	}

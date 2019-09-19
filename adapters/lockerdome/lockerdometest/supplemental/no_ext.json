@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    "ext was not provided."
+  ]
+}
