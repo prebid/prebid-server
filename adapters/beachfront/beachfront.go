@@ -17,10 +17,10 @@ import (
 const Seat = "beachfront"
 const BidCapacity = 5
 
-const BannerEndpoint = "https://display.bfmio.com/prebid_display"
-const VideoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
+const bannerEndpoint = "https://display.bfmio.com/prebid_display"
+const videoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 
-const VideoEndpointSuffix = "&prebidserver"
+const nurlVideoEndpointSuffix = "&prebidserver"
 
 const beachfrontAdapterName = "BF_PREBID_S2S"
 const beachfrontAdapterVersion = "0.8.0"
@@ -137,7 +137,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		if err == nil {
 			reqs[0] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     BannerEndpoint,
+				Uri:     bannerEndpoint,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -158,7 +158,7 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		if err == nil {
 			reqs[j+nurlBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     VideoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
+				Uri:     videoEndpoint + "=" + beachfrontRequests.ADMVideo[j].AppId,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -173,13 +173,12 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
-		// Chop off the leading "{" and add the nurl flag
 		bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
 
 		if err == nil {
 			reqs[j+admBump] = &adapters.RequestData{
 				Method:  "POST",
-				Uri:     VideoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + VideoEndpointSuffix,
+				Uri:     videoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
 				Body:    bytes,
 				Headers: headers,
 			}
@@ -351,7 +350,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 }
 
 // @TODO lots of room for improvment. Maybe look at the UA
-func guessDeviceType(request *openrtb.BidRequest) (openrtb.DeviceType){
+func guessDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	if request.App == nil {
 		return openrtb.DeviceTypePersonalComputer
 	}
@@ -412,7 +411,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		if bfReqs[i].Request.Device.DeviceType == 0 {
 			bfReqs[i].Request.Device.DeviceType = guessDeviceType(request)
-			}
+		}
 
 		imp := request.Imp[i]
 
@@ -469,12 +468,12 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	if response.StatusCode == http.StatusBadRequest {
 		return nil, []error{&errortypes.BadInput{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("bad request status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri),
 		}}
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}
+		return nil, []error{fmt.Errorf("unexpected status code %d from %s. \n%s\nRun with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri, externalRequest.Body)}
 	}
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID)
@@ -533,7 +532,7 @@ func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest 
 			CrID:  beachfrontResp[i].CrID,
 			ImpID: beachfrontResp[i].Slot,
 			Price: beachfrontResp[i].Price,
-			ID:    fmt.Sprintf("%sBanner",beachfrontResp[i].Slot),
+			ID:    fmt.Sprintf("%sBanner", beachfrontResp[i].Slot),
 			AdM:   beachfrontResp[i].Adm,
 			H:     beachfrontResp[i].H,
 			W:     beachfrontResp[i].W,
@@ -553,7 +552,7 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 		return bids, errs
 	}
 
-	if externalRequest.Uri[len(externalRequest.Uri)-len(VideoEndpointSuffix):len(externalRequest.Uri)] == VideoEndpointSuffix {
+	if externalRequest.Uri[len(externalRequest.Uri)-len(nurlVideoEndpointSuffix):len(externalRequest.Uri)] == nurlVideoEndpointSuffix {
 
 		for i := 0; i < len(bids); i++ {
 			crid := extractNurlVideoCrid(bids[i].NURL)
@@ -658,7 +657,7 @@ func getIP(ip string) string {
 
 func getBidType(externalRequest *adapters.RequestData) openrtb_ext.BidType {
 	t := strings.Split(externalRequest.Uri, "=")[0]
-	if t == VideoEndpoint {
+	if t == videoEndpoint {
 		return openrtb_ext.BidTypeVideo
 	}
 

@@ -28,6 +28,7 @@
         "id":"video2",
         "ext":{
           "bidder":{
+            "videoResponseType": "nurl",
             "bidfloor":0.01,
             "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
           }
@@ -66,18 +67,18 @@
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
           "isPrebid": true,
-          "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
           "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
           "imp": [
             {
               "video": {
                 "w": 600,
-                "h": 450
+                "h": 450,
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ]
               },
-              "bidfloor": 0.01,
-              "id": 1,
-              "secure": 0,
-              "impid": "video2"
+              "id": "video2"
             }
           ],
           "site": {
@@ -86,8 +87,9 @@
           },
           "device": {
             "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "127.0.0.1",
-            "js": "1"
+            "ip": "192.168.255.255",
+            "devicetype": 2,
+            "js": 1
           },
           "cur": [
             "USD"
