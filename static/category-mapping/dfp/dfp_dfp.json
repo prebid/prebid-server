@@ -3,6 +3,14 @@
     "id": "movies",
     "name": "Filmed Entertainment"
   },
+  "IAB1-6": {
+    "id": "movies",
+    "name": "Filmed Entertainment"
+  },
+  "IAB1-7": {
+    "id": "movies",
+    "name": "Filmed Entertainment"
+  },
   "IAB2-1": {
     "id": "auto",
     "name": "Automotive"
@@ -95,9 +103,37 @@
     "id": "auto",
     "name": "Automotive"
   },
+  "IAB3-1": {
+    "id": "business",
+    "name": "Business Services"
+  },
   "IAB3-4": {
     "id": "electronics",
     "name": "Computing Product"
+  },
+  "IAB4-5": {
+    "id": "business",
+    "name": "Business Services"
+  },
+  "IAB5-1": {
+    "id": "education",
+    "name": "Educational Services"
+  },
+  "IAB5-10": {
+    "id": "education",
+    "name": "Educational Services"
+  },
+  "IAB7-1": {
+    "id": "healthcare",
+    "name": "Health Care Services"
+  },
+  "IAB7-32": {
+    "id": "healthcare",
+    "name": "Health Care Services"
+  },
+  "IAB7-44": {
+    "id": "healthcare",
+    "name": "Health Care Services"
   },
   "IAB8-1": {
     "id": "food",
@@ -175,9 +211,45 @@
     "id": "game",
     "name": "Gaming"
   },
+  "IAB9-9": {
+    "id": "tobacco",
+    "name": "Tobacco"
+  },
+  "IAB9-30": {
+    "id": "entertainment",
+    "name": "Entertainment"
+  },
+  "IAB10-1": {
+    "id": "appliances",
+    "name": "Appliances"
+  },
+  "IAB10-7": {
+    "id": "furnishings",
+    "name": "Home Furnishings"
+  },
+  "IAB11-2": {
+    "id": "government",
+    "name": "Government/Municipal"
+  },
+  "IAB11-4": {
+    "id": "government",
+    "name": "Government/Municipal"
+  },
+  "IAB13-2": {
+    "id": "business",
+    "name": "Business Services"
+  },
   "IAB13-4": {
     "id": "financial",
     "name": "Financial Services"
+  },
+  "IAB13-6": {
+    "id": "insurance",
+    "name": "Insurance"
+  },
+  "IAB14-1": {
+    "id": "dating",
+    "name": "dating"
   },
   "IAB16-1": {
     "id": "pets",
@@ -207,9 +279,21 @@
     "id": "pets",
     "name": "Pet Food/Supplies"
   },
+  "IAB17-12": {
+    "id": "sport",
+    "name": "Professional Sports"
+  },
   "IAB18-1": {
     "id": "beauty",
     "name": "Cosmetics/Toiletries"
+  },
+  "IAB18-4": {
+    "id": "jewelry",
+    "name": "Jewelry"
+  },
+  "IAB18-5": {
+    "id": "apparel",
+    "name": "Apparel"
   },
   "IAB19-2": {
     "id": "electronics",
@@ -222,6 +306,10 @@
   "IAB19-4": {
     "id": "electronics",
     "name": "Computing Product"
+  },
+  "IAB19-6": {
+    "id": "telecommunications",
+    "name": "Telecommunications"
   },
   "IAB19-7": {
     "id": "electronics",
@@ -246,6 +334,10 @@
   "IAB19-12": {
     "id": "electronics",
     "name": "Computing Product"
+  },
+  "IAB19-13": {
+    "id": "publishing",
+    "name": "Publishing"
   },
   "IAB19-14": {
     "id": "electronics",
@@ -442,5 +534,13 @@
   "IAB20-27": {
     "id": "travel",
     "name": "Travel/Hotels/Airlines"
+  },
+  "IAB21-3": {
+    "id": "realestate",
+    "name": "Real Estate"
+  },
+  "IAB22-2": {
+    "id": "realestate",
+    "name": "Real Estate"
   }
 }
