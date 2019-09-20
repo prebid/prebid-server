@@ -10,6 +10,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -350,9 +351,38 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	return bfr, errs
 }
 
-// @TODO lots of room for improvment. Maybe look at the UA
 func guessDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
-	if request.App == nil {
+	if request.Device.UA != "" {
+		var matched bool
+		var err error
+
+		matched, err = regexp.MatchString(`^.*(Apple\ ?TV|TV\ Safari|webOS\.TV|SonyCEBrowser|DTVNetBrowser|InettvBrowse|SmartTvA).*$`, request.Device.UA)
+
+		if err == nil && matched {
+			return openrtb.DeviceTypeConnectedTV
+		}
+
+		matched, err = regexp.MatchString(`^.*(CrKey|AFTT|AFTM).*$`, request.Device.UA)
+
+		if err == nil && matched {
+			return openrtb.DeviceTypeConnectedDevice
+		}
+
+		matched, err = regexp.MatchString(`^.*Roku.*$`, request.Device.UA)
+
+		if err == nil && matched {
+			return openrtb.DeviceTypeSetTopBox
+		}
+
+		matched, err = regexp.MatchString(`^.*(Android|iPhone|IEMobile|Mobile\ Safari).*$`, request.Device.UA)
+
+		if err == nil && matched {
+			return openrtb.DeviceTypeMobileTablet
+		}
+	}
+
+	if request.Site != nil {
+
 		return openrtb.DeviceTypePersonalComputer
 	}
 
@@ -393,9 +423,12 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		bfReqs[i].Request = *request
+		var secure int8
 
 		if bfReqs[i].Request.Site != nil && bfReqs[i].Request.Site.Domain == "" && bfReqs[i].Request.Site.Page != "" {
 			bfReqs[i].Request.Site.Domain = getDomain(bfReqs[i].Request.Site.Page)
+
+			secure = isSecure(bfReqs[i].Request.Site.Page)
 		}
 
 		if bfReqs[i].Request.App != nil && bfReqs[i].Request.App.Domain == "" && bfReqs[i].Request.App.Bundle != "" {
@@ -413,7 +446,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		if bfReqs[i].Request.Device.DeviceType == 0 {
 			bfReqs[i].Request.Device.DeviceType = guessDeviceType(request)
 		}
-		secure := isSecure(bfReqs[i].Request.Site.Page)
 
 		imp := request.Imp[i]
 
