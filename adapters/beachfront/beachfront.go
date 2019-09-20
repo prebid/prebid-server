@@ -252,7 +252,7 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 			appid = ext.AppIds.Banner
 		}
 	} else {
-		error = errors.New("unable to determine the banner appId from the supplied extension")
+		error = errors.New("unable to determine the appId(s) from the supplied extension")
 	}
 
 	return appid, error
@@ -325,6 +325,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	bfr.IsMobile = site.Mobile
 	bfr.Page = site.Page
 	bfr.Domain = site.Domain
+	bfr.Secure = isSecure(site.Page)
 
 	if request.User != nil && request.User.ID != "" {
 		if bfr.User.ID == "" {
@@ -412,11 +413,13 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		if bfReqs[i].Request.Device.DeviceType == 0 {
 			bfReqs[i].Request.Device.DeviceType = guessDeviceType(request)
 		}
+		secure := isSecure(bfReqs[i].Request.Site.Page)
 
 		imp := request.Imp[i]
 
 		imp.Banner = nil
 		imp.Ext = nil
+		imp.Secure = &secure
 
 		// @TODO - ask Alex - when bid floor gets set to 0 here, the request is sent with no bidfloor key. Is that
 		// what we want?
@@ -473,7 +476,7 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, []error{fmt.Errorf("unexpected status code %d from %s. \n%s\nRun with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri, externalRequest.Body)}
+		return nil, []error{fmt.Errorf("unexpected status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri)}
 	}
 
 	bids, errs := postprocess(response, externalRequest, internalRequest.ID)
@@ -598,7 +601,7 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 	return beachfrontExt, err
 }
 
-func getDomain(page string) string {
+func getDomain(page string) (string) {
 	protoUrl := strings.Split(page, "//")
 	var domainPage string
 
@@ -612,10 +615,21 @@ func getDomain(page string) string {
 
 }
 
+func isSecure(page string) (int8) {
+	protoUrl := strings.Split(page, "://")
+
+	if len(protoUrl) > 1 && protoUrl[0] == "https" {
+		return 1
+	}
+
+	return 0
+
+}
+
 /*In the case of a mobile banner, the endpoint has a Site field, but no App field, so building a reasonable
 Site object from the App.
 */
-func getSite(request *openrtb.BidRequest) openrtb.Site {
+func getSite(request *openrtb.BidRequest) (openrtb.Site,)  {
 	var site = request.Site
 
 	if site == nil {
@@ -642,6 +656,7 @@ func getSite(request *openrtb.BidRequest) openrtb.Site {
 		}
 		site.Mobile = 0
 	}
+
 	return *site
 }
 
