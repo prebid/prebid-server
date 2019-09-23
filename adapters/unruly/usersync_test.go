@@ -13,7 +13,7 @@ func TestUnrulySyncer(t *testing.T) {
 	syncInfo, err := syncer.GetUsersyncInfo("0", "")
 	assert.NoError(t, err)
 	assert.Equal(t, "//unrulymedia.com/pixel?redir=external.com%2Fsetuid%3Fbidder%3Dunruly%26gdpr%3D0%26gdpr_consent%3D%26uid%3D%24UID", syncInfo.URL)
-	assert.Equal(t, "redirect", syncInfo.Type)
+	assert.Equal(t, "iframe", syncInfo.Type)
 	assert.EqualValues(t, 162, syncer.GDPRVendorID())
 	assert.Equal(t, false, syncInfo.SupportCORS)
 }

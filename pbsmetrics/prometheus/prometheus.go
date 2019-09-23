@@ -16,6 +16,7 @@ type Metrics struct {
 	connCounter          prometheus.Gauge
 	connError            *prometheus.CounterVec
 	imps                 *prometheus.CounterVec
+	legacyImps           *prometheus.CounterVec
 	requests             *prometheus.CounterVec
 	reqTimer             *prometheus.HistogramVec
 	adaptRequests        *prometheus.CounterVec
@@ -44,6 +45,10 @@ const (
 	adapterErrLabel     = "adapter_error"
 	cacheResultLabel    = "cache_result"
 	gdprBlockedLabel    = "gdpr_blocked"
+	bannerLabel         = "banner"
+	videoLabel          = "video"
+	audioLabel          = "audio"
+	nativeLabel         = "native"
 )
 
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
@@ -59,6 +64,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	bidLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel, bidTypeLabel, markupTypeLabel}
 	errorLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterErrLabel, adapterLabel}
 
+	impLabelNames := []string{bannerLabel, videoLabel, audioLabel, nativeLabel}
+
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
 	metrics.connCounter = newConnCounter(cfg)
@@ -68,11 +75,16 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"ErrorType"},
 	)
 	metrics.Registry.MustRegister(metrics.connError)
-	metrics.imps = newCounter(cfg, "imps_requested_total",
-		"Total number of impressions requested through PBS.",
-		standardLabelNames,
+	metrics.imps = newCounter(cfg, "imps_requested",
+		"Count of Impressions by type and in total requested through PBS.",
+		impLabelNames,
 	)
 	metrics.Registry.MustRegister(metrics.imps)
+	metrics.legacyImps = newCounter(cfg, "legacy_imps_requested",
+		"Total number of impressions requested through legacy PBS.",
+		standardLabelNames,
+	)
+	metrics.Registry.MustRegister(metrics.legacyImps)
 	metrics.requests = newCounter(cfg, "requests_total",
 		"Total number of requests made to PBS.",
 		standardLabelNames,
@@ -203,8 +215,14 @@ func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
 	me.requests.With(resolveLabels(labels)).Inc()
 }
 
-func (me *Metrics) RecordImps(labels pbsmetrics.Labels, numImps int) {
-	me.imps.With(resolveLabels(labels)).Add(float64(numImps))
+func (me *Metrics) RecordImps(implabels pbsmetrics.ImpLabels) {
+	me.imps.With(resolveImpLabels(implabels)).Inc()
+}
+
+func (me *Metrics) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	var lbls prometheus.Labels
+	lbls = resolveLabels(labels)
+	me.legacyImps.With(lbls).Add(float64(numImps))
 }
 
 func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
@@ -334,6 +352,28 @@ func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
 	}
 }
 
+func resolveImpLabels(labels pbsmetrics.ImpLabels) prometheus.Labels {
+	var impLabels prometheus.Labels = prometheus.Labels{
+		bannerLabel: "no",
+		videoLabel:  "no",
+		audioLabel:  "no",
+		nativeLabel: "no",
+	}
+	if labels.BannerImps {
+		impLabels[bannerLabel] = "yes"
+	}
+	if labels.VideoImps {
+		impLabels[videoLabel] = "yes"
+	}
+	if labels.AudioImps {
+		impLabels[audioLabel] = "yes"
+	}
+	if labels.NativeImps {
+		impLabels[nativeLabel] = "yes"
+	}
+	return impLabels
+}
+
 // initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances
 func initializeTimeSeries(m *Metrics) {
 	// Connection errors
@@ -350,7 +390,6 @@ func initializeTimeSeries(m *Metrics) {
 	adapterLabels := labels // save regenerating these dimensions for adapter status
 	labels = addDimension(labels, responseStatusLabel, requestStatusesAsString())
 	for _, l := range labels {
-		_ = m.imps.With(l)
 		_ = m.requests.With(l)
 		_ = m.reqTimer.With(l)
 	}
@@ -384,6 +423,15 @@ func initializeTimeSeries(m *Metrics) {
 	for _, l := range cacheLabels {
 		_ = m.storedImpCacheResult.With(l)
 		_ = m.storedReqCacheResult.With(l)
+	}
+
+	// ImpType labels
+	impTypeLabels := addDimension([]prometheus.Labels{}, bannerLabel, []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, videoLabel, []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, audioLabel, []string{"yes", "no"})
+	impTypeLabels = addDimension(impTypeLabels, nativeLabel, []string{"yes", "no"})
+	for _, l := range impTypeLabels {
+		_ = m.imps.With(l)
 	}
 }
 

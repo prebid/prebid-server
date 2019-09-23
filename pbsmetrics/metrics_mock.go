@@ -31,7 +31,13 @@ func (me *MetricsEngineMock) RecordConnectionClose(success bool) {
 }
 
 // RecordImps mock
-func (me *MetricsEngineMock) RecordImps(labels Labels, numImps int) {
+func (me *MetricsEngineMock) RecordImps(labels ImpLabels) {
+	me.Called(labels)
+	return
+}
+
+// RecordLegacyImps mock
+func (me *MetricsEngineMock) RecordLegacyImps(labels Labels, numImps int) {
 	me.Called(labels, numImps)
 	return
 }

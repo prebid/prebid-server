@@ -3,14 +3,15 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y wget
 RUN cd /tmp && \
-    wget https://dl.google.com/go/go1.11.11.linux-amd64.tar.gz && \
-    tar -xf go1.11.11.linux-amd64.tar.gz && \
+    wget https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz && \
+    tar -xf go1.12.7.linux-amd64.tar.gz && \
     mv go /usr/local
 WORKDIR /go/src/github.com/prebid/prebid-server/
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:$GOROOT/bin:$PATH
-RUN apt-get install -y git go-dep && \
+RUN apt-get update && \
+    apt-get install -y git go-dep && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV CGO_ENABLED 0
 COPY ./ ./

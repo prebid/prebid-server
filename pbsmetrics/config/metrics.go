@@ -27,7 +27,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
 			returnEngine.GoMetrics.MetricsRegistry, // metrics registry
-			time.Second*10,                         // interval
+			time.Second*20,                         // interval
 			cfg.Metrics.Influxdb.Host,              // the InfluxDB url
 			cfg.Metrics.Influxdb.Database,          // your InfluxDB database
 			cfg.Metrics.Influxdb.Username,          // your InfluxDB user
@@ -83,10 +83,17 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-// RecordImps across all engines
-func (me *MultiMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
+//RecordsImps records imps with imp types across all metric engines
+func (me *MultiMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
 	for _, thisME := range *me {
-		thisME.RecordImps(labels, numImps)
+		thisME.RecordImps(implabels)
+	}
+}
+
+// RecordImps for the legacy endpoint
+func (me *MultiMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	for _, thisME := range *me {
+		thisME.RecordLegacyImps(labels, numImps)
 	}
 }
 
@@ -186,7 +193,12 @@ func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
 }
 
 // RecordImps as a noop
-func (me *DummyMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
+func (me *DummyMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
+	return
+}
+
+// RecordLegacyImps as a noop
+func (me *DummyMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
 	return
 }
 
