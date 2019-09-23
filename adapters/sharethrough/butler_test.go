@@ -94,7 +94,39 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					IP: "127.0.0.1",
 				},
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
-				User: &openrtb.User{},
+				BAdv: []string{"domain1.com", "domain2.com"},
+				TMax: 700,
+			},
+			inputDom: "http://a.domain.com",
+			expected: &adapters.RequestData{
+				Method: "POST",
+				Uri:    "http://abc.com",
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":700,"deadline":"2019-09-12T11:29:00.700123456Z"}`),
+				Headers: http.Header{
+					"Content-Type":    []string{"application/json;charset=utf-8"},
+					"Accept":          []string{"application/json"},
+					"Origin":          []string{"http://a.domain.com"},
+					"Referer":         []string{"http://a.domain.com/page"},
+					"User-Agent":      []string{"Android Chome/60"},
+					"X-Forwarded-For": []string{"127.0.0.1"},
+				},
+			},
+		},
+		"Generates width/height if not provided": {
+			inputImp: openrtb.Imp{
+				ID:  "abc",
+				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true} }`),
+				Banner: &openrtb.Banner{
+					Format: []openrtb.Format{{H: 30, W: 40}},
+				},
+			},
+			inputReq: &openrtb.BidRequest{
+				App: &openrtb.App{Ext: []byte(`{}`)},
+				Device: &openrtb.Device{
+					UA: "Android Chome/60",
+					IP: "127.0.0.1",
+				},
+				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
 				BAdv: []string{"domain1.com", "domain2.com"},
 				TMax: 700,
 			},
@@ -139,6 +171,64 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		if outputError != nil {
 			t.Errorf("Expected no errors, got %s\n", outputError)
 		}
+	}
+}
+
+func TestFailureRequestFromOpenRTB(t *testing.T) {
+	tests := map[string]struct {
+		inputImp      openrtb.Imp
+		inputReq      *openrtb.BidRequest
+		expectedError string
+	}{
+		"Fails when unable to parse imp.Ext": {
+			inputImp: openrtb.Imp{
+				Ext: []byte(`{"abc`),
+			},
+			inputReq: &openrtb.BidRequest{
+				Device: &openrtb.Device{UA: "A", IP: "ip"},
+				Site:   &openrtb.Site{Page: "page"},
+			},
+			expectedError: `unexpected end of JSON input`,
+		},
+		"Fails when unable to parse imp.Ext.Bidder": {
+			inputImp: openrtb.Imp{
+				Ext: []byte(`{ "bidder": "{ abc" }`),
+			},
+			inputReq: &openrtb.BidRequest{
+				Device: &openrtb.Device{UA: "A", IP: "ip"},
+				Site:   &openrtb.Site{Page: "page"},
+			},
+			expectedError: `json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpSharethrough`,
+		},
+	}
+
+	mockUriHelper := MockStrUriHelper{
+		mockBuildUri: func() string {
+			return "http://abc.com"
+		},
+	}
+
+	mockUtil := MockUtil{
+		mockCanAutoPlayVideo: func() bool { return true },
+		mockGdprApplies:      func() bool { return true },
+		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
+		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
+	}
+
+	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: mockUtil, UserAgentParsers: UserAgentParsers{
+		ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+		ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+	}}
+
+	assert := assert.New(t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		output, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq, "anything")
+
+		assert.Nil(output)
+		assert.NotNil(outputError)
+		assert.Equal(test.expectedError, outputError.Error())
 	}
 }
 
@@ -437,8 +527,8 @@ func TestFailParseUri(t *testing.T) {
 		expectedError string
 	}{
 		"Fails decoding if unable to parse URI": {
-			input:         "wrong URI",
-			expectedError: `strconv.ParseUint: parsing "": invalid syntax`,
+			input:         "test:/#$%?#",
+			expectedError: `parse test:/#$%?#: invalid URL escape "%?#"`,
 		},
 		"Fails decoding if height not provided": {
 			input:         "http://abc.com?width=10",
@@ -450,20 +540,15 @@ func TestFailParseUri(t *testing.T) {
 		},
 	}
 
+	assert := assert.New(t)
+
 	uriHelper := StrUriHelper{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 		output, actualError := uriHelper.parseUri(test.input)
 
-		if output != nil {
-			t.Errorf("Expected return value nil, got %+v\n", output)
-		}
-		if actualError == nil {
-			t.Errorf("Expected error not to be nil\n")
-			break
-		}
-		if actualError.Error() != test.expectedError {
-			t.Errorf("Expected error '%s', got '%s'\n", test.expectedError, actualError.Error())
-		}
+		assert.Nil(output)
+		assert.NotNil(actualError)
+		assert.Equal(test.expectedError, actualError.Error())
 	}
 }
