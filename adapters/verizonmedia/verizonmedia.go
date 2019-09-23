@@ -181,6 +181,9 @@ func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_
 	request.Imp[0].Banner = &banner
 
 	if banner.W != nil && banner.H != nil {
+		if *banner.W == 0 || *banner.H == 0 {
+			return errors.New(fmt.Sprintf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H))
+		}
 		return nil
 	}
 
