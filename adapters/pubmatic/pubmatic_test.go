@@ -17,6 +17,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
 	"github.com/prebid/prebid-server/cache/dummycache"
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -669,5 +670,51 @@ func TestPubmaticSampleRequest(t *testing.T) {
 	}, cacheClient, &hcs)
 	if err != nil {
 		t.Fatalf("Error when parsing request: %v", err)
+	}
+}
+
+func TestGetBidTypeVideo(t *testing.T) {
+	extJSON := `{"BidType":1}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	if actualBidTypeValue != openrtb_ext.BidTypeVideo {
+		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeVideo, actualBidTypeValue)
+	}
+}
+
+func TestGetBidTypeForMissingBidTypeExt(t *testing.T) {
+	extJSON := `{}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	// banner is the default bid type when no bidType key is present in the bid.ext
+	if actualBidTypeValue != "banner" {
+		t.Errorf("Expected Bid Type value was: banner, actual value is: %v", actualBidTypeValue)
+	}
+}
+
+func TestGetBidTypeBanner(t *testing.T) {
+	extJSON := `{"BidType":0}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
+		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
+	}
+}
+
+func TestGetBidTypeNative(t *testing.T) {
+	extJSON := `{"BidType":2}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	if actualBidTypeValue != openrtb_ext.BidTypeNative {
+		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeNative, actualBidTypeValue)
+	}
+}
+
+func TestGetBidTypeForUnsupportedCode(t *testing.T) {
+	extJSON := `{"BidType":99}`
+	extrm := json.RawMessage(extJSON)
+	actualBidTypeValue := getBidType(extrm)
+	if actualBidTypeValue != openrtb_ext.BidTypeBanner {
+		t.Errorf("Expected Bid Type value was: %v, actual value is: %v", openrtb_ext.BidTypeBanner, actualBidTypeValue)
 	}
 }
