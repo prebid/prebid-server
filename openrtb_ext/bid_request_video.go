@@ -59,7 +59,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Indicates that the response requires an adserver specific content category
-	IncludeBrandCategory IncludeBrandCategory `json:"includebrandcategory"`
+	IncludeBrandCategory *IncludeBrandCategory `json:"includebrandcategory,omitempty"`
 
 	// Attribute:
 	//   video

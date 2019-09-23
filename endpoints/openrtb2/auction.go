@@ -1149,6 +1149,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
 				httpStatus = http.StatusServiceUnavailable
 				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+				break
 			}
 		}
 		w.WriteHeader(httpStatus)
