@@ -151,9 +151,15 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	if anyBidsReturned {
-		bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
-		if err != nil {
-			return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+
+		var bidCategory map[string]string
+		//If includebrandcategory is present in ext then CE feature is on.
+		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
+			var err error
+			bidCategory, adapterBids, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			if err != nil {
+				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+			}
 		}
 
 		auc := newAuction(adapterBids, len(bidRequest.Imp))
@@ -354,24 +360,23 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
-	//If includebrandcategory is present in ext then CE feature is on.
-	if requestExt.Prebid.Targeting == nil {
-		return res, seatBids, nil
-	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
-	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
-		return res, seatBids, nil //if not present continue the existing processing without CE.
-	}
+	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
 
-	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
-	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
-	if err != nil {
-		return res, seatBids, err
-	}
+	var primaryAdServer string
+	var publisher string
+	var err error
 
-	publisher := brandCatExt.Publisher
+	if includeBrandCategory && brandCatExt.WithCategory {
+		//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
+		primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
+		if err != nil {
+			return res, seatBids, err
+		}
+		publisher = brandCatExt.Publisher
+	}
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
 
@@ -387,24 +392,23 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				duration = bid.bidVideo.Duration
 				category = bid.bidVideo.PrimaryCategory
 			}
-
-			if category == "" {
+			if brandCatExt.WithCategory && category == "" {
 				bidIabCat := bid.bid.Cat
 				if len(bidIabCat) != 1 {
 					//TODO: add metrics
 					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
-				} else {
-					//if unique IAB category is present then translate it to the adserver category based on mapping file
-					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
-					if err != nil || category == "" {
-						//TODO: add metrics
-						//if mapping required but no mapping file is found then discard the bid
-						bidsToRemove = append(bidsToRemove, bidInd)
-						continue
-					}
 				}
+				//if unique IAB category is present then translate it to the adserver category based on mapping file
+				category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
+				if err != nil || category == "" {
+					//TODO: add metrics
+					//if mapping required but no mapping file is found then discard the bid
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				}
+
 			}
 
 			// TODO: consider should we remove bids with zero duration here?
@@ -428,7 +432,12 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				}
 			}
 
-			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			var categoryDuration string
+			if brandCatExt.WithCategory {
+				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			} else {
+				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+			}
 
 			if dupe, ok := dedupe[categoryDuration]; ok {
 				// 50% chance for either bid with duplicate categoryDuration values to be kept
