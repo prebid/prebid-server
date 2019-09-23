@@ -3,6 +3,11 @@
   "title": "Adpone Adapter Params",
   "description": "A schema which validates params accepted by the adpone adapter",
   "type": "object",
-  "properties": {},
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "description": "Placement Id"
+    }
+  },
   "required": []
 }
