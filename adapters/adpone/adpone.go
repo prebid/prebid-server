@@ -25,6 +25,10 @@ func (adapter *adponeAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
+	if len(openRTBRequest.Imp) == 0 {
+		errs = append(errs, newBadInputError("No impression in the bid request"))
+		return nil, errs
+	}
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		errs = append(errs, err)
@@ -33,6 +37,11 @@ func (adapter *adponeAdapter) MakeRequests(
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
+	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("X-Forwarded-For", openRTBRequest.Device.IP)
+	headers.Add("User-Agent", openRTBRequest.Device.UA)
+
 	requestToBidder := &adapters.RequestData{
 		Method:  "POST",
 		Uri:     adapter.endpoint,
@@ -90,4 +99,10 @@ func (adapter *adponeAdapter) MakeBids(
 
 	return bidderResponse, nil
 
+}
+
+func newBadInputError(message string) error {
+	return &errortypes.BadInput{
+		Message: message,
+	}
 }
