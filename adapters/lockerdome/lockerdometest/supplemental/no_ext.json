@@ -17,6 +17,7 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "ext was not provided."
+    "ext was not provided.",
+    "No valid or supported impressions in the bid request."
   ]
 }

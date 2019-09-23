@@ -31,6 +31,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 		return nil, errs
 	}
 
+	var indexesOfValidImps []int
 	for i := 0; i < numberOfImps; i++ {
 		// LockerDome currently only supports banner impressions, and requires data in the ext field.
 		if openRTBRequest.Imp[i].Banner == nil { // lockerdometest/supplemental/unsupported_imp_type.json
@@ -38,7 +39,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 				Message: "LockerDome does not currently support non-banner types.",
 			}
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 		var bidderExt adapters.ExtImpBidder
 		err := json.Unmarshal(openRTBRequest.Imp[i].Ext, &bidderExt)
@@ -47,7 +48,7 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 				Message: "ext was not provided.",
 			}
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 		var lockerdomeExt openrtb_ext.ExtImpLockerDome
 		err = json.Unmarshal(bidderExt.Bidder, &lockerdomeExt)
@@ -56,17 +57,31 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 				Message: "ext.bidder.adUnitId was not provided.",
 			}
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 		if lockerdomeExt.AdUnitId == "" { // lockerdometest/supplemental/empty_adUnitId_param.json
 			err := &errortypes.BadInput{
 				Message: "ext.bidder.adUnitId is empty.",
 			}
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
+		indexesOfValidImps = append(indexesOfValidImps, i)
 	}
 
+	var validImps []openrtb.Imp
+	for j := 0; j < len(indexesOfValidImps); j++ {
+		validImps = append(validImps, openRTBRequest.Imp[j])
+	}
+	if len(validImps) == 0 {
+		err := &errortypes.BadInput{
+			Message: "No valid or supported impressions in the bid request.",
+		}
+		errs = append(errs, err)
+		return nil, errs
+	} else {
+		openRTBRequest.Imp = validImps
+	}
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
 		errs = append(errs, err)
