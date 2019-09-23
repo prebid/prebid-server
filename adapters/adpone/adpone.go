@@ -39,8 +39,6 @@ func (adapter *adponeAdapter) MakeRequests(
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("x-openrtb-version", "2.5")
-	headers.Add("X-Forwarded-For", openRTBRequest.Device.IP)
-	headers.Add("User-Agent", openRTBRequest.Device.UA)
 
 	requestToBidder := &adapters.RequestData{
 		Method:  "POST",
