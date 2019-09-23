@@ -96,8 +96,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	}
 	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
+		handleError(labels, w, []error{err}, ao)
 		return
 	}
 
@@ -106,12 +105,12 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//load additional data - stored simplified req
 	storedRequestId, err := getVideoStoredRequestId(requestJson)
 
-	if err != nil && deps.cfg.VideoStoredRequestRequired {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
-		return
-	}
-	if err == nil {
+	if err != nil {
+		if deps.cfg.VideoStoredRequestRequired {
+			handleError(labels, w, []error{err}, ao)
+			return
+		}
+	} else {
 		storedRequest, errs := deps.loadStoredVideoRequest(context.Background(), storedRequestId)
 		if len(errs) > 0 {
 			handleError(labels, w, errs, ao)
@@ -121,8 +120,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		//merge incoming req with stored video req
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequest, requestJson)
 		if err != nil {
-			errL := []error{err}
-			handleError(labels, w, errL, ao)
+			handleError(labels, w, []error{err}, ao)
 			return
 		}
 	}
@@ -137,7 +135,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if deps.defaultRequest {
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
 			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
-			errL = []error{err}
+			handleError(labels, w, []error{err}, ao)
 			return
 		}
 	}
@@ -198,10 +196,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		labels.PubID = effectivePubID(bidReq.Site.Publisher)
 	}
-	// Blacklist account now that we have resolved the value
-	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
-		errL := []error{&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)}}
+
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
 		handleError(labels, w, errL, ao)
+		return
 	}
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
@@ -247,21 +246,19 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
 	var errors string
-	var foundBlacklisted bool = false
+	var status int = http.StatusInternalServerError
 	for _, er := range errL {
 		erVal := errortypes.DecodeError(er)
 		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
-			foundBlacklisted = true
+			status = http.StatusServiceUnavailable
+		} else if erVal == errortypes.AcctRequiredCode {
+			status = http.StatusBadRequest
+			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
-	if foundBlacklisted {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		ao.Status = http.StatusServiceUnavailable
-	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		ao.Status = http.StatusInternalServerError
-	}
+	w.WriteHeader(status)
+	ao.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
 	ao.Errors = append(ao.Errors, errL...)

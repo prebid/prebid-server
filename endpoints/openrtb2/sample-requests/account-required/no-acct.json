@@ -1,56 +1,34 @@
 {
-    "description": "This is a perfectly valid request except that it comes from a blacklisted Account",
-    "message": "Invalid request: Prebid-server has blacklisted Account ID: bad_acct, please reach out to the prebid server host.\n",
+    "description": "This request comes with no account id",
+    "message": "Invalid request: Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.\n",
   
     "requestPayload": {
       "id": "some-request-id",
-      "user": {
-        "ext": {
-          "consent": "gdpr-consent-string",
-          "prebid": {
-            "buyeruids": {
-              "appnexus": "override-appnexus-id-in-cookie"
-            }
-          }
-        }
+      "site": {
+      	"page": "test.somepage.com"
       },
-      "app": {
-        "id": "cool_app",
-        "publisher": {
-            "id": "bad_acct"
-        }
-      },
-      "regs": {
-        "ext": {
-          "gdpr": 1
-        }
-      },
+      "user": { },
       "imp": [
         {
-          "id": "some-impression-id",
+          "id": "my-imp-id",
           "banner": {
             "format": [
-              {
-                "w": 300,
-                "h": 250
-              },
               {
                 "w": 300,
                 "h": 600
               }
             ]
           },
+          "pmp": {
+            "deals": [
+              {
+                "id": "some-deal-id"
+              }
+            ]
+          },
           "ext": {
             "appnexus": {
               "placementId": 10433394
-            },
-            "districtm": {
-              "placementId": 105
-            },
-            "rubicon": {
-              "accountId": 1001,
-              "siteId": 113932,
-              "zoneId": 535510
             }
           }
         }

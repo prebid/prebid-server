@@ -37,12 +37,15 @@ const maxSize = 1024 * 256
 // Struct of data for the general purpose auction tester
 type getResponseFromDirectory struct {
 	dir             string
+	file            string
 	payloadGetter   func(*testing.T, []byte) []byte
 	messageGetter   func(*testing.T, []byte) []byte
 	expectedCode    int
 	aliased         bool
 	disabledBidders []string
 	adaptersConfig  map[string]config.Adapter
+	accountReq      bool
+	description     string
 }
 
 // TestExplicitUserId makes sure that the cookie's ID doesn't override an explicit value sent in the request.
@@ -221,10 +224,57 @@ func TestBlacklistRequests(t *testing.T) {
 		dir:           "sample-requests/blacklisted",
 		payloadGetter: getRequestPayload,
 		messageGetter: getMessage,
-		expectedCode:  http.StatusBadRequest,
+		expectedCode:  http.StatusServiceUnavailable,
 		aliased:       false,
 	}
 	tests.assert(t)
+}
+
+// TestRejectAccountRequired asserts we return a 400 code on a request that comes with no user id nor app id
+// if the `AccountRequired` field in the `config.Configuration` structure is set to true
+func TestRejectAccountRequired(t *testing.T) {
+	tests := []*getResponseFromDirectory{
+		{
+			// Account not required and not provided in prebid request
+			dir:           "sample-requests/account-required",
+			file:          "no-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: nilReturner,
+			expectedCode:  http.StatusOK,
+			accountReq:    false,
+		},
+		{
+			// Account was required but not provided in prebid request
+			dir:           "sample-requests/account-required",
+			file:          "no-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: getMessage,
+			expectedCode:  http.StatusBadRequest,
+			accountReq:    true,
+		},
+		{
+			// Account is required, was provided and is not in the blacklisted accounts map
+			dir:           "sample-requests/account-required",
+			file:          "with-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: nilReturner,
+			expectedCode:  http.StatusOK,
+			aliased:       true,
+			accountReq:    true,
+		},
+		{
+			// Account is required, was provided in request and is found in the  blacklisted accounts map
+			dir:           "sample-requests/blacklisted",
+			file:          "blacklisted-acct.json",
+			payloadGetter: getRequestPayload,
+			messageGetter: getMessage,
+			expectedCode:  http.StatusServiceUnavailable,
+			accountReq:    true,
+		},
+	}
+	for _, test := range tests {
+		test.assert(t)
+	}
 }
 
 // assertResponseFromDirectory makes sure that the payload from each file in dir gets the expected response status code
@@ -232,16 +282,33 @@ func TestBlacklistRequests(t *testing.T) {
 func (gr *getResponseFromDirectory) assert(t *testing.T) {
 	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
 	t.Helper()
-	for _, fileInfo := range fetchFiles(t, gr.dir) {
-		filename := gr.dir + "/" + fileInfo.Name()
-		fileData := readFile(t, filename)
+	var filename string
+	var filesToAssert []string
+	if gr.file == "" {
+		// Append every file found in `gr.dir` to the `filesToAssert` array and test them all
+		for _, fileInfo := range fetchFiles(t, gr.dir) {
+			filesToAssert = append(filesToAssert, gr.dir+"/"+fileInfo.Name())
+		}
+	} else {
+		// Just test the single `gr.file`, and not the entiriety of files that may be found in `gr.dir`
+		filesToAssert = append(filesToAssert, gr.dir+"/"+gr.file)
+	}
+
+	var fileData []byte
+	// Test the one or more test files appended to `filesToAssert`
+	for _, testFile := range filesToAssert {
+		fileData = readFile(t, testFile)
 		code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
-		fmt.Printf("Processing %s\n", filename)
+		fmt.Printf("Processing %s\n", testFile)
 		assertResponseCode(t, filename, code, gr.expectedCode, msg)
 
 		expectMsg := gr.messageGetter(t, fileData)
-		if len(expectMsg) > 0 {
-			assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+		if gr.description != "" {
+			if len(expectMsg) > 0 {
+				assert.Equal(t, string(expectMsg), msg, "Test failed. %s. Filename: \n", gr.description, filename)
+			} else {
+				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+			}
 		}
 	}
 }
@@ -283,7 +350,7 @@ func (gr *getResponseFromDirectory) doRequest(t *testing.T, requestData []byte) 
 		newParamsValidator(t),
 		&mockStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}},
+		&config.Configuration{MaxRequestSize: maxSize, BlacklistedApps: []string{"spam_app"}, BlacklistedAppMap: map[string]bool{"spam_app": true}, BlacklistedAccts: []string{"bad_acct"}, BlacklistedAcctMap: map[string]bool{"bad_acct": true}, AccountRequired: gr.accountReq},
 		theMetrics,
 		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
 		disabledBidders,
