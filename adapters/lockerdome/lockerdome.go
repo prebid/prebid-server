@@ -68,19 +68,20 @@ func (adapter *LockerDomeAdapter) MakeRequests(openRTBRequest *openrtb.BidReques
 		}
 		indexesOfValidImps = append(indexesOfValidImps, i)
 	}
-
-	var validImps []openrtb.Imp
-	for j := 0; j < len(indexesOfValidImps); j++ {
-		validImps = append(validImps, openRTBRequest.Imp[j])
-	}
-	if len(validImps) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No valid or supported impressions in the bid request.",
+	if numberOfImps > len(indexesOfValidImps) {
+		var validImps []openrtb.Imp
+		for j := 0; j < len(indexesOfValidImps); j++ {
+			validImps = append(validImps, openRTBRequest.Imp[j])
 		}
-		errs = append(errs, err)
-		return nil, errs
-	} else {
-		openRTBRequest.Imp = validImps
+		if len(validImps) == 0 {
+			err := &errortypes.BadInput{
+				Message: "No valid or supported impressions in the bid request.",
+			}
+			errs = append(errs, err)
+			return nil, errs
+		} else {
+			openRTBRequest.Imp = validImps
+		}
 	}
 	openRTBRequestJSON, err := json.Marshal(openRTBRequest)
 	if err != nil {
