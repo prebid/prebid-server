@@ -53,6 +53,9 @@ cache:
   scheme: http
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
+external_cache:
+  host: www.externalprebidcache.net
+  path: endpoints/cache
 http_client:
   max_idle_connections: 500
   max_idle_connections_per_host: 20
@@ -159,6 +162,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
+	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
@@ -216,29 +221,6 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
-}
-
-func TestGetBaseURL(t *testing.T) {
-	type cacheHostToOutput struct {
-		cacheObj        *Cache
-		resultStringURL string
-	}
-	testInput := []cacheHostToOutput{
-		//  1) Current actual host found in the `app-config_prebid-server` repo, print schema and host only
-		{cacheObj: &Cache{Scheme: "http", Host: "prebid-cache-v1", Path: "", Query: ""}, resultStringURL: "http://prebid-cache-v1"},
-		//  2) Even with an specified query and path
-		{cacheObj: &Cache{Scheme: "https", Host: "www.pbcserver.com", Path: "pbcache/endpoint", Query: "uuid=%PBS_CACHE_UUID%"}, resultStringURL: "https://www.pbcserver.com"},
-		//  3) No scheme
-		{cacheObj: &Cache{Scheme: "", Host: "www.pbcserver.com", Path: "", Query: "uuid=%PBS_CACHE_UUID%"}, resultStringURL: "//www.pbcserver.com"},
-		//  4) Scheme other than 'http' or 'https'
-		{cacheObj: &Cache{Scheme: "ftp", Host: "www.pbcserver.com", Path: "", Query: "uuid=%PBS_CACHE_UUID%"}, resultStringURL: "//www.pbcserver.com"},
-		//  5) No config parameters specified
-		{cacheObj: &Cache{Scheme: "", Host: "", Path: "", Query: ""}, resultStringURL: "//"},
-	}
-	for i, test := range testInput {
-		testUrl := test.cacheObj.GetBaseURL()
-		assert.Equal(t, test.resultStringURL, testUrl, "Error handling the cfg.cacheHost object. Test number %d \n", i+1)
-	}
 }
 
 func TestValidConfig(t *testing.T) {

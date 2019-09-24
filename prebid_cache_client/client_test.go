@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/prebid/prebid-server/config"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 // Prevents #197
@@ -116,7 +117,7 @@ func TestEncodeValueToBuffer(t *testing.T) {
 	assertStringEqual(t, expected, actual)
 }
 
-// The following test asserts that the cache client's GetPrebidCacheSplitURL() implementation is able to pull return the exact Path and Host that were
+// The following test asserts that the cache client's GetExtCacheData() implementation is able to pull return the exact Path and Host that were
 // specified in Prebid-Server's configuration, no substitutions nor default values.
 func TestStripCacheHostAndPath(t *testing.T) {
 	type aTest struct {
@@ -126,17 +127,15 @@ func TestStripCacheHostAndPath(t *testing.T) {
 	}
 	testInput := []aTest{
 		{inConfig: []byte(`
-cache:
-  scheme: http
+external_cache:
   host: prebid-server.prebid.org
   path: pbcache/endpoint
 `), expectedHost: "prebid-server.prebid.org", expectedPath: "pbcache/endpoint"},
 		{inConfig: []byte(`
-cache:
-  scheme: http
+external_cache:
   host: prebidcache.net
-  query: uuid=%PBS_CACHE_UUID%
 `), expectedHost: "prebidcache.net", expectedPath: ""},
+		{inConfig: []byte(``), expectedHost: "", expectedPath: ""},
 	}
 	for i, test := range testInput {
 		//start viper
@@ -148,8 +147,8 @@ cache:
 		cfg, _ := config.New(v)
 
 		//start client
-		cacheClient := NewClient(&cfg.CacheURL)
-		cHost, cPath := cacheClient.GetPrebidCacheSplitURL()
+		cacheClient := NewClient(&cfg.CacheURL, &cfg.ExtCacheURL)
+		cHost, cPath := cacheClient.GetExtCacheData()
 
 		//assert
 		assert.Equal(t, test.expectedHost, cHost, "Expected host '%s', got '%s' \n", i+1, test.expectedHost, cHost)

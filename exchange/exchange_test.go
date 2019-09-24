@@ -859,7 +859,7 @@ func mockHandler(statusCode int, getBody string, postBody string) http.Handler {
 
 type wellBehavedCache struct{}
 
-func (c *wellBehavedCache) GetPrebidCacheSplitURL() (string, string) {
+func (c *wellBehavedCache) GetExtCacheData() (string, string) {
 	return "www.pbcserver.com", "/pbcache/endpoint"
 }
 
