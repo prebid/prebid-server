@@ -2,7 +2,7 @@ package openrtb_ext
 
 // ExtPublisher defines the contract for ...publisher.ext (found in both bidrequest.site and bidrequest.app)
 type ExtPublisher struct {
-	Prebid ExtPublisherPrebid `json:"prebid"`
+	Prebid *ExtPublisherPrebid `json:"prebid"`
 }
 
 // ExtPublisherPrebid defines the contract for publisher.ext.prebid

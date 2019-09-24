@@ -853,7 +853,7 @@ func TestEffectivePubID(t *testing.T) {
 	assert.Equal(t, pbsmetrics.PublisherUnknown, effectivePubID(&pub), "effectivePubID failed for empty Publisher.")
 	pub.ID = "123"
 	assert.Equal(t, "123", effectivePubID(&pub), "effectivePubID failed for standard Publisher.")
-	pub.Ext = json.RawMessage(`{"parentAccount": "abc"}`)
+	pub.Ext = json.RawMessage(`{"prebid": {"parentAccount": "abc"} }`)
 	assert.Equal(t, "abc", effectivePubID(&pub), "effectivePubID failed for parentAccount.")
 }
 
