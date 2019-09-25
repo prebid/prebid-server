@@ -311,10 +311,11 @@ func (cfg *Metrics) validate(errs configErrors) configErrors {
 }
 
 type InfluxMetrics struct {
-	Host     string `mapstructure:"host"`
-	Database string `mapstructure:"database"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Host               string `mapstructure:"host"`
+	Database           string `mapstructure:"database"`
+	Username           string `mapstructure:"username"`
+	Password           string `mapstructure:"password"`
+	MetricSendInterval int    `mapstructure:"metric_send_interval"`
 }
 
 type PrometheusMetrics struct {
@@ -546,6 +547,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.influxdb.metric_send_interval", 20)
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
