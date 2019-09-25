@@ -69,7 +69,7 @@ metrics:
     database: metricsdb
     username: admin
     password: admin1324
-	collection_rate_seconds: 30
+    collection_rate_seconds: 30
 datacache:
   type: postgres
   filename: /usr/db/db.db
