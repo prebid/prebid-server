@@ -3,6 +3,7 @@ package adpone
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
@@ -25,6 +26,15 @@ func (adapter *adponeAdapter) MakeRequests(
 	requestsToBidder []*adapters.RequestData,
 	errs []error,
 ) {
+	var imp = &openRTBRequest.Imp[0]
+	var bidderExt adapters.ExtImpBidder
+	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		errs = append(errs, newBadInputError(err.Error(),))
+	}
+	var ttxExt openrtb_ext.ExtAdpone
+	if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
+		errs = append(errs, newBadInputError(err.Error(),))
+	}
 	if len(openRTBRequest.Imp) == 0 {
 		errs = append(errs, newBadInputError("No impression in the bid request"))
 		return nil, errs
