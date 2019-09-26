@@ -47,7 +47,7 @@
           "page": "https://yourmomshouse.com",
           "referrer": "",
           "search": "",
-          "secure": 0,
+          "secure": 1,
           "requestId": "some_test_ad",
           "isMobile": 0,
           "ip": "",

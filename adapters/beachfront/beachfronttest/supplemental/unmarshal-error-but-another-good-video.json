@@ -28,7 +28,6 @@
         "id":"video2",
         "ext":{
           "bidder":{
-            "videoResponseType": "nurl",
             "bidfloor":0.01,
             "appId":"11bc5dd5-7421-4dd8-c926-40fa653bec76"
           }
@@ -78,7 +77,8 @@
                   "video/webm"
                 ]
               },
-              "id": "video2"
+              "id": "video2",
+              "secure": 0
             }
           ],
           "site": {

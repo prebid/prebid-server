@@ -46,6 +46,7 @@
           "imp": [
             {
               "id": "video1",
+              "secure": 0,
               "video": {
                 "mimes":[
                   "video/mp4"

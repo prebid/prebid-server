@@ -11,6 +11,7 @@
         "id":"mix1",
         "ext":{
           "bidder":{
+            "videoResponseType" : "adm",
             "bidfloor":0.41,
             "appIds": {
               "banner": "487cf244-5e95-43cb-e7b9-bb540873ca7e",
@@ -121,6 +122,7 @@
 
               },
               "bidfloor": 0.41,
+              "secure": 0,
               "id": "mix1"
             }
           ],

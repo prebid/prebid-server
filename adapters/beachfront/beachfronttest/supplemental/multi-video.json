@@ -52,6 +52,7 @@
           "imp": [
             {
               "id":"multivideo",
+              "secure": 0,
               "video": {
                 "mimes": [
                   "video/mp4",
@@ -127,6 +128,7 @@
           "imp":[
             {
               "id":"multivideo",
+              "secure": 0,
               "video":{
                 "mimes":[
                   "video/mp4",

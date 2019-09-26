@@ -10,7 +10,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -352,35 +351,6 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 }
 
 func guessDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
-	if request.Device.UA != "" {
-		var matched bool
-		var err error
-
-		matched, err = regexp.MatchString(`^.*(Apple\ ?TV|TV\ Safari|webOS\.TV|SonyCEBrowser|DTVNetBrowser|InettvBrowse|SmartTvA).*$`, request.Device.UA)
-
-		if err == nil && matched {
-			return openrtb.DeviceTypeConnectedTV
-		}
-
-		matched, err = regexp.MatchString(`^.*(CrKey|AFTT|AFTM).*$`, request.Device.UA)
-
-		if err == nil && matched {
-			return openrtb.DeviceTypeConnectedDevice
-		}
-
-		matched, err = regexp.MatchString(`^.*Roku.*$`, request.Device.UA)
-
-		if err == nil && matched {
-			return openrtb.DeviceTypeSetTopBox
-		}
-
-		matched, err = regexp.MatchString(`^.*(Android|iPhone|IEMobile|Mobile\ Safari).*$`, request.Device.UA)
-
-		if err == nil && matched {
-			return openrtb.DeviceTypeMobileTablet
-		}
-	}
-
 	if request.Site != nil {
 
 		return openrtb.DeviceTypePersonalComputer
@@ -419,7 +389,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		if beachfrontExt.VideoResponseType != "" {
 			bfReqs[i].VideoResponseType = beachfrontExt.VideoResponseType
 		} else {
-			bfReqs[i].VideoResponseType = "adm"
+			bfReqs[i].VideoResponseType = "nurl"
 		}
 
 		bfReqs[i].Request = *request
@@ -633,7 +603,7 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 	return beachfrontExt, err
 }
 
-func getDomain(page string) (string) {
+func getDomain(page string) string {
 	protoUrl := strings.Split(page, "//")
 	var domainPage string
 
@@ -647,7 +617,7 @@ func getDomain(page string) (string) {
 
 }
 
-func isSecure(page string) (int8) {
+func isSecure(page string) int8 {
 	protoUrl := strings.Split(page, "://")
 
 	if len(protoUrl) > 1 && protoUrl[0] == "https" {
@@ -661,7 +631,7 @@ func isSecure(page string) (int8) {
 /*In the case of a mobile banner, the endpoint has a Site field, but no App field, so building a reasonable
 Site object from the App.
 */
-func getSite(request *openrtb.BidRequest) (openrtb.Site,)  {
+func getSite(request *openrtb.BidRequest) openrtb.Site {
 	var site = request.Site
 
 	if site == nil {
