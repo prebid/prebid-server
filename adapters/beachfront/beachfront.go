@@ -321,11 +321,27 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 	}
 
-	site := getSite(request)
-	bfr.IsMobile = site.Mobile
-	bfr.Page = site.Page
-	bfr.Domain = site.Domain
-	bfr.Secure = isSecure(site.Page)
+	if request.App != nil {
+		bfr.Page = request.App.Bundle
+		if request.App.Domain == "" {
+			bfr.Domain = getDomain(request.App.Domain)
+		} else {
+			bfr.Domain = request.App.Domain
+		}
+
+		bfr.IsMobile = 1
+	} else if request.Site.Page != "" {
+		bfr.Page = request.Site.Page
+		if request.Site.Domain == "" {
+			bfr.Domain = getDomain(request.Site.Page)
+		} else {
+			bfr.Domain = request.Site.Domain
+		}
+
+		bfr.IsMobile = 0
+	}
+
+	bfr.Secure = isSecure(bfr.Page)
 
 	if request.User != nil && request.User.ID != "" {
 		if bfr.User.ID == "" {
@@ -626,40 +642,6 @@ func isSecure(page string) int8 {
 
 	return 0
 
-}
-
-/*In the case of a mobile banner, the endpoint has a Site field, but no App field, so building a reasonable
-Site object from the App.
-*/
-func getSite(request *openrtb.BidRequest) openrtb.Site {
-	var site = request.Site
-
-	if site == nil {
-		site = new(openrtb.Site)
-	}
-
-	if request.App != nil {
-
-		if request.App.Domain == "" {
-			site.Domain = getDomain(request.App.Domain)
-		} else {
-			site.Domain = request.App.Domain
-		}
-
-		site.Page = request.App.Bundle
-		site.Mobile = 1
-	} else {
-		if request.Site.Page != "" {
-			if request.Site.Domain == "" {
-				site.Domain = getDomain(request.Site.Page)
-			} else {
-				site.Domain = request.Site.Domain
-			}
-		}
-		site.Mobile = 0
-	}
-
-	return *site
 }
 
 func getIP(ip string) string {
