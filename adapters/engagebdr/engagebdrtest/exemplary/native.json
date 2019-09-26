@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+            "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+             "ver":"1.1"
+        },
+        "ext": {
+            "bidder": {
+                "sspid": "99997"
+            }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://dsp.bnmla.com/hb?zoneid=99997",
+        "body":{
+          "id": "test-request-id",
+          "imp": [{
+            "id": "test-imp-id",
+            "native": {
+                "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+             "ver":"1.1"
+            },
+            "ext": {
+                "bidder": {
+                    "sspid":"99997"
+                }
+            }
+          }]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+              {
+                  "id" : "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 9.81,
+                  "adid": "abcde-12345",
+                  "adm": "{\"native\":{\"link\":{\"url\":\"https://rtb-use.mfadsrvr.com/click/ESoNneAwqCPnn97YSh0EoJzPUnSmqwdERCYPCdrHr1_TJz_V-x2xjMgxcROeooIH5fe1exAsWt2aqg1ESQEVQM8i0TpI1QBcV4V87Uzmf_XfAR6-6xqvqfGuDs-pJDWqAYz0P0OtHlrvVztlMdWu6JT9_GAtVAnB9gp0JchRJLSqr1h_GRZwuNUri7NvveTD7m8ZUHKNFldKPwHCbom120NFFn2Z3a6v0owsZfIgOff-1YyvZ9WkzVr3755kGRT_D1FUy3r2kurY8HdfeTiRuZAajluniEkJql7yGlS6hVfQ3vT3X93BKIo1F_A3o4bfywT49tM-3l2X8vwlc-w9X-B5VudQPJ8kboJZ2OuaD5AN///\"},\"assets\":[{\"id\":0,\"title\":{\"text\":\"4 Signs Your Heart Is Quietly Failing You\"},\"required\":1},{\"id\":3,\"img\":{\"w\":1200,\"h\":627,\"url\":\"https://de9a11s35xj3d.cloudfront.net/5922785fd53de8084607850abdaace4f.jpg\"}},{\"id\":4,\"data\":{\"value\":\"PhysioTru\"}},{\"id\":6,\"data\":{\"value\":\"\\n How To Avoid A Heart Attack (Do This For 7 Seconds Twice A Day)\\n \"}}],\"imptrackers\":[\"https://rtb-use.mfadsrvr.com/imp_c2s/v1/ESoNneAwqCPnn97YSh0EoJzPUnSmqwdERCYPCdrHr1_TJz_V-x2xjMgxcROeooIH5fe1exAsWt2aqg1ESQEVQM8i0TpI1QBcV4V87Uzmf_XfAR6-6xqvqfGuDs-pJDWqAYz0P0OtHlrvVztlMdWu6JT9_GAtVAnB9gp0JchRJLSqr1h_GRZwuNUri7NvveTD7m8ZUHKNFldKPwHCbom120NFFn2Z3a6v0owsZfIgOff-1YyvZ9WkzVr3755kGRT_D1FUy3r2kurY8HdfeTiRuZAajluniEkJql7yGlS6hVfQ3vT3X93BKIo1F_A3o4bfywT49tM-3l2X8vwlc-w9X-B5VudQPJ8kboJZ2OuaD5AN/${AUCTION_PRICE}\"],\"ver\":1}}",
+                  "adomain": [
+                      "advertiserdomain.com"
+                  ],
+                  "cid": "campaign1",
+                  "crid": "abcde-12345",
+                  "w": 300,
+                  "h": 250
+              }
+              ],
+              "seat": "test-request-id"
+            }
+          ],
+          "bidid": "test-request-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+  {
+      "currency": "USD",
+      "bids": [
+      {
+          "bid": {
+              "id": "test-imp-id",
+              "impid": "test-imp-id",
+              "price": 9.81,
+              "adid": "abcde-12345",
+              "adm": "{\"native\":{\"link\":{\"url\":\"https://rtb-use.mfadsrvr.com/click/ESoNneAwqCPnn97YSh0EoJzPUnSmqwdERCYPCdrHr1_TJz_V-x2xjMgxcROeooIH5fe1exAsWt2aqg1ESQEVQM8i0TpI1QBcV4V87Uzmf_XfAR6-6xqvqfGuDs-pJDWqAYz0P0OtHlrvVztlMdWu6JT9_GAtVAnB9gp0JchRJLSqr1h_GRZwuNUri7NvveTD7m8ZUHKNFldKPwHCbom120NFFn2Z3a6v0owsZfIgOff-1YyvZ9WkzVr3755kGRT_D1FUy3r2kurY8HdfeTiRuZAajluniEkJql7yGlS6hVfQ3vT3X93BKIo1F_A3o4bfywT49tM-3l2X8vwlc-w9X-B5VudQPJ8kboJZ2OuaD5AN///\"},\"assets\":[{\"id\":0,\"title\":{\"text\":\"4 Signs Your Heart Is Quietly Failing You\"},\"required\":1},{\"id\":3,\"img\":{\"w\":1200,\"h\":627,\"url\":\"https://de9a11s35xj3d.cloudfront.net/5922785fd53de8084607850abdaace4f.jpg\"}},{\"id\":4,\"data\":{\"value\":\"PhysioTru\"}},{\"id\":6,\"data\":{\"value\":\"\\n How To Avoid A Heart Attack (Do This For 7 Seconds Twice A Day)\\n \"}}],\"imptrackers\":[\"https://rtb-use.mfadsrvr.com/imp_c2s/v1/ESoNneAwqCPnn97YSh0EoJzPUnSmqwdERCYPCdrHr1_TJz_V-x2xjMgxcROeooIH5fe1exAsWt2aqg1ESQEVQM8i0TpI1QBcV4V87Uzmf_XfAR6-6xqvqfGuDs-pJDWqAYz0P0OtHlrvVztlMdWu6JT9_GAtVAnB9gp0JchRJLSqr1h_GRZwuNUri7NvveTD7m8ZUHKNFldKPwHCbom120NFFn2Z3a6v0owsZfIgOff-1YyvZ9WkzVr3755kGRT_D1FUy3r2kurY8HdfeTiRuZAajluniEkJql7yGlS6hVfQ3vT3X93BKIo1F_A3o4bfywT49tM-3l2X8vwlc-w9X-B5VudQPJ8kboJZ2OuaD5AN/${AUCTION_PRICE}\"],\"ver\":1}}",
+              "adomain": ["advertiserdomain.com"],
+              "cid": "campaign1",
+              "crid": "abcde-12345",
+              "w": 300,
+              "h": 250
+          },
+          "type": "native"
+      }
+      ]
+  }
+  ]
+}
+

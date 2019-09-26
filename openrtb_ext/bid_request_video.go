@@ -27,7 +27,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Application where the impression will be shown
-	App openrtb.App `json:"app"`
+	App *openrtb.App `json:"app"`
 
 	// Attribute:
 	//   site
@@ -35,7 +35,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Site where the impression will be shown
-	Site openrtb.Site `json:"site"`
+	Site *openrtb.Site `json:"site"`
 
 	// Attribute:
 	//   user
@@ -59,7 +59,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Indicates that the response requires an adserver specific content category
-	IncludeBrandCategory IncludeBrandCategory `json:"includebrandcategory"`
+	IncludeBrandCategory *IncludeBrandCategory `json:"includebrandcategory,omitempty"`
 
 	// Attribute:
 	//   video

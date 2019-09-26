@@ -7,6 +7,9 @@
         "id": "imp-id",
         "banner": null
       }
-    ]
+    ],
+    "app": {
+      "id": "app_001"
+    }
   }
 }

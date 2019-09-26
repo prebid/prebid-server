@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -22,10 +23,13 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
+	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	cmpBools(t, "account_required", cfg.AccountRequired, false)
+	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 }
 
 var fullConfig = []byte(`
@@ -39,6 +43,7 @@ host_cookie:
   domain: cookies.prebid.org
   opt_out_url: http://prebid.org/optout
   opt_in_url: http://prebid.org/optin
+  max_cookie_size_bytes: 32768
 external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
@@ -64,6 +69,7 @@ metrics:
     database: metricsdb
     username: admin
     password: admin1324
+    metric_send_interval: 30
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -89,6 +95,8 @@ adapters:
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
   adkerneladn:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+blacklisted_apps: ["spamAppID","sketchy-app-id"]
+account_required: true
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
@@ -176,6 +184,15 @@ func TestFullConfig(t *testing.T) {
 	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
 
+	//Assert the NonStandardPublishers was correctly unmarshalled
+	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
+	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[1], "sketchy-app-id")
+
+	//Assert the BlacklistedAppMap hash table was built correctly
+	for i := 0; i < len(cfg.BlacklistedApps); i++ {
+		cmpBools(t, "cfg.BlacklistedAppMap", cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]], true)
+	}
+
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")
@@ -183,6 +200,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
 	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
+	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
@@ -203,6 +221,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
+	cmpBools(t, "account_required", cfg.AccountRequired, true)
 }
 
 func TestValidConfig(t *testing.T) {
@@ -288,6 +307,28 @@ func TestLimitTimeout(t *testing.T) {
 	doTimeoutTest(t, 5, 5, 10, 0)
 	doTimeoutTest(t, 15, 15, 0, 0)
 	doTimeoutTest(t, 15, 0, 20, 15)
+}
+
+func TestCookieSizeError(t *testing.T) {
+	type aTest struct {
+		cookieHost  *HostCookie
+		expectError bool
+	}
+	testCases := []aTest{
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
+	}
+	for i := range testCases {
+		if testCases[i].expectError {
+			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+		} else {
+			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+		}
+	}
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {

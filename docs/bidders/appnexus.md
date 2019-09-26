@@ -17,3 +17,29 @@ is not supplied for an `imp`, but `request.app.ext.prebid.source`
 and `request.app.ext.prebid.version` are supplied, the adapter will fill in a value for
 `diplaymanagerver`. It will concatonate the two `app` fields as `<source>-<version>` fo fill in
 the empty `displaymanagerver` before sending the request to AppNexus.
+
+## Test Request
+
+The following test parameters can be used to verify that Prebid Server is working properly with the 
+Appnexus adapter. This example includes an `imp` object with an Appnexus test placement ID and sizes
+that would match with the test creative.
+
+```
+	"imp": [{
+		"id": "some-impression-id",
+		"banner": {
+			"format": [{
+				"w": 600,
+				"h": 500
+			}, {
+				"w": 300,
+				"h": 600
+			}]
+		},
+		"ext": {
+			"appnexus": {
+				"placementId": 13144370
+			}
+		}
+	}]
+```

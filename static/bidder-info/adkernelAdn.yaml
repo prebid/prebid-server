@@ -1,9 +1,9 @@
 maintainer:
-  email: "denis@adkernel.com"
+  email: "prebid-dev@adkernel.com"
 capabilities:
   app:
     mediaTypes:
-      - banner      
+      - banner
   site:
     mediaTypes:
       - banner
