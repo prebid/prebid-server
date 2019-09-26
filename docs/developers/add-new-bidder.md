@@ -36,7 +36,7 @@ Bidder implementations may assume that any params have already been validated ag
 ###Long form video support
 If bidder is going to support long form video make sure bidder returns:
 
-- single IAB category for each bid in `TypedBid.bid.Cat` field, singe string value in string list, please refer to this convenience link (not the final official definition): [IAB categories](https://adtagmacros.com/list-of-iab-categories-for-advertisement/)
+- category in primary ad server format in `bid.bidVideo.PrimaryCategory`, string value, or single IAB category for each bid in `TypedBid.bid.Cat` field, singe string value in string list, please refer to this convenience link (not the final official definition): [IAB categories](https://adtagmacros.com/list-of-iab-categories-for-advertisement/)
 - ad duration in seconds in `TypedBid.BidVideo.Duration` field, int value
 - bid price in `TypedBid.bid.Price`, float value
 
