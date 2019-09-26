@@ -28,10 +28,21 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
+// ImpLabels
+type ImpLabels struct {
+	BannerImps bool
+	VideoImps  bool
+	AudioImps  bool
+	NativeImps bool
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
 type DemandSource string
+
+// ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
+type ImpMediaType string
 
 // RequestType : Request type enumeration
 type RequestType string
@@ -53,6 +64,9 @@ type AdapterError string
 
 // CacheResult : Cache hit/miss
 type CacheResult string
+
+// PublisherUnknown: Default value for Labels.PubID
+const PublisherUnknown = "unknown"
 
 // The demand sources
 const (
@@ -78,6 +92,14 @@ const (
 	ReqTypeVideo    RequestType = "video"
 )
 
+// The media types described in the "imp" json objects
+const (
+	ImpTypeBanner ImpMediaType = "banner"
+	ImpTypeVideo  ImpMediaType = "video"
+	ImpTypeAudio  ImpMediaType = "audio"
+	ImpTypeNative ImpMediaType = "native"
+)
+
 func RequestTypes() []RequestType {
 	return []RequestType{
 		ReqTypeLegacy,
@@ -85,6 +107,15 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2App,
 		ReqTypeAMP,
 		ReqTypeVideo,
+	}
+}
+
+func ImpTypes() []ImpMediaType {
+	return []ImpMediaType{
+		ImpTypeBanner,
+		ImpTypeVideo,
+		ImpTypeAudio,
+		ImpTypeNative,
 	}
 }
 
@@ -208,7 +239,8 @@ type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
-	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
+	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterPanic(labels AdapterLabels)

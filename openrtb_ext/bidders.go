@@ -21,16 +21,20 @@ type BidderName string
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
 	Bidder33Across       BidderName = "33across"
+	BidderAdkernel       BidderName = "adkernel"
 	BidderAdkernelAdn    BidderName = "adkernelAdn"
 	BidderAdtelligent    BidderName = "adtelligent"
 	BidderAdform         BidderName = "adform"
+	BidderAdvangelists   BidderName = "advangelists"
 	BidderAppnexus       BidderName = "appnexus"
 	BidderBeachfront     BidderName = "beachfront"
 	BidderBrightroll     BidderName = "brightroll"
 	BidderConsumable     BidderName = "consumable"
 	BidderConversant     BidderName = "conversant"
+	BidderEmxDigital     BidderName = "emx_digital"
 	BidderEPlanning      BidderName = "eplanning"
 	BidderFacebook       BidderName = "audienceNetwork"
+	BidderGamma          BidderName = "gamma"
 	BidderGamoshi        BidderName = "gamoshi"
 	BidderGrid           BidderName = "grid"
 	BidderGumGum         BidderName = "gumgum"
@@ -42,27 +46,39 @@ const (
 	BidderPubmatic       BidderName = "pubmatic"
 	BidderPulsepoint     BidderName = "pulsepoint"
 	BidderRhythmone      BidderName = "rhythmone"
+	BidderRTBHouse       BidderName = "rtbhouse"
 	BidderRubicon        BidderName = "rubicon"
 	BidderSharethrough   BidderName = "sharethrough"
 	BidderSomoaudience   BidderName = "somoaudience"
 	BidderSovrn          BidderName = "sovrn"
 	BidderSonobi         BidderName = "sonobi"
+	BidderTriplelift     BidderName = "triplelift"
+	BidderUnruly         BidderName = "unruly"
+	BidderVerizonMedia   BidderName = "verizonmedia"
+	BidderVrtcal         BidderName = "vrtcal"
 	BidderYieldmo        BidderName = "yieldmo"
+	BidderVisx           BidderName = "visx"
+	BidderTappx          BidderName = "tappx"
+	BidderEngageBDR      BidderName = "engagebdr"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
 	"33across":        Bidder33Across,
+	"adkernel":        BidderAdkernel,
 	"adkernelAdn":     BidderAdkernelAdn,
 	"adtelligent":     BidderAdtelligent,
 	"adform":          BidderAdform,
+	"advangelists":    BidderAdvangelists,
 	"appnexus":        BidderAppnexus,
 	"beachfront":      BidderBeachfront,
 	"audienceNetwork": BidderFacebook,
 	"brightroll":      BidderBrightroll,
 	"consumable":      BidderConsumable,
 	"conversant":      BidderConversant,
+	"emx_digital":     BidderEmxDigital,
 	"eplanning":       BidderEPlanning,
+	"gamma":           BidderGamma,
 	"gamoshi":         BidderGamoshi,
 	"grid":            BidderGrid,
 	"gumgum":          BidderGumGum,
@@ -74,12 +90,20 @@ var BidderMap = map[string]BidderName{
 	"pubmatic":        BidderPubmatic,
 	"pulsepoint":      BidderPulsepoint,
 	"rhythmone":       BidderRhythmone,
+	"rtbhouse":        BidderRTBHouse,
 	"rubicon":         BidderRubicon,
 	"sharethrough":    BidderSharethrough,
 	"somoaudience":    BidderSomoaudience,
 	"sovrn":           BidderSovrn,
 	"sonobi":          BidderSonobi,
+	"triplelift":      BidderTriplelift,
+	"unruly":          BidderUnruly,
+	"verizonmedia":    BidderVerizonMedia,
+	"vrtcal":          BidderVrtcal,
 	"yieldmo":         BidderYieldmo,
+	"visx":            BidderVisx,
+	"tappx":           BidderTappx,
+	"engagebdr":       BidderEngageBDR,
 }
 
 // BidderList returns the values of the BidderMap

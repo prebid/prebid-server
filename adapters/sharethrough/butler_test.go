@@ -8,6 +8,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -52,6 +53,9 @@ func assertRequestDataEquals(t *testing.T, testName string, expected *adapters.R
 	if len(expected.Body) != len(actual.Body) {
 		t.Errorf("Body mismatch: expected %s got %s\n", expected.Body, actual.Body)
 	}
+	if len(expected.Headers) != len(actual.Headers) {
+		t.Errorf("Number of headers mismatch: expected %d got %d\n", len(expected.Headers), len(actual.Headers))
+	}
 	for headerIndex, expectedHeader := range expected.Headers {
 		if expectedHeader[0] != actual.Headers[headerIndex][0] {
 			t.Errorf("Header %s mismatch: expected %s got %s\n", headerIndex, expectedHeader[0], actual.Headers[headerIndex][0])
@@ -63,9 +67,10 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 	tests := map[string]struct {
 		inputImp openrtb.Imp
 		inputReq *openrtb.BidRequest
+		inputDom string
 		expected *adapters.RequestData
 	}{
-		"Generates the correct AdServer request from Imp": {
+		"Generates the correct AdServer request from Imp (no user provided)": {
 			inputImp: openrtb.Imp{
 				ID:  "abc",
 				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]} }`),
@@ -77,15 +82,22 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				App: &openrtb.App{Ext: []byte(`{}`)},
 				Device: &openrtb.Device{
 					UA: "Android Chome/60",
+					IP: "127.0.0.1",
 				},
+				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
 			},
+			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
 				Body:   nil,
 				Headers: http.Header{
-					"Content-Type": []string{"text/plain;charset=utf-8"},
-					"Accept":       []string{"application/json"},
+					"Content-Type":    []string{"text/plain;charset=utf-8"},
+					"Accept":          []string{"application/json"},
+					"Origin":          []string{"http://a.domain.com"},
+					"Referer":         []string{"http://a.domain.com/page"},
+					"User-Agent":      []string{"Android Chome/60"},
+					"X-Forwarded-For": []string{"127.0.0.1"},
 				},
 			},
 		},
@@ -103,7 +115,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
 	}}
 	for testName, test := range tests {
-		outputSuccess, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq)
+		outputSuccess, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq, test.inputDom)
 		assertRequestDataEquals(t, testName, test.expected, outputSuccess)
 		if outputError != nil {
 			t.Errorf("Expected no errors, got %s\n", outputError)
@@ -154,7 +166,7 @@ func assertBidderResponseEquals(t *testing.T, testName string, expected adapters
 func TestSuccessResponseToOpenRTB(t *testing.T) {
 	tests := map[string]struct {
 		inputButlerReq  *adapters.RequestData
-		inputStrResp    openrtb_ext.ExtImpSharethroughResponse
+		inputStrResp    []byte
 		expectedSuccess *adapters.BidderResponse
 		expectedErrors  []error
 	}{
@@ -162,18 +174,7 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 			inputButlerReq: &adapters.RequestData{
 				Uri: "http://uri.com?placement_key=pkey&bidId=bidid&height=20&width=30",
 			},
-			inputStrResp: openrtb_ext.ExtImpSharethroughResponse{
-				AdServerRequestID: "arid",
-				BidID:             "bid",
-				Creatives: []openrtb_ext.ExtImpSharethroughCreative{{
-					CPM: 10,
-					Metadata: openrtb_ext.ExtImpSharethroughCreativeMetadata{
-						CampaignKey: "cmpKey",
-						CreativeKey: "creaKey",
-						DealID:      "dealId",
-					},
-				}},
-			},
+			inputStrResp: []byte(`{ "adserverRequestId": "arid", "bidId": "bid", "creatives": [{"cpm": 10, "creative": {"campaign_key": "cmpKey", "creative_key": "creaKey", "deal_id": "dealId"}}] }`),
 			expectedSuccess: &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{{
 					BidType: openrtb_ext.BidTypeNative,
@@ -207,15 +208,13 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 func TestFailResponseToOpenRTB(t *testing.T) {
 	tests := map[string]struct {
 		inputButlerReq  *adapters.RequestData
-		inputStrResp    openrtb_ext.ExtImpSharethroughResponse
+		inputStrResp    []byte
 		expectedSuccess *adapters.BidderResponse
 		expectedErrors  []error
 	}{
 		"Returns nil if no creatives provided": {
-			inputButlerReq: &adapters.RequestData{},
-			inputStrResp: openrtb_ext.ExtImpSharethroughResponse{
-				Creatives: []openrtb_ext.ExtImpSharethroughCreative{},
-			},
+			inputButlerReq:  &adapters.RequestData{},
+			inputStrResp:    []byte(`{}`),
 			expectedSuccess: nil,
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: "No creative provided"},
@@ -225,12 +224,18 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 			inputButlerReq: &adapters.RequestData{
 				Uri: "wrong format url",
 			},
-			inputStrResp: openrtb_ext.ExtImpSharethroughResponse{
-				Creatives: []openrtb_ext.ExtImpSharethroughCreative{{}},
-			},
+			inputStrResp:    []byte(`{ "creatives": [{"creative": {}}] }`),
 			expectedSuccess: nil,
 			expectedErrors: []error{
 				&errortypes.BadInput{Message: `strconv.ParseUint: parsing "": invalid syntax`},
+			},
+		},
+		"Returns error if failed parsing body": {
+			inputButlerReq:  &adapters.RequestData{},
+			inputStrResp:    []byte(`{ wrong json`),
+			expectedSuccess: nil,
+			expectedErrors: []error{
+				&errortypes.BadInput{Message: "Unable to parse response JSON"},
 			},
 		},
 	}
@@ -275,6 +280,8 @@ func TestBuildUri(t *testing.T) {
 				Iframe:             false,
 				Height:             20,
 				Width:              30,
+				TheTradeDeskUserId: "ttd123",
+				SharethroughUserId: "stx123",
 			},
 			expected: []string{
 				"http://abc.com?",
@@ -287,7 +294,9 @@ func TestBuildUri(t *testing.T) {
 				"height=20",
 				"width=30",
 				"supplyId=FGMrCMMc",
-				"strVersion=1.0.0",
+				"strVersion=" + strconv.FormatInt(strVersion, 10),
+				"ttduid=ttd123",
+				"stxuid=stx123",
 			},
 		},
 	}

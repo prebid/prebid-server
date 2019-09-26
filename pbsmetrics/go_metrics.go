@@ -17,6 +17,7 @@ type Metrics struct {
 	ConnectionAcceptErrorMeter metrics.Meter
 	ConnectionCloseErrorMeter  metrics.Meter
 	ImpMeter                   metrics.Meter
+	LegacyImpMeter             metrics.Meter
 	AppRequestMeter            metrics.Meter
 	NoCookieMeter              metrics.Meter
 	SafariRequestMeter         metrics.Meter
@@ -36,6 +37,12 @@ type Metrics struct {
 	userSyncBadRequest    metrics.Meter
 	userSyncSet           map[openrtb_ext.BidderName]metrics.Meter
 	userSyncGDPRPrevent   map[openrtb_ext.BidderName]metrics.Meter
+
+	// Media types found in the "imp" JSON object
+	ImpsTypeBanner metrics.Meter
+	ImpsTypeVideo  metrics.Meter
+	ImpsTypeAudio  metrics.Meter
+	ImpsTypeNative metrics.Meter
 
 	AdapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
 	// Don't export accountMetrics because we need helper functions here to insure its properly populated dynamically
@@ -91,6 +98,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ConnectionAcceptErrorMeter: blankMeter,
 		ConnectionCloseErrorMeter:  blankMeter,
 		ImpMeter:                   blankMeter,
+		LegacyImpMeter:             blankMeter,
 		AppRequestMeter:            blankMeter,
 		NoCookieMeter:              blankMeter,
 		SafariRequestMeter:         blankMeter,
@@ -106,6 +114,11 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		userSyncBadRequest:         blankMeter,
 		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
 		userSyncGDPRPrevent:        make(map[openrtb_ext.BidderName]metrics.Meter),
+
+		ImpsTypeBanner: blankMeter,
+		ImpsTypeVideo:  blankMeter,
+		ImpsTypeAudio:  blankMeter,
+		ImpsTypeNative: blankMeter,
 
 		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics: make(map[string]*accountMetrics),
@@ -137,6 +150,13 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
 	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
 	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
+	newMetrics.LegacyImpMeter = metrics.GetOrRegisterMeter("legacy_imps_requested", registry)
+
+	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
+	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
+	newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
+	newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
+
 	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
 	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
@@ -297,8 +317,24 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	am.requestMeter.Mark(1)
 }
 
-func (me *Metrics) RecordImps(labels Labels, numImps int) {
-	me.ImpMeter.Mark(int64(numImps))
+func (me *Metrics) RecordImps(labels ImpLabels) {
+	me.ImpMeter.Mark(int64(1))
+	if labels.BannerImps {
+		me.ImpsTypeBanner.Mark(int64(1))
+	}
+	if labels.VideoImps {
+		me.ImpsTypeVideo.Mark(int64(1))
+	}
+	if labels.AudioImps {
+		me.ImpsTypeAudio.Mark(int64(1))
+	}
+	if labels.NativeImps {
+		me.ImpsTypeNative.Mark(int64(1))
+	}
+}
+
+func (me *Metrics) RecordLegacyImps(labels Labels, numImps int) {
+	me.LegacyImpMeter.Mark(int64(numImps))
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {

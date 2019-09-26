@@ -945,7 +945,8 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
+
+	pc.SetCookieOnResponse(fakewriter, false, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
@@ -1035,18 +1036,25 @@ func TestOpenRTBRequest(t *testing.T) {
                     "keyv": 1,
                     "pref": 0
                 },
-                "tpid": [{
-                    "source": "tdid",
-                    "uid": "3d50a262-bd8e-4be3-90b8-246291523907"
-                },{
+				"eids": [{
+                    "source": "adserver.org",
+                    "uids": [{
+                        "id": "3d50a262-bd8e-4be3-90b8-246291523907",
+                        "ext": {
+                            "rtiPartner": "TDID"
+                        }
+                    }]
+                },
+                {
                     "source": "pubcid",
-                    "uid": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
-                }]
+                    "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+				}]
             }`),
 		},
+		Ext: json.RawMessage(`{"prebid": {}}`),
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1074,6 +1082,9 @@ func TestOpenRTBRequest(t *testing.T) {
 		}
 		if rpRequest.Cur != nil {
 			t.Fatalf("Wrong request.Cur. Expected nil, Got %s", rpRequest.Cur)
+		}
+		if request.Ext != nil {
+			t.Fatalf("Wrong request.ext. Expected nil, Got %v", request.Ext)
 		}
 
 		if rpRequest.Imp[0].ID == "test-imp-banner-id" {
@@ -1125,7 +1136,10 @@ func TestOpenRTBRequest(t *testing.T) {
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
 			}
-			if userExt.TpID == nil || len(userExt.TpID) != 2 {
+			if userExt.Eids == nil || len(userExt.Eids) != 2 {
+				t.Fatal("Eids values are not as expected!")
+			}
+			if userExt.TpID == nil || len(userExt.TpID) != 1 {
 				t.Fatal("TpID values are not as expected!")
 			}
 		} else {
@@ -1163,7 +1177,7 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 		}},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)
@@ -1223,7 +1237,7 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 		}},
 	}
 
-	reqs, errs := bidder.MakeRequests(request)
+	reqs, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
 
 	if len(errs) > 0 {
 		t.Errorf("Got unexpected errors while building HTTP requests: %v", errs)

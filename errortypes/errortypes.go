@@ -6,9 +6,12 @@ const (
 	NoErrorCode = iota
 	TimeoutCode
 	BadInputCode
+	BlacklistedAppCode
 	BadServerResponseCode
 	FailedToRequestBidsCode
 	BidderTemporarilyDisabledCode
+	BlacklistedAcctCode
+	AcctRequiredCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -49,6 +52,54 @@ func (err *BadInput) Error() string {
 
 func (err *BadInput) Code() int {
 	return BadInputCode
+}
+
+// BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedApp struct {
+	Message string
+}
+
+func (err *BlacklistedApp) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedApp) Code() int {
+	return BlacklistedAppCode
+}
+
+// BlacklistedAcct should be used when a request account ID matches an entry in the BlacklistedAccts
+// environment variable array
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type BlacklistedAcct struct {
+	Message string
+}
+
+func (err *BlacklistedAcct) Error() string {
+	return err.Message
+}
+
+func (err *BlacklistedAcct) Code() int {
+	return BlacklistedAcctCode
+}
+
+// AcctRequired should be used when the environment variable ACCOUNT_REQUIRED has been set to not
+// process requests that don't come with a valid account ID
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type AcctRequired struct {
+	Message string
+}
+
+func (err *AcctRequired) Error() string {
+	return err.Message
+}
+
+func (err *AcctRequired) Code() int {
+	return AcctRequiredCode
 }
 
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.

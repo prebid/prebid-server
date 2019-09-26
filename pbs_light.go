@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Holds binary revision string
+// Rev holds binary revision string
 // Set manually at build time using:
 //    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
 // Populated automatically at build / release time via .travis.yml
@@ -42,9 +42,7 @@ func main() {
 }
 
 func serve(revision string, cfg *config.Configuration) error {
-
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds)*time.Second)
-
 	r, err := router.New(cfg, currencyConverter)
 	if err != nil {
 		return err

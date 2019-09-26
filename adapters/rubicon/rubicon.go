@@ -41,8 +41,8 @@ type rubiconParams struct {
 	AccountId int                `json:"accountId"`
 	SiteId    int                `json:"siteId"`
 	ZoneId    int                `json:"zoneId"`
-	Inventory json.RawMessage    `json:"inventory"`
-	Visitor   json.RawMessage    `json:"visitor"`
+	Inventory json.RawMessage    `json:"inventory,omitempty"`
+	Visitor   json.RawMessage    `json:"visitor,omitempty"`
 	Video     rubiconVideoParams `json:"video"`
 }
 
@@ -53,7 +53,7 @@ type rubiconImpExtRPTrack struct {
 
 type rubiconImpExtRP struct {
 	ZoneID int                  `json:"zone_id"`
-	Target json.RawMessage      `json:"target"`
+	Target json.RawMessage      `json:"target,omitempty"`
 	Track  rubiconImpExtRPTrack `json:"track"`
 }
 
@@ -62,14 +62,20 @@ type rubiconImpExt struct {
 }
 
 type rubiconUserExtRP struct {
-	Target json.RawMessage `json:"target"`
+	Target json.RawMessage `json:"target,omitempty"`
+}
+
+type rubiconExtUserTpID struct {
+	Source string `json:"source"`
+	UID    string `json:"uid"`
 }
 
 type rubiconUserExt struct {
-	RP        rubiconUserExtRP              `json:"rp"`
-	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
 	Consent   string                        `json:"consent,omitempty"`
-	TpID      []openrtb_ext.ExtUserTpID     `json:"tpid,omitempty"`
+	DigiTrust *openrtb_ext.ExtUserDigiTrust `json:"digitrust"`
+	Eids      []openrtb_ext.ExtUserEid      `json:"eids,omitempty"`
+	TpID      []rubiconExtUserTpID          `json:"tpid,omitempty"`
+	RP        rubiconUserExtRP              `json:"rp"`
 }
 
 type rubiconSiteExtRP struct {
@@ -193,6 +199,7 @@ var rubiSizeMap = map[rubiSize]int{
 	{w: 320, h: 100}:   117,
 	{w: 800, h: 250}:   125,
 	{w: 200, h: 600}:   126,
+	{w: 640, h: 320}:   156,
 }
 
 //MAS algorithm
@@ -533,7 +540,7 @@ func NewRubiconBidder(client *http.Client, uri string, xuser string, xpass strin
 	}
 }
 
-func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	numRequests := len(request.Imp)
 	errs := make([]error, 0, len(request.Imp))
 	var err error
@@ -590,11 +597,30 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 					})
 					continue
 				}
+				userExtRP.Consent = userExt.Consent
 				if userExt.DigiTrust != nil {
 					userExtRP.DigiTrust = userExt.DigiTrust
 				}
-				userExtRP.Consent = userExt.Consent
-				userExtRP.TpID = userExt.TpID
+				userExtRP.Eids = userExt.Eids
+
+				// set user.ext.tpid
+				if len(userExt.Eids) > 0 {
+					tpIds := make([]rubiconExtUserTpID, 0)
+					for _, eid := range userExt.Eids {
+						if eid.Source == "adserver.org" {
+							uids := eid.Uids
+							if len(uids) > 0 {
+								uid := uids[0]
+								if uid.Ext != nil && uid.Ext.RtiPartner == "TDID" {
+									tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
+								}
+							}
+						}
+					}
+					if len(tpIds) > 0 {
+						userExtRP.TpID = tpIds
+					}
+				}
 			}
 
 			userCopy.Ext, err = json.Marshal(&userExtRP)
@@ -656,6 +682,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.
 
 		request.Imp = []openrtb.Imp{thisImp}
 		request.Cur = nil
+		request.Ext = nil
 
 		reqJSON, err := json.Marshal(request)
 		if err != nil {

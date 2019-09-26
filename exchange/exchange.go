@@ -85,6 +85,16 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 	}
 
+	for _, impInRequest := range bidRequest.Imp {
+		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
+			BannerImps: impInRequest.Banner != nil,
+			VideoImps:  impInRequest.Video != nil,
+			AudioImps:  impInRequest.Audio != nil,
+			NativeImps: impInRequest.Native != nil,
+		}
+		e.me.RecordImps(impLabels)
+	}
+
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
 	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
@@ -141,9 +151,15 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
 	if anyBidsReturned {
-		bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
-		if err != nil {
-			return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+
+		var bidCategory map[string]string
+		//If includebrandcategory is present in ext then CE feature is on.
+		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
+			var err error
+			bidCategory, adapterBids, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			if err != nil {
+				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+			}
 		}
 
 		auc := newAuction(adapterBids, len(bidRequest.Imp))
@@ -162,7 +178,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
 }
 
-func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel func()) {
+func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
 	auctionCtx = ctx
 	cancel = func() {}
 	if needsCache {
@@ -202,7 +218,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			if givenAdjustment, ok := bidAdjustments[string(aName)]; ok {
 				adjustmentFactor = givenAdjustment
 			}
-			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions)
+			var reqInfo adapters.ExtraRequestInfo
+			reqInfo.PbsEntryPoint = bidlabels.RType
+			bids, err := e.adapterMap[coreBidder].requestBid(ctx, request, aName, adjustmentFactor, conversions, &reqInfo)
 
 			// Add in time reporting
 			elapsed := time.Since(start)
@@ -342,24 +360,23 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
-	//If includebrandcategory is present in ext then CE feature is on.
-	if requestExt.Prebid.Targeting == nil {
-		return res, seatBids, nil
-	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
-	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
-		return res, seatBids, nil //if not present continue the existing processing without CE.
-	}
+	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
 
-	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
-	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
-	if err != nil {
-		return res, seatBids, err
-	}
+	var primaryAdServer string
+	var publisher string
+	var err error
 
-	publisher := brandCatExt.Publisher
+	if includeBrandCategory && brandCatExt.WithCategory {
+		//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
+		primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
+		if err != nil {
+			return res, seatBids, err
+		}
+		publisher = brandCatExt.Publisher
+	}
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
 
@@ -375,24 +392,23 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				duration = bid.bidVideo.Duration
 				category = bid.bidVideo.PrimaryCategory
 			}
-
-			if category == "" {
+			if brandCatExt.WithCategory && category == "" {
 				bidIabCat := bid.bid.Cat
 				if len(bidIabCat) != 1 {
 					//TODO: add metrics
 					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
-				} else {
-					//if unique IAB category is present then translate it to the adserver category based on mapping file
-					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
-					if err != nil || category == "" {
-						//TODO: add metrics
-						//if mapping required but no mapping file is found then discard the bid
-						bidsToRemove = append(bidsToRemove, bidInd)
-						continue
-					}
 				}
+				//if unique IAB category is present then translate it to the adserver category based on mapping file
+				category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
+				if err != nil || category == "" {
+					//TODO: add metrics
+					//if mapping required but no mapping file is found then discard the bid
+					bidsToRemove = append(bidsToRemove, bidInd)
+					continue
+				}
+
 			}
 
 			// TODO: consider should we remove bids with zero duration here?
@@ -416,7 +432,12 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				}
 			}
 
-			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			var categoryDuration string
+			if brandCatExt.WithCategory {
+				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			} else {
+				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+			}
 
 			if dupe, ok := dedupe[categoryDuration]; ok {
 				// 50% chance for either bid with duplicate categoryDuration values to be kept
@@ -512,7 +533,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 			bidResponseExt.Errors[a] = adapterExtra[a].Errors
 		}
 		if len(errList) > 0 {
-			bidResponseExt.Errors["prebid"] = errsToBidderErrors(errList)
+			bidResponseExt.Errors[openrtb_ext.PrebidExtKey] = errsToBidderErrors(errList)
 		}
 		bidResponseExt.ResponseTimeMillis[a] = adapterExtra[a].ResponseTimeMillis
 		// Defering the filling of bidResponseExt.Usersync[a] until later

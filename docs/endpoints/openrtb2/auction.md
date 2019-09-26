@@ -82,10 +82,11 @@ The only exception here is the top-level `BidResponse`, because it's bidder-inde
 
 Exceptions are made for extensions with "standard" recommendations:
 
-- `request.user.ext.digitrust` -- To support Digitrust support
+- `request.user.ext.digitrust` -- To support Digitrust
 - `request.regs.ext.gdpr` and `request.user.ext.consent` -- To support GDPR
 - `request.site.ext.amp` -- To identify AMP as the request source
 - `request.app.ext.source` and `request.app.ext.version` -- To support identifying the displaymanager/SDK in mobile apps. If given, we expect these to be strings.
+- `request.regs.coppa` -- to support COPPA
 
 #### Bid Adjustments
 
@@ -131,6 +132,28 @@ The list of price granularity ranges must be given in order of increasing `max` 
 For backwards compatibility the following strings will also be allowed as price granularity definitions. There is no guarantee that these will be honored in the future. "One of ['low', 'med', 'high', 'auto', 'dense']" See [price granularity definitions](http://prebid.org/prebid-mobile/adops-price-granularity.html)
 
 One of "includewinners" or "includebidderkeys" must be true (both default to true if unset). If both were false, then no targeting keys would be set, which is better configured by omitting targeting altogether.
+
+MediaType PriceGranularity (PBS-Java only) - when a single OpenRTB request contains multiple impressions with different mediatypes, or a single impression supports multiple formats, the different mediatypes may need different price granularities. If `mediatypepricegranularity` is present, `pricegranularity` would only be used for any mediatypes not specified. 
+
+```
+            "ext": {
+                "prebid": {
+                    "targeting": {
+                        "mediatypepricegranularity": {
+                            "banner": { "ranges": [
+                                {"min": 0, "max": 20, "increment": 0.5}
+                            ]},
+                            "video": { "ranges": [
+                                {"min": 0, "max": 10, "increment": 1},
+                                {"min": 10, "max": 20, "increment": 2},
+                                {"min": 20, "max": 50, "increment": 5}
+                            ]}
+                        }
+                    }
+                    "includewinners": true
+                }
+             }
+```
 
 **Response format** (returned in `bid.ext.prebid.targeting`)
 
@@ -379,6 +402,214 @@ Example:
 
 PBS receiving a request for an interstitial imp and these parameters set, it will rewrite the format object within the interstitial imp. If the format array's first object is a size, PBS will take it as the max size for the interstitial. If that size is 1x1, it will look up the device's size and use that as the max size. If the format is not present, it will also use the device size as the max size. (1x1 support so that you don't have to omit the format object to use the device size)
 PBS with interstitial support will come preconfigured with a list of common ad sizes. Preferentially organized by weighing the larger and more common sizes first. But no guarantees to the ordering will be made. PBS will generate a new format list for the interstitial imp by traversing this list and picking the first 10 sizes that fall within the imp's max size and minimum percentage size. There will be no attempt to favor aspect ratios closer to the original size's aspect ratio. The limit of 10 is enforced to ensure we don't overload bidders with an overlong list. All the interstitial parameters will still be passed to the bidders, so they may recognize them and use their own size matching algorithms if they prefer.
+
+#### Stored Responses (PBS-Java only)
+
+While testing SDK and video integrations, it's important, but often difficult, to get consistent responses back from bidders that cover a range of scenarios like different CPM values, deals, etc. Prebid Server supports a debugging workflow in two ways:
+
+- a stored-auction-response that covers multiple bidder responses
+- multiple stored-bid-reponses at the bidder adapter level
+
+**Single Stored Auction Response ID**
+
+When a storedauctionresponse ID is specified:
+
+- the rest of the ext.prebid block is irrelevant and ignored
+- nothing is sent to any bidder adapter for that imp
+- the response retrieved from the stored-response-id is assumed to be the entire contents of the seatbid object corresponding to that impression.
+
+This request:
+```
+{
+  "test":1,
+  "tmax":500,
+  "id": "test-auction-id",
+  "app": { ... },
+  "ext": {
+      "prebid": {
+             "targeting": {},
+             "cache": { "bids": {} }
+       }
+  },
+  "imp": [
+    {
+      "id": "a",
+      "ext": { "prebid": { "storedauctionresponse": { "id": "1111111111" } } }
+    },
+    {
+      "id": "b",
+      "ext": { "prebid": { "storedauctionresponse": { "id": "22222222222" } } }
+    }
+  ]
+}
+```
+
+Will result in this response, assuming that the ids exist in the appropriate DB table read by Prebid Server:
+```
+{
+    "id": "test-auction-id",
+    "seatbid": [
+        {
+             // BidderA bids from storedauctionresponse=1111111111
+             // BidderA bids from storedauctionresponse=22222222
+        },
+       {
+             // BidderB bids from storedauctionresponse=1111111111
+             // BidderB bids from storedauctionresponse=22222222
+       }
+  ]
+}
+```
+
+**Multiple Stored Bid Response IDs**
+
+In contrast to what's outlined above, this approach lets some real auctions take place while some bidders have test responses that still exercise bidder code. For example, this request:
+
+```
+{
+  "test":1,
+  "tmax":500,
+  "id": "test-auction-id",
+  "app": { ... },
+  "ext": {
+      "prebid": {
+             "targeting": {},
+             "cache": { "bids": {} }
+       }
+  },
+  "imp": [
+    {
+      "id": "a",
+      "ext": {
+          "prebid": {
+            "storedbidresponse": [
+                  { "bidder": "BidderA", "id": "333333" },
+                  { "bidder": "BidderB", "id": "444444" },
+             ]
+           } 
+      }
+    },
+    {
+      "id": "b",
+      "ext": {
+          "prebid": {
+            "storedbidresponse": [
+                  { "bidder": "BidderA", "id": "5555555" },
+                  { "bidder": "BidderB", "id": "6666666" },
+             ]
+           } 
+      }
+    }
+  ]
+}
+```
+Could result in this response:
+
+```
+{
+    "id": "test-auction-id",
+    "seatbid": [
+        {
+             "bid": [
+             // contents of storedbidresponse=3333333 as parsed by bidderA adapter
+             // contents of storedbidresponse=5555555 as parsed by bidderA adapter
+             ]
+        },
+       {
+             // contents of storedbidresponse=4444444 as parsed by bidderB adapter
+             // contents of storedbidresponse=6666666 as parsed by bidderB adapter
+       }
+  ]
+}
+```
+
+Setting up the storedresponse DB entries is the responsibility of each Prebid Server host company.
+
+See Prebid.org troubleshooting pages for how to utilize this feature within the context of the browser.
+
+
+#### User IDs (PBS-Java only)
+
+Prebid Server adapters can support the [Prebid.js User ID modules](http://prebid.org/dev-docs/modules/userId.html) by reading the following extensions and passing them through to their server endpoints:
+
+```
+{
+    "user": {
+        "ext": {
+            "eids": [{
+                "source": "adserver.org",
+                "uids": [{
+                    "id": "111111111111",
+                    "ext": {
+                        "rtiPartner": "TDID"
+                    }
+                }]
+            },
+            {
+                "source": "pubcommon",
+                "id":"11111111"
+            }
+            ],
+            "digitrust": {
+                "id": "11111111111",
+                "keyv": 4
+            }
+        }
+    }
+}
+```
+
+#### First Party Data Support (PBS-Java only)
+
+This is the Prebid Server version of the Prebid.js First Party Data feature. It's a standard way for the page (or app) to supply first party data and control which bidders have access to it.
+
+It specifies where in the OpenRTB request non-standard attributes should be passed. For example:
+
+```
+{
+    ext: {
+       prebid: {
+           data: { bidders: [ 'rubicon', 'appnexus' ] }  // these are the bidders allowed to see protected data
+       }
+    },
+    site: {
+         keywords: "",
+         search: "",
+         ext: {
+             data: { GLOBAL CONTEXT DATA } // only seen by bidders named in ext.prebid.data.bidders[]
+         }
+    },
+    user: {
+        keywords: "", 
+        gender: "", 
+        yob: 1999, 
+        geo: {},
+        ext: {
+            data: { GLOBAL USER DATA }  // only seen by bidders named in ext.prebid.data.bidders[]
+        }
+    },
+    imp: [
+        ext: {
+            context: {
+                keywords: "",
+                search: "",
+                data: { ADUNIT SPECFIC CONTEXT DATA }  // can be seen by all bidders
+            }
+         }
+    ]
+```
+
+Prebid Server enforces the data permissioning
+
+So before passing the values to the bidder adapters, core will:
+
+1. check for ext.prebid.data.bidders
+1. if it exists, store it locally, but remove it from the OpenRTB before being sent to the adapters
+1. As the OpenRTB request is being sent to each adapter:
+    1. if ext.prebid.data.bidders exists in the original request, and this bidder is on the list then copy site.ext.data, app.ext.data, and user.ext.data to their bidder request -- otherwise don't copy those blocks
+    1. copy other objects as normal
+
+Each adapter must be coded to read the values from these locations and pass it to their endpoints appropriately.
 
 ### OpenRTB Ambiguities
 

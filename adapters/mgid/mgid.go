@@ -24,7 +24,7 @@ type RespBidExt struct {
 	CreativeType openrtb_ext.BidType `json:"crtype"`
 }
 
-func (a *MgidAdapter) MakeRequests(request *openrtb.BidRequest) (adapterRequests []*adapters.RequestData, errs []error) {
+func (a *MgidAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) (adapterRequests []*adapters.RequestData, errs []error) {
 
 	adapterReq, errs := a.makeRequest(request)
 	if adapterReq != nil && len(errs) == 0 {
@@ -88,7 +88,11 @@ func preprocess(request *openrtb.BidRequest) (path string, err error) {
 		if path == "" {
 			path = mgidExt.AccountId
 		}
-		request.Imp[i].TagID = mgidExt.PlacementId
+		if mgidExt.PlacementId == "" {
+			request.Imp[i].TagID = imp.ID
+		} else {
+			request.Imp[i].TagID = mgidExt.PlacementId + "/" + imp.ID
+		}
 
 		cur := ""
 		if mgidExt.Currency != "" && mgidExt.Currency != "USD" {
