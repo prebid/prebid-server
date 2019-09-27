@@ -11,5 +11,5 @@
     ]
   },
 
-  "expectedMakeRequestsErrors": ["ext.bidder not provided"]
+  "expectedMakeRequestsErrors": ["imp #0: ext.bidder not provided"]
 }
