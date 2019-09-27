@@ -51,7 +51,7 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 				targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner)
 			}
 			if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
-				targData.addKeys(targets, openrtb_ext.HbDealIdConstantKey, deal, bidderName, isOverallWinner)
+				targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, bidderName, isOverallWinner)
 			}
 
 			if isApp {

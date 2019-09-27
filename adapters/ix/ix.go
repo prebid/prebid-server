@@ -37,8 +37,7 @@ func (a *IxAdapter) SkipNoCookies() bool {
 }
 
 type indexParams struct {
-	SiteID string    `json:"siteId"`
-	Size   [2]uint64 `json:"size"`
+	SiteID string `json:"siteId"`
 }
 
 type ixBidResult struct {
@@ -100,11 +99,6 @@ func (a *IxAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.P
 		}
 
 		for sizeIndex, format := range unit.Sizes {
-			// ensure request are sent only for valid size as specified in the params
-			if ok := isValidIXSize(format, params.Size); !ok {
-				continue
-			}
-
 			// Only grab this ad unit
 			// Not supporting multi-media-type adunit yet
 			thisImp := indexReqImp[i]

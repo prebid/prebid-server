@@ -1,6 +1,7 @@
 package prometheusmetrics
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/stretchr/testify/assert"
 )
 
 var gaugeValueRegexp = regexp.MustCompile("gauge:<value:([0-9]+) >")
@@ -46,6 +48,7 @@ func TestRequestMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
 
 	proMetrics.RecordRequest(labels[0])
 	proMetrics.RecordRequest(labels[1])
@@ -53,16 +56,49 @@ func TestRequestMetrics(t *testing.T) {
 	proMetrics.RecordRequest(labels[2])
 	proMetrics.RecordRequest(labels[0])
 	proMetrics.RecordRequest(labels[2])
+	proMetrics.RecordRequest(labels[4])
 
 	proMetrics.requests.With(resolveLabels(labels[0])).Write(&metrics0)
 	proMetrics.requests.With(resolveLabels(labels[1])).Write(&metrics1)
 	proMetrics.requests.With(resolveLabels(labels[2])).Write(&metrics2)
 	proMetrics.requests.With(resolveLabels(labels[3])).Write(&metrics3)
+	proMetrics.requests.With(resolveLabels(labels[4])).Write(&metrics4)
 
 	assertCounterValue(t, "requests[0]", &metrics0, 3)
 	assertCounterValue(t, "requests[1]", &metrics1, 1)
 	assertCounterValue(t, "requests[2]", &metrics2, 2)
 	assertCounterValue(t, "requests[3]", &metrics3, 0)
+	assertCounterValue(t, "requests[4]", &metrics4, 1)
+}
+
+func TestLegacyImpMetrics(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metrics0 := dto.Metric{}
+	metrics1 := dto.Metric{}
+	metrics2 := dto.Metric{}
+	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
+
+	proMetrics.RecordLegacyImps(labels[0], 1)
+	proMetrics.RecordLegacyImps(labels[1], 5)
+	proMetrics.RecordLegacyImps(labels[0], 2)
+	proMetrics.RecordLegacyImps(labels[2], 2)
+	proMetrics.RecordLegacyImps(labels[0], 7)
+	proMetrics.RecordLegacyImps(labels[2], 1)
+	proMetrics.RecordLegacyImps(labels[4], 1)
+
+	proMetrics.legacyImps.With(resolveLabels(labels[0])).Write(&metrics0)
+	proMetrics.legacyImps.With(resolveLabels(labels[1])).Write(&metrics1)
+	proMetrics.legacyImps.With(resolveLabels(labels[2])).Write(&metrics2)
+	proMetrics.legacyImps.With(resolveLabels(labels[3])).Write(&metrics3)
+	proMetrics.legacyImps.With(resolveLabels(labels[4])).Write(&metrics4)
+
+	assertCounterValue(t, "legacyImps_requested[0]", &metrics0, 10)
+	assertCounterValue(t, "legacyImps_requested[1]", &metrics1, 5)
+	assertCounterValue(t, "legacyImps_requested[2]", &metrics2, 3)
+	assertCounterValue(t, "legacyImps_requested[3]", &metrics3, 0)
+	assertCounterValue(t, "legacyImps_requested[4]", &metrics4, 1)
 }
 
 func TestImpMetrics(t *testing.T) {
@@ -73,22 +109,56 @@ func TestImpMetrics(t *testing.T) {
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
 
-	proMetrics.RecordImps(labels[0], 1)
-	proMetrics.RecordImps(labels[1], 5)
-	proMetrics.RecordImps(labels[0], 2)
-	proMetrics.RecordImps(labels[2], 2)
-	proMetrics.RecordImps(labels[0], 7)
-	proMetrics.RecordImps(labels[2], 1)
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[1])
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[2])
+	proMetrics.RecordImps(impTypeLabels[0])
+	proMetrics.RecordImps(impTypeLabels[2])
+	proMetrics.RecordImps(impTypeLabels[3])
 
-	proMetrics.imps.With(resolveLabels(labels[0])).Write(&metrics0)
-	proMetrics.imps.With(resolveLabels(labels[1])).Write(&metrics1)
-	proMetrics.imps.With(resolveLabels(labels[2])).Write(&metrics2)
-	proMetrics.imps.With(resolveLabels(labels[3])).Write(&metrics3)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[0])).Write(&metrics0)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[1])).Write(&metrics1)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[2])).Write(&metrics2)
+	proMetrics.imps.With(resolveImpLabels(impTypeLabels[3])).Write(&metrics3)
 
-	assertCounterValue(t, "imps_requested[0]", &metrics0, 10)
-	assertCounterValue(t, "imps_requested[1]", &metrics1, 5)
-	assertCounterValue(t, "imps_requested[2]", &metrics2, 3)
-	assertCounterValue(t, "imps_requested[3]", &metrics3, 0)
+	assertCounterValue(t, "imp_metrics[0]", &metrics0, 3)
+	assertCounterValue(t, "imp_metrics[1]", &metrics1, 1)
+	assertCounterValue(t, "imp_metrics[2]", &metrics2, 2)
+	assertCounterValue(t, "imp_metrics[3]", &metrics3, 1)
+}
+
+func TestRecordImps(t *testing.T) {
+	var sampleEngine *Metrics = newTestMetricsEngine()
+	var sampleMetrics dto.Metric = dto.Metric{}
+	var samplePBSImpLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: true,
+	}
+	var samplePrometheusMetrics prometheus.Labels = resolveImpLabels(samplePBSImpLabels)
+
+	sampleEngine.RecordImps(samplePBSImpLabels)
+	sampleEngine.imps.With(samplePrometheusMetrics).Write(&sampleMetrics)
+
+	for _, metricLabel := range sampleMetrics.Label {
+		var impType string = *metricLabel.Name
+		switch impType {
+		case "banner":
+			assert.Equal(t, *metricLabel.Value, "no", "'banner")
+		case "video":
+			assert.Equal(t, *metricLabel.Value, "no", "'video' should equal 'no'")
+		case "audio":
+			assert.Equal(t, *metricLabel.Value, "no", "'audio' should equal 'no'")
+		case "native":
+			assert.Equal(t, *metricLabel.Value, "yes", "'native' should equal 'yes'")
+		default:
+			fmt.Printf("'%s' is not recognized as a label \n", impType)
+		}
+	}
+
+	assertCounterValue(t, "imps_types_banner_count", &sampleMetrics, 1)
 }
 
 func TestTimerMetrics(t *testing.T) {
@@ -98,6 +168,7 @@ func TestTimerMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
 
 	proMetrics.RecordRequestTime(labels[0], 120*time.Millisecond)
 	proMetrics.RecordRequestTime(labels[1], 85*time.Millisecond)
@@ -105,6 +176,7 @@ func TestTimerMetrics(t *testing.T) {
 	proMetrics.RecordRequestTime(labels[2], 250*time.Millisecond)
 	proMetrics.RecordRequestTime(labels[0], 90*time.Millisecond)
 	proMetrics.RecordRequestTime(labels[2], 180*time.Millisecond)
+	proMetrics.RecordRequestTime(labels[4], 100*time.Millisecond)
 
 	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
 	// returned is still a reference to a Histogram, so this hack works. It may break in the future
@@ -113,11 +185,13 @@ func TestTimerMetrics(t *testing.T) {
 	proMetrics.reqTimer.With(resolveLabels(labels[1])).(prometheus.Histogram).Write(&metrics1)
 	proMetrics.reqTimer.With(resolveLabels(labels[2])).(prometheus.Histogram).Write(&metrics2)
 	proMetrics.reqTimer.With(resolveLabels(labels[3])).(prometheus.Histogram).Write(&metrics3)
+	proMetrics.reqTimer.With(resolveLabels(labels[4])).(prometheus.Histogram).Write(&metrics4)
 
 	assertHistogramValue(t, "request_time[0]", &metrics0, 3)
 	assertHistogramValue(t, "request_time[1]", &metrics1, 1)
 	assertHistogramValue(t, "request_time[2]", &metrics2, 2)
 	assertHistogramValue(t, "request_time[3]", &metrics3, 0)
+	assertHistogramValue(t, "request_time[4]", &metrics4, 1)
 }
 
 func TestAdapterRequestMetrics(t *testing.T) {
@@ -127,11 +201,13 @@ func TestAdapterRequestMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
 	emetrics0 := dto.Metric{}
 	emetrics1a := dto.Metric{}
 	emetrics1b := dto.Metric{}
 	emetrics2 := dto.Metric{}
 	emetrics3 := dto.Metric{}
+	emetrics4 := dto.Metric{}
 
 	proMetrics.RecordAdapterRequest(adaptLabels[0])
 	proMetrics.RecordAdapterRequest(adaptLabels[1])
@@ -139,28 +215,33 @@ func TestAdapterRequestMetrics(t *testing.T) {
 	proMetrics.RecordAdapterRequest(adaptLabels[2])
 	proMetrics.RecordAdapterRequest(adaptLabels[0])
 	proMetrics.RecordAdapterRequest(adaptLabels[2])
+	proMetrics.RecordAdapterRequest(adaptLabels[4])
 
 	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[0])).Write(&metrics0)
 	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[1])).Write(&metrics1)
 	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[2])).Write(&metrics2)
 	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[3])).Write(&metrics3)
+	proMetrics.adaptRequests.With(resolveAdapterLabels(adaptLabels[4])).Write(&metrics4)
 
 	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[0], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics0)
 	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[1], string(pbsmetrics.AdapterErrorBadServerResponse))).Write(&emetrics1a)
 	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[1], string(pbsmetrics.AdapterErrorUnknown))).Write(&emetrics1b)
 	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[2], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics2)
 	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[3], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics3)
+	proMetrics.adaptErrors.With(resolveAdapterErrorLabels(adaptLabels[4], string(pbsmetrics.AdapterErrorBadInput))).Write(&emetrics4)
 
 	assertCounterValue(t, "adapter_requests[0]", &metrics0, 3)
 	assertCounterValue(t, "adapter_requests[1]", &metrics1, 1)
 	assertCounterValue(t, "adapter_requests[2]", &metrics2, 2)
 	assertCounterValue(t, "adapter_requests[3]", &metrics3, 0)
+	assertCounterValue(t, "adapter_requests[4]", &metrics4, 1)
 
 	assertCounterValue(t, "adapter_errors[0]", &emetrics0, 0)
 	assertCounterValue(t, "adapter_errors[1]a", &emetrics1a, 1)
 	assertCounterValue(t, "adapter_errors[1]b", &emetrics1b, 1)
 	assertCounterValue(t, "adapter_errors[2]", &emetrics2, 0)
 	assertCounterValue(t, "adapter_errors[3]", &emetrics3, 0)
+	assertCounterValue(t, "adapter_errors[4]", &emetrics4, 0)
 }
 
 func TestAdapterBidsMetrics(t *testing.T) {
@@ -170,6 +251,7 @@ func TestAdapterBidsMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
 
 	proMetrics.RecordAdapterBidReceived(adaptLabels[0], openrtb_ext.BidTypeBanner, true)
 	proMetrics.RecordAdapterBidReceived(adaptLabels[1], openrtb_ext.BidTypeBanner, false)
@@ -177,16 +259,19 @@ func TestAdapterBidsMetrics(t *testing.T) {
 	proMetrics.RecordAdapterBidReceived(adaptLabels[2], openrtb_ext.BidTypeVideo, true)
 	proMetrics.RecordAdapterBidReceived(adaptLabels[0], openrtb_ext.BidTypeBanner, true)
 	proMetrics.RecordAdapterBidReceived(adaptLabels[2], openrtb_ext.BidTypeVideo, true)
+	proMetrics.RecordAdapterBidReceived(adaptLabels[4], openrtb_ext.BidTypeVideo, true)
 
 	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[0], openrtb_ext.BidTypeBanner, true)).Write(&metrics0)
 	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[1], openrtb_ext.BidTypeBanner, false)).Write(&metrics1)
 	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[2], openrtb_ext.BidTypeVideo, true)).Write(&metrics2)
 	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[3], openrtb_ext.BidTypeNative, false)).Write(&metrics3)
+	proMetrics.adaptBids.With(resolveBidLabels(adaptLabels[4], openrtb_ext.BidTypeVideo, true)).Write(&metrics4)
 
 	assertCounterValue(t, "adapter_bids_received[0]", &metrics0, 3)
 	assertCounterValue(t, "adapter_bids_received[1]", &metrics1, 1)
 	assertCounterValue(t, "adapter_bids_received[2]", &metrics2, 2)
 	assertCounterValue(t, "adapter_bids_received[3]", &metrics3, 0)
+	assertCounterValue(t, "adapter_bids_received[4]", &metrics4, 1)
 }
 
 func TestAdapterPriceMetrics(t *testing.T) {
@@ -195,6 +280,7 @@ func TestAdapterPriceMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
 
 	proMetrics.RecordAdapterPrice(adaptLabels[0], 0.12)
 	proMetrics.RecordAdapterPrice(adaptLabels[1], 2.35)
@@ -202,6 +288,7 @@ func TestAdapterPriceMetrics(t *testing.T) {
 	proMetrics.RecordAdapterPrice(adaptLabels[2], 3.23333)
 	proMetrics.RecordAdapterPrice(adaptLabels[0], 6.564)
 	proMetrics.RecordAdapterPrice(adaptLabels[2], 0.03)
+	proMetrics.RecordAdapterPrice(adaptLabels[4], 1.23)
 
 	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
 	// returned is still a reference to a Histogram, so this hack works. It may break in the future
@@ -210,11 +297,13 @@ func TestAdapterPriceMetrics(t *testing.T) {
 	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
 	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
 	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[3])).(prometheus.Histogram).Write(&metrics3)
+	proMetrics.adaptPrices.With(resolveAdapterLabels(adaptLabels[4])).(prometheus.Histogram).Write(&metrics4)
 
 	assertHistogramValue(t, "adapter_prices[0]", &metrics0, 3)
 	assertHistogramValue(t, "adapter_prices[1]", &metrics1, 1)
 	assertHistogramValue(t, "adapter_prices[2]", &metrics2, 2)
 	assertHistogramValue(t, "adapter_prices[3]", &metrics3, 0)
+	assertHistogramValue(t, "adapter_prices[4]", &metrics4, 1)
 
 }
 
@@ -225,6 +314,7 @@ func TestAdapterTimeMetrics(t *testing.T) {
 	metrics1 := dto.Metric{}
 	metrics2 := dto.Metric{}
 	metrics3 := dto.Metric{}
+	metrics4 := dto.Metric{}
 
 	proMetrics.RecordAdapterTime(adaptLabels[0], 85*time.Millisecond)
 	proMetrics.RecordAdapterTime(adaptLabels[1], 235*time.Millisecond)
@@ -232,6 +322,7 @@ func TestAdapterTimeMetrics(t *testing.T) {
 	proMetrics.RecordAdapterTime(adaptLabels[2], 323*time.Millisecond)
 	proMetrics.RecordAdapterTime(adaptLabels[0], 664*time.Millisecond)
 	proMetrics.RecordAdapterTime(adaptLabels[2], 33*time.Millisecond)
+	proMetrics.RecordAdapterTime(adaptLabels[4], 333*time.Millisecond)
 
 	// HistogramVec.With() now returns an observer interface, with no Write() method. The interface
 	// returned is still a reference to a Histogram, so this hack works. It may break in the future
@@ -240,12 +331,48 @@ func TestAdapterTimeMetrics(t *testing.T) {
 	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[1])).(prometheus.Histogram).Write(&metrics1)
 	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[2])).(prometheus.Histogram).Write(&metrics2)
 	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[3])).(prometheus.Histogram).Write(&metrics3)
+	proMetrics.adaptTimer.With(resolveAdapterLabels(adaptLabels[4])).(prometheus.Histogram).Write(&metrics4)
 
 	assertHistogramValue(t, "adapter_time[0]", &metrics0, 3)
 	assertHistogramValue(t, "adapter_time[1]", &metrics1, 1)
 	assertHistogramValue(t, "adapter_time[2]", &metrics2, 2)
 	assertHistogramValue(t, "adapter_time[3]", &metrics3, 0)
+	assertHistogramValue(t, "adapter_time[4]", &metrics4, 1)
 
+}
+
+func TestRecordStoredReqCacheResult(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricCacheHit := dto.Metric{}
+	metricCacheMiss := dto.Metric{}
+
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 2)
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheHit, 0)
+	proMetrics.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, 1)
+
+	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
+	proMetrics.storedReqCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
+
+	assertCounterValue(t, "stored_request_cache_performance[hit]", &metricCacheHit, 2)
+	assertCounterValue(t, "stored_request_cache_performance[miss]", &metricCacheMiss, 1)
+}
+
+func TestRecordStoredImpCacheResult(t *testing.T) {
+	proMetrics := newTestMetricsEngine()
+
+	metricCacheHit := dto.Metric{}
+	metricCacheMiss := dto.Metric{}
+
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 2)
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheHit, 0)
+	proMetrics.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, 1)
+
+	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheHit)).Write(&metricCacheHit)
+	proMetrics.storedImpCacheResult.WithLabelValues(string(pbsmetrics.CacheMiss)).Write(&metricCacheMiss)
+
+	assertCounterValue(t, "stored_imp_cache_performance[hit]", &metricCacheHit, 2)
+	assertCounterValue(t, "stored_imp_cache_performance[miss]", &metricCacheMiss, 1)
 }
 
 func TestCookieMetrics(t *testing.T) {
@@ -259,10 +386,11 @@ func TestCookieMetrics(t *testing.T) {
 	proMetrics.RecordCookieSync(labels[2])
 	proMetrics.RecordCookieSync(labels[0])
 	proMetrics.RecordCookieSync(labels[2])
+	proMetrics.RecordCookieSync(labels[4])
 
 	proMetrics.cookieSync.Write(&metrics0)
 
-	assertCounterValue(t, "cookie_sync_requests", &metrics0, 6)
+	assertCounterValue(t, "cookie_sync_requests", &metrics0, 7)
 }
 
 func TestUserMetrics(t *testing.T) {
@@ -300,6 +428,7 @@ func TestMetricsExist(t *testing.T) {
 
 	if err := proMetrics.Registry.Register(prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "prebid",
+		Subsystem: "server",
 		Name:      "active_connections",
 		Help:      "Current number of active (open) connections.",
 	})); err == nil {
@@ -311,7 +440,7 @@ func newTestMetricsEngine() *Metrics {
 	return NewMetrics(config.PrometheusMetrics{
 		Port:      8080,
 		Namespace: "prebid",
-		Subsystem: "",
+		Subsystem: "server",
 	})
 }
 
@@ -347,6 +476,45 @@ var labels = []pbsmetrics.Labels{
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusBadInput,
+	},
+	{
+		Source:        pbsmetrics.DemandWeb,
+		RType:         pbsmetrics.ReqTypeVideo,
+		PubID:         "Pub4",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	},
+}
+
+var impTypeLabels = []pbsmetrics.ImpLabels{
+	{
+		//impType: "banner",
+		BannerImps: true,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: false,
+	},
+	{
+		//impType: "audio",
+		BannerImps: false,
+		VideoImps:  true,
+		AudioImps:  false,
+		NativeImps: false,
+	},
+	{
+		//impType: "video",
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  true,
+		NativeImps: false,
+	},
+	{
+		//impType: "native",
+		BannerImps: false,
+		VideoImps:  false,
+		AudioImps:  false,
+		NativeImps: true,
 	},
 }
 
@@ -391,6 +559,16 @@ var adaptLabels = []pbsmetrics.AdapterLabels{
 		RType:         pbsmetrics.ReqTypeORTB2App,
 		Adapter:       openrtb_ext.BidderAppnexus,
 		PubID:         "Pub3",
+		Browser:       pbsmetrics.BrowserOther,
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		AdapterBids:   pbsmetrics.AdapterBidPresent,
+		AdapterErrors: map[pbsmetrics.AdapterError]struct{}{},
+	},
+	{
+		Source:        pbsmetrics.DemandWeb,
+		RType:         pbsmetrics.ReqTypeVideo,
+		Adapter:       openrtb_ext.BidderAppnexus,
+		PubID:         "Pub4",
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		AdapterBids:   pbsmetrics.AdapterBidPresent,

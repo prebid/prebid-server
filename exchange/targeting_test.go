@@ -204,7 +204,7 @@ type mockTargetingBidder struct {
 	bids          []*openrtb.Bid
 }
 
-func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     m.mockServerURL,

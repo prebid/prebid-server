@@ -95,7 +95,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	}
 
 	currentIndex := 0
-	processResponse := func(uuidObj []byte, dataType jsonparser.ValueType, offset int, err error) {
+	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
 		if uuid, valueType, _, err := jsonparser.Get(uuidObj, "uuid"); err != nil {
 			glog.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody))
 			errs = append(errs, fmt.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody)))

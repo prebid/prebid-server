@@ -22,7 +22,7 @@ type Permissions interface {
 	// Determines whether or not to send PI information to a bidder, or mask it out.
 	//
 	// If the consent string was nonsenical, the returned error will be an ErrorMalformedConsent.
-	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error)
+	PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error)
 }
 
 // NewPermissions gets an instance of the Permissions for use elsewhere in the project.

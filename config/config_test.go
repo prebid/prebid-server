@@ -24,12 +24,15 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
+	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
+	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 }
 
 var fullConfig = []byte(`
 gdpr:
   host_vendor_id: 15
   usersync_if_ambiguous: true
+  non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -86,6 +89,7 @@ adapters:
     endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
   adkerneladn:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+blacklisted_apps: ["spamAppID","sketchy-app-id"]
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
@@ -157,6 +161,31 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
+
+	//Assert the NonStandardPublishers was correctly unmarshalled
+	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[0], "siteID")
+	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[1], "fake-site-id")
+	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[2], "appID")
+	cmpStrings(t, "gdpr.non_standard_publishers", cfg.GDPR.NonStandardPublishers[3], "agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA")
+
+	//Assert the NonStandardPublisherMap hash table was built correctly
+	var found bool
+	for i := 0; i < len(cfg.GDPR.NonStandardPublishers); i++ {
+		_, found = cfg.GDPR.NonStandardPublisherMap[cfg.GDPR.NonStandardPublishers[i]]
+		cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, true)
+	}
+	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
+	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+
+	//Assert the NonStandardPublishers was correctly unmarshalled
+	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
+	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[1], "sketchy-app-id")
+
+	//Assert the BlacklistedAppMap hash table was built correctly
+	for i := 0; i < len(cfg.BlacklistedApps); i++ {
+		cmpBools(t, "cfg.BlacklistedAppMap", cfg.BlacklistedAppMap[cfg.BlacklistedApps[i]], true)
+	}
+
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://currency.prebid.org")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "recaptcha_secret", cfg.RecaptchaSecret, "asdfasdfasdfasdf")

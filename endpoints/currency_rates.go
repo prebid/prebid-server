@@ -57,10 +57,10 @@ func newCurrencyRatesInfo(rateConverter rateConverter) currencyRatesInfo {
 }
 
 // NewCurrencyRatesEndpoint returns current currency rates applied by the PBS server.
-func NewCurrencyRatesEndpoint(rateConverter rateConverter) func(w http.ResponseWriter, r *http.Request) {
+func NewCurrencyRatesEndpoint(rateConverter rateConverter) http.HandlerFunc {
 	currencyRateInfo := newCurrencyRatesInfo(rateConverter)
 
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		jsonOutput, err := json.Marshal(currencyRateInfo)
 		if err != nil {
 			glog.Errorf("/currency/rates Critical error when trying to marshal currencyRateInfo: %v", err)

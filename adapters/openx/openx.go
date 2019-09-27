@@ -26,7 +26,7 @@ type openxReqExt struct {
 	BidderConfig string `json:"bc"`
 }
 
-func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *OpenxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var bannerImps []openrtb.Imp
 	var videoImps []openrtb.Imp

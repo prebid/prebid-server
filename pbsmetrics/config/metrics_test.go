@@ -69,9 +69,16 @@ func TestMultiMetricsEngine(t *testing.T) {
 		CookieFlag:  pbsmetrics.CookieFlagYes,
 		AdapterBids: pbsmetrics.AdapterBidPresent,
 	}
+	impTypeLabels := pbsmetrics.ImpLabels{
+		BannerImps: true,
+		VideoImps:  false,
+		AudioImps:  true,
+		NativeImps: true,
+	}
 	for i := 0; i < 5; i++ {
 		metricsEngine.RecordRequest(labels)
-		metricsEngine.RecordImps(labels, 2)
+		metricsEngine.RecordImps(impTypeLabels)
+		metricsEngine.RecordLegacyImps(labels, 2)
 		metricsEngine.RecordRequestTime(labels, time.Millisecond*20)
 		metricsEngine.RecordAdapterRequest(pubLabels)
 		metricsEngine.RecordAdapterRequest(apnLabels)
@@ -79,13 +86,31 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 	}
+	impTypeLabels.BannerImps = false
+	impTypeLabels.VideoImps = true
+	impTypeLabels.AudioImps = false
+	impTypeLabels.NativeImps = false
+	for i := 0; i < 3; i++ {
+		metricsEngine.RecordImps(impTypeLabels)
+	}
+	//Make the metrics engine, instantiated here with goEngine, fill its RequestStatuses[RequestType][pbsmetrics.RequestStatusXX] with the new boolean values added to pbsmetrics.Labels
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeLegacy][pbsmetrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeAMP][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusErr].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBadInput].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBadInput].Count(), 0)
+
+	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
+	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)
+	VerifyMetrics(t, "ImpsTypeAudio", goEngine.ImpsTypeAudio.Count(), 5)
+	VerifyMetrics(t, "ImpsTypeNative", goEngine.ImpsTypeNative.Count(), 5)
+
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
-	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 10)
+	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
+	VerifyMetrics(t, "LegacyImpMeter", goEngine.LegacyImpMeter.Count(), 10)
 	VerifyMetrics(t, "NoCookieMeter", goEngine.NoCookieMeter.Count(), 0)
 	VerifyMetrics(t, "SafariRequestMeter", goEngine.SafariRequestMeter.Count(), 5)
 	VerifyMetrics(t, "SafariNoCookieMeter", goEngine.SafariNoCookieMeter.Count(), 0)

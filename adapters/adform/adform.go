@@ -1,6 +1,7 @@
 package adform
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -57,6 +58,8 @@ type adformDigitrustPrivacy struct {
 type adformAdUnit struct {
 	MasterTagId json.Number `json:"mid"`
 	PriceType   string      `json:"priceType,omitempty"`
+	KeyValues   string      `json:"mkv,omitempty"`
+	KeyWords    string      `json:"mkw,omitempty"`
 
 	bidId      string
 	adUnitCode string
@@ -287,8 +290,15 @@ func (r *adformRequest) buildAdformUrl(a *AdformAdapter) string {
 
 	adUnitsParams := make([]string, 0, len(r.adUnits))
 	for _, adUnit := range r.adUnits {
-		str := fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.currency)
-		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(str)))
+		var buffer bytes.Buffer
+		buffer.WriteString(fmt.Sprintf("mid=%s&rcur=%s", adUnit.MasterTagId, r.currency))
+		if adUnit.KeyValues != "" {
+			buffer.WriteString(fmt.Sprintf("&mkv=%s", adUnit.KeyValues))
+		}
+		if adUnit.KeyWords != "" {
+			buffer.WriteString(fmt.Sprintf("&mkw=%s", adUnit.KeyWords))
+		}
+		adUnitsParams = append(adUnitsParams, base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(buffer.Bytes()))
 	}
 
 	return fmt.Sprintf("%s&%s", uri, strings.Join(adUnitsParams, "&"))
@@ -371,7 +381,7 @@ func NewAdformBidder(client *http.Client, endpointURL string) *AdformAdapter {
 	}
 }
 
-func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *AdformAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	adformRequest, errors := openRtbToAdformRequest(request)
 	if len(adformRequest.adUnits) == 0 {
 		return nil, errors

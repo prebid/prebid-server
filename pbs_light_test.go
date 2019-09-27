@@ -20,19 +20,18 @@ func forceEnv(t *testing.T, key string, val string) func() {
 	orig, set := os.LookupEnv(key)
 	err := os.Setenv(key, val)
 	if err != nil {
-		t.Fatalf("Error setting evnvironment %s", key)
+		t.Fatalf("Error setting environment %s", key)
 	}
 	if set {
 		return func() {
 			if os.Setenv(key, orig) != nil {
-				t.Fatalf("Error unsetting evnvironment %s", key)
+				t.Fatalf("Error unsetting environment %s", key)
 			}
 		}
-	} else {
-		return func() {
-			if os.Unsetenv(key) != nil {
-				t.Fatalf("Error unsetting evnvironment %s", key)
-			}
+	}
+	return func() {
+		if os.Unsetenv(key) != nil {
+			t.Fatalf("Error unsetting environment %s", key)
 		}
 	}
 }

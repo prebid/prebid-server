@@ -127,15 +127,14 @@ func (s *configService) Get(key string) (string, error) {
 	defer cancel()
 	var config string
 	if err := s.shared.db.QueryRowContext(ctx, "SELECT config FROM s2sconfig_config where uuid = $1 LIMIT 1", key).Scan(&config); err != nil {
-		/* TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB */
-		if pqErr, ok := err.(*pq.Error); ok {
-			// If the user didn't give us a UUID, the query fails with this error. Wrap it so that we don't
-			// pollute the app logs with bad user input.
-			if string(pqErr.Code) == "22P02" {
-				err = &stored_requests.NotFoundError{
-					ID:       key,
-					DataType: "Legacy Config",
-				}
+		// TODO -- We should store failed attempts in the LRU as well to stop from hitting to DB
+
+		// If the user didn't give us a UUID, the query fails with this error. Wrap it so that we don't
+		// pollute the app logs with bad user input.
+		if pqErr, ok := err.(*pq.Error); ok && string(pqErr.Code) == "22P02" {
+			err = &stored_requests.NotFoundError{
+				ID:       key,
+				DataType: "Legacy Config",
 			}
 		}
 		return "", err

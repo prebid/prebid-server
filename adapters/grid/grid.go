@@ -15,7 +15,7 @@ type GridAdapter struct {
 }
 
 // MakeRequests makes the HTTP requests which should be made to fetch bids.
-func (a *GridAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *GridAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errors = make([]error, 0)
 
 	reqJSON, err := json.Marshal(request)

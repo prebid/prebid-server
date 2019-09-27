@@ -12,6 +12,8 @@ type ExtImp struct {
 	Rubicon    *ExtImpRubicon    `json:"rubicon"`
 	Adform     *ExtImpAdform     `json:"adform"`
 	Rhythmone  *ExtImpRhythmone  `json:"rhythmone"`
+	Unruly     *ExtImpUnruly     `json:"unruly"`
+	EmxDigital *ExtImpEmxDigital `json:"emx_digital"`
 }
 
 // ExtImpPrebid defines the contract for bidrequest.imp[i].ext.prebid

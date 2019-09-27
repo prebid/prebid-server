@@ -27,7 +27,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Application where the impression will be shown
-	App openrtb.App `json:"app"`
+	App *openrtb.App `json:"app"`
 
 	// Attribute:
 	//   site
@@ -35,7 +35,7 @@ type BidRequestVideo struct {
 	//   object; App or Site required
 	// Description:
 	//   Site where the impression will be shown
-	Site openrtb.Site `json:"site"`
+	Site *openrtb.Site `json:"site"`
 
 	// Attribute:
 	//   user
@@ -111,6 +111,23 @@ type BidRequestVideo struct {
 	//    be received including Internet latency to avoid timeout. This
 	//    value supersedes any a priori guidance from the exchange.
 	TMax int64 `json:"tmax,omitempty"`
+
+	// Attribute:
+	//   bcat
+	// Type:
+	//   string array
+	// Description:
+	//   Blocked advertiser categories using the IAB content
+	//   categories. Refer to List 5.1.
+	BCat []string `json:"bcat,omitempty"`
+
+	// Attribute:
+	//   badv
+	// Type:
+	//   string array
+	// Description:
+	//   Block list of advertisers by their domains (e.g., “ford.com”).
+	BAdv []string `json:"badv,omitempty"`
 }
 
 type PodConfig struct {

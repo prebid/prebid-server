@@ -8,10 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
-	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -51,14 +51,6 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		return nil, err
 	}
 
-	// Without this, the code crashes with a nil-pointer dereference below, on
-	// cnvrReq.Site.ID = params.SiteID
-	if cnvrReq.Site == nil {
-		return nil, &errortypes.BadInput{
-			Message: "Conversant doesn't support App requests",
-		}
-	}
-
 	// Create a map of impression objects for both request creation
 	// and response parsing.
 
@@ -86,18 +78,22 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 		}
 
 		// Fill in additional Site info
-
 		if params.SiteID != "" {
-			cnvrReq.Site.ID = params.SiteID
+			if cnvrReq.Site != nil {
+				cnvrReq.Site.ID = params.SiteID
+			}
+			if cnvrReq.App != nil {
+				cnvrReq.App.ID = params.SiteID
+			}
 		}
 
-		if params.Mobile != nil {
+		if params.Mobile != nil && !(cnvrReq.Site == nil) {
 			cnvrReq.Site.Mobile = *params.Mobile
 		}
 
 		// Fill in additional impression info
 
-		imp.DisplayManager = "pubmatic-openwrap"
+		imp.DisplayManager = "prebid-s2s"
 		imp.DisplayManagerVer = "1.0.1"
 		imp.BidFloor = params.BidFloor
 		imp.TagID = params.TagID
@@ -149,9 +145,15 @@ func (a *ConversantAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidde
 
 	// Do a quick check on required parameters
 
-	if cnvrReq.Site.ID == "" {
+	if cnvrReq.Site != nil && cnvrReq.Site.ID == "" {
 		return nil, &errortypes.BadInput{
 			Message: "Missing site id",
+		}
+	}
+
+	if cnvrReq.App != nil && cnvrReq.App.ID == "" {
+		return nil, &errortypes.BadInput{
+			Message: "Missing app id",
 		}
 	}
 

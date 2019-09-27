@@ -15,7 +15,7 @@ type RhythmoneAdapter struct {
 	endPoint string
 }
 
-func (a *RhythmoneAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *RhythmoneAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var uri string

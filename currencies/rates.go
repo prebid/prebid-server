@@ -61,7 +61,7 @@ func (r *Rates) GetRate(from string, to string) (float64, error) {
 		return 1, nil
 	}
 	if r.Conversions != nil {
-		if conversion, present := r.Conversions[fromUnit.String()][toUnit.String()]; present == true {
+		if conversion, present := r.Conversions[fromUnit.String()][toUnit.String()]; present {
 			return conversion, err
 		}
 

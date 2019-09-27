@@ -8,16 +8,17 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
-	"github.com/PubMatic-OpenWrap/prebid-server/router"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/julienschmidt/httprouter"
+
+	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
+	"github.com/PubMatic-OpenWrap/prebid-server/router"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 )
 
-// Holds binary revision string
+// Rev holds binary revision string
 // Set manually at build time using:
 //    go build -ldflags "-X main.Rev=`git rev-parse --short HEAD`"
 // Populated automatically at build / release time via .travis.yml
@@ -65,7 +66,6 @@ func InitPrebidServer(configFile string) {
 }
 
 func serve(revision string, cfg *config.Configuration) error {
-
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds)*time.Second)
 
 	_, err := router.New(cfg, currencyConverter)

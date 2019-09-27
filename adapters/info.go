@@ -3,10 +3,13 @@ package adapters
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -32,7 +35,7 @@ type InfoAwareBidder struct {
 	info parsedBidderInfo
 }
 
-func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error) {
+func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
 	if request.Site != nil {
 		if !i.info.site.enabled {
@@ -58,7 +61,7 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb.BidRequest) ([]*RequestD
 		request.Imp = filteredImps
 		errs = append(errs, newErrs...)
 	}
-	reqs, delegateErrs := i.Bidder.MakeRequests(request)
+	reqs, delegateErrs := i.Bidder.MakeRequests(request, reqInfo)
 	return reqs, append(errs, delegateErrs...)
 }
 
@@ -129,7 +132,7 @@ type BidderInfos map[string]BidderInfo
 // ParseBidderInfos reads all the static/bidder-info/{bidder}.yaml files from the filesystem.
 // The map it returns will have a key for every element of the bidders array.
 // If a {bidder}.yaml file does not exist for some bidder, it will panic.
-func ParseBidderInfos(infoDir string, bidders []openrtb_ext.BidderName) BidderInfos {
+func ParseBidderInfos(cfg map[string]config.Adapter, infoDir string, bidders []openrtb_ext.BidderName) BidderInfos {
 	bidderInfos := make(map[string]BidderInfo, len(bidders))
 	for _, bidderName := range bidders {
 		bidderString := string(bidderName)
@@ -142,9 +145,20 @@ func ParseBidderInfos(infoDir string, bidders []openrtb_ext.BidderName) BidderIn
 		if err := yaml.Unmarshal(fileData, &parsedInfo); err != nil {
 			glog.Fatalf("error parsing yaml in file %s: %v", infoDir+"/"+bidderString+".yaml", err)
 		}
+
+		if isEnabledBidder(cfg, bidderString) {
+			parsedInfo.Status = StatusActive
+		} else {
+			parsedInfo.Status = StatusDisabled
+		}
+
 		bidderInfos[bidderString] = parsedInfo
 	}
 	return bidderInfos
+}
+
+func (infos BidderInfos) IsActive(bidder openrtb_ext.BidderName) bool {
+	return infos[string(bidder)].Status == StatusActive
 }
 
 func (infos BidderInfos) HasAppSupport(bidder openrtb_ext.BidderName) bool {
@@ -163,7 +177,23 @@ func (infos BidderInfos) SupportsWebMediaType(bidder openrtb_ext.BidderName, med
 	return containsMediaType(infos[string(bidder)].Capabilities.Site.MediaTypes, mediaType)
 }
 
+// isEnabledBidder Checks that a bidder config exists and is not disabled
+func isEnabledBidder(cfg map[string]config.Adapter, bidder string) bool {
+	a, ok := cfg[strings.ToLower(bidder)]
+	return ok && !a.Disabled
+}
+
+// BidderStatus represents a bidder status in PBS, can be either active or disabled
+type BidderStatus string
+
+const (
+	StatusUnknown  BidderStatus = ""
+	StatusActive   BidderStatus = "ACTIVE"
+	StatusDisabled BidderStatus = "DISABLED"
+)
+
 type BidderInfo struct {
+	Status       BidderStatus      `yaml:"status" json:"status"`
 	Maintainer   *MaintainerInfo   `yaml:"maintainer" json:"maintainer"`
 	Capabilities *CapabilitiesInfo `yaml:"capabilities" json:"capabilities"`
 	AliasOf      string            `json:"aliasOf,omitempty"`
@@ -216,4 +246,8 @@ func parseBidderInfo(info BidderInfo) parsedBidderInfo {
 		parsedInfo.site.banner, parsedInfo.site.video, parsedInfo.site.audio, parsedInfo.site.native = parseAllowedTypes(info.Capabilities.Site.MediaTypes)
 	}
 	return parsedInfo
+}
+
+type ExtraRequestInfo struct {
+	PbsEntryPoint pbsmetrics.RequestType
 }

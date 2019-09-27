@@ -2,10 +2,12 @@ package adapters_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +25,7 @@ func TestAppNotSupported(t *testing.T) {
 	constrained := adapters.EnforceBidderInfo(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		App: &openrtb.App{},
-	})
+	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
 	}
@@ -44,7 +46,7 @@ func TestSiteNotSupported(t *testing.T) {
 	constrained := adapters.EnforceBidderInfo(bidder, info)
 	bids, errs := constrained.MakeRequests(&openrtb.BidRequest{
 		Site: &openrtb.Site{},
-	})
+	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 1) {
 		return
 	}
@@ -86,7 +88,7 @@ func TestImpFiltering(t *testing.T) {
 			},
 		},
 		Site: &openrtb.Site{},
-	})
+	}, &adapters.ExtraRequestInfo{})
 	if !assert.Len(t, errs, 6) {
 		return
 	}
@@ -115,7 +117,7 @@ type mockBidder struct {
 	gotRequest *openrtb.BidRequest
 }
 
-func (m *mockBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (m *mockBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	m.gotRequest = request
 	return nil, []error{errors.New("mock MakeRequests error")}
 }
@@ -124,12 +126,22 @@ func (m *mockBidder) MakeBids(internalRequest *openrtb.BidRequest, externalReque
 	return nil, []error{errors.New("mock MakeBids error")}
 }
 
+func blankAdapterConfig(bidderName openrtb_ext.BidderName) map[string]config.Adapter {
+	adapters := make(map[string]config.Adapter)
+	adapters[strings.ToLower(string(bidderName))] = config.Adapter{}
+
+	return adapters
+}
+
 func TestParsing(t *testing.T) {
 	mockBidderName := openrtb_ext.BidderName("someBidder")
-	infos := adapters.ParseBidderInfos("./adapterstest/bidder-info", []openrtb_ext.BidderName{mockBidderName})
+	infos := adapters.ParseBidderInfos(blankAdapterConfig(mockBidderName), "./adapterstest/bidder-info", []openrtb_ext.BidderName{mockBidderName})
 	if infos[string(mockBidderName)].Maintainer.Email != "some-email@domain.com" {
 		t.Errorf("Bad maintainer email. Got %s", infos[string(mockBidderName)].Maintainer.Email)
 	}
+
+	assert.Equal(t, true, infos.IsActive(mockBidderName))
+
 	assert.Equal(t, true, infos.HasAppSupport(mockBidderName))
 	assert.Equal(t, true, infos.HasSiteSupport(mockBidderName))
 

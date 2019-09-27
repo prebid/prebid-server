@@ -7,6 +7,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 )
 
+// PrebidExtKey represents the prebid extension key used in requests
+const PrebidExtKey = "prebid"
+
 // ExtDevice defines the contract for bidrequest.device.ext
 type ExtDevice struct {
 	Prebid ExtDevicePrebid `json:"prebid"`

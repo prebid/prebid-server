@@ -93,7 +93,7 @@ func (fetcher *dbFetcher) FetchRequests(ctx context.Context, requestIDs []string
 	return storedRequestData, storedImpData, errs
 }
 
-func (fetcher *dbFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
+func (fetcher *dbFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
 	return "", nil
 }
 
@@ -113,16 +113,14 @@ func appendErrors(dataType string, ids []string, data map[string]json.RawMessage
 //
 // These errors are documented here: https://www.postgresql.org/docs/9.3/static/errcodes-appendix.html
 func isBadInput(err error) bool {
-	if pqErr, ok := err.(*pq.Error); ok {
-		// Unfortunately, Postgres queries will fail if a non-UUID is passedd into a query for a UUID column. For example:
-		//
-		//    SELECT uuid, data, dataType FROM stored_requests WHERE uuid IN ('abc');
-		//
-		// Since users can send us strings which are _not_ UUIDs, and we don't want the code to assume anything about
-		// the database schema, we can just convert these into standard NotFoundErrors.
-		if string(pqErr.Code) == "22P02" {
-			return true
-		}
+	// Unfortunately, Postgres queries will fail if a non-UUID is passedd into a query for a UUID column. For example:
+	//
+	//    SELECT uuid, data, dataType FROM stored_requests WHERE uuid IN ('abc');
+	//
+	// Since users can send us strings which are _not_ UUIDs, and we don't want the code to assume anything about
+	// the database schema, we can just convert these into standard NotFoundErrors.
+	if pqErr, ok := err.(*pq.Error); ok && string(pqErr.Code) == "22P02" {
+		return true
 	}
 
 	return false

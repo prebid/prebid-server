@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
-[![Go Report Card](https://goreportcard.com/badge/github.com/prebid/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/prebid/prebid-server)
+[![Go Report Card](https://goreportcard.com/badge/github.com/PubMatic-OpenWrap/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/PubMatic-OpenWrap/prebid-server)
 
 # Prebid Server
 
@@ -18,7 +18,7 @@ For more information, see:
 
 ## Installation
 
-First install [Go 1.9.1](https://golang.org/doc/install) or later and [dep](https://golang.github.io/dep/docs/installation.html). Note that dep requires an explicit GOPATH to be set.
+First install [Go 1.11](https://golang.org/doc/install) or later and [dep](https://golang.github.io/dep/docs/installation.html). Note that dep requires an explicit GOPATH to be set.
 
 ```bash
 export GOPATH=$(go env GOPATH)

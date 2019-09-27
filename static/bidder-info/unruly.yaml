@@ -1,0 +1,9 @@
+maintainer:
+  email: "adspaces@unrulygroup.com"
+capabilities:
+  site:
+    mediaTypes:
+      - video
+  app:
+    mediaTypes:
+      - video

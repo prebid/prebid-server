@@ -1,0 +1,6 @@
+maintainer:
+  email: "inventory.devel@rtbhouse.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

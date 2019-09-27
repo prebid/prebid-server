@@ -60,7 +60,7 @@ type hbResponseAd struct {
 	Height       uint64 `json:"h,omitempty"`
 }
 
-func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (adapter *EPlanningAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errors := make([]error, 0, len(request.Imp))
 	totalImps := len(request.Imp)
 	spacesStrings := make([]string, 0, totalImps)

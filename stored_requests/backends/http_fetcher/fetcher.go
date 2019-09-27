@@ -56,9 +56,10 @@ func NewFetcher(client *http.Client, endpoint string) *HttpFetcher {
 }
 
 type HttpFetcher struct {
-	client   *http.Client
-	Endpoint string
-	hasQuery bool
+	client     *http.Client
+	Endpoint   string
+	hasQuery   bool
+	Categories map[string]map[string]stored_requests.Category
 }
 
 func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []string, impIDs []string) (requestData map[string]json.RawMessage, impData map[string]json.RawMessage, errs []error) {
@@ -80,8 +81,54 @@ func (fetcher *HttpFetcher) FetchRequests(ctx context.Context, requestIDs []stri
 	return
 }
 
-func (fetcher *HttpFetcher) FetchCategories(primaryAdServer, publisherId, iabCategory string) (string, error) {
-	return "", nil
+func (fetcher *HttpFetcher) FetchCategories(ctx context.Context, primaryAdServer, publisherId, iabCategory string) (string, error) {
+	if fetcher.Categories == nil {
+		fetcher.Categories = make(map[string]map[string]stored_requests.Category)
+	}
+
+	//in NewFetcher function there is a code to add "?" at the end of url
+	//in case of categories we don't expect to have any parameters, that's why we need to remove "?"
+	var dataName, url string
+	if publisherId != "" {
+		dataName = fmt.Sprintf("%s_%s", primaryAdServer, publisherId)
+		url = fmt.Sprintf("%s/%s/%s.json", strings.TrimSuffix(fetcher.Endpoint, "?"), primaryAdServer, publisherId)
+	} else {
+		dataName = primaryAdServer
+		url = fmt.Sprintf("%s/%s.json", strings.TrimSuffix(fetcher.Endpoint, "?"), primaryAdServer)
+	}
+
+	if data, ok := fetcher.Categories[dataName]; ok {
+		if val, ok := data[iabCategory]; ok {
+			return val.Id, nil
+		} else {
+			return "", fmt.Errorf("Unable to find category mapping for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+		}
+	}
+
+	httpReq, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	httpResp, err := ctxhttp.Do(ctx, fetcher.client, httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := ioutil.ReadAll(httpResp.Body)
+	tmp := make(map[string]stored_requests.Category)
+
+	if err := json.Unmarshal(respBytes, &tmp); err != nil {
+		return "", fmt.Errorf("Unable to unmarshal categories for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+	}
+	fetcher.Categories[dataName] = tmp
+
+	if val, ok := tmp[iabCategory]; ok {
+		return val.Id, nil
+	} else {
+		return "", fmt.Errorf("Unable to find category mapping for adserver: '%s', publisherId: '%s'", primaryAdServer, publisherId)
+	}
 }
 
 func buildRequest(endpoint string, requestIDs []string, impIDs []string) (*http.Request, error) {

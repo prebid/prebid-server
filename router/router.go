@@ -12,9 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints"
-	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2"
-
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
@@ -27,6 +24,10 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rubicon"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sovrn"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
@@ -34,16 +35,15 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/postgrescache"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints"
+	"github.com/PubMatic-OpenWrap/prebid-server/endpoints/openrtb2"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	storedRequestsConf "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
 
 	"github.com/golang/glog"
@@ -110,7 +110,7 @@ func NewJsonDirectoryServer(schemaDirectory string, validator openrtb_ext.Bidder
 		glog.Fatalf("Failed to marshal bidder param JSON-schema: %v", err)
 	}
 
-	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	return func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(response)
 	}
@@ -163,8 +163,8 @@ func loadDataCache(cfg *config.Configuration, db *sql.DB) (err error) {
 func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 	// These keys _must_ coincide with the bidder code in Prebid.js, if the adapter exists in both projects
 	return map[string]adapters.Adapter{
-		"appnexus":   appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
-		"districtm":  appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint),
+		"appnexus":   appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
+		"districtm":  appnexus.NewAppNexusAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].PlatformID),
 		"ix":         ix.NewIxAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint),
 		"pubmatic":   pubmatic.NewPubmaticAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
@@ -201,9 +201,16 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
 		},
 	}
+	// Hack because of how legacy handles districtm
+	legacyBidderList := openrtb_ext.BidderList()
+	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
+
 	g_cfg = cfg
 	var db *sql.DB
-	db, _, g_storedReqFetcher, _, g_categoriesFetcher = storedRequestsConf.NewStoredRequests(cfg, theClient, r.Router)
+	// Metrics engine
+	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
+	db, _, g_storedReqFetcher, _, g_categoriesFetcher, _ = storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, theClient, r.Router)
+
 	// todo(zachbadgett): better shutdown
 	//r.Shutdown = shutdown
 	if err := loadDataCache(cfg, db); err != nil {
@@ -211,10 +218,6 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	}
 
 	g_analytics = analyticsConf.NewPBSAnalytics(&cfg.Analytics)
-
-	// Hack because of how legacy handles districtm
-	legacyBidderList := openrtb_ext.BidderList()
-	legacyBidderList = append(legacyBidderList, openrtb_ext.BidderName("districtm"))
 
 	// Metrics engine
 	g_metrics = metricsConf.NewMetricsEngine(cfg, legacyBidderList)
@@ -227,11 +230,12 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	g_disabledBidders = map[string]string{
 		"indexExchange": "Bidder \"indexExchange\" has been deprecated and is no longer available. Please use bidder \"ix\" and note that the bidder params have changed.",
 	}
-	var bidderList []openrtb_ext.BidderName
-	bidderList, g_bidderMap = exchange.DisableBidders(cfg.Adapters, openrtb_ext.BidderList(), g_disabledBidders)
+	//var bidderList []openrtb_ext.BidderName
 
 	p, _ := filepath.Abs(infoDirectory)
-	bidderInfos := adapters.ParseBidderInfos(p, bidderList)
+	bidderInfos := adapters.ParseBidderInfos(cfg.Adapters, p, openrtb_ext.BidderList())
+
+	g_bidderMap = exchange.DisableBidders(bidderInfos, g_disabledBidders)
 
 	_, g_defReqJSON = readDefaultRequest(cfg.DefReqConfig)
 
@@ -288,7 +292,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 }
 
 func OrtbAuctionEndpointWrapper(w http.ResponseWriter, r *http.Request) error {
-	ortbAuctionEndpoint, err := openrtb2.NewEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap, g_categoriesFetcher)
+	ortbAuctionEndpoint, err := openrtb2.NewEndpoint(g_ex, g_paramsValidator, g_storedReqFetcher, g_categoriesFetcher, g_cfg, g_metrics, g_analytics, g_disabledBidders, g_defReqJSON, g_bidderMap)
 	if err != nil {
 		return err
 	}
@@ -338,7 +342,7 @@ func SyncerMap() map[openrtb_ext.BidderName]usersync.Usersyncer {
 func SupportCORS(handler http.Handler) http.Handler {
 	c := cors.New(cors.Options{
 		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
+		AllowOriginFunc: func(string) bool {
 			return true
 		},
 		AllowedHeaders: []string{"Origin", "X-Requested-With", "Content-Type", "Accept"}})

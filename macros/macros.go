@@ -8,7 +8,8 @@ import (
 // EndpointTemplateParams specifies params for an endpoint template
 type EndpointTemplateParams struct {
 	Host        string
-	PublisherID int
+	PublisherID string
+	ZoneID      string
 }
 
 // UserSyncTemplateParams specifies params for an user sync URL template
@@ -19,11 +20,12 @@ type UserSyncTemplateParams struct {
 
 // ResolveMacros resolves macros in the given template with the provided params
 func ResolveMacros(aTemplate template.Template, params interface{}) (string, error) {
-	var strBuilder bytes.Buffer
-	err := aTemplate.Execute(&strBuilder, params)
+	strBuf := bytes.Buffer{}
+
+	err := aTemplate.Execute(&strBuf, params)
 	if err != nil {
 		return "", err
 	}
-	res := strBuilder.String()
+	res := strBuf.String()
 	return res, nil
 }

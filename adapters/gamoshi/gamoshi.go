@@ -17,7 +17,7 @@ type GamoshiAdapter struct {
 	URI string
 }
 
-func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *GamoshiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {

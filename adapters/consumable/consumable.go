@@ -71,7 +71,7 @@ type pricing struct {
 	ClearPrice *float64 `json:"clearPrice"`
 }
 
-func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *ConsumableAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	headers := http.Header{
 		"Content-Type": {"application/json"},
 		"Accept":       {"application/json"},

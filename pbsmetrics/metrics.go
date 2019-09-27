@@ -28,10 +28,21 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
+// ImpLabels
+type ImpLabels struct {
+	BannerImps bool
+	VideoImps  bool
+	AudioImps  bool
+	NativeImps bool
+}
+
 // Label typecasting. Se below the type definitions for possible values
 
 // DemandSource : Demand source enumeration
 type DemandSource string
+
+// ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
+type ImpMediaType string
 
 // RequestType : Request type enumeration
 type RequestType string
@@ -50,6 +61,12 @@ type AdapterBid string
 
 // AdapterError : Errors which may have occurred during the adapter's execution
 type AdapterError string
+
+// CacheResult : Cache hit/miss
+type CacheResult string
+
+// PublisherUnknown: Default value for Labels.PubID
+const PublisherUnknown = "unknown"
 
 // The demand sources
 const (
@@ -72,6 +89,15 @@ const (
 	ReqTypeORTB2Web RequestType = "openrtb2-web"
 	ReqTypeORTB2App RequestType = "openrtb2-app"
 	ReqTypeAMP      RequestType = "amp"
+	ReqTypeVideo    RequestType = "video"
+)
+
+// The media types described in the "imp" json objects
+const (
+	ImpTypeBanner ImpMediaType = "banner"
+	ImpTypeVideo  ImpMediaType = "video"
+	ImpTypeAudio  ImpMediaType = "audio"
+	ImpTypeNative ImpMediaType = "native"
 )
 
 func RequestTypes() []RequestType {
@@ -80,6 +106,16 @@ func RequestTypes() []RequestType {
 		ReqTypeORTB2Web,
 		ReqTypeORTB2App,
 		ReqTypeAMP,
+		ReqTypeVideo,
+	}
+}
+
+func ImpTypes() []ImpMediaType {
+	return []ImpMediaType{
+		ImpTypeBanner,
+		ImpTypeVideo,
+		ImpTypeAudio,
+		ImpTypeNative,
 	}
 }
 
@@ -160,6 +196,22 @@ func AdapterErrors() []AdapterError {
 	}
 }
 
+const (
+	// CacheHit represents a cache hit i.e the key was found in cache
+	CacheHit CacheResult = "hit"
+	// CacheMiss represents a cache miss i.e that key wasn't found in cache
+	// and had to be fetched from the backend
+	CacheMiss CacheResult = "miss"
+)
+
+// CacheResults returns possible cache results i.e. cache hit or miss
+func CacheResults() []CacheResult {
+	return []CacheResult{
+		CacheHit,
+		CacheMiss,
+	}
+}
+
 // UserLabels : Labels for /setuid endpoint
 type UserLabels struct {
 	Action RequestAction
@@ -187,7 +239,8 @@ type MetricsEngine interface {
 	RecordConnectionAccept(success bool)
 	RecordConnectionClose(success bool)
 	RecordRequest(labels Labels)                           // ignores adapter. only statusOk and statusErr fom status
-	RecordImps(labels Labels, numImps int)                 // ignores adapter. only statusOk and statusErr fom status
+	RecordImps(labels ImpLabels)                           // RecordImps across openRTB2 engines that support the 'Native' Imp Type
+	RecordLegacyImps(labels Labels, numImps int)           // RecordImps for the legacy engine
 	RecordRequestTime(labels Labels, length time.Duration) // ignores adapter. only statusOk and statusErr fom status
 	RecordAdapterRequest(labels AdapterLabels)
 	RecordAdapterPanic(labels AdapterLabels)
@@ -199,4 +252,6 @@ type MetricsEngine interface {
 	RecordCookieSync(labels Labels) // May ignore all labels
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
+	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
+	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
 }

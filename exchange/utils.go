@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strings"
 
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 )
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -41,40 +42,34 @@ func cleanOpenRTBRequests(ctx context.Context,
 	// Clean PI from bidrequests if not allowed per GDPR
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
-	if gdpr == 1 {
-		for bidder, bidReq := range requestsByBidder {
-			// Fixes #820
+
+	// Check if it's an AMP request
+	isAMP := labels.RType == pbsmetrics.ReqTypeAMP
+
+	// Check if COPPA applies for this request
+	var applyCOPPA bool
+	if orig.Regs != nil && orig.Regs.COPPA == 1 {
+		applyCOPPA = true
+	}
+
+	for bidder, bidReq := range requestsByBidder {
+		var applyGDPR bool
+		// Fixes #820
+		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
-			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, consent); !ok && err == nil {
-				cleanPI(bidReq, labels.RType == pbsmetrics.ReqTypeAMP)
+
+			var publisherID = labels.PubID
+			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent); !ok && err == nil {
+				applyGDPR = true
 			}
+		}
+
+		if applyGDPR || applyCOPPA {
+			applyRegs(bidReq, isAMP, applyGDPR, applyCOPPA)
 		}
 	}
 
 	return
-}
-
-func getBidderExts(reqExt *openrtb_ext.ExtRequest) (map[string]map[string]interface{}, error) {
-	if reqExt == nil {
-		return nil, nil
-	}
-
-	if reqExt.Prebid.BidderParams == nil {
-		return nil, nil
-	}
-
-	pbytes, err := json.Marshal(reqExt.Prebid.BidderParams)
-	if err != nil {
-		return nil, err
-	}
-
-	var bidderParams map[string]map[string]interface{}
-	err = json.Unmarshal(pbytes, &bidderParams)
-	if err != nil {
-		return nil, err
-	}
-
-	return bidderParams, nil
 }
 
 func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.Imp, aliases map[string]string, usersyncs IdFetcher, blabels map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels, labels pbsmetrics.Labels) (map[openrtb_ext.BidderName]*openrtb.BidRequest, []error) {
@@ -83,18 +78,6 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	var reqExt openrtb_ext.ExtRequest
-	err = json.Unmarshal(req.Ext, &reqExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	bidderExt, err := getBidderExts(&reqExt)
-	if err != nil {
-		return nil, []error{err}
-	}
-
 	for bidder, imps := range impsByBidder {
 		reqCopy := *req
 		coreBidder := resolveBidder(bidder, aliases)
@@ -114,20 +97,6 @@ func splitBidRequest(req *openrtb.BidRequest, impsByBidder map[string][]openrtb.
 			blabels[coreBidder].CookieFlag = pbsmetrics.CookieFlagYes
 		}
 		reqCopy.Imp = imps
-
-		if len(bidderExt) != 0 {
-			bidderName := openrtb_ext.BidderName(bidder)
-			if bidderParams, ok := bidderExt[string(bidderName)]; ok {
-				reqExt.Prebid.BidderParams = bidderParams
-			} else {
-				reqExt.Prebid.BidderParams = nil
-			}
-
-			if reqCopy.Ext, err = json.Marshal(&reqExt); err != nil {
-				return nil, []error{err}
-			}
-		}
-
 		requestsByBidder[openrtb_ext.BidderName(bidder)] = &reqCopy
 	}
 	return requestsByBidder, nil
@@ -188,7 +157,7 @@ func splitImps(imps []openrtb.Imp) (map[string][]openrtb.Imp, []error) {
 		imp := imps[i]
 		impExt := impExts[i]
 
-		rawPrebidExt, ok := impExt["prebid"]
+		rawPrebidExt, ok := impExt[openrtb_ext.PrebidExtKey]
 
 		if ok {
 			var prebidExt openrtb_ext.ExtImpPrebid
@@ -233,7 +202,7 @@ func sanitizedImpCopy(imp *openrtb.Imp,
 	}
 
 	for bidder, ext := range bidderExts {
-		if bidder == "prebid" {
+		if bidder == openrtb_ext.PrebidExtKey {
 			continue
 		}
 
@@ -243,7 +212,7 @@ func sanitizedImpCopy(imp *openrtb.Imp,
 		newExt["bidder"] = ext
 
 		if rawPrebidExt != nil {
-			newExt["prebid"] = rawPrebidExt
+			newExt[openrtb_ext.PrebidExtKey] = rawPrebidExt
 		}
 
 		rawExt, err := json.Marshal(newExt)
@@ -324,7 +293,7 @@ func parseImpExts(imps []openrtb.Imp) ([]map[string]json.RawMessage, error) {
 // parseAliases parses the aliases from the BidRequest
 func parseAliases(orig *openrtb.BidRequest) (map[string]string, []error) {
 	var aliases map[string]string
-	if value, dataType, _, err := jsonparser.Get(orig.Ext, "prebid", "aliases"); dataType == jsonparser.Object && err == nil {
+	if value, dataType, _, err := jsonparser.Get(orig.Ext, openrtb_ext.PrebidExtKey, "aliases"); dataType == jsonparser.Object && err == nil {
 		if err := json.Unmarshal(value, &aliases); err != nil {
 			return nil, []error{err}
 		}
@@ -343,4 +312,106 @@ func randomizeList(list []openrtb_ext.BidderName) {
 		j = perm[i]
 		list[i], list[j] = list[j], list[i]
 	}
+}
+
+func applyRegs(bidRequest *openrtb.BidRequest, isAMP, applyGDPR, applyCOPPA bool) {
+	if bidRequest.User != nil {
+		// Need to duplicate pointer objects
+		user := *bidRequest.User
+		bidRequest.User = &user
+
+		// There's no way for AMP to send a GDPR consent string yet so it's hard
+		// to know if the vendor is consented or not and therefore for AMP requests
+		// we keep the BuyerUID as is
+		if !isAMP {
+			bidRequest.User.BuyerUID = ""
+		}
+		if applyCOPPA {
+			bidRequest.User.ID = ""
+			bidRequest.User.Yob = 0
+			bidRequest.User.Gender = ""
+			bidRequest.User.BuyerUID = ""
+		}
+		bidRequest.User.Geo = cleanGeo(bidRequest.User.Geo, applyGDPR, applyCOPPA)
+	}
+	if bidRequest.Device != nil {
+		// Need to duplicate pointer objects
+		device := *bidRequest.Device
+		bidRequest.Device = &device
+
+		bidRequest.Device.DIDMD5 = ""
+		bidRequest.Device.DIDSHA1 = ""
+		bidRequest.Device.DPIDMD5 = ""
+		bidRequest.Device.DPIDSHA1 = ""
+		if applyCOPPA {
+			bidRequest.Device.MACSHA1 = ""
+			bidRequest.Device.MACMD5 = ""
+			bidRequest.Device.IFA = ""
+		}
+		bidRequest.Device.IP = cleanIP(bidRequest.Device.IP)
+		bidRequest.Device.IPv6 = cleanIPV6(bidRequest.Device.IPv6, applyGDPR, applyCOPPA)
+		bidRequest.Device.Geo = cleanGeo(bidRequest.Device.Geo, applyGDPR, applyCOPPA)
+	}
+}
+
+// Zero the last byte of an IP address
+func cleanIP(fullIP string) string {
+	i := strings.LastIndex(fullIP, ".")
+	if i == -1 {
+		return ""
+	}
+	return fullIP[0:i] + ".0"
+}
+
+func cleanIPV6(fullIP string, applyGDPR, applyCOPPA bool) string {
+	// If neither GDPR nor COPPA applies then do nothing
+	if !applyGDPR && !applyCOPPA {
+		return fullIP
+	}
+
+	i := strings.LastIndex(fullIP, ":")
+	if i == -1 {
+		return ""
+	}
+	fullIP = fullIP[0:i]
+
+	// If COPPA then remove the lowest 32 bits of the IP
+	if applyCOPPA {
+		fullIP = fullIP[:strings.LastIndex(fullIP, ":")+1] + "0:0"
+		return fullIP
+	}
+	// If GDPR then remove the lowest 32 bits of the IP
+	if applyGDPR {
+		fullIP = fullIP + ":0"
+	}
+	return fullIP
+}
+
+// Return a cleaned Geo object pointer (round off the latitude/longitude)
+func cleanGeo(geo *openrtb.Geo, applyGDPR, applyCOPPA bool) *openrtb.Geo {
+	// If neither GDPR nor COPPA applies then do nothing
+	if !applyCOPPA && !applyGDPR {
+		return geo
+	}
+
+	if geo == nil {
+		return nil
+	}
+	newGeo := *geo
+
+	// If GDPR applies then round off the Lat and LON values
+	if applyGDPR {
+		newGeo.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0
+		newGeo.Lon = float64(int(geo.Lon*100.0+0.5)) / 100.0
+	}
+
+	// If COPPA applies then remove Lat, Lon, Metro, City and Zip values
+	if applyCOPPA {
+		newGeo.Lat = 0
+		newGeo.Lon = 0
+		newGeo.Metro = ""
+		newGeo.City = ""
+		newGeo.ZIP = ""
+	}
+	return &newGeo
 }

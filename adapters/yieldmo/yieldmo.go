@@ -19,7 +19,7 @@ type Ext struct {
 	PlacementId string `json:"placement_id"`
 }
 
-func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *YieldmoAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
 

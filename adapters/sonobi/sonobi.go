@@ -46,7 +46,7 @@ type sonobiParams struct {
 }
 
 // MakeRequests Makes the OpenRTB request payload
-func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *SonobiAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var sonobiExt openrtb_ext.ExtImpSonobi
 	var err error

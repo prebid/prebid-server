@@ -18,10 +18,12 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
 
@@ -39,13 +41,13 @@ func NewAmpEndpoint(
 	ex exchange.Exchange,
 	validator openrtb_ext.BidderParamValidator,
 	requestsById stored_requests.Fetcher,
+	categories stored_requests.CategoryFetcher,
 	cfg *config.Configuration,
 	met pbsmetrics.MetricsEngine,
 	pbsAnalytics analytics.PBSAnalyticsModule,
 	disabledBidders map[string]string,
 	defReqJSON []byte,
 	bidderMap map[string]openrtb_ext.BidderName,
-	categoriesFetcher stored_requests.CategoryFetcher,
 ) (httprouter.Handle, error) {
 
 	if ex == nil || validator == nil || requestsById == nil || cfg == nil || met == nil {
@@ -54,7 +56,19 @@ func NewAmpEndpoint(
 
 	defRequest := defReqJSON != nil && len(defReqJSON) > 0
 
-	return httprouter.Handle((&endpointDeps{ex, validator, requestsById, cfg, met, pbsAnalytics, disabledBidders, defRequest, defReqJSON, bidderMap, categoriesFetcher}).AmpAuction), nil
+	return httprouter.Handle((&endpointDeps{
+		ex,
+		validator,
+		requestsById,
+		empty_fetcher.EmptyFetcher{},
+		categories,
+		cfg,
+		met,
+		pbsAnalytics,
+		disabledBidders,
+		defRequest,
+		defReqJSON,
+		bidderMap}).AmpAuction), nil
 
 }
 
@@ -76,16 +90,15 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 
 	start := time.Now()
 	labels := pbsmetrics.Labels{
-		Source:        pbsmetrics.DemandUnknown,
+		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeAMP,
-		PubID:         "",
+		PubID:         pbsmetrics.PublisherUnknown,
 		Browser:       pbsmetrics.BrowserOther,
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
 	defer func() {
 		deps.metricsEngine.RecordRequest(labels)
-		deps.metricsEngine.RecordImps(labels, 1)
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAmpObject(&ao)
 	}()
@@ -102,9 +115,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		origin = r.Header.Get("Origin")
 		ao.Origin = origin
 	}
-
-	debugParam := r.FormValue("debug")
-	debug := debugParam == "1"
 
 	// Headers "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
 	// and "Access-Control-Allow-Credentials" are handled in CORS middleware
@@ -124,7 +134,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	ctx := context.Background()
-	cancel := func() {}
+	var cancel context.CancelFunc
 	if req.TMax > 0 {
 		ctx, cancel = context.WithDeadline(ctx, start.Add(time.Duration(req.TMax)*time.Millisecond))
 	} else {
@@ -133,16 +143,24 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	defer cancel()
 
 	usersyncs := usersync.ParsePBSCookieFromRequest(r, &(deps.cfg.HostCookie))
-	if req.App != nil {
-		labels.Source = pbsmetrics.DemandApp
+	if usersyncs.LiveSyncCount() == 0 {
+		labels.CookieFlag = pbsmetrics.CookieFlagNo
 	} else {
-		labels.Source = pbsmetrics.DemandWeb
-		if usersyncs.LiveSyncCount() == 0 {
-			labels.CookieFlag = pbsmetrics.CookieFlagNo
-		} else {
-			labels.CookieFlag = pbsmetrics.CookieFlagYes
-		}
+		labels.CookieFlag = pbsmetrics.CookieFlagYes
 	}
+	labels.PubID = effectivePubID(req.Site.Publisher)
+	// Blacklist account now that we have resolved the value
+	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
+		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
+		w.WriteHeader(http.StatusBadRequest)
+		for _, err := range errL {
+			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
+		}
+		ao.Errors = append(ao.Errors, errL...)
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		return
+	}
+
 	response, err := deps.ex.HoldAuction(ctx, req, usersyncs, labels, &deps.categories)
 	ao.AuctionResponse = response
 
@@ -199,7 +217,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	ao.AmpTargetingValues = targets
 
 	// add debug information if requested
-	if debug && eRErr == nil {
+	if req.Test == 1 && eRErr == nil {
 		if extResponse.Debug != nil {
 			ampResponse.Debug = extResponse.Debug
 		} else {
@@ -238,9 +256,7 @@ func (deps *endpointDeps) parseAmpRequest(httpRequest *http.Request) (req *openr
 	deps.setFieldsImplicitly(httpRequest, req)
 
 	// Need to ensure cache and targeting are turned on
-	debugParam := httpRequest.FormValue("debug")
-	debug := debugParam == "1"
-	errs = defaultRequestExt(req, debug)
+	errs = defaultRequestExt(req)
 	if len(errs) > 0 {
 		return
 	}
@@ -266,6 +282,9 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		return
 	}
 
+	debugParam := httpRequest.FormValue("debug")
+	debug := debugParam == "1"
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(storedRequestTimeoutMillis)*time.Millisecond)
 	defer cancel()
 
@@ -283,6 +302,10 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 	if err := json.Unmarshal(requestJSON, req); err != nil {
 		errs = []error{err}
 		return
+	}
+
+	if debug {
+		req.Test = 1
 	}
 
 	// Two checks so users know which way the Imp check failed.
@@ -435,7 +458,7 @@ func parseIntErrorless(value string, defaultTo uint64) uint64 {
 
 // AMP won't function unless ext.prebid.targeting and ext.prebid.cache.bids are defined.
 // If the user didn't include them, default those here.
-func defaultRequestExt(req *openrtb.BidRequest, debug bool) (errs []error) {
+func defaultRequestExt(req *openrtb.BidRequest) (errs []error) {
 	errs = nil
 	extRequest := &openrtb_ext.ExtRequest{}
 	if req.Ext != nil && len(req.Ext) > 0 {
@@ -446,9 +469,6 @@ func defaultRequestExt(req *openrtb.BidRequest, debug bool) (errs []error) {
 	}
 
 	setDefaults := false
-	if debug {
-		extRequest.Prebid.Debug = 1
-	}
 	// Ensure Targeting and caching is on
 	if extRequest.Prebid.Targeting == nil {
 		setDefaults = true

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -21,7 +22,7 @@ type adkernelAdnAdapter struct {
 }
 
 //MakeRequests prepares request information for prebid-server core
-func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (adapter *adkernelAdnAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 	if len(request.Imp) == 0 {
 		errs = append(errs, newBadInputError("No impression in the bid request"))
@@ -80,6 +81,9 @@ func validateImpression(imp *openrtb.Imp, impExt *openrtb_ext.ExtImpAdkernelAdn)
 	if impExt.PublisherID < 1 {
 		return newBadInputError(fmt.Sprintf("Invalid pubId value. Ignoring imp id=%s", imp.ID))
 	}
+	if imp.Video == nil && imp.Banner == nil {
+		return newBadInputError(fmt.Sprintf("Invalid imp with id=%s. Expected imp.banner or imp.video", imp.ID))
+	}
 	return nil
 }
 
@@ -110,7 +114,10 @@ func compatImpression(imp *openrtb.Imp) error {
 	if imp.Banner != nil {
 		return compatBannerImpression(imp)
 	}
-	return nil
+	if imp.Video != nil {
+		return compatVideoImpression(imp)
+	}
+	return newBadInputError("Unsupported impression has been received")
 }
 
 func compatBannerImpression(imp *openrtb.Imp) error {
@@ -128,6 +135,18 @@ func compatBannerImpression(imp *openrtb.Imp) error {
 		banner.H = &format.H
 		imp.Banner = banner
 	}
+
+	imp.Video = nil
+	imp.Native = nil
+	imp.Audio = nil
+
+	return nil
+}
+
+func compatVideoImpression(imp *openrtb.Imp) error {
+	imp.Banner = nil
+	imp.Audio = nil
+	imp.Native = nil
 	return nil
 }
 
@@ -174,10 +193,7 @@ func (adapter *adkernelAdnAdapter) buildAdapterRequest(prebidBidRequest *openrtb
 func createBidRequest(prebidBidRequest *openrtb.BidRequest, params *openrtb_ext.ExtImpAdkernelAdn, imps []openrtb.Imp) *openrtb.BidRequest {
 	bidRequest := *prebidBidRequest
 	bidRequest.Imp = imps
-	for idx := range bidRequest.Imp {
-		imp := &bidRequest.Imp[idx]
-		imp.TagID = imp.ID
-	}
+
 	if bidRequest.Site != nil {
 		// Need to copy Site as Request is a shallow copy
 		siteCopy := *bidRequest.Site
@@ -200,7 +216,8 @@ func (adapter *adkernelAdnAdapter) buildEndpointURL(params *openrtb_ext.ExtImpAd
 	if params.Host != "" {
 		reqHost = params.Host
 	}
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: params.PublisherID}
+	pubIDStr := strconv.Itoa(params.PublisherID)
+	endpointParams := macros.EndpointTemplateParams{Host: reqHost, PublisherID: pubIDStr}
 	return macros.ResolveMacros(adapter.EndpointTemplate, endpointParams)
 }
 
@@ -242,11 +259,11 @@ func (adapter *adkernelAdnAdapter) MakeBids(internalRequest *openrtb.BidRequest,
 // getMediaTypeForImp figures out which media type this bid is for
 func getMediaTypeForImpID(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 	for _, imp := range imps {
-		if imp.ID == impID && imp.Video != nil {
-			return openrtb_ext.BidTypeVideo
+		if imp.ID == impID && imp.Banner != nil {
+			return openrtb_ext.BidTypeBanner
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+	return openrtb_ext.BidTypeVideo
 }
 
 func newBadInputError(message string) error {

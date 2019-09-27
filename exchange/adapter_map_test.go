@@ -10,7 +10,8 @@ import (
 )
 
 func TestNewAdapterMap(t *testing.T) {
-	adapterMap := newAdapterMap(nil, &config.Configuration{Adapters: blankAdapterConfig(openrtb_ext.BidderList())}, adapters.ParseBidderInfos("../static/bidder-info", openrtb_ext.BidderList()))
+	cfg := &config.Configuration{Adapters: blankAdapterConfig(openrtb_ext.BidderList())}
+	adapterMap := newAdapterMap(nil, cfg, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()))
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if bidder, ok := adapterMap[bidderName]; bidder == nil || !ok {
 			t.Errorf("adapterMap missing expected Bidder: %s", string(bidderName))
@@ -37,7 +38,7 @@ func TestNewAdapterMapDisabledAdapters(t *testing.T) {
 			}
 		}
 	}
-	adapterMap := newAdapterMap(nil, &config.Configuration{Adapters: cfgAdapters}, adapters.ParseBidderInfos("../static/bidder-info", bidderList))
+	adapterMap := newAdapterMap(nil, &config.Configuration{Adapters: cfgAdapters}, adapters.ParseBidderInfos(cfgAdapters, "../static/bidder-info", bidderList))
 	for _, bidderName := range openrtb_ext.BidderMap {
 		if bidder, ok := adapterMap[bidderName]; bidder == nil || !ok {
 			if inList(bidderList, bidderName) {

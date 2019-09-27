@@ -27,7 +27,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
 			returnEngine.GoMetrics.MetricsRegistry, // metrics registry
-			time.Second*10,                         // interval
+			time.Second*20,                         // interval
 			cfg.Metrics.Influxdb.Host,              // the InfluxDB url
 			cfg.Metrics.Influxdb.Database,          // your InfluxDB database
 			cfg.Metrics.Influxdb.Username,          // your InfluxDB user
@@ -53,7 +53,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	return &returnEngine
 }
 
-// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to unerlying metrics engines.
+// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to underlying metrics engines.
 type DetailedMetricsEngine struct {
 	pbsmetrics.MetricsEngine
 	GoMetrics         *pbsmetrics.Metrics
@@ -83,10 +83,17 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-// RecordImps across all engines
-func (me *MultiMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
+//RecordsImps records imps with imp types across all metric engines
+func (me *MultiMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
 	for _, thisME := range *me {
-		thisME.RecordImps(labels, numImps)
+		thisME.RecordImps(implabels)
+	}
+}
+
+// RecordImps for the legacy endpoint
+func (me *MultiMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	for _, thisME := range *me {
+		thisME.RecordLegacyImps(labels, numImps)
 	}
 }
 
@@ -139,6 +146,20 @@ func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
 	}
 }
 
+// RecordStoredReqCacheResult across all engines
+func (me *MultiMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordStoredReqCacheResult(cacheResult, inc)
+	}
+}
+
+// RecordStoredImpCacheResult across all engines
+func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordStoredImpCacheResult(cacheResult, inc)
+	}
+}
+
 // RecordAdapterCookieSync across all engines
 func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
 	for _, thisME := range *me {
@@ -172,7 +193,12 @@ func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
 }
 
 // RecordImps as a noop
-func (me *DummyMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
+func (me *DummyMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
+	return
+}
+
+// RecordLegacyImps as a noop
+func (me *DummyMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
 	return
 }
 
@@ -218,5 +244,15 @@ func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.Bidder
 
 // RecordUserIDSet as a noop
 func (me *DummyMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
+	return
+}
+
+// RecordStoredReqCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	return
+}
+
+// RecordStoredImpCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
 	return
 }
