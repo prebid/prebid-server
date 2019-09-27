@@ -245,7 +245,7 @@ func getAppId(ext openrtb_ext.ExtImpBeachfront, media openrtb_ext.BidType) (stri
 		ext.AppId != "" {
 
 		appid = ext.AppId
-	} else if fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
+	} else if reflect.TypeOf(ext.AppIds) != nil && fmt.Sprintf("%s", reflect.TypeOf(ext.AppIds)) == "openrtb_ext.ExtImpBeachfrontAppIds" {
 		if media == openrtb_ext.BidTypeVideo && ext.AppIds.Video != "" {
 			appid = ext.AppIds.Video
 		} else if media == openrtb_ext.BidTypeBanner && ext.AppIds.Banner != "" {
