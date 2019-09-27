@@ -5,8 +5,9 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 	"net/http"
+	"regexp"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func (m MockStrAdServer) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.Bi
 	return m.mockRequestFromOpenRTB()
 }
 
-func (m MockStrAdServer) responseToOpenRTB(strResp openrtb_ext.ExtImpSharethroughResponse, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
+func (m MockStrAdServer) responseToOpenRTB(strRawResp []byte, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
 	return m.mockResponseToOpenRTB()
 }
 
@@ -38,6 +39,36 @@ func (m MockStrUriHelper) buildUri(params StrAdSeverParams) string {
 
 func (m MockStrUriHelper) parseUri(uri string) (*StrAdSeverParams, error) {
 	return m.mockParseUri()
+}
+
+func TestNewSharethroughBidder(t *testing.T) {
+	tests := map[string]struct {
+		input  string
+		output SharethroughAdapter
+	}{
+		"Creates Sharethrough adapter": {
+			input: "test endpoint",
+			output: SharethroughAdapter{
+				AdServer: StrOpenRTBTranslator{
+					UriHelper: StrUriHelper{BaseURI: "test endpoint"},
+					Util:      Util{},
+					UserAgentParsers: UserAgentParsers{
+						ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+						ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+						SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+					},
+				},
+			},
+		},
+	}
+
+	assert := assert.New(t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+
+		actual := NewSharethroughBidder(test.input)
+		assert.Equal(actual, &test.output)
+	}
 }
 
 func TestSuccessMakeRequests(t *testing.T) {
@@ -208,13 +239,6 @@ func TestFailureMakeBids(t *testing.T) {
 				StatusCode: http.StatusInternalServerError,
 			},
 			expected: []error{fmt.Errorf("unexpected status code: %d. Run with request.debug = 1 for more info", http.StatusInternalServerError)},
-		},
-		"Returns error if failed parsing body": {
-			inputResponse: &adapters.ResponseData{
-				StatusCode: http.StatusOK,
-				Body:       []byte(`{ wrong json`),
-			},
-			expected: []error{fmt.Errorf("invalid character 'w' looking for beginning of object key string")},
 		},
 		"Passes by errors from responseToOpenRTB": {
 			inputResponse: &adapters.ResponseData{

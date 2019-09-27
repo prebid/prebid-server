@@ -1,0 +1,13 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "ext": {
+      "bidder": {
+        "id": "sample-id"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    "No impressions in the bid request"
+  ]
+}

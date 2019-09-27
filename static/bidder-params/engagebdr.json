@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "EngageBDR Adapter Params",
+  "description": "A schema which validates params accepted by the EngageBDR adapter",
+  "type": "object",
+  "properties": {
+    "sspid": {
+      "type": "string",
+      "description": "SSPID parameter",
+      "pattern": "^[0-9]+$"
+    }
+  },
+  "required": ["sspid"]
+}
