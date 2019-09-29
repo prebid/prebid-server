@@ -70,7 +70,17 @@ func NewRateConverterWithNotifier(
 		return rc
 	}
 
-	rc.Update()                   // Make sure to populate data before to return the converter
+	// Make sure to populate data before to return the converter
+	err := rc.Update()
+	// If unable to fetch currency rates from "syncSourceURL" then log the error
+	// and move on without supporting currency conversions.
+	if err != nil {
+		glog.Errorf("Error fetching currency rates from %s. Currency conversions won't be supported. %s",
+			syncSourceURL, err.Error())
+		rc.constantRates = NewConstantRates()
+		return rc
+	}
+
 	go rc.startPeriodicFetching() // Start periodic ticking
 
 	return rc
@@ -172,6 +182,11 @@ func (rc *RateConverter) Rates() Conversions {
 
 // GetInfo returns setup information about the converter
 func (rc *RateConverter) GetInfo() ConverterInfo {
+	currencyRates := rc.Rates()
+	if currencyRates == nil {
+		currencyRates = NewConstantRates()
+	}
+
 	return converterInfo{
 		source:           rc.syncSourceURL,
 		fetchingInterval: rc.fetchingInterval,

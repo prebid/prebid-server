@@ -1,10 +1,10 @@
 package currencies_test
 
 import (
-	"io/ioutil"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,354 +13,236 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFetch_Success(t *testing.T) {
+func getMockRates() []byte {
+	return []byte(`{
+		"dataAsOf":"2018-09-12",
+		"conversions":{
+			"USD":{
+				"GBP":0.77208
+			},
+			"GBP":{
+				"USD":1.2952
+			}
+		}
+	}`)
+}
 
+func formatTestErrorMsg(desc string, message string, args ...interface{}) string {
+	message = fmt.Sprintf(message, args)
+	return fmt.Sprintf("Test Case: %s \n Message: %s", desc, message)
+}
+
+func TestNewRateConverter(t *testing.T) {
 	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(
-				`{
-					"dataAsOf":"2018-09-12",
-					"conversions":{
-						"USD":{
-							"GBP":0.77208
-						},
-						"GBP":{
-							"USD":1.2952
-						}
-					}
-				}`,
-			))
-		}),
-	)
+	mockServerHandler := func(mockResponse []byte, code int) http.Handler {
+		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			rw.WriteHeader(code)
+			rw.Write(mockResponse)
+		})
+	}
 
-	defer mockedHttpServer.Close()
-
-	expectedRates := &currencies.Rates{
-		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
-		Conversions: map[string]map[string]float64{
-			"USD": {
-				"GBP": 0.77208,
-			},
-			"GBP": {
-				"USD": 1.2952,
-			},
+	testCases := []struct {
+		mockResponse     []byte
+		mockResponseCode int
+		updateInterval   int // In seconds
+		fetchURL         string
+		expectedTicks    int
+		description      string
+	}{
+		{
+			mockResponse:     getMockRates(),
+			mockResponseCode: 200,
+			updateInterval:   1,
+			expectedTicks:    1,
+			description:      "Fetching currency rates successfully",
+		},
+		{
+			mockResponse:     []byte(""),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			description:      "Currency rates endpoint returns empty response",
+		},
+		{
+			mockResponse:     []byte("`invalid-json:"),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			description:      "Currency rates endpoint returns invalid json",
+		},
+		{
+			mockResponse:     nil,
+			mockResponseCode: 200,
+			updateInterval:   100,
+			description:      "Currency rates endpoint returns nil response",
+		},
+		{
+			mockResponseCode: 404,
+			updateInterval:   4,
+			description:      "Currency rates endpoint returns 404",
+		},
+		{
+			mockResponseCode: 400,
+			updateInterval:   1,
+			description:      "Currency rates endpoint returns 400",
+		},
+		{
+			mockResponse:     getMockRates(),
+			mockResponseCode: 200,
+			description:      "Fetch interval set to 0",
+		},
+		{
+			fetchURL:    "invalid-url",
+			description: "Invalid currency rates endpoint",
 		},
 	}
 
-	// Execute:
-	beforeExecution := time.Now()
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(24)*time.Hour,
-	)
+	for _, test := range testCases {
+		mockedHttpServer := httptest.NewServer(mockServerHandler(test.mockResponse, test.mockResponseCode))
 
-	// Verify:
-	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
-	assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() should return a time set")
-	assert.True(t, currencyConverter.LastUpdated().After(beforeExecution), "LastUpdated() should be after last update")
-	rates := currencyConverter.Rates()
-	assert.NotNil(t, rates, "Rates() should not return nil")
-	assert.Equal(t, expectedRates, rates, "Rates() doesn't return expected rates")
+		if test.fetchURL == "" {
+			test.fetchURL = mockedHttpServer.URL
+		}
+		// Execute:
+		beforeExecution := time.Now()
+		currencyConverter := currencies.NewRateConverter(
+			&http.Client{},
+			test.fetchURL,
+			time.Duration(test.updateInterval)*time.Second,
+		)
+
+		// Verify:
+		if test.expectedTicks == 0 {
+			// Check for the next 200 milliseconds that no fetch was triggered
+			time.Sleep(200 * time.Millisecond)
+
+			assert.Equal(t, (time.Time{}), currencyConverter.LastUpdated(), formatTestErrorMsg(test.description, "LastUpdated() shouldn't be set"))
+			assert.Equal(t, &currencies.ConstantRates{}, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Conversions.Rates weren't the expected ones"))
+			continue
+		}
+
+		lastUpdated := currencyConverter.LastUpdated()
+		assert.NotEqual(t, (time.Time{}), lastUpdated, formatTestErrorMsg(test.description, "LastUpdated() should return a time set"))
+		assert.True(t, lastUpdated.After(beforeExecution), formatTestErrorMsg(test.description, "LastUpdated() should be after last update"))
+
+		rates := &currencies.Rates{}
+		err := json.Unmarshal(test.mockResponse, rates)
+		assert.NoError(t, err, formatTestErrorMsg(test.description, "JSON unmarshalling of conversions failed"))
+
+		assert.Equal(t, rates, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Rates() doesn't return expected rates"))
+
+		// Check for the next 1 second that no fetch was triggered
+		time.Sleep(500 * time.Millisecond)
+		assert.Equal(t, lastUpdated, currencyConverter.LastUpdated(), formatTestErrorMsg(test.description, "Currency rates were fetched before the requested duration was passed"))
+	}
 }
 
-func TestFetch_Fail404(t *testing.T) {
-
+func TestNewRateConverterWithNotifier(t *testing.T) {
 	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusNotFound)
-		}),
-	)
+	rates := &currencies.Rates{}
+	err := json.Unmarshal(getMockRates(), rates)
+	assert.NoError(t, err, "JSON unmarshalling of conversions failed")
 
-	defer mockedHttpServer.Close()
+	mockServerHandler := func(mockResponse []byte, code int) http.Handler {
+		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			rw.WriteHeader(code)
+			rw.Write(mockResponse)
+		})
+	}
 
-	// Execute:
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(24)*time.Hour,
-	)
-
-	// Verify:
-	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
-	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
-	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
-}
-
-func TestFetch_FailErrorHttpClient(t *testing.T) {
-
-	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusBadRequest)
-		}),
-	)
-
-	defer mockedHttpServer.Close()
-
-	// Execute:
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(24)*time.Hour,
-	)
-
-	// Verify:
-	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
-	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
-	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
-}
-
-func TestFetch_FailBadSyncURL(t *testing.T) {
-
-	// Setup:
-
-	// Execute:
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		"justaweirdurl",
-		time.Duration(24)*time.Hour,
-	)
-
-	// Verify:
-	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
-	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
-}
-
-func TestFetch_FailBadJSON(t *testing.T) {
-
-	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(
-				`{
-					"dataAsOf":"2018-09-12",
-					"conversions":{
-						"USD":{
-							"GBP":0.77208
-						},
-						"GBP":{
-							"USD":1.2952
-						},
-						"badJsonHere"
-					}
-				}`,
-			))
-		}),
-	)
-
-	defer mockedHttpServer.Close()
-
-	// Execute:
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(24)*time.Hour,
-	)
-
-	// Verify:
-	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
-	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
-	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
-}
-
-func TestFetch_InvalidRemoteResponseContent(t *testing.T) {
-
-	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusOK)
-			rw.Write(nil)
-		}),
-	)
-
-	defer mockedHttpServer.Close()
-
-	// Execute:
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(24)*time.Hour,
-	)
-
-	// Verify:
-	assert.Equal(t, 1, len(calledURLs), "sync URL should have been called %d times but was %d", 1, len(calledURLs))
-	assert.Equal(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated() shouldn't return a time set")
-	assert.Nil(t, currencyConverter.Rates(), "Rates() should return nil")
-}
-
-func TestInit(t *testing.T) {
-
-	// Setup:
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(
-				`{
-					"dataAsOf":"2018-09-12",
-					"conversions":{
-						"USD":{
-							"GBP":0.77208
-						},
-						"GBP":{
-							"USD":1.2952
-						}
-					}
-				}`,
-			))
-		}),
-	)
-
-	// Execute:
-	expectedTicks := 5
-	ticksTimes := []time.Time{}
-	ticks := make(chan int)
-	currencyConverter := currencies.NewRateConverterWithNotifier(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(100)*time.Millisecond,
-		ticks,
-	)
-
-	// Verify:
-	expectedIntervalDuration := time.Duration(100) * time.Millisecond
-	errorMargin := 0.1 // 10% error margin
-	expectedRates := &currencies.Rates{
-		DataAsOf: time.Date(2018, time.September, 12, 0, 0, 0, 0, time.UTC),
-		Conversions: map[string]map[string]float64{
-			"USD": {
-				"GBP": 0.77208,
-			},
-			"GBP": {
-				"USD": 1.2952,
-			},
+	testCases := []struct {
+		mockResponse     []byte
+		mockResponseCode int
+		updateInterval   int
+		fetchURL         string
+		expectedTicks    int
+		description      string
+	}{
+		{
+			mockResponse:     getMockRates(),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			expectedTicks:    5,
+			description:      "Fetching currency rates successfully",
+		},
+		{
+			mockResponse:     []byte(""),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			description:      "Currency rates endpoint returns empty response",
+		},
+		{
+			mockResponse:     []byte("`invalid-json:"),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			description:      "Currency rates endpoint returns invalid json",
+		},
+		{
+			mockResponseCode: 503,
+			updateInterval:   1,
+			description:      "Unable to reach currency rates endpoint",
+		},
+		{
+			mockResponse:     getMockRates(),
+			mockResponseCode: 200,
+			description:      "Fetch interval set to 0",
+		},
+		{
+			fetchURL:    "invalid-url",
+			description: "Invalid currency rates endpoint",
 		},
 	}
 
-	// At each ticks, do couple checks
-	for ticksCount := range ticks {
-		ticksTimes = append(ticksTimes, time.Now())
-		if len(ticksTimes) > 1 {
-			intervalDuration := ticksTimes[len(ticksTimes)-1].Truncate(time.Millisecond).Sub(ticksTimes[len(ticksTimes)-2].Truncate(time.Millisecond))
-			intervalDiff := float64(float64(intervalDuration.Nanoseconds()) / float64(expectedIntervalDuration.Nanoseconds()))
-			assert.False(t, intervalDiff > float64(errorMargin*100), "Interval between ticks should be: %d but was: %d", expectedIntervalDuration, intervalDuration)
+	for _, test := range testCases {
+		ticksTimes := []time.Time{}
+		ticks := make(chan int)
+		mockedHttpServer := httptest.NewServer(mockServerHandler(test.mockResponse, test.mockResponseCode))
+		if test.fetchURL == "" {
+			test.fetchURL = mockedHttpServer.URL
+		}
+		updateInterval := time.Duration(test.updateInterval) * time.Millisecond
+
+		// Execute:
+		currencyConverter := currencies.NewRateConverterWithNotifier(
+			&http.Client{},
+			test.fetchURL,
+			updateInterval,
+			ticks,
+		)
+
+		// Verify:
+
+		// If test.expectedTicks == 0 meaning we expect back constantRates
+		if test.expectedTicks == 0 {
+			assert.NotNil(t, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Rates shouldn't be nil"))
+			assert.Equal(t, &currencies.ConstantRates{}, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Conversions.Rates weren't the expected ones"))
+			continue
 		}
 
-		assert.NotNil(t, currencyConverter.Rates(), "Rates shouldn't be nil")
-		assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), "LastUpdated should be set")
-		rates := currencyConverter.Rates()
-		assert.Equal(t, expectedRates, rates, "Conversions.Rates weren't the expected ones")
+		errorMargin := 0.1 // 10% error margin
 
-		if ticksCount == expectedTicks {
-			currencyConverter.StopPeriodicFetching()
-			return
+		// At each ticks, do couple checks
+		for ticksCount := range ticks {
+			ticksTimes = append(ticksTimes, time.Now())
+			if len(ticksTimes) > 1 {
+				intervalDuration := ticksTimes[len(ticksTimes)-1].Truncate(time.Millisecond).Sub(ticksTimes[len(ticksTimes)-2].Truncate(time.Millisecond))
+				intervalDiff := float64(float64(intervalDuration.Nanoseconds()) / float64(updateInterval.Nanoseconds()))
+				assert.False(t, intervalDiff > float64(errorMargin*100), formatTestErrorMsg(test.description, "Interval between ticks should be: %d but was: %d", updateInterval, intervalDuration))
+			}
+
+			assert.NotNil(t, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Rates shouldn't be nil"))
+			assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), formatTestErrorMsg(test.description, "LastUpdated should be set"))
+			assert.Equal(t, rates, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Conversions.Rates weren't the expected ones"))
+
+			if ticksCount == test.expectedTicks {
+				currencyConverter.StopPeriodicFetching()
+				break
+			}
 		}
+		lastFetched := time.Now()
+
+		// Check for the next 1 second that no fetch was triggered
+		time.Sleep(1 * time.Second)
+		assert.False(t, currencyConverter.LastUpdated().After(lastFetched), formatTestErrorMsg(test.description, "LastUpdated() shouldn't be after `lastFetched` since the periodic fetching is stopped"))
 	}
-}
-
-func TestStop(t *testing.T) {
-
-	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(
-				`{
-					"dataAsOf":"2018-09-12",
-					"conversions":{
-						"USD":{
-							"GBP":0.77208
-						},
-						"GBP":{
-							"USD":1.2952
-						}
-					}
-				}`,
-			))
-		}),
-	)
-
-	// Execute:
-	expectedTicks := 2
-	ticks := make(chan int)
-	currencyConverter := currencies.NewRateConverterWithNotifier(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(100)*time.Millisecond,
-		ticks,
-	)
-
-	// Let the currency converter fetch 5 times before stopping it
-	for ticksCount := range ticks {
-		if ticksCount == expectedTicks {
-			currencyConverter.StopPeriodicFetching()
-			break
-		}
-	}
-	lastFetched := time.Now()
-
-	// Verify:
-	// Check for the next 1 second that no fetch was triggered
-	time.Sleep(1 * time.Second)
-
-	assert.False(t, currencyConverter.LastUpdated().After(lastFetched), "LastUpdated() shouldn't be after `lastFetched` since the periodic fetching is stopped")
-}
-
-func TestInitWithZeroDuration(t *testing.T) {
-
-	// Setup:
-	calledURLs := []string{}
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			calledURLs = append(calledURLs, req.RequestURI)
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(
-				`{
-					"dataAsOf":"2018-09-12",
-					"conversions":{
-						"USD":{
-							"GBP":0.77208
-						},
-						"GBP":{
-							"USD":1.2952
-						}
-					}
-				}`,
-			))
-		}),
-	)
-
-	// Execute:
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(0),
-	)
-
-	// Verify:
-	// Check for the next 1 second that no fetch was triggered
-	time.Sleep(1 * time.Second)
-
-	assert.Equal(t, 0, len(calledURLs), "sync URL shouldn't have been called but was called %d times", 0, len(calledURLs))
-	assert.Equal(t, (time.Time{}), currencyConverter.LastUpdated(), "LastUpdated() shouldn't be set")
-	_, ok := currencyConverter.Rates().(*currencies.ConstantRates)
-	assert.True(t, ok, "Rates should be type of `currencies.ConstantRates`")
 }
 
 func TestRates(t *testing.T) {
@@ -384,19 +266,7 @@ func TestRates(t *testing.T) {
 	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
 		func(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(
-				`{
-					"dataAsOf":"2018-09-12",
-					"conversions":{
-						"USD":{
-							"GBP":0.77208
-						},
-						"GBP":{
-							"USD":1.2952
-						}
-					}
-				}`,
-			))
+			rw.Write([]byte(getMockRates()))
 		}),
 	)
 
@@ -431,30 +301,6 @@ func TestRates(t *testing.T) {
 	}
 }
 
-func TestRates_EmptyRates(t *testing.T) {
-
-	// Setup:
-	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
-		func(rw http.ResponseWriter, req *http.Request) {
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(""))
-		}),
-	)
-
-	// Execute:
-	// Will try to fetch directly on method call but will fail
-	currencyConverter := currencies.NewRateConverter(
-		&http.Client{},
-		mockedHttpServer.URL,
-		time.Duration(100)*time.Millisecond,
-	)
-	defer currencyConverter.StopPeriodicFetching()
-	rates := currencyConverter.Rates()
-
-	// Verify:
-	assert.Nil(t, rates, "rates should be nil")
-}
-
 func TestRace(t *testing.T) {
 
 	// This test is checking that no race conditions appear in rate converter.
@@ -462,29 +308,19 @@ func TestRace(t *testing.T) {
 	// and rates while the rate converter is also updating periodically.
 
 	// Setup:
-	// Using an HTTP client mock preventing any http client overload while using
-	// very small update intervals (less than 50ms) in this test.
-	// See #722
-	mockedHttpClient := &mockHttpClient{
-		responseBody: `{
-			"dataAsOf":"2018-09-12",
-			"conversions":{
-				"USD":{
-					"GBP":0.77208
-				},
-				"GBP":{
-					"USD":1.2952
-				}
-			}
-		}`,
-	}
+	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
+		func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(getMockRates()))
+		}),
+	)
 
 	// Execute:
 
 	// Create a rate converter which will be fetching new values every 10 ms
 	currencyConverter := currencies.NewRateConverter(
-		mockedHttpClient,
-		"currency.fake.com",
+		&http.Client{},
+		mockedHttpServer.URL,
 		time.Duration(10)*time.Millisecond,
 	)
 	defer currencyConverter.StopPeriodicFetching()
@@ -529,17 +365,4 @@ func TestRace(t *testing.T) {
 		dones[i] <- true
 	}
 	wg.Wait()
-}
-
-// mockHttpClient is a simple http client mock returning a constant response body
-type mockHttpClient struct {
-	responseBody string
-}
-
-func (m *mockHttpClient) Do(req *http.Request) (*http.Response, error) {
-	return &http.Response{
-		Status:     "200 OK",
-		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(strings.NewReader(m.responseBody)),
-	}, nil
 }
