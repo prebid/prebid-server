@@ -53,7 +53,9 @@
               "id": "test-imp-id",
               "tagid": "pos2",
               "banner": {
-                "format": [{"w": 728, "h": 90}]
+                "format": [{"w": 728, "h": 90}],
+                "w": 728,
+                "h": 90
               },
               "ext": {
                 "bidder": {

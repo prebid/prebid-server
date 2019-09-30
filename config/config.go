@@ -57,6 +57,8 @@ type Configuration struct {
 	// Array of blacklisted accounts that is used to create the hash table BlacklistedAcctMap so Account.ID's can be instantly accessed.
 	BlacklistedAccts   []string `mapstructure:"blacklisted_accts,flow"`
 	BlacklistedAcctMap map[string]bool
+	// Is publisher/account ID required to be submitted in the OpenRTB2 request
+	AccountRequired bool `mapstructure:"account_required"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -309,10 +311,11 @@ func (cfg *Metrics) validate(errs configErrors) configErrors {
 }
 
 type InfluxMetrics struct {
-	Host     string `mapstructure:"host"`
-	Database string `mapstructure:"database"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Host               string `mapstructure:"host"`
+	Database           string `mapstructure:"database"`
+	Username           string `mapstructure:"username"`
+	Password           string `mapstructure:"password"`
+	MetricSendInterval int    `mapstructure:"metric_send_interval"`
 }
 
 type PrometheusMetrics struct {
@@ -544,6 +547,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
 	v.SetDefault("metrics.influxdb.password", "")
+	v.SetDefault("metrics.influxdb.metric_send_interval", 20)
 	v.SetDefault("metrics.prometheus.port", 0)
 	v.SetDefault("metrics.prometheus.namespace", "")
 	v.SetDefault("metrics.prometheus.subsystem", "")
@@ -676,6 +680,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("default_request.alias_info", false)
 	v.SetDefault("blacklisted_apps", []string{""})
 	v.SetDefault("blacklisted_accts", []string{""})
+	v.SetDefault("account_required", false)
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

@@ -2,6 +2,7 @@ package verizonmedia
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -71,7 +72,11 @@ func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 
 	siteCopy := *request.Site
 	request.Site = &siteCopy
-	changeRequestForBidService(request, &verizonMediaExt)
+	if err := changeRequestForBidService(request, &verizonMediaExt); err != nil {
+		errors = append(errors, err)
+		return nil, errors
+	}
+
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		errors = append(errors, err)
@@ -160,13 +165,38 @@ func getImpInfo(impId string, imps []openrtb.Imp) (bool, openrtb_ext.BidType) {
 	return exists, mediaType
 }
 
-func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) {
+func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) error {
 	if request.Imp[0].TagID == "" {
 		request.Imp[0].TagID = extension.Pos
 	}
 	if request.Site.ID == "" {
 		request.Site.ID = extension.Dcn
 	}
+
+	if request.Imp[0].Banner == nil {
+		return nil
+	}
+
+	banner := *request.Imp[0].Banner
+	request.Imp[0].Banner = &banner
+
+	if banner.W != nil && banner.H != nil {
+		if *banner.W == 0 || *banner.H == 0 {
+			return errors.New(fmt.Sprintf("Invalid sizes provided for Banner %dx%d", *banner.W, *banner.H))
+		}
+		return nil
+	}
+
+	if len(banner.Format) == 0 {
+		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+	}
+
+	banner.W = new(uint64)
+	*banner.W = banner.Format[0].W
+	banner.H = new(uint64)
+	*banner.H = banner.Format[0].H
+
+	return nil
 }
 
 func NewVerizonMediaAdapter(config *adapters.HTTPAdapterConfig, uri string) *VerizonMediaAdapter {

@@ -150,14 +150,19 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	labels.PubID = effectivePubID(req.Site.Publisher)
 	// Blacklist account now that we have resolved the value
-	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
-		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
-		w.WriteHeader(http.StatusBadRequest)
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
+		erVal := errortypes.DecodeError(acctIdErr)
+		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		} else { //erVal == errortypes.AcctRequiredCode
+			w.WriteHeader(http.StatusBadRequest)
+		}
+		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		ao.Errors = append(ao.Errors, errL...)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 

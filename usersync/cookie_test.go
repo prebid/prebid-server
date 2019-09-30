@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -402,11 +403,41 @@ func newTestCookie() (*PBSCookie, int) {
 func writeThenRead(cookie *PBSCookie, maxCookieSize int) *PBSCookie {
 	w := httptest.NewRecorder()
 	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: maxCookieSize}
-	cookie.SetCookieOnResponse(w, hostCookie, 90*24*time.Hour)
+	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
 	writtenCookie := w.HeaderMap.Get("Set-Cookie")
 
 	header := http.Header{}
 	header.Add("Cookie", writtenCookie)
 	request := http.Request{Header: header}
 	return ParsePBSCookieFromRequest(&request, hostCookie)
+}
+
+func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
+	cookie := newSampleCookie()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
+	req.Header.Set("User-Agent", ua)
+	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
+	cookie.SetCookieOnResponse(w, true, hostCookie, 90*24*time.Hour)
+	writtenCookie := w.HeaderMap.Get("Set-Cookie")
+	t.Log("Set-Cookie is: ", writtenCookie)
+	if !strings.Contains(writtenCookie, "SSCookie=1") {
+		t.Error("Set-Cookie should contain SSCookie=1")
+	}
+}
+
+func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
+	cookie := newSampleCookie()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36"
+	req.Header.Set("User-Agent", ua)
+	hostCookie := &config.HostCookie{Domain: "mock-domain", MaxCookieSizeBytes: 0}
+	cookie.SetCookieOnResponse(w, false, hostCookie, 90*24*time.Hour)
+	writtenCookie := w.HeaderMap.Get("Set-Cookie")
+	t.Log("Set-Cookie is: ", writtenCookie)
+	if strings.Contains(writtenCookie, "SameSite=none") {
+		t.Error("Set-Cookie should not contain SameSite=none")
+	}
 }

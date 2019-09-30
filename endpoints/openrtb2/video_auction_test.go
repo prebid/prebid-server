@@ -107,7 +107,7 @@ func TestCreateBidExtension(t *testing.T) {
 	})
 
 	videoRequest := openrtb_ext.BidRequestVideo{
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 			Publisher:       "",
 		},
@@ -139,7 +139,7 @@ func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
 	durationRange = append(durationRange, 30)
 
 	videoRequest := openrtb_ext.BidRequestVideo{
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 			Publisher:       "",
 		},
@@ -224,7 +224,7 @@ func TestVideoEndpointValidationsPositive(t *testing.T) {
 		App: &openrtb.App{
 			Bundle: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -262,7 +262,7 @@ func TestVideoEndpointValidationsCritical(t *testing.T) {
 			RequireExactDuration: true,
 			Pods:                 pods,
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 0,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -336,7 +336,7 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 		App: &openrtb.App{
 			Bundle: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -409,7 +409,7 @@ func TestVideoEndpointValidationsSiteAndApp(t *testing.T) {
 		Site: &openrtb.Site{
 			ID: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -464,7 +464,7 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 		Site: &openrtb.Site{
 			Domain: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
