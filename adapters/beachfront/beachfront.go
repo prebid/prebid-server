@@ -18,8 +18,7 @@ const Seat = "beachfront"
 const BidCapacity = 5
 
 const bannerEndpoint = "https://display.bfmio.com/prebid_display"
-// const videoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
-const videoEndpoint = "http://localhost/fake.php?exchange_id"
+const videoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
 
 const nurlVideoEndpointSuffix = "&prebidserver"
 
@@ -624,7 +623,12 @@ func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string,
 
 func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
-	return strings.TrimSuffix(chunky[2], ":")
+	if len(chunky) > 1 {
+
+		return strings.TrimSuffix(chunky[2], ":")
+	}
+
+	return ""
 }
 
 func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
