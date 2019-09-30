@@ -18,7 +18,8 @@ const Seat = "beachfront"
 const BidCapacity = 5
 
 const bannerEndpoint = "https://display.bfmio.com/prebid_display"
-const videoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
+// const videoEndpoint = "https://reachms.bfmio.com/bid.json?exchange_id"
+const videoEndpoint = "http://localhost/fake.php?exchange_id"
 
 const nurlVideoEndpointSuffix = "&prebidserver"
 
@@ -520,14 +521,25 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	for i := 0; i < len(bids); i++ {
 
-		if xtrnal.ID != "" && int(xtrnal.Imp[i].Video.MaxDuration) > 0 {
+		var dur beachfrontVideoBidExtension
+		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil {
+
+			var impVideo openrtb_ext.ExtBidPrebidVideo
+			impVideo.Duration = int(dur.Duration)
+
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:      &bids[i],
+				BidType:  getBidType(externalRequest),
+				BidVideo: &impVideo,
+			})
+		} else if xtrnal.ID != "" && int(xtrnal.Imp[i].Video.MaxDuration) > 0 {
 
 			var impVideo openrtb_ext.ExtBidPrebidVideo
 			impVideo.Duration = int(xtrnal.Imp[i].Video.MaxDuration)
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bids[i],
-				BidType: getBidType(externalRequest),
+				Bid:      &bids[i],
+				BidType:  getBidType(externalRequest),
 				BidVideo: &impVideo,
 			})
 		} else {
@@ -589,8 +601,7 @@ func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string,
 
 	var errs = make([]error, 0)
 
-
-	if uri[len(uri)-len(nurlVideoEndpointSuffix):len(uri)] == nurlVideoEndpointSuffix {
+	if uri[len(uri)-len(nurlVideoEndpointSuffix):] == nurlVideoEndpointSuffix {
 
 		for i := 0; i < len(bids); i++ {
 			crid := extractNurlVideoCrid(bids[i].NURL)
