@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"github.com/golang/glog"
 	"net/http"
 	"time"
 
@@ -17,6 +18,17 @@ import (
 func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+		glog.Info("************ In NewSetUIDEndpoint")
+		glog.Info("************ Request: %v", r)
+		glog.Info("************ r.Proto: %v", r.Proto)
+		glog.Info("************ r.RequestURI: %v", r.RequestURI)
+		glog.Info("************ r.URL: %s", r.URL)
+		glog.Info("************ r.URL.Scheme: %s", r.URL.Scheme)
+		glog.Info("************ r.Header: %s", r.Header)
+		glog.Info("************ r.TLS: %s", r.TLS)
+		glog.Info("************ r.RemoteAddr: %s", r.RemoteAddr)
+
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
 			Errors: make([]error, 0),
