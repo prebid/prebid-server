@@ -90,8 +90,10 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	var height, width uint64
 	if len(strImpParams.IframeSize) >= 2 {
 		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
-	} else {
+	} else if imp.Banner != nil {
 		height, width = s.Util.getPlacementSize(imp.Banner.Format)
+	} else {
+		height, width = 1, 1
 	}
 
 	jsonBody, err := (StrBodyHelper{Clock: s.Util.getClock()}).buildBody(request)
