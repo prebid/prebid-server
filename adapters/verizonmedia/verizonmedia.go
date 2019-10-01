@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
-	"net/http"
 )
 
 type VerizonMediaAdapter struct {
@@ -25,8 +26,8 @@ func (a *VerizonMediaAdapter) SkipNoCookies() bool {
 }
 
 func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
 	errors := make([]error, 0, 1)
+
 	if len(request.Imp) == 0 {
 		err := &errortypes.BadInput{
 			Message: "No impression in the bid request",
@@ -35,68 +36,82 @@ func (a *VerizonMediaAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo 
 		return nil, errors
 	}
 
-	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
-	if err != nil {
-		err = &errortypes.BadInput{
-			Message: "ext.bidder not provided",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
-	var verizonMediaExt openrtb_ext.ExtImpVerizonMedia
-	err = json.Unmarshal(bidderExt.Bidder, &verizonMediaExt)
-	if err != nil {
-		err = &errortypes.BadInput{
-			Message: err.Error(),
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
-
-	if verizonMediaExt.Dcn == "" {
-		err = &errortypes.BadInput{
-			Message: "Missing param dcn",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
-
-	if verizonMediaExt.Pos == "" {
-		err = &errortypes.BadInput{
-			Message: "Missing param pos",
-		}
-		errors = append(errors, err)
-		return nil, errors
-	}
-
-	siteCopy := *request.Site
-	request.Site = &siteCopy
-	if err := changeRequestForBidService(request, &verizonMediaExt); err != nil {
-		errors = append(errors, err)
-		return nil, errors
-	}
-
-	reqJSON, err := json.Marshal(request)
-	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
-	}
-
-	thisURI := a.URI
-
+	reqs := make([]*adapters.RequestData, 0, len(request.Imp))
 	headers := http.Header{}
+
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Set("User-Agent", request.Device.UA)
 	headers.Add("x-openrtb-version", "2.5")
 
-	return []*adapters.RequestData{{
-		Method:  "POST",
-		Uri:     thisURI,
-		Body:    reqJSON,
-		Headers: headers,
-	}}, errors
+	if request.Device != nil && request.Device.UA != "" {
+		headers.Set("User-Agent", request.Device.UA)
+	}
+
+	for idx, imp := range request.Imp {
+		var bidderExt adapters.ExtImpBidder
+		err := json.Unmarshal(imp.Ext, &bidderExt)
+		if err != nil {
+			err = &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%d: ext.bidder not provided", idx),
+			}
+			errors = append(errors, err)
+			continue
+		}
+
+		var verizonMediaExt openrtb_ext.ExtImpVerizonMedia
+		err = json.Unmarshal(bidderExt.Bidder, &verizonMediaExt)
+		if err != nil {
+			err = &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%d: %s", idx, err.Error()),
+			}
+			errors = append(errors, err)
+			continue
+		}
+
+		if verizonMediaExt.Dcn == "" {
+			err = &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%d: missing param dcn", idx),
+			}
+			errors = append(errors, err)
+			continue
+		}
+
+		if verizonMediaExt.Pos == "" {
+			err = &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%d: missing param pos", idx),
+			}
+			errors = append(errors, err)
+			continue
+		}
+
+		// Split up multi-impression requests into multiple requests so that
+		// each split request is only associated to a single impression
+		reqCopy := *request
+		reqCopy.Imp = []openrtb.Imp{imp}
+
+		siteCopy := *request.Site
+		reqCopy.Site = &siteCopy
+
+		if err := changeRequestForBidService(&reqCopy, &verizonMediaExt); err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		reqJSON, err := json.Marshal(&reqCopy)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		reqs = append(reqs, &adapters.RequestData{
+			Method:  "POST",
+			Uri:     a.URI,
+			Body:    reqJSON,
+			Headers: headers,
+		})
+	}
+
+	return reqs, errors
 }
 
 func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -166,12 +181,9 @@ func getImpInfo(impId string, imps []openrtb.Imp) (bool, openrtb_ext.BidType) {
 }
 
 func changeRequestForBidService(request *openrtb.BidRequest, extension *openrtb_ext.ExtImpVerizonMedia) error {
-	if request.Imp[0].TagID == "" {
-		request.Imp[0].TagID = extension.Pos
-	}
-	if request.Site.ID == "" {
-		request.Site.ID = extension.Dcn
-	}
+	/* Always override the tag ID and site ID of the request */
+	request.Imp[0].TagID = extension.Pos
+	request.Site.ID = extension.Dcn
 
 	if request.Imp[0].Banner == nil {
 		return nil
