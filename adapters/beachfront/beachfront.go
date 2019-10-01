@@ -483,6 +483,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 	var errs []error
+	var bidResponse *adapters.BidderResponse
 
 	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
 		return nil, nil
@@ -516,17 +517,17 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, errs
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 
 	for i := 0; i < len(bids); i++ {
 
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &bids[i],
-				BidType: getBidType(externalRequest),
-			})
+		bidResponse = adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 
-
+		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+			Bid:     &bids[i],
+			BidType: getBidType(externalRequest),
+		})
 	}
+
 
 	return bidResponse, errs
 }
@@ -601,7 +602,6 @@ func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string,
 func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
 	if len(chunky) > 1 {
-
 		return strings.TrimSuffix(chunky[2], ":")
 	}
 
