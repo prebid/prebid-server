@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 const minChromeVersion = 53
@@ -32,9 +33,18 @@ type UtilityInterface interface {
 	isAtMinSafariVersion(string, *regexp.Regexp) bool
 
 	parseDomain(string) string
+	getClock() ClockInterface
 }
 
-type Util struct{}
+type ClockInterface interface {
+	now() time.Time
+}
+
+type Clock struct{}
+
+type Util struct {
+	Clock ClockInterface
+}
 
 type userExt struct {
 	Consent string                   `json:"consent,omitempty"`
@@ -48,10 +58,11 @@ type userInfo struct {
 }
 
 func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
+	landingTime := u.Clock.now()
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
 
 	tmplBody := `
-		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}" />
+		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}&adReceivedAt={{.LandingTime}}" />
 
 		<div data-str-native-key="{{.Pkey}}" data-stx-response-name="{{.StrRespId}}"></div>
 	 	<script>var {{.StrRespId}} = "{{.B64EncodedJson}}"</script>
@@ -96,11 +107,13 @@ func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethro
 		Pkey           string
 		StrRespId      template.JS
 		B64EncodedJson string
+		LandingTime    string
 	}{
 		template.JS(strResp.AdServerRequestID),
 		params.Pkey,
 		template.JS(strRespId),
 		b64EncodedJson,
+		landingTime.Format(time.RFC3339Nano),
 	})
 	if err != nil {
 		return "", err
@@ -232,4 +245,12 @@ func (u Util) parseDomain(fullUrl string) string {
 	}
 
 	return domain
+}
+
+func (u Util) getClock() ClockInterface {
+	return u.Clock
+}
+
+func (c Clock) now() time.Time {
+	return time.Now().UTC()
 }

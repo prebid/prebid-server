@@ -6,23 +6,24 @@ import (
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 type MockUtil struct {
-	mockCanAutoPlayVideo  func() bool
-	mockGdprApplies       func() bool
-	mockGdprConsentString func() string
-	mockGenerateHBUri     func() string
-	mockGetPlacementSize  func() (uint64, uint64)
+	mockCanAutoPlayVideo func() bool
+	mockGdprApplies      func() bool
+	mockGetPlacementSize func() (uint64, uint64)
+	mockParseUserInfo    func() userInfo
 	UtilityInterface
 }
 
-func (m MockUtil) canAutoPlayVideo(userAgent string) bool {
+func (m MockUtil) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) bool {
 	return m.mockCanAutoPlayVideo()
 }
 
@@ -30,16 +31,24 @@ func (m MockUtil) gdprApplies(request *openrtb.BidRequest) bool {
 	return m.mockGdprApplies()
 }
 
-func (m MockUtil) gdprConsentString(bidRequest *openrtb.BidRequest) string {
-	return m.mockGdprConsentString()
-}
-
-func (m MockUtil) generateHBUri(baseUrl string, params StrAdSeverParams, app *openrtb.App) string {
-	return m.mockGenerateHBUri()
-}
-
 func (m MockUtil) getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
 	return m.mockGetPlacementSize()
+}
+
+func (m MockUtil) parseUserInfo(user *openrtb.User) (ui userInfo) {
+	return m.mockParseUserInfo()
+}
+
+func (m MockUtil) getClock() ClockInterface {
+	return MockClock{}
+}
+
+type MockClock struct {
+	ClockInterface
+}
+
+func (m MockClock) now() time.Time {
+	return time.Date(2019, 9, 12, 11, 29, 0, 123456, time.UTC)
 }
 
 func assertRequestDataEquals(t *testing.T, testName string, expected *adapters.RequestData, actual *adapters.RequestData) {
@@ -85,14 +94,49 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 					IP: "127.0.0.1",
 				},
 				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
+				BAdv: []string{"domain1.com", "domain2.com"},
+				TMax: 700,
 			},
 			inputDom: "http://a.domain.com",
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
-				Body:   nil,
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":700,"deadline":"2019-09-12T11:29:00.700123456Z"}`),
 				Headers: http.Header{
-					"Content-Type":    []string{"text/plain;charset=utf-8"},
+					"Content-Type":    []string{"application/json;charset=utf-8"},
+					"Accept":          []string{"application/json"},
+					"Origin":          []string{"http://a.domain.com"},
+					"Referer":         []string{"http://a.domain.com/page"},
+					"User-Agent":      []string{"Android Chome/60"},
+					"X-Forwarded-For": []string{"127.0.0.1"},
+				},
+			},
+		},
+		"Generates width/height if not provided": {
+			inputImp: openrtb.Imp{
+				ID:  "abc",
+				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true} }`),
+				Banner: &openrtb.Banner{
+					Format: []openrtb.Format{{H: 30, W: 40}},
+				},
+			},
+			inputReq: &openrtb.BidRequest{
+				App: &openrtb.App{Ext: []byte(`{}`)},
+				Device: &openrtb.Device{
+					UA: "Android Chome/60",
+					IP: "127.0.0.1",
+				},
+				Site: &openrtb.Site{Page: "http://a.domain.com/page"},
+				BAdv: []string{"domain1.com", "domain2.com"},
+				TMax: 700,
+			},
+			inputDom: "http://a.domain.com",
+			expected: &adapters.RequestData{
+				Method: "POST",
+				Uri:    "http://abc.com",
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":700,"deadline":"2019-09-12T11:29:00.700123456Z"}`),
+				Headers: http.Header{
+					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
 					"Origin":          []string{"http://a.domain.com"},
 					"Referer":         []string{"http://a.domain.com/page"},
@@ -109,7 +153,14 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		},
 	}
 
-	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: Util{}, UserAgentParsers: UserAgentParsers{
+	mockUtil := MockUtil{
+		mockCanAutoPlayVideo: func() bool { return true },
+		mockGdprApplies:      func() bool { return true },
+		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
+		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
+	}
+
+	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: mockUtil, UserAgentParsers: UserAgentParsers{
 		ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
 		ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
 		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
@@ -120,6 +171,64 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		if outputError != nil {
 			t.Errorf("Expected no errors, got %s\n", outputError)
 		}
+	}
+}
+
+func TestFailureRequestFromOpenRTB(t *testing.T) {
+	tests := map[string]struct {
+		inputImp      openrtb.Imp
+		inputReq      *openrtb.BidRequest
+		expectedError string
+	}{
+		"Fails when unable to parse imp.Ext": {
+			inputImp: openrtb.Imp{
+				Ext: []byte(`{"abc`),
+			},
+			inputReq: &openrtb.BidRequest{
+				Device: &openrtb.Device{UA: "A", IP: "ip"},
+				Site:   &openrtb.Site{Page: "page"},
+			},
+			expectedError: `unexpected end of JSON input`,
+		},
+		"Fails when unable to parse imp.Ext.Bidder": {
+			inputImp: openrtb.Imp{
+				Ext: []byte(`{ "bidder": "{ abc" }`),
+			},
+			inputReq: &openrtb.BidRequest{
+				Device: &openrtb.Device{UA: "A", IP: "ip"},
+				Site:   &openrtb.Site{Page: "page"},
+			},
+			expectedError: `json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpSharethrough`,
+		},
+	}
+
+	mockUriHelper := MockStrUriHelper{
+		mockBuildUri: func() string {
+			return "http://abc.com"
+		},
+	}
+
+	mockUtil := MockUtil{
+		mockCanAutoPlayVideo: func() bool { return true },
+		mockGdprApplies:      func() bool { return true },
+		mockGetPlacementSize: func() (uint64, uint64) { return 100, 200 },
+		mockParseUserInfo:    func() userInfo { return userInfo{Consent: "ok", TtdUid: "ttduid", StxUid: "stxuid"} },
+	}
+
+	adServer := StrOpenRTBTranslator{UriHelper: mockUriHelper, Util: mockUtil, UserAgentParsers: UserAgentParsers{
+		ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
+		ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
+		SafariVersion:    regexp.MustCompile(`Version\/(?P<safariVersion>\d+)`),
+	}}
+
+	assert := assert.New(t)
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		output, outputError := adServer.requestFromOpenRTB(test.inputImp, test.inputReq, "anything")
+
+		assert.Nil(output)
+		assert.NotNil(outputError)
+		assert.Equal(test.expectedError, outputError.Error())
 	}
 }
 
@@ -195,7 +304,7 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 		},
 	}
 
-	adServer := StrOpenRTBTranslator{Util: Util{}, UriHelper: StrUriHelper{}}
+	adServer := StrOpenRTBTranslator{Util: Util{Clock: MockClock{}}, UriHelper: StrUriHelper{}}
 	for testName, test := range tests {
 		outputSuccess, outputErrors := adServer.responseToOpenRTB(test.inputStrResp, test.inputButlerReq)
 		assertBidderResponseEquals(t, testName, *test.expectedSuccess, *outputSuccess)
@@ -264,6 +373,47 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 	}
 }
 
+func TestBuildBody(t *testing.T) {
+	tests := map[string]struct {
+		inputRequest  *openrtb.BidRequest
+		expectedJson  []byte
+		expectedError error
+	}{
+		"Empty input: skips badomains, tmax default to 10 sec and sets deadline accordingly": {
+			inputRequest: &openrtb.BidRequest{
+				BAdv: nil,
+			},
+			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
+			expectedError: nil,
+		},
+		"Sets badv as list of domains according to Badv (tmax default to 10 sec and sets deadline accordingly)": {
+			inputRequest: &openrtb.BidRequest{
+				BAdv: []string{"dom1.com", "dom2.com"},
+			},
+			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"], "tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
+			expectedError: nil,
+		},
+		"Sets tmax and deadline according to Tmax": {
+			inputRequest: &openrtb.BidRequest{
+				TMax: 500,
+			},
+			expectedJson:  []byte(`{"tmax": 500, "deadline":"2019-09-12T11:29:00.500123456Z"}`),
+			expectedError: nil,
+		},
+	}
+
+	assert := assert.New(t)
+	helper := StrBodyHelper{Clock: MockClock{}}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		outputJson, outputError := helper.buildBody(test.inputRequest)
+
+		assert.JSONEq(string(test.expectedJson), string(outputJson))
+		assert.Equal(test.expectedError, outputError)
+	}
+}
+
 func TestBuildUri(t *testing.T) {
 	tests := map[string]struct {
 		inputParams StrAdSeverParams
@@ -297,11 +447,12 @@ func TestBuildUri(t *testing.T) {
 				"strVersion=" + strconv.FormatInt(strVersion, 10),
 				"ttduid=ttd123",
 				"stxuid=stx123",
+				"adRequestAt=2019-09-12T11%3A29%3A00.000123456Z",
 			},
 		},
 	}
 
-	uriHelper := StrUriHelper{BaseURI: "http://abc.com"}
+	uriHelper := StrUriHelper{BaseURI: "http://abc.com", Clock: MockClock{}}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 		output := uriHelper.buildUri(test.inputParams)
@@ -376,8 +527,8 @@ func TestFailParseUri(t *testing.T) {
 		expectedError string
 	}{
 		"Fails decoding if unable to parse URI": {
-			input:         "wrong URI",
-			expectedError: `strconv.ParseUint: parsing "": invalid syntax`,
+			input:         "test:/#$%?#",
+			expectedError: `parse test:/#$%?#: invalid URL escape "%?#"`,
 		},
 		"Fails decoding if height not provided": {
 			input:         "http://abc.com?width=10",
@@ -389,20 +540,15 @@ func TestFailParseUri(t *testing.T) {
 		},
 	}
 
+	assert := assert.New(t)
+
 	uriHelper := StrUriHelper{}
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 		output, actualError := uriHelper.parseUri(test.input)
 
-		if output != nil {
-			t.Errorf("Expected return value nil, got %+v\n", output)
-		}
-		if actualError == nil {
-			t.Errorf("Expected error not to be nil\n")
-			break
-		}
-		if actualError.Error() != test.expectedError {
-			t.Errorf("Expected error '%s', got '%s'\n", test.expectedError, actualError.Error())
-		}
+		assert.Nil(output)
+		assert.NotNil(actualError)
+		assert.Equal(test.expectedError, actualError.Error())
 	}
 }

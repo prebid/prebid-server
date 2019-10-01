@@ -22,7 +22,7 @@ func TestGetAdMarkup(t *testing.T) {
 			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
-				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid" />`,
+				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid&adReceivedAt=2019-09-12T11%3a29%3a00.000123456Z" />`,
 				`<div data-str-native-key="pkey" data-stx-response-name="str_response_bid"></div>`,
 				fmt.Sprintf(`<script>var str_response_bid = "%s"</script>`, base64.StdEncoding.EncodeToString([]byte(`{"bidId": "bid", "adserverRequestId": "arid"}`))),
 			},
@@ -61,11 +61,11 @@ func TestGetAdMarkup(t *testing.T) {
 		var strResp openrtb_ext.ExtImpSharethroughResponse
 		_ = json.Unmarshal(test.inputResponse, &strResp)
 
-		outputSuccess, outputError := Util{}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
+		outputSuccess, outputError := Util{Clock: MockClock{}}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
 		for _, markup := range test.expectedSuccess {
 			assert.Contains(outputSuccess, markup)
 		}
-		assert.Equal(outputError, test.expectedError)
+		assert.Equal(test.expectedError, outputError)
 	}
 }
 
@@ -97,8 +97,8 @@ func TestGetPlacementSize(t *testing.T) {
 		assert := assert.New(t)
 
 		outputHeight, outputWidth := Util{}.getPlacementSize(test.input)
-		assert.Equal(outputHeight, test.expectedHeight)
-		assert.Equal(outputWidth, test.expectedWidth)
+		assert.Equal(test.expectedHeight, outputHeight)
+		assert.Equal(test.expectedWidth, outputWidth)
 	}
 }
 
@@ -107,13 +107,17 @@ type userAgentTest struct {
 	expected bool
 }
 
+type userAgentFailureTest struct {
+	input string
+}
+
 func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
 		output := fn(test.input)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -155,7 +159,7 @@ func TestCanAutoPlayVideo(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.canAutoPlayVideo(test.input, uaParsers)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -232,7 +236,7 @@ func TestIsAtMinChromeVersion(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -262,7 +266,7 @@ func TestIsAtMinChromeIosVersion(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -292,7 +296,7 @@ func TestIsAtMinSafariVersion(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.isAtMinSafariVersion(test.input, regex)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -343,7 +347,7 @@ func TestGdprApplies(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.gdprApplies(test.input)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -391,9 +395,9 @@ func TestParseUserInfo(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.parseUserInfo(test.input)
-		assert.Equal(output.Consent, test.expected.Consent)
-		assert.Equal(output.TtdUid, test.expected.TtdUid)
-		assert.Equal(output.StxUid, test.expected.StxUid)
+		assert.Equal(test.expected.Consent, output.Consent)
+		assert.Equal(test.expected.TtdUid, output.TtdUid)
+		assert.Equal(test.expected.StxUid, output.StxUid)
 	}
 }
 
@@ -421,6 +425,26 @@ func TestParseDomain(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.parseDomain(test.input)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
+	}
+}
+
+func TestGetClock(t *testing.T) {
+	tests := map[string]struct {
+		input    Util
+		expected Clock
+	}{
+		"returns Clock from Utility": {
+			input:    Util{Clock: Clock{}},
+			expected: Clock{},
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		output := test.input.getClock()
+		assert.Equal(test.expected, output)
 	}
 }
