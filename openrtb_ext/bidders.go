@@ -42,6 +42,7 @@ const (
 	BidderImprovedigital BidderName = "improvedigital"
 	BidderIx             BidderName = "ix"
 	BidderLifestreet     BidderName = "lifestreet"
+	BidderLockerDome     BidderName = "lockerdome"
 	BidderMgid           BidderName = "mgid"
 	BidderOpenx          BidderName = "openx"
 	BidderPubmatic       BidderName = "pubmatic"
@@ -87,6 +88,7 @@ var BidderMap = map[string]BidderName{
 	"improvedigital":  BidderImprovedigital,
 	"ix":              BidderIx,
 	"lifestreet":      BidderLifestreet,
+	"lockerdome":      BidderLockerDome,
 	"openx":           BidderOpenx,
 	"mgid":            BidderMgid,
 	"pubmatic":        BidderPubmatic,
