@@ -520,34 +520,11 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 
 	for i := 0; i < len(bids); i++ {
 
-		var dur beachfrontVideoBidExtension
-		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil {
-
-			var impVideo openrtb_ext.ExtBidPrebidVideo
-			impVideo.Duration = int(dur.Duration)
-
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:      &bids[i],
-				BidType:  getBidType(externalRequest),
-				BidVideo: &impVideo,
-			})
-		} else if xtrnal.ID != "" && int(xtrnal.Imp[i].Video.MaxDuration) > 0 {
-
-			var impVideo openrtb_ext.ExtBidPrebidVideo
-			impVideo.Duration = int(xtrnal.Imp[i].Video.MaxDuration)
-
-			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:      &bids[i],
-				BidType:  getBidType(externalRequest),
-				BidVideo: &impVideo,
-			})
-		} else {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bids[i],
 				BidType: getBidType(externalRequest),
 			})
 
-		}
 
 	}
 
