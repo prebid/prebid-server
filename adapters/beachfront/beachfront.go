@@ -287,16 +287,15 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			continue
 		}
 
-		slot := beachfrontSlot{}
-		slot.Id = appid
+		slot := beachfrontSlot{
+			Id:       appid,
+			Slot:     request.Imp[i].ID,
+			Bidfloor: beachfrontExt.BidFloor,
+		}
 
 		if beachfrontExt.BidFloor <= minBidFloor {
 			slot.Bidfloor = 0
-		} else {
-			slot.Bidfloor = beachfrontExt.BidFloor
 		}
-
-		slot.Slot = request.Imp[i].ID
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
@@ -372,12 +371,10 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 func guessDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	if request.Site != nil {
-
 		return openrtb.DeviceTypePersonalComputer
 	}
 
 	return openrtb.DeviceTypeMobileTablet
-
 }
 
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
@@ -443,8 +440,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		imp.Ext = nil
 		imp.Secure = &secure
 
-		// @TODO - ask Alex - when bid floor gets set to 0 here, the request is sent with no bidfloor key. Is that
-		// what we want?
 		if beachfrontExt.BidFloor <= minBidFloor {
 			imp.BidFloor = 0
 		} else {
@@ -516,17 +511,27 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, errs
 	}
 
-
+	var dur beachfrontVideoBidExtension
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
 	for i := 0; i < len(bids); i++ {
 
+		// If we unmarshal without an error, this is an AdM video
+		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil {
+			var impVideo openrtb_ext.ExtBidPrebidVideo
+			impVideo.Duration = int(dur.Duration)
 
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bids[i],
-			BidType: getBidType(externalRequest),
-		})
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:      &bids[i],
+				BidType:  getBidType(externalRequest),
+				BidVideo: &impVideo,
+			})
+		} else {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bids[i],
+				BidType: getBidType(externalRequest),
+			})
+		}
 	}
-
 
 	return bidResponse, errs
 }
@@ -620,7 +625,7 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 
 	if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
 		return beachfrontExt, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBeachfront, err: %s", imp.ID, err),
 		}
 	}
 
