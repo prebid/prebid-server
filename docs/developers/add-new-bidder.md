@@ -33,13 +33,18 @@ Bidder implementations are scattered throughout several files.
 
 Bidder implementations may assume that any params have already been validated against the defined json-schema.
 
-###Long form video support
+### Long form video support
 If bidder is going to support long form video make sure bidder has:
 
-- Field, `bid.bidVideo.PrimaryCategory` can also be called `TypedBid.bid.Cat`. Category from `bid.bidVideo.PrimaryCategory` field should be a string value, translated to Primary ad server format. Category from `TypedBid.bid.Cat` field should be a single string value in string array in IAB format.
+| Field          |Type                           |Description                       
+|----------------|-------------------------------|-----------------------------|
+|bid.bidVideo.PrimaryCategory | string | Category for the bid. Should be able to be translated to Primary ad server format|           
+|TypedBid.bid.Cat | []string | Category for the bid. Should be an array with length 1 containing the value in IAB format|            
+|TypedBid.BidVideo.Duration | int | AD duration in seconds|
+|TypedBid.bid.Price | float | Bid price|
+
+Note: `bid.bidVideo.PrimaryCategory` or `TypedBid.bid.Cat` should be specified.
 To learn more about IAB categories, please refer to this convenience link (not the final official definition): [IAB categories](https://adtagmacros.com/list-of-iab-categories-for-advertisement/)
-- Ad duration in seconds in `TypedBid.BidVideo.Duration` field, int value
-- Bid price in `TypedBid.bid.Price`, float value
 
 ## Test Your Bidder
 
