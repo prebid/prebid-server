@@ -286,7 +286,7 @@ func TestSuccessResponseToOpenRTB(t *testing.T) {
 			inputStrResp: []byte(`{ "adserverRequestId": "arid", "bidId": "bid", "creatives": [{"cpm": 10, "creative": {"campaign_key": "cmpKey", "creative_key": "creaKey", "deal_id": "dealId"}}] }`),
 			expectedSuccess: &adapters.BidderResponse{
 				Bids: []*adapters.TypedBid{{
-					BidType: openrtb_ext.BidTypeNative,
+					BidType: openrtb_ext.BidTypeBanner,
 					Bid: &openrtb.Bid{
 						AdID:   "arid",
 						ID:     "bid",

@@ -130,7 +130,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	bidResponse := adapters.NewBidderResponse()
 
 	bidResponse.Currency = "USD"
-	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
+	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeBanner}
 
 	if len(strResp.Creatives) == 0 {
 		errs = append(errs, &errortypes.BadInput{Message: "No creative provided"})
