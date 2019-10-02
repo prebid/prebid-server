@@ -70,6 +70,89 @@ metrics:
     username: admin
     password: admin1324
     metric_send_interval: 30
+  metrics_collect:
+    active_connections: true
+    connection_accept_errors: true
+    connection_close_errors: true
+    imps_requested: true
+    legacy_imps_requested: true
+    imp: 
+      banner: true
+      video: true
+      audio: true
+      native: true
+    safari_requests: true
+    no_cookie_requests: true
+    app_requests: true
+    safari_no_cookie_requests: true
+    request_time: true
+    amp_no_cookie_requests: true
+    cookie_sync_requests: true
+    usersync: 
+      bad_requests: true
+      opt_outs: true
+      unknown:
+        sets: true
+        gdpr_prevent: true
+    adapter: 
+      cookie_sync:
+        gen: true
+        gdpr_prevent: true
+      usersync:
+        sets: true
+        gdpr_prevent: true
+      no_cookie_requests: true
+      requests:
+        nobid: true
+        gotbids: true
+        badinput: true
+        badserverresponse: true
+        timeout: true
+        failedtorequestbid: true
+        unknown_error: true
+        panic: true
+      request_time: true
+      prices: true
+      adm_bids_received:
+        banner: true
+        video: true
+        audio: true
+        native: true
+      nurl_bids_received:
+        banner: true
+        video: true
+        audio: true
+        native: true
+      bids_received: true
+    requests: 
+      ok:
+        legacy: true
+        openrtb2-web: true
+        openrtb2-app: true
+        amp: true
+        video: true
+      badinput:
+        legacy: true
+        openrtb2-web: true
+        openrtb2-app: true
+        amp: true
+        video: true
+      err:
+        legacy: true
+        openrtb2-web: true
+        openrtb2-app: true
+        amp: true
+        video: true
+      networkerr:
+        legacy: true
+        openrtb2-web: true
+        openrtb2-app: true
+        amp: true
+        video: true
+    stored_request_cache_hit: true
+    stored_imp_cache_hit: true
+    stored_request_cache_miss: true
+    stored_imp_cache_miss: true
 datacache:
   type: postgres
   filename: /usr/db/db.db

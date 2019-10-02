@@ -304,6 +304,7 @@ func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configEr
 type Metrics struct {
 	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
+	Enabled    MetricsCollect    `mapstructure:"metrics_collect"`
 }
 
 func (cfg *Metrics) validate(errs configErrors) configErrors {
@@ -708,4 +709,80 @@ func isValidCookieSize(maxCookieSize int) error {
 		return fmt.Errorf("Configured cookie size is less than allowed minimum size of %d \n", MIN_COOKIE_SIZE_BYTES)
 	}
 	return nil
+}
+
+type MetricsCollect struct {
+	ActiveConnections      bool                          `mapstructure:"active_connections"`
+	ConnectionAcceptErrors bool                          `mapstructure:"connection_accept_errors"`
+	ConnectionCloseErrors  bool                          `mapstructure:"connection_close_errors"`
+	ImpsRequested          bool                          `mapstructure:"imps_requested"`
+	LegacyImpsRequested    bool                          `mapstructure:"legacy_imps_requested"`
+	Imp                    impMetricsCollect             `mapstructure:"imp"`
+	SafariRequests         bool                          `mapstructure:"safari_requests"`
+	NoCookieRequests       bool                          `mapstructure:"no_cookie_requests"`
+	AppRequests            bool                          `mapstructure:"app_requests"`
+	SafariNoCookieRequests bool                          `mapstructure:"safari_no_cookie_requests"`
+	RequestTime            bool                          `mapstructure:"request_time"`
+	AmpNoCookieRequests    bool                          `mapstructure:"amp_no_cookie_requests"`
+	CookieSyncRequests     bool                          `mapstructure:"cookie_sync_requests"`
+	Usersync               usersyncMetricsCollect        `mapstructure:"usersync"`
+	Adapter                adapterMetricsCollect         `mapstructure:"adapter"`
+	Requests               requestStatusesMetricsCollect `mapstructure:"requests"`
+	StoredRequestCacheHit  bool                          `mapstructure:"stored_request_cache_hit"`
+	StoredImpCacheHit      bool                          `mapstructure:"stored_imp_cache_hit"`
+	StoredRequestCacheMiss bool                          `mapstructure:"stored_request_cache_miss"`
+	StoredImpCacheMiss     bool                          `mapstructure:"stored_imp_cache_miss"`
+}
+type impMetricsCollect struct {
+	Banner bool `mapstructure:"banner"`
+	Video  bool `mapstructure:"video"`
+	Audio  bool `mapstructure:"audio"`
+	Native bool `mapstructure:"native"`
+}
+type usersyncMetricsCollect struct {
+	BadRequests bool                       `mapstructure:"bad_requests"`
+	OptOuts     bool                       `mapstructure:"opt_outs"`
+	Unknown     usersyncGDPRMetricsCollect `mapstructure:"unknown"`
+}
+type usersyncGDPRMetricsCollect struct {
+	sets        bool `mapstructure:"sets"`
+	gdprPrevent bool `mapstructure:"gdpr_prevent"`
+}
+type adapterMetricsCollect struct {
+	CookieSync        cookieSyncMetricsCollect   `mapstructure:"cookie_sync"`
+	Usersync          usersyncGDPRMetricsCollect `mapstructure:"usersync"`
+	NoCookie_requests bool                       `mapstructure:"no_cookie_requests"`
+	ReqAdapter        reqAdapterMetricsCollect   `mapstructure:"requests"`
+	RequestTime       bool                       `mapstructure:"request_time"`
+	Prices            bool                       `mapstructure:"prices"`
+	AdmBidsReceived   impMetricsCollect          `mapstructure:"adm_bids_received"`
+	NurlBidsReceived  impMetricsCollect          `mapstructure:"nurl_bids_received"`
+	BidsReceived      bool                       `mapstructure:"bids_received"`
+	RequestsPanic     bool                       `mapstructure:"requests_panic"`
+}
+type cookieSyncMetricsCollect struct {
+	Gen         bool `mapstructure:"gen"`
+	GdprPrevent bool `mapstructure:"gdpr_prevent"`
+}
+type reqAdapterMetricsCollect struct {
+	Nobid              bool `mapstructure:"nobid"`
+	Gotbids            bool `mapstructure:"gotbids"`
+	Badinput           bool `mapstructure:"badinput"`
+	Badserverresponse  bool `mapstructure:"badserverresponse"`
+	Timeout            bool `mapstructure:"timeout"`
+	Failedtorequestbid bool `mapstructure:"failedtorequestbid"`
+	UnknownError       bool `mapstructure:"unknown_error"`
+}
+type reqTypeMetricsCollect struct {
+	Legacy      bool `mapstructure:"legacy"`
+	Openrtb2Web bool `mapstructure:"openrtb2-web"`
+	Openrtb2App bool `mapstructure:"openrtb2-app"`
+	Amp         bool `mapstructure:"amp"`
+	Video       bool `mapstructure:"video"`
+}
+type requestStatusesMetricsCollect struct {
+	StatusOK         reqTypeMetricsCollect `mapstructure:"ok"`
+	StatusBadInput   reqTypeMetricsCollect `mapstructure:"badinput"`
+	StatusErr        reqTypeMetricsCollect `mapstructure:"err"`
+	StatusNetworkErr reqTypeMetricsCollect `mapstructure:"networkerr"`
 }

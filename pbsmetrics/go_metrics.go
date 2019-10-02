@@ -144,33 +144,77 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName) *Metrics {
+func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, en MetricsCollect) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges)
-	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
-	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
-	newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
-	newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
-	newMetrics.LegacyImpMeter = metrics.GetOrRegisterMeter("legacy_imps_requested", registry)
+	if en.activeConnections {
+		newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
+	}
+	if en.connectionAcceptErrors {
+		newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
+	}
+	if en.connectionCloseErrors {
+		newMetrics.ConnectionCloseErrorMeter = metrics.GetOrRegisterMeter("connection_close_errors", registry)
+	}
+	if en.impsRequested {
+		newMetrics.ImpMeter = metrics.GetOrRegisterMeter("imps_requested", registry)
+	}
+	if en.legacyImpsRequested {
+		newMetrics.LegacyImpMeter = metrics.GetOrRegisterMeter("legacy_imps_requested", registry)
+	}
 
-	newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
-	newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
-	newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
-	newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
+	if en.imp.banner {
+		newMetrics.ImpsTypeBanner = metrics.GetOrRegisterMeter("imp_banner", registry)
+	}
+	if en.imp.video {
+		newMetrics.ImpsTypeVideo = metrics.GetOrRegisterMeter("imp_video", registry)
+	}
+	if en.imp.audio {
+		newMetrics.ImpsTypeAudio = metrics.GetOrRegisterMeter("imp_audio", registry)
+	}
+	if en.imp.native {
+		newMetrics.ImpsTypeNative = metrics.GetOrRegisterMeter("imp_native", registry)
+	}
 
-	newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
-	newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
-	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
-	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
-	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
-	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
-	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
-	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
-	newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
+	if en.safariRequests {
+		newMetrics.SafariRequestMeter = metrics.GetOrRegisterMeter("safari_requests", registry)
+	}
+	if en.noCookieRequests {
+		newMetrics.NoCookieMeter = metrics.GetOrRegisterMeter("no_cookie_requests", registry)
+	}
+	if en.appRequests {
+		newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
+	}
+	if en.safariNoCookieRequests {
+		newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
+	}
+	if en.requestTime {
+		newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	}
+	if en.ampNoCookieRequests {
+		newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
+	}
+	if en.cookieSyncRequests {
+		newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
+	}
+	if en.usersync.badRequests {
+		newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
+	}
+	if en.usersync.optOuts {
+		newMetrics.userSyncOptout = metrics.GetOrRegisterMeter("usersync.opt_outs", registry)
+	}
 	for _, a := range exchanges {
-		newMetrics.CookieSyncGen[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gen", string(a)), registry)
-		newMetrics.CookieSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gdpr_prevent", string(a)), registry)
-		newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
-		newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
+		if en.adapter.cookieSync.gen {
+			newMetrics.CookieSyncGen[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gen", string(a)), registry)
+		}
+		if en.adapter.cookieSync.gdprPrevent {
+			newMetrics.CookieSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("cookie_sync.%s.gdpr_prevent", string(a)), registry)
+		}
+		if en.adapter.usersync.sets {
+			newMetrics.userSyncSet[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.sets", string(a)), registry)
+		}
+		if en.adapter.usersync.gdprPrevent {
+			newMetrics.userSyncGDPRPrevent[a] = metrics.GetOrRegisterMeter(fmt.Sprintf("usersync.%s.gdpr_prevent", string(a)), registry)
+		}
 		registerAdapterMetrics(registry, "adapter", string(a), newMetrics.AdapterMetrics[a])
 	}
 	for typ, statusMap := range newMetrics.RequestStatuses {
@@ -224,32 +268,51 @@ func makeBlankMarkupDeliveryMetrics() *MarkupDeliveryMetrics {
 	}
 }
 
-func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics) {
-	am.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), registry)
-	am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
-	am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
-	am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
-	am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+func registerAdapterMetrics(registry metrics.Registry, adapterOrAccount string, exchange string, am *AdapterMetrics, enad adapterMetricsCollect) {
+	if enad.noCookieRequests {
+		am.NoCookieMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.no_cookie_requests", adapterOrAccount, exchange), registry)
+	}
+	if enad.reqAdapter.nobid {
+		am.NoBidMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.nobid", adapterOrAccount, exchange), registry)
+	}
+	if enad.reqAdapter.gotbids {
+		am.GotBidsMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.gotbids", adapterOrAccount, exchange), registry)
+	}
+	if enad.requestTime {
+		am.RequestTimer = metrics.GetOrRegisterTimer(fmt.Sprintf("%[1]s.%[2]s.request_time", adapterOrAccount, exchange), registry)
+	}
+	if enad.prices {
+		am.PriceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("%[1]s.%[2]s.prices", adapterOrAccount, exchange), registry, metrics.NewExpDecaySample(1028, 0.015))
+	}
 	am.MarkupMetrics = map[openrtb_ext.BidType]*MarkupDeliveryMetrics{
-		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner),
-		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo),
-		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio),
-		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative),
+		openrtb_ext.BidTypeBanner: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeBanner, enad.admBidsReceived.banner, enad.nurlBidsReceived.banner),
+		openrtb_ext.BidTypeVideo:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeVideo, enad.admBidsReceived.video, enad.nurlBidsReceived.video),
+		openrtb_ext.BidTypeAudio:  makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeAudio, enad.admBidsReceived.audio, enad.nurlBidsReceived.audio),
+		openrtb_ext.BidTypeNative: makeDeliveryMetrics(registry, adapterOrAccount+"."+exchange, openrtb_ext.BidTypeNative, enad.admBidsReceived.native, enad.nurlBidsReceived.native),
 	}
 	for err := range am.ErrorMeters {
+		if (err == AdapterErrorBadInput && !enad.reqAdapter.badinput) || (err == AdapterErrorBadServerResponse && !enad.reqAdapter.badserverresponse) || (err == AdapterErrorTimeout && !enad.reqAdapter.timeout) || (err == AdapterErrorFailedToRequestBids && !enad.reqAdapter.failedtorequestbid) || (err == AdapterErrorUnknown && !enad.reqAdapter.unknownError) {
+			continue
+		}
 		am.ErrorMeters[err] = metrics.GetOrRegisterMeter(fmt.Sprintf("%s.%s.requests.%s", adapterOrAccount, exchange, err), registry)
 	}
-	if adapterOrAccount != "adapter" {
+	if adapterOrAccount != "adapter" && enad.bidsReceived {
 		am.BidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.bids_received", adapterOrAccount, exchange), registry)
 	}
-	am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
+	if enad.requestsPanic {
+		am.PanicMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("%[1]s.%[2]s.requests.panic", adapterOrAccount, exchange), registry)
+	}
 }
 
-func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType) *MarkupDeliveryMetrics {
-	return &MarkupDeliveryMetrics{
-		AdmMeter:  metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".adm_bids_received", registry),
-		NurlMeter: metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".nurl_bids_received", registry),
+func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openrtb_ext.BidType, admEnabled bool, nurlEnabled bool) *MarkupDeliveryMetrics {
+	var rv *MarkupDeliveryMetrics
+	if admEnabled {
+		rv.AdmMeter = metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".adm_bids_received", registry)
 	}
+	if nurlEnabled {
+		rv.NurlMeter = metrics.GetOrRegisterMeter(prefix+"."+string(bidType)+".nurl_bids_received", registry)
+	}
+	return rv
 }
 
 // getAccountMetrics gets or registers the account metrics for account "id".
