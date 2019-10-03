@@ -86,6 +86,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Banner: &openrtb.Banner{
 					Format: []openrtb.Format{{H: 30, W: 40}},
 				},
+				BidFloor: 1.0,
 			},
 			inputReq: &openrtb.BidRequest{
 				App: &openrtb.App{Ext: []byte(`{}`)},
@@ -101,7 +102,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 			expected: &adapters.RequestData{
 				Method: "POST",
 				Uri:    "http://abc.com",
-				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":700,"deadline":"2019-09-12T11:29:00.700123456Z"}`),
+				Body:   []byte(`{"badv":["domain1.com","domain2.com"],"tmax":700,"deadline":"2019-09-12T11:29:00.700123456Z","bidfloor":1}`),
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
@@ -376,13 +377,13 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 func TestBuildBody(t *testing.T) {
 	tests := map[string]struct {
 		inputRequest  *openrtb.BidRequest
+		inputImp      openrtb.Imp
 		expectedJson  []byte
 		expectedError error
 	}{
 		"Empty input: skips badomains, tmax default to 10 sec and sets deadline accordingly": {
-			inputRequest: &openrtb.BidRequest{
-				BAdv: nil,
-			},
+			inputRequest:  &openrtb.BidRequest{},
+			inputImp:      openrtb.Imp{},
 			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
@@ -390,6 +391,7 @@ func TestBuildBody(t *testing.T) {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
+			inputImp:      openrtb.Imp{},
 			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"], "tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
@@ -397,7 +399,16 @@ func TestBuildBody(t *testing.T) {
 			inputRequest: &openrtb.BidRequest{
 				TMax: 500,
 			},
+			inputImp:      openrtb.Imp{},
 			expectedJson:  []byte(`{"tmax": 500, "deadline":"2019-09-12T11:29:00.500123456Z"}`),
+			expectedError: nil,
+		},
+		"Sets bidfloor according to the Imp object": {
+			inputRequest: &openrtb.BidRequest{},
+			inputImp: openrtb.Imp{
+				BidFloor: 1.23,
+			},
+			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z", "bidfloor":1.23}`),
 			expectedError: nil,
 		},
 	}
@@ -407,7 +418,7 @@ func TestBuildBody(t *testing.T) {
 
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
-		outputJson, outputError := helper.buildBody(test.inputRequest)
+		outputJson, outputError := helper.buildBody(test.inputRequest, test.inputImp)
 
 		assert.JSONEq(string(test.expectedJson), string(outputJson))
 		assert.Equal(test.expectedError, outputError)
