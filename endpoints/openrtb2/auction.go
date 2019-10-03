@@ -1175,8 +1175,8 @@ func effectivePubID(pub *openrtb.Publisher) string {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
 			err := json.Unmarshal(pub.Ext, &pubExt)
-			if err == nil && pubExt.ParentAccount != nil && *pubExt.ParentAccount != "" {
-				return *pubExt.ParentAccount
+			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
+				return *pubExt.Prebid.ParentAccount
 			}
 		}
 		if pub.ID != "" {
