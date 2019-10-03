@@ -24,7 +24,7 @@ func TestCloseErrorMetrics(t *testing.T) {
 
 func doTest(t *testing.T, allowAccept bool, allowClose bool) {
 	reg := metrics.NewRegistry()
-	me := pbsmetrics.NewMetrics(reg, nil)
+	me := pbsmetrics.NewMetrics(reg, nil, false)
 
 	var listener net.Listener = &mockListener{
 		listenSuccess: allowAccept,

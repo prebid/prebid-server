@@ -97,7 +97,9 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
+account_adapter_details: true
 `)
+var emptyConfig = []byte(``)
 
 var invalidAdapterEndpointConfig = []byte(`
 adapters:
@@ -222,8 +224,19 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "account_adapter_details", cfg.AccountAdapterDetails, true)
 }
 
+func TestConfigToCollectAllMetrics(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(emptyConfig))
+	cfg, err := New(v)
+	assert.NoError(t, err, "Setting up config should work but it doesn't")
+
+	cmpBools(t, "account_adapter_details", cfg.AccountAdapterDetails, false)
+}
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{

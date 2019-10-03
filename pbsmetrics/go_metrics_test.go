@@ -9,7 +9,7 @@ import (
 
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, false)
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
@@ -50,7 +50,7 @@ func TestNewMetrics(t *testing.T) {
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, false)
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
@@ -67,7 +67,7 @@ func TestRecordBidType(t *testing.T) {
 
 func TestRecordGDPRRejection(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, false)
 	m.RecordUserIDSet(UserLabels{
 		Action: RequestActionGDPR,
 		Bidder: openrtb_ext.BidderAppnexus,
@@ -80,6 +80,15 @@ func ensureContains(t *testing.T, registry metrics.Registry, name string, metric
 	if inRegistry := registry.Get(name); inRegistry == nil {
 		t.Errorf("No metric in registry at %s.", name)
 	} else if inRegistry != metric {
+		t.Errorf("Bad value stored at metric %s.", name)
+	}
+}
+
+func ensureNotContains(t *testing.T, registry metrics.Registry, name string, metric interface{}) {
+	t.Helper()
+	if inRegistry := registry.Get(name); inRegistry != nil {
+		t.Errorf("No metric in registry at %s.", name)
+	} else if inRegistry == metric {
 		t.Errorf("Bad value stored at metric %s.", name)
 	}
 }
@@ -99,6 +108,29 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
 }
 
+func ensureNotContainsAccountMetrics(t *testing.T, registry metrics.Registry, name string, adapterMetrics *AdapterMetrics) {
+	t.Helper()
+	ensureNotContains(t, registry, "account."+name+".requests", adapterMetrics.PriceHistogram)
+	ensureNotContains(t, registry, "account."+name+".requests", adapterMetrics.RequestTimer)
+	ensureNotContains(t, registry, "account."+name+".requests", adapterMetrics.NoBidMeter)
+	ensureNotContains(t, registry, "account."+name+".requests", adapterMetrics.GotBidsMeter)
+	ensureNotContains(t, registry, "account."+name+".requests", adapterMetrics.BidsReceivedMeter)
+}
+
+func TestDisableAccountMetrics(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, true)
+	if m.accountMetrics != nil {
+		t.Errorf("When Configuration.AccountAdapterDetails is set to true, Metrics.accountMetrics should be nil")
+	}
+}
+
+func TestNotContainsAccountMetrics(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, true)
+	ensureNotContainsAccountMetrics(t, registry, "appnexus", m.AdapterMetrics["appnexus"])
+	ensureNotContainsAccountMetrics(t, registry, "rubicon", m.AdapterMetrics["rubicon"])
+}
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {
 	ensureContains(t, registry, prefix+".banner.adm_bids_received", mdm[openrtb_ext.BidTypeBanner].AdmMeter)
 	ensureContains(t, registry, prefix+".banner.nurl_bids_received", mdm[openrtb_ext.BidTypeBanner].NurlMeter)
