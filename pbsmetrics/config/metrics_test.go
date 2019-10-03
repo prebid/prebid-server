@@ -86,7 +86,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
 	}
-	labels_blacklist := []pbsmetrics.Labels{
+	labelsBlacklist := []pbsmetrics.Labels{
 		{
 			Source:        pbsmetrics.DemandWeb,
 			RType:         pbsmetrics.ReqTypeAMP,
@@ -104,8 +104,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
 		},
 	}
-	for i := 0; i < 2; i++ {
-		metricsEngine.RecordRequest(labels_blacklist[i])
+	for _, label := range labelsBlacklist {
+		metricsEngine.RecordRequest(label)
 	}
 	impTypeLabels.BannerImps = false
 	impTypeLabels.VideoImps = true
@@ -149,6 +149,6 @@ func TestMultiMetricsEngine(t *testing.T) {
 
 func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {
 	if expected != actual {
-		t.Errorf("Error in metric %s: got %d, expected %d.", name, expected, actual)
+		t.Errorf("Error in metric %s: got %d, expected %d.", name, actual, expected)
 	}
 }
