@@ -106,6 +106,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
+					"Accept-Encoding": []string{"gzip"},
 					"Origin":          []string{"http://a.domain.com"},
 					"Referer":         []string{"http://a.domain.com/page"},
 					"User-Agent":      []string{"Android Chome/60"},
@@ -139,6 +140,7 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
+					"Accept-Encoding": []string{"gzip"},
 					"Origin":          []string{"http://a.domain.com"},
 					"Referer":         []string{"http://a.domain.com/page"},
 					"User-Agent":      []string{"Android Chome/60"},
