@@ -180,16 +180,26 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Requ
 	}
 
 	glog.Info("************ In SetCookieOnResponse")
-	glog.Info("************ Request: %v", r)
-	glog.Info("************ r.Proto: %v", r.Proto)
-	glog.Info("************ r.RequestURI: %v", r.RequestURI)
-	glog.Info("************ r.URL: %s", r.URL)
-	glog.Info("************ r.URL.Scheme: %s", r.URL.Scheme)
-	glog.Info("************ r.Header: %s", r.Header)
-	glog.Info("************ r.TLS: %s", r.TLS)
-	glog.Info("************ r.RemoteAddr: %s", r.RemoteAddr)
+	glog.Info("************ Request: ", r)
+	glog.Info("************ r.Proto: ", r.Proto)
+	glog.Info("************ r.RequestURI: ", r.RequestURI)
+	glog.Info("************ r.URL: ", r.URL)
+	glog.Info("************ r.URL.Scheme: ", r.URL.Scheme)
+	glog.Info("************ r.Header: ", r.Header)
+	glog.Info("************ r.TLS: ", r.TLS)
+	glog.Info("************ r.RemoteAddr: ", r.RemoteAddr)
 
-	//httpCookie.Secure = true
+	refererHeader := r.Header.Get("Referer")
+	secParam := r.URL.Query().Get("sec")
+
+	glog.Info("************ refererHeader: ", refererHeader)
+	glog.Info("************ secParam: ", secParam)
+
+	if secParam == "1" {
+		httpCookie.Secure = true
+	} else if strings.HasPrefix(refererHeader, "https") {
+		httpCookie.Secure = true
+	}
 
 	cookieStr := httpCookie.String()
 	var sameSiteCookie *http.Cookie

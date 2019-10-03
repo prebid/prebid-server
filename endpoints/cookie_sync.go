@@ -43,16 +43,16 @@ type cookieSyncDeps struct {
 }
 
 func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	
+
 	glog.Info("************ In cookie_sync.go .. Endpoint()")
-	glog.Info("************ Request: %v", r)
-	glog.Info("************ r.Proto: %v", r.Proto)
-	glog.Info("************ r.RequestURI: %v", r.RequestURI)
-	glog.Info("************ r.URL: %s", r.URL)
-	glog.Info("************ r.URL.Scheme: %s", r.URL.Scheme)
-	glog.Info("************ r.Header: %s", r.Header)
-	glog.Info("************ r.TLS: %s", r.TLS)
-	glog.Info("************ r.RemoteAddr: %s", r.RemoteAddr)
+	glog.Info("************ Request: ", r)
+	glog.Info("************ r.Proto: ", r.Proto)
+	glog.Info("************ r.RequestURI: ", r.RequestURI)
+	glog.Info("************ r.URL: ", r.URL)
+	glog.Info("************ r.URL.Scheme: ", r.URL.Scheme)
+	glog.Info("************ r.Header: ", r.Header)
+	glog.Info("************ r.TLS: ", r.TLS)
+	glog.Info("************ r.RemoteAddr: ", r.RemoteAddr)
 
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
