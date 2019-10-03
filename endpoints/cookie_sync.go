@@ -54,6 +54,10 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	glog.Info("************ r.TLS: ", r.TLS)
 	glog.Info("************ r.RemoteAddr: ", r.RemoteAddr)
 
+	secParam := r.URL.Query().Get("sec")
+
+	glog.Info("************ secParam: ", secParam)
+
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
 		Status:       http.StatusOK,
@@ -157,6 +161,10 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		}
 		syncInfo, err := deps.syncers[openrtb_ext.BidderName(newBidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
 		if err == nil {
+			if secParam == "1" && newBidder == openrtb_ext.BidderPubmatic.String() {
+				syncInfo.URL += "%26sec=1"
+			}
+
 			newSync := &usersync.CookieSyncBidders{
 				BidderCode:   bidder,
 				NoCookie:     true,
