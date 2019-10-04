@@ -22,7 +22,13 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "LockerDome does not currently support non-banner types.",
-    "No valid or supported impressions in the bid request."
+    {
+      "value": "LockerDome does not currently support non-banner types.",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid or supported impressions in the bid request.",
+      "comparison": "literal"
+    }
   ]
 }
