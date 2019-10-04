@@ -3,13 +3,14 @@ package pbsmetrics
 import (
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 )
 
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, false)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, &config.DisabledMetrics{})
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
@@ -50,7 +51,7 @@ func TestNewMetrics(t *testing.T) {
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, false)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, &config.DisabledMetrics{})
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
@@ -67,7 +68,7 @@ func TestRecordBidType(t *testing.T) {
 
 func TestRecordGDPRRejection(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, false)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, &config.DisabledMetrics{})
 	m.RecordUserIDSet(UserLabels{
 		Action: RequestActionGDPR,
 		Bidder: openrtb_ext.BidderAppnexus,
@@ -119,15 +120,7 @@ func ensureNotContainsAccountMetrics(t *testing.T, registry metrics.Registry, na
 
 func TestDisableAccountMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, true)
-	if m.accountMetrics != nil {
-		t.Errorf("When Configuration.AccountAdapterDetails is set to true, Metrics.accountMetrics should be nil")
-	}
-}
-
-func TestNotContainsAccountMetrics(t *testing.T) {
-	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, true)
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, &config.DisabledMetrics{AccountAdapterDetails: true})
 	ensureNotContainsAccountMetrics(t, registry, "appnexus", m.AdapterMetrics["appnexus"])
 	ensureNotContainsAccountMetrics(t, registry, "rubicon", m.AdapterMetrics["rubicon"])
 }

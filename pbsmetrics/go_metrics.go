@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
 )
@@ -51,6 +52,8 @@ type Metrics struct {
 	userSyncRwMutex       sync.RWMutex
 
 	exchanges []openrtb_ext.BidderName
+	// Will hold boolean values to help us disable metric collection if needed
+	MetricsDisabled config.DisabledMetrics
 }
 
 // AdapterMetrics houses the metrics for a particular adapter
@@ -89,7 +92,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // rather than loading legacy metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics bool) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics *config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
 		MetricsRegistry:            registry,
@@ -120,13 +123,14 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		ImpsTypeAudio:  blankMeter,
 		ImpsTypeNative: blankMeter,
 
-		AdapterMetrics: make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
-		accountMetrics: nil,
+		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
+		accountMetrics:  make(map[string]*accountMetrics),
+		MetricsDisabled: config.DisabledMetrics{},
 
 		exchanges: exchanges,
 	}
-	if !disableAccountMetrics {
-		newMetrics.accountMetrics = make(map[string]*accountMetrics)
+	if disableMetrics != nil && disableMetrics.AccountAdapterDetails {
+		newMetrics.MetricsDisabled = *disableMetrics
 	}
 	for _, a := range exchanges {
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
@@ -147,8 +151,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-//Account_adapter_details
-func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics bool) *Metrics {
+func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics *config.DisabledMetrics) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -260,14 +263,6 @@ func makeDeliveryMetrics(registry metrics.Registry, prefix string, bidType openr
 // There is no getBlankAccountMetrics() as all metrics are generated dynamically.
 func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	var am *accountMetrics
-	/* type accountMetrics struct {
-		requestMeter      metrics.Meter
-		bidsReceivedMeter metrics.Meter
-		priceHistogram    metrics.Histogram
-		// store account by adapter metrics. Type is map[PBSBidder.BidderCode]
-		adapterMetrics map[openrtb_ext.BidderName]*AdapterMetrics
-	}
-	*/
 	var ok bool
 
 	me.accountMetricsRWMutex.RLock()
@@ -292,9 +287,9 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
-	for _, a := range me.exchanges {
-		am.adapterMetrics[a] = makeBlankAdapterMetrics()
-		registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
+	for i := 0; i < len(me.exchanges) && me.MetricsDisabled.AccountAdapterDetails; i++ {
+		am.adapterMetrics[me.exchanges[i]] = makeBlankAdapterMetrics()
+		registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(me.exchanges[i]), am.adapterMetrics[me.exchanges[i]])
 	}
 
 	me.accountMetrics[id] = am
@@ -325,10 +320,8 @@ func (me *Metrics) RecordRequest(labels Labels) {
 	}
 
 	// Handle the account metrics now.
-	if me.accountMetrics != nil {
-		am := me.getAccountMetrics(labels.PubID)
-		am.requestMeter.Mark(1)
-	}
+	am := me.getAccountMetrics(labels.PubID)
+	am.requestMeter.Mark(1)
 }
 
 func (me *Metrics) RecordImps(labels ImpLabels) {
@@ -389,24 +382,21 @@ func (me *Metrics) RecordAdapterPanic(labels AdapterLabels) {
 // RecordAdapterRequest implements a part of the MetricsEngine interface
 func (me *Metrics) RecordAdapterRequest(labels AdapterLabels) {
 	am, ok := me.AdapterMetrics[labels.Adapter]
-	var aam *AdapterMetrics
 	if !ok {
 		glog.Errorf("Trying to run adapter metrics on %s: adapter metrics not found", string(labels.Adapter))
 		return
 	}
 
-	if me.accountMetrics != nil {
-		aam = me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
-	}
+	aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
 	switch labels.AdapterBids {
 	case AdapterBidNone:
 		am.NoBidMeter.Mark(1)
-		if me.accountMetrics != nil {
+		if ok {
 			aam.NoBidMeter.Mark(1)
 		}
 	case AdapterBidPresent:
 		am.GotBidsMeter.Mark(1)
-		if me.accountMetrics != nil {
+		if ok {
 			aam.GotBidsMeter.Mark(1)
 		}
 	default:
@@ -433,8 +423,7 @@ func (me *Metrics) RecordAdapterBidReceived(labels AdapterLabels, bidType openrt
 	// Adapter metrics
 	am.BidsReceivedMeter.Mark(1)
 	// Account-Adapter metrics
-	if me.accountMetrics != nil {
-		aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.BidsReceivedMeter.Mark(1)
 	}
 
@@ -460,8 +449,7 @@ func (me *Metrics) RecordAdapterPrice(labels AdapterLabels, cpm float64) {
 	// Adapter metrics
 	am.PriceHistogram.Update(int64(cpm))
 	// Account-Adapter metrics
-	if me.accountMetrics != nil {
-		aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.PriceHistogram.Update(int64(cpm))
 	}
 }
@@ -476,8 +464,7 @@ func (me *Metrics) RecordAdapterTime(labels AdapterLabels, length time.Duration)
 	// Adapter metrics
 	am.RequestTimer.Update(length)
 	// Account-Adapter metrics
-	if me.accountMetrics != nil {
-		aam := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]
+	if aam, ok := me.getAccountMetrics(labels.PubID).adapterMetrics[labels.Adapter]; ok {
 		aam.RequestTimer.Update(length)
 	}
 }

@@ -70,6 +70,8 @@ metrics:
     username: admin
     password: admin1324
     metric_send_interval: 30
+  disabled_metrics:
+    account_adapter_details: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -97,7 +99,6 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
-account_adapter_details: true
 `)
 var emptyConfig = []byte(``)
 
@@ -224,7 +225,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
-	cmpBools(t, "account_adapter_details", cfg.AccountAdapterDetails, true)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 }
 
 func TestConfigToCollectAllMetrics(t *testing.T) {
@@ -235,7 +236,7 @@ func TestConfigToCollectAllMetrics(t *testing.T) {
 	cfg, err := New(v)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 
-	cmpBools(t, "account_adapter_details", cfg.AccountAdapterDetails, false)
+	assert.Nil(t, cfg.Metrics.Disabled, "cfg.Metrics.Disabled was not given any value in the configuration an is supposed to be NULL")
 }
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{

@@ -59,8 +59,6 @@ type Configuration struct {
 	BlacklistedAcctMap map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
-	// True if we want to stop collecting account-specific metrics
-	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -306,6 +304,12 @@ func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configEr
 type Metrics struct {
 	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
+	Disabled   *DisabledMetrics  `mapstructure:"disabled_metrics"`
+}
+
+type DisabledMetrics struct {
+	// True if we want to stop collecting account-specific metrics
+	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 }
 
 func (cfg *Metrics) validate(errs configErrors) configErrors {
