@@ -304,7 +304,7 @@ func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configEr
 type Metrics struct {
 	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
-	Disabled   *DisabledMetrics  `mapstructure:"disabled_metrics"`
+	Disabled   DisabledMetrics   `mapstructure:"disabled_metrics"`
 }
 
 type DisabledMetrics struct {

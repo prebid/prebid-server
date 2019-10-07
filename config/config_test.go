@@ -236,7 +236,8 @@ func TestConfigToCollectAllMetrics(t *testing.T) {
 	cfg, err := New(v)
 	assert.NoError(t, err, "Setting up config should work but it doesn't")
 
-	assert.Nil(t, cfg.Metrics.Disabled, "cfg.Metrics.Disabled was not given any value in the configuration an is supposed to be NULL")
+	assert.NotNil(t, cfg.Metrics.Disabled, "cfg.Metrics.Disabled was not given any value in the configuration and it is supposed to be initialized to config.DisabledMetrics{} by default")
+	assert.Equal(t, cfg.Metrics.Disabled.AccountAdapterDetails, false, "cfg.Metrics.Disabled was not given any value in the configuration an it is supposed to be false")
 }
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{

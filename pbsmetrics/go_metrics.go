@@ -92,7 +92,7 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // rather than loading legacy metrics that never get filled.
 // This will also eventually let us configure metrics, such as setting a limited set of metrics
 // for a production instance, and then expanding again when we need more debugging.
-func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics *config.DisabledMetrics) *Metrics {
+func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
 	newMetrics := &Metrics{
 		MetricsRegistry:            registry,
@@ -125,13 +125,13 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 		AdapterMetrics:  make(map[openrtb_ext.BidderName]*AdapterMetrics, len(exchanges)),
 		accountMetrics:  make(map[string]*accountMetrics),
-		MetricsDisabled: config.DisabledMetrics{},
+		MetricsDisabled: disableMetrics,
 
 		exchanges: exchanges,
 	}
-	if disableMetrics != nil && disableMetrics.AccountAdapterDetails {
-		newMetrics.MetricsDisabled = *disableMetrics
-	}
+	//if disableMetrics != nil && disableMetrics.AccountAdapterDetails {
+	//newMetrics.MetricsDisabled = *disableMetrics
+	//}
 	for _, a := range exchanges {
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
@@ -151,7 +151,7 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 // metrics object to contain only the metrics we are interested in. This would allow for debug
 // mode metrics. The code would allways try to record the metrics, but effectively noop if we are
 // using a blank meter/timer.
-func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics *config.DisabledMetrics) *Metrics {
+func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableAccountMetrics config.DisabledMetrics) *Metrics {
 	newMetrics := NewBlankMetrics(registry, exchanges, disableAccountMetrics)
 	newMetrics.ConnectionCounter = metrics.GetOrRegisterCounter("active_connections", registry)
 	newMetrics.ConnectionAcceptErrorMeter = metrics.GetOrRegisterMeter("connection_accept_errors", registry)
@@ -287,9 +287,11 @@ func (me *Metrics) getAccountMetrics(id string) *accountMetrics {
 	am.bidsReceivedMeter = metrics.GetOrRegisterMeter(fmt.Sprintf("account.%s.bids_received", id), me.MetricsRegistry)
 	am.priceHistogram = metrics.GetOrRegisterHistogram(fmt.Sprintf("account.%s.prices", id), me.MetricsRegistry, metrics.NewExpDecaySample(1028, 0.015))
 	am.adapterMetrics = make(map[openrtb_ext.BidderName]*AdapterMetrics, len(me.exchanges))
-	for i := 0; i < len(me.exchanges) && me.MetricsDisabled.AccountAdapterDetails; i++ {
-		am.adapterMetrics[me.exchanges[i]] = makeBlankAdapterMetrics()
-		registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(me.exchanges[i]), am.adapterMetrics[me.exchanges[i]])
+	if !me.MetricsDisabled.AccountAdapterDetails {
+		for _, a := range me.exchanges {
+			am.adapterMetrics[a] = makeBlankAdapterMetrics()
+			registerAdapterMetrics(me.MetricsRegistry, fmt.Sprintf("account.%s", id), string(a), am.adapterMetrics[a])
+		}
 	}
 
 	me.accountMetrics[id] = am
