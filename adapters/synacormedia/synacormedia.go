@@ -30,7 +30,6 @@ func NewSynacorMediaBidder(endpointTemplate string) adapters.Bidder {
 	syncTemplate, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
 		glog.Fatal("Unable to parse endpoint url template")
-		glog.Fatal(endpointTemplate)
 		return nil
 	}
 	return &SynacorMediaAdapter{EndpointTemplate: *syncTemplate}
@@ -53,14 +52,19 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	var errs []error
 	var validImps []openrtb.Imp
 	var re *ReqExt
+	var firstExtImp *openrtb_ext.ExtImpSynacormedia = nil
 
 	for _, imp := range request.Imp {
 		_, err := getExtImpObj(&imp)
+		validImp, err := getExtImpObj(&imp)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 		validImps = append(validImps, imp)
+		if firstExtImp == nil {
+			firstExtImp = validImp
+		}
 	}
 
 	if len(validImps) == 0 {
@@ -68,14 +72,8 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	}
 
 	var err error
-	// need to grab an impression to get the seat id
-	var firstImp = validImps[0]
-	firstExtImp, err := getExtImpObj(&firstImp)
-	if err != nil {
-		return nil, append(errs, err)
-	}
 
-	if firstExtImp.SeatId == "" {
+	if firstExtImp == nil || firstExtImp.SeatId == "" {
 		return nil, append(errs, &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Impression missing seat id"),
 		})
@@ -97,6 +95,7 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	// set Request Headers
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
+	headers.Add("Accept", "application/json")
 
 	// create Request Uri
 	reqUri, err := a.buildEndpointURL(firstExtImp)
@@ -159,11 +158,19 @@ func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
+	// filter out non banner and non video imps
+	var validRequestImps []openrtb.Imp
+	for _, imp := range internalRequest.Imp {
+		if imp.Banner != nil || imp.Video != nil {
+			validRequestImps = append(validRequestImps, imp)
+		}
+	}
+
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp),
+				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, validRequestImps),
 			})
 		}
 	}
