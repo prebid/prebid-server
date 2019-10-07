@@ -162,7 +162,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		syncInfo, err := deps.syncers[openrtb_ext.BidderName(newBidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
 		if err == nil {
 			//For secure = true
-			if secParam == "1" && newBidder == "pubmatic" {
+			if secParam == "1" && newBidder == openrtb_ext.BidderPubmatic.String() {
 				syncInfo.URL += "%26sec%3D1%26"
 			}
 
