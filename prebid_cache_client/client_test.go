@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -121,33 +120,43 @@ func TestEncodeValueToBuffer(t *testing.T) {
 // specified in Prebid-Server's configuration, no substitutions nor default values.
 func TestStripCacheHostAndPath(t *testing.T) {
 	type aTest struct {
-		inConfig     []byte
-		expectedHost string
-		expectedPath string
+		inCacheURL    config.Cache
+		inExtCacheURL config.ExternalCache
+		expectedHost  string
+		expectedPath  string
 	}
 	testInput := []aTest{
-		{inConfig: []byte(`
-external_cache:
-  host: prebid-server.prebid.org
-  path: pbcache/endpoint
-`), expectedHost: "prebid-server.prebid.org", expectedPath: "pbcache/endpoint"},
-		{inConfig: []byte(`
-external_cache:
-  host: prebidcache.net
-`), expectedHost: "prebidcache.net", expectedPath: ""},
-		{inConfig: []byte(``), expectedHost: "", expectedPath: ""},
+		{
+			inCacheURL: config.Cache{ExpectedTimeMillis: 10},
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebid-server.prebid.org",
+				Path: "pbcache/endpoint",
+			},
+			expectedHost: "prebid-server.prebid.org",
+			expectedPath: "pbcache/endpoint",
+		},
+		{
+			inCacheURL: config.Cache{ExpectedTimeMillis: 10},
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebidcache.net",
+				Path: "",
+			},
+			expectedHost: "prebidcache.net",
+			expectedPath: "",
+		},
+		{
+			inCacheURL: config.Cache{ExpectedTimeMillis: 10},
+			inExtCacheURL: config.ExternalCache{
+				Host: "",
+				Path: "",
+			},
+			expectedHost: "",
+			expectedPath: "",
+		},
 	}
 	for i, test := range testInput {
-		//start viper
-		v := viper.New()
-		config.SetupViper(v, "")
-		v.SetConfigType("yaml")
-		//parse testst config into a config object
-		v.ReadConfig(bytes.NewBuffer(test.inConfig))
-		cfg, _ := config.New(v)
-
 		//start client
-		cacheClient := NewClient(&cfg.CacheURL, &cfg.ExtCacheURL)
+		cacheClient := NewClient(&test.inCacheURL, &test.inExtCacheURL)
 		cHost, cPath := cacheClient.GetExtCacheData()
 
 		//assert
