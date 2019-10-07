@@ -101,7 +101,6 @@ adapters:
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
 `)
-var emptyConfig = []byte(``)
 
 var invalidAdapterEndpointConfig = []byte(`
 adapters:
