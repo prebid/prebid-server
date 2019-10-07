@@ -308,7 +308,7 @@ type Metrics struct {
 }
 
 type DisabledMetrics struct {
-	// True if we want to stop collecting account-specific metrics
+	// True if we want to stop collecting account-to-adapter metrics
 	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 }
 

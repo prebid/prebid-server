@@ -30,6 +30,7 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 }
 
 var fullConfig = []byte(`
@@ -228,17 +229,6 @@ func TestFullConfig(t *testing.T) {
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 }
 
-func TestConfigToCollectAllMetrics(t *testing.T) {
-	v := viper.New()
-	SetupViper(v, "")
-	v.SetConfigType("yaml")
-	v.ReadConfig(bytes.NewBuffer(emptyConfig))
-	cfg, err := New(v)
-	assert.NoError(t, err, "Setting up config should work but it doesn't")
-
-	assert.NotNil(t, cfg.Metrics.Disabled, "cfg.Metrics.Disabled was not given any value in the configuration and it is supposed to be initialized to config.DisabledMetrics{} by default")
-	assert.Equal(t, cfg.Metrics.Disabled.AccountAdapterDetails, false, "cfg.Metrics.Disabled was not given any value in the configuration an it is supposed to be false")
-}
 func TestValidConfig(t *testing.T) {
 	cfg := Configuration{
 		StoredRequests: StoredRequests{
