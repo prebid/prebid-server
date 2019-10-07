@@ -369,7 +369,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 	return bfr, errs
 }
 
-func guessDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
+func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	if request.Site != nil {
 		return openrtb.DeviceTypePersonalComputer
 	}
@@ -431,7 +431,8 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		}
 
 		if bfReqs[i].Request.Device.DeviceType == 0 {
-			bfReqs[i].Request.Device.DeviceType = guessDeviceType(request)
+			// More fine graned deviceType methods will be added in the future
+			bfReqs[i].Request.Device.DeviceType = fallBackDeviceType(request)
 		}
 
 		imp := request.Imp[i]
