@@ -10,13 +10,13 @@ import (
 )
 
 const supplyId = "FGMrCMMc"
-const strVersion = 4
+const strVersion = 5
 
 func NewSharethroughBidder(endpoint string) *SharethroughAdapter {
 	return &SharethroughAdapter{
 		AdServer: StrOpenRTBTranslator{
-			UriHelper: StrUriHelper{BaseURI: endpoint},
-			Util:      Util{},
+			UriHelper: StrUriHelper{BaseURI: endpoint, Clock: Clock{}},
+			Util:      Util{Clock: Clock{}},
 			UserAgentParsers: UserAgentParsers{
 				ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
 				ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),
