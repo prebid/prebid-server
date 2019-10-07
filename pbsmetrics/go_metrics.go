@@ -129,9 +129,6 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 
 		exchanges: exchanges,
 	}
-	//if disableMetrics != nil && disableMetrics.AccountAdapterDetails {
-	//newMetrics.MetricsDisabled = *disableMetrics
-	//}
 	for _, a := range exchanges {
 		newMetrics.AdapterMetrics[a] = makeBlankAdapterMetrics()
 	}
