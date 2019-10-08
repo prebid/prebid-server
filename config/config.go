@@ -304,6 +304,12 @@ func validateAdapters(adapterMap map[string]Adapter, errs configErrors) configEr
 type Metrics struct {
 	Influxdb   InfluxMetrics     `mapstructure:"influxdb"`
 	Prometheus PrometheusMetrics `mapstructure:"prometheus"`
+	Disabled   DisabledMetrics   `mapstructure:"disabled_metrics"`
+}
+
+type DisabledMetrics struct {
+	// True if we want to stop collecting account-to-adapter metrics
+	AccountAdapterDetails bool `mapstructure:"account_adapter_details"`
 }
 
 func (cfg *Metrics) validate(errs configErrors) configErrors {

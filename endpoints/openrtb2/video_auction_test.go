@@ -638,7 +638,7 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	edep := &endpointDeps{
 		ex,
 		newParamsValidator(t),
