@@ -63,7 +63,7 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	var infos adapters.BidderInfos
 	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return

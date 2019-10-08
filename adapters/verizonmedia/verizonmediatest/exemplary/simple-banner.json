@@ -7,6 +7,7 @@
         "banner": {
           "format": [{"w": 728, "h": 90}]
         },
+        "tagid": "123",
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -20,7 +21,7 @@
       "ip": "127.0.0.1"
     },
     "site": {
-      "id": ""
+      "id": "test-site-id"
     }
   },
 
@@ -53,7 +54,9 @@
               "id": "test-imp-id",
               "tagid": "pos2",
               "banner": {
-                "format": [{"w": 728, "h": 90}]
+                "format": [{"w": 728, "h": 90}],
+                "w": 728,
+                "h": 90
               },
               "ext": {
                 "bidder": {

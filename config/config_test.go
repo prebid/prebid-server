@@ -29,6 +29,8 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
+	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
 }
 
 var fullConfig = []byte(`
@@ -71,6 +73,9 @@ metrics:
     database: metricsdb
     username: admin
     password: admin1324
+    metric_send_interval: 30
+  disabled_metrics:
+    account_adapter_details: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -203,6 +208,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
 	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
+	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
@@ -224,6 +230,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 }
 
 func TestValidConfig(t *testing.T) {

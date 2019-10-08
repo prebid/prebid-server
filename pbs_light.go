@@ -26,10 +26,11 @@ var Rev string
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
-	flag.Parse() // read glog settings from cmd line
 }
 
 func main() {
+	flag.Parse() // required for glog flags and testing package flags
+
 	v := viper.New()
 	config.SetupViper(v, "pbs")
 	cfg, err := config.New(v)
