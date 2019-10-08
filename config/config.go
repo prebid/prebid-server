@@ -30,6 +30,7 @@ type Configuration struct {
 	StatusResponse  string             `mapstructure:"status_response"`
 	AuctionTimeouts AuctionTimeouts    `mapstructure:"auction_timeouts_ms"`
 	CacheURL        Cache              `mapstructure:"cache"`
+	ExtCacheURL     ExternalCache      `mapstructure:"external_cache"`
 	RecaptchaSecret string             `mapstructure:"recaptcha_secret"`
 	HostCookie      HostCookie         `mapstructure:"host_cookie"`
 	Metrics         Metrics            `mapstructure:"metrics"`
@@ -349,6 +350,13 @@ type DataCache struct {
 	TTLSeconds int    `mapstructure:"ttl_seconds"`
 }
 
+// Data type where we store the external cache URL elements. This is completely unrelated to type Cache struct defined afterwards, because
+// the latter is used for internal cache URL while the following contains information of the external cache URL.
+type ExternalCache struct {
+	Host string `mapstructure:"host"`
+	Path string `mapstructure:"path"`
+}
+
 type Cache struct {
 	Scheme string `mapstructure:"scheme"`
 	Host   string `mapstructure:"host"`
@@ -537,6 +545,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("cache.default_ttl_seconds.video", 0)
 	v.SetDefault("cache.default_ttl_seconds.native", 0)
 	v.SetDefault("cache.default_ttl_seconds.audio", 0)
+	v.SetDefault("external_cache.host", "")
+	v.SetDefault("external_cache.path", "")
 	v.SetDefault("recaptcha_secret", "")
 	v.SetDefault("host_cookie.domain", "")
 	v.SetDefault("host_cookie.family", "")

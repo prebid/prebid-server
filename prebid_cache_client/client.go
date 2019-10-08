@@ -23,6 +23,9 @@ type Client interface {
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
 	// logging any relevant errors to the app logs
 	PutJson(ctx context.Context, values []Cacheable) ([]string, []error)
+
+	// Serves the purpose of a getter that returns the host and the cache of the prebid-server URL
+	GetExtCacheData() (string, string)
 }
 
 type PayloadType string
@@ -39,7 +42,7 @@ type Cacheable struct {
 	Key        string
 }
 
-func NewClient(conf *config.Cache) Client {
+func NewClient(conf *config.Cache, extCache *config.ExternalCache) Client {
 	return &clientImpl{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -47,13 +50,21 @@ func NewClient(conf *config.Cache) Client {
 				IdleConnTimeout: 65,
 			},
 		},
-		putUrl: conf.GetBaseURL() + "/cache",
+		putUrl:            conf.GetBaseURL() + "/cache",
+		externalCacheHost: extCache.Host,
+		externalCachePath: extCache.Path,
 	}
 }
 
 type clientImpl struct {
-	httpClient *http.Client
-	putUrl     string
+	httpClient        *http.Client
+	putUrl            string
+	externalCacheHost string
+	externalCachePath string
+}
+
+func (c *clientImpl) GetExtCacheData() (string, string) {
+	return c.externalCacheHost, c.externalCachePath
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {

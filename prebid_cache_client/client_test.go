@@ -8,6 +8,9 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/stretchr/testify/assert"
 )
 
 // Prevents #197
@@ -111,6 +114,52 @@ func TestEncodeValueToBuffer(t *testing.T) {
 	_ = encodeValueToBuffer(testCache, false, buf)
 	actual := buf.String()
 	assertStringEqual(t, expected, actual)
+}
+
+// The following test asserts that the cache client's GetExtCacheData() implementation is able to pull return the exact Path and Host that were
+// specified in Prebid-Server's configuration, no substitutions nor default values.
+func TestStripCacheHostAndPath(t *testing.T) {
+	inCacheURL := config.Cache{ExpectedTimeMillis: 10}
+	type aTest struct {
+		inExtCacheURL config.ExternalCache
+		expectedHost  string
+		expectedPath  string
+	}
+	testInput := []aTest{
+		{
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebid-server.prebid.org",
+				Path: "pbcache/endpoint",
+			},
+			expectedHost: "prebid-server.prebid.org",
+			expectedPath: "pbcache/endpoint",
+		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebidcache.net",
+				Path: "",
+			},
+			expectedHost: "prebidcache.net",
+			expectedPath: "",
+		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Host: "",
+				Path: "",
+			},
+			expectedHost: "",
+			expectedPath: "",
+		},
+	}
+	for _, test := range testInput {
+		//start client
+		cacheClient := NewClient(&inCacheURL, &test.inExtCacheURL)
+		cHost, cPath := cacheClient.GetExtCacheData()
+
+		//assert
+		assert.Equal(t, test.expectedHost, cHost)
+		assert.Equal(t, test.expectedPath, cPath)
+	}
 }
 
 func assertIntEqual(t *testing.T, expected, actual int) {
