@@ -155,10 +155,11 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		erVal := errortypes.DecodeError(acctIdErr)
 		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
 			w.WriteHeader(http.StatusServiceUnavailable)
+			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
 		} else { //erVal == errortypes.AcctRequiredCode
 			w.WriteHeader(http.StatusBadRequest)
+			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		}
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
