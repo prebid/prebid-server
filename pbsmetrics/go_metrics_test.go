@@ -102,7 +102,7 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
 }
 
-func TestDisableAccountMetrics(t *testing.T) {
+func TestNoAdapterAccountMetrics(t *testing.T) {
 	accountId := "acct-id"
 	registry := metrics.NewRegistry()
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
@@ -114,15 +114,57 @@ func TestDisableAccountMetrics(t *testing.T) {
 
 	// Assert no adapter metrics are found in the accountMetrics map
 	assert.Equalf(t, len(m.accountMetrics[accountId].adapterMetrics) == 0, true, "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[accountId].adapterMetrics))
+}
+
+func TestRegistryAccountMetrics(t *testing.T) {
+	accountId := "acct-id"
+
+	type aTest struct {
+		disableAccountMetrics bool
+		assertFunc            func(t *testing.T, accountID string, m *Metrics, registry metrics.Registry)
+	}
+	tests := [2]aTest{
+		{
+			disableAccountMetrics: false,
+			assertFunc:            assertRegistryEnabledAccountMetrics,
+		},
+		{
+			disableAccountMetrics: true,
+			assertFunc:            assertRegistryDisabledAccountMetrics,
+		},
+	}
+	for _, test := range tests {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: test.disableAccountMetrics})
+		test.assertFunc(t, accountId, m, registry)
+	}
+}
+
+func assertRegistryDisabledAccountMetrics(t *testing.T, accountID string, m *Metrics, registry metrics.Registry) {
+	// Assert no account metrics exist in the registry
+	m.RecordAdapterBidReceived(AdapterLabels{Adapter: openrtb_ext.BidderAppnexus, PubID: accountID}, openrtb_ext.BidTypeBanner, true)
+	registryMap := registry.GetAll()
+	for k := range registryMap {
+		isAcctAdapterMetric := strings.Contains(k, string(openrtb_ext.BidderAppnexus)) && strings.Contains(k, accountID)
+		if !assert.Equalf(t, isAcctAdapterMetric, false, "Test failed. Metrics registry should not contain 'account.<account_id>.<bidder_id>.*' metrics like %s in the registry\n", k) {
+			break
+		}
+	}
+}
+
+func assertRegistryEnabledAccountMetrics(t *testing.T, accountID string, m *Metrics, registry metrics.Registry) {
+	accountAdapterMetricsCount := 0
+	m.RecordAdapterBidReceived(AdapterLabels{Adapter: openrtb_ext.BidderAppnexus, PubID: accountID}, openrtb_ext.BidTypeBanner, true)
 
 	// Assert no account metrics exist in the registry
 	registryMap := registry.GetAll()
 	for k := range registryMap {
-		isAcctAdapterMetric := strings.Contains(k, string(openrtb_ext.BidderAppnexus)) && strings.Contains(k, accountId)
-		if !assert.Equalf(t, isAcctAdapterMetric, false, "Test failed. Metrics registry should not contain 'account.<account_id>.<bidder_id>.*' metrics like %s \n", k) {
-			break
+		isAcctAdapterMetric := strings.Contains(k, string(openrtb_ext.BidderAppnexus)) && strings.Contains(k, accountID)
+		if isAcctAdapterMetric {
+			accountAdapterMetricsCount++
 		}
 	}
+	assert.Equalf(t, true, accountAdapterMetricsCount > 0, "Test failed. Metrics registry should contain more than one 'account.<account_id>.<bidder_id>.*' entries in the registry \n")
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {
