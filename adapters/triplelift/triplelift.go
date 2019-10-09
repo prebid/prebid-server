@@ -24,11 +24,7 @@ type TripleliftRespExt struct {
 }
 
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
-	t := ext.Triplelift.Format
-	if t == 11 {
-		return openrtb_ext.BidTypeVideo
-	}
-	return openrtb_ext.BidTypeBanner
+	return openrtb_ext.BidTypeNative
 }
 
 func processImp(imp *openrtb.Imp) error {
@@ -41,8 +37,8 @@ func processImp(imp *openrtb.Imp) error {
 	if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
 		return err
 	}
-	if imp.Banner == nil && imp.Video == nil {
-		return fmt.Errorf("neither Banner nor Video object specified")
+	if imp.Native == nil {
+		return fmt.Errorf("no native object specified")
 	}
 	imp.TagID = tlext.InvCode
 	// floor is optional
