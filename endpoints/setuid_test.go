@@ -196,3 +196,21 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
 	return g.allowPI, nil
 }
+
+func TestSiteCookieCheck(t *testing.T) {
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
+	expectedResult := true
+	actualResult := siteCookieCheck(ua)
+	if actualResult != expectedResult {
+		t.Errorf("Expected: %v, but got: %v", expectedResult, actualResult)
+	}
+}
+
+func TestSiteCookieCheckForOlderChromeVersion(t *testing.T) {
+	ua := "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36"
+	expectedResult := false
+	actualResult := siteCookieCheck(ua)
+	if actualResult != expectedResult {
+		t.Errorf("Expected: %v, but got: %v", expectedResult, actualResult)
+	}
+}
