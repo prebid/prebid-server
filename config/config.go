@@ -561,6 +561,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("http_client.max_idle_connections_per_host", 10)
 	v.SetDefault("http_client.idle_connection_timeout_seconds", 60)
 	// no metrics configured by default (metrics{host|database|username|password})
+	v.SetDefault("metrics.disabled_metrics.account_adapter_details", false)
 	v.SetDefault("metrics.influxdb.host", "")
 	v.SetDefault("metrics.influxdb.database", "")
 	v.SetDefault("metrics.influxdb.username", "")
