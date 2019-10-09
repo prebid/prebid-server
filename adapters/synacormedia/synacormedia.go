@@ -55,7 +55,6 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	var firstExtImp *openrtb_ext.ExtImpSynacormedia = nil
 
 	for _, imp := range request.Imp {
-		_, err := getExtImpObj(&imp)
 		validImp, err := getExtImpObj(&imp)
 		if err != nil {
 			errs = append(errs, err)
@@ -168,9 +167,13 @@ func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
+			var mediaType = getMediaTypeForImp(sb.Bid[i].ImpID, validRequestImps)
+			if mediaType != openrtb_ext.BidTypeBanner && mediaType != openrtb_ext.BidTypeVideo {
+				continue
+			}
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: getMediaTypeForImp(sb.Bid[i].ImpID, validRequestImps),
+				BidType: mediaType,
 			})
 		}
 	}
@@ -181,10 +184,21 @@ func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
 	mediaType := openrtb_ext.BidTypeBanner
 	for _, imp := range imps {
 		if imp.ID == impId {
-			if imp.Banner == nil && imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
+			if imp.Banner != nil {
+				break
 			}
-			return mediaType
+			if imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+				break
+			}
+			if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
+				break
+			}
+			if imp.Audio != nil {
+				mediaType = openrtb_ext.BidTypeAudio
+				break
+			}
 		}
 	}
 	return mediaType
