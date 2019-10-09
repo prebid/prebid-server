@@ -123,15 +123,11 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			var bidExt TripleliftRespExt
-			if err := json.Unmarshal(bid.Ext, &bidExt); err != nil {
-				errs = append(errs, err)
-			} else {
-				bidType := getBidType(bidExt)
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
-				})
-			}
+			bidType := getBidType(bidExt)
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: bidType,
+			})
 		}
 	}
 	return bidResponse, errs
