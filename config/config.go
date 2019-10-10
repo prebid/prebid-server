@@ -9,6 +9,7 @@ import (
 	"text/template"
 	"time"
 
+	"encoding/json"
 	"github.com/golang/glog"
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
@@ -225,7 +226,8 @@ type Adapter struct {
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
-	Disabled bool `mapstructure:"disabled"`
+	Disabled         bool            `mapstructure:"disabled"`
+	ExtraAdapterInfo json.RawMessage `json:"extra_info,omitempty"`
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
