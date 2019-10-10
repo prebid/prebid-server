@@ -31,7 +31,7 @@ func (m MockUtil) gdprApplies(request *openrtb.BidRequest) bool {
 	return m.mockGdprApplies()
 }
 
-func (m MockUtil) getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
+func (m MockUtil) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height uint64, width uint64) {
 	return m.mockGetPlacementSize()
 }
 
