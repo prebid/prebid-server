@@ -1,5 +1,5 @@
 {
-  "expectedMakeRequestsErrors" : ["neither Banner nor Video object specified","No valid impressions for triplelift"],
+  "expectedMakeRequestsErrors" : ["no native object specified","No valid impressions for triplelift"],
   "mockBidRequest": {
     "id": "test-request-id",
     "imp": [
