@@ -178,14 +178,14 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Requ
 		httpCookie.Domain = domain
 	}
 
-	refererHeader := r.Header.Get("Referer")
+	//refererHeader := r.Header.Get("Referer")
 	secParam := r.URL.Query().Get("sec")
-
 	if secParam == "1" {
 		httpCookie.Secure = true
-	} else if strings.HasPrefix(refererHeader, "https") {
-		httpCookie.Secure = true
 	}
+	/*else if strings.HasPrefix(refererHeader, "https") {
+		httpCookie.Secure = true
+	}*/
 
 	cookieStr := httpCookie.String()
 	var sameSiteCookie *http.Cookie

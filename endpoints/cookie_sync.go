@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -149,8 +150,9 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		if err == nil {
 			//For secure = true flag on cookie
 			secParam := r.URL.Query().Get("sec")
+			refererHeader := r.Header.Get("Referer")
 			bidderPubmatic := openrtb_ext.BidderPubmatic
-			if secParam == "1" && newBidder == bidderPubmatic.String() {
+			if (secParam == "1" || strings.HasPrefix(refererHeader, "https")) && newBidder == bidderPubmatic.String() {
 				syncInfo.URL += "%26sec%3D1%26"
 			}
 
