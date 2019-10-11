@@ -24,7 +24,8 @@ type UtilityInterface interface {
 	parseUserInfo(*openrtb.User) userInfo
 
 	getAdMarkup([]byte, openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
-	getPlacementSize([]openrtb.Format) (uint64, uint64)
+	getBestFormat([]openrtb.Format) (uint64, uint64)
+	getPlacementSize(openrtb.Imp, openrtb_ext.ExtImpSharethrough) (uint64, uint64)
 
 	canAutoPlayVideo(string, UserAgentParsers) bool
 	isAndroid(string) bool
@@ -122,24 +123,28 @@ func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethro
 	return templatedBuf.String(), nil
 }
 
-func (u Util) getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
-	biggest := struct {
-		Height uint64
-		Width  uint64
-	}{
-		Height: 1,
-		Width:  1,
+func (u Util) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height uint64, width uint64) {
+	height, width = 1, 1
+	if len(strImpParams.IframeSize) >= 2 {
+		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
+	} else if imp.Banner != nil {
+		height, width = u.getBestFormat(imp.Banner.Format)
 	}
 
+	return
+}
+
+func (u Util) getBestFormat(formats []openrtb.Format) (height uint64, width uint64) {
+	height, width = 1, 1
 	for i := 0; i < len(formats); i++ {
 		format := formats[i]
-		if (format.H * format.W) > (biggest.Height * biggest.Width) {
-			biggest.Height = format.H
-			biggest.Width = format.W
+		if (format.H * format.W) > (height * width) {
+			height = format.H
+			width = format.W
 		}
 	}
 
-	return biggest.Height, biggest.Width
+	return
 }
 
 func (u Util) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) bool {
