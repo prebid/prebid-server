@@ -44,20 +44,6 @@ type cookieSyncDeps struct {
 
 func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	glog.Info("************ In cookie_sync.go .. Endpoint()")
-	glog.Info("************ Request: ", r)
-	glog.Info("************ r.Proto: ", r.Proto)
-	glog.Info("************ r.RequestURI: ", r.RequestURI)
-	glog.Info("************ r.URL: ", r.URL)
-	glog.Info("************ r.URL.Scheme: ", r.URL.Scheme)
-	glog.Info("************ r.Header: ", r.Header)
-	glog.Info("************ r.TLS: ", r.TLS)
-	glog.Info("************ r.RemoteAddr: ", r.RemoteAddr)
-
-	secParam := r.URL.Query().Get("sec")
-
-	glog.Info("************ secParam: ", secParam)
-
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
 		Status:       http.StatusOK,
@@ -162,6 +148,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		syncInfo, err := deps.syncers[openrtb_ext.BidderName(newBidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
 		if err == nil {
 			//For secure = true flag on cookie
+			secParam := r.URL.Query().Get("sec")
 			bidderPubmatic := openrtb_ext.BidderPubmatic
 			if secParam == "1" && newBidder == bidderPubmatic.String() {
 				syncInfo.URL += "%26sec%3D1%26"

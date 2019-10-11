@@ -10,7 +10,7 @@ import (
 )
 
 func TestGetUIDs(t *testing.T) {
-	req := makeRequest("/getuids", map[string]string{"adnxs": "123", "audienceNetwork": "456"})
+	req := makeRequest("/getuids", map[string]string{"adnxs": "123", "audienceNetwork": "456"}, false, false, false)
 	endpoint := NewGetUIDsEndpoint(config.HostCookie{})
 	res := httptest.NewRecorder()
 	endpoint(res, req, nil)
@@ -21,7 +21,7 @@ func TestGetUIDs(t *testing.T) {
 }
 
 func TestGetUIDsWithNoSyncs(t *testing.T) {
-	req := makeRequest("/getuids", map[string]string{})
+	req := makeRequest("/getuids", map[string]string{}, false, false, false)
 	endpoint := NewGetUIDsEndpoint(config.HostCookie{})
 	res := httptest.NewRecorder()
 	endpoint(res, req, nil)

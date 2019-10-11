@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/golang/glog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -179,21 +178,8 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Requ
 		httpCookie.Domain = domain
 	}
 
-	glog.Info("************ In SetCookieOnResponse")
-	glog.Info("************ Request: ", r)
-	glog.Info("************ r.Proto: ", r.Proto)
-	glog.Info("************ r.RequestURI: ", r.RequestURI)
-	glog.Info("************ r.URL: ", r.URL)
-	glog.Info("************ r.URL.Scheme: ", r.URL.Scheme)
-	glog.Info("************ r.Header: ", r.Header)
-	glog.Info("************ r.TLS: ", r.TLS)
-	glog.Info("************ r.RemoteAddr: ", r.RemoteAddr)
-
 	refererHeader := r.Header.Get("Referer")
 	secParam := r.URL.Query().Get("sec")
-
-	glog.Info("************ refererHeader: ", refererHeader)
-	glog.Info("************ secParam: ", secParam)
 
 	if secParam == "1" {
 		httpCookie.Secure = true

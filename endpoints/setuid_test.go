@@ -3,9 +3,12 @@ package endpoints
 import (
 	"context"
 	"errors"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,7 +22,7 @@ import (
 )
 
 func TestNormalSet(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil), true, false)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false, false,false), true, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
 	assertHasSyncs(t, response, map[string]string{
 		"pubmatic": "123",
@@ -27,13 +30,13 @@ func TestNormalSet(t *testing.T) {
 }
 
 func TestUnset(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic", map[string]string{"pubmatic": "1234"}), true, false)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic", map[string]string{"pubmatic": "1234"}, false, false, false), true, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
 	assertHasSyncs(t, response, nil)
 }
 
 func TestMergeSet(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", map[string]string{"rubicon": "def"}), true, false)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", map[string]string{"rubicon": "def"}, false, false, false), true, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
 	assertHasSyncs(t, response, map[string]string{
 		"pubmatic": "123",
@@ -42,21 +45,21 @@ func TestMergeSet(t *testing.T) {
 }
 
 func TestGDPRPrevention(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil), false, false)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false, false, false), false, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
 	assertStringsMatch(t, "The gdpr_consent string prevents cookies from being saved", response.Body.String())
 	assertNoCookie(t, response)
 }
 
 func TestGDPRConsentError(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil), false, true)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil, false, false, false), false, true)
 	assertIntsMatch(t, http.StatusBadRequest, response.Code)
 	assertStringsMatch(t, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon.", response.Body.String())
 	assertNoCookie(t, response)
 }
 
 func TestInapplicableGDPR(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=0", nil), false, false)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=0", nil, false, false, false), false, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
 	assertHasSyncs(t, response, map[string]string{
 		"pubmatic": "123",
@@ -64,7 +67,7 @@ func TestInapplicableGDPR(t *testing.T) {
 }
 
 func TestExplicitGDPRPrevention(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil), false, false)
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil, false, false, false), false, false)
 	assertIntsMatch(t, http.StatusOK, response.Code)
 	assertStringsMatch(t, "The gdpr_consent string prevents cookies from being saved", response.Body.String())
 	assertNoCookie(t, response)
@@ -91,6 +94,34 @@ func TestOptedOut(t *testing.T) {
 	assertIntsMatch(t, http.StatusUnauthorized, response.Code)
 }
 
+func TestSecParam(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, true, false,false), true, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	uidsCookie := readUidsCookie(response.Header())
+	assert.True(t, uidsCookie.Secure)
+}
+
+func TestSecureRefererHeader(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false, false,true), true, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	uidsCookie := readUidsCookie(response.Header())
+	assert.True(t, uidsCookie.Secure)
+}
+
+func TestRefererHeader(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false, true,false), true, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	uidsCookie := readUidsCookie(response.Header())
+	assert.False(t, uidsCookie.Secure)
+}
+
+func TestNoRefererHeader(t *testing.T) {
+	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false, false,false), true, false)
+	assertIntsMatch(t, http.StatusOK, response.Code)
+	uidsCookie := readUidsCookie(response.Header())
+	assert.False(t, uidsCookie.Secure)
+}
+
 func assertHasSyncs(t *testing.T, resp *httptest.ResponseRecorder, syncs map[string]string) {
 	t.Helper()
 	cookie := parseCookieString(t, resp)
@@ -103,12 +134,12 @@ func assertHasSyncs(t *testing.T, resp *httptest.ResponseRecorder, syncs map[str
 
 func assertBadRequest(t *testing.T, uri string, errMsg string) {
 	t.Helper()
-	response := doRequest(makeRequest(uri, nil), true, false)
+	response := doRequest(makeRequest(uri, nil, false, false, false), true, false)
 	assertIntsMatch(t, http.StatusBadRequest, response.Code)
 	assertStringsMatch(t, errMsg, response.Body.String())
 }
 
-func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
+func makeRequest(uri string, existingSyncs map[string]string, addSecParam bool, addHttpRefererHeader bool, addHttpsRefererHeader bool) *http.Request {
 	request := httptest.NewRequest("GET", uri, nil)
 	if len(existingSyncs) > 0 {
 		pbsCookie := usersync.NewPBSCookie()
@@ -116,6 +147,16 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 			pbsCookie.TrySync(family, value)
 		}
 		addCookie(request, pbsCookie)
+	}
+	if addSecParam {
+		q := request.URL.Query()
+		q.Add("sec", "1")
+		request.URL.RawQuery = q.Encode()
+	}
+	if addHttpRefererHeader {
+		request.Header.Set("Referer", "http://unit-test.com")
+	} else if addHttpsRefererHeader {
+		request.Header.Set("Referer", "https://unit-test.com")
 	}
 	return request
 }
@@ -139,6 +180,7 @@ func addCookie(req *http.Request, cookie *usersync.PBSCookie) {
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.PBSCookie {
 	cookieString := response.Header().Get("Set-Cookie")
+
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
 	assertIntsMatch(t, 2, len(res))
@@ -195,4 +237,123 @@ func (g *mockPermsSetUID) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 
 func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
 	return g.allowPI, nil
+}
+
+func readUidsCookie(h http.Header) *http.Cookie {
+	cookieCount := len(h["Set-Cookie"])
+	if cookieCount == 0 {
+		return nil
+	}
+	//cookies := make([]*http.Cookie, 0, cookieCount)
+	for _, line := range h["Set-Cookie"] {
+		parts := strings.Split(strings.TrimSpace(line), ";")
+		if len(parts) == 1 && parts[0] == "" {
+			continue
+		}
+		parts[0] = strings.TrimSpace(parts[0])
+		j := strings.Index(parts[0], "=")
+		if j < 0 {
+			continue
+		}
+		name, value := parts[0][:j], parts[0][j+1:]
+		if name != "uids" {
+			continue
+		}
+		//if !isCookieNameValid(name) {
+		//	continue
+		//}
+		value, ok := parseCookieValue(value, true)
+		if !ok {
+			continue
+		}
+		c := &http.Cookie{
+			Name:  name,
+			Value: value,
+			Raw:   line,
+		}
+		for i := 1; i < len(parts); i++ {
+			parts[i] = strings.TrimSpace(parts[i])
+			if len(parts[i]) == 0 {
+				continue
+			}
+
+			attr, val := parts[i], ""
+			if j := strings.Index(attr, "="); j >= 0 {
+				attr, val = attr[:j], attr[j+1:]
+			}
+			lowerAttr := strings.ToLower(attr)
+			val, ok = parseCookieValue(val, false)
+			if !ok {
+				c.Unparsed = append(c.Unparsed, parts[i])
+				continue
+			}
+			switch lowerAttr {
+			case "samesite":
+				lowerVal := strings.ToLower(val)
+				switch lowerVal {
+				case "lax":
+					c.SameSite = http.SameSiteLaxMode
+				case "strict":
+					c.SameSite = http.SameSiteStrictMode
+				default:
+					c.SameSite = http.SameSiteDefaultMode
+				}
+				continue
+			case "secure":
+				c.Secure = true
+				continue
+			case "httponly":
+				c.HttpOnly = true
+				continue
+			case "domain":
+				c.Domain = val
+				continue
+			case "max-age":
+				secs, err := strconv.Atoi(val)
+				if err != nil || secs != 0 && val[0] == '0' {
+					break
+				}
+				if secs <= 0 {
+					secs = -1
+				}
+				c.MaxAge = secs
+				continue
+			case "expires":
+				c.RawExpires = val
+				exptime, err := time.Parse(time.RFC1123, val)
+				if err != nil {
+					exptime, err = time.Parse("Mon, 02-Jan-2006 15:04:05 MST", val)
+					if err != nil {
+						c.Expires = time.Time{}
+						break
+					}
+				}
+				c.Expires = exptime.UTC()
+				continue
+			case "path":
+				c.Path = val
+				continue
+			}
+			c.Unparsed = append(c.Unparsed, parts[i])
+		}
+		return c
+	}
+	return nil
+}
+
+func parseCookieValue(raw string, allowDoubleQuote bool) (string, bool) {
+	// Strip the quotes, if present.
+	if allowDoubleQuote && len(raw) > 1 && raw[0] == '"' && raw[len(raw)-1] == '"' {
+		raw = raw[1 : len(raw)-1]
+	}
+	for i := 0; i < len(raw); i++ {
+		if !validCookieValueByte(raw[i]) {
+			return "", false
+		}
+	}
+	return raw, true
+}
+
+func validCookieValueByte(b byte) bool {
+	return 0x20 <= b && b < 0x7f && b != '"' && b != ';' && b != '\\'
 }
