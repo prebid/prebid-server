@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "abc",
+    "site": {
+      "page": "prebid.org"
+    },
+    "publisher": { },
+    "imp": [
+      {
+        "id": "imp123",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": "notjsontho"
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": ["json: cannot unmarshal string into Go value of type adapters.ExtImpBidder"]
+}

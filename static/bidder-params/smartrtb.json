@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "SmartRTB Adapter Params",
+    "description": "Required parameters for the SmartRTB server adapter",
+    "type": "object",
+    "properties": {
+      "pub_id": {
+        "type": "string",
+        "description": "Assigned publisher ID",
+        "minLength": 4
+      },
+      "med_id": {
+        "type": "string",
+        "description": "App or site ID",
+        "minLength": 20
+      },
+      "zone_id": {
+        "type": "string",
+        "description": "Specific zone ID for this placement, belonging to app/site",
+        "minLength": 20
+      }
+    },
+    "required": [ "pub_id" ]
+  }
+  
