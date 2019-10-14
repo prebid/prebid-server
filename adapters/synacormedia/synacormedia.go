@@ -157,17 +157,9 @@ func (a *SynacorMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
-	// filter out non banner and non video imps
-	var validRequestImps []openrtb.Imp
-	for _, imp := range internalRequest.Imp {
-		if imp.Banner != nil || imp.Video != nil {
-			validRequestImps = append(validRequestImps, imp)
-		}
-	}
-
 	for _, sb := range bidResp.SeatBid {
 		for i := range sb.Bid {
-			var mediaType = getMediaTypeForImp(sb.Bid[i].ImpID, validRequestImps)
+			var mediaType = getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
 			if mediaType != openrtb_ext.BidTypeBanner && mediaType != openrtb_ext.BidTypeVideo {
 				continue
 			}
