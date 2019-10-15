@@ -684,6 +684,8 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.verizonmedia.disabled", true)
 	v.SetDefault("adapters.visx.endpoint", "https://t.visx.net/s2s_bid?wrapperType=s2s_prebid_standard")
 	v.SetDefault("adapters.tappx.endpoint", "https://{{.Host}}")
+	//TODO: set correct endpoint
+	v.SetDefault("adapters.kubient.endpoint", "http://localhost:8080/bid?source=prebid-server")
 
 	v.SetDefault("max_request_size", 1024*256)
 	v.SetDefault("analytics.file.filename", "")

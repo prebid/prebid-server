@@ -41,6 +41,7 @@ const (
 	BidderGumGum         BidderName = "gumgum"
 	BidderImprovedigital BidderName = "improvedigital"
 	BidderIx             BidderName = "ix"
+	BidderKubient        BidderName = "kubient"
 	BidderLifestreet     BidderName = "lifestreet"
 	BidderLockerDome     BidderName = "lockerdome"
 	BidderMgid           BidderName = "mgid"
@@ -108,6 +109,7 @@ var BidderMap = map[string]BidderName{
 	"visx":            BidderVisx,
 	"tappx":           BidderTappx,
 	"engagebdr":       BidderEngageBDR,
+	"kubient":         BidderKubient,
 }
 
 // BidderList returns the values of the BidderMap

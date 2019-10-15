@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"fmt"
+	"github.com/prebid/prebid-server/adapters/kubient"
 	"net/http"
 	"strings"
 
@@ -100,6 +101,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderImprovedigital: improvedigital.NewImprovedigitalBidder(cfg.Adapters[string(openrtb_ext.BidderImprovedigital)].Endpoint),
 		openrtb_ext.BidderTappx:          tappx.NewTappxBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderTappx))].Endpoint),
 		openrtb_ext.BidderVerizonMedia:   verizonmedia.NewVerizonMediaBidder(client, cfg.Adapters[string(openrtb_ext.BidderVerizonMedia)].Endpoint),
+		openrtb_ext.BidderKubient:        kubient.NewKubientBidder(cfg.Adapters[string(openrtb_ext.BidderKubient)].Endpoint),
 	}
 
 	legacyBidders := map[openrtb_ext.BidderName]adapters.Adapter{
