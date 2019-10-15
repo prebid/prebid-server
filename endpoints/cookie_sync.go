@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -153,7 +154,10 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			refererHeader := r.Header.Get("Referer")
 			bidderPubmatic := openrtb_ext.BidderPubmatic
 			if (secParam == "1" || strings.HasPrefix(refererHeader, "https")) && newBidder == bidderPubmatic.String() {
-				syncInfo.URL += "%26sec%3D1%26"
+				urlWithSecParam, err := setSecureParam(syncInfo.URL)
+				if err == nil {
+					syncInfo.URL = urlWithSecParam
+				}
 			}
 
 			newSync := &usersync.CookieSyncBidders{
@@ -199,6 +203,31 @@ func cookieSyncStatus(syncCount int) string {
 		return "no_cookie"
 	}
 	return "ok"
+}
+
+func setSecureParam(usersync_url string) (string, error) {
+	u1, err := url.Parse(usersync_url)
+	if err != nil {
+		glog.Errorf("Error while setting secure flag, failed to parse usersync url: %v",err)
+		return "", err
+	}
+
+	q1 := u1.Query()
+	u2, err := url.Parse(q1.Get("predirect"))
+	if err != nil {
+		glog.Errorf("Error while setting secure flag, failed to parse predirect param: %v",err)
+		return "", err
+	}
+
+	q2 := u2.Query()
+
+	q2.Set("sec", "1")
+
+	u2.RawQuery = q2.Encode()
+	q1.Set("predirect", u2.String())
+	u1.RawQuery = q1.Encode()
+
+	return u1.String(), nil
 }
 
 type CookieSyncReq cookieSyncRequest
