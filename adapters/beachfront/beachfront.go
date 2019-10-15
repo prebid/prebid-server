@@ -480,11 +480,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 
-	if response.StatusCode == http.StatusOK && len(response.Body) <= 2 {
-		return nil, nil
-	}
-
-	if response.StatusCode == http.StatusNoContent {
+	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2)  {
 		return nil, nil
 	}
 
