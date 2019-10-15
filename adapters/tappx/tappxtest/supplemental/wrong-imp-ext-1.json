@@ -20,6 +20,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Error parsing tappxExt parameters"
+    {
+      "value": "Error parsing tappxExt parameters",
+      "comparison": "literal"
+    }
   ]
 }
