@@ -28,7 +28,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Invalid imp with id=adunit-1. Expected imp.banner or imp.video"
+    {
+      "value": "Invalid imp with id=adunit-1. Expected imp.banner or imp.video",
+      "comparison": "literal"
+    }
   ]
- 
+  
 }

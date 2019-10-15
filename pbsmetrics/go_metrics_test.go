@@ -3,13 +3,15 @@ package pbsmetrics
 import (
 	"testing"
 
+	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	metrics "github.com/rcrowley/go-metrics"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewMetrics(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{})
 
 	ensureContains(t, registry, "app_requests", m.AppRequestMeter)
 	ensureContains(t, registry, "no_cookie_requests", m.NoCookieMeter)
@@ -50,7 +52,7 @@ func TestNewMetrics(t *testing.T) {
 
 func TestRecordBidType(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{})
 
 	m.RecordAdapterBidReceived(AdapterLabels{
 		Adapter: openrtb_ext.BidderAppnexus,
@@ -67,7 +69,7 @@ func TestRecordBidType(t *testing.T) {
 
 func TestRecordGDPRRejection(t *testing.T) {
 	registry := metrics.NewRegistry()
-	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus})
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{})
 	m.RecordUserIDSet(UserLabels{
 		Action: RequestActionGDPR,
 		Bidder: openrtb_ext.BidderAppnexus,
@@ -97,6 +99,75 @@ func ensureContainsAdapterMetrics(t *testing.T, registry metrics.Registry, name 
 	ensureContains(t, registry, name+".request_time", adapterMetrics.RequestTimer)
 	ensureContains(t, registry, name+".prices", adapterMetrics.PriceHistogram)
 	ensureContainsBidTypeMetrics(t, registry, name, adapterMetrics.MarkupMetrics)
+}
+
+func TestRecordBidTypeDisabledConfig(t *testing.T) {
+	testCases := []struct {
+		hasAdm                 bool
+		DisabledMetrics        config.DisabledMetrics
+		ExpectedAdmMeterCount  int64
+		ExpectedNurlMeterCount int64
+		BidType                openrtb_ext.BidType
+		PubID                  string
+	}{
+		{
+			hasAdm:                 true,
+			DisabledMetrics:        config.DisabledMetrics{},
+			ExpectedAdmMeterCount:  1,
+			ExpectedNurlMeterCount: 0,
+			BidType:                openrtb_ext.BidTypeBanner,
+			PubID:                  "acct-id",
+		},
+		{
+			hasAdm:                 false,
+			DisabledMetrics:        config.DisabledMetrics{},
+			ExpectedAdmMeterCount:  0,
+			ExpectedNurlMeterCount: 1,
+			BidType:                openrtb_ext.BidTypeVideo,
+			PubID:                  "acct-id",
+		},
+		{
+			hasAdm:                 false,
+			DisabledMetrics:        config.DisabledMetrics{AccountAdapterDetails: true},
+			ExpectedAdmMeterCount:  0,
+			ExpectedNurlMeterCount: 1,
+			BidType:                openrtb_ext.BidTypeVideo,
+			PubID:                  "acct-id",
+		},
+		{
+			hasAdm:                 true,
+			DisabledMetrics:        config.DisabledMetrics{AccountAdapterDetails: true},
+			ExpectedAdmMeterCount:  1,
+			ExpectedNurlMeterCount: 0,
+			BidType:                openrtb_ext.BidTypeBanner,
+			PubID:                  "acct-id",
+		},
+	}
+
+	for _, test := range testCases {
+		registry := metrics.NewRegistry()
+		m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, test.DisabledMetrics)
+
+		m.RecordAdapterBidReceived(AdapterLabels{
+			Adapter: openrtb_ext.BidderAppnexus,
+			PubID:   test.PubID,
+		}, test.BidType, test.hasAdm)
+		assert.Equal(t, test.ExpectedAdmMeterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[test.BidType].AdmMeter.Count(), "Appnexus Banner Adm Bids")
+		assert.Equal(t, test.ExpectedNurlMeterCount, m.AdapterMetrics[openrtb_ext.BidderAppnexus].MarkupMetrics[test.BidType].NurlMeter.Count(), "Appnexus Banner Nurl Bids")
+
+		if test.DisabledMetrics.AccountAdapterDetails {
+			assert.Len(t, m.accountMetrics[test.PubID].adapterMetrics, 0, "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
+		} else {
+			assert.NotEqual(t, 0, len(m.accountMetrics[test.PubID].adapterMetrics), "Test failed. Account metrics that contain adapter information are disabled, therefore we expect no entries in m.accountMetrics[accountId].adapterMetrics, we have %d \n", len(m.accountMetrics[test.PubID].adapterMetrics))
+		}
+	}
+}
+
+func TestNewMetricsWithDisabledConfig(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+	assert.True(t, m.MetricsDisabled.AccountAdapterDetails, "Accound adapter metrics should be disabled")
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {

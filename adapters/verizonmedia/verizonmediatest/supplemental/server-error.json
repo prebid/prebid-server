@@ -39,7 +39,9 @@
               "id": "test-imp-id",
               "tagid": "pos2",
               "banner": {
-                "format": [{"w": 728, "h": 90}]
+                "format": [{"w": 728, "h": 90}],
+                "w": 728,
+                "h": 90
               },
               "ext": {
                 "bidder": {
@@ -62,5 +64,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Unexpected status code: 500."]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500.",
+      "comparison": "literal"
+    }
+  ]
 }

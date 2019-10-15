@@ -15,7 +15,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Ignoring imp id=test-imp-id, error while decoding impExt, err: unexpected end of JSON input."
+    {
+      "value": "Ignoring imp id=test-imp-id, error while decoding impExt, err: unexpected end of JSON input.",
+      "comparison": "literal"
+    }
   ]
 }
 

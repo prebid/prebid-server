@@ -29,7 +29,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Tappx key undefined"
+    {
+      "value": "Tappx key undefined",
+      "comparison": "literal"
+    }
   ]
  
 }
