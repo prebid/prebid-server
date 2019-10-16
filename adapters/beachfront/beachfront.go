@@ -327,7 +327,6 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 	var t = fallBackDeviceType(request)
 
-
 	if t == openrtb.DeviceTypeMobileTablet {
 		bfr.Page = request.App.Bundle
 		if request.App.Domain == "" {
@@ -337,7 +336,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 
 		bfr.IsMobile = 1
-	} else if t ==openrtb.DeviceTypePersonalComputer {
+	} else if t == openrtb.DeviceTypePersonalComputer {
 		bfr.Page = request.Site.Page
 		if request.Site.Domain == "" {
 			bfr.Domain = getDomain(request.Site.Page)
@@ -662,7 +661,7 @@ func getIP(ip string) string {
 	// This will only effect testing. The backend will return "" for localhost IPs,
 	// and seems not to know what IPv6 is, so just setting it to one that is not likely to
 	// be used.
-	if ip == "::1" || ip == "127.0.0.1" {
+	if ip == "" || ip == "::1" || ip == "127.0.0.1" {
 		return "192.168.255.255"
 	}
 	return ip
