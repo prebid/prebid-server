@@ -325,7 +325,10 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 	}
 
-	if request.App != nil {
+	var t = fallBackDeviceType(request)
+
+
+	if t == openrtb.DeviceTypeMobileTablet {
 		bfr.Page = request.App.Bundle
 		if request.App.Domain == "" {
 			bfr.Domain = getDomain(request.App.Domain)
@@ -334,7 +337,7 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 		}
 
 		bfr.IsMobile = 1
-	} else if request.Site.Page != "" {
+	} else if t ==openrtb.DeviceTypePersonalComputer {
 		bfr.Page = request.Site.Page
 		if request.Site.Domain == "" {
 			bfr.Domain = getDomain(request.Site.Page)
