@@ -195,7 +195,8 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if request.Imp[i].Banner != nil {
+		if (request.Imp[i].Banner.Format != nil) ||
+			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil) {
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
 
@@ -204,7 +205,7 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 		}
 	}
 
-	if len(bannerImps) == 0 && len(videoImps) == 0 {
+	if len(bannerImps)+len(videoImps) == 0 {
 		errs = append(errs, errors.New("no valid impressions were found in the request"))
 		return
 	}
@@ -480,7 +481,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
 
-	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2)  {
+	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2) {
 		return nil, nil
 	}
 
