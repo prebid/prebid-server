@@ -244,7 +244,7 @@ func checkForValidBidSize(bids pbs.PBSBidSlice, bidder *pbs.PBSBidder) pbs.PBSBi
 	finalBidCounter := 0
 bidLoop:
 	for _, bid := range bids {
-		if undimensionedBanner(bid) {
+		if isUndimensionedBanner(bid) {
 			for _, adunit := range bidder.AdUnits {
 				if isBidIDAndCodeEqual(&adunit, bid) {
 					if len(adunit.Sizes) == 1 {
@@ -360,7 +360,7 @@ func sortBidsAddKeywordsMobile(bids pbs.PBSBidSlice, pbs_req *pbs.PBSRequest, pr
 }
 
 func getDefaultLabels(r *http.Request) pbsmetrics.Labels {
-	rlabels = pbsmetrics.Labels{
+	rlabels := pbsmetrics.Labels{
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeLegacy,
 		PubID:         "",
@@ -372,7 +372,7 @@ func getDefaultLabels(r *http.Request) pbsmetrics.Labels {
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
-			labels.Browser = pbsmetrics.BrowserSafari
+			rlabels.Browser = pbsmetrics.BrowserSafari
 		}
 	}
 	return rlabels
