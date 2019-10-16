@@ -11,8 +11,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	//"regexp"
-	//"regexp/syntax"
 )
 
 func TestDefaults(t *testing.T) {
