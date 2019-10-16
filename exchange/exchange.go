@@ -581,17 +581,12 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 	return bids, errList
 }
 
+// Returns a snapshot of resolved bid request for debug if test field is set in the incomming request
 func buildResolvedRequest(bidRequest *openrtb.BidRequest) (json.RawMessage, error) {
-	// Snapshot of resolved bid request for debug if test request
-	var resolvedRequest json.RawMessage = nil
-	var err error
-
 	if bidRequest.Test == 1 {
-		if r, err := json.Marshal(bidRequest); err == nil {
-			resolvedRequest = r
-		}
+		return json.Marshal(bidRequest)
 	}
-	return resolvedRequest, err
+	return nil, nil
 }
 
 func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) []openrtb_ext.BidderName {
