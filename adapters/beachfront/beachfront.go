@@ -96,6 +96,10 @@ type beachfrontResponseSlot struct {
 	Adm   string  `json:"adm"`
 }
 
+type beachfrontVideoBidExtension struct {
+	Duration int `json:"duration"`
+}
+
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var beachfrontRequests beachfrontRequests
 	var errs = make([]error, 0, len(request.Imp))
@@ -284,16 +288,15 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 			continue
 		}
 
-		slot := beachfrontSlot{}
-		slot.Id = appid
+		slot := beachfrontSlot{
+			Id:       appid,
+			Slot:     request.Imp[i].ID,
+			Bidfloor: beachfrontExt.BidFloor,
+		}
 
 		if beachfrontExt.BidFloor <= minBidFloor {
 			slot.Bidfloor = 0
-		} else {
-			slot.Bidfloor = beachfrontExt.BidFloor
 		}
-
-		slot.Slot = request.Imp[i].ID
 
 		for j := 0; j < len(request.Imp[i].Banner.Format); j++ {
 
@@ -369,12 +372,10 @@ func getBannerRequest(request *openrtb.BidRequest) (beachfrontBannerRequest, []e
 
 func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 	if request.Site != nil {
-
 		return openrtb.DeviceTypePersonalComputer
 	}
 
 	return openrtb.DeviceTypeMobileTablet
-
 }
 
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
@@ -478,6 +479,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	var bids []openrtb.Bid
+	var errs []error
 
 	if response.StatusCode == http.StatusNoContent || (response.StatusCode == http.StatusOK && len(response.Body) <= 2) {
 		return nil, nil
@@ -493,25 +495,46 @@ func (a *BeachfrontAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 		return nil, []error{fmt.Errorf("unexpected status code %d from %s. Run with request.debug = 1 for more info", response.StatusCode, externalRequest.Uri)}
 	}
 
-	bids, errs := postprocess(response, externalRequest, internalRequest.ID)
+	var xtrnal openrtb.BidRequest
+
+	// For video, which uses RTB for the external request, this will unmarshal as expected. For banner, it will
+	// only get the User struct and everything else will be nil
+	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
+		errs = append(errs, err)
+	}
+
+	bids, errs = postprocess(response, xtrnal, externalRequest.Uri, internalRequest.ID)
 
 	if len(errs) != 0 {
 		return nil, errs
 	}
 
+	var dur beachfrontVideoBidExtension
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(BidCapacity)
-
 	for i := 0; i < len(bids); i++ {
-		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-			Bid:     &bids[i],
-			BidType: getBidType(externalRequest),
-		})
+
+		// If we unmarshal without an error, this is an AdM video
+		if err := json.Unmarshal(bids[i].Ext, &dur); err == nil {
+			var impVideo openrtb_ext.ExtBidPrebidVideo
+			impVideo.Duration = int(dur.Duration)
+
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:      &bids[i],
+				BidType:  getBidType(externalRequest),
+				BidVideo: &impVideo,
+			})
+		} else {
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bids[i],
+				BidType: getBidType(externalRequest),
+			})
+		}
 	}
 
 	return bidResponse, errs
 }
 
-func postprocess(response *adapters.ResponseData, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
+func postprocess(response *adapters.ResponseData, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
 	var beachfrontResp []beachfrontResponseSlot
 	var errs = make([]error, 0)
 
@@ -526,23 +549,17 @@ func postprocess(response *adapters.ResponseData, externalRequest *adapters.Requ
 			errs = append(errs, err)
 			return nil, errs
 		} else {
-			return postprocessBanner(beachfrontResp, externalRequest, id)
+			return postprocessBanner(beachfrontResp, id)
 		}
 	}
 
-	return postprocessVideo(openrtbResp.SeatBid[0].Bid, externalRequest, id)
+	return postprocessVideo(openrtbResp.SeatBid[0].Bid, xtrnal, uri, id)
 }
 
-func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
+func postprocessBanner(beachfrontResp []beachfrontResponseSlot, id string) ([]openrtb.Bid, []error) {
 
-	var xtrnal beachfrontBannerRequest
 	var bids = make([]openrtb.Bid, len(beachfrontResp))
 	var errs = make([]error, 0)
-
-	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
-		errs = append(errs, err)
-		return bids, errs
-	}
 
 	for i := 0; i < len(beachfrontResp); i++ {
 		bids[i] = openrtb.Bid{
@@ -559,17 +576,11 @@ func postprocessBanner(beachfrontResp []beachfrontResponseSlot, externalRequest 
 	return bids, errs
 }
 
-func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData, id string) ([]openrtb.Bid, []error) {
+func postprocessVideo(bids []openrtb.Bid, xtrnal openrtb.BidRequest, uri string, id string) ([]openrtb.Bid, []error) {
 
-	var xtrnal openrtb.BidRequest
 	var errs = make([]error, 0)
 
-	if err := json.Unmarshal(externalRequest.Body, &xtrnal); err != nil {
-		errs = append(errs, err)
-		return bids, errs
-	}
-
-	if externalRequest.Uri[len(externalRequest.Uri)-len(nurlVideoEndpointSuffix):len(externalRequest.Uri)] == nurlVideoEndpointSuffix {
+	if uri[len(uri)-len(nurlVideoEndpointSuffix):] == nurlVideoEndpointSuffix {
 
 		for i := 0; i < len(bids); i++ {
 			crid := extractNurlVideoCrid(bids[i].NURL)
@@ -592,7 +603,11 @@ func postprocessVideo(bids []openrtb.Bid, externalRequest *adapters.RequestData,
 
 func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
-	return strings.TrimSuffix(chunky[2], ":")
+	if len(chunky) > 1 {
+		return strings.TrimSuffix(chunky[2], ":")
+	}
+
+	return ""
 }
 
 func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, error) {
@@ -608,7 +623,7 @@ func getBeachfrontExtension(imp openrtb.Imp) (openrtb_ext.ExtImpBeachfront, erro
 
 	if err = json.Unmarshal(bidderExt.Bidder, &beachfrontExt); err != nil {
 		return beachfrontExt, &errortypes.BadInput{
-			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBidder, err: %s", imp.ID, err),
+			Message: fmt.Sprintf("ignoring imp id=%s, error while decoding extImpBeachfront, err: %s", imp.ID, err),
 		}
 	}
 
