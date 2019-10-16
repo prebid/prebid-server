@@ -195,8 +195,8 @@ func preprocess(request *openrtb.BidRequest) (beachfrontReqs beachfrontRequests,
 	var bannerImps = make([]openrtb.Imp, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
-		if (request.Imp[i].Banner.Format != nil) ||
-			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil) {
+		if request.Imp[i].Banner != nil && ((request.Imp[i].Banner.Format[0].H != 0 && request.Imp[i].Banner.Format[0].W != 0) ||
+			(request.Imp[i].Banner.H != nil && request.Imp[i].Banner.W != nil)) {
 			bannerImps = append(bannerImps, request.Imp[i])
 		}
 
@@ -441,8 +441,6 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 		imp.Ext = nil
 		imp.Secure = &secure
 
-		// @TODO - ask Alex - when bid floor gets set to 0 here, the request is sent with no bidfloor key. Is that
-		// what we want?
 		if beachfrontExt.BidFloor <= minBidFloor {
 			imp.BidFloor = 0
 		} else {

@@ -34,11 +34,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal object into Go struct field ExtImpBeachfront.appId of type string",
-      "comparison": "literal"
-    },
-    {
-      "value": "no valid impressions were found",
+      "value": "ignoring imp id=looser, error while decoding extImpBidder, err: json: cannot unmarshal string into Go struct field ExtImpBeachfront.bidfloor of type float64",
       "comparison": "literal"
     }
   ]
