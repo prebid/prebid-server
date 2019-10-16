@@ -721,6 +721,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")
 }
 
 func isValidCookieSize(maxCookieSize int) error {
