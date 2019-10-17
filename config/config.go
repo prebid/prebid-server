@@ -225,7 +225,8 @@ type Adapter struct {
 		Password string `mapstructure:"password"`
 		Tracker  string `mapstructure:"tracker"`
 	} `mapstructure:"xapi"` // needed for Rubicon
-	Disabled bool `mapstructure:"disabled"`
+	Disabled         bool   `mapstructure:"disabled"`
+	ExtraAdapterInfo string `mapstructure:"extra_info"`
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
@@ -722,6 +723,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".disabled", false)
 	v.SetDefault(adapterCfgPrefix+bidder+".partner_id", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".extra_info", "")
 }
 
 func isValidCookieSize(maxCookieSize int) error {
