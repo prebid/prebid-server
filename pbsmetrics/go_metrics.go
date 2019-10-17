@@ -24,6 +24,7 @@ type Metrics struct {
 	SafariRequestMeter         metrics.Meter
 	SafariNoCookieMeter        metrics.Meter
 	RequestTimer               metrics.Timer
+	PrebidCacheRequestTimer    metrics.Timer
 	StoredReqCacheMeter        map[CacheResult]metrics.Meter
 	StoredImpCacheMeter        map[CacheResult]metrics.Meter
 
@@ -94,6 +95,8 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
+	blankTimer := &metrics.NilTimer{}
+
 	newMetrics := &Metrics{
 		MetricsRegistry:            registry,
 		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
@@ -106,7 +109,8 @@ func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderNa
 		NoCookieMeter:              blankMeter,
 		SafariRequestMeter:         blankMeter,
 		SafariNoCookieMeter:        blankMeter,
-		RequestTimer:               &metrics.NilTimer{},
+		RequestTimer:               blankTimer,
+		PrebidCacheRequestTimer:    blankTimer,
 		StoredReqCacheMeter:        make(map[CacheResult]metrics.Meter),
 		StoredImpCacheMeter:        make(map[CacheResult]metrics.Meter),
 		AmpNoCookieMeter:           blankMeter,
@@ -166,6 +170,8 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	newMetrics.PrebidCacheRequestTimer = metrics.GetOrRegisterTimer("prebid_cache_request_time", registry)
+
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
 	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
@@ -501,8 +507,16 @@ func (me *Metrics) RecordStoredReqCacheResult(cacheResult CacheResult, inc int) 
 	me.StoredReqCacheMeter[cacheResult].Mark(int64(inc))
 }
 
+// RecordStoredImpCacheResult implements a part of the MetricsEngine interface. Records the
+// cache hits and misses when looking up stored impressions.
 func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) {
 	me.StoredImpCacheMeter[cacheResult].Mark(int64(inc))
+}
+
+// RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the
+// amount of time taken to store the auction result in Prebid Cache.
+func (me *Metrics) RecordPrebidCacheRequestTime(length time.Duration) {
+	me.PrebidCacheRequestTimer.Update(length)
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {

@@ -10,7 +10,11 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
+	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // Prevents #197
@@ -21,14 +25,19 @@ func TestEmptyPut(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+
 	client := &clientImpl{
 		httpClient: server.Client(),
 		putUrl:     server.URL,
+		metrics:    metricsMock,
 	}
 	ids, _ := client.PutJson(context.Background(), nil)
 	assertIntEqual(t, len(ids), 0)
 	ids, _ = client.PutJson(context.Background(), []Cacheable{})
 	assertIntEqual(t, len(ids), 0)
+
+	metricsMock.AssertNotCalled(t, "RecordPrebidCacheRequestTime")
 }
 
 func TestBadResponse(t *testing.T) {
@@ -38,9 +47,13 @@ func TestBadResponse(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock.On("RecordPrebidCacheRequestTime", mock.Anything).Once()
+
 	client := &clientImpl{
 		httpClient: server.Client(),
 		putUrl:     server.URL,
+		metrics:    metricsMock,
 	}
 	ids, _ := client.PutJson(context.Background(), []Cacheable{
 		{
@@ -54,6 +67,8 @@ func TestBadResponse(t *testing.T) {
 	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "")
 	assertStringEqual(t, ids[1], "")
+
+	metricsMock.AssertExpectations(t)
 }
 
 func TestCancelledContext(t *testing.T) {
@@ -63,9 +78,12 @@ func TestCancelledContext(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+
 	client := &clientImpl{
 		httpClient: server.Client(),
 		putUrl:     server.URL,
+		metrics:    metricsMock,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -77,15 +95,21 @@ func TestCancelledContext(t *testing.T) {
 	})
 	assertIntEqual(t, len(ids), 1)
 	assertStringEqual(t, ids[0], "")
+
+	metricsMock.AssertNotCalled(t, "RecordPrebidCacheRequestTime")
 }
 
 func TestSuccessfulPut(t *testing.T) {
 	server := httptest.NewServer(newHandler(2))
 	defer server.Close()
 
+	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	metricsMock.On("RecordPrebidCacheRequestTime", mock.Anything).Once()
+
 	client := &clientImpl{
 		httpClient: server.Client(),
 		putUrl:     server.URL,
+		metrics:    metricsMock,
 	}
 
 	ids, _ := client.PutJson(context.Background(), []Cacheable{
@@ -101,6 +125,8 @@ func TestSuccessfulPut(t *testing.T) {
 	assertIntEqual(t, len(ids), 2)
 	assertStringEqual(t, ids[0], "0")
 	assertStringEqual(t, ids[1], "1")
+
+	metricsMock.AssertExpectations(t)
 }
 
 func TestEncodeValueToBuffer(t *testing.T) {
@@ -153,7 +179,7 @@ func TestStripCacheHostAndPath(t *testing.T) {
 	}
 	for _, test := range testInput {
 		//start client
-		cacheClient := NewClient(&inCacheURL, &test.inExtCacheURL)
+		cacheClient := NewClient(&inCacheURL, &test.inExtCacheURL, &metricsConf.DummyMetricsEngine{})
 		cHost, cPath := cacheClient.GetExtCacheData()
 
 		//assert
