@@ -60,6 +60,9 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
 	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
 
+	timerBucketsQuickTasks := prometheus.LinearBuckets(0.005, 0.005, 20)
+	timerBucketsQuickTasks = append([]float64{0.001, 0.0015, 0.003}, timerBucketsQuickTasks...)
+
 	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel, accountLabel}
 
 	adapterLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel}
@@ -151,7 +154,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	metrics.Registry.MustRegister(metrics.userID)
 	metrics.prebidCacheReqTimer = newHistogramWithoutLabels(cfg, "prebid_cache_request_time_seconds",
 		"Seconds to complete each PBC request.",
-		timerBuckets,
+		timerBucketsQuickTasks,
 	)
 	metrics.Registry.MustRegister(metrics.prebidCacheReqTimer)
 
