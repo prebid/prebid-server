@@ -1,9 +1,10 @@
 package openrtb_ext
 
 type ExtImpSharethrough struct {
-	Pkey       string `json:"pkey"`
-	Iframe     bool   `json:"iframe"`
-	IframeSize []int  `json:"iframeSize"`
+	Pkey       string  `json:"pkey"`
+	Iframe     bool    `json:"iframe"`
+	IframeSize []int   `json:"iframeSize"`
+	BidFloor   float64 `json:"bidfloor"`
 }
 
 // ExtImpSharethrough defines the contract for bidrequest.imp[i].ext.sharethrough
