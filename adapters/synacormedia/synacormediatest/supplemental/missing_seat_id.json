@@ -21,6 +21,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Impression missing seat id"
+    {
+      "value": "Impression missing seat id",
+      "comparison": "literal"
+    }
   ]
 }

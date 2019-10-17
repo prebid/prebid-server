@@ -59,6 +59,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "json: cannot unmarshal string into Go value of type openrtb.BidResponse"
+    {
+      "comparison": "literal",
+      "value": "json: cannot unmarshal string into Go value of type openrtb.BidResponse"
+    }
   ]
 }
