@@ -63,7 +63,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	timerBucketsQuickTasks := prometheus.LinearBuckets(0.005, 0.005, 20)
 	timerBucketsQuickTasks = append([]float64{0.001, 0.0015, 0.003}, timerBucketsQuickTasks...)
 
-	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel}
+	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel, accountLabel}
 
 	adapterLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel}
 	bidLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel, bidTypeLabel, markupTypeLabel}
