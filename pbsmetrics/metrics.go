@@ -28,7 +28,7 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
-// ImpLabels
+// ImpLabels defines metric labels descripting the impression type.
 type ImpLabels struct {
 	BannerImps bool
 	VideoImps  bool
@@ -65,7 +65,7 @@ type AdapterError string
 // CacheResult : Cache hit/miss
 type CacheResult string
 
-// PublisherUnknown: Default value for Labels.PubID
+// PublisherUnknown : Default value for Labels.PubID
 const PublisherUnknown = "unknown"
 
 // The demand sources
@@ -256,4 +256,5 @@ type MetricsEngine interface {
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
+	RecordPrebidCacheRequestTime(length time.Duration)
 }

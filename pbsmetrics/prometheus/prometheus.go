@@ -28,6 +28,7 @@ type Metrics struct {
 	cookieSync           prometheus.Counter
 	adaptCookieSync      *prometheus.CounterVec
 	userID               *prometheus.CounterVec
+	prebidCacheReqTimer  prometheus.Histogram
 	storedReqCacheResult *prometheus.CounterVec
 	storedImpCacheResult *prometheus.CounterVec
 }
@@ -147,6 +148,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"action", "bidder"},
 	)
 	metrics.Registry.MustRegister(metrics.userID)
+	metrics.prebidCacheReqTimer = newHistogramWithoutLabels(cfg, "prebid_cache_request_time_seconds",
+		"Seconds to complete each PBC request.",
+		timerBuckets,
+	)
+	metrics.Registry.MustRegister(metrics.prebidCacheReqTimer)
 
 	initializeTimeSeries(&metrics)
 
@@ -192,6 +198,17 @@ func newHistogram(cfg config.PrometheusMetrics, name string, help string, labels
 		Buckets:   buckets,
 	}
 	return prometheus.NewHistogramVec(opts, labels)
+}
+
+func newHistogramWithoutLabels(cfg config.PrometheusMetrics, name string, help string, buckets []float64) prometheus.Histogram {
+	opts := prometheus.HistogramOpts{
+		Namespace: cfg.Namespace,
+		Subsystem: cfg.Subsystem,
+		Name:      name,
+		Help:      help,
+		Buckets:   buckets,
+	}
+	return prometheus.NewHistogram(opts)
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {
@@ -290,6 +307,12 @@ func (me *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult
 
 func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 	me.userID.With(resolveUserSyncLabels(userLabels)).Inc()
+}
+
+// RecordPrebidCacheRequestTime records amount of time taken to store the auction result in Prebid Cache
+func (me *Metrics) RecordPrebidCacheRequestTime(length time.Duration) {
+	time := float64(length) / float64(time.Second)
+	me.prebidCacheReqTimer.Observe(time)
 }
 
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
@@ -404,6 +427,7 @@ func initializeTimeSeries(m *Metrics) {
 		_ = m.adaptPrices.With(l)
 		_ = m.adaptPanics.With(l)
 	}
+
 	// AdapterBid labels
 	labels = addDimension(labels, bidTypeLabel, bidTypesAsString())
 	labels = addDimension(labels, markupTypeLabel, []string{"unknown", "adm"})
