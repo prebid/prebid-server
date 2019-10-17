@@ -341,7 +341,6 @@ func TestCacheVideoOnly(t *testing.T) {
 	bids = append(bids, &rbVideoBid2)
 
 	ctx := context.TODO()
-	w := httptest.NewRecorder()
 	v := viper.New()
 	config.SetupViper(v, "")
 	cfg, err := config.New(v)
@@ -355,8 +354,7 @@ func TestCacheVideoOnly(t *testing.T) {
 	prebid_cache_client.InitPrebidCache(server.URL)
 	var labels = &pbsmetrics.Labels{}
 	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
-		writeAuctionError(w, "Prebid cache failed", err)
-		labels.RequestStatus = pbsmetrics.RequestStatusErr
+		t.Errorf("Prebid cache failed: %v \n", err)
 		return
 	}
 	if bids[0].CacheID != "UUID-1" {
