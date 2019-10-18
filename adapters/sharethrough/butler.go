@@ -71,7 +71,6 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Accept-Encoding", "gzip")
 	headers.Add("Origin", domain)
 	headers.Add("Referer", request.Site.Page)
 	headers.Add("X-Forwarded-For", request.Device.IP)
