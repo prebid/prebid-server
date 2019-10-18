@@ -1,0 +1,116 @@
+{
+  "incomingRequest": {
+    "ortbRequest": {
+      "id": "some-request-id",
+      "imp": [
+        {
+          "id": "my-imp-id",
+          "native": {
+            "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"required\":1,\"title\":{\"len\":500}},{\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
+            "ver": "1.1"
+          },
+          "ext": {
+            "appnexus": {
+              "placementId": 1
+            }
+          }
+        }
+      ],
+      "app": {
+        "bundle": "org.prebid.mobile.api1demo",
+        "ver": "1.2",
+        "name": "API1.0Demo",
+        "publisher": {
+          "id": "bfa84af2-bd16-4d35-96ad-31c6bb888df0"
+        },
+        "ext": {
+          "prebid": {
+            "source": "prebid-mobile",
+            "version": "1.2"
+          }
+        }
+      },
+      "user": {
+        "gender": "O"
+      },
+      "regs": {
+        "coppa": 1
+      },
+      "ext": {
+        "prebid": {
+          "cache": {
+            "bids": {}
+          },
+          "targeting": {},
+          "includewinners": false
+        }
+      }
+    }
+  },
+  "outgoingRequests": {
+    "appnexus": {
+      "mockResponse": {
+        "pbsSeatBid": {
+          "pbsBids": [
+            {
+              "ortbBid": {
+                "id": "apn-bid",
+                "impid": "my-imp-id",
+                "price": 10,
+                "adid": "1234",
+                "adm": "{\"assets\":[{\"id\":1,\"img\":{\"type\":3,\"url\":\"http://vcdn.adnxs.com/p/creative-image/f8/7f/0f/13/f87f0f13-230c-4f05-8087-db9216e393de.jpg\",\"w\":989,\"h\":742,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"title\":{\"text\":\"This is a Prebid Native Creative\"}},{\"id\":2,\"data\":{\"type\":1,\"value\":\"Prebid.org\"}},{\"id\":3,\"data\":{\"type\":2,\"value\":\"This is a Prebid Native Creative.  There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://some-url.com\"},\"imptrackers\":[\"http://someimptracker.com\"],\"jstracker\":\"some-js-tracker\"}",
+                "iurl": "http://nym1-ib.adnxs.com/cr?id=97494204",
+                "cid": "9325",
+                "crid": "97494204",
+                "cat": ["IAB1-1"]
+              },
+              "bidType": "native"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "bids": {
+      "id": "some-request-id",
+      "seatbid": [
+        {
+          "seat": "appnexus",
+          "bid": [
+            {
+              "id": "apn-bid",
+              "impid": "my-imp-id",
+              "price": 10,
+              "iurl": "http://nym1-ib.adnxs.com/cr?id=97494204",
+              "cid": "9325",
+              "crid": "97494204",
+              "cat": ["IAB1-1"],
+              "adid": "1234",
+              "adm": "{\"assets\":[{\"id\":1,\"img\":{\"type\":3,\"url\":\"http://vcdn.adnxs.com/p/creative-image/f8/7f/0f/13/f87f0f13-230c-4f05-8087-db9216e393de.jpg\",\"w\":989,\"h\":742,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"title\":{\"text\":\"This is a Prebid Native Creative\"}},{\"id\":2,\"data\":{\"type\":1,\"value\":\"Prebid.org\"}},{\"id\":3,\"data\":{\"type\":2,\"value\":\"This is a Prebid Native Creative.  There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://some-url.com\"},\"imptrackers\":[\"http://someimptracker.com\"],\"jstracker\":\"some-js-tracker\"}",
+              "ext": {
+                "prebid": {
+                  "type": "native",
+                  "targeting": {
+                    "hb_bidder": "appnexus",
+                    "hb_bidder_appnexus": "appnexus",
+                    "hb_cache_id": "0",
+                    "hb_cache_id_appnexus": "0",
+                    "hb_cache_host": "www.pbcserver.com",
+                    "hb_cache_host_appnex": "www.pbcserver.com",
+                    "hb_cache_path": "/pbcache/endpoint",
+                    "hb_cache_path_appnex": "/pbcache/endpoint",
+                    "hb_env": "mobile-app",
+                    "hb_env_appnexus": "mobile-app",
+                    "hb_pb": "10.00",
+                    "hb_pb_appnexus": "10.00"
+                   }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
