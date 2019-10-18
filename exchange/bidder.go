@@ -160,42 +160,16 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 				if request.App != nil {
 					for i := 0; i < len(bidResponse.Bids); i++ {
 						if bidResponse.Bids[i].BidType == openrtb_ext.BidTypeNative {
-							var nativeMarkup nativeResponse.Response
-							if err := json.Unmarshal(json.RawMessage(bidResponse.Bids[i].Bid.AdM), &nativeMarkup); err != nil {
-								// Some bidders are not following IAB spec when doing native. One such example is Facebook. We are not ignoring such bids
-								continue
-							}
+							nativeMarkup, moreErrs := addNativeTypes(bidResponse.Bids[i].Bid, request)
+							errs = append(errs, moreErrs...)
 
-							nativeImp, err := getNativeImpByImpID(bidResponse.Bids[i].Bid.ImpID, request)
-							if err != nil {
-								errs = append(errs, err)
-							}
-							var nativePayload nativeRequests.Request
-							if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
-								errs = append(errs, err)
-							}
-
-							for j := 0; j < len(nativeMarkup.Assets); j++ {
-								asset := nativeMarkup.Assets[j]
-								if asset.Img != nil {
-									tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-									if tempAsset.Img.Type != 0 {
-										asset.Img.Type = tempAsset.Img.Type
-									}
+							if nativeMarkup != nil {
+								markup, err := json.Marshal(*nativeMarkup)
+								if err != nil {
+									errs = append(errs, err)
 								}
-
-								if asset.Data != nil {
-									tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
-									if tempAsset.Data.Type != 0 {
-										asset.Data.Type = tempAsset.Data.Type
-									}
-								}
+								bidResponse.Bids[i].Bid.AdM = string(markup)
 							}
-							markup, err := json.Marshal(nativeMarkup)
-							if err != nil {
-								errs = append(errs, err)
-							}
-							bidResponse.Bids[i].Bid.AdM = string(markup)
 						}
 					}
 				}
@@ -225,6 +199,46 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	return seatBid, errs
 }
 
+func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeResponse.Response, []error) {
+	var errs []error
+	var nativeMarkup *nativeResponse.Response
+	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil {
+		// Some bidders are returning non-IAB complaiant native markup. In this case Prebid server will not be able to add types. E.g Facebook
+		return nil, errs
+	}
+
+	nativeImp, err := getNativeImpByImpID(bid.ImpID, request)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	var nativePayload nativeRequests.Request
+	if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
+		errs = append(errs, err)
+	}
+
+	for _, asset := range nativeMarkup.Assets {
+		setAssetTypes(asset, nativePayload)
+	}
+
+	return nativeMarkup, errs
+}
+
+func setAssetTypes(asset nativeResponse.Asset, nativePayload nativeRequests.Request) {
+	if asset.Img != nil {
+		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
+		if tempAsset.Img.Type != 0 {
+			asset.Img.Type = tempAsset.Img.Type
+		}
+	}
+
+	if asset.Data != nil {
+		tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
+		if tempAsset.Data.Type != 0 {
+			asset.Data.Type = tempAsset.Data.Type
+		}
+	}
+}
+
 func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
 	for _, impInRequest := range request.Imp {
 		if impInRequest.ID == impID && impInRequest.Native != nil {
@@ -235,14 +249,12 @@ func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Na
 }
 
 func getAssetByID(id int64, assets []nativeRequests.Asset) nativeRequests.Asset {
-	var asset nativeRequests.Asset
-	for i := 0; i < len(assets); i++ {
-		if id == assets[i].ID {
-			asset = assets[i]
-			break
+	for _, asset := range assets {
+		if id == asset.ID {
+			return asset
 		}
 	}
-	return asset
+	return nativeRequests.Asset{}
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
