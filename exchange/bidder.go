@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
+	nativeRequests "github.com/mxmCherry/openrtb/native/request"
+	nativeResponse "github.com/mxmCherry/openrtb/native/response"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
@@ -153,6 +156,50 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 					}
 				}
 
+				// Only do this for request from mobile app
+				if request.App != nil {
+					for i := 0; i < len(bidResponse.Bids); i++ {
+						if bidResponse.Bids[i].BidType == openrtb_ext.BidTypeNative {
+							var nativeMarkup nativeResponse.Response
+							if err := json.Unmarshal(json.RawMessage(bidResponse.Bids[i].Bid.AdM), &nativeMarkup); err != nil {
+								// Some bidders are not following IAB spec when doing native. One such example is Facebook. We are not ignoring such bids
+								continue
+							}
+
+							nativeImp, err := getNativeImpByImpID(bidResponse.Bids[i].Bid.ImpID, request)
+							if err != nil {
+								errs = append(errs, err)
+							}
+							var nativePayload nativeRequests.Request
+							if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
+								errs = append(errs, err)
+							}
+
+							for j := 0; j < len(nativeMarkup.Assets); j++ {
+								asset := nativeMarkup.Assets[j]
+								if asset.Img != nil {
+									tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
+									if tempAsset.Img.Type != 0 {
+										asset.Img.Type = tempAsset.Img.Type
+									}
+								}
+
+								if asset.Data != nil {
+									tempAsset := getAssetByID(asset.ID, nativePayload.Assets)
+									if tempAsset.Data.Type != 0 {
+										asset.Data.Type = tempAsset.Data.Type
+									}
+								}
+							}
+							markup, err := json.Marshal(nativeMarkup)
+							if err != nil {
+								errs = append(errs, err)
+							}
+							bidResponse.Bids[i].Bid.AdM = string(markup)
+						}
+					}
+				}
+
 				if err == nil {
 					// Conversion rate found, using it for conversion
 					for i := 0; i < len(bidResponse.Bids); i++ {
@@ -176,6 +223,26 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 	}
 
 	return seatBid, errs
+}
+
+func getNativeImpByImpID(impID string, request *openrtb.BidRequest) (*openrtb.Native, error) {
+	for _, impInRequest := range request.Imp {
+		if impInRequest.ID == impID && impInRequest.Native != nil {
+			return impInRequest.Native, nil
+		}
+	}
+	return nil, errors.New("Could not find native imp")
+}
+
+func getAssetByID(id int64, assets []nativeRequests.Asset) nativeRequests.Asset {
+	var asset nativeRequests.Asset
+	for i := 0; i < len(assets); i++ {
+		if id == assets[i].ID {
+			asset = assets[i]
+			break
+		}
+	}
+	return asset
 }
 
 // makeExt transforms information about the HTTP call into the contract class for the PBS response.
