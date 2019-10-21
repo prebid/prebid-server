@@ -3,6 +3,7 @@ package kubient
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
 
 	"github.com/mxmCherry/openrtb"
@@ -46,51 +47,64 @@ func (adapter *KubientAdapter) MakeRequests(
 	return requestsToBidder, errs
 }
 
-const unexpectedStatusCodeFormat = "" +
-	"Unexpected status code: %d. Run with request.debug = 1 for more info"
+// MakeBids makes the bids
+func (adapter *KubientAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+	var errs []error
 
-// MakeBids unpacks the server's response into Bids.
-func (adapter *KubientAdapter) MakeBids(
-	openRTBRequest *openrtb.BidRequest,
-	requestToBidder *adapters.RequestData,
-	bidderRawResponse *adapters.ResponseData,
-) (
-	bidderResponse *adapters.BidderResponse,
-	errs []error,
-) {
-	switch bidderRawResponse.StatusCode {
-	case http.StatusOK:
-		break
-	case http.StatusNoContent:
+	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
-	case http.StatusBadRequest:
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
-		}
-		return nil, []error{err}
-	default:
-		err := &errortypes.BadServerResponse{
-			Message: fmt.Sprintf(unexpectedStatusCodeFormat, bidderRawResponse.StatusCode),
-		}
+	}
+
+	if response.StatusCode == http.StatusBadRequest {
+		return nil, []error{&errortypes.BadInput{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+		}}
+	}
+
+	var bidResp openrtb.BidResponse
+
+	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
-	var openRTBBidderResponse openrtb.BidResponse
-	if err := json.Unmarshal(bidderRawResponse.Body, &openRTBBidderResponse); err != nil {
-		return nil, []error{err}
-	}
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
-	bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
-	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
-	var typedBid *adapters.TypedBid
-	for _, seatBid := range openRTBBidderResponse.SeatBid {
-		for _, bid := range seatBid.Bid {
-			bid := bid // pin! -> https://github.com/kyoh86/scopelint#whats-this
-			typedBid = &adapters.TypedBid{Bid: &bid, BidType: "banner"}
-			bidderResponse.Bids = append(bidderResponse.Bids, typedBid)
+	for _, sb := range bidResp.SeatBid {
+		for i := range sb.Bid {
+			bidType, err := getMediaTypeForImp(sb.Bid[i].ImpID, internalRequest.Imp)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				b := &adapters.TypedBid{
+					Bid:     &sb.Bid[i],
+					BidType: bidType,
+				}
+				bidResponse.Bids = append(bidResponse.Bids, b)
+			}
+		}
+	}
+	return bidResponse, errs
+}
+
+func getMediaTypeForImp(impID string, imps []openrtb.Imp) (openrtb_ext.BidType, error) {
+	mediaType := openrtb_ext.BidTypeBanner
+	for _, imp := range imps {
+		if imp.ID == impID {
+			if imp.Banner == nil && imp.Video != nil {
+				mediaType = openrtb_ext.BidTypeVideo
+			}
+			return mediaType, nil
 		}
 	}
 
-	return bidderResponse, nil
-
+	// This shouldnt happen. Lets handle it just incase by returning an error.
+	return "", &errortypes.BadInput{
+		Message: fmt.Sprintf("Failed to find impression \"%s\" ", impID),
+	}
 }
