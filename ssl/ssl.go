@@ -16,6 +16,28 @@ func GetRootCAPool() *x509.CertPool {
 	return pool
 }
 
+// Appends certificates to the `x509.CertPool` from a `.pem` private local file. On many Linux
+// systems, /etc/ssl/cert.pem will contain the system wide set but in our case, we'll pull
+// the certificate file path from the `Configuration` struct
+func AppendPEMFileToRootCAPool(certPool *x509.CertPool, pemFileName string) error {
+	if certPool == nil {
+		certPool = x509.NewCertPool()
+	}
+	if pemFileName != "" {
+		//read file and place it's contents in `pemCerts`
+		pemCerts, err := ioutil.ReadFile(pemFileName)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read file %s: %v", pemFileName, err)
+		}
+
+		//`pemCerts` has been obtained, append to certPool
+		certPool.AppendCertsFromPEM(pemCerts)
+	} else {
+		return fmt.Errorf("Path to local PEM file containing SSL certificates is\n")
+	}
+	return nil
+}
+
 var pemCerts = []byte(`
 -----BEGIN CERTIFICATE-----
 MIIDzzCCAregAwIBAgIDAWweMA0GCSqGSIb3DQEBBQUAMIGNMQswCQYDVQQGEwJB
