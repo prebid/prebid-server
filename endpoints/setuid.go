@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -55,9 +56,9 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 			return
 		}
 
-		if bidder == "" {
+		if err := validateBidder(bidder); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`"bidder" query param is required`))
+			w.Write([]byte(err.Error()))
 			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
 				Action: pbsmetrics.RequestActionErr,
 				Bidder: openrtb_ext.BidderName(bidder),
@@ -70,7 +71,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		uid := query.Get("uid")
 		so.UID = uid
 
-		var err error = nil
+		var err error
 		if uid == "" {
 			pc.Unsync(bidder)
 		} else {
@@ -89,6 +90,18 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
 	})
+}
+
+func validateBidder(bidderName string) error {
+	if bidderName == "" {
+		return errors.New(`"bidder" query param is required`)
+	}
+
+	// Fixes #1054
+	if _, ok := openrtb_ext.BidderMap[bidderName]; !ok {
+		return errors.New("The bidder name provided is not supported by Prebid Server")
+	}
+	return nil
 }
 
 // siteCookieCheck scans the input User Agent string to check if browser is Chrome and browser version is greater than the minimum version for adding the SameSite cookie attribute
