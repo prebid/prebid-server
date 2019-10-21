@@ -95,7 +95,8 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
 	pc.SetPreference(optout == "")
 
-	pc.SetCookieOnResponse(w, deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration())
+	pc.SetCookieOnResponse(w, false, deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration())
+
 	if optout == "" {
 		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, 301)
 	} else {

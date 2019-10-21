@@ -23,6 +23,7 @@ const (
 	Bidder33Across       BidderName = "33across"
 	BidderAdkernel       BidderName = "adkernel"
 	BidderAdkernelAdn    BidderName = "adkernelAdn"
+	BidderAdpone         BidderName = "adpone"
 	BidderAdtelligent    BidderName = "adtelligent"
 	BidderAdform         BidderName = "adform"
 	BidderAdvangelists   BidderName = "advangelists"
@@ -41,6 +42,7 @@ const (
 	BidderImprovedigital BidderName = "improvedigital"
 	BidderIx             BidderName = "ix"
 	BidderLifestreet     BidderName = "lifestreet"
+	BidderLockerDome     BidderName = "lockerdome"
 	BidderMgid           BidderName = "mgid"
 	BidderOpenx          BidderName = "openx"
 	BidderPubmatic       BidderName = "pubmatic"
@@ -52,6 +54,7 @@ const (
 	BidderSomoaudience   BidderName = "somoaudience"
 	BidderSovrn          BidderName = "sovrn"
 	BidderSonobi         BidderName = "sonobi"
+	BidderSynacormedia   BidderName = "synacormedia"
 	BidderTriplelift     BidderName = "triplelift"
 	BidderUnruly         BidderName = "unruly"
 	BidderVerizonMedia   BidderName = "verizonmedia"
@@ -67,6 +70,7 @@ var BidderMap = map[string]BidderName{
 	"33across":        Bidder33Across,
 	"adkernel":        BidderAdkernel,
 	"adkernelAdn":     BidderAdkernelAdn,
+	"adpone":          BidderAdpone,
 	"adtelligent":     BidderAdtelligent,
 	"adform":          BidderAdform,
 	"advangelists":    BidderAdvangelists,
@@ -85,6 +89,7 @@ var BidderMap = map[string]BidderName{
 	"improvedigital":  BidderImprovedigital,
 	"ix":              BidderIx,
 	"lifestreet":      BidderLifestreet,
+	"lockerdome":      BidderLockerDome,
 	"openx":           BidderOpenx,
 	"mgid":            BidderMgid,
 	"pubmatic":        BidderPubmatic,
@@ -96,6 +101,7 @@ var BidderMap = map[string]BidderName{
 	"somoaudience":    BidderSomoaudience,
 	"sovrn":           BidderSovrn,
 	"sonobi":          BidderSonobi,
+	"synacormedia":    BidderSynacormedia,
 	"triplelift":      BidderTriplelift,
 	"unruly":          BidderUnruly,
 	"verizonmedia":    BidderVerizonMedia,

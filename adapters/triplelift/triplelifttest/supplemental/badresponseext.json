@@ -95,5 +95,10 @@
       ]
     }
   ],
-  "expectedMakeBidsErrors": ["json: cannot unmarshal string into Go value of type triplelift.TripleliftRespExt"]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type triplelift.TripleliftRespExt",
+      "comparison": "literal"
+    }
+  ]
 }

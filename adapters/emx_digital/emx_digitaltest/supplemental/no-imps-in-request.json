@@ -9,5 +9,10 @@
         }
       },
 
-      "expectedMakeRequestsErrors": ["No Imps in Bid Request"]
+      "expectedMakeRequestsErrors": [
+        {
+          "value": "No Imps in Bid Request",
+          "comparison": "literal"
+        }
+      ]
 }

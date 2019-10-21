@@ -3,6 +3,8 @@ package endpoints
 import (
 	"context"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -12,6 +14,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/usersync"
+)
+
+const (
+	chromeStr       = "Chrome/"
+	chromeiOSStr    = "CriOS/"
+	chromeMinVer    = 67
+	chromeStrLen    = len(chromeStr)
+	chromeiOSStrLen = len(chromeiOSStr)
 )
 
 func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
@@ -76,8 +86,37 @@ func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, pbsanalyti
 			so.Success = true
 		}
 
-		pc.SetCookieOnResponse(w, &cfg, cookieTTL)
+		setSiteCookie := siteCookieCheck(r.UserAgent())
+		pc.SetCookieOnResponse(w, setSiteCookie, &cfg, cookieTTL)
 	})
+}
+
+// siteCookieCheck scans the input User Agent string to check if browser is Chrome and browser version is greater than the minimum version for adding the SameSite cookie attribute
+func siteCookieCheck(ua string) bool {
+	result := false
+
+	index := strings.Index(ua, chromeStr)
+	criOSIndex := strings.Index(ua, chromeiOSStr)
+	if index != -1 {
+		result = checkChromeBrowserVersion(ua, index, chromeStrLen)
+	} else if criOSIndex != -1 {
+		result = checkChromeBrowserVersion(ua, criOSIndex, chromeiOSStrLen)
+	}
+	return result
+}
+
+func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
+	result := false
+	vIndex := index + chromeStrLength
+	dotIndex := strings.Index(ua[vIndex:], ".")
+	if dotIndex == -1 {
+		dotIndex = len(ua[vIndex:])
+	}
+	version, _ := strconv.Atoi(ua[vIndex : vIndex+dotIndex])
+	if version >= chromeMinVer {
+		result = true
+	}
+	return result
 }
 
 func preventSyncsGDPR(gdprEnabled string, gdprConsent string, perms gdpr.Permissions) (bool, int, string) {

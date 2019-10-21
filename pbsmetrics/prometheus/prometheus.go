@@ -49,6 +49,7 @@ const (
 	videoLabel          = "video"
 	audioLabel          = "audio"
 	nativeLabel         = "native"
+	accountLabel        = "account"
 )
 
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
@@ -58,7 +59,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
 	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
 
-	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel}
+	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel, accountLabel}
 
 	adapterLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel}
 	bidLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel, bidTypeLabel, markupTypeLabel}
@@ -294,9 +295,9 @@ func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
 	return prometheus.Labels{
-		demandSourceLabel: string(labels.Source),
-		requestTypeLabel:  string(labels.RType),
-		// "pubid":   labels.PubID,
+		demandSourceLabel:   string(labels.Source),
+		requestTypeLabel:    string(labels.RType),
+		accountLabel:        string(labels.PubID),
 		browserLabel:        string(labels.Browser),
 		cookieLabel:         string(labels.CookieFlag),
 		responseStatusLabel: string(labels.RequestStatus),
@@ -389,6 +390,8 @@ func initializeTimeSeries(m *Metrics) {
 	labels = addDimension(labels, cookieLabel, cookieTypesAsString())
 	adapterLabels := labels // save regenerating these dimensions for adapter status
 	labels = addDimension(labels, responseStatusLabel, requestStatusesAsString())
+	// If we implement an account whitelist, we can seed the metrics with that list to redusce latency associated with registering new lable values on the fly.
+	labels = addDimension(labels, accountLabel, []string{pbsmetrics.PublisherUnknown})
 	for _, l := range labels {
 		_ = m.requests.With(l)
 		_ = m.reqTimer.With(l)

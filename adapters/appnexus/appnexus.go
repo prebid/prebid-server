@@ -346,7 +346,7 @@ func (a *AppNexusAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	if reqExt.Appnexus == nil {
 		reqExt.Appnexus = &appnexusReqExtAppnexus{}
 	}
-	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer != 0
+	includeBrandCategory := reqExt.Prebid.Targeting != nil && reqExt.Prebid.Targeting.IncludeBrandCategory != nil
 	if includeBrandCategory {
 		reqExt.Appnexus.BrandCategoryUniqueness = &includeBrandCategory
 		reqExt.Appnexus.IncludeBrandCategory = &includeBrandCategory

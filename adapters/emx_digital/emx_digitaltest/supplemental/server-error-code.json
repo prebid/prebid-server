@@ -43,5 +43,10 @@
       }
     ],
 
-    "expectedMakeBidsErrors": ["Invalid Status Returned: 500. Run with request.debug = 1 for more info"]
+    "expectedMakeBidsErrors": [
+      {
+        "value": "Invalid Status Returned: 500. Run with request.debug = 1 for more info",
+        "comparison": "literal"
+      }
+    ]
   }
