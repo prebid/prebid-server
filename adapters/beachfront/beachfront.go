@@ -101,10 +101,7 @@ type beachfrontVideoBidExtension struct {
 }
 
 func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	var beachfrontRequests beachfrontRequests
-	var errs = make([]error, 0, len(request.Imp))
-
-	beachfrontRequests, errs = preprocess(request)
+	beachfrontRequests, errs := preprocess(request)
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
@@ -177,9 +174,8 @@ func (a *BeachfrontAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 	for j := 0; j < len(beachfrontRequests.NurlVideo); j++ {
 		bytes, err := json.Marshal(beachfrontRequests.NurlVideo[j].Request)
 
-		bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
-
 		if err == nil {
+			bytes = append([]byte(`{"isPrebid":true,`), bytes[1:]...)
 			reqs[j+admBump] = &adapters.RequestData{
 				Method:  "POST",
 				Uri:     videoEndpoint + "=" + beachfrontRequests.NurlVideo[j].AppId + nurlVideoEndpointSuffix,
@@ -383,14 +379,14 @@ func fallBackDeviceType(request *openrtb.BidRequest) openrtb.DeviceType {
 func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []error) {
 	var bfReqs = make([]beachfrontVideoRequest, len(request.Imp))
 	var errs = make([]error, 0, len(request.Imp))
-	var bad = make([]int, 0)
+	var failedRequestIndicies = make([]int, 0)
 
 	for i := 0; i < len(request.Imp); i++ {
 		beachfrontExt, err := getBeachfrontExtension(request.Imp[i])
 
 		if err != nil {
 			// Failed to extract the beachfrontExt, so this request is junk.
-			bad = append(bad, i)
+			failedRequestIndicies = append(failedRequestIndicies, i)
 			errs = append(errs, err)
 			continue
 		}
@@ -399,7 +395,7 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 
 		if err != nil {
 			// Failed to get an appid, so this request is junk.
-			bad = append(bad, i)
+			failedRequestIndicies = append(failedRequestIndicies, i)
 			errs = append(errs, err)
 			continue
 		}
@@ -470,9 +466,9 @@ func getVideoRequests(request *openrtb.BidRequest) ([]beachfrontVideoRequest, []
 	}
 
 	// Strip out any failed requests
-	if len(bad) > 0 {
-		for i := 0; i < len(bad); i++ {
-			bfReqs = removeVideoElement(bfReqs, bad[i])
+	if len(failedRequestIndicies) > 0 {
+		for i := 0; i < len(failedRequestIndicies); i++ {
+			bfReqs = removeVideoElement(bfReqs, failedRequestIndicies[i])
 		}
 
 	}
