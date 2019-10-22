@@ -2,11 +2,12 @@
   "mockBidRequest": {
     "id": "some_test_ad",
     "site": {
-      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+      "page": "https://example.com/whatever"
     },
     "imp": [
       {
         "bidfloor": 0.02,
+        "id": "looser",
         "video":{
           "mimes":[
             "video/mp4"
@@ -17,9 +18,11 @@
         },
         "ext": {
           "bidder": {
-            "bidfloor": 0.02,
+            "some": "other thing",
+            "bidfloor": "One MILLION dollars, ha, ha ha, ha, ha ha!",
             "appId": {
-              "value": "3b16770b-17af-4d22-daff-9606bdf2c9c3"
+              "not": "the object",
+              "you": "were looking for"
             }
           }
         }
@@ -27,13 +30,11 @@
     ]
   },
 
+
+
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal object into Go struct field ExtImpBeachfront.appId of type string",
-      "comparison": "literal"
-    },
-    {
-      "value": "no valid impressions were found",
+      "value": "ignoring imp id=looser, error while decoding extImpBeachfront, err: json: cannot unmarshal string into Go struct field ExtImpBeachfront.bidfloor of type float64",
       "comparison": "literal"
     }
   ]
