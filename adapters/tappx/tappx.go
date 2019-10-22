@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const TAPPX_BIDDER_VERSION = "1.0"
+const TAPPX_BIDDER_VERSION = "1.1"
 
 type TappxAdapter struct {
 	http             *adapters.HTTPAdapter
@@ -39,6 +39,7 @@ type tappxParams struct {
 	Host     string `json:"host"`
 	TappxKey string `json:"tappxkey"`
 	Endpoint string `json:"endpoint"`
+	BidFloor string `json:"bidfloor"`
 }
 
 func (a *TappxAdapter) Name() string {
@@ -76,6 +77,10 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 	url, err := a.buildEndpointURL(&tappxExt, test)
 	if url == "" {
 		return nil, []error{err}
+	}
+
+	if tappxExt.BidFloor > 0 {
+		request.Imp[0].BidFloor = tappxExt.BidFloor
 	}
 
 	reqJSON, err := json.Marshal(request)
@@ -143,7 +148,7 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		thisURI = thisURI + "&ts=" + strconv.Itoa(int(t))
 	}
 
-	thisURI = thisURI + "&v=" + TAPPX_BIDDER_VERSION
+	thisURI = thisURI + "&v=" + TAPPX_BIDDER_VERSION + "&type_cnn=prebid"
 
 	return thisURI, nil
 }

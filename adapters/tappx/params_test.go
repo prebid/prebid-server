@@ -3,7 +3,6 @@ package tappx
 import (
 	"encoding/json"
 	"testing"
-
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
@@ -35,6 +34,7 @@ func TestInvalidParams(t *testing.T) {
 
 var validParams = []string{
 	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com/"}`,
+	`{"tappxkey":"pub-12345-android-9876", "endpoint":"ZZ1INTERNALTEST149147915", "host":"test.tappx.com/", "bidfloor":0.5}`
 }
 
 var invalidParams = []string{
