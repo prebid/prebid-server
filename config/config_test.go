@@ -32,7 +32,6 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
-	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 }
 
