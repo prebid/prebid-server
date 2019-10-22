@@ -179,7 +179,11 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
 	// local file system
 	certPool := ssl.GetRootCAPool()
-	ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	var readCertErr Error
+	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	if readCertErr != nil {
+		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
+	}
 
 	theClient := &http.Client{
 		Transport: &http.Transport{
