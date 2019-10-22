@@ -167,8 +167,9 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 								markup, err := json.Marshal(*nativeMarkup)
 								if err != nil {
 									errs = append(errs, err)
+								} else {
+									bidResponse.Bids[i].Bid.AdM = string(markup)
 								}
-								bidResponse.Bids[i].Bid.AdM = string(markup)
 							}
 						}
 					}
@@ -202,7 +203,7 @@ func (bidder *bidderAdapter) requestBid(ctx context.Context, request *openrtb.Bi
 func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeResponse.Response, []error) {
 	var errs []error
 	var nativeMarkup *nativeResponse.Response
-	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil {
+	if err := json.Unmarshal(json.RawMessage(bid.AdM), &nativeMarkup); err != nil || len(nativeMarkup.Assets) == 0 {
 		// Some bidders are returning non-IAB complaiant native markup. In this case Prebid server will not be able to add types. E.g Facebook
 		return nil, errs
 	}
@@ -210,7 +211,9 @@ func addNativeTypes(bid *openrtb.Bid, request *openrtb.BidRequest) (*nativeRespo
 	nativeImp, err := getNativeImpByImpID(bid.ImpID, request)
 	if err != nil {
 		errs = append(errs, err)
+		return nil, errs
 	}
+
 	var nativePayload nativeRequests.Request
 	if err := json.Unmarshal(json.RawMessage((*nativeImp).Request), &nativePayload); err != nil {
 		errs = append(errs, err)
