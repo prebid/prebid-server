@@ -20,5 +20,14 @@
       "page": "http://www.publisher.com/awesome/site?with=some&parameters=here"
     }
   },
-  "expectedMakeRequestsErrors": ["ignoring imp id=test-imp-id, invalid tagid must be a String of numbers","Error in preprocess of Imp, err: [ignoring imp id=test-imp-id, invalid tagid must be a String of numbers]"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "ignoring imp id=test-imp-id, invalid tagid must be a String of numbers",
+      "comparison": "literal"
+    },
+    {
+      "value": "Error in preprocess of Imp, err: [ignoring imp id=test-imp-id, invalid tagid must be a String of numbers]",
+      "comparison": "literal"
+    }
+  ]
 }

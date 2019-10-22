@@ -28,6 +28,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "PartnerID is empty"
+    {
+      "value": "PartnerID is empty",
+      "comparison": "literal"
+    }
   ]
 }

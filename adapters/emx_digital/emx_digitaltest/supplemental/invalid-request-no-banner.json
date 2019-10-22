@@ -13,5 +13,14 @@
       ]
     },
 
-    "expectedMakeRequestsErrors": ["Request needs to include a Banner object","Error in preprocess of Imp, err: [Request needs to include a Banner object]"]
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Request needs to include a Banner object",
+        "comparison": "literal"
+      },
+      {
+        "value": "Error in preprocess of Imp, err: [Request needs to include a Banner object]",
+        "comparison": "literal"
+      }
+    ]
   }

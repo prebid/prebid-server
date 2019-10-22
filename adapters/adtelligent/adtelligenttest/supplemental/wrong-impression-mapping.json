@@ -69,6 +69,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "ignoring bid id=test-bid-id, request doesn't contain any impression with id=SOME-WRONG-IMP-ID"
+    {
+      "value": "ignoring bid id=test-bid-id, request doesn't contain any impression with id=SOME-WRONG-IMP-ID",
+      "comparison": "literal"
+    }
   ]
 }

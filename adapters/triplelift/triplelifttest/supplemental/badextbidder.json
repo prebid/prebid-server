@@ -1,5 +1,14 @@
 {
-  "expectedMakeRequestsErrors" : ["json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpTriplelift","No valid impressions for triplelift"],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpTriplelift",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impressions for triplelift",
+      "comparison": "literal"
+    }
+  ],
   "mockBidRequest": {
     "id": "test-request-id",
     "imp": [

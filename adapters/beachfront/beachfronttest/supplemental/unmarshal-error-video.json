@@ -28,7 +28,13 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "json: cannot unmarshal object into Go struct field ExtImpBeachfront.appId of type string",
-    "no valid impressions were found"
+    {
+      "value": "json: cannot unmarshal object into Go struct field ExtImpBeachfront.appId of type string",
+      "comparison": "literal"
+    },
+    {
+      "value": "no valid impressions were found",
+      "comparison": "literal"
+    }
   ]
 }

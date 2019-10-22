@@ -122,6 +122,8 @@
                 "type": "video",
                 "targeting": {
                   "hb_bidder_audienceNe": "audienceNetwork",
+                  "hb_cache_host_audien": "www.pbcserver.com",
+                  "hb_cache_path_audien": "/pbcache/endpoint",
                   "hb_pb_audienceNetwor": "0.50",
                   "hb_size_audienceNetw": "200x250"
                 }
@@ -144,6 +146,10 @@
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
+                  "hb_cache_host": "www.pbcserver.com",
+                  "hb_cache_host_appnex": "www.pbcserver.com",
+                  "hb_cache_path": "/pbcache/endpoint",
+                  "hb_cache_path_appnex": "/pbcache/endpoint",
                   "hb_pb": "0.70",
                   "hb_pb_appnexus": "0.70",
                   "hb_size": "200x250",
@@ -178,6 +184,10 @@
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
+                  "hb_cache_host": "www.pbcserver.com",
+                  "hb_cache_host_appnex": "www.pbcserver.com",
+                  "hb_cache_path": "/pbcache/endpoint",
+                  "hb_cache_path_appnex": "/pbcache/endpoint",
                   "hb_pb": "0.60",
                   "hb_pb_appnexus": "0.60",
                   "hb_size": "300x500",

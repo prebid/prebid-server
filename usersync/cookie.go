@@ -12,9 +12,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
-const DEFAULT_TTL = 14 * 24 * time.Hour
-const UID_COOKIE_NAME = "uids"
+const (
+	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
+	DEFAULT_TTL         = 14 * 24 * time.Hour
+	UID_COOKIE_NAME     = "uids"
+	SameSiteCookieName  = "SSCookie"
+	SameSiteCookieValue = "1"
+	SameSiteAttribute   = "; SameSite=None"
+)
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -161,7 +166,7 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.HostCookie, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
 	var domain string = cfg.Domain
 
@@ -187,7 +192,22 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, cfg *config.
 		}
 		currSize = len([]byte(httpCookie.String()))
 	}
-	http.SetCookie(w, httpCookie)
+
+	uidsCookieStr := httpCookie.String()
+	var sameSiteCookie *http.Cookie
+	if setSiteCookie {
+		uidsCookieStr += SameSiteAttribute
+		sameSiteCookie = &http.Cookie{
+			Name:    SameSiteCookieName,
+			Value:   SameSiteCookieValue,
+			Expires: time.Now().Add(ttl),
+			Path:    "/",
+		}
+		sameSiteCookieStr := sameSiteCookie.String()
+		sameSiteCookieStr += SameSiteAttribute
+		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	}
+	w.Header().Add("Set-Cookie", uidsCookieStr)
 }
 
 // Unsync removes the user's ID for the given family from this cookie.

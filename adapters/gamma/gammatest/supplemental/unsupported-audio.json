@@ -19,7 +19,13 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Gamma only supports banner and video media types. Ignoring imp id=unsupported-audio-imp",
-    "No valid impression in the bid request"
+    {
+      "value": "Gamma only supports banner and video media types. Ignoring imp id=unsupported-audio-imp",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impression in the bid request",
+      "comparison": "literal"
+    }
   ]
 }

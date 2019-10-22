@@ -96,7 +96,7 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			thisTimeInUTC := thisTime.UTC()
 			thisEndpoint := e.Endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
 			ctx, cancel := e.ctxProducer()
-			resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
+			resp, err := ctxhttp.Get(ctx, e.client, thisEndpoint)
 			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
 				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
