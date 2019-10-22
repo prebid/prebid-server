@@ -2,6 +2,8 @@ package ssl
 
 import (
 	"crypto/x509"
+	"fmt"
+	"io/ioutil"
 )
 
 // from https://medium.com/@kelseyhightower/optimizing-docker-images-for-static-binaries-b5696e26eb07
@@ -27,7 +29,7 @@ func AppendPEMFileToRootCAPool(certPool *x509.CertPool, pemFileName string) erro
 		//read file and place it's contents in `pemCerts`
 		pemCerts, err := ioutil.ReadFile(pemFileName)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read file %s: %v", pemFileName, err)
+			return fmt.Errorf("Failed to read file %s: %v", pemFileName, err)
 		}
 
 		//`pemCerts` has been obtained, append to certPool
