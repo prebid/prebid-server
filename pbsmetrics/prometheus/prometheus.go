@@ -28,7 +28,7 @@ type Metrics struct {
 	cookieSync           prometheus.Counter
 	adaptCookieSync      *prometheus.CounterVec
 	userID               *prometheus.CounterVec
-	prebidCacheReqTimer  prometheus.Histogram
+	prebidCacheReqTimer  *prometheus.HistogramVec
 	storedReqCacheResult *prometheus.CounterVec
 	storedImpCacheResult *prometheus.CounterVec
 }
@@ -56,7 +56,6 @@ const (
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
 // Its own function to keep the metric creation function cleaner.
 func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
-	// define the buckets for timers
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
 	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
 
@@ -152,9 +151,9 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"action", "bidder"},
 	)
 	metrics.Registry.MustRegister(metrics.userID)
-	metrics.prebidCacheReqTimer = newHistogramWithoutLabels(cfg, "prebid_cache_request_time_seconds",
+	metrics.prebidCacheReqTimer = newHistogram(cfg, "prebid_cache_request_time_seconds",
 		"Seconds to complete each PBC request.",
-		timerBucketsQuickTasks,
+		[]string{responseStatusLabel}, timerBucketsQuickTasks,
 	)
 	metrics.Registry.MustRegister(metrics.prebidCacheReqTimer)
 
@@ -202,17 +201,6 @@ func newHistogram(cfg config.PrometheusMetrics, name string, help string, labels
 		Buckets:   buckets,
 	}
 	return prometheus.NewHistogramVec(opts, labels)
-}
-
-func newHistogramWithoutLabels(cfg config.PrometheusMetrics, name string, help string, buckets []float64) prometheus.Histogram {
-	opts := prometheus.HistogramOpts{
-		Namespace: cfg.Namespace,
-		Subsystem: cfg.Subsystem,
-		Name:      name,
-		Help:      help,
-		Buckets:   buckets,
-	}
-	return prometheus.NewHistogram(opts)
 }
 
 func (me *Metrics) RecordConnectionAccept(success bool) {
@@ -314,9 +302,9 @@ func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 }
 
 // RecordPrebidCacheRequestTime records amount of time taken to store the auction result in Prebid Cache
-func (me *Metrics) RecordPrebidCacheRequestTime(length time.Duration) {
+func (me *Metrics) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
 	time := float64(length) / float64(time.Second)
-	me.prebidCacheReqTimer.Observe(time)
+	me.prebidCacheReqTimer.With(resolveRequestLabels(labels)).Observe(time)
 }
 
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
@@ -399,6 +387,12 @@ func resolveImpLabels(labels pbsmetrics.ImpLabels) prometheus.Labels {
 		impLabels[nativeLabel] = "yes"
 	}
 	return impLabels
+}
+
+func resolveRequestLabels(labels pbsmetrics.RequestLabels) prometheus.Labels {
+	return prometheus.Labels{
+		responseStatusLabel: string(labels.RequestStatus),
+	}
 }
 
 // initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances

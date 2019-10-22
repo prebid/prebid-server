@@ -101,13 +101,15 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	anResp, err := ctxhttp.Do(ctx, c.httpClient, httpReq)
 	if err != nil {
 		elapsedTime := time.Since(startTime)
+		c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusErr}, elapsedTime)
+
 		friendlyErr := fmt.Errorf("Error sending the request to Prebid Cache: %v; Duration=%v", err, elapsedTime)
 		glog.Error(friendlyErr)
 		errs = append(errs, friendlyErr)
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
-	c.metrics.RecordPrebidCacheRequestTime(time.Since(startTime))
+	c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusOK}, time.Since(startTime))
 
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {

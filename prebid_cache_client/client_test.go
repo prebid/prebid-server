@@ -48,7 +48,10 @@ func TestBadResponse(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	metricsMock.On("RecordPrebidCacheRequestTime", mock.Anything).Once()
+	successCacheCallResponseLabels := pbsmetrics.RequestLabels{
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	metricsMock.On("RecordPrebidCacheRequestTime", successCacheCallResponseLabels, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -79,6 +82,10 @@ func TestCancelledContext(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
+	errorCacheCallResponseLabels := pbsmetrics.RequestLabels{
+		RequestStatus: pbsmetrics.RequestStatusErr,
+	}
+	metricsMock.On("RecordPrebidCacheRequestTime", errorCacheCallResponseLabels, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -96,7 +103,7 @@ func TestCancelledContext(t *testing.T) {
 	assertIntEqual(t, len(ids), 1)
 	assertStringEqual(t, ids[0], "")
 
-	metricsMock.AssertNotCalled(t, "RecordPrebidCacheRequestTime")
+	metricsMock.AssertExpectations(t)
 }
 
 func TestSuccessfulPut(t *testing.T) {
@@ -104,7 +111,10 @@ func TestSuccessfulPut(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	metricsMock.On("RecordPrebidCacheRequestTime", mock.Anything).Once()
+	successCacheCallResponseLabels := pbsmetrics.RequestLabels{
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+	metricsMock.On("RecordPrebidCacheRequestTime", successCacheCallResponseLabels, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),

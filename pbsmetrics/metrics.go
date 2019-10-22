@@ -28,12 +28,17 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
-// ImpLabels defines metric labels descripting the impression type.
+// ImpLabels defines metric labels describing the impression type.
 type ImpLabels struct {
 	BannerImps bool
 	VideoImps  bool
 	AudioImps  bool
 	NativeImps bool
+}
+
+// RequestLabels defines metric labels describing the result of a network request.
+type RequestLabels struct {
+	RequestStatus RequestStatus
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -256,5 +261,5 @@ type MetricsEngine interface {
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
-	RecordPrebidCacheRequestTime(length time.Duration)
+	RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration)
 }

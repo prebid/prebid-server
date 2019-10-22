@@ -175,9 +175,9 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) 
 }
 
 // RecordPrebidCacheRequestTime across all engines
-func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(length time.Duration) {
+func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordPrebidCacheRequestTime(length)
+		thisME.RecordPrebidCacheRequestTime(labels, length)
 	}
 }
 
@@ -265,6 +265,6 @@ func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.
 }
 
 // RecordPrebidCacheRequestTime as a noop
-func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(length time.Duration) {
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
 	return
 }
