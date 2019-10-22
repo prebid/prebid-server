@@ -84,6 +84,10 @@ const (
 	// It will exist only if the incoming bidRequest defiend request.app instead of request.site.
 	HbEnvKey TargetingKey = "hb_env"
 
+	// HbCacheHost and HbCachePath exist to supply cache host and path as targeting parameters
+	HbConstantCacheHostKey TargetingKey = "hb_cache_host"
+	HbConstantCachePathKey TargetingKey = "hb_cache_path"
+
 	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
 	HbBidderConstantKey TargetingKey = "hb_bidder"
 	HbSizeConstantKey   TargetingKey = "hb_size"

@@ -50,8 +50,8 @@ func TestNewSharethroughBidder(t *testing.T) {
 			input: "test endpoint",
 			output: SharethroughAdapter{
 				AdServer: StrOpenRTBTranslator{
-					UriHelper: StrUriHelper{BaseURI: "test endpoint"},
-					Util:      Util{},
+					UriHelper: StrUriHelper{BaseURI: "test endpoint", Clock: Clock{}},
+					Util:      Util{Clock: Clock{}},
 					UserAgentParsers: UserAgentParsers{
 						ChromeVersion:    regexp.MustCompile(`Chrome\/(?P<ChromeVersion>\d+)`),
 						ChromeiOSVersion: regexp.MustCompile(`CriOS\/(?P<chromeiOSVersion>\d+)`),

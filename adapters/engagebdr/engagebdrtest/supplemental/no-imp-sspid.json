@@ -17,7 +17,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Ignoring imp id=test-imp-id, no sspid present."
+    {
+      "value": "Ignoring imp id=test-imp-id, no sspid present.",
+      "comparison": "literal"
+    }
   ]
 }
 

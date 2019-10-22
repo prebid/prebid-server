@@ -28,6 +28,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "ZoneID is empty"
+    {
+      "value": "ZoneID is empty",
+      "comparison": "literal"
+    }
   ]
 }
