@@ -271,3 +271,38 @@ func TestFailureMakeBids(t *testing.T) {
 		}
 	}
 }
+
+func TestGetResponseData(t *testing.T) {
+	gzipData, _ := gZipData([]byte("this is a gzipped string"))
+
+	tests := map[string]struct {
+		inputResponse *adapters.ResponseData
+		output        []byte
+		error         error
+	}{
+		"Decompress body if it's gzipped": {
+			inputResponse: &adapters.ResponseData{
+				Body:    gzipData,
+				Headers: http.Header{"Content-Encoding": []string{"gzip"}},
+			},
+			output: []byte("this is a gzipped string"),
+			error:  nil,
+		},
+		"Returns raw body if not compressed": {
+			inputResponse: &adapters.ResponseData{
+				Body: []byte("this is not compressed"),
+			},
+			output: []byte("this is not compressed"),
+			error:  nil,
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		data, error := getResponseData(test.inputResponse)
+		assert.Equal(test.output, data)
+		assert.Equal(test.error, error)
+	}
+}

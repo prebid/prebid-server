@@ -1,6 +1,8 @@
 package sharethrough
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -469,6 +471,52 @@ func TestParseDomain(t *testing.T) {
 
 		output := Util{}.parseDomain(test.input)
 		assert.Equal(test.expected, output)
+	}
+}
+
+/*
+	Copied over from: https://gist.github.com/alex-ant/aeaaf497055590dacba760af24839b8d
+*/
+func gZipData(data []byte) (compressedData []byte, err error) {
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+
+	_, err = gz.Write(data)
+	if err != nil {
+		return
+	}
+
+	if err = gz.Flush(); err != nil {
+		return
+	}
+
+	if err = gz.Close(); err != nil {
+		return
+	}
+
+	compressedData = b.Bytes()
+
+	return
+}
+
+func TestGUnzipData(t *testing.T) {
+	tests := map[string]struct {
+		data []byte
+	}{
+		"Decodes gzip encoded data": {
+			data: []byte("this is a test"),
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		zip, err1 := gZipData(test.data)
+		unzip, err2 := Util{}.gUnzipData(zip)
+		assert.Equal(test.data, unzip)
+		assert.Nil(err1)
+		assert.Nil(err2)
 	}
 }
 
