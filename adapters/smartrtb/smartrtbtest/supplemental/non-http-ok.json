@@ -67,5 +67,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Unexpected HTTP status 500."]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected HTTP status 500.",
+      "comparison": "literal"
+    }
+  ]
 }

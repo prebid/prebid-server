@@ -84,5 +84,10 @@
       }
     }
   ],
-  "expectedMakeBidsErrors": ["Invalid bid extension from endpoint."]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Invalid bid extension from endpoint.",
+      "comparison": "literal"
+    }
+  ]
 }

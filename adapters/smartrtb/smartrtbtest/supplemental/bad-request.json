@@ -61,5 +61,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Invalid request."]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Invalid request.",
+      "comparison": "literal"
+    }
+  ]
 }
