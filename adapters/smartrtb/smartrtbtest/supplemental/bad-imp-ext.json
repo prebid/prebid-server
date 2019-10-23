@@ -23,5 +23,10 @@
     ]
   },
 
-  "expectedMakeRequestsErrors": ["unexpected end of JSON input"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "unexpected end of JSON input",
+      "comparison": "literal"
+    }
+  ]
 }

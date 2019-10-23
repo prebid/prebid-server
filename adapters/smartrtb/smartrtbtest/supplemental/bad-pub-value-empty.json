@@ -28,5 +28,10 @@
     ]
   },
 
-  "expectedMakeRequestsErrors": ["Cannot infer publisher ID from bid ext"]
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Cannot infer publisher ID from bid ext",
+      "comparison": "literal"
+    }
+  ]
 }
