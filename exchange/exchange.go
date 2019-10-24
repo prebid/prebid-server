@@ -76,13 +76,9 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
 	// Snapshot of resolved bid request for debug if test request
-	var resolvedRequest json.RawMessage
-	if bidRequest.Test == 1 {
-		if r, err := json.Marshal(bidRequest); err != nil {
-			glog.Errorf("Error marshalling bid request for debug: %v", err)
-		} else {
-			resolvedRequest = r
-		}
+	resolvedRequest, err := buildResolvedRequest(bidRequest)
+	if err != nil {
+		glog.Errorf("Error marshalling bid request for debug: %v", err)
 	}
 
 	for _, impInRequest := range bidRequest.Imp {
@@ -100,14 +96,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
 
 	// List of bidders we have requests for.
-	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
-	i := 0
-	for a := range cleanRequests {
-		liveAdapters[i] = a
-		i++
-	}
-	// Randomize the list of adapters to make the auction more fair
-	randomizeList(liveAdapters)
+	liveAdapters := listBiddersWithRequests(cleanRequests)
+
 	// Process the request to check for targeting parameters.
 	var targData *targetData
 	shouldCacheBids := false
@@ -599,4 +589,25 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
+}
+
+// Returns a snapshot of resolved bid request for debug if test field is set in the incomming request
+func buildResolvedRequest(bidRequest *openrtb.BidRequest) (json.RawMessage, error) {
+	if bidRequest.Test == 1 {
+		return json.Marshal(bidRequest)
+	}
+	return nil, nil
+}
+
+func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) []openrtb_ext.BidderName {
+	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
+	i := 0
+	for a := range cleanRequests {
+		liveAdapters[i] = a
+		i++
+	}
+	// Randomize the list of adapters to make the auction more fair
+	randomizeList(liveAdapters)
+
+	return liveAdapters
 }
