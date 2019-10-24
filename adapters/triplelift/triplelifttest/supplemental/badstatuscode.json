@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "inventoryCode": "aa" 
+            "inventoryCode": "aa"
           }
         }
       }
@@ -27,7 +27,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
+        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=20",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -45,7 +45,7 @@
                   }
                 ]
               },
-              "tagid" : "aa",
+              "tagid": "aa",
               "ext": {
                 "bidder": {
                   "inventoryCode": "aa"
@@ -79,7 +79,7 @@
                   "w": 300,
                   "ext": {
                     "triplelift_pb": {
-                        "format" : 2
+                      "format": 2
                     }
                   }
                 }
@@ -92,8 +92,7 @@
       }
     }
   ],
-  "expectedBidResponses": [
-  ],
+  "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
       "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
