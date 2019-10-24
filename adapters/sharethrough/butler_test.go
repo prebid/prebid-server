@@ -82,11 +82,10 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 		"Generates the correct AdServer request from Imp (no user provided)": {
 			inputImp: openrtb.Imp{
 				ID:  "abc",
-				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20]} }`),
+				Ext: []byte(`{ "bidder": {"pkey": "pkey", "iframe": true, "iframeSize": [10, 20], "bidfloor": 1.0} }`),
 				Banner: &openrtb.Banner{
 					Format: []openrtb.Format{{H: 30, W: 40}},
 				},
-				BidFloor: 1.0,
 			},
 			inputReq: &openrtb.BidRequest{
 				App: &openrtb.App{Ext: []byte(`{}`)},
@@ -106,7 +105,6 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
-					"Accept-Encoding": []string{"gzip"},
 					"Origin":          []string{"http://a.domain.com"},
 					"Referer":         []string{"http://a.domain.com/page"},
 					"User-Agent":      []string{"Android Chome/60"},
@@ -140,7 +138,6 @@ func TestSuccessRequestFromOpenRTB(t *testing.T) {
 				Headers: http.Header{
 					"Content-Type":    []string{"application/json;charset=utf-8"},
 					"Accept":          []string{"application/json"},
-					"Accept-Encoding": []string{"gzip"},
 					"Origin":          []string{"http://a.domain.com"},
 					"Referer":         []string{"http://a.domain.com/page"},
 					"User-Agent":      []string{"Android Chome/60"},
@@ -379,13 +376,13 @@ func TestFailResponseToOpenRTB(t *testing.T) {
 func TestBuildBody(t *testing.T) {
 	tests := map[string]struct {
 		inputRequest  *openrtb.BidRequest
-		inputImp      openrtb.Imp
+		inputImp      openrtb_ext.ExtImpSharethrough
 		expectedJson  []byte
 		expectedError error
 	}{
 		"Empty input: skips badomains, tmax default to 10 sec and sets deadline accordingly": {
 			inputRequest:  &openrtb.BidRequest{},
-			inputImp:      openrtb.Imp{},
+			inputImp:      openrtb_ext.ExtImpSharethrough{},
 			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
@@ -393,7 +390,7 @@ func TestBuildBody(t *testing.T) {
 			inputRequest: &openrtb.BidRequest{
 				BAdv: []string{"dom1.com", "dom2.com"},
 			},
-			inputImp:      openrtb.Imp{},
+			inputImp:      openrtb_ext.ExtImpSharethrough{},
 			expectedJson:  []byte(`{"badv": ["dom1.com", "dom2.com"], "tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z"}`),
 			expectedError: nil,
 		},
@@ -401,13 +398,13 @@ func TestBuildBody(t *testing.T) {
 			inputRequest: &openrtb.BidRequest{
 				TMax: 500,
 			},
-			inputImp:      openrtb.Imp{},
+			inputImp:      openrtb_ext.ExtImpSharethrough{},
 			expectedJson:  []byte(`{"tmax": 500, "deadline":"2019-09-12T11:29:00.500123456Z"}`),
 			expectedError: nil,
 		},
 		"Sets bidfloor according to the Imp object": {
 			inputRequest: &openrtb.BidRequest{},
-			inputImp: openrtb.Imp{
+			inputImp: openrtb_ext.ExtImpSharethrough{
 				BidFloor: 1.23,
 			},
 			expectedJson:  []byte(`{"tmax":10000, "deadline":"2019-09-12T11:29:10.000123456Z", "bidfloor":1.23}`),
