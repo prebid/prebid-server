@@ -120,12 +120,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
 				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
 				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
-			}
-			if shouldCacheBids {
-				targData.includeCacheBids = true
-			}
-			if shouldCacheVAST {
-				targData.includeCacheVast = true
+				includeCacheBids:  shouldCacheBids,
+				includeCacheVast:  shouldCacheVAST,
 			}
 			targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 		}
