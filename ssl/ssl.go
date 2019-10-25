@@ -34,8 +34,6 @@ func AppendPEMFileToRootCAPool(certPool *x509.CertPool, pemFileName string) (*x5
 
 		//`pemCerts` has been obtained, append to certPool
 		certPool.AppendCertsFromPEM(pemCerts)
-	} else {
-		return certPool, fmt.Errorf("Path to local PEM file containing SSL certificates is\n")
 	}
 	return certPool, nil
 }
