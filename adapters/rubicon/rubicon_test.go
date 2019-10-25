@@ -1036,7 +1036,8 @@ func TestOpenRTBRequest(t *testing.T) {
                     "keyv": 1,
                     "pref": 0
                 },
-				"eids": [{
+				"eids": [
+				{
                     "source": "adserver.org",
                     "uids": [{
                         "id": "3d50a262-bd8e-4be3-90b8-246291523907",
@@ -1048,7 +1049,17 @@ func TestOpenRTBRequest(t *testing.T) {
                 {
                     "source": "pubcid",
                     "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
-				}]
+				},
+				{
+					"source": "liveintent.com",
+					"uids": [{
+						"id": "T7JiRRvsRAmh88"
+					}],
+					"ext": {
+						"segments": ["999","888"]
+					}
+				}
+				]
             }`),
 		},
 		Ext: json.RawMessage(`{"prebid": {}}`),
@@ -1136,11 +1147,24 @@ func TestOpenRTBRequest(t *testing.T) {
 			if userExt.DigiTrust.ID != "some-digitrust-id" || userExt.DigiTrust.KeyV != 1 || userExt.DigiTrust.Pref != 0 {
 				t.Fatal("DigiTrust values are not as expected!")
 			}
-			if userExt.Eids == nil || len(userExt.Eids) != 2 {
+			if userExt.Eids == nil || len(userExt.Eids) != 3 {
 				t.Fatal("Eids values are not as expected!")
 			}
-			if userExt.TpID == nil || len(userExt.TpID) != 1 {
+			if userExt.TpID == nil || len(userExt.TpID) != 2 {
 				t.Fatal("TpID values are not as expected!")
+			}
+			if userExt.TpID[0].Source != "tdid" {
+				t.Fatal("TpID source value is not as expected!")
+			}
+			if userExt.TpID[1].Source != "liveintent.com" {
+				t.Fatal("TpID source value is not as expected!")
+			}
+			userExtRPTarget := make(map[string]interface{})
+			if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
+				t.Fatal("Error unmarshalling request.user.ext.rp.target object.")
+			}
+			if _, ok := userExtRPTarget["LIseg"]; !ok {
+				t.Fatal("request.user.ext.rp.target value is not as expected!")
 			}
 		} else {
 			t.Fatalf("User.Ext object should not be nil since it contains a valid digitrust object.")
