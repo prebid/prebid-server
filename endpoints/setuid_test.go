@@ -39,7 +39,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:           "Set uid for valid bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=some-bidder&uid=123",
+			uri:                   "/setuid?bidder=unsupported-bidder&uid=123",
 			existingSyncs:         nil,
 			gdprAllowsHostCookies: true,
 			expectedSyncs:         nil,
@@ -55,7 +55,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:           "Don't set uid for an empty bidder",
 		},
 		{
-			uri:                   "/setuid?bidder=some-bidder&uid=123",
+			uri:                   "/setuid?bidder=unsupported-bidder&uid=123",
 			existingSyncs:         map[string]string{"pubmatic": "1234"},
 			gdprAllowsHostCookies: true,
 			expectedSyncs:         nil,
@@ -142,8 +142,8 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description: "Return an error if the GDPR string is either malformed or using a newer version that isn't yet supported",
 		},
 		{
-			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent" +
-				"=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
+				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 			existingSyncs:        nil,
 			expectedSyncs:        nil,
 			expectedResponseCode: http.StatusOK,
@@ -151,8 +151,8 @@ func TestSetUIDEndpoint(t *testing.T) {
 			description:          "Shouldn't set uid for a bidder if it is not allowed by the GDPR consent string",
 		},
 		{
-			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent" +
-				"=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
+				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
 			gdprAllowsHostCookies: true,
 			existingSyncs:         nil,
 			expectedSyncs:         map[string]string{"pubmatic": "123"},
