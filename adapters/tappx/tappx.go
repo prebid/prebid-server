@@ -10,12 +10,14 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 	"strconv"
 	"text/template"
 	"time"
 )
 
 const TAPPX_BIDDER_VERSION = "1.1"
+const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
 	http             *adapters.HTTPAdapter
@@ -33,13 +35,6 @@ func NewTappxBidder(client *http.Client, endpointTemplate string) *TappxAdapter 
 		http:             a,
 		endpointTemplate: *template,
 	}
-}
-
-type tappxParams struct {
-	Host     string `json:"host"`
-	TappxKey string `json:"tappxkey"`
-	Endpoint string `json:"endpoint"`
-	BidFloor string `json:"bidfloor"`
 }
 
 func (a *TappxAdapter) Name() string {
@@ -129,9 +124,11 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-	if reqKey == "" {
+	thisURI, err := url.Parse(host)
+
+	if err != nil {
 		return "", &errortypes.BadInput{
-			Message: "Tappx key undefined",
+			Message: "Malformed URL: check host parameter",
 		}
 	}
 
@@ -141,16 +138,30 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 		}
 	}
 
-	thisURI := host + params.Endpoint + "?tappxkey=" + params.TappxKey
+	thisURI.Path += params.Endpoint
+
+	queryParams := url.Values{}
+
+	if reqKey == "" {
+		return "", &errortypes.BadInput{
+			Message: "Tappx key undefined",
+		}
+	}
+
+	queryParams.Add("tappxkey", params.TappxKey)
 
 	if test == 0 {
 		t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
-		thisURI = thisURI + "&ts=" + strconv.Itoa(int(t))
+		queryParams.Add("ts", strconv.Itoa(int(t)))
 	}
 
-	thisURI = thisURI + "&v=" + TAPPX_BIDDER_VERSION + "&type_cnn=prebid"
+	queryParams.Add("v", TAPPX_BIDDER_VERSION)
 
-	return thisURI, nil
+	queryParams.Add("type_cnn", TYPE_CNN)
+
+	thisURI.RawQuery = queryParams.Encode()
+
+	return thisURI.String(), nil
 }
 
 func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
