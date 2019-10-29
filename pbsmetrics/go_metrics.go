@@ -13,19 +13,21 @@ import (
 
 // Metrics is the legacy Metrics object (go-metrics) expanded to also satisfy the MetricsEngine interface
 type Metrics struct {
-	MetricsRegistry            metrics.Registry
-	ConnectionCounter          metrics.Counter
-	ConnectionAcceptErrorMeter metrics.Meter
-	ConnectionCloseErrorMeter  metrics.Meter
-	ImpMeter                   metrics.Meter
-	LegacyImpMeter             metrics.Meter
-	AppRequestMeter            metrics.Meter
-	NoCookieMeter              metrics.Meter
-	SafariRequestMeter         metrics.Meter
-	SafariNoCookieMeter        metrics.Meter
-	RequestTimer               metrics.Timer
-	StoredReqCacheMeter        map[CacheResult]metrics.Meter
-	StoredImpCacheMeter        map[CacheResult]metrics.Meter
+	MetricsRegistry                metrics.Registry
+	ConnectionCounter              metrics.Counter
+	ConnectionAcceptErrorMeter     metrics.Meter
+	ConnectionCloseErrorMeter      metrics.Meter
+	ImpMeter                       metrics.Meter
+	LegacyImpMeter                 metrics.Meter
+	AppRequestMeter                metrics.Meter
+	NoCookieMeter                  metrics.Meter
+	SafariRequestMeter             metrics.Meter
+	SafariNoCookieMeter            metrics.Meter
+	RequestTimer                   metrics.Timer
+	PrebidCacheRequestTimerSuccess metrics.Timer
+	PrebidCacheRequestTimerError   metrics.Timer
+	StoredReqCacheMeter            map[CacheResult]metrics.Meter
+	StoredImpCacheMeter            map[CacheResult]metrics.Meter
 
 	// Metrics for OpenRTB requests specifically. So we can track what % of RequestsMeter are OpenRTB
 	// and know when legacy requests have been abandoned.
@@ -94,29 +96,33 @@ const unknownBidder openrtb_ext.BidderName = "unknown"
 // for a production instance, and then expanding again when we need more debugging.
 func NewBlankMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, disableMetrics config.DisabledMetrics) *Metrics {
 	blankMeter := &metrics.NilMeter{}
+	blankTimer := &metrics.NilTimer{}
+
 	newMetrics := &Metrics{
-		MetricsRegistry:            registry,
-		RequestStatuses:            make(map[RequestType]map[RequestStatus]metrics.Meter),
-		ConnectionCounter:          metrics.NilCounter{},
-		ConnectionAcceptErrorMeter: blankMeter,
-		ConnectionCloseErrorMeter:  blankMeter,
-		ImpMeter:                   blankMeter,
-		LegacyImpMeter:             blankMeter,
-		AppRequestMeter:            blankMeter,
-		NoCookieMeter:              blankMeter,
-		SafariRequestMeter:         blankMeter,
-		SafariNoCookieMeter:        blankMeter,
-		RequestTimer:               &metrics.NilTimer{},
-		StoredReqCacheMeter:        make(map[CacheResult]metrics.Meter),
-		StoredImpCacheMeter:        make(map[CacheResult]metrics.Meter),
-		AmpNoCookieMeter:           blankMeter,
-		CookieSyncMeter:            blankMeter,
-		CookieSyncGen:              make(map[openrtb_ext.BidderName]metrics.Meter),
-		CookieSyncGDPRPrevent:      make(map[openrtb_ext.BidderName]metrics.Meter),
-		userSyncOptout:             blankMeter,
-		userSyncBadRequest:         blankMeter,
-		userSyncSet:                make(map[openrtb_ext.BidderName]metrics.Meter),
-		userSyncGDPRPrevent:        make(map[openrtb_ext.BidderName]metrics.Meter),
+		MetricsRegistry:                registry,
+		RequestStatuses:                make(map[RequestType]map[RequestStatus]metrics.Meter),
+		ConnectionCounter:              metrics.NilCounter{},
+		ConnectionAcceptErrorMeter:     blankMeter,
+		ConnectionCloseErrorMeter:      blankMeter,
+		ImpMeter:                       blankMeter,
+		LegacyImpMeter:                 blankMeter,
+		AppRequestMeter:                blankMeter,
+		NoCookieMeter:                  blankMeter,
+		SafariRequestMeter:             blankMeter,
+		SafariNoCookieMeter:            blankMeter,
+		RequestTimer:                   blankTimer,
+		PrebidCacheRequestTimerSuccess: blankTimer,
+		PrebidCacheRequestTimerError:   blankTimer,
+		StoredReqCacheMeter:            make(map[CacheResult]metrics.Meter),
+		StoredImpCacheMeter:            make(map[CacheResult]metrics.Meter),
+		AmpNoCookieMeter:               blankMeter,
+		CookieSyncMeter:                blankMeter,
+		CookieSyncGen:                  make(map[openrtb_ext.BidderName]metrics.Meter),
+		CookieSyncGDPRPrevent:          make(map[openrtb_ext.BidderName]metrics.Meter),
+		userSyncOptout:                 blankMeter,
+		userSyncBadRequest:             blankMeter,
+		userSyncSet:                    make(map[openrtb_ext.BidderName]metrics.Meter),
+		userSyncGDPRPrevent:            make(map[openrtb_ext.BidderName]metrics.Meter),
 
 		ImpsTypeBanner: blankMeter,
 		ImpsTypeVideo:  blankMeter,
@@ -166,6 +172,9 @@ func NewMetrics(registry metrics.Registry, exchanges []openrtb_ext.BidderName, d
 	newMetrics.AppRequestMeter = metrics.GetOrRegisterMeter("app_requests", registry)
 	newMetrics.SafariNoCookieMeter = metrics.GetOrRegisterMeter("safari_no_cookie_requests", registry)
 	newMetrics.RequestTimer = metrics.GetOrRegisterTimer("request_time", registry)
+	newMetrics.PrebidCacheRequestTimerSuccess = metrics.GetOrRegisterTimer("prebid_cache_request_time.ok", registry)
+	newMetrics.PrebidCacheRequestTimerError = metrics.GetOrRegisterTimer("prebid_cache_request_time.err", registry)
+
 	newMetrics.AmpNoCookieMeter = metrics.GetOrRegisterMeter("amp_no_cookie_requests", registry)
 	newMetrics.CookieSyncMeter = metrics.GetOrRegisterMeter("cookie_sync_requests", registry)
 	newMetrics.userSyncBadRequest = metrics.GetOrRegisterMeter("usersync.bad_requests", registry)
@@ -501,8 +510,21 @@ func (me *Metrics) RecordStoredReqCacheResult(cacheResult CacheResult, inc int) 
 	me.StoredReqCacheMeter[cacheResult].Mark(int64(inc))
 }
 
+// RecordStoredImpCacheResult implements a part of the MetricsEngine interface. Records the
+// cache hits and misses when looking up stored impressions.
 func (me *Metrics) RecordStoredImpCacheResult(cacheResult CacheResult, inc int) {
 	me.StoredImpCacheMeter[cacheResult].Mark(int64(inc))
+}
+
+// RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the
+// amount of time taken to store the auction result in Prebid Cache.
+func (me *Metrics) RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration) {
+	if labels.RequestStatus == RequestStatusOK {
+		me.PrebidCacheRequestTimerSuccess.Update(length)
+		return
+	}
+
+	me.PrebidCacheRequestTimerError.Update(length)
 }
 
 func doMark(bidder openrtb_ext.BidderName, meters map[openrtb_ext.BidderName]metrics.Meter) {
