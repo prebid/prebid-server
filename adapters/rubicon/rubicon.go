@@ -708,11 +708,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 						if segments != nil {
 							userExtRPTarget := make(map[string]interface{})
-							if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
-								errs = append(errs, &errortypes.BadInput{
-									Message: err.Error(),
-								})
-								continue
+
+							if userExtRP.RP.Target != nil {
+								if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
+									errs = append(errs, &errortypes.BadInput{
+										Message: err.Error(),
+									})
+									continue
+								}
 							}
 
 							userExtRPTarget["LIseg"] = segments
