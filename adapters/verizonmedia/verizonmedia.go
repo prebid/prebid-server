@@ -135,12 +135,6 @@ func (a *VerizonMediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, exte
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(internalRequest.Imp))
 
-	if len(bidResp.SeatBid) < 1 {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Invalid SeatBids count: %d", len(bidResp.SeatBid)),
-		}}
-	}
-
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
 			exists, mediaTypeId := getImpInfo(bid.ImpID, internalRequest.Imp)

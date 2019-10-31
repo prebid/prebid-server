@@ -22,7 +22,13 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "ext.bidder.adUnitId is empty.",
-    "No valid or supported impressions in the bid request."
+    {
+      "value": "ext.bidder.adUnitId is empty.",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid or supported impressions in the bid request.",
+      "comparison": "literal"
+    }
   ]
 }

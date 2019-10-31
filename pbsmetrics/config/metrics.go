@@ -22,7 +22,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	if cfg.Metrics.Influxdb.Host != "" {
 		// Currently use go-metrics as the metrics piece for influx
-		returnEngine.GoMetrics = pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
+		returnEngine.GoMetrics = pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled)
 		engineList = append(engineList, returnEngine.GoMetrics)
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
@@ -174,6 +174,13 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) 
 	}
 }
 
+// RecordPrebidCacheRequestTime across all engines
+func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordPrebidCacheRequestTime(labels, length)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct{}
 
@@ -254,5 +261,10 @@ func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.
 
 // RecordStoredImpCacheResult as a noop
 func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	return
+}
+
+// RecordPrebidCacheRequestTime as a noop
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
 	return
 }

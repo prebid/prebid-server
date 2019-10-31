@@ -18,7 +18,13 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "ext.bidder.adUnitId was not provided.",
-    "No valid or supported impressions in the bid request."
+    {
+      "value": "ext.bidder.adUnitId was not provided.",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid or supported impressions in the bid request.",
+      "comparison": "literal"
+    }
   ]
 }

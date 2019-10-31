@@ -71,6 +71,49 @@ func TestGetAdMarkup(t *testing.T) {
 
 func TestGetPlacementSize(t *testing.T) {
 	tests := map[string]struct {
+		imp            openrtb.Imp
+		strImpParams   openrtb_ext.ExtImpSharethrough
+		expectedHeight uint64
+		expectedWidth  uint64
+	}{
+		"Returns size from STR params if provided": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{IframeSize: []int{100, 200}},
+			expectedHeight: 100,
+			expectedWidth:  200,
+		},
+		"Skips size from STR params if malformed": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{IframeSize: []int{100}},
+			expectedHeight: 1,
+			expectedWidth:  1,
+		},
+		"Returns size from banner format if provided": {
+			imp:            openrtb.Imp{Banner: &openrtb.Banner{Format: []openrtb.Format{{H: 100, W: 200}}}},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{},
+			expectedHeight: 100,
+			expectedWidth:  200,
+		},
+		"Defaults to 1x1": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{},
+			expectedHeight: 1,
+			expectedWidth:  1,
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		outputHeight, outputWidth := Util{}.getPlacementSize(test.imp, test.strImpParams)
+		assert.Equal(test.expectedHeight, outputHeight)
+		assert.Equal(test.expectedWidth, outputWidth)
+	}
+}
+
+func TestGetBestFormat(t *testing.T) {
+	tests := map[string]struct {
 		input          []openrtb.Format
 		expectedHeight uint64
 		expectedWidth  uint64
@@ -96,7 +139,7 @@ func TestGetPlacementSize(t *testing.T) {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
-		outputHeight, outputWidth := Util{}.getPlacementSize(test.input)
+		outputHeight, outputWidth := Util{}.getBestFormat(test.input)
 		assert.Equal(test.expectedHeight, outputHeight)
 		assert.Equal(test.expectedWidth, outputWidth)
 	}

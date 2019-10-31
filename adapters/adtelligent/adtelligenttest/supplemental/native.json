@@ -17,6 +17,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "ignoring imp id=unsupported-native-imp, Adtelligent supports only Video and Banner"
+    {
+      "value": "ignoring imp id=unsupported-native-imp, Adtelligent supports only Video and Banner",
+      "comparison": "literal"
+    }
   ]
 }

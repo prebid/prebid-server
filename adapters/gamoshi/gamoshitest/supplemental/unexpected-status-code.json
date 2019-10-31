@@ -50,6 +50,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "unexpected status code: 500. Run with request.debug = 1 for more info"
+    {
+      "value": "unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
   ]
 }
