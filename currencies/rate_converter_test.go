@@ -141,8 +141,15 @@ func TestNewRateConverterWithNotifier(t *testing.T) {
 	err := json.Unmarshal(getMockRates(), rates)
 	assert.NoError(t, err, "JSON unmarshalling of conversions failed")
 
-	mockServerHandler := func(mockResponse []byte, code int) http.Handler {
+	mockServerHandler := func(mockResponse []byte, code int, initialFailCount int,
+		failRespCode int, failRespMessage []byte) http.Handler {
+		called := 0
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			if called < initialFailCount {
+				rw.WriteHeader(failRespCode)
+				rw.Write(failRespMessage)
+			}
+			called++
 			rw.WriteHeader(code)
 			rw.Write(mockResponse)
 		})
@@ -151,11 +158,34 @@ func TestNewRateConverterWithNotifier(t *testing.T) {
 	testCases := []struct {
 		mockResponse     []byte
 		mockResponseCode int
+		initialFailCount int
+		failRespCode     int
+		failRespMessage  []byte
 		updateInterval   int
 		fetchURL         string
 		expectedTicks    int
 		description      string
 	}{
+		{
+			mockResponse:     getMockRates(),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			expectedTicks:    2,
+			initialFailCount: 2,
+			failRespCode:     400,
+			failRespMessage:  []byte("Bad request"),
+			description:      "Fetching currency rates successfully",
+		},
+		{
+			mockResponse:     getMockRates(),
+			mockResponseCode: 200,
+			updateInterval:   100,
+			expectedTicks:    5,
+			initialFailCount: 2,
+			failRespCode:     400,
+			failRespMessage:  []byte("Bad request"),
+			description:      "Fetching currency rates successfully",
+		},
 		{
 			mockResponse:     getMockRates(),
 			mockResponseCode: 200,
@@ -194,7 +224,8 @@ func TestNewRateConverterWithNotifier(t *testing.T) {
 	for _, test := range testCases {
 		ticksTimes := []time.Time{}
 		ticks := make(chan int)
-		mockedHttpServer := httptest.NewServer(mockServerHandler(test.mockResponse, test.mockResponseCode))
+		mockedHttpServer := httptest.NewServer(mockServerHandler(test.mockResponse, test.mockResponseCode,
+			test.initialFailCount, test.failRespCode, test.failRespMessage))
 		if test.fetchURL == "" {
 			test.fetchURL = mockedHttpServer.URL
 		}
@@ -229,8 +260,14 @@ func TestNewRateConverterWithNotifier(t *testing.T) {
 			}
 
 			assert.NotNil(t, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Rates shouldn't be nil"))
-			assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), formatTestErrorMsg(test.description, "LastUpdated should be set"))
-			assert.Equal(t, rates, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Conversions.Rates weren't the expected ones"))
+
+			// This is < and not <= because of the first fetch call before starting periodic fetching
+			if ticksCount < test.initialFailCount {
+				assert.Equal(t, &currencies.ConstantRates{}, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Conversions.Rates weren't the expected ones."))
+			} else {
+				assert.Equal(t, rates, currencyConverter.Rates(), formatTestErrorMsg(test.description, "Conversions.Rates weren't the expected ones"))
+				assert.NotEqual(t, currencyConverter.LastUpdated(), (time.Time{}), formatTestErrorMsg(test.description, "LastUpdated should be set"))
+			}
 
 			if ticksCount == test.expectedTicks {
 				currencyConverter.StopPeriodicFetching()

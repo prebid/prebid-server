@@ -78,7 +78,6 @@ func NewRateConverterWithNotifier(
 		glog.Errorf("Error fetching currency rates from %s. Currency conversions won't be supported. %s",
 			syncSourceURL, err.Error())
 		rc.constantRates = NewConstantRates()
-		return rc
 	}
 
 	go rc.startPeriodicFetching() // Start periodic ticking
@@ -139,7 +138,10 @@ func (rc *RateConverter) startPeriodicFetching() {
 		select {
 		case <-ticker.C:
 			// Retries are handled by clients directly.
-			rc.Update()
+			err := rc.Update()
+			if err == nil && rc.constantRates != nil {
+				rc.constantRates = nil
+			}
 			updatesTicksCount++
 			if rc.updateNotifier != nil {
 				rc.updateNotifier <- updatesTicksCount
