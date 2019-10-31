@@ -3,7 +3,6 @@ package datablocks
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -73,10 +72,6 @@ func (a *DatablocksAdapter) MakeBids(
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
 
-	if response.StatusCode == http.StatusNoContent {
-		return nil, nil
-	}
-
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("ERR, response with status %d", response.StatusCode),
@@ -105,9 +100,9 @@ func (a *DatablocksAdapter) MakeBids(
 	return bidResponse, nil
 }
 
-func splitImpressions(imps []openrtb.Imp) (map[*openrtb_ext.ExtImpDatablocks][]openrtb.Imp, error) {
+func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpDatablocks][]openrtb.Imp, error) {
 
-	var m = make(map[*openrtb_ext.ExtImpDatablocks][]openrtb.Imp)
+	var m = make(map[openrtb_ext.ExtImpDatablocks][]openrtb.Imp)
 
 	for _, imp := range imps {
 		bidderParams, err := getBidderParams(&imp)
@@ -115,12 +110,12 @@ func splitImpressions(imps []openrtb.Imp) (map[*openrtb_ext.ExtImpDatablocks][]o
 			return nil, err
 		}
 
-		_, ok := m[bidderParams]
+		_, ok := m[*bidderParams]
 		if ok {
-			v, _ := m[bidderParams]
-			m[bidderParams] = append(v, imp)
+			v, _ := m[*bidderParams]
+			m[*bidderParams] = append(v, imp)
 		} else {
-			m[bidderParams] = []openrtb.Imp{imp}
+			m[*bidderParams] = []openrtb.Imp{imp}
 		}
 	}
 
@@ -131,37 +126,43 @@ func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: "Missing bidder ext",
 		}
 	}
 	var datablocksExt openrtb_ext.ExtImpDatablocks
 	if err := json.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: err.Error(),
+			Message: "Missing host or sourceId Param",
 		}
 	}
 	return &datablocksExt, nil
 }
 
 func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
+
+	bidType := openrtb_ext.BidTypeBanner
+
 	for _, imp := range imps {
-		if imp.ID == impID {
-			if imp.Banner != nil {
-				return openrtb_ext.BidTypeBanner
+		if ( imp.ID == impID ) {
+			if imp.Video != nil {
+				bidType = openrtb_ext.BidTypeVideo
+				break;
 			} else if imp.Native != nil {
-				return openrtb_ext.BidTypeNative
+				bidType = openrtb_ext.BidTypeNative
+				break;
 			} else {
-				return openrtb_ext.BidTypeVideo
+				bidType = openrtb_ext.BidTypeBanner
+				break;
 			}
 		}
 	}
-	return openrtb_ext.BidTypeBanner
+
+	return bidType
 }
 
 func NewDatablocksBidder(endpoint string) *DatablocksAdapter {
 	template, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url")
 		return nil
 	}
 
