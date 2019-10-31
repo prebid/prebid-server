@@ -634,7 +634,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.beachfront.platform_id", "155")
 	v.SetDefault("adapters.brightroll.endpoint", "http://east-bid.ybp.yahoo.com/bid/appnexuspbs")
 	v.SetDefault("adapters.consumable.endpoint", "https://e.serverbid.com/api/v2")
-	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/search?sourceId={{.SourceId}}")
+	v.SetDefault("adapters.datablocks.endpoint", "http://{{.Host}}/openrtb2?sid={{.SourceId}}")
 	v.SetDefault("adapters.engagebdr.endpoint", "http://dsp.bnmla.com/hb")
 	v.SetDefault("adapters.conversant.endpoint", "http://api.hb.ad.cpe.dotomi.com/s2s/header/24")
 	v.SetDefault("adapters.emx_digital.endpoint", "https://hb.emxdgt.com")
