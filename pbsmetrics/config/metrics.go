@@ -174,6 +174,13 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) 
 	}
 }
 
+// RecordPrebidCacheRequestTime across all engines
+func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordPrebidCacheRequestTime(labels, length)
+	}
+}
+
 // DummyMetricsEngine is a Noop metrics engine in case no metrics are configured. (may also be useful for tests)
 type DummyMetricsEngine struct{}
 
@@ -254,5 +261,10 @@ func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.
 
 // RecordStoredImpCacheResult as a noop
 func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	return
+}
+
+// RecordPrebidCacheRequestTime as a noop
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
 	return
 }

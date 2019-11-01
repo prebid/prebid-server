@@ -71,7 +71,6 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Accept-Encoding", "gzip")
 	headers.Add("Origin", domain)
 	headers.Add("Referer", request.Site.Page)
 	headers.Add("X-Forwarded-For", request.Device.IP)
@@ -90,7 +89,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	userInfo := s.Util.parseUserInfo(request.User)
 	height, width := s.Util.getPlacementSize(imp, strImpParams)
 
-	jsonBody, err := (StrBodyHelper{Clock: s.Util.getClock()}).buildBody(request, imp)
+	jsonBody, err := (StrBodyHelper{Clock: s.Util.getClock()}).buildBody(request, strImpParams)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +162,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	return bidResponse, errs
 }
 
-func (h StrBodyHelper) buildBody(request *openrtb.BidRequest, imp openrtb.Imp) (body []byte, err error) {
+func (h StrBodyHelper) buildBody(request *openrtb.BidRequest, strImpParams openrtb_ext.ExtImpSharethrough) (body []byte, err error) {
 	timeout := request.TMax
 	if timeout == 0 {
 		timeout = defaultTmax
@@ -173,7 +172,7 @@ func (h StrBodyHelper) buildBody(request *openrtb.BidRequest, imp openrtb.Imp) (
 		BlockedAdvDomains: request.BAdv,
 		MaxTimeout:        timeout,
 		Deadline:          h.Clock.now().Add(time.Duration(timeout) * time.Millisecond).Format(time.RFC3339Nano),
-		BidFloor:          imp.BidFloor,
+		BidFloor:          strImpParams.BidFloor,
 	})
 
 	return

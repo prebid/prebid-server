@@ -8,10 +8,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -42,7 +45,7 @@ type Cacheable struct {
 	Key        string
 }
 
-func NewClient(conf *config.Cache, extCache *config.ExternalCache) Client {
+func NewClient(conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
 	return &clientImpl{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -53,6 +56,7 @@ func NewClient(conf *config.Cache, extCache *config.ExternalCache) Client {
 		putUrl:            conf.GetBaseURL() + "/cache",
 		externalCacheHost: extCache.Host,
 		externalCachePath: extCache.Path,
+		metrics:           metrics,
 	}
 }
 
@@ -61,6 +65,7 @@ type clientImpl struct {
 	putUrl            string
 	externalCacheHost string
 	externalCachePath string
+	metrics           pbsmetrics.MetricsEngine
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string) {
@@ -81,22 +86,29 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 		errs = append(errs, fmt.Errorf("Error creating JSON for prebid cache: %v", err))
 		return uuidsToReturn, errs
 	}
+
 	httpReq, err := http.NewRequest("POST", c.putUrl, bytes.NewReader(postBody))
 	if err != nil {
 		glog.Errorf("Error creating POST request to prebid cache: %v", err)
 		errs = append(errs, fmt.Errorf("Error creating POST request to prebid cache: %v", err))
 		return uuidsToReturn, errs
 	}
+
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
+	startTime := time.Now()
 	anResp, err := ctxhttp.Do(ctx, c.httpClient, httpReq)
+	elapsedTime := time.Since(startTime)
 	if err != nil {
-		glog.Errorf("Error sending the request to Prebid Cache: %v", err)
-		errs = append(errs, fmt.Errorf("Error sending the request to Prebid Cache: %v", err))
+		c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusErr}, elapsedTime)
+		friendlyErr := fmt.Errorf("Error sending the request to Prebid Cache: %v; Duration=%v", err, elapsedTime)
+		glog.Error(friendlyErr)
+		errs = append(errs, friendlyErr)
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
+	c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusOK}, elapsedTime)
 
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
