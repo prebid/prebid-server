@@ -75,7 +75,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       pbsmetrics.BrowserOther,
+		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -84,11 +84,6 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
-
-	isSafari := checkSafari(r)
-	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
-	}
 
 	lr := &io.LimitedReader{
 		R: r.Body,
@@ -251,9 +246,12 @@ func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, 
 		erVal := errortypes.DecodeError(er)
 		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
 			status = http.StatusServiceUnavailable
+			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
+			break
 		} else if erVal == errortypes.AcctRequiredCode {
 			status = http.StatusBadRequest
 			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+			break
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
