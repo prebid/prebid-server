@@ -131,10 +131,10 @@ func (a *auction) auction(w http.ResponseWriter, r *http.Request, _ httprouter.P
 			bidderRunner := a.recoverSafely(func(bidder *pbs.PBSBidder, aLabels pbsmetrics.AdapterLabels) {
 
 				start := time.Now()
+				bidList, err := ex.Call(ctx, req, bidder)
 				a.metricsEngine.RecordAdapterTime(aLabels, time.Since(start))
 				bidder.ResponseTime = int(time.Since(start) / time.Millisecond)
-				var bidList pbs.PBSBidSlice
-				processBidResult(bidList, bidder, &aLabels, &ctx, req, a.metricsEngine, ex)
+				processBidResult(bidList, bidder, &aLabels, a.metricsEngine, err)
 
 				ch <- bidResult{
 					bidder:  bidder,
@@ -437,9 +437,7 @@ func cacheAccordingToMarkup(req *pbs.PBSRequest, resp *pbs.PBSResponse, ctx cont
 	return nil
 }
 
-func processBidResult(bidList pbs.PBSBidSlice, bidder *pbs.PBSBidder, aLabels *pbsmetrics.AdapterLabels, ctx *context.Context, req *pbs.PBSRequest, metrics pbsmetrics.MetricsEngine, ex adapters.Adapter) {
-	var err error
-	bidList, err = ex.Call(*ctx, req, bidder)
+func processBidResult(bidList pbs.PBSBidSlice, bidder *pbs.PBSBidder, aLabels *pbsmetrics.AdapterLabels, metrics pbsmetrics.MetricsEngine, err error) {
 	if err != nil {
 		var s struct{}
 		if err == context.DeadlineExceeded {
