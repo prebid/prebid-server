@@ -658,75 +658,11 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 				// set user.ext.tpid
 				if len(userExt.Eids) > 0 {
-					tpIds := make([]rubiconExtUserTpID, 0)
-
-					var segments []string
-					for _, eid := range userExt.Eids {
-						if eid.Source == "adserver.org" {
-							uids := eid.Uids
-							if len(uids) > 0 {
-								uid := uids[0]
-
-								if uid.Ext != nil {
-									var eidUidExt rubiconUserExtEidUidExt
-									if err := json.Unmarshal(uid.Ext, &eidUidExt); err != nil {
-										errs = append(errs, &errortypes.BadInput{
-											Message: err.Error(),
-										})
-										continue
-									}
-
-									if eidUidExt.RtiPartner == "TDID" {
-										tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
-									}
-								}
-							}
-						} else if eid.Source == "liveintent.com" {
-							uids := eid.Uids
-							if len(uids) > 0 {
-								uidId := uids[0].ID
-								if uidId != "" {
-									tpIds = append(tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
-								}
-
-								if eid.Ext != nil {
-									var eidExt rubiconUserExtEidExt
-									if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
-										errs = append(errs, &errortypes.BadInput{
-											Message: err.Error(),
-										})
-										continue
-									}
-									segments = eidExt.Segments
-								}
-							}
-						}
-					}
-
-					if len(tpIds) > 0 {
-						userExtRP.TpID = tpIds
-
-						if segments != nil {
-							userExtRPTarget := make(map[string]interface{})
-
-							if userExtRP.RP.Target != nil {
-								if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
-									errs = append(errs, &errortypes.BadInput{
-										Message: err.Error(),
-									})
-									continue
-								}
-							}
-
-							userExtRPTarget["LIseg"] = segments
-
-							target, err = json.Marshal(&userExtRPTarget)
-							if err != nil {
-								errs = append(errs, err)
-								continue
-							}
-							userExtRP.RP.Target = target
-						}
+					if tpIds, segments, errors := getTpIdsAndSegments(userExt.Eids); len(errors) > 0 {
+						errs = append(errs, errors...)
+					} else if err := updateUserExtWithTpIdsAndSegments(&userExtRP, tpIds, segments); err != nil {
+						errs = append(errs, err)
+						continue
 					}
 				}
 			}
@@ -809,6 +745,82 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 	}
 
 	return requestData, errs
+}
+
+func getTpIdsAndSegments(eids []openrtb_ext.ExtUserEid) ([]rubiconExtUserTpID, []string, []error) {
+	tpIds := make([]rubiconExtUserTpID, 0)
+	segments := make([]string, 0)
+	errs := make([]error, 0)
+
+	for _, eid := range eids {
+		switch eid.Source {
+		case "adserver.org":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uid := uids[0]
+
+				if uid.Ext != nil {
+					var eidUidExt rubiconUserExtEidUidExt
+					if err := json.Unmarshal(uid.Ext, &eidUidExt); err != nil {
+						errs = append(errs, &errortypes.BadInput{
+							Message: err.Error(),
+						})
+						continue
+					}
+
+					if eidUidExt.RtiPartner == "TDID" {
+						tpIds = append(tpIds, rubiconExtUserTpID{Source: "tdid", UID: uid.ID})
+					}
+				}
+			}
+		case "liveintent.com":
+			uids := eid.Uids
+			if len(uids) > 0 {
+				uidId := uids[0].ID
+				if uidId != "" {
+					tpIds = append(tpIds, rubiconExtUserTpID{Source: "liveintent.com", UID: uidId})
+				}
+
+				if eid.Ext != nil {
+					var eidExt rubiconUserExtEidExt
+					if err := json.Unmarshal(eid.Ext, &eidExt); err != nil {
+						errs = append(errs, &errortypes.BadInput{
+							Message: err.Error(),
+						})
+						continue
+					}
+					segments = eidExt.Segments
+				}
+			}
+		}
+	}
+
+	return tpIds, segments, errs
+}
+
+func updateUserExtWithTpIdsAndSegments(userExtRP *rubiconUserExt, tpIds []rubiconExtUserTpID, segments []string) error {
+	if len(tpIds) > 0 {
+		userExtRP.TpID = tpIds
+
+		if segments != nil {
+			userExtRPTarget := make(map[string]interface{})
+
+			if userExtRP.RP.Target != nil {
+				if err := json.Unmarshal(userExtRP.RP.Target, &userExtRPTarget); err != nil {
+					return &errortypes.BadInput{Message: err.Error()}
+				}
+			}
+
+			userExtRPTarget["LIseg"] = segments
+
+			if target, err := json.Marshal(&userExtRPTarget); err != nil {
+				return &errortypes.BadInput{Message: err.Error()}
+			} else {
+				userExtRP.RP.Target = target
+			}
+		}
+	}
+	return nil
 }
 
 func isVideo(imp openrtb.Imp) bool {
