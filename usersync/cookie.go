@@ -177,6 +177,13 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Requ
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
+
+	// Set the secure flag to 'uids' cookie; using sec query param for backward compatibility
+	secParam := r.URL.Query().Get("sec")
+	if secParam == "1" {
+		httpCookie.Secure = true
+	}
+
 	cookieStr := httpCookie.String()
 	var sameSiteCookie *http.Cookie
 	if IsBrowserApplicableForSameSite(r) {
