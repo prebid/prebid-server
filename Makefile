@@ -13,9 +13,8 @@ all:
 # deps will clean out the vendor directory and use go mod for a fresh install
 deps:
 	rm -rf vendor
-	go mod vendor
-	go mod tidy
-
+	GOPROXY="https://proxy.golang.org" go mod vendor -v && go mod tidy -v
+	
 # test will ensure that all of our dependencies are available and run validate.sh
 test: deps
 	./validate.sh
