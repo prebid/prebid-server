@@ -175,12 +175,22 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	r = &Router{
 		Router: httprouter.New(),
 	}
+
+	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
+	// local file system
+	certPool := ssl.GetRootCAPool()
+	var readCertErr error
+	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	if readCertErr != nil {
+		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
+	}
+
 	theClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
 			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+			TLSClientConfig:     &tls.Config{RootCAs: certPool},
 		},
 	}
 	// Hack because of how legacy handles districtm
