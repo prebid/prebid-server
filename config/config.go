@@ -60,6 +60,8 @@ type Configuration struct {
 	BlacklistedAcctMap map[string]bool
 	// Is publisher/account ID required to be submitted in the OpenRTB2 request
 	AccountRequired bool `mapstructure:"account_required"`
+	// Local private file containing SSL certificates
+	PemCertsFile string `mapstructure:"certificates_file"`
 }
 
 const MIN_COOKIE_SIZE_BYTES = 500
@@ -704,6 +706,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("blacklisted_apps", []string{""})
 	v.SetDefault("blacklisted_accts", []string{""})
 	v.SetDefault("account_required", false)
+	v.SetDefault("certificates_file", "")
 
 	// Set environment variable support:
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

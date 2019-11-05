@@ -2,6 +2,8 @@ package ssl
 
 import (
 	"crypto/x509"
+	"fmt"
+	"io/ioutil"
 )
 
 // from https://medium.com/@kelseyhightower/optimizing-docker-images-for-static-binaries-b5696e26eb07
@@ -14,6 +16,26 @@ func GetRootCAPool() *x509.CertPool {
 		pool.AppendCertsFromPEM(pemCerts)
 	}
 	return pool
+}
+
+// Appends certificates to the `x509.CertPool` from a `.pem` private local file. On many Linux
+// systems, /etc/ssl/cert.pem will contain the system wide set but in our case, we'll pull
+// the certificate file path from the `Configuration` struct
+func AppendPEMFileToRootCAPool(certPool *x509.CertPool, pemFileName string) (*x509.CertPool, error) {
+	if certPool == nil {
+		certPool = x509.NewCertPool()
+	}
+	if pemFileName != "" {
+		//read file and place it's contents in `pemCerts`
+		pemCerts, err := ioutil.ReadFile(pemFileName)
+		if err != nil {
+			return certPool, fmt.Errorf("Failed to read file %s: %v", pemFileName, err)
+		}
+
+		//`pemCerts` has been obtained, append to certPool
+		certPool.AppendCertsFromPEM(pemCerts)
+	}
+	return certPool, nil
 }
 
 var pemCerts = []byte(`
