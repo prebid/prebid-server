@@ -1,5 +1,18 @@
 {
+<<<<<<< HEAD:adapters/triplelift_native/tripleliftnativetest/supplemental/badlyformed.json
   "expectedMakeRequestsErrors" : ["no native object specified","No valid impressions for triplelift"],
+=======
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "neither Banner nor Video object specified",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impressions for triplelift",
+      "comparison": "literal"
+    }
+  ],
+>>>>>>> master:adapters/triplelift/triplelifttest/supplemental/badlyformed.json
   "mockBidRequest": {
     "id": "test-request-id",
     "imp": [

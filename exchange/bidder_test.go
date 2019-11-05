@@ -962,6 +962,107 @@ func TestServerCallDebugging(t *testing.T) {
 	}
 }
 
+func TestMobileNativeTypes(t *testing.T) {
+	respBody := "{\"bid\":false}"
+	respStatus := 200
+	server := httptest.NewServer(mockHandler(respStatus, "getBody", respBody))
+	defer server.Close()
+
+	reqBody := "{\"key\":\"val\"}"
+	reqURL := server.URL
+
+	testCases := []struct {
+		mockBidderRequest  *openrtb.BidRequest
+		mockBidderResponse *adapters.BidderResponse
+		expectedValue      string
+		description        string
+	}{
+		{
+			mockBidderRequest: &openrtb.BidRequest{
+				Imp: []openrtb.Imp{
+					{
+						ID: "some-imp-id",
+						Native: &openrtb.Native{
+							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
+						},
+					},
+				},
+				App: &openrtb.App{},
+			},
+			mockBidderResponse: &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb.Bid{
+							ImpID: "some-imp-id",
+							AdM:   "{\"assets\":[{\"id\":2,\"img\":{\"url\":\"http://vcdn.adnxs.com/p/creative-image/f8/7f/0f/13/f87f0f13-230c-4f05-8087-db9216e393de.jpg\",\"w\":989,\"h\":742,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"id\":1,\"title\":{\"text\":\"This is a Prebid Native Creative\"}},{\"id\":3,\"data\":{\"value\":\"Prebid.org\"}},{\"id\":4,\"data\":{\"value\":\"This is a Prebid Native Creative.  There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://some-url.com\"},\"imptrackers\":[\"http://someimptracker.com\"],\"jstracker\":\"some-js-tracker\"}",
+							Price: 10,
+						},
+						BidType: openrtb_ext.BidTypeNative,
+					},
+				},
+			},
+			expectedValue: "{\"assets\":[{\"id\":2,\"img\":{\"type\":3,\"url\":\"http://vcdn.adnxs.com/p/creative-image/f8/7f/0f/13/f87f0f13-230c-4f05-8087-db9216e393de.jpg\",\"w\":989,\"h\":742,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"id\":1,\"title\":{\"text\":\"This is a Prebid Native Creative\"}},{\"id\":3,\"data\":{\"type\":1,\"value\":\"Prebid.org\"}},{\"id\":4,\"data\":{\"type\":2,\"value\":\"This is a Prebid Native Creative.  There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://some-url.com\"},\"imptrackers\":[\"http://someimptracker.com\"],\"jstracker\":\"some-js-tracker\"}",
+			description:   "Checks types in response",
+		},
+		{
+			mockBidderRequest: &openrtb.BidRequest{
+				Imp: []openrtb.Imp{
+					{
+						ID: "some-imp-id",
+						Native: &openrtb.Native{
+							Request: "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}}]}",
+						},
+					},
+				},
+				App: &openrtb.App{},
+			},
+			mockBidderResponse: &adapters.BidderResponse{
+				Bids: []*adapters.TypedBid{
+					{
+						Bid: &openrtb.Bid{
+							ImpID: "some-imp-id",
+							AdM:   "{\"some-diff-markup\":\"creative\"}",
+							Price: 10,
+						},
+						BidType: openrtb_ext.BidTypeNative,
+					},
+				},
+			},
+			expectedValue: "{\"some-diff-markup\":\"creative\"}",
+			description:   "Non IAB compliant markup",
+		},
+	}
+
+	for _, tc := range testCases {
+		bidderImpl := &goodSingleBidder{
+			httpRequest: &adapters.RequestData{
+				Method:  "POST",
+				Uri:     reqURL,
+				Body:    []byte(reqBody),
+				Headers: http.Header{},
+			},
+			bidResponse: tc.mockBidderResponse,
+		}
+		bidder := adaptBidder(bidderImpl, server.Client())
+		currencyConverter := currencies.NewRateConverterDefault()
+
+		seatBids, _ := bidder.requestBid(
+			context.Background(),
+			tc.mockBidderRequest,
+			"test",
+			1.0,
+			currencyConverter.Rates(),
+			&adapters.ExtraRequestInfo{},
+		)
+
+		var actualValue string
+		for _, bid := range seatBids.bids {
+			actualValue = bid.bid.AdM
+			diffJson(t, tc.description, []byte(actualValue), []byte(tc.expectedValue))
+		}
+	}
+}
+
 func TestErrorReporting(t *testing.T) {
 	bidder := adaptBidder(&bidRejector{}, nil)
 	currencyConverter := currencies.NewRateConverterDefault()

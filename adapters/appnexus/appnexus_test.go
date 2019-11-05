@@ -367,7 +367,8 @@ func TestAppNexusBasicResponse(t *testing.T) {
 	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("adnxs", andata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
+
+	pc.SetCookieOnResponse(fakewriter, false, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()

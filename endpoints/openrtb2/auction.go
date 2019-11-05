@@ -90,7 +90,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       pbsmetrics.BrowserOther,
+		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -100,15 +100,9 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	isSafari := checkSafari(r)
-	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
-	}
-
 	req, errL := deps.parseRequest(r)
 
-	if fatalError(errL) && writeError(errL, w) {
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+	if fatalError(errL) && writeError(errL, w, &labels) {
 		return
 	}
 
@@ -135,11 +129,10 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		}
 		labels.PubID = effectivePubID(req.Site.Publisher)
 	}
-	// Blacklist account now that we have resolved the value
-	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
-		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
-		writeError(errL, w)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
+		writeError(errL, w, &labels)
 		return
 	}
 
@@ -1128,28 +1121,51 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
-// Check if a request comes from a Safari browser
-func checkSafari(r *http.Request) (isSafari bool) {
-	isSafari = false
+// parseUserID gets this user's ID for the host machine, if it exists.
+func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
+	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
+		return hostCookie.Value, true
+	} else {
+		return "", false
+	}
+}
+
+// getBrowserName checks if a request comes from a Safari browser.
+// Returns pbsmetrics.BrowserSafari or pbsmetrics.BrowserOther
+// depending on the value of the "User-Agent" header of our http.Request
+func getBrowserName(r *http.Request) pbsmetrics.Browser {
+	var browser pbsmetrics.Browser = pbsmetrics.BrowserOther
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
-			isSafari = true
+			browser = pbsmetrics.BrowserSafari
 		}
 	}
-	return
+	return browser
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.
-func writeError(errs []error, w http.ResponseWriter) bool {
+func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) bool {
+	var rc bool = false
 	if len(errs) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
+		httpStatus := http.StatusBadRequest
+		metricsStatus := pbsmetrics.RequestStatusBadInput
+		for _, err := range errs {
+			erVal := errortypes.DecodeError(err)
+			if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+				httpStatus = http.StatusServiceUnavailable
+				metricsStatus = pbsmetrics.RequestStatusBlacklisted
+				break
+			}
+		}
+		w.WriteHeader(httpStatus)
+		labels.RequestStatus = metricsStatus
 		for _, err := range errs {
 			w.Write([]byte(fmt.Sprintf("Invalid request: %s\n", err.Error())))
 		}
-		return true
+		rc = true
 	}
-	return false
+	return rc
 }
 
 // Checks to see if an error in an error list is a fatal error
@@ -1169,8 +1185,8 @@ func effectivePubID(pub *openrtb.Publisher) string {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
 			err := json.Unmarshal(pub.Ext, &pubExt)
-			if err == nil && pubExt.ParentAccount != nil && *pubExt.ParentAccount != "" {
-				return *pubExt.ParentAccount
+			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
+				return *pubExt.Prebid.ParentAccount
 			}
 		}
 		if pub.ID != "" {
@@ -1178,4 +1194,16 @@ func effectivePubID(pub *openrtb.Publisher) string {
 		}
 	}
 	return pbsmetrics.PublisherUnknown
+}
+
+func validateAccount(cfg *config.Configuration, pubID string) error {
+	var err error = nil
+	if cfg.AccountRequired && pubID == pbsmetrics.PublisherUnknown {
+		// If specified in the configuration, discard requests that don't come with an account ID.
+		err = error(&errortypes.AcctRequired{Message: fmt.Sprintf("Prebid-server has been configured to discard requests that don't come with an Account ID. Please reach out to the prebid server host.")})
+	} else if _, found := cfg.BlacklistedAcctMap[pubID]; found {
+		// Blacklist account now that we have resolved the value
+		err = error(&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, please reach out to the prebid server host.", pubID)})
+	}
+	return err
 }

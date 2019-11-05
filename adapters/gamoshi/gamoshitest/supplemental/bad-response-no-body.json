@@ -49,6 +49,9 @@
     }
   ],
   "expectedMakeBidsErrors": [
-    "bad server response: unexpected end of JSON input. "
+    {
+      "value": "bad server response: unexpected end of JSON input. ",
+      "comparison": "literal"
+    }
   ]
 }

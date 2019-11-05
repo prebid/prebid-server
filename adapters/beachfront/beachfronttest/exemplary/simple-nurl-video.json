@@ -29,13 +29,14 @@
       "publisher":{
         "id":"publisher1"
       },
-      "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534"
+      "page": "http://example.com/whatever/something.html"
     },
     "user": {
       "id": "some-user",
       "buyeruid": "some-buyer"
     },
     "device": {
+      "devicetype": 2,
       "ip": "127.0.0.1",
       "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16"
     }
@@ -46,30 +47,38 @@
       "expectedRequest": {
         "uri": "https://reachms.bfmio.com/bid.json?exchange_id=11bc5dd5-7421-4dd8-c926-40fa653bec76&prebidserver",
         "body": {
-          "isPrebid": true,
-          "appId": "11bc5dd5-7421-4dd8-c926-40fa653bec76",
           "id": "61b87329-8790-47b7-90dd-c53ae7ce1723",
+          "isPrebid": true,
           "imp": [
             {
               "video": {
                 "w": 300,
-                "h": 250
+                "h": 250,
+                "mimes": [
+                  "video/mp4"
+                ]
               },
-              "bidfloor": 0.01,
-              "secure" : 0,
-              "id": 0,
-              "impid": "video1"
+              "id": "video1",
+              "secure": 0
             }
           ],
           "site": {
-            "page": "https://test.opposingviews.com/i/society/republican-sen-collins-may-change-vote-tax-bill?cb=1234534",
-            "domain": "test.opposingviews.com"
+            "publisher":{
+              "id":"publisher1"
+            },
+            "page": "http://example.com/whatever/something.html",
+            "domain": "example.com"
           },
           "device": {
-            "js": "1",
+            "devicetype": 2,
             "ua": "Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16",
-            "ip": "127.0.0.1"
+            "ip": "192.168.255.255"
           },
+          "source": {
+           "tid": "61b87329-8790-47b7-90dd-c53ae7ce1723"
+          },
+          "tmax": 1000,
+
           "cur": [
             "USD"
           ],
@@ -78,47 +87,33 @@
             "buyeruid": "some-buyer"
           }
         }
-        },
+      },
       "mockResponse": {
         "status" : 200,
         "body": {
           "id":"61b87329-8790-47b7-90dd-c53ae7ce1723",
           "seatBid":[
-            {
-              "bid":[
-                {
-                  "w":0,
-                  "h":0,
-                  "id": "0",
-                  "impid":"",
-                  "price":0.01,
-                  "adid":"",
-                  "nurl":"https://evt.bfmio.com/getmu?aid=bid:0d32aea6-d199-4803-a188-bd7cf7be1e12:11bc5dd5-7421-4dd8-c926-40fa653bec76:0.01:0.01&v=1&dsp=5afda03c7c2d2bfaee55a3f0,0.01&i_type=pre",
-                  "adm":"",
-                  "adomain":[
-
-                  ],
-                  "iurl":"",
-                  "cid":"",
-                  "crid":"",
-                  "attr":[
-
-                  ],
-                  "ext":{
-
-                  },
-                  "cat":[
-
-                  ]
-                }
-              ],
-              "seat":"",
-              "group":0,
-              "ext":{
-
+              {
+                "bid": [
+                  {
+                    "id": "video1NurlVideo",
+                    "impid": "video1",
+                    "price": 20,
+                    "nurl": "https://useast.bfmio.com/getBids?aid=bid:70b99087-1b92-4e81-bc42-05c940fd6014:11bc5dd5-7421-4dd8-c926-40fa653bec76:20.0:20.0&v=1&dsp=5d8391a85f35945a70c9ddf0,0.01&i_type=pre",
+                    "crid": "70b99087-1b92-4e81-bc42-05c940fd6014",
+                    "w": 300,
+                    "h": 250,
+                    "ext": {
+                      "prebid": {
+                        "type": "video"
+                      },
+                      "bidder": {}
+                    }
+                  }
+                ],
+                "seat": "beachfront"
               }
-            }
-          ]
+            ]
         }
       }
     }

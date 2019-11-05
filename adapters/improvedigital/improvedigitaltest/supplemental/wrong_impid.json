@@ -72,6 +72,9 @@
   ],
 
   "expectedMakeBidsErrors": [
-    "Failed to find impression for ID: \"unknown_impid\""
+    {
+      "value": "Failed to find impression for ID: \"unknown_impid\"",
+      "comparison": "literal"
+    }
   ]
 }
