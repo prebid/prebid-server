@@ -52,8 +52,8 @@ const (
 	BidderSomoaudience     BidderName = "somoaudience"
 	BidderSovrn            BidderName = "sovrn"
 	BidderSonobi           BidderName = "sonobi"
-	BidderSynacormedia   BidderName = "synacormedia"
-	BidderTriplelift     BidderName = "triplelift"
+	BidderSynacormedia     BidderName = "synacormedia"
+	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
 	BidderUnruly           BidderName = "unruly"
 	BidderVerizonMedia     BidderName = "verizonmedia"
@@ -98,8 +98,8 @@ var BidderMap = map[string]BidderName{
 	"somoaudience":      BidderSomoaudience,
 	"sovrn":             BidderSovrn,
 	"sonobi":            BidderSonobi,
-	"synacormedia":    BidderSynacormedia,
-	"triplelift":      BidderTriplelift,
+	"synacormedia":      BidderSynacormedia,
+	"triplelift":        BidderTriplelift,
 	"triplelift_native": BidderTripleliftNative,
 	"unruly":            BidderUnruly,
 	"verizonmedia":      BidderVerizonMedia,
