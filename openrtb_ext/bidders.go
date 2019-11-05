@@ -20,31 +20,31 @@ type BidderName string
 // These names _must_ coincide with the bidder code in Prebid.js, if an adapter also exists in that project.
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
-	Bidder33Across         BidderName = "33across"
-	BidderAdkernel         BidderName = "adkernel"
-	BidderAdkernelAdn      BidderName = "adkernelAdn"
-	    BidderAdpone         BidderName = "adpone"
-    BidderAdtelligent      BidderName = "adtelligent"
-	BidderAdform           BidderName = "adform"
-	BidderAdvangelists     BidderName = "advangelists"
-	BidderAppnexus         BidderName = "appnexus"
-	BidderBeachfront       BidderName = "beachfront"
-	BidderBrightroll       BidderName = "brightroll"
-	BidderConsumable       BidderName = "consumable"
-	BidderConversant       BidderName = "conversant"
-	BidderEmxDigital       BidderName = "emx_digital"
-	BidderEPlanning        BidderName = "eplanning"
-	BidderFacebook         BidderName = "audienceNetwork"
-	BidderGamma            BidderName = "gamma"
-	BidderGamoshi          BidderName = "gamoshi"
-	BidderGrid             BidderName = "grid"
-	BidderGumGum           BidderName = "gumgum"
-	BidderImprovedigital   BidderName = "improvedigital"
-	BidderIx               BidderName = "ix"
-	BidderLifestreet       BidderName = "lifestreet"
-	    BidderLockerDome     BidderName = "lockerdome"
+	Bidder33Across       BidderName = "33across"
+	BidderAdkernel       BidderName = "adkernel"
+	BidderAdkernelAdn    BidderName = "adkernelAdn"
+	BidderAdpone         BidderName = "adpone"
+	BidderAdtelligent    BidderName = "adtelligent"
+	BidderAdform         BidderName = "adform"
+	BidderAdvangelists   BidderName = "advangelists"
+	BidderAppnexus       BidderName = "appnexus"
+	BidderBeachfront     BidderName = "beachfront"
+	BidderBrightroll     BidderName = "brightroll"
+	BidderConsumable     BidderName = "consumable"
+	BidderConversant     BidderName = "conversant"
+	BidderEmxDigital     BidderName = "emx_digital"
+	BidderEPlanning      BidderName = "eplanning"
+	BidderFacebook       BidderName = "audienceNetwork"
+	BidderGamma          BidderName = "gamma"
+	BidderGamoshi        BidderName = "gamoshi"
+	BidderGrid           BidderName = "grid"
+	BidderGumGum         BidderName = "gumgum"
+	BidderImprovedigital BidderName = "improvedigital"
+	BidderIx             BidderName = "ix"
+	BidderLifestreet     BidderName = "lifestreet"
+	BidderLockerDome     BidderName = "lockerdome"
 
-    BidderMgid             BidderName = "mgid"
+	BidderMgid             BidderName = "mgid"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -69,31 +69,31 @@ const (
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
-	"33across":          Bidder33Across,
-	"adkernel":          BidderAdkernel,
-	"adkernelAdn":       BidderAdkernelAdn,
-	    "adpone":          BidderAdpone,
-    "adtelligent":       BidderAdtelligent,
-	"adform":            BidderAdform,
-	"advangelists":      BidderAdvangelists,
-	"appnexus":          BidderAppnexus,
-	"beachfront":        BidderBeachfront,
-	"audienceNetwork":   BidderFacebook,
-	"brightroll":        BidderBrightroll,
-	"consumable":        BidderConsumable,
-	"conversant":        BidderConversant,
-	"emx_digital":       BidderEmxDigital,
-	"eplanning":         BidderEPlanning,
-	"gamma":             BidderGamma,
-	"gamoshi":           BidderGamoshi,
-	"grid":              BidderGrid,
-	"gumgum":            BidderGumGum,
-	"improvedigital":    BidderImprovedigital,
-	"ix":                BidderIx,
-	"lifestreet":        BidderLifestreet,
-	    "lockerdome":      BidderLockerDome,
+	"33across":        Bidder33Across,
+	"adkernel":        BidderAdkernel,
+	"adkernelAdn":     BidderAdkernelAdn,
+	"adpone":          BidderAdpone,
+	"adtelligent":     BidderAdtelligent,
+	"adform":          BidderAdform,
+	"advangelists":    BidderAdvangelists,
+	"appnexus":        BidderAppnexus,
+	"beachfront":      BidderBeachfront,
+	"audienceNetwork": BidderFacebook,
+	"brightroll":      BidderBrightroll,
+	"consumable":      BidderConsumable,
+	"conversant":      BidderConversant,
+	"emx_digital":     BidderEmxDigital,
+	"eplanning":       BidderEPlanning,
+	"gamma":           BidderGamma,
+	"gamoshi":         BidderGamoshi,
+	"grid":            BidderGrid,
+	"gumgum":          BidderGumGum,
+	"improvedigital":  BidderImprovedigital,
+	"ix":              BidderIx,
+	"lifestreet":      BidderLifestreet,
+	"lockerdome":      BidderLockerDome,
 
-    "openx":             BidderOpenx,
+	"openx":             BidderOpenx,
 	"mgid":              BidderMgid,
 	"pubmatic":          BidderPubmatic,
 	"pulsepoint":        BidderPulsepoint,
