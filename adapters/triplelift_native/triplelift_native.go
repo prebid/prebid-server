@@ -23,6 +23,17 @@ type TripleliftRespExt struct {
 	Triplelift TripleliftInnerExt `json:"triplelift_pb"`
 }
 
+type TripleliftNativeExtInfo struct {
+
+	// Array is used for deserialization.
+
+	PublisherWhitelist []string `mapstructure:"publisher_whitelist,flow"`
+
+	// Map is used for optimized memory access and should be constructed after deserialization.
+
+	PublisherWhitelistMap map[string]bool
+}
+
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
