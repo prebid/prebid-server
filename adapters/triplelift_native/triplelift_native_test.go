@@ -1,4 +1,4 @@
-package triplelift
+package triplelift_native
 
 import (
 	"github.com/prebid/prebid-server/adapters/adapterstest"
