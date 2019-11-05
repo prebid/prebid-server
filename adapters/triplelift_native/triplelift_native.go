@@ -11,7 +11,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-type TripleliftAdapter struct {
+type TripleliftNativeAdapter struct {
 	endpoint string
 }
 
@@ -51,7 +51,7 @@ func processImp(imp *openrtb.Imp) error {
 	return nil
 }
 
-func (a *TripleliftAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp)+1)
 	reqs := make([]*adapters.RequestData, 0, 1)
 	// copy the request, because we are going to mutate it
@@ -97,7 +97,7 @@ func getBidCount(bidResponse openrtb.BidResponse) int {
 	return c
 }
 
-func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if response.StatusCode == http.StatusNoContent {
 		return nil, nil
 	}
@@ -133,7 +133,7 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb.BidRequest, extern
 	return bidResponse, errs
 }
 
-func NewTripleliftBidder(client *http.Client, endpoint string) *TripleliftAdapter {
-	return &TripleliftAdapter{
+func NewTripleliftNativeBidder(client *http.Client, endpoint string) *TripleliftNativeAdapter {
+	return &TripleliftNativeAdapter{
 		endpoint: endpoint}
 }
