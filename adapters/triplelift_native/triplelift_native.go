@@ -24,13 +24,10 @@ type TripleliftRespExt struct {
 }
 
 type TripleliftNativeExtInfo struct {
-
 	// Array is used for deserialization.
-
 	PublisherWhitelist []string `mapstructure:"publisher_whitelist,flow"`
 
 	// Map is used for optimized memory access and should be constructed after deserialization.
-
 	PublisherWhitelistMap map[string]bool
 }
 
