@@ -13,6 +13,7 @@ import (
 
 type TripleliftNativeAdapter struct {
 	endpoint string
+    extInfo TripleliftNativeExtInfo
 }
 
 type TripleliftInnerExt struct {
@@ -73,7 +74,7 @@ func effectivePubID(pub *openrtb.Publisher) string {
 			return pub.ID
 		}
 	}
-	return nil
+	return "unknown"
 }
 
 func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
