@@ -73,7 +73,7 @@ func effectivePubID(pub *openrtb.Publisher) string {
 			return pub.ID
 		}
 	}
-	return pbsmetrics.PublisherUnknown
+	return nil
 }
 
 func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extra *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
