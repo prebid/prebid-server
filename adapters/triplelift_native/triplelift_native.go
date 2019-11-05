@@ -133,7 +133,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	return bidResponse, errs
 }
 
-func NewTripleliftNativeBidder(client *http.Client, endpoint string) *TripleliftNativeAdapter {
+func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) *TripleliftNativeAdapter {
 	return &TripleliftNativeAdapter{
 		endpoint: endpoint}
 }
