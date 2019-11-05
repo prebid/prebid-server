@@ -74,6 +74,12 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 			errs = append(errs, err)
 		}
 	}
+	publisher := request.App.Publisher
+	publisherID := effectivePubID(publisher)
+	if _, exists := a.extInfo.PublisherWhitelistMap[publisherID]; !exists {
+		err := fmt.Errorf("Unsupported publisher for triplelift_native")
+		return nil, []error{err}
+	}
 	if len(validImps) == 0 {
 		err := fmt.Errorf("No valid impressions for triplelift")
 		errs = append(errs, err)
