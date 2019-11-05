@@ -1180,7 +1180,7 @@ func fatalError(errL []error) bool {
 }
 
 // Returns the effective publisher ID
-func effectivePubID(pub *openrtb.Publisher) string {
+func EffectivePubID(pub *openrtb.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
