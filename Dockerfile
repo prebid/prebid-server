@@ -10,6 +10,7 @@ RUN mkdir -p /app/prebid-server/
 WORKDIR /app/prebid-server/
 ENV GOROOT=/usr/local/go
 ENV PATH=$GOROOT/bin:$PATH
+ENV GOPROXY="https://proxy.golang.org"
 RUN apt-get update && \
     apt-get install -y git && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

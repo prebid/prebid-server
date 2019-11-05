@@ -90,7 +90,7 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeORTB2Web,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       pbsmetrics.BrowserOther,
+		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -99,11 +99,6 @@ func (deps *endpointDeps) Auction(w http.ResponseWriter, r *http.Request, _ http
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAuctionObject(&ao)
 	}()
-
-	isSafari := checkSafari(r)
-	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
-	}
 
 	req, errL := deps.parseRequest(r)
 
@@ -1126,16 +1121,27 @@ func setUAImplicitly(httpReq *http.Request, bidReq *openrtb.BidRequest) {
 	}
 }
 
-// Check if a request comes from a Safari browser
-func checkSafari(r *http.Request) (isSafari bool) {
-	isSafari = false
+// parseUserID gets this user's ID for the host machine, if it exists.
+func parseUserID(cfg *config.Configuration, httpReq *http.Request) (string, bool) {
+	if hostCookie, err := httpReq.Cookie(cfg.HostCookie.CookieName); hostCookie != nil && err == nil {
+		return hostCookie.Value, true
+	} else {
+		return "", false
+	}
+}
+
+// getBrowserName checks if a request comes from a Safari browser.
+// Returns pbsmetrics.BrowserSafari or pbsmetrics.BrowserOther
+// depending on the value of the "User-Agent" header of our http.Request
+func getBrowserName(r *http.Request) pbsmetrics.Browser {
+	var browser pbsmetrics.Browser = pbsmetrics.BrowserOther
 	if ua := user_agent.New(r.Header.Get("User-Agent")); ua != nil {
 		name, _ := ua.Browser()
 		if name == "Safari" {
-			isSafari = true
+			browser = pbsmetrics.BrowserSafari
 		}
 	}
-	return
+	return browser
 }
 
 // Write(return) errors to the client, if any. Returns true if errors were found.

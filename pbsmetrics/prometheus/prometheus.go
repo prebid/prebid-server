@@ -28,6 +28,7 @@ type Metrics struct {
 	cookieSync           prometheus.Counter
 	adaptCookieSync      *prometheus.CounterVec
 	userID               *prometheus.CounterVec
+	prebidCacheReqTimer  *prometheus.HistogramVec
 	storedReqCacheResult *prometheus.CounterVec
 	storedImpCacheResult *prometheus.CounterVec
 }
@@ -55,9 +56,11 @@ const (
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
 // Its own function to keep the metric creation function cleaner.
 func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
-	// define the buckets for timers
 	timerBuckets := prometheus.LinearBuckets(0.05, 0.05, 20)
 	timerBuckets = append(timerBuckets, []float64{1.5, 2.0, 3.0, 5.0, 10.0, 50.0}...)
+
+	timerBucketsQuickTasks := prometheus.LinearBuckets(0.005, 0.005, 20)
+	timerBucketsQuickTasks = append([]float64{0.001, 0.0015, 0.003}, timerBucketsQuickTasks...)
 
 	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel, accountLabel}
 
@@ -148,6 +151,11 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 		[]string{"action", "bidder"},
 	)
 	metrics.Registry.MustRegister(metrics.userID)
+	metrics.prebidCacheReqTimer = newHistogram(cfg, "prebid_cache_request_time_seconds",
+		"Seconds to complete each PBC request.",
+		[]string{responseStatusLabel}, timerBucketsQuickTasks,
+	)
+	metrics.Registry.MustRegister(metrics.prebidCacheReqTimer)
 
 	initializeTimeSeries(&metrics)
 
@@ -293,6 +301,12 @@ func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 	me.userID.With(resolveUserSyncLabels(userLabels)).Inc()
 }
 
+// RecordPrebidCacheRequestTime records amount of time taken to store the auction result in Prebid Cache
+func (me *Metrics) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
+	time := float64(length) / float64(time.Second)
+	me.prebidCacheReqTimer.With(resolveRequestLabels(labels)).Observe(time)
+}
+
 func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
 	return prometheus.Labels{
 		demandSourceLabel:   string(labels.Source),
@@ -375,6 +389,12 @@ func resolveImpLabels(labels pbsmetrics.ImpLabels) prometheus.Labels {
 	return impLabels
 }
 
+func resolveRequestLabels(labels pbsmetrics.RequestLabels) prometheus.Labels {
+	return prometheus.Labels{
+		responseStatusLabel: string(labels.RequestStatus),
+	}
+}
+
 // initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances
 func initializeTimeSeries(m *Metrics) {
 	// Connection errors
@@ -407,6 +427,7 @@ func initializeTimeSeries(m *Metrics) {
 		_ = m.adaptPrices.With(l)
 		_ = m.adaptPanics.With(l)
 	}
+
 	// AdapterBid labels
 	labels = addDimension(labels, bidTypeLabel, bidTypesAsString())
 	labels = addDimension(labels, markupTypeLabel, []string{"unknown", "adm"})

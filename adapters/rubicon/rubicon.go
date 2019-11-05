@@ -5,13 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/prebid/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/golang/glog"
-
-	"github.com/prebid/prebid-server/pbs"
+	"strings"
 
 	"golang.org/x/net/context/ctxhttp"
 
@@ -102,6 +101,18 @@ type rubiconBannerExtRP struct {
 
 type rubiconBannerExt struct {
 	RP rubiconBannerExtRP `json:"rp"`
+}
+
+type ExtImpContextData struct {
+	AdSlot string `json:"adslot,omitempty"`
+}
+
+type ExtImpContext struct {
+	Data ExtImpContextData `json:"data,omitempty"`
+}
+
+type ExtImpWithContext struct {
+	Context ExtImpContext `json:"context,omitempty"` // First Party Data context
 }
 
 // ***** Video Extension *****
@@ -572,10 +583,42 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 			continue
 		}
 
+		target := rubiconExt.Inventory
+		if rubiconExt.Inventory != nil {
+			rubiconExtInventory := make(map[string]interface{})
+			if err := json.Unmarshal(rubiconExt.Inventory, &rubiconExtInventory); err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: err.Error(),
+				})
+				continue
+			}
+
+			var extImpWithContext ExtImpWithContext
+			if err := json.Unmarshal(thisImp.Ext, &extImpWithContext); err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: err.Error(),
+				})
+				continue
+			}
+
+			// Copy imp[].ext.context.data.adslot is copied to imp[].ext.rp.target.dfp_ad_unit_code,
+			// but with any leading slash dropped
+			adSlot := extImpWithContext.Context.Data.AdSlot
+			if adSlot != "" {
+				rubiconExtInventory["dfp_ad_unit_code"] = strings.TrimLeft(adSlot, "/")
+
+				target, err = json.Marshal(&rubiconExtInventory)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+			}
+		}
+
 		impExt := rubiconImpExt{
 			RP: rubiconImpExtRP{
 				ZoneID: rubiconExt.ZoneId,
-				Target: rubiconExt.Inventory,
+				Target: target,
 				Track:  rubiconImpExtRPTrack{Mint: "", MintVersion: ""},
 			},
 		}
