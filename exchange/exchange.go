@@ -358,7 +358,6 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	var translateCategories = true
 
 	if includeBrandCategory && brandCatExt.WithCategory {
-		//if TranslateCategories is nil, default category translation to enabled
 		if brandCatExt.TranslateCategories != nil {
 			translateCategories = *brandCatExt.TranslateCategories
 		}

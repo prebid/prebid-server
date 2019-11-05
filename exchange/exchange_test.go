@@ -526,8 +526,8 @@ func newExtRequest() openrtb_ext.ExtRequest {
 		},
 	}
 
-	translateCat := true
-	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1, WithCategory: true, TranslateCategories: &translateCat}
+	translateCategories := true
+	brandCat := openrtb_ext.ExtIncludeBrandCategory{PrimaryAdServer: 1, WithCategory: true, TranslateCategories: &translateCategories}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     priceGran,
@@ -555,61 +555,6 @@ func newExtRequestNoBrandCat() openrtb_ext.ExtRequest {
 	}
 
 	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: false}
-
-	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
-		IncludeBrandCategory: &brandCat,
-	}
-
-	return openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &reqExt,
-		},
-	}
-}
-
-func newExtRequestTranslateCatNil() openrtb_ext.ExtRequest {
-	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
-		Ranges: []openrtb_ext.GranularityRange{
-			{
-				Min:       0.0,
-				Max:       20.0,
-				Increment: 2.0,
-			},
-		},
-	}
-
-	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: true, PrimaryAdServer: 1}
-
-	reqExt := openrtb_ext.ExtRequestTargeting{
-		PriceGranularity:     priceGran,
-		IncludeWinners:       true,
-		IncludeBrandCategory: &brandCat,
-	}
-
-	return openrtb_ext.ExtRequest{
-		Prebid: openrtb_ext.ExtRequestPrebid{
-			Targeting: &reqExt,
-		},
-	}
-}
-
-func newExtRequestTranslateCatFalse() openrtb_ext.ExtRequest {
-	priceGran := openrtb_ext.PriceGranularity{
-		Precision: 2,
-		Ranges: []openrtb_ext.GranularityRange{
-			{
-				Min:       0.0,
-				Max:       20.0,
-				Increment: 2.0,
-			},
-		},
-	}
-
-	translateCat := false
-	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: true, TranslateCategories: &translateCat}
 
 	reqExt := openrtb_ext.ExtRequestTargeting{
 		PriceGranularity:     priceGran,
@@ -739,7 +684,7 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequestTranslateCatNil()
+	requestExt := newExtRequestTranslateCategories(nil)
 
 	targData := &targetData{
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
@@ -781,6 +726,36 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 	assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
 }
 
+func newExtRequestTranslateCategories(translateCategories *bool) openrtb_ext.ExtRequest {
+	priceGran := openrtb_ext.PriceGranularity{
+		Precision: 2,
+		Ranges: []openrtb_ext.GranularityRange{
+			{
+				Min:       0.0,
+				Max:       20.0,
+				Increment: 2.0,
+			},
+		},
+	}
+
+	brandCat := openrtb_ext.ExtIncludeBrandCategory{WithCategory: true, PrimaryAdServer: 1}
+	if translateCategories != nil {
+		brandCat.TranslateCategories = translateCategories
+	}
+
+	reqExt := openrtb_ext.ExtRequestTargeting{
+		PriceGranularity:     priceGran,
+		IncludeWinners:       true,
+		IncludeBrandCategory: &brandCat,
+	}
+
+	return openrtb_ext.ExtRequest{
+		Prebid: openrtb_ext.ExtRequestPrebid{
+			Targeting: &reqExt,
+		},
+	}
+}
+
 func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 
 	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
@@ -788,7 +763,8 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 		t.Errorf("Failed to create a category Fetcher: %v", error)
 	}
 
-	requestExt := newExtRequestTranslateCatFalse()
+	translateCategories := false
+	requestExt := newExtRequestTranslateCategories(&translateCategories)
 
 	targData := &targetData{
 		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
