@@ -144,8 +144,8 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) *TripleliftNativeAdapter {
 	var extInfo TripleliftNativeExtInfo
 
-	if err := json.Unmarshal(extraInfo, &extInfo); err != nil {
-		panic("Invalid TripleLife Native extra adapter info: " + err.Message)
+	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
+		panic("Invalid TripleLife Native extra adapter info: " + err.Error())
 	}
 
 	// Populate map for faster memory access
