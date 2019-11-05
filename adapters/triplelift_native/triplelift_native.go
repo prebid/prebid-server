@@ -13,7 +13,7 @@ import (
 
 type TripleliftNativeAdapter struct {
 	endpoint string
-    extInfo TripleliftNativeExtInfo
+	extInfo  TripleliftNativeExtInfo
 }
 
 type TripleliftInnerExt struct {
