@@ -47,12 +47,12 @@ const (
 	BidderPulsepoint     BidderName = "pulsepoint"
 	BidderRhythmone      BidderName = "rhythmone"
 	BidderRTBHouse       BidderName = "rtbhouse"
-	BidderRubicon        BidderName = "rubicon"
-	BidderSharethrough   BidderName = "sharethrough"
-	BidderSomoaudience   BidderName = "somoaudience"
-	BidderSovrn          BidderName = "sovrn"
-	BidderSonobi         BidderName = "sonobi"
-	BidderTriplelift     BidderName = "triplelift_native"
+	BidderRubicon              BidderName = "rubicon"
+	BidderSharethrough         BidderName = "sharethrough"
+	BidderSomoaudience         BidderName = "somoaudience"
+	BidderSovrn                BidderName = "sovrn"
+	BidderSonobi               BidderName = "sonobi"
+	BidderTripleliftNative     BidderName = "triplelift_native"
 	BidderUnruly         BidderName = "unruly"
 	BidderVerizonMedia   BidderName = "verizonmedia"
 	BidderVrtcal         BidderName = "vrtcal"
@@ -96,7 +96,7 @@ var BidderMap = map[string]BidderName{
 	"somoaudience":      BidderSomoaudience,
 	"sovrn":             BidderSovrn,
 	"sonobi":            BidderSonobi,
-	"triplelift_native": BidderTriplelift,
+	"triplelift_native": BidderTripleliftNative,
 	"unruly":            BidderUnruly,
 	"verizonmedia":      BidderVerizonMedia,
 	"vrtcal":            BidderVrtcal,
