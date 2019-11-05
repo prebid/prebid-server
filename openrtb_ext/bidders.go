@@ -23,7 +23,8 @@ const (
 	Bidder33Across         BidderName = "33across"
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
-	BidderAdtelligent      BidderName = "adtelligent"
+	    BidderAdpone         BidderName = "adpone"
+    BidderAdtelligent      BidderName = "adtelligent"
 	BidderAdform           BidderName = "adform"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAppnexus         BidderName = "appnexus"
@@ -41,7 +42,9 @@ const (
 	BidderImprovedigital   BidderName = "improvedigital"
 	BidderIx               BidderName = "ix"
 	BidderLifestreet       BidderName = "lifestreet"
-	BidderMgid             BidderName = "mgid"
+	    BidderLockerDome     BidderName = "lockerdome"
+
+    BidderMgid             BidderName = "mgid"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
 	BidderPulsepoint       BidderName = "pulsepoint"
@@ -69,7 +72,8 @@ var BidderMap = map[string]BidderName{
 	"33across":          Bidder33Across,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
-	"adtelligent":       BidderAdtelligent,
+	    "adpone":          BidderAdpone,
+    "adtelligent":       BidderAdtelligent,
 	"adform":            BidderAdform,
 	"advangelists":      BidderAdvangelists,
 	"appnexus":          BidderAppnexus,
@@ -87,7 +91,9 @@ var BidderMap = map[string]BidderName{
 	"improvedigital":    BidderImprovedigital,
 	"ix":                BidderIx,
 	"lifestreet":        BidderLifestreet,
-	"openx":             BidderOpenx,
+	    "lockerdome":      BidderLockerDome,
+
+    "openx":             BidderOpenx,
 	"mgid":              BidderMgid,
 	"pubmatic":          BidderPubmatic,
 	"pulsepoint":        BidderPulsepoint,
