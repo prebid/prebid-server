@@ -1,6 +1,7 @@
 package triplelift_native
 
 import (
+    "os"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -168,7 +169,8 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) *TripleliftNativeAdapter {
 	var extInfo TripleliftNativeExtInfo
 
-	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
+    fmt.Fprintln(os.Stderr, extraInfo)
+    if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
 		panic("Invalid TripleLife Native extra adapter info: " + err.Error())
 	}
 
