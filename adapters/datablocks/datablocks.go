@@ -126,15 +126,28 @@ func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Missing bidder ext",
+			Message: fmt.Sprintf("Missing bidder ext: %s",err.Error()),
 		}
 	}
 	var datablocksExt openrtb_ext.ExtImpDatablocks
 	if err := json.Unmarshal(bidderExt.Bidder, &datablocksExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: "Missing host or sourceId Param",
+			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
 		}
 	}
+
+	if datablocksExt.SourceId < 1 {
+		return nil, &errortypes.BadInput{
+			Message: "Invalid/Missing SourceId",
+		}
+	}
+
+	if len(datablocksExt.Host) < 1 {
+		return nil, &errortypes.BadInput{
+			Message: "Invalid/Missing Host",
+		}
+	}
+
 	return &datablocksExt, nil
 }
 
