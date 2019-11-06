@@ -128,7 +128,11 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 	return reqs, errs
 }
 
-func getPublisher(*openrtb.BidRequest) openrtb.Site.Publisher {
+func getPublisher(request *openrtb.BidRequest) *openrtb.Publisher {
+    if request.App.Publisher != nil {
+        return request.App.Publisher
+    }
+    return request.Site.Publisher
 }
 
 func getBidCount(bidResponse openrtb.BidResponse) int {
