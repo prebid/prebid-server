@@ -63,11 +63,11 @@ func processImp(imp *openrtb.Imp) error {
 
 // Returns the effective publisher ID
 func effectivePubID(pub *openrtb.Publisher) string {
-	fmt.Fprintln(os.Stderr,"haa")
-    if pub != nil {
-        fmt.Fprintln(os.Stderr,"aaa")
+	fmt.Fprintln(os.Stderr, "haa")
+	if pub != nil {
+		fmt.Fprintln(os.Stderr, "aaa")
 		if pub.Ext != nil {
-        fmt.Fprintln(os.Stderr,"aafda")
+			fmt.Fprintln(os.Stderr, "aafda")
 			var pubExt openrtb_ext.ExtPublisher
 			err := json.Unmarshal(pub.Ext, &pubExt)
 			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
@@ -97,7 +97,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 		}
 	}
 	fmt.Fprintln(os.Stderr, "hlai")
-	publisher := getPublisher(request) 
+	publisher := getPublisher(request)
 	publisherID := effectivePubID(publisher)
 	fmt.Fprintln(os.Stderr, "adai")
 	fmt.Fprintln(os.Stderr, "publisherID")
@@ -129,10 +129,10 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 }
 
 func getPublisher(request *openrtb.BidRequest) *openrtb.Publisher {
-    if request.App.Publisher != nil {
-        return request.App.Publisher
-    }
-    return request.Site.Publisher
+	if request.App.Publisher != nil {
+		return request.App.Publisher
+	}
+	return request.Site.Publisher
 }
 
 func getBidCount(bidResponse openrtb.BidResponse) int {
