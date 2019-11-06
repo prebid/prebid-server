@@ -129,7 +129,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 }
 
 func getPublisher(request *openrtb.BidRequest) *openrtb.Publisher {
-	if request.App.Publisher != nil {
+	if request.App != nil {
 		return request.App.Publisher
 	}
 	return request.Site.Publisher
