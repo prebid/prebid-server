@@ -27,7 +27,7 @@ type TripleliftRespExt struct {
 
 type TripleliftNativeExtInfo struct {
 	// Array is used for deserialization.
-	PublisherWhitelist []string `mapstructure:"publisher_whitelist,flow"`
+	PublisherWhitelist []string `json:"publisher_whitelist"`
 
 	// Map is used for optimized memory access and should be constructed after deserialization.
 	PublisherWhitelistMap map[string]bool
@@ -100,10 +100,14 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 	publisher := getPublisher(request)
 	publisherID := effectivePubID(publisher)
 	fmt.Fprintln(os.Stderr, "adai")
-	fmt.Fprintln(os.Stderr, "publisherID")
+	fmt.Fprintln(os.Stderr, publisherID)
 	if _, exists := a.extInfo.PublisherWhitelistMap[publisherID]; !exists {
 		err := fmt.Errorf("Unsupported publisher for triplelift_native")
-		return nil, []error{err}
+		z, zz  := json.Marshal(a.extInfo)
+        if zz == nil {
+            fmt.Fprintln(os.Stderr, string(z))
+        }
+        return nil, []error{err}
 	}
 	if len(validImps) == 0 {
 		err := fmt.Errorf("No valid impressions for triplelift")
@@ -183,10 +187,10 @@ func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo s
 	var extInfo TripleliftNativeExtInfo
 
 	fmt.Fprintln(os.Stderr, "hihi")
-	fmt.Fprintln(os.Stderr, extraInfo)
 	if len(extraInfo) == 0 {
 		extraInfo = "{\"publisher_whitelist\":[]}"
 	}
+	fmt.Fprintln(os.Stderr, extraInfo)
 	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
 		panic("Invalid TripleLife Native extra adapter info: " + err.Error())
 	}
@@ -194,9 +198,11 @@ func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo s
 	// Populate map for faster memory access
 	extInfo.PublisherWhitelistMap = make(map[string]bool)
 	for _, v := range extInfo.PublisherWhitelist {
+        fmt.Fprintln(os.Stderr, v)
 		extInfo.PublisherWhitelistMap[v] = true
 	}
 
 	return &TripleliftNativeAdapter{
+        extInfo : extInfo,
 		endpoint: endpoint}
 }
