@@ -901,10 +901,12 @@ func TestCurrencyTrunc(t *testing.T) {
 	}
 
 	errL := deps.validateRequest(&req)
-	if len(errL) > 0 {
-		for _, err := range errL {
-			if err.Error() != "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency" {
-				t.Errorf(err.Error())
+	for _, err := range errL {
+		if err.Error() != "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency" {
+			t.Errorf(err.Error())
+		} else {
+			if errortypes.DecodeError(err) != errortypes.WarningCode {
+				t.Errorf("The expected warning has the wrong error type/code")
 			}
 		}
 	}
