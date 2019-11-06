@@ -24,6 +24,7 @@ WORKDIR /usr/local/bin/
 COPY --from=build /app/prebid-server/ .
 COPY static static/
 COPY stored_requests/data stored_requests/data
+COPY ssl/*.crt /etc/ssl/certs/
 RUN apt-get update && \
     apt-get install -y ca-certificates mtr && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
