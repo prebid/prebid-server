@@ -63,11 +63,8 @@ func processImp(imp *openrtb.Imp) error {
 
 // Returns the effective publisher ID
 func effectivePubID(pub *openrtb.Publisher) string {
-	fmt.Fprintln(os.Stderr, "haa")
 	if pub != nil {
-		fmt.Fprintln(os.Stderr, "aaa")
 		if pub.Ext != nil {
-			fmt.Fprintln(os.Stderr, "aafda")
 			var pubExt openrtb_ext.ExtPublisher
 			err := json.Unmarshal(pub.Ext, &pubExt)
 			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
@@ -96,17 +93,10 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 			errs = append(errs, err)
 		}
 	}
-	fmt.Fprintln(os.Stderr, "hlai")
 	publisher := getPublisher(request)
 	publisherID := effectivePubID(publisher)
-	fmt.Fprintln(os.Stderr, "adai")
-	fmt.Fprintln(os.Stderr, publisherID)
 	if _, exists := a.extInfo.PublisherWhitelistMap[publisherID]; !exists {
 		err := fmt.Errorf("Unsupported publisher for triplelift_native")
-		z, zz  := json.Marshal(a.extInfo)
-        if zz == nil {
-            fmt.Fprintln(os.Stderr, string(z))
-        }
         return nil, []error{err}
 	}
 	if len(validImps) == 0 {
@@ -186,11 +176,9 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) *TripleliftNativeAdapter {
 	var extInfo TripleliftNativeExtInfo
 
-	fmt.Fprintln(os.Stderr, "hihi")
 	if len(extraInfo) == 0 {
 		extraInfo = "{\"publisher_whitelist\":[]}"
 	}
-	fmt.Fprintln(os.Stderr, extraInfo)
 	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
 		panic("Invalid TripleLife Native extra adapter info: " + err.Error())
 	}
@@ -198,7 +186,6 @@ func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo s
 	// Populate map for faster memory access
 	extInfo.PublisherWhitelistMap = make(map[string]bool)
 	for _, v := range extInfo.PublisherWhitelist {
-        fmt.Fprintln(os.Stderr, v)
 		extInfo.PublisherWhitelistMap[v] = true
 	}
 
