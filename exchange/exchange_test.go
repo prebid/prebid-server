@@ -88,13 +88,98 @@ func TestCharacterEscape(t *testing.T) {
 	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
+	liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra := buildBidResponseParams()
+
+	//errList []error
+	var errList []error
+
+	/* 	4) Build bid response 									*/
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, errList)
+
+	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
+	if err != nil {
+		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
+	}
+	if len(errList) > 0 {
+		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
+	}
+	if bytes.Contains(bid_resp.Ext, []byte("u0026")) {
+		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
+	}
+}
+
+func TestGetBidCacheInfo(t *testing.T) {
+	/* 1) An adapter 											*/
+	cfg := &config.Configuration{
+		Adapters: map[string]config.Adapter{
+			"appnexus": {
+				Endpoint: "http://ib.adnxs.com/endpoint",
+			},
+		},
+	}
+
+	/* 	2) Init new exchange with said configuration			*/
+	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
+	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
+	defer server.Close()
+
+	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+
+	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
+	liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra := buildBidResponseParams()
+	var errList []error
+	auc := &auction{
+		winningBids: map[string]*pbsOrtbBid{
+			"some-imp-id": {
+				bid: &openrtb.Bid{
+					ID:    "some-imp-idBanner",
+					ImpID: "some-imp-id",
+					Price: 9.517803,
+					CrID:  "crid_1",
+					W:     300,
+					H:     600,
+				},
+				bidType: "banner",
+			},
+		},
+		cacheIds: map[*openrtb.Bid]string{
+			{
+				ID:    "appnxsBid",
+				Price: 9.517803,
+			}: "CACHE_UUID_1234",
+		},
+	}
+
+	/* 	4) Build bid response 									*/
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errList)
+
+	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
+	assert.NoError(t, err, "There was an error")
+	fmt.Printf("%v \n", bid_resp)
+	//if bytes.Contains(bid_resp.Ext, []byte("u0026")) {
+	//	t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
+	//}
+}
+
+func buildBidResponseParams() ([]openrtb_ext.BidderName, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, *openrtb.BidRequest, json.RawMessage, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	//liveAdapters []openrtb_ext.BidderName,
-	liveAdapters := make([]openrtb_ext.BidderName, 1)
-	liveAdapters[0] = "appnexus"
+	liveAdapters := []openrtb_ext.BidderName{"appnexus"}
 
 	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
-	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid, 1)
-	adapterBids["appnexus"] = &pbsOrtbSeatBid{currency: "USD"}
+	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+		"appnexus": {
+			bids: []*pbsOrtbBid{
+				{
+					bid: &openrtb.Bid{
+						ID:    "some-imp-id",
+						Price: 9.517803,
+					},
+					bidType: openrtb_ext.BidTypeBanner,
+				},
+			},
+			currency: "USD",
+		},
+	}
 
 	//An openrtb.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
 	bidRequest := &openrtb.BidRequest{
@@ -115,28 +200,19 @@ func TestCharacterEscape(t *testing.T) {
 	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
 
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
-	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
-	adapterExtra["appnexus"] = &seatResponseExtra{
-		ResponseTimeMillis: 5,
-		Errors:             []openrtb_ext.ExtBidderError{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
+	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
+		openrtb_ext.BidderName("appnexus"): {
+			ResponseTimeMillis: 5,
+			Errors: []openrtb_ext.ExtBidderError{
+				{
+					Code:    999,
+					Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\"",
+				},
+			},
+		},
 	}
 
-	//errList []error
-	var errList []error
-
-	/* 	4) Build bid response 									*/
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errList)
-
-	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
-	if err != nil {
-		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
-	}
-	if len(errList) > 0 {
-		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
-	}
-	if bytes.Contains(bid_resp.Ext, []byte("u0026")) {
-		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bid_resp.Ext))
-	}
+	return liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra
 }
 
 // TestRaceIntegration runs an integration test using all the sample params from
@@ -939,6 +1015,10 @@ type wellBehavedCache struct{}
 
 func (c *wellBehavedCache) GetExtCacheData() (string, string) {
 	return "www.pbcserver.com", "/pbcache/endpoint"
+}
+
+func (c *wellBehavedCache) GetPutUrl() string {
+	return "https://localcacheurl.com/cache"
 }
 
 func (c *wellBehavedCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {

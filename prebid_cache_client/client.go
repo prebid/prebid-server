@@ -29,6 +29,9 @@ type Client interface {
 
 	// Serves the purpose of a getter that returns the host and the cache of the prebid-server URL
 	GetExtCacheData() (string, string)
+
+	// Serves the purpose of a getter that returns the host and the cache of the prebid-server URL
+	GetPutUrl() string
 }
 
 type PayloadType string
@@ -70,6 +73,10 @@ type clientImpl struct {
 
 func (c *clientImpl) GetExtCacheData() (string, string) {
 	return c.externalCacheHost, c.externalCachePath
+}
+
+func (c *clientImpl) GetPutUrl() string {
+	return c.putUrl
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
