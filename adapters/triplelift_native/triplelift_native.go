@@ -97,7 +97,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 		}
 	}
 	fmt.Fprintln(os.Stderr, "hlai")
-	publisher := request.Site.Publisher
+	publisher := getPublisher(request) 
 	publisherID := effectivePubID(publisher)
 	fmt.Fprintln(os.Stderr, "adai")
 	fmt.Fprintln(os.Stderr, "publisherID")
@@ -126,6 +126,9 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 		Body:    reqJSON,
 		Headers: headers})
 	return reqs, errs
+}
+
+func getPublisher(*openrtb.BidRequest) openrtb.Site.Publisher {
 }
 
 func getBidCount(bidResponse openrtb.BidResponse) int {
