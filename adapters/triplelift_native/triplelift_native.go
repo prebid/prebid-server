@@ -184,6 +184,9 @@ func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo s
 
 	fmt.Fprintln(os.Stderr, "hihi")
 	fmt.Fprintln(os.Stderr, extraInfo)
+	if len(extraInfo) == 0 {
+		extraInfo = "{\"publisher_whitelist\":[]}"
+	}
 	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
 		panic("Invalid TripleLife Native extra adapter info: " + err.Error())
 	}
