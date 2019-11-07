@@ -1,9 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "missing-extbid-test",
+    "id": "bad-host-test",
     "imp": [
       {
-        "id": "missing-extbid-test",
+        "id": "bad-host-test-imp",
         "banner": {
           "format": [
             {
@@ -11,6 +11,14 @@
               "h": 250
             }
           ]
+        },
+        "ext": 
+        {
+          "bidder":
+          {
+              "host": "",
+              "sourceId": 123
+          }
         }
       }
     ]
@@ -18,10 +26,8 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Missing bidder ext: unexpected end of JSON input",
+      "value": "Invalid/Missing Host",
       "comparison": "literal"
     } 
   ]
-
-  
 }

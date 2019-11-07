@@ -75,14 +75,8 @@
         },
         "mockResponse":
         {
-            "status": 500,
-            "body": {}
+            "status": 204
         }
     }],
-    "expectedMakeBidsErrors": [
-      {
-        "value": "ERR, response with status 500",
-        "comparison": "literal"  
-      }
-    ]
+    "expectedBidResponses": []
 }

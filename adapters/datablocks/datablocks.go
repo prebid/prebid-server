@@ -3,6 +3,7 @@ package datablocks
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
@@ -72,6 +73,10 @@ func (a *DatablocksAdapter) MakeBids(
 	response *adapters.ResponseData,
 ) (*adapters.BidderResponse, []error) {
 
+	if response.StatusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("ERR, response with status %d", response.StatusCode),
@@ -110,9 +115,8 @@ func splitImpressions(imps []openrtb.Imp) (map[openrtb_ext.ExtImpDatablocks][]op
 			return nil, err
 		}
 
-		_, ok := m[*bidderParams]
+		v, ok := m[*bidderParams]
 		if ok {
-			v, _ := m[*bidderParams]
 			m[*bidderParams] = append(v, imp)
 		} else {
 			m[*bidderParams] = []openrtb.Imp{imp}
@@ -126,7 +130,7 @@ func getBidderParams(imp *openrtb.Imp) (*openrtb_ext.ExtImpDatablocks, error) {
 	var bidderExt adapters.ExtImpBidder
 	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("Missing bidder ext: %s",err.Error()),
+			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
 	var datablocksExt openrtb_ext.ExtImpDatablocks
@@ -176,6 +180,7 @@ func getMediaType(impID string, imps []openrtb.Imp) openrtb_ext.BidType {
 func NewDatablocksBidder(endpoint string) *DatablocksAdapter {
 	template, err := template.New("endpointTemplate").Parse(endpoint)
 	if err != nil {
+		glog.Fatal("Unable to parse endpoint url template")
 		return nil
 	}
 

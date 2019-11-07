@@ -21,7 +21,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Missing host or sourceId Param",
+      "value": "Cannot Resolve host or sourceId: unexpected end of JSON input",
       "comparison": "literal"
     } 
   ]
