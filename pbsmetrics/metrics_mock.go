@@ -68,7 +68,7 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 }
 
 // RecordCookieSync mock
-func (me *MetricsEngineMock) RecordCookieSync(labels Labels) {
+func (me *MetricsEngineMock) RecordCookieSync() {
 	me.Called(labels)
 }
 
@@ -93,6 +93,6 @@ func (me *MetricsEngineMock) RecordStoredImpCacheResult(cacheResult CacheResult,
 }
 
 // RecordPrebidCacheRequestTime mock
-func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration) {
-	me.Called(labels, length)
+func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+	me.Called(success, length)
 }

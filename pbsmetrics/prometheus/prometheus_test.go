@@ -380,17 +380,12 @@ func TestCookieMetrics(t *testing.T) {
 
 	metrics0 := dto.Metric{}
 
-	proMetrics.RecordCookieSync(labels[0])
-	proMetrics.RecordCookieSync(labels[1])
-	proMetrics.RecordCookieSync(labels[0])
-	proMetrics.RecordCookieSync(labels[2])
-	proMetrics.RecordCookieSync(labels[0])
-	proMetrics.RecordCookieSync(labels[2])
-	proMetrics.RecordCookieSync(labels[4])
+	proMetrics.RecordCookieSync()
+	proMetrics.RecordCookieSync()
 
 	proMetrics.cookieSync.Write(&metrics0)
 
-	assertCounterValue(t, "cookie_sync_requests", &metrics0, 7)
+	assertCounterValue(t, "cookie_sync_requests", &metrics0, 2)
 }
 
 func TestUserMetrics(t *testing.T) {

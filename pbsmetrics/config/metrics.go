@@ -140,9 +140,9 @@ func (me *MultiMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels,
 }
 
 // RecordCookieSync across all engines
-func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
+func (me *MultiMetricsEngine) RecordCookieSync() {
 	for _, thisME := range *me {
-		thisME.RecordCookieSync(labels)
+		thisME.RecordCookieSync()
 	}
 }
 
@@ -175,9 +175,9 @@ func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) 
 }
 
 // RecordPrebidCacheRequestTime across all engines
-func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
+func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	for _, thisME := range *me {
-		thisME.RecordPrebidCacheRequestTime(labels, length)
+		thisME.RecordPrebidCacheRequestTime(success, length)
 	}
 }
 
@@ -240,7 +240,7 @@ func (me *DummyMetricsEngine) RecordAdapterTime(labels pbsmetrics.AdapterLabels,
 }
 
 // RecordCookieSync as a noop
-func (me *DummyMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
+func (me *DummyMetricsEngine) RecordCookieSync() {
 	return
 }
 
@@ -265,6 +265,5 @@ func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.
 }
 
 // RecordPrebidCacheRequestTime as a noop
-func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
-	return
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 }

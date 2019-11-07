@@ -1,56 +1,65 @@
 package prometheusmetrics
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
-	_ "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Defines the actual Prometheus metrics we will be using. Satisfies interface MetricsEngine
+// Metrics defines the Prometheus metrics backing the MetricsEngine implementation.
 type Metrics struct {
-	Registry             *prometheus.Registry
-	connCounter          prometheus.Gauge
-	connError            *prometheus.CounterVec
-	imps                 *prometheus.CounterVec
-	legacyImps           *prometheus.CounterVec
-	requests             *prometheus.CounterVec
-	reqTimer             *prometheus.HistogramVec
-	adaptRequests        *prometheus.CounterVec
-	adaptTimer           *prometheus.HistogramVec
-	adaptBids            *prometheus.CounterVec
-	adaptPrices          *prometheus.HistogramVec
-	adaptErrors          *prometheus.CounterVec
-	adaptPanics          *prometheus.CounterVec
-	cookieSync           prometheus.Counter
-	adaptCookieSync      *prometheus.CounterVec
-	userID               *prometheus.CounterVec
-	prebidCacheReqTimer  *prometheus.HistogramVec
-	storedReqCacheResult *prometheus.CounterVec
-	storedImpCacheResult *prometheus.CounterVec
+	Registry *prometheus.Registry
+
+	// General Metrics
+	cookieSync                   prometheus.Counter
+	impressions                  *prometheus.CounterVec
+	impressionsLegacy            prometheus.Counter
+	prebidCacheWriteTimer        *prometheus.HistogramVec
+	requests                     *prometheus.CounterVec
+	requestsTimer                *prometheus.HistogramVec
+	requestsWithoutCookie        *prometheus.CounterVec
+	storedRequestCacheResult     *prometheus.CounterVec
+	storedImpressionsCacheResult *prometheus.CounterVec
+
+	// Adapter Metrics
+	adapterBids              *prometheus.CounterVec
+	adapterConnectionsOpened *prometheus.CounterVec
+	adapterConnectionsClosed *prometheus.CounterVec
+	adapterConnectionsError  *prometheus.CounterVec
+	adapterCookieSync        *prometheus.CounterVec
+	adapterErrors            *prometheus.CounterVec
+	adapterPanics            *prometheus.CounterVec
+	adapterPrices            *prometheus.HistogramVec
+	adapterRequests          *prometheus.CounterVec
+	adapterRequestsTimer     *prometheus.HistogramVec
+	adapterUserSync          *prometheus.CounterVec
+
+	// Account Metrics
+	accountRequests *prometheus.CounterVec
 }
 
 const (
-	requestTypeLabel    = "request_type"
-	demandSourceLabel   = "demand_source"
-	browserLabel        = "browser"
-	cookieLabel         = "cookie"
-	responseStatusLabel = "response_status"
-	adapterLabel        = "adapter"
-	adapterBidLabel     = "adapter_bid"
-	markupTypeLabel     = "markup_type"
-	bidTypeLabel        = "bid_type"
-	adapterErrLabel     = "adapter_error"
-	cacheResultLabel    = "cache_result"
-	gdprBlockedLabel    = "gdpr_blocked"
-	bannerLabel         = "banner"
-	videoLabel          = "video"
-	audioLabel          = "audio"
-	nativeLabel         = "native"
-	accountLabel        = "account"
+	requestTypeLabel     = "request_type"
+	requestStatusLabel   = "request_status"
+	isBannerLabel        = "is_banner"
+	isVideoLabel         = "is_video"
+	isAudioLabel         = "is_audio"
+	isNativeLabel        = "is_native"
+	successLabel         = "success"
+	cacheResultLabel     = "cache_result"
+	adapterLabel         = "adapter"
+	connectionErrorLabel = "connection_error"
+	bidTypeLabel         = "bid_type"
+	hasCookieLabel       = "has_cookie"
+	hasBidsLabel         = "has_bids"
+	accountLabel         = "account"
+	adapterErrorLabel    = "adapter_error"
+	privacyBlockedLabel  = "privacy_blocked"
+	actionLabel          = "action"
 )
 
 // NewMetrics constructs the appropriate options for the Prometheus metrics. Needs to be fed the promethus config
@@ -62,137 +71,148 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 	timerBucketsQuickTasks := prometheus.LinearBuckets(0.005, 0.005, 20)
 	timerBucketsQuickTasks = append([]float64{0.001, 0.0015, 0.003}, timerBucketsQuickTasks...)
 
-	standardLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, responseStatusLabel, accountLabel}
-
-	adapterLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel}
-	bidLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterBidLabel, adapterLabel, bidTypeLabel, markupTypeLabel}
-	errorLabelNames := []string{demandSourceLabel, requestTypeLabel, browserLabel, cookieLabel, adapterErrLabel, adapterLabel}
-
-	impLabelNames := []string{bannerLabel, videoLabel, audioLabel, nativeLabel}
+	priceBuckets := []float64{0, 250, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000}
 
 	metrics := Metrics{}
 	metrics.Registry = prometheus.NewRegistry()
-	metrics.connCounter = newConnCounter(cfg)
-	metrics.Registry.MustRegister(metrics.connCounter)
-	metrics.connError = newCounter(cfg, "active_connections_total",
-		"Errors reported on the connections coming in.",
-		[]string{"ErrorType"},
-	)
-	metrics.Registry.MustRegister(metrics.connError)
-	metrics.imps = newCounter(cfg, "imps_requested",
-		"Count of Impressions by type and in total requested through PBS.",
-		impLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.imps)
-	metrics.legacyImps = newCounter(cfg, "legacy_imps_requested",
-		"Total number of impressions requested through legacy PBS.",
-		standardLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.legacyImps)
-	metrics.requests = newCounter(cfg, "requests_total",
-		"Total number of requests made to PBS.",
-		standardLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.requests)
-	metrics.reqTimer = newHistogram(cfg, "request_time_seconds",
-		"Seconds to resolve each PBS request.",
-		standardLabelNames, timerBuckets,
-	)
-	metrics.Registry.MustRegister(metrics.reqTimer)
-	metrics.adaptRequests = newCounter(cfg, "adapter_requests_total",
-		"Number of requests sent out to each bidder.",
-		adapterLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.adaptRequests)
-	metrics.adaptPanics = newCounter(cfg, "adapter_panics_total",
-		"Number of panics generated by each bidder.",
-		adapterLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.adaptPanics)
-	metrics.adaptTimer = newHistogram(cfg, "adapter_time_seconds",
-		"Seconds to resolve each request to a bidder.",
-		adapterLabelNames, timerBuckets,
-	)
-	metrics.Registry.MustRegister(metrics.adaptTimer)
-	metrics.adaptBids = newCounter(cfg, "adapter_bids_received_total",
-		"Number of bids received from each bidder.",
-		bidLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.adaptBids)
-	metrics.storedReqCacheResult = newCounter(cfg, "stored_request_cache_performance",
-		"Number of stored request cache hits vs miss",
-		[]string{"cache_result"},
-	)
-	metrics.Registry.MustRegister(metrics.storedReqCacheResult)
-	metrics.storedImpCacheResult = newCounter(cfg, "stored_imp_cache_performance",
-		"Number of stored imp cache hits vs miss",
-		[]string{"cache_result"},
-	)
-	metrics.Registry.MustRegister(metrics.storedImpCacheResult)
-	metrics.adaptPrices = newHistogram(cfg, "adapter_prices",
-		"Values of the bids from each bidder.",
-		adapterLabelNames, prometheus.LinearBuckets(0.1, 0.1, 200),
-	)
-	metrics.Registry.MustRegister(metrics.adaptPrices)
-	metrics.adaptErrors = newCounter(cfg, "adapter_errors_total",
-		"Number of unique error types seen in each request to an adapter.",
-		errorLabelNames,
-	)
-	metrics.Registry.MustRegister(metrics.adaptErrors)
-	metrics.cookieSync = newCookieSync(cfg)
-	metrics.Registry.MustRegister(metrics.cookieSync)
-	metrics.adaptCookieSync = newCounter(cfg, "cookie_sync_returns",
-		"Number of syncs generated for a bidder, and if they were subsequently blocked.",
-		[]string{adapterLabel, gdprBlockedLabel},
-	)
-	metrics.Registry.MustRegister(metrics.adaptCookieSync)
-	metrics.userID = newCounter(cfg, "setuid_calls",
-		"Number of user ID syncs performed",
-		[]string{"action", "bidder"},
-	)
-	metrics.Registry.MustRegister(metrics.userID)
-	metrics.prebidCacheReqTimer = newHistogram(cfg, "prebid_cache_request_time_seconds",
-		"Seconds to complete each PBC request.",
-		[]string{responseStatusLabel}, timerBucketsQuickTasks,
-	)
-	metrics.Registry.MustRegister(metrics.prebidCacheReqTimer)
+
+	metrics.cookieSync = newCounterWithoutLabels(cfg, metrics.Registry,
+		"cookie_sync_requests",
+		"Count of cookie sync requests to Prebid Server.")
+
+	metrics.impressions = newCounter(cfg, metrics.Registry,
+		"impressions_requested",
+		"Count of requested impressions to Prebid Server labeled by type.",
+		[]string{isBannerLabel, isVideoLabel, isAudioLabel, isNativeLabel})
+
+	metrics.impressionsLegacy = newCounterWithoutLabels(cfg, metrics.Registry,
+		"impressions_requested_legacy",
+		"Count of requested impressions to Prebid Server using the legacy endpoint.")
+
+	metrics.prebidCacheWriteTimer = newHistogram(cfg, metrics.Registry,
+		"prebidcache_write_time_seconds",
+		"Seconds to complete a write to Prebid Cache labeled by success or failure.",
+		[]string{successLabel},
+		timerBucketsQuickTasks)
+
+	metrics.requests = newCounter(cfg, metrics.Registry,
+		"requests",
+		"Count of total requests to Prebid Server labeled by type and status.",
+		[]string{requestTypeLabel, requestStatusLabel})
+
+	metrics.requestsTimer = newHistogram(cfg, metrics.Registry,
+		"request_time_seconds",
+		"Seconds to resolve successful Prebid Server requests labeled by type.",
+		[]string{requestTypeLabel},
+		timerBuckets)
+
+	metrics.requestsWithoutCookie = newCounter(cfg, metrics.Registry,
+		"requests_without_cookie",
+		"Count of total requests to Prebid Server without a cookie labeled by type.",
+		[]string{requestTypeLabel})
+
+	metrics.storedRequestCacheResult = newCounter(cfg, metrics.Registry,
+		"stored_request_cache_performance",
+		"Count of stored request cache requests attempts by hits or miss.",
+		[]string{cacheResultLabel})
+
+	metrics.storedImpressionsCacheResult = newCounter(cfg, metrics.Registry,
+		"stored_impressions_cache_performance",
+		"Count of stored impression cache requests attempts by hits or miss.",
+		[]string{cacheResultLabel})
+
+	metrics.adapterBids = newCounter(cfg, metrics.Registry,
+		"adapter_bids",
+		"Count of bids labeled by adapter, if a cookie is present, and if bids are present.",
+		[]string{adapterLabel, hasCookieLabel, hasBidsLabel})
+
+	metrics.adapterConnectionsOpened = newCounter(cfg, metrics.Registry,
+		"adapter_connections_opened",
+		"Count of connections successfully opened labeled by adapter.",
+		[]string{adapterLabel})
+
+	metrics.adapterConnectionsClosed = newCounter(cfg, metrics.Registry,
+		"adapter_connections_closed",
+		"Count of connections successfully closed labeled by adapter.",
+		[]string{adapterLabel})
+
+	metrics.adapterConnectionsError = newCounter(cfg, metrics.Registry,
+		"adapter_connections_error",
+		"Count of errors with connections labeled by adapter and error type.",
+		[]string{adapterLabel, connectionErrorLabel})
+
+	metrics.adapterCookieSync = newCounter(cfg, metrics.Registry,
+		"adapter_cookie_sync",
+		"Count of cookie sync requests received labeled by adapter and if the sync was blocked due to privacy regulation (GDPR, CCPA, etc...).",
+		[]string{adapterLabel, privacyBlockedLabel})
+
+	metrics.adapterErrors = newCounter(cfg, metrics.Registry,
+		"adapter_errors",
+		"Count of errors labeled by adapter and error type.",
+		[]string{adapterLabel, adapterErrorLabel})
+
+	metrics.adapterPanics = newCounter(cfg, metrics.Registry,
+		"adapter_panics",
+		"Count of panics labeled by adapter.",
+		[]string{adapterLabel, adapterErrorLabel})
+
+	metrics.adapterPrices = newHistogram(cfg, metrics.Registry,
+		"adapter_prices",
+		"Monetary value of the bids labeled by adapter.",
+		[]string{adapterLabel},
+		priceBuckets)
+
+	metrics.adapterRequests = newCounter(cfg, metrics.Registry,
+		"adapter_requests",
+		"Count of requests labeled by adapter, type, and status.",
+		[]string{adapterLabel, requestTypeLabel, requestStatusLabel})
+
+	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
+		"adapter_request_time_seconds",
+		"Seconds to resolve each successful request labeled by adapter.",
+		[]string{adapterLabel, requestTypeLabel},
+		timerBuckets)
+
+	metrics.adapterUserSync = newCounter(cfg, metrics.Registry,
+		"adapter_uset_sync",
+		"Count of user ID sync requests received labeled by adapter and action.",
+		[]string{adapterLabel, actionLabel})
+
+	metrics.accountRequests = newCounter(cfg, metrics.Registry,
+		"account_requests",
+		"Count of total requests to Prebid Server labeled by account.",
+		[]string{accountLabel})
 
 	initializeTimeSeries(&metrics)
 
 	return &metrics
 }
 
-func newConnCounter(cfg config.PrometheusMetrics) prometheus.Gauge {
-	opts := prometheus.GaugeOpts{
-		Namespace: cfg.Namespace,
-		Subsystem: cfg.Subsystem,
-		Name:      "active_connections",
-		Help:      "Current number of active (open) connections.",
-	}
-	return prometheus.NewGauge(opts)
-}
-
-func newCookieSync(cfg config.PrometheusMetrics) prometheus.Counter {
-	opts := prometheus.CounterOpts{
-		Namespace: cfg.Namespace,
-		Subsystem: cfg.Subsystem,
-		Name:      "cookie_sync_requests_total",
-		Help:      "Number of cookie sync requests received.",
-	}
-	return prometheus.NewCounter(opts)
-}
-
-func newCounter(cfg config.PrometheusMetrics, name string, help string, labels []string) *prometheus.CounterVec {
+func newCounter(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string) *prometheus.CounterVec {
 	opts := prometheus.CounterOpts{
 		Namespace: cfg.Namespace,
 		Subsystem: cfg.Subsystem,
 		Name:      name,
 		Help:      help,
 	}
-	return prometheus.NewCounterVec(opts, labels)
+	counter := prometheus.NewCounterVec(opts, labels)
+	registry.MustRegister(counter)
+	return counter
 }
 
-func newHistogram(cfg config.PrometheusMetrics, name string, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+func newCounterWithoutLabels(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string) prometheus.Counter {
+	opts := prometheus.CounterOpts{
+		Namespace: cfg.Namespace,
+		Subsystem: cfg.Subsystem,
+		Name:      name,
+		Help:      help,
+	}
+	counter := prometheus.NewCounter(opts)
+	registry.MustRegister(counter)
+	return counter
+}
+
+func newHistogram(cfg config.PrometheusMetrics, registry *prometheus.Registry, name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
 	opts := prometheus.HistogramOpts{
 		Namespace: cfg.Namespace,
 		Subsystem: cfg.Subsystem,
@@ -200,49 +220,79 @@ func newHistogram(cfg config.PrometheusMetrics, name string, help string, labels
 		Help:      help,
 		Buckets:   buckets,
 	}
-	return prometheus.NewHistogramVec(opts, labels)
+	histogram := prometheus.NewHistogramVec(opts, labels)
+	registry.MustRegister(histogram)
+	return histogram
 }
 
-func (me *Metrics) RecordConnectionAccept(success bool) {
+// init labels
+
+func (m *Metrics) RecordConnectionAccept(adapter openrtb_ext.BidderName, success bool) {
 	if success {
-		me.connCounter.Inc()
+		m.adapterConnectionsOpened.With(prometheus.Labels{
+			adapterLabel: string(adapter),
+		}).Inc()
 	} else {
-		me.connError.WithLabelValues("accept_error").Inc()
+		m.adapterConnectionsError.With(prometheus.Labels{
+			adapterLabel:         string(adapter),
+			connectionErrorLabel: "accept_error",
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordConnectionClose(adapter openrtb_ext.BidderName, success bool) {
+	if success {
+		m.adapterConnectionsClosed.With(prometheus.Labels{
+			adapterLabel: string(adapter),
+		}).Inc()
+	} else {
+		m.adapterConnectionsError.With(prometheus.Labels{
+			adapterLabel:         string(adapter),
+			connectionErrorLabel: "close_error",
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordRequest(labels pbsmetrics.Labels) {
+	m.requests.With(prometheus.Labels{
+		requestTypeLabel:   string(labels.RType),
+		requestStatusLabel: string(labels.RequestStatus),
+	}).Inc()
+
+	if labels.PubID != pbsmetrics.PublisherUnknown {
+		m.accountRequests.With(prometheus.Labels{
+			accountLabel: labels.PubID,
+		}).Inc()
 	}
 
-}
-
-func (me *Metrics) RecordConnectionClose(success bool) {
-	if success {
-		me.connCounter.Dec()
-	} else {
-		me.connError.WithLabelValues("close_error").Inc()
+	if labels.CookieFlag == pbsmetrics.CookieFlagNo {
+		m.requestsWithoutCookie.With(prometheus.Labels{
+			requestTypeLabel: string(labels.RType),
+		}).Inc()
 	}
 }
 
-func (me *Metrics) RecordRequest(labels pbsmetrics.Labels) {
-	me.requests.With(resolveLabels(labels)).Inc()
+func (m *Metrics) RecordImps(labels pbsmetrics.ImpLabels) {
+	m.impressions.With(prometheus.Labels{
+		isBannerLabel: strconv.FormatBool(labels.BannerImps),
+		isVideoLabel:  strconv.FormatBool(labels.VideoImps),
+		isAudioLabel:  strconv.FormatBool(labels.AudioImps),
+		isNativeLabel: strconv.FormatBool(labels.NativeImps),
+	}).Inc()
 }
 
-func (me *Metrics) RecordImps(implabels pbsmetrics.ImpLabels) {
-	me.imps.With(resolveImpLabels(implabels)).Inc()
+func (m *Metrics) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	m.impressionsLegacy.Add(float64(numImps))
 }
 
-func (me *Metrics) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
-	var lbls prometheus.Labels
-	lbls = resolveLabels(labels)
-	me.legacyImps.With(lbls).Add(float64(numImps))
+func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
+	timeInSeconds := float64(length) / float64(time.Second)
+	m.requestsTimer.With(prometheus.Labels{
+		requestTypeLabel: string(labels.RType),
+	}).Observe(timeInSeconds)
 }
 
-func (me *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
-	time := float64(length) / float64(time.Second)
-	me.reqTimer.With(resolveLabels(labels)).Observe(time)
-}
-
-func (me *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
-	me.adaptPanics.With(resolveAdapterLabels(labels)).Inc()
-}
-
+// todo: can have multiple errors per request. this is not represented correctly.
 func (me *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	me.adaptRequests.With(resolveAdapterLabels(labels)).Inc()
 	for k := range labels.AdapterErrors {
@@ -250,149 +300,72 @@ func (me *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	}
 }
 
+func (m *Metrics) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
+	m.adapterPanics.With(prometheus.Labels{
+		adapterLabel: string(labels.Adapter),
+	}).Inc()
+}
+
+// todo: also an issue. does cookie or bid received make sense here?
 func (me *Metrics) RecordAdapterBidReceived(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) {
-	me.adaptBids.With(resolveBidLabels(labels, bidType, hasAdm)).Inc()
+	m.adapterBids.With(prometheus.Labels{
+		adapterLabel:   string(labels.Adapter),
+		hasCookieLabel: strconv.FormatBool(labels.CookieFlag != pbsmetrics.CookieFlagNo),
+		hasBidsLabel:   strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
+	}).Inc()
 }
 
-func (me *Metrics) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64) {
-	me.adaptPrices.With(resolveAdapterLabels(labels)).Observe(cpm)
+func (m *Metrics) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float64) {
+	m.adapterPrices.With(prometheus.Labels{
+		adapterLabel: string(labels.Adapter),
+	}).Observe(cpm)
 }
 
-func (me *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
-	time := float64(length) / float64(time.Second)
-	me.adaptTimer.With(resolveAdapterLabels(labels)).Observe(time)
-}
-
-func (me *Metrics) RecordCookieSync(labels pbsmetrics.Labels) {
-	me.cookieSync.Inc()
-}
-
-func (me *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
-	labels := prometheus.Labels{
-		adapterLabel: string(adapter),
+func (m *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
+	if len(labels.AdapterErrors) == 0 {
+		timeInSeconds := float64(length) / float64(time.Second)
+		m.adapterRequestsTimer.With(prometheus.Labels{
+			adapterLabel:     string(labels.Adapter),
+			requestTypeLabel: string(labels.RType),
+		}).Observe(timeInSeconds)
 	}
-	if gdprBlocked {
-		labels[gdprBlockedLabel] = "true"
-	} else {
-		labels[gdprBlockedLabel] = "false"
-	}
-	me.adaptCookieSync.With(labels).Inc()
 }
 
-// RecordStoredReqCacheResult records cache hits and misses when looking up stored requests
-func (me *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
-	labels := prometheus.Labels{
+func (m *Metrics) RecordCookieSync() {
+	m.cookieSync.Inc()
+}
+
+func (m *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, privacyBlocked bool) {
+	m.adapterCookieSync.With(prometheus.Labels{
+		adapterLabel:        string(adapter),
+		privacyBlockedLabel: strconv.FormatBool(privacyBlocked),
+	}).Inc()
+}
+
+func (m *Metrics) RecordUserIDSet(labels pbsmetrics.UserLabels) {
+	m.adapterUserSync.With(prometheus.Labels{
+		adapterLabel: string(labels.Bidder),
+		actionLabel:  string(labels.Action),
+	}).Inc()
+}
+
+func (m *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	m.storedRequestCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
-	}
-
-	me.storedReqCacheResult.With(labels).Add(float64(inc))
+	}).Add(float64(inc))
 }
 
-// RecordStoredImpCacheResult records cache hits and misses when looking up stored imps
-func (me *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
-	labels := prometheus.Labels{
+func (m *Metrics) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	m.storedImpressionsCacheResult.With(prometheus.Labels{
 		cacheResultLabel: string(cacheResult),
-	}
-
-	me.storedImpCacheResult.With(labels).Add(float64(inc))
+	}).Add(float64(inc))
 }
 
-func (me *Metrics) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
-	me.userID.With(resolveUserSyncLabels(userLabels)).Inc()
-}
-
-// RecordPrebidCacheRequestTime records amount of time taken to store the auction result in Prebid Cache
-func (me *Metrics) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
-	time := float64(length) / float64(time.Second)
-	me.prebidCacheReqTimer.With(resolveRequestLabels(labels)).Observe(time)
-}
-
-func resolveLabels(labels pbsmetrics.Labels) prometheus.Labels {
-	return prometheus.Labels{
-		demandSourceLabel:   string(labels.Source),
-		requestTypeLabel:    string(labels.RType),
-		accountLabel:        string(labels.PubID),
-		browserLabel:        string(labels.Browser),
-		cookieLabel:         string(labels.CookieFlag),
-		responseStatusLabel: string(labels.RequestStatus),
-	}
-}
-
-func resolveAdapterLabels(labels pbsmetrics.AdapterLabels) prometheus.Labels {
-	return prometheus.Labels{
-		demandSourceLabel: string(labels.Source),
-		requestTypeLabel:  string(labels.RType),
-		// "pubid":   labels.PubID,
-		browserLabel:    string(labels.Browser),
-		cookieLabel:     string(labels.CookieFlag),
-		adapterBidLabel: string(labels.AdapterBids),
-		adapterLabel:    string(labels.Adapter),
-	}
-}
-
-func resolveBidLabels(labels pbsmetrics.AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool) prometheus.Labels {
-	bidLabels := prometheus.Labels{
-		demandSourceLabel: string(labels.Source),
-		requestTypeLabel:  string(labels.RType),
-		// "pubid":   labels.PubID,
-		browserLabel:    string(labels.Browser),
-		cookieLabel:     string(labels.CookieFlag),
-		adapterBidLabel: string(labels.AdapterBids),
-		adapterLabel:    string(labels.Adapter),
-		bidTypeLabel:    string(bidType),
-		markupTypeLabel: "unknown",
-	}
-	if hasAdm {
-		bidLabels[markupTypeLabel] = "adm"
-	}
-	return bidLabels
-}
-
-func resolveAdapterErrorLabels(labels pbsmetrics.AdapterLabels, errorType string) prometheus.Labels {
-	return prometheus.Labels{
-		demandSourceLabel: string(labels.Source),
-		requestTypeLabel:  string(labels.RType),
-		// "pubid":   labels.PubID,
-		browserLabel:    string(labels.Browser),
-		cookieLabel:     string(labels.CookieFlag),
-		adapterErrLabel: errorType,
-		adapterLabel:    string(labels.Adapter),
-	}
-}
-
-func resolveUserSyncLabels(userLabels pbsmetrics.UserLabels) prometheus.Labels {
-	return prometheus.Labels{
-		"action": string(userLabels.Action),
-		"bidder": string(userLabels.Bidder),
-	}
-}
-
-func resolveImpLabels(labels pbsmetrics.ImpLabels) prometheus.Labels {
-	var impLabels prometheus.Labels = prometheus.Labels{
-		bannerLabel: "no",
-		videoLabel:  "no",
-		audioLabel:  "no",
-		nativeLabel: "no",
-	}
-	if labels.BannerImps {
-		impLabels[bannerLabel] = "yes"
-	}
-	if labels.VideoImps {
-		impLabels[videoLabel] = "yes"
-	}
-	if labels.AudioImps {
-		impLabels[audioLabel] = "yes"
-	}
-	if labels.NativeImps {
-		impLabels[nativeLabel] = "yes"
-	}
-	return impLabels
-}
-
-func resolveRequestLabels(labels pbsmetrics.RequestLabels) prometheus.Labels {
-	return prometheus.Labels{
-		responseStatusLabel: string(labels.RequestStatus),
-	}
+func (m *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
+	timeInSeconds := float64(length) / float64(time.Second)
+	m.prebidCacheWriteTimer.With(prometheus.Labels{
+		successLabel: strconv.FormatBool(success),
+	}).Observe(timeInSeconds)
 }
 
 // initializeTimeSeries precreates all possible metric label values, so there is no locking needed at run time creating new instances

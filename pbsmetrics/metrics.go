@@ -256,10 +256,10 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordCookieSync()
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
-	RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration)
+	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 }
