@@ -1,8 +1,9 @@
 package prometheusmetrics
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
@@ -59,6 +60,6 @@ func TestRegisterLabelPermutations(t *testing.T) {
 			resultLabels = append(resultLabels, label)
 		})
 
-		assert.True(t, reflect.DeepEqual(test.expectedLabels, resultLabels))
+		assert.True(t, cmp.Equal(test.expectedLabels, resultLabels))
 	}
 }
