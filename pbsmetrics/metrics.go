@@ -236,6 +236,16 @@ const (
 	RequestActionErr    RequestAction = "err"
 )
 
+// RequestActions returns possible setuid action labels
+func RequestActions() []RequestAction {
+	return []RequestAction{
+		RequestActionSet,
+		RequestActionOptOut,
+		RequestActionGDPR,
+		RequestActionErr,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total numer of incoming requests. The remaining 5 fire off per outgoing

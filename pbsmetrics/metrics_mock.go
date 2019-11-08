@@ -69,7 +69,7 @@ func (me *MetricsEngineMock) RecordAdapterTime(labels AdapterLabels, length time
 
 // RecordCookieSync mock
 func (me *MetricsEngineMock) RecordCookieSync() {
-	me.Called(labels)
+	me.Called()
 }
 
 // RecordAdapterCookieSync mock
