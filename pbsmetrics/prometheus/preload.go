@@ -98,7 +98,7 @@ func preloadLabelValuesForCounter(counter *prometheus.CounterVec, labelsWithValu
 
 func preloadLabelValuesForHistogram(histogram *prometheus.HistogramVec, labelsWithValues map[string][]string) {
 	registerLabelPermutations(labelsWithValues, func(labels prometheus.Labels) {
-		_ = histogram.With(labels)
+		histogram.With(labels)
 	})
 }
 
