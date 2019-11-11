@@ -78,26 +78,11 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	parsedReq := &cookieSyncRequest{}
-	if err := json.Unmarshal(bodyBytes, parsedReq); err != nil {
+	if err := parseRequest(parsedReq, bodyBytes, deps.gDPR.UsersyncIfAmbiguous); err != nil {
 		co.Status = http.StatusBadRequest
-		co.Errors = append(co.Errors, fmt.Errorf("JSON parsing failed: %v", err))
-		http.Error(w, "JSON parsing failed: "+err.Error(), http.StatusBadRequest)
+		co.Errors = append(co.Errors, err)
+		http.Error(w, co.Errors[len(co.Errors)-1].Error(), co.Status)
 		return
-	}
-
-	if parsedReq.GDPR != nil && *parsedReq.GDPR == 1 && parsedReq.Consent == "" {
-		co.Status = http.StatusBadRequest
-		co.Errors = append(co.Errors, errors.New("gdpr_consent is required if gdpr is 1"))
-		http.Error(w, "gdpr_consent is required if gdpr=1", http.StatusBadRequest)
-		return
-	}
-	// If GDPR is ambiguous, lets untangle it here.
-	if parsedReq.GDPR == nil {
-		var gdpr = 1
-		if deps.gDPR.UsersyncIfAmbiguous {
-			gdpr = 0
-		}
-		parsedReq.GDPR = &gdpr
 	}
 
 	if len(biddersJSON) == 0 {
@@ -158,6 +143,26 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	enc.Encode(csResp)
+}
+
+func parseRequest(parsedReq *cookieSyncRequest, bodyBytes []byte, usersyncIfAmbiguous bool) error {
+	if err := json.Unmarshal(bodyBytes, parsedReq); err != nil {
+		return fmt.Errorf("JSON parsing failed: %s", err.Error())
+	}
+
+	if parsedReq.GDPR != nil && *parsedReq.GDPR == 1 && parsedReq.Consent == "" {
+		return errors.New("gdpr_consent is required if gdpr=1")
+	}
+	// If GDPR is ambiguous, lets untangle it here.
+	if parsedReq.GDPR == nil {
+		var gdpr = new(int)
+		*gdpr = 1
+		if usersyncIfAmbiguous {
+			*gdpr = 0
+		}
+		parsedReq.GDPR = gdpr
+	}
+	return nil
 }
 
 func gdprToString(gdpr *int) string {

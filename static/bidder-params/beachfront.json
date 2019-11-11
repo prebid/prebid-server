@@ -6,13 +6,35 @@
   "properties": {
     "appId" : {
       "type": "string",
-      "description": "The id of an inventory target"
+      "description": "The id of an inventory target. This can only be used in requests that contain one media type. It will be applied to all imps in the request."
+    },
+    "appIds": {
+      "type" : "object",
+      "description": "An object that specifies appIds for specific media types. This can be used for either single media type requests or multiple.",
+      "properties": {
+        "video" : {
+          "type": "string",
+          "description": "An appId string that will be applied to video requests in this imp."
+        },
+        "banner" : {
+          "type": "string",
+          "description": "An appId string that will be applied to banner requests in this imp."
+        }
+      }
     },
     "bidfloor": {
       "type": "number",
-      "description": "The price floor for the bid"
+      "description": "The price floor for the bid."
+    },
+    "videoResponseType": {
+      "type": "string",
+      "description": "By default the video response will be a nurl URL, but if you want AdM/VAST, set this to 'adm'. If you want both set it to 'both'. Setting it to any other string will have no effect and the default format will be returned."
     }
   },
 
-  "required": ["appId", "bidfloor"]
+  "required": ["bidfloor"],
+  "oneOf": [{
+      "required": ["appId"] }, {
+      "required": ["appIds"]
+    }]
 }

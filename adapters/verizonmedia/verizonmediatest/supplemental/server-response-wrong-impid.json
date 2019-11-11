@@ -94,5 +94,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Unknown ad unit code 'wrong'"]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unknown ad unit code 'wrong'",
+      "comparison": "literal"
+    }
+  ]
 }

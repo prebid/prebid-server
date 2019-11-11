@@ -27,6 +27,8 @@ func TestNewMetrics(t *testing.T) {
 	ensureContains(t, registry, "usersync.appnexus.gdpr_prevent", m.userSyncGDPRPrevent["appnexus"])
 	ensureContains(t, registry, "usersync.rubicon.gdpr_prevent", m.userSyncGDPRPrevent["rubicon"])
 	ensureContains(t, registry, "usersync.unknown.gdpr_prevent", m.userSyncGDPRPrevent["unknown"])
+	ensureContains(t, registry, "prebid_cache_request_time.ok", m.PrebidCacheRequestTimerSuccess)
+	ensureContains(t, registry, "prebid_cache_request_time.err", m.PrebidCacheRequestTimerError)
 
 	ensureContains(t, registry, "requests.ok.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusOK])
 	ensureContains(t, registry, "requests.badinput.legacy", m.RequestStatuses[ReqTypeLegacy][RequestStatusBadInput])
@@ -168,6 +170,30 @@ func TestNewMetricsWithDisabledConfig(t *testing.T) {
 	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus, openrtb_ext.BidderRubicon}, config.DisabledMetrics{AccountAdapterDetails: true})
 
 	assert.True(t, m.MetricsDisabled.AccountAdapterDetails, "Accound adapter metrics should be disabled")
+}
+
+func TestRecordPrebidCacheRequestTimeWithSuccessLabel(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+	m.RecordPrebidCacheRequestTime(RequestLabels{
+		RequestStatus: RequestStatusOK,
+	}, 42)
+
+	assert.Equal(t, m.PrebidCacheRequestTimerSuccess.Count(), int64(1))
+	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(0))
+}
+
+func TestRecordPrebidCacheRequestTimeWithErrorLabel(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderAppnexus}, config.DisabledMetrics{AccountAdapterDetails: true})
+
+	m.RecordPrebidCacheRequestTime(RequestLabels{
+		RequestStatus: RequestStatusErr,
+	}, 42)
+
+	assert.Equal(t, m.PrebidCacheRequestTimerSuccess.Count(), int64(0))
+	assert.Equal(t, m.PrebidCacheRequestTimerError.Count(), int64(1))
 }
 
 func ensureContainsBidTypeMetrics(t *testing.T, registry metrics.Registry, prefix string, mdm map[openrtb_ext.BidType]*MarkupDeliveryMetrics) {
