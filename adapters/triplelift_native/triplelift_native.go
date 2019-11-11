@@ -97,7 +97,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb.BidRequest, extr
 	publisherID := effectivePubID(publisher)
 	if _, exists := a.extInfo.PublisherWhitelistMap[publisherID]; !exists {
 		err := fmt.Errorf("Unsupported publisher for triplelift_native")
-        return nil, []error{err}
+		return nil, []error{err}
 	}
 	if len(validImps) == 0 {
 		err := fmt.Errorf("No valid impressions for triplelift")
@@ -190,6 +190,6 @@ func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo s
 	}
 
 	return &TripleliftNativeAdapter{
-        extInfo : extInfo,
+		extInfo:  extInfo,
 		endpoint: endpoint}
 }
