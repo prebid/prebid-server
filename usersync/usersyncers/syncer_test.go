@@ -59,7 +59,7 @@ func TestNewSyncerMap(t *testing.T) {
 	}
 
 	adaptersWithoutSyncers := map[openrtb_ext.BidderName]bool{
-		openrtb_ext.BidderTappx: true,
+		openrtb_ext.BidderTappx:   true,
 		openrtb_ext.BidderKubient: true,
 	}
 
