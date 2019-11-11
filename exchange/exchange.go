@@ -577,7 +577,9 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, a
 			},
 		}
 		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
-			bidExt.Prebid.Cache.Bids = &cacheInfo
+			bidExt.Prebid.Cache = &openrtb_ext.ExtBidPrebidCache{
+				Bids: &cacheInfo,
+			}
 		}
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
@@ -598,13 +600,10 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.E
 	var found bool = false
 
 	if auc != nil {
-		if bid.bidType == openrtb_ext.BidTypeVideo {
-			cacheUUID, found = auc.vastCacheIds[bid.bid]
-		} else {
-			cacheUUID, found = auc.cacheIds[bid.bid]
-		}
-
-		if found {
+		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
+			cacheInfo.CacheId = cacheUUID
+			cacheInfo.Url = e.cache.GetPutUrl() + "?uuid=" + cacheUUID //if there's no UUID, should we still define a url?
+		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
 			cacheInfo.CacheId = cacheUUID
 			cacheInfo.Url = e.cache.GetPutUrl() + "?uuid=" + cacheUUID //if there's no UUID, should we still define a url?
 		}
