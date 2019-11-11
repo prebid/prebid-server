@@ -43,26 +43,28 @@ const (
 	BidderIx             BidderName = "ix"
 	BidderLifestreet     BidderName = "lifestreet"
 	BidderLockerDome     BidderName = "lockerdome"
-	BidderMgid           BidderName = "mgid"
-	BidderOpenx          BidderName = "openx"
-	BidderPubmatic       BidderName = "pubmatic"
-	BidderPulsepoint     BidderName = "pulsepoint"
-	BidderRhythmone      BidderName = "rhythmone"
-	BidderRTBHouse       BidderName = "rtbhouse"
-	BidderRubicon        BidderName = "rubicon"
-	BidderSharethrough   BidderName = "sharethrough"
-	BidderSomoaudience   BidderName = "somoaudience"
-	BidderSovrn          BidderName = "sovrn"
-	BidderSonobi         BidderName = "sonobi"
-	BidderSynacormedia   BidderName = "synacormedia"
-	BidderTriplelift     BidderName = "triplelift"
-	BidderUnruly         BidderName = "unruly"
-	BidderVerizonMedia   BidderName = "verizonmedia"
-	BidderVrtcal         BidderName = "vrtcal"
-	BidderYieldmo        BidderName = "yieldmo"
-	BidderVisx           BidderName = "visx"
-	BidderTappx          BidderName = "tappx"
-	BidderEngageBDR      BidderName = "engagebdr"
+
+	BidderMgid             BidderName = "mgid"
+	BidderOpenx            BidderName = "openx"
+	BidderPubmatic         BidderName = "pubmatic"
+	BidderPulsepoint       BidderName = "pulsepoint"
+	BidderRhythmone        BidderName = "rhythmone"
+	BidderRTBHouse         BidderName = "rtbhouse"
+	BidderRubicon          BidderName = "rubicon"
+	BidderSharethrough     BidderName = "sharethrough"
+	BidderSomoaudience     BidderName = "somoaudience"
+	BidderSovrn            BidderName = "sovrn"
+	BidderSonobi           BidderName = "sonobi"
+	BidderSynacormedia     BidderName = "synacormedia"
+	BidderTriplelift       BidderName = "triplelift"
+	BidderTripleliftNative BidderName = "triplelift_native"
+	BidderUnruly           BidderName = "unruly"
+	BidderVerizonMedia     BidderName = "verizonmedia"
+	BidderVrtcal           BidderName = "vrtcal"
+	BidderYieldmo          BidderName = "yieldmo"
+	BidderVisx             BidderName = "visx"
+	BidderTappx            BidderName = "tappx"
+	BidderEngageBDR        BidderName = "engagebdr"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
@@ -90,26 +92,28 @@ var BidderMap = map[string]BidderName{
 	"ix":              BidderIx,
 	"lifestreet":      BidderLifestreet,
 	"lockerdome":      BidderLockerDome,
-	"openx":           BidderOpenx,
-	"mgid":            BidderMgid,
-	"pubmatic":        BidderPubmatic,
-	"pulsepoint":      BidderPulsepoint,
-	"rhythmone":       BidderRhythmone,
-	"rtbhouse":        BidderRTBHouse,
-	"rubicon":         BidderRubicon,
-	"sharethrough":    BidderSharethrough,
-	"somoaudience":    BidderSomoaudience,
-	"sovrn":           BidderSovrn,
-	"sonobi":          BidderSonobi,
-	"synacormedia":    BidderSynacormedia,
-	"triplelift":      BidderTriplelift,
-	"unruly":          BidderUnruly,
-	"verizonmedia":    BidderVerizonMedia,
-	"vrtcal":          BidderVrtcal,
-	"yieldmo":         BidderYieldmo,
-	"visx":            BidderVisx,
-	"tappx":           BidderTappx,
-	"engagebdr":       BidderEngageBDR,
+
+	"openx":             BidderOpenx,
+	"mgid":              BidderMgid,
+	"pubmatic":          BidderPubmatic,
+	"pulsepoint":        BidderPulsepoint,
+	"rhythmone":         BidderRhythmone,
+	"rtbhouse":          BidderRTBHouse,
+	"rubicon":           BidderRubicon,
+	"sharethrough":      BidderSharethrough,
+	"somoaudience":      BidderSomoaudience,
+	"sovrn":             BidderSovrn,
+	"sonobi":            BidderSonobi,
+	"synacormedia":      BidderSynacormedia,
+	"triplelift":        BidderTriplelift,
+	"triplelift_native": BidderTripleliftNative,
+	"unruly":            BidderUnruly,
+	"verizonmedia":      BidderVerizonMedia,
+	"vrtcal":            BidderVrtcal,
+	"yieldmo":           BidderYieldmo,
+	"visx":              BidderVisx,
+	"tappx":             BidderTappx,
+	"engagebdr":         BidderEngageBDR,
 }
 
 // BidderList returns the values of the BidderMap
