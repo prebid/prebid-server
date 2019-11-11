@@ -106,10 +106,12 @@ func TestCreateBidExtension(t *testing.T) {
 		Increment: 0.1,
 	})
 
+	translateCategories := true
 	videoRequest := openrtb_ext.BidRequestVideo{
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
-			PrimaryAdserver: 1,
-			Publisher:       "",
+			PrimaryAdserver:     1,
+			Publisher:           "",
+			TranslateCategories: &translateCategories,
 		},
 		PodConfig: openrtb_ext.PodConfig{
 			DurationRangeSec:     durationRange,
@@ -138,10 +140,12 @@ func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
 	durationRange = append(durationRange, 15)
 	durationRange = append(durationRange, 30)
 
+	translateCategories := false
 	videoRequest := openrtb_ext.BidRequestVideo{
 		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
-			PrimaryAdserver: 1,
-			Publisher:       "",
+			PrimaryAdserver:     1,
+			Publisher:           "",
+			TranslateCategories: &translateCategories,
 		},
 		PodConfig: openrtb_ext.PodConfig{
 			DurationRangeSec:     durationRange,

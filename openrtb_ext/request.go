@@ -57,9 +57,10 @@ type ExtRequestTargeting struct {
 }
 
 type ExtIncludeBrandCategory struct {
-	PrimaryAdServer int    `json:"primaryadserver"`
-	Publisher       string `json:"publisher"`
-	WithCategory    bool   `json:"withcategory"`
+	PrimaryAdServer     int    `json:"primaryadserver"`
+	Publisher           string `json:"publisher"`
+	WithCategory        bool   `json:"withcategory"`
+	TranslateCategories *bool  `json:"translatecategories,omitempty"`
 }
 
 // Make an unmarshaller that will set a default PriceGranularity

@@ -508,9 +508,10 @@ func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, erro
 	var inclBrandCat *openrtb_ext.ExtIncludeBrandCategory
 	if videoRequest.IncludeBrandCategory != nil {
 		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
-			PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
-			Publisher:       videoRequest.IncludeBrandCategory.Publisher,
-			WithCategory:    true,
+			PrimaryAdServer:     videoRequest.IncludeBrandCategory.PrimaryAdserver,
+			Publisher:           videoRequest.IncludeBrandCategory.Publisher,
+			WithCategory:        true,
+			TranslateCategories: videoRequest.IncludeBrandCategory.TranslateCategories,
 		}
 	} else {
 		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
