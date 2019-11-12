@@ -28,7 +28,7 @@ func NewTappxBidder(client *http.Client, endpointTemplate string) *TappxAdapter 
 	a := &adapters.HTTPAdapter{Client: client}
 	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
+		glog.Fatal("Unable to parse endpoint url template: " + err.Error())
 		return nil
 	}
 	return &TappxAdapter{
@@ -98,29 +98,31 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
-	reqHost, reqKey, reqEndpoint := "", "", ""
-	if params.Host != "" {
-		reqHost = params.Host
-	}
-	if params.Endpoint != "" {
-		reqEndpoint = params.Endpoint
-	}
-	if params.TappxKey != "" {
-		reqKey = params.TappxKey
-	}
 
-	if reqHost == "" {
+	if params.Host == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx host undefined",
 		}
 	}
 
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost}
+	if params.Endpoint == "" {
+		return "", &errortypes.BadInput{
+			Message: "Tappx endpoint undefined",
+		}
+	}
+
+	if params.TappxKey == "" {
+		return "", &errortypes.BadInput{
+			Message: "Tappx key undefined",
+		}
+	}
+
+	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
 	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
 
 	if err != nil {
 		return "", &errortypes.BadInput{
-			Message: "Unable to parse endpoint url template",
+			Message: "Unable to parse endpoint url template: " + err.Error(),
 		}
 	}
 
@@ -128,25 +130,13 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 
 	if err != nil {
 		return "", &errortypes.BadInput{
-			Message: "Malformed URL: check host parameter",
-		}
-	}
-
-	if reqEndpoint == "" {
-		return "", &errortypes.BadInput{
-			Message: "Tappx endpoint undefined",
+			Message: "Malformed URL: " + err.Error(),
 		}
 	}
 
 	thisURI.Path += params.Endpoint
 
 	queryParams := url.Values{}
-
-	if reqKey == "" {
-		return "", &errortypes.BadInput{
-			Message: "Tappx key undefined",
-		}
-	}
 
 	queryParams.Add("tappxkey", params.TappxKey)
 

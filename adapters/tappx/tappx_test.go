@@ -24,9 +24,10 @@ func TestTsValue(t *testing.T) {
 
 	url, err := adapter.buildEndpointURL(&tappxExt, test)
 
-	match, err := regexp.MatchString(`&ts=[0-9]{13}`, url)
+	match, err := regexp.MatchString(`https://example\.host\.tappx\.com/DUMMYENDPOINT\?tappxkey=dummy-tappx-key&ts=[0-9]{13}&type_cnn=prebid&v=1\.1`, url)
 	if err != nil {
-		//something happened during regex validation
+		t.Errorf("Error while running regex validation: %s", err.Error())
+		return
 	}
 	assert.True(t, match)
 }
