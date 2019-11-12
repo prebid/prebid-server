@@ -156,7 +156,7 @@ func (err *BidderTemporarilyDisabled) Code() int {
 	return BidderTemporarilyDisabledCode
 }
 
-// Warning is a genric warning type, not a serious error
+// Warning is a generic warning type, not a serious error
 type Warning struct {
 	Message string
 }
