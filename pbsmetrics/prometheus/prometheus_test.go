@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -366,6 +367,102 @@ func TestRequestTimeMetric(t *testing.T) {
 	}
 }
 
+func TestAdapterRequestMetrics(t *testing.T) {
+
+	// primary test
+	// cookie / no cookie
+	// has bids / no bids
+
+	// erors
+
+	//	m.adapterRequests.With(prometheus.Labels{
+	//	adapterLabel:   string(labels.Adapter),
+	//	hasCookieLabel: strconv.FormatBool(labels.CookieFlag != pbsmetrics.CookieFlagNo),
+	//		hasBidsLabel:   strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
+	//}).Inc()
+
+	//for err := range labels.AdapterErrors {
+	//	m.adapterErrors.With(prometheus.Labels{
+	//		adapterLabel:      string(labels.Adapter),
+	//		adapterErrorLabel: string(err),
+	//	}).Inc()
+	//}
+}
+
+// adapter bids, adm vs nurl
+
+// adapter price, same as request time
+
+// adapter time, same as request time (if no errors)
+
+func TestAdapterPanicMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+
+	m.RecordAdapterPanic(pbsmetrics.AdapterLabels{
+		Adapter: openrtb_ext.BidderName(adapterName),
+	})
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", fmt.Sprintf("adapterPanics[%s]", adapterName), m.adapterPanics,
+		expectedCount,
+		prometheus.Labels{
+			adapterLabel: adapterName,
+		})
+}
+
+func TestStoredReqCacheResultMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	hitCount := 42
+	missCount := 108
+	m.RecordStoredReqCacheResult(pbsmetrics.CacheHit, hitCount)
+	m.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, missCount)
+
+	assertCounterVecValue(t, "", "storedRequestCacheResult[hit]", m.storedRequestCacheResult,
+		float64(hitCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheHit),
+		})
+	assertCounterVecValue(t, "", "storedRequestCacheResult[miss]", m.storedRequestCacheResult,
+		float64(missCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheMiss),
+		})
+}
+
+func TestStoredImpCacheResultMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	hitCount := 42
+	missCount := 108
+	m.RecordStoredImpCacheResult(pbsmetrics.CacheHit, hitCount)
+	m.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, missCount)
+
+	assertCounterVecValue(t, "", "storedRequestCacheResult[hit]", m.storedImpressionsCacheResult,
+		float64(hitCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheHit),
+		})
+	assertCounterVecValue(t, "", "storedRequestCacheResult[miss]", m.storedImpressionsCacheResult,
+		float64(missCount),
+		prometheus.Labels{
+			cacheResultLabel: string(pbsmetrics.CacheMiss),
+		})
+}
+
+func TestCookieMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordCookieSync()
+
+	expected := float64(1)
+	assertCounterValue(t, "", "cookieSync", m.cookieSync,
+		expected)
+}
+
+// user metrics
+
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
 	m := dto.Metric{}
 	counter.Write(&m)
@@ -377,11 +474,6 @@ func assertCounterValue(t *testing.T, description, name string, counter promethe
 func assertCounterVecValue(t *testing.T, description, name string, counterVec *prometheus.CounterVec, expected float64, labels prometheus.Labels) {
 	counter := counterVec.With(labels)
 	assertCounterValue(t, description, name, counter, expected)
-}
-
-func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expectedCount uint64, expectedSum float64) {
-	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":Count")
-	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":Sum")
 }
 
 func getHistogramFromHistogramVec(histogram *prometheus.HistogramVec, labelKey, labelValue string) dto.Histogram {
@@ -408,4 +500,9 @@ func processMetrics(collector prometheus.Collector, handler func(m dto.Metric)) 
 		metric.Write(&dtoMetric)
 		handler(dtoMetric)
 	}
+}
+
+func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expectedCount uint64, expectedSum float64) {
+	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":Count")
+	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":Sum")
 }
