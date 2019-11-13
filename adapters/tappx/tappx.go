@@ -10,12 +10,14 @@ import (
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"net/http"
+	"net/url"
 	"strconv"
 	"text/template"
 	"time"
 )
 
-const TAPPX_BIDDER_VERSION = "1.0"
+const TAPPX_BIDDER_VERSION = "1.1"
+const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
 	http             *adapters.HTTPAdapter
@@ -26,19 +28,13 @@ func NewTappxBidder(client *http.Client, endpointTemplate string) *TappxAdapter 
 	a := &adapters.HTTPAdapter{Client: client}
 	template, err := template.New("endpointTemplate").Parse(endpointTemplate)
 	if err != nil {
-		glog.Fatal("Unable to parse endpoint url template")
+		glog.Fatal("Unable to parse endpoint url template: " + err.Error())
 		return nil
 	}
 	return &TappxAdapter{
 		http:             a,
 		endpointTemplate: *template,
 	}
-}
-
-type tappxParams struct {
-	Host     string `json:"host"`
-	TappxKey string `json:"tappxkey"`
-	Endpoint string `json:"endpoint"`
 }
 
 func (a *TappxAdapter) Name() string {
@@ -78,6 +74,10 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 		return nil, []error{err}
 	}
 
+	if tappxExt.BidFloor > 0 {
+		request.Imp[0].BidFloor = tappxExt.BidFloor
+	}
+
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
@@ -98,54 +98,60 @@ func (a *TappxAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapte
 
 // Builds enpoint url based on adapter-specific pub settings from imp.ext
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
-	reqHost, reqKey, reqEndpoint := "", "", ""
-	if params.Host != "" {
-		reqHost = params.Host
-	}
-	if params.Endpoint != "" {
-		reqEndpoint = params.Endpoint
-	}
-	if params.TappxKey != "" {
-		reqKey = params.TappxKey
-	}
 
-	if reqHost == "" {
+	if params.Host == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx host undefined",
 		}
 	}
 
-	endpointParams := macros.EndpointTemplateParams{Host: reqHost}
-	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
-
-	if err != nil {
-		return "", &errortypes.BadInput{
-			Message: "Unable to parse endpoint url template",
-		}
-	}
-
-	if reqKey == "" {
-		return "", &errortypes.BadInput{
-			Message: "Tappx key undefined",
-		}
-	}
-
-	if reqEndpoint == "" {
+	if params.Endpoint == "" {
 		return "", &errortypes.BadInput{
 			Message: "Tappx endpoint undefined",
 		}
 	}
 
-	thisURI := host + params.Endpoint + "?tappxkey=" + params.TappxKey
+	if params.TappxKey == "" {
+		return "", &errortypes.BadInput{
+			Message: "Tappx key undefined",
+		}
+	}
+
+	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
+	host, err := macros.ResolveMacros(a.endpointTemplate, endpointParams)
+
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: "Unable to parse endpoint url template: " + err.Error(),
+		}
+	}
+
+	thisURI, err := url.Parse(host)
+
+	if err != nil {
+		return "", &errortypes.BadInput{
+			Message: "Malformed URL: " + err.Error(),
+		}
+	}
+
+	thisURI.Path += params.Endpoint
+
+	queryParams := url.Values{}
+
+	queryParams.Add("tappxkey", params.TappxKey)
 
 	if test == 0 {
 		t := time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
-		thisURI = thisURI + "&ts=" + strconv.Itoa(int(t))
+		queryParams.Add("ts", strconv.Itoa(int(t)))
 	}
 
-	thisURI = thisURI + "&v=" + TAPPX_BIDDER_VERSION
+	queryParams.Add("v", TAPPX_BIDDER_VERSION)
 
-	return thisURI, nil
+	queryParams.Add("type_cnn", TYPE_CNN)
+
+	thisURI.RawQuery = queryParams.Encode()
+
+	return thisURI.String(), nil
 }
 
 func (a *TappxAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {

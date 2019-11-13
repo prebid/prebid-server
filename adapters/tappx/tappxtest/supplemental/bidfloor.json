@@ -13,7 +13,8 @@
          "bidder": {
             "tappxkey": "pub-12345-android-9876",
             "endpoint": "PREBIDTEMPLATE",
-            "host": "test.tappx.com"
+            "host": "test.tappx.com",
+            "bidfloor": 1.5
           }
         }
       }
@@ -44,11 +45,13 @@
                 "w": 300,
                 "h": 250
               },
+              "bidfloor": 1.5,
               "ext": {
                 "bidder": {
                   "tappxkey": "pub-12345-android-9876",
                   "endpoint": "PREBIDTEMPLATE",
-                 "host": "test.tappx.com"
+                 "host": "test.tappx.com",
+                 "bidfloor": 1.5
                 }
               }
             }

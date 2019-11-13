@@ -10,8 +10,9 @@
         },
         "ext": {
           "bidder": {
+            "host": "example.ho%st.tappx.com",
             "endpoint": "PREBIDTEMPLATE",
-            "host": "test.tappx.com"
+            "tappxkey": "pub-12345-android-9876"
           }
         }
       }
@@ -30,7 +31,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "Tappx key undefined",
+      "value": "Malformed URL: parse https://example.ho%st.tappx.com: invalid URL escape \"%st\"",
       "comparison": "literal"
     }
   ]
