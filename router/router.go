@@ -237,6 +237,11 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
 	}
 
+	videoProxyEndpoint, err := openrtb2.NewVideoProxyEndpoint(theExchange, paramsValidator, fetcher, videoFetcher, categoriesFetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, activeBiddersMap)
+	if err != nil {
+		glog.Fatalf("Failed to create the video endpoint handler. %v", err)
+	}
+
 	r.POST("/auction", endpoints.Auction(cfg, syncers, gdprPerms, r.MetricsEngine, dataCache, exchanges))
 	r.POST("/openrtb2/auction", openrtbEndpoint)
 	r.POST("/openrtb2/video", videoEndpoint)
@@ -247,6 +252,8 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	r.POST("/cookie_sync", endpoints.NewCookieSyncEndpoint(syncers, cfg, gdprPerms, r.MetricsEngine, pbsAnalytics))
 	r.GET("/status", endpoints.NewStatusEndpoint(cfg.StatusResponse))
 	r.GET("/", serveIndex)
+	r.GET("/videoproxy", videoProxyEndpoint)
+	r.POST("/videoproxy", videoProxyEndpoint)
 	r.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	userSyncDeps := &pbs.UserSyncDeps{

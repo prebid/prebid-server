@@ -126,12 +126,38 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	bidResp, errL := deps.executeVideoRequest(videoBidReq, podErrors, labels, w, r, ao, start)
+	if len(errL) > 0 {
+		handleError(labels, w, errL, ao)
+		return
+	}
+
+	resp, err := json.Marshal(bidResp)
+	//resp, err := json.Marshal(response)
+	if err != nil {
+		errL := []error{err}
+		handleError(labels, w, errL, ao)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+
+}
+
+func (deps *endpointDeps) executeVideoRequest(videoBidReq *openrtb_ext.BidRequestVideo,
+	podErrors []PodError,
+	labels pbsmetrics.Labels,
+	w http.ResponseWriter,
+	r *http.Request,
+	ao analytics.AuctionObject,
+	start time.Time) (videoBidResp *openrtb_ext.BidResponseVideo, errL []error) {
 	var bidReq = &openrtb.BidRequest{}
 	if deps.defaultRequest {
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
 			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
 			handleError(labels, w, []error{err}, ao)
-			return
+			return nil, []error{err}
 		}
 	}
 
@@ -204,31 +230,20 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		errL := []error{err}
 		handleError(labels, w, errL, ao)
-		return
+		return nil, errL
 	}
 
 	//build simplified response
-	bidResp, err := buildVideoResponse(response, podErrors)
+	videoBidResp, err = buildVideoResponse(response, podErrors)
 	if err != nil {
 		errL := []error{err}
 		handleError(labels, w, errL, ao)
-		return
+		return nil, errL
 	}
 	if bidReq.Test == 1 {
-		bidResp.Ext = response.Ext
+		videoBidResp.Ext = response.Ext
 	}
-
-	resp, err := json.Marshal(bidResp)
-	//resp, err := json.Marshal(response)
-	if err != nil {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(resp)
-
+	return
 }
 
 func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []PodError) *openrtb_ext.BidRequestVideo {
