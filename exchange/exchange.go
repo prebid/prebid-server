@@ -600,12 +600,15 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.E
 	var found bool = false
 
 	if auc != nil {
+		var extCacheHost, extCachePath string
 		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
 			cacheInfo.CacheId = cacheUUID
-			cacheInfo.Url = e.cache.GetPutUrl() + "?uuid=" + cacheUUID //if there's no UUID, should we still define a url?
+			extCacheHost, extCachePath = e.cache.GetExtCacheData()
+			cacheInfo.Url = extCacheHost + "/" + extCachePath + "?uuid=" + cacheUUID
 		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
 			cacheInfo.CacheId = cacheUUID
-			cacheInfo.Url = e.cache.GetPutUrl() + "?uuid=" + cacheUUID //if there's no UUID, should we still define a url?
+			extCacheHost, extCachePath = e.cache.GetExtCacheData()
+			cacheInfo.Url = extCacheHost + "/" + extCachePath + "?uuid=" + cacheUUID
 		}
 	}
 	return cacheInfo, found

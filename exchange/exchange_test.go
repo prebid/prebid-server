@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
+	pbc "github.com/prebid/prebid-server/prebid_cache_client"
 	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/yudai/gojsondiff"
@@ -72,10 +73,11 @@ func TestNewExchange(t *testing.T) {
 func TestCharacterEscape(t *testing.T) {
 	/* 1) Adapter with a '& char in its endpoint property 		*/
 	/*    https://github.com/prebid/prebid-server/issues/465	*/
+	var appnxs string = "appnexus"
 	cfg := &config.Configuration{
 		Adapters: make(map[string]config.Adapter, 1),
 	}
-	cfg.Adapters["appnexus"] = config.Adapter{
+	cfg.Adapters[appnxs] = config.Adapter{
 		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
 	}
 
@@ -88,7 +90,22 @@ func TestCharacterEscape(t *testing.T) {
 	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
-	liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra := buildBidResponseParams(openrtb_ext.BidderName("appnexus"))
+	//An openrtb.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
+	bidRequest := &openrtb.BidRequest{
+		ID: "some-request-id",
+		Imp: []openrtb.Imp{{
+			ID:     "some-impression-id",
+			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
+			Ext:    json.RawMessage(`{"` + appnxs + `": {"placementId": 10433394}}`),
+		}},
+		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
+		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
+		AT:     1,
+		TMax:   500,
+		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
+	}
+
+	liveAdapters, adapterBids, resolvedRequest, adapterExtra := buildBidResponseParams(openrtb_ext.BidderName("appnexus"), bidRequest)
 
 	//errList []error
 	var errList []error
@@ -109,52 +126,139 @@ func TestCharacterEscape(t *testing.T) {
 }
 
 func TestGetBidCacheInfo(t *testing.T) {
+	generatedUUID := "CACHE_UUID_1234"
 	/* 1) An adapter 											*/
-	var appnxs string = "appnexus"
+	bidderName := openrtb_ext.BidderName("appnexus")
 
 	cfg := &config.Configuration{
 		Adapters: map[string]config.Adapter{
-			appnxs: {
+			string(bidderName): {
 				Endpoint: "http://ib.adnxs.com/endpoint",
 			},
 		},
+		CacheURL: config.Cache{
+			Host: "www.internalprebidcache.net",
+		},
 		ExtCacheURL: config.ExternalCache{
-			Host: "www.externalprebidcache.net",
+			Host: "https://www.externalprebidcache.net",
 			Path: "endpoints/cache",
 		},
 	}
+	adapterList := make([]openrtb_ext.BidderName, 0, 2)
+	testEngine := metricsConf.NewMetricsEngine(cfg, adapterList)
 
 	/* 	2) Init new exchange with said configuration			*/
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+	e := NewExchange(server.Client(), pbc.NewClient(&cfg.CacheURL, &cfg.ExtCacheURL, testEngine), cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
-	liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra := buildBidResponseParams(openrtb_ext.BidderName(appnxs))
-	var errList []error
-	auc := &auction{
-		winningBids: map[string]*pbsOrtbBid{
-			"some-imp-id": {
-				bid: &openrtb.Bid{
-					ID:    "some-imp-idBanner",
-					ImpID: "some-imp-id",
-					Price: 9.517803,
-					CrID:  "crid_1",
-					W:     300,
-					H:     600,
-				},
-				bidType: "banner",
-			},
-		},
-		cacheIds: map[*openrtb.Bid]string{
-			{
-				ID:    "appnxsBid",
-				Price: 9.517803,
-			}: "CACHE_UUID_1234",
+	//liveAdapters []openrtb_ext.BidderName,
+	liveAdapters := []openrtb_ext.BidderName{bidderName}
+
+	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
+	bids := []*openrtb.Bid{
+		&openrtb.Bid{
+			ID:             "some-imp-id",
+			ImpID:          "",
+			Price:          9.517803,
+			NURL:           "",
+			BURL:           "",
+			LURL:           "",
+			AdM:            "",
+			AdID:           "",
+			ADomain:        nil,
+			Bundle:         "",
+			IURL:           "",
+			CID:            "",
+			CrID:           "",
+			Tactic:         "",
+			Cat:            nil,
+			Attr:           nil,
+			API:            0,
+			Protocol:       0,
+			QAGMediaRating: 0,
+			Language:       "",
+			DealID:         "",
+			W:              300,
+			H:              250,
+			WRatio:         0,
+			HRatio:         0,
+			Exp:            0,
+			Ext:            nil,
 		},
 	}
+	auc := &auction{
+		cacheIds: map[*openrtb.Bid]string{
+			bids[0]: generatedUUID,
+		},
+	}
+	aPbsOrtbBidArr := []*pbsOrtbBid{
+		&pbsOrtbBid{
+			bid:     bids[0],
+			bidType: openrtb_ext.BidTypeBanner,
+			bidTargets: map[string]string{
+				"pricegranularity":  "med",
+				"includewinners":    "true",
+				"includebidderkeys": "false",
+			},
+		},
+	}
+	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+		bidderName: {
+			bids:     aPbsOrtbBidArr,
+			currency: "USD",
+		},
+	}
+
+	//resolvedRequest json.RawMessage
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
+
+	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
+	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
+		bidderName: {
+			ResponseTimeMillis: 5,
+			Errors: []openrtb_ext.ExtBidderError{
+				{
+					Code:    999,
+					Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\"",
+				},
+			},
+		},
+	}
+	bidRequest := &openrtb.BidRequest{
+		ID:   "some-request-id",
+		TMax: 1000,
+		Imp: []openrtb.Imp{
+			{
+				ID:     "test-div",
+				Secure: openrtb.Int8Ptr(0),
+				Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}}},
+				Ext: json.RawMessage(` {
+    "rubicon": {
+        "accountId": 1001,
+        "siteId": 113932,
+        "zoneId": 535510
+    },
+    "appnexus": { "placementId": 10433394 },
+    "pubmatic": { "publisherId": "156209", "adSlot": "pubmatic_test2@300x250" },
+    "pulsepoint": { "cf": "300X250", "cp": 512379, "ct": 486653 },
+    "conversant": { "site_id": "108060" },
+    "ix": { "siteId": "287415" }
+}`),
+			},
+		},
+		Site: &openrtb.Site{
+			Page:      "http://rubitest.com/index.html",
+			Publisher: &openrtb.Publisher{ID: "1001"},
+		},
+		Test: 1,
+		Ext:  json.RawMessage(`{"prebid": { "cache": { "bids": {}, "vastxml": {} }, "targeting": { "pricegranularity": "med", "includewinners": true, "includebidderkeys": false } }}`),
+	}
+
+	var errList []error
 
 	/* 	4) Build bid response 									*/
 	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errList)
@@ -165,117 +269,55 @@ func TestGetBidCacheInfo(t *testing.T) {
 	expectedBidResponse := &openrtb.BidResponse{
 		SeatBid: []openrtb.SeatBid{
 			openrtb.SeatBid{
-				Seat: appnxs,
+				Seat: string(bidderName),
 				Bid: []openrtb.Bid{
 					openrtb.Bid{
-						Ext: json.RawMessage(`{ "prebid": { "cache": { "bids": { "cacheId": "0", "url": "https://www.externalprebidcache.net/endpoints/cache?uuid=0" }, "key": "", "url": "" }`),
+						Ext: json.RawMessage(`{ "prebid": { "cache": { "bids": { "cacheId": "` + generatedUUID + `", "url": "https://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234" }, "key": "", "url": "" }`),
 					},
 				},
 			},
 		},
 	}
-	// compare bid_resp vs expectedBidResponse using the json parser
-	cacheUUID, err := jsonparser.GetString(bid_resp.SeatBid[0].Bid[0].Ext, "prebid", "type")
-	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the cacheId field from actual build response. Message: %v \n", err)
-
+	// compare cache UUID
 	expCacheUUID, err := jsonparser.GetString(expectedBidResponse.SeatBid[0].Bid[0].Ext, "prebid", "cache", "bids", "cacheId")
 	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the cacheId field from expected build response. Message: %v \n", err)
 
-	assert.Equal(t, expCacheUUID, cacheUUID, "[TestGetBidCacheInfo] cacheId field in ext should equal CACHE_UUID_1234")
+	cacheUUID, err := jsonparser.GetString(bid_resp.SeatBid[0].Bid[0].Ext, "prebid", "cache", "bids", "cacheId")
+	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] bid_resp.SeatBid[0].Bid[0].Ext = %s \n", bid_resp.SeatBid[0].Bid[0].Ext)
+
+	assert.Equal(t, expCacheUUID, cacheUUID, "[TestGetBidCacheInfo] cacheId field in ext should equal CACHE_UUID_1234. expCacheUUID=\"%s\", cacheUUID=\"%s\" \n", expCacheUUID, cacheUUID)
+
+	// compare cache UUID
+	expCacheURL, err := jsonparser.GetString(expectedBidResponse.SeatBid[0].Bid[0].Ext, "prebid", "cache", "bids", "url")
+	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from expected build response. Message: %v \n", err)
 
 	cacheURL, err := jsonparser.GetString(bid_resp.SeatBid[0].Bid[0].Ext, "prebid", "cache", "bids", "url")
 	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from actual build response. Message: %v \n", err)
 
-	expCacheURL, err := jsonparser.GetString(expectedBidResponse.SeatBid[0].Bid[0].Ext, "prebid", "cache", "bids", "url")
-	assert.NoErrorf(t, err, "[TestGetBidCacheInfo] Error found while trying to json parse the url field from expected build response. Message: %v \n", err)
-
-	assert.Equal(t, cacheURL, expCacheURL, "[TestGetBidCacheInfo] cacheId field in ext should equal `http://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234`")
+	assert.Equal(t, expCacheURL, cacheURL, "[TestGetBidCacheInfo] cacheId field in ext should equal `http://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234`::: expCacheURL=\"%s\", cacheURL=\"%s\" \n", expCacheURL, cacheURL)
 	/*
-		--- FAIL: TestGetBidCacheInfo (0.00s)
-		    exchange_test.go:184:
-		                Error Trace:    exchange_test.go:184
+		--- FAIL: TestGetBidCacheInfo (43.86s)
+		    exchange_test.go:297:
+		                Error Trace:    exchange_test.go:297
 		                Error:          Not equal:
-		                                expected: "0"
-		                                actual  : "banner"
+		                                expected: "https://www.externalprebidcache.net/endpoints/cache?uuid=0"
+		                                actual  : "https://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234"
 
 		                                Diff:
 		                                --- Expected
 		                                +++ Actual
 		                                @@ -1 +1 @@
-		                                -0
-		                                +banner
+		                                -https://www.externalprebidcache.net/endpoints/cache?uuid=0
+		                                +https://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234
 		                Test:           TestGetBidCacheInfo
-		                Messages:       [TestGetBidCacheInfo] cacheId field in ext should equal CACHE_UUID_1234
-		    exchange_test.go:187:
-		                Error Trace:    exchange_test.go:187
-		                Error:          Received unexpected error:
-		                                Key path not found
-		                Test:           TestGetBidCacheInfo
-		                Messages:       [TestGetBidCacheInfo] Error found while trying to json parse the url field from actual build response. Message: Key path not found
-		    exchange_test.go:192:
-		                Error Trace:    exchange_test.go:192
-		                Error:          Not equal:
-		                                expected: ""
-		                                actual  : "https://www.externalprebidcache.net/endpoints/cache?uuid=0"
+		                Messages:       [TestGetBidCacheInfo] cacheId field in ext should equal `http://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234`:::
 
-		                                Diff:
-		                                --- Expected
-		                                +++ Actual
-		                                @@ -1 +1 @@
-		                                -
-		                                +https://www.externalprebidcache.net/endpoints/cache?uuid=0
-		                Test:           TestGetBidCacheInfo
-		                Messages:       [TestGetBidCacheInfo] cacheId field in ext should equal `http://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234`
+						expCacheURL="https://www.externalprebidcache.net/endpoints/cache?uuid=0"
+						   cacheURL="https://www.externalprebidcache.net/endpoints/cache?uuid=CACHE_UUID_1234"
 	*/
 }
 
-/*
-{
-    "id": "7b3e93dc-10cc-42cd-b855-76ddea2e3f7d",
-    "source": { "tid": "7b3e93dc-10cc-42cd-b855-76ddea2e3f7d" },
-    "tmax": 1000,
-    "imp": [
-        {
-            "id": "test-div",
-            "ext": {
-                "rubicon": {
-                    "accountId": 1001,
-                    "siteId": 113932,
-                    "zoneId": 535510
-                },
-                "appnexus": { "placementId": 10433394 },
-                "pubmatic": { "publisherId": "156209", "adSlot": "pubmatic_test2@300x250" },
-                "pulsepoint": { "cf": "300X250", "cp": 512379, "ct": 486653 },
-                "conversant": { "site_id": "108060" },
-                "ix": { "siteId": "287415" }
-            },
-            "secure": 0,
-            "banner": {
-                "format": [
-                    {
-                        "w": 300,
-                        "h": 250
-                    }
-                ]
-            }
-        }
-    ],
-    "test": 1,
-    "site": {
-        "publisher": { "id": "1001" },
-        "page": "http://rubitest.com/index.html"
-    },
-    "ext": {
-        "prebid": {
-            "cache": { "bids": {}, "vastxml": {} },
-            "targeting": { "pricegranularity": "med", "includewinners": true, "includebidderkeys": false }
-        }
-    }
-}
-*/
-
-func buildBidResponseParams(bidderName openrtb_ext.BidderName) ([]openrtb_ext.BidderName, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, *openrtb.BidRequest, json.RawMessage, map[openrtb_ext.BidderName]*seatResponseExtra) {
-	var appnxs openrtb_ext.BidderName = bidderName
+func buildBidResponseParams(bidderName openrtb_ext.BidderName, bidRequest *openrtb.BidRequest) ([]openrtb_ext.BidderName, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, json.RawMessage, map[openrtb_ext.BidderName]*seatResponseExtra) {
 	//liveAdapters []openrtb_ext.BidderName,
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
 
@@ -287,27 +329,20 @@ func buildBidResponseParams(bidderName openrtb_ext.BidderName) ([]openrtb_ext.Bi
 					bid: &openrtb.Bid{
 						ID:    "some-imp-id",
 						Price: 9.517803,
+						W:     300,
+						H:     250,
 					},
 					bidType: openrtb_ext.BidTypeBanner,
+					bidTargets: map[string]string{
+						"pricegranularity":  "med",
+						"includewinners":    "true",
+						"includebidderkeys": "false",
+					},
 				},
 			},
 			currency: "USD",
+			//ext:      bidRequest.Ext,
 		},
-	}
-
-	//An openrtb.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
-	bidRequest := &openrtb.BidRequest{
-		ID: "some-request-id",
-		Imp: []openrtb.Imp{{
-			ID:     "some-impression-id",
-			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"` + appnxs + `": {"placementId": 10433394}}`),
-		}},
-		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
-		AT:     1,
-		TMax:   500,
-		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
 	}
 
 	//resolvedRequest json.RawMessage
@@ -326,7 +361,7 @@ func buildBidResponseParams(bidderName openrtb_ext.BidderName) ([]openrtb_ext.Bi
 		},
 	}
 
-	return liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra
+	return liveAdapters, adapterBids, resolvedRequest, adapterExtra
 }
 
 // TestRaceIntegration runs an integration test using all the sample params from
@@ -436,32 +471,32 @@ func newRaceCheckingRequest(t *testing.T) *openrtb.BidRequest {
 	}
 }
 
-func TestPanicRecovery(t *testing.T) {
-	cfg := &config.Configuration{
-		CacheURL: config.Cache{
-			ExpectedTimeMillis: 20,
-		},
-		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
-	}
-
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
-	e := NewExchange(&http.Client{}, nil, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
-	chBids := make(chan *bidResponseWrapper, 1)
-	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
-		panic("panic!")
-	}
-	recovered := e.recoverSafely(panicker, chBids)
-	apnLabels := pbsmetrics.AdapterLabels{
-		Source:      pbsmetrics.DemandWeb,
-		RType:       pbsmetrics.ReqTypeORTB2Web,
-		Adapter:     openrtb_ext.BidderAppnexus,
-		PubID:       "test1",
-		Browser:     pbsmetrics.BrowserSafari,
-		CookieFlag:  pbsmetrics.CookieFlagYes,
-		AdapterBids: pbsmetrics.AdapterBidNone,
-	}
-	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
-}
+//func TestPanicRecovery(t *testing.T) {
+//	cfg := &config.Configuration{
+//		CacheURL: config.Cache{
+//			ExpectedTimeMillis: 20,
+//		},
+//		Adapters: blankAdapterConfig(openrtb_ext.BidderList()),
+//	}
+//
+//	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+//	e := NewExchange(&http.Client{}, nil, cfg, theMetrics, adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+//	chBids := make(chan *bidResponseWrapper, 1)
+//	panicker := func(aName openrtb_ext.BidderName, coreBidder openrtb_ext.BidderName, request *openrtb.BidRequest, bidlabels *pbsmetrics.AdapterLabels, conversions currencies.Conversions) {
+//		panic("panic!")
+//	}
+//	recovered := e.recoverSafely(panicker, chBids)
+//	apnLabels := pbsmetrics.AdapterLabels{
+//		Source:      pbsmetrics.DemandWeb,
+//		RType:       pbsmetrics.ReqTypeORTB2Web,
+//		Adapter:     openrtb_ext.BidderAppnexus,
+//		PubID:       "test1",
+//		Browser:     pbsmetrics.BrowserSafari,
+//		CookieFlag:  pbsmetrics.CookieFlagYes,
+//		AdapterBids: pbsmetrics.AdapterBidNone,
+//	}
+//	recovered(openrtb_ext.BidderAppnexus, openrtb_ext.BidderAppnexus, nil, &apnLabels, nil)
+//}
 
 func buildImpExt(t *testing.T, jsonFilename string) json.RawMessage {
 	adapterFolders, err := ioutil.ReadDir("../adapters")
@@ -1129,10 +1164,6 @@ type wellBehavedCache struct{}
 
 func (c *wellBehavedCache) GetExtCacheData() (string, string) {
 	return "www.pbcserver.com", "/pbcache/endpoint"
-}
-
-func (c *wellBehavedCache) GetPutUrl() string {
-	return "https://localcacheurl.com/cache"
 }
 
 func (c *wellBehavedCache) PutJson(ctx context.Context, values []prebid_cache_client.Cacheable) ([]string, []error) {
