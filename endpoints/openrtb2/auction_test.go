@@ -865,6 +865,54 @@ func validRequest(t *testing.T, filename string) string {
 	return string(requestData)
 }
 
+func TestCurrencyTrunc(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+	}
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage("{\"appnexus\": {\"placementId\": 5667}}"),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Cur: []string{"USD", "EUR"},
+	}
+
+	errL := deps.validateRequest(&req)
+	for _, err := range errL {
+		if err.Error() != "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency" {
+			t.Errorf(err.Error())
+		} else {
+			if errortypes.DecodeError(err) != errortypes.WarningCode {
+				t.Errorf("The expected warning has the wrong error type/code")
+			}
+		}
+	}
+	assert.Len(t, req.Cur, 1)
+}
+
 // nobidExchange is a well-behaved exchange which always bids "no bid".
 type nobidExchange struct {
 	gotRequest *openrtb.BidRequest
