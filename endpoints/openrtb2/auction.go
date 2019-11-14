@@ -256,6 +256,11 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 		return []error{errors.New("request.imp must contain at least one element.")}
 	}
 
+	if len(req.Cur) > 1 {
+		req.Cur = req.Cur[0:1]
+		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("A prebid request can only process one currency. Taking the first currency in the list, %s, as the active currency", req.Cur[0])})
+	}
+
 	var aliases map[string]string
 	if bidExt, err := deps.parseBidExt(req.Ext); err != nil {
 		return []error{err}
@@ -1172,7 +1177,7 @@ func writeError(errs []error, w http.ResponseWriter, labels *pbsmetrics.Labels) 
 func fatalError(errL []error) bool {
 	for _, err := range errL {
 		errCode := errortypes.DecodeError(err)
-		if errCode != errortypes.BidderTemporarilyDisabledCode || errCode == errortypes.BlacklistedAppCode || errCode == errortypes.BlacklistedAcctCode {
+		if errCode != errortypes.BidderTemporarilyDisabledCode && errCode != errortypes.WarningCode {
 			return true
 		}
 	}

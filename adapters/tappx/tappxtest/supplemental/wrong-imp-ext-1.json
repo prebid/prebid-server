@@ -12,7 +12,7 @@
           "bidder": {
             "tappxkey": 1,
             "endpoint": "PREBIDTEMPLATE",
-            "host": "test.tappx.com/"
+            "host": "test.tappx.com"
           }
         }
       }

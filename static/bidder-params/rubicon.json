@@ -37,27 +37,27 @@
       "type": "object",
       "description": "An object defining additional Rubicon video parameters",
       "properties": {
-        "Language": {
+        "language": {
           "type": "string",
           "description": "Language of the ad - should match content video"
         },
-        "PlayerHeight": {
+        "playerHeight": {
           "type": "integer",
           "description": "Height in pixels of the video player"
         },
-        "PlayerWidth": {
+        "playerWidth": {
           "type": "integer",
           "description": "Width in pixels of the video player"
         },
-        "VideoSizeID": {
+        "size_id": {
           "type": "integer",
           "description": "Rubicon size_id, used to describe type of video ad (preroll, postroll, etc)"
         },
-        "Skip": {
+        "skip": {
           "type": "integer",
           "description": "Can this ad be skipped ( 0 = no, 1 = yes)"
         },
-        "SkipDelay": {
+        "skipdelay": {
           "type": "integer",
           "description": "number of seconds until the ad can be skipped"
         }
