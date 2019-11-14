@@ -29,8 +29,6 @@ type TripleliftNativeExtInfo struct {
 
 	// Map is used for optimized memory access and should be constructed after deserialization.
 	PublisherWhitelistMap map[string]bool
-
-	Endpoint string `json:"endpoint"`
 }
 
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
@@ -191,5 +189,5 @@ func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo s
 
 	return &TripleliftNativeAdapter{
 		extInfo:  extInfo,
-		endpoint: extInfo.Endpoint}
+		endpoint: endpoint}
 }
