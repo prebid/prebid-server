@@ -221,7 +221,6 @@ type Adapter struct {
 	//
 	// For more info on templates, see: https://golang.org/pkg/text/template/
 	UserSyncURL string `mapstructure:"usersync_url"`
-	PlatformID  string `mapstructure:"platform_id"` // needed for Facebook
 	XAPI        struct {
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
@@ -229,6 +228,11 @@ type Adapter struct {
 	} `mapstructure:"xapi"` // needed for Rubicon
 	Disabled         bool   `mapstructure:"disabled"`
 	ExtraAdapterInfo string `mapstructure:"extra_info"`
+
+	// needed for Facebook
+	PlatformID string `mapstructure:"platform_id"`
+	AppID      string `mapstructure:"app_id"`
+	AppSecret  string `mapstructure:"app_secret"`
 }
 
 // validateAdapterEndpoint makes sure that an adapter has a valid endpoint
