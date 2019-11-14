@@ -3,7 +3,9 @@ maintainer:
 capabilities:
   app:
     mediaTypes:
-      - native
+      - banner
+      - video
   site:
     mediaTypes:
-      - native
+      - banner
+      - video
