@@ -1,0 +1,12 @@
+maintainer:
+  email: "support@kubient.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+
