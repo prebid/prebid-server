@@ -231,7 +231,6 @@ type Adapter struct {
 
 	// needed for Facebook
 	PlatformID string `mapstructure:"platform_id"`
-	AppID      string `mapstructure:"app_id"`
 	AppSecret  string `mapstructure:"app_secret"`
 }
 
