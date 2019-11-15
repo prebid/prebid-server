@@ -246,14 +246,7 @@ bidLoop:
 	for _, bid := range bids {
 		if isUndimensionedBanner(bid) {
 			for _, adunit := range bidder.AdUnits {
-				if isBidIDAndCodeEqual(&adunit, bid) {
-					if len(adunit.Sizes) == 1 {
-						bid.Width, bid.Height = adunit.Sizes[0].W, adunit.Sizes[0].H
-						finalValidBids[finalBidCounter] = bid
-						finalBidCounter = finalBidCounter + 1
-					} else if len(adunit.Sizes) > 1 {
-						glog.Warningf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
-					}
+				if copyBannerDimensions(&adunit, bid, finalValidBids, &finalBidCounter) {
 					continue bidLoop
 				}
 			}
@@ -269,8 +262,21 @@ func isUndimensionedBanner(bid *pbs.PBSBid) bool {
 	return bid.CreativeMediaType == "banner" && (bid.Height == 0 || bid.Width == 0)
 }
 
-func isBidIDAndCodeEqual(adunit *pbs.PBSAdUnit, bid *pbs.PBSBid) bool {
-	return adunit.BidID == bid.BidID && adunit.Code == bid.AdUnitCode
+func copyBannerDimensions(adunit *pbs.PBSAdUnit, bid *pbs.PBSBid, finalValidBids []*pbs.PBSBid, finalBidCounter *int) bool {
+	var bidIDEqualsCode bool = false
+
+	if adunit.BidID == bid.BidID && adunit.Code == bid.AdUnitCode && adunit.Sizes != nil {
+		if len(adunit.Sizes) == 1 {
+			bid.Width, bid.Height = adunit.Sizes[0].W, adunit.Sizes[0].H
+			finalValidBids[*finalBidCounter] = bid
+			*finalBidCounter += 1
+		} else if len(adunit.Sizes) > 1 {
+			glog.Warningf("Bid was rejected for bidder %s because no size was defined", bid.BidderCode)
+		}
+		bidIDEqualsCode = true
+	}
+
+	return bidIDEqualsCode
 }
 
 // sortBidsAddKeywordsMobile sorts the bids and adds ad server targeting keywords to each bid.
