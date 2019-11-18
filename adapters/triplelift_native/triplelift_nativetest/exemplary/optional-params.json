@@ -1,6 +1,7 @@
 {
   "mockBidRequest": {
     "id": "test-request-id",
+    "site": { "publisher": {"id":"foo","name":"foo"}},
     "imp": [
       {
    "native":{
