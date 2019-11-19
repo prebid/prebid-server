@@ -55,9 +55,8 @@ func processImp(imp *openrtb.Imp) error {
 	// floor is optional
 	if tlext.Floor == nil {
 		return nil
-	} else {
-		imp.BidFloor = *tlext.Floor
-	}
+    }
+	imp.BidFloor = *tlext.Floor
 	// no error
 	return nil
 }
