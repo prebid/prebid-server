@@ -11,7 +11,7 @@
   ],
   "mockBidRequest": {
     "id": "test-request-id",
-    "site": { "publisher": {"id":"foo","name":"foo"}},
+    "site": { "publisher": {"ext":{"prebid":{"parentAccount":"foo"}}, "id":"far","name":"bar"}},
     "imp": [
       {
         "id": "test-imp-id",
