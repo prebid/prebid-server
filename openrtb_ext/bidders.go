@@ -45,7 +45,6 @@ const (
 	BidderKubient        BidderName = "kubient"
 	BidderLifestreet     BidderName = "lifestreet"
 	BidderLockerDome     BidderName = "lockerdome"
-
 	BidderMgid             BidderName = "mgid"
 	BidderOpenx            BidderName = "openx"
 	BidderPubmatic         BidderName = "pubmatic"
