@@ -1,5 +1,5 @@
 {
-  "expectedMakeRequestsErrors" : [{"value": "no native object specified"},{"value":"No valid impressions for triplelift"}],
+  "expectedMakeRequestsErrors" : [{"comparison":"literal","value": "no native object specified"},{"comparison":"literal","value":"No valid impressions for triplelift"}],
   "mockBidRequest": {
     "site": { "publisher": {"id":"foo","name":"foo"}},
     "id": "test-request-id",
