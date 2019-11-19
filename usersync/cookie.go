@@ -125,7 +125,6 @@ func (cookie *PBSCookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 		Value:   b64,
 		Expires: time.Now().Add(ttl),
 		Path:    "/",
-		Secure:  true,
 	}
 }
 
@@ -194,9 +193,11 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		currSize = len([]byte(httpCookie.String()))
 	}
 
-	uidsCookieStr := httpCookie.String()
+	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
+		httpCookie.Secure = true
+		uidsCookieStr := httpCookie.String()
 		uidsCookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
@@ -208,6 +209,8 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	} else {
+		uidsCookieStr = httpCookie.String()
 	}
 	w.Header().Add("Set-Cookie", uidsCookieStr)
 }
