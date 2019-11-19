@@ -44,5 +44,5 @@
   ],
   "expectedBidResponses": [
   ],
-  "expectedMakeBidsErrors": ["Unexpected status code: 400. Run with request.debug = 1 for more info"]
+  "expectedMakeBidsErrors": [{"comparison":"literal", "value" : "Unexpected status code: 400. Run with request.debug = 1 for more info"}]
 }
