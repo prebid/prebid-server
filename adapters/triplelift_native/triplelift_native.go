@@ -33,10 +33,6 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelistMap map[string]bool
 }
 
-func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
-	return openrtb_ext.BidTypeNative
-}
-
 func processImp(imp *openrtb.Imp) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
@@ -163,7 +159,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			var bidExt TripleliftRespExt
-			bidType := getBidType(bidExt)
+			bidType := openrtb_ext.BidTypeNative
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: bidType,
