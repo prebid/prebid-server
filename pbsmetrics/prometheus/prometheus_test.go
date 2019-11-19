@@ -1,7 +1,6 @@
 package prometheusmetrics
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -21,56 +20,100 @@ func createMetricsForTesting() *Metrics {
 	})
 }
 
-// test accumulation
+func TestMetricCountGatekeeping(t *testing.T) {
+	m := createMetricsForTesting()
+
+	// Gather All Metrics
+	metricFamilies, err := m.Registry.Gather()
+	if err != nil {
+		assert.NoError(t, err, "gather metics")
+	}
+
+	// Summarize By Adapter Cardinality
+	// - This requires metrics to be preloaded. We don't preload account metrics, so we can't test those.
+	generalCardinalityCount := 0
+	adapterCardinalityCount := 0
+	for _, metricFamily := range metricFamilies {
+		for _, metric := range metricFamily.GetMetric() {
+			isPerAdapter := false
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == adapterLabel {
+					isPerAdapter = true
+				}
+			}
+
+			if isPerAdapter {
+				adapterCardinalityCount++
+			} else {
+				generalCardinalityCount++
+			}
+		}
+	}
+
+	// Calculate Per-Adapter Cardinality
+	adapterCount := len(openrtb_ext.BidderList())
+	perAdapterCardinalityCount := adapterCardinalityCount / adapterCount
+
+	// Verify General Cardinality
+	// - This assertion provides a warning for newly added high-cardinality non-adapter specific metrics. The hardcoded limit
+	//   is an arbitrary soft ceiling. Thought should be given as to the value of the new metrics if you find yourself
+	//   needing to increase this number.
+	assert.True(t, generalCardinalityCount <= 500, "General Cardinality")
+
+	// Verify Per-Adapter Cardinality
+	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
+	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
+	assert.True(t, perAdapterCardinalityCount <= 20, "Per-Adapter Cardinality")
+}
 
 func TestConnectionMetrics(t *testing.T) {
 	testCases := []struct {
-		description         string
-		testCase            func(m *Metrics)
-		expectedOpened      float64
-		expectedOpenedError float64
-		expectedClosed      float64
-		expectedClosedError float64
+		description              string
+		testCase                 func(m *Metrics)
+		expectedOpenedCount      float64
+		expectedOpenedErrorCount float64
+		expectedClosedCount      float64
+		expectedClosedErrorCount float64
 	}{
 		{
 			description: "Open Success",
 			testCase: func(m *Metrics) {
 				m.RecordConnectionAccept(true)
 			},
-			expectedOpened:      1,
-			expectedOpenedError: 0,
-			expectedClosed:      0,
-			expectedClosedError: 0,
+			expectedOpenedCount:      1,
+			expectedOpenedErrorCount: 0,
+			expectedClosedCount:      0,
+			expectedClosedErrorCount: 0,
 		},
 		{
 			description: "Open Error",
 			testCase: func(m *Metrics) {
 				m.RecordConnectionAccept(false)
 			},
-			expectedOpened:      0,
-			expectedOpenedError: 1,
-			expectedClosed:      0,
-			expectedClosedError: 0,
+			expectedOpenedCount:      0,
+			expectedOpenedErrorCount: 1,
+			expectedClosedCount:      0,
+			expectedClosedErrorCount: 0,
 		},
 		{
 			description: "Closed Success",
 			testCase: func(m *Metrics) {
 				m.RecordConnectionClose(true)
 			},
-			expectedOpened:      0,
-			expectedOpenedError: 0,
-			expectedClosed:      1,
-			expectedClosedError: 0,
+			expectedOpenedCount:      0,
+			expectedOpenedErrorCount: 0,
+			expectedClosedCount:      1,
+			expectedClosedErrorCount: 0,
 		},
 		{
 			description: "Closed Error",
 			testCase: func(m *Metrics) {
 				m.RecordConnectionClose(false)
 			},
-			expectedOpened:      0,
-			expectedOpenedError: 0,
-			expectedClosed:      0,
-			expectedClosedError: 1,
+			expectedOpenedCount:      0,
+			expectedOpenedErrorCount: 0,
+			expectedClosedCount:      0,
+			expectedClosedErrorCount: 1,
 		},
 	}
 
@@ -80,15 +123,15 @@ func TestConnectionMetrics(t *testing.T) {
 		test.testCase(m)
 
 		assertCounterValue(t, test.description, "connectionsClosed", m.connectionsClosed,
-			test.expectedClosed)
+			test.expectedClosedCount)
 		assertCounterValue(t, test.description, "connectionsOpened", m.connectionsOpened,
-			test.expectedOpened)
-		assertCounterVecValue(t, test.description, "connectionsError[accept]", m.connectionsError,
-			test.expectedOpenedError, prometheus.Labels{
+			test.expectedOpenedCount)
+		assertCounterVecValue(t, test.description, "connectionsError[type=accept]", m.connectionsError,
+			test.expectedOpenedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionAcceptError,
 			})
-		assertCounterVecValue(t, test.description, "connectionsError[close]", m.connectionsError,
-			test.expectedClosedError, prometheus.Labels{
+		assertCounterVecValue(t, test.description, "connectionsError[type=close]", m.connectionsError,
+			test.expectedClosedErrorCount, prometheus.Labels{
 				connectionErrorLabel: connectionCloseError,
 			})
 	}
@@ -96,17 +139,17 @@ func TestConnectionMetrics(t *testing.T) {
 
 func TestRequestMetric(t *testing.T) {
 	m := createMetricsForTesting()
-
 	requestType := pbsmetrics.ReqTypeORTB2Web
 	requestStatus := pbsmetrics.RequestStatusBlacklisted
+
 	m.RecordRequest(pbsmetrics.Labels{
 		RType:         requestType,
 		RequestStatus: requestStatus,
 	})
 
-	expected := float64(1)
-	assertCounterVecValue(t, "", fmt.Sprintf("requests[%s,%s]", requestType, requestStatus), m.requests,
-		expected,
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "requests", m.requests,
+		expectedCount,
 		prometheus.Labels{
 			requestTypeLabel:   string(requestType),
 			requestStatusLabel: string(requestStatus),
@@ -124,31 +167,31 @@ func TestRequestMetricWithoutCookie(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description string
-		testCase    func(m *Metrics)
-		cookieFlag  pbsmetrics.CookieFlag
-		expected    float64
+		description   string
+		testCase      func(m *Metrics)
+		cookieFlag    pbsmetrics.CookieFlag
+		expectedCount float64
 	}{
 		{
 			description: "Yes",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagYes)
 			},
-			expected: 0,
+			expectedCount: 0,
 		},
 		{
 			description: "No",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagNo)
 			},
-			expected: 1,
+			expectedCount: 1,
 		},
 		{
 			description: "Unknown",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagUnknown)
 			},
-			expected: 0,
+			expectedCount: 0,
 		},
 	}
 
@@ -157,8 +200,8 @@ func TestRequestMetricWithoutCookie(t *testing.T) {
 
 		test.testCase(m)
 
-		assertCounterVecValue(t, test.description, fmt.Sprintf("requestsWithoutCookie[%s]", requestType), m.requestsWithoutCookie,
-			test.expected,
+		assertCounterVecValue(t, test.description, "requestsWithoutCookie", m.requestsWithoutCookie,
+			test.expectedCount,
 			prometheus.Labels{
 				requestTypeLabel: string(requestType),
 			})
@@ -168,33 +211,31 @@ func TestRequestMetricWithoutCookie(t *testing.T) {
 func TestAccountMetric(t *testing.T) {
 	knownPubID := "knownPublisher"
 	performTest := func(m *Metrics, pubID string) {
-		requestType := pbsmetrics.ReqTypeORTB2Web
-		requestStatus := pbsmetrics.RequestStatusBlacklisted
 		m.RecordRequest(pbsmetrics.Labels{
-			RType:         requestType,
-			RequestStatus: requestStatus,
+			RType:         pbsmetrics.ReqTypeORTB2Web,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
 			PubID:         pubID,
 		})
 	}
 
 	testCases := []struct {
-		description string
-		testCase    func(m *Metrics)
-		expected    float64
+		description   string
+		testCase      func(m *Metrics)
+		expectedCount float64
 	}{
 		{
 			description: "Known",
 			testCase: func(m *Metrics) {
 				performTest(m, knownPubID)
 			},
-			expected: 1,
+			expectedCount: 1,
 		},
 		{
 			description: "Unknown",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.PublisherUnknown)
 			},
-			expected: 0,
+			expectedCount: 0,
 		},
 	}
 
@@ -203,8 +244,8 @@ func TestAccountMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		assertCounterVecValue(t, test.description, fmt.Sprintf("accountRequests[%s]", knownPubID), m.accountRequests,
-			test.expected,
+		assertCounterVecValue(t, test.description, "accountRequests", m.accountRequests,
+			test.expectedCount,
 			prometheus.Labels{
 				accountLabel: knownPubID,
 			})
@@ -222,62 +263,62 @@ func TestImpressionsMetric(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description    string
-		testCase       func(m *Metrics)
-		expectedBanner float64
-		expectedVideo  float64
-		expectedAudio  float64
-		expectedNative float64
+		description         string
+		testCase            func(m *Metrics)
+		expectedBannerCount float64
+		expectedVideoCount  float64
+		expectedAudioCount  float64
+		expectedNativeCount float64
 	}{
 		{
 			description: "Banner Only",
 			testCase: func(m *Metrics) {
 				performTest(m, true, false, false, false)
 			},
-			expectedBanner: 1,
-			expectedVideo:  0,
-			expectedAudio:  0,
-			expectedNative: 0,
+			expectedBannerCount: 1,
+			expectedVideoCount:  0,
+			expectedAudioCount:  0,
+			expectedNativeCount: 0,
 		},
 		{
 			description: "Video Only",
 			testCase: func(m *Metrics) {
 				performTest(m, false, true, false, false)
 			},
-			expectedBanner: 0,
-			expectedVideo:  1,
-			expectedAudio:  0,
-			expectedNative: 0,
+			expectedBannerCount: 0,
+			expectedVideoCount:  1,
+			expectedAudioCount:  0,
+			expectedNativeCount: 0,
 		},
 		{
 			description: "Audio Only",
 			testCase: func(m *Metrics) {
 				performTest(m, false, false, true, false)
 			},
-			expectedBanner: 0,
-			expectedVideo:  0,
-			expectedAudio:  1,
-			expectedNative: 0,
+			expectedBannerCount: 0,
+			expectedVideoCount:  0,
+			expectedAudioCount:  1,
+			expectedNativeCount: 0,
 		},
 		{
 			description: "Native Only",
 			testCase: func(m *Metrics) {
 				performTest(m, false, false, false, true)
 			},
-			expectedBanner: 0,
-			expectedVideo:  0,
-			expectedAudio:  0,
-			expectedNative: 1,
+			expectedBannerCount: 0,
+			expectedVideoCount:  0,
+			expectedAudioCount:  0,
+			expectedNativeCount: 1,
 		},
 		{
 			description: "Multiple Types",
 			testCase: func(m *Metrics) {
 				performTest(m, true, false, false, true)
 			},
-			expectedBanner: 1,
-			expectedVideo:  0,
-			expectedAudio:  0,
-			expectedNative: 1,
+			expectedBannerCount: 1,
+			expectedVideoCount:  0,
+			expectedAudioCount:  0,
+			expectedNativeCount: 1,
 		},
 	}
 
@@ -286,31 +327,31 @@ func TestImpressionsMetric(t *testing.T) {
 
 		test.testCase(m)
 
-		var totalBanner float64
-		var totalVideo float64
-		var totalAudio float64
-		var totalNative float64
+		var bannerCount float64
+		var videoCount float64
+		var audioCount float64
+		var nativeCount float64
 		processMetrics(m.impressions, func(m dto.Metric) {
 			value := m.GetCounter().GetValue()
 			for _, label := range m.GetLabel() {
 				if label.GetValue() == "true" {
 					switch label.GetName() {
 					case isBannerLabel:
-						totalBanner = totalBanner + value
+						bannerCount += value
 					case isVideoLabel:
-						totalVideo = totalVideo + value
+						videoCount += value
 					case isAudioLabel:
-						totalAudio = totalAudio + value
+						audioCount += value
 					case isNativeLabel:
-						totalNative = totalNative + value
+						nativeCount += value
 					}
 				}
 			}
 		})
-		assert.Equal(t, test.expectedBanner, totalBanner, test.description)
-		assert.Equal(t, test.expectedVideo, totalVideo, test.description)
-		assert.Equal(t, test.expectedAudio, totalAudio, test.description)
-		assert.Equal(t, test.expectedNative, totalNative, test.description)
+		assert.Equal(t, test.expectedBannerCount, bannerCount, test.description+":banner")
+		assert.Equal(t, test.expectedVideoCount, videoCount, test.description+":video")
+		assert.Equal(t, test.expectedAudioCount, audioCount, test.description+":audio")
+		assert.Equal(t, test.expectedNativeCount, nativeCount, test.description+":native")
 	}
 }
 
@@ -319,9 +360,9 @@ func TestLegacyImpressionsMetric(t *testing.T) {
 
 	m.RecordLegacyImps(pbsmetrics.Labels{}, 42)
 
-	expected := float64(42)
+	expectedCount := float64(42)
 	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
-		expected)
+		expectedCount)
 }
 
 func TestRequestTimeMetric(t *testing.T) {
@@ -367,33 +408,343 @@ func TestRequestTimeMetric(t *testing.T) {
 	}
 }
 
-func TestAdapterRequestMetrics(t *testing.T) {
+func TestAdapterBidReceivedMetric(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, hasAdm bool) {
+		labels := pbsmetrics.AdapterLabels{
+			Adapter: openrtb_ext.BidderName(adapterName),
+		}
+		bidType := openrtb_ext.BidTypeBanner
+		m.RecordAdapterBidReceived(labels, bidType, hasAdm)
+	}
 
-	// primary test
-	// cookie / no cookie
-	// has bids / no bids
+	testCases := []struct {
+		description       string
+		testCase          func(m *Metrics)
+		expectedAdmCount  float64
+		expectedNurlCount float64
+	}{
+		{
+			description: "AdM",
+			testCase: func(m *Metrics) {
+				performTest(m, true)
+			},
+			expectedAdmCount:  1,
+			expectedNurlCount: 0,
+		},
+		{
+			description: "Nurl",
+			testCase: func(m *Metrics) {
+				performTest(m, false)
+			},
+			expectedAdmCount:  0,
+			expectedNurlCount: 1,
+		},
+	}
 
-	// erors
+	for _, test := range testCases {
+		m := createMetricsForTesting()
 
-	//	m.adapterRequests.With(prometheus.Labels{
-	//	adapterLabel:   string(labels.Adapter),
-	//	hasCookieLabel: strconv.FormatBool(labels.CookieFlag != pbsmetrics.CookieFlagNo),
-	//		hasBidsLabel:   strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
-	//}).Inc()
+		test.testCase(m)
 
-	//for err := range labels.AdapterErrors {
-	//	m.adapterErrors.With(prometheus.Labels{
-	//		adapterLabel:      string(labels.Adapter),
-	//		adapterErrorLabel: string(err),
-	//	}).Inc()
-	//}
+		assertCounterVecValue(t, test.description, "adapterBids[adm]", m.adapterBids,
+			test.expectedAdmCount,
+			prometheus.Labels{
+				adapterLabel:        adapterName,
+				markupDeliveryLabel: markupDeliveryAdm,
+			})
+		assertCounterVecValue(t, test.description, "adapterBids[nurl]", m.adapterBids,
+			test.expectedNurlCount,
+			prometheus.Labels{
+				adapterLabel:        adapterName,
+				markupDeliveryLabel: markupDeliveryNurl,
+			})
+	}
 }
 
-// adapter bids, adm vs nurl
+func TestRecordAdapterPriceMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+	cpm := float64(42)
 
-// adapter price, same as request time
+	m.RecordAdapterPrice(pbsmetrics.AdapterLabels{
+		Adapter: openrtb_ext.BidderName(adapterName),
+	}, cpm)
 
-// adapter time, same as request time (if no errors)
+	expectedCount := uint64(1)
+	expectedSum := cpm
+	result := getHistogramFromHistogramVec(m.adapterPrices, adapterLabel, adapterName)
+	assertHistogram(t, "adapterPrices", result, expectedCount, expectedSum)
+}
+
+func TestAdapterRequestMetrics(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, cookieFlag pbsmetrics.CookieFlag, adapterBids pbsmetrics.AdapterBid) {
+		labels := pbsmetrics.AdapterLabels{
+			Adapter:     openrtb_ext.BidderName(adapterName),
+			CookieFlag:  cookieFlag,
+			AdapterBids: adapterBids,
+		}
+		m.RecordAdapterRequest(labels)
+	}
+
+	testCases := []struct {
+		description           string
+		testCase              func(m *Metrics)
+		expectedCount         float64
+		expectedNoCookieCount float64
+		expectedHasBidsCount  float64
+	}{
+		{
+			description: "No Cookie & No Bids",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagNo, pbsmetrics.AdapterBidNone)
+			},
+			expectedCount:         1,
+			expectedNoCookieCount: 1,
+			expectedHasBidsCount:  0,
+		},
+		{
+			description: "Unknown Cookie & No Bids",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagUnknown, pbsmetrics.AdapterBidNone)
+			},
+			expectedCount:         1,
+			expectedNoCookieCount: 0,
+			expectedHasBidsCount:  0,
+		},
+		{
+			description: "Has Cookie & No Bids",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagYes, pbsmetrics.AdapterBidNone)
+			},
+			expectedCount:         1,
+			expectedNoCookieCount: 0,
+			expectedHasBidsCount:  0,
+		},
+		{
+			description: "No Cookie & Bids Present",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagNo, pbsmetrics.AdapterBidPresent)
+			},
+			expectedCount:         1,
+			expectedNoCookieCount: 1,
+			expectedHasBidsCount:  1,
+		},
+		{
+			description: "Unknown Cookie & Bids Present",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagUnknown, pbsmetrics.AdapterBidPresent)
+			},
+			expectedCount:         1,
+			expectedNoCookieCount: 0,
+			expectedHasBidsCount:  1,
+		},
+		{
+			description: "Has Cookie & Bids Present",
+			testCase: func(m *Metrics) {
+				performTest(m, pbsmetrics.CookieFlagYes, pbsmetrics.AdapterBidPresent)
+			},
+			expectedCount:         1,
+			expectedNoCookieCount: 0,
+			expectedHasBidsCount:  1,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		var totalCount float64
+		var totalNoCookieCount float64
+		var totalHasBidsCount float64
+		processMetrics(m.adapterRequests, func(m dto.Metric) {
+			isMetricForAdapter := false
+			for _, label := range m.GetLabel() {
+				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+					isMetricForAdapter = true
+				}
+			}
+
+			if isMetricForAdapter {
+				value := m.GetCounter().GetValue()
+				totalCount += value
+				for _, label := range m.GetLabel() {
+					if label.GetValue() == "true" {
+						switch label.GetName() {
+						case noCookieLabel:
+							totalNoCookieCount += value
+						case hasBidsLabel:
+							totalHasBidsCount += value
+						}
+					}
+				}
+			}
+		})
+		assert.Equal(t, test.expectedCount, totalCount, test.description+":total")
+		assert.Equal(t, test.expectedNoCookieCount, totalNoCookieCount, test.description+":noCookie")
+		assert.Equal(t, test.expectedHasBidsCount, totalHasBidsCount, test.description+":hasBids")
+	}
+}
+
+func TestAdapterRequestErrorMetrics(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, adapterErrors map[pbsmetrics.AdapterError]struct{}) {
+		labels := pbsmetrics.AdapterLabels{
+			Adapter:       openrtb_ext.BidderName(adapterName),
+			AdapterErrors: adapterErrors,
+			CookieFlag:    pbsmetrics.CookieFlagUnknown,
+			AdapterBids:   pbsmetrics.AdapterBidPresent,
+		}
+		m.RecordAdapterRequest(labels)
+	}
+
+	testCases := []struct {
+		description                 string
+		testCase                    func(m *Metrics)
+		expectedErrorsCount         float64
+		expectedBadInputErrorsCount float64
+	}{
+		{
+			description: "No Errors",
+			testCase: func(m *Metrics) {
+				performTest(m, nil)
+			},
+			expectedErrorsCount:         0,
+			expectedBadInputErrorsCount: 0,
+		},
+		{
+			description: "Bad Input Error",
+			testCase: func(m *Metrics) {
+				performTest(m, map[pbsmetrics.AdapterError]struct{}{
+					pbsmetrics.AdapterErrorBadInput: {},
+				})
+			},
+			expectedErrorsCount:         1,
+			expectedBadInputErrorsCount: 1,
+		},
+		{
+			description: "Other Error",
+			testCase: func(m *Metrics) {
+				performTest(m, map[pbsmetrics.AdapterError]struct{}{
+					pbsmetrics.AdapterErrorBadServerResponse: {},
+				})
+			},
+			expectedErrorsCount:         1,
+			expectedBadInputErrorsCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		var errorsCount float64
+		var badInputErrorsCount float64
+		processMetrics(m.adapterErrors, func(m dto.Metric) {
+			isMetricForAdapter := false
+			for _, label := range m.GetLabel() {
+				if label.GetName() == adapterLabel && label.GetValue() == adapterName {
+					isMetricForAdapter = true
+				}
+			}
+
+			if isMetricForAdapter {
+				value := m.GetCounter().GetValue()
+				errorsCount += value
+				for _, label := range m.GetLabel() {
+					if label.GetName() == adapterErrorLabel && label.GetValue() == string(pbsmetrics.AdapterErrorBadInput) {
+						badInputErrorsCount += value
+					}
+				}
+			}
+		})
+		assert.Equal(t, test.expectedErrorsCount, errorsCount, test.description+":errors")
+		assert.Equal(t, test.expectedBadInputErrorsCount, badInputErrorsCount, test.description+":badInputErrors")
+	}
+}
+
+func TestAdapterTimeMetric(t *testing.T) {
+	adapterName := "anyName"
+	performTest := func(m *Metrics, timeInMs float64, adapterErrors map[pbsmetrics.AdapterError]struct{}) {
+		m.RecordAdapterTime(pbsmetrics.AdapterLabels{
+			Adapter:       openrtb_ext.BidderName(adapterName),
+			AdapterErrors: adapterErrors,
+		}, time.Duration(timeInMs)*time.Millisecond)
+	}
+
+	testCases := []struct {
+		description   string
+		testCase      func(m *Metrics)
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{
+			description: "Success",
+			testCase: func(m *Metrics) {
+				performTest(m, 500, map[pbsmetrics.AdapterError]struct{}{})
+			},
+			expectedCount: 1,
+			expectedSum:   0.5,
+		},
+		{
+			description: "Error",
+			testCase: func(m *Metrics) {
+				performTest(m, 500, map[pbsmetrics.AdapterError]struct{}{
+					pbsmetrics.AdapterErrorTimeout: {},
+				})
+			},
+			expectedCount: 0,
+			expectedSum:   0,
+		},
+	}
+
+	for _, test := range testCases {
+		m := createMetricsForTesting()
+
+		test.testCase(m)
+
+		result := getHistogramFromHistogramVec(m.adapterRequestsTimer, adapterLabel, adapterName)
+		assertHistogram(t, test.description, result, test.expectedCount, test.expectedSum)
+	}
+}
+
+func TestAdapterCookieSyncMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+	privacyBlocked := true
+
+	m.RecordAdapterCookieSync(openrtb_ext.BidderName(adapterName), privacyBlocked)
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "adapterCookieSync", m.adapterCookieSync,
+		expectedCount,
+		prometheus.Labels{
+			adapterLabel:        adapterName,
+			privacyBlockedLabel: "true",
+		})
+}
+
+func TestUserIDSetMetric(t *testing.T) {
+	m := createMetricsForTesting()
+	adapterName := "anyName"
+	action := pbsmetrics.RequestActionSet
+
+	m.RecordUserIDSet(pbsmetrics.UserLabels{
+		Bidder: openrtb_ext.BidderName(adapterName),
+		Action: action,
+	})
+
+	expectedCount := float64(1)
+	assertCounterVecValue(t, "", "adapterUserSync", m.adapterUserSync,
+		expectedCount,
+		prometheus.Labels{
+			adapterLabel: adapterName,
+			actionLabel:  string(action),
+		})
+}
 
 func TestAdapterPanicMetric(t *testing.T) {
 	m := createMetricsForTesting()
@@ -404,7 +755,7 @@ func TestAdapterPanicMetric(t *testing.T) {
 	})
 
 	expectedCount := float64(1)
-	assertCounterVecValue(t, "", fmt.Sprintf("adapterPanics[%s]", adapterName), m.adapterPanics,
+	assertCounterVecValue(t, "", "adapterPanics", m.adapterPanics,
 		expectedCount,
 		prometheus.Labels{
 			adapterLabel: adapterName,
@@ -419,12 +770,12 @@ func TestStoredReqCacheResultMetric(t *testing.T) {
 	m.RecordStoredReqCacheResult(pbsmetrics.CacheHit, hitCount)
 	m.RecordStoredReqCacheResult(pbsmetrics.CacheMiss, missCount)
 
-	assertCounterVecValue(t, "", "storedRequestCacheResult[hit]", m.storedRequestCacheResult,
+	assertCounterVecValue(t, "", "storedRequestCacheResult:hit", m.storedRequestCacheResult,
 		float64(hitCount),
 		prometheus.Labels{
 			cacheResultLabel: string(pbsmetrics.CacheHit),
 		})
-	assertCounterVecValue(t, "", "storedRequestCacheResult[miss]", m.storedRequestCacheResult,
+	assertCounterVecValue(t, "", "storedRequestCacheResult:miss", m.storedRequestCacheResult,
 		float64(missCount),
 		prometheus.Labels{
 			cacheResultLabel: string(pbsmetrics.CacheMiss),
@@ -439,12 +790,12 @@ func TestStoredImpCacheResultMetric(t *testing.T) {
 	m.RecordStoredImpCacheResult(pbsmetrics.CacheHit, hitCount)
 	m.RecordStoredImpCacheResult(pbsmetrics.CacheMiss, missCount)
 
-	assertCounterVecValue(t, "", "storedRequestCacheResult[hit]", m.storedImpressionsCacheResult,
+	assertCounterVecValue(t, "", "storedImpressionsCacheResult:hit", m.storedImpressionsCacheResult,
 		float64(hitCount),
 		prometheus.Labels{
 			cacheResultLabel: string(pbsmetrics.CacheHit),
 		})
-	assertCounterVecValue(t, "", "storedRequestCacheResult[miss]", m.storedImpressionsCacheResult,
+	assertCounterVecValue(t, "", "storedImpressionsCacheResult:miss", m.storedImpressionsCacheResult,
 		float64(missCount),
 		prometheus.Labels{
 			cacheResultLabel: string(pbsmetrics.CacheMiss),
@@ -456,12 +807,39 @@ func TestCookieMetric(t *testing.T) {
 
 	m.RecordCookieSync()
 
-	expected := float64(1)
+	expectedCount := float64(1)
 	assertCounterValue(t, "", "cookieSync", m.cookieSync,
-		expected)
+		expectedCount)
 }
 
-// user metrics
+func TestPrebidCacheRequestTimeMetric(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordPrebidCacheRequestTime(true, time.Duration(100)*time.Millisecond)
+	m.RecordPrebidCacheRequestTime(false, time.Duration(200)*time.Millisecond)
+
+	successExpectedCount := uint64(1)
+	successExpectedSum := float64(0.1)
+	successResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "true")
+	assertHistogram(t, "Success", successResult, successExpectedCount, successExpectedSum)
+
+	errorExpectedCount := uint64(1)
+	errorExpectedSum := float64(0.2)
+	errorResult := getHistogramFromHistogramVec(m.prebidCacheWriteTimer, successLabel, "false")
+	assertHistogram(t, "Error", errorResult, errorExpectedCount, errorExpectedSum)
+}
+
+func TestMetricAccumulationSpotCheck(t *testing.T) {
+	m := createMetricsForTesting()
+
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 1)
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 2)
+	m.RecordLegacyImps(pbsmetrics.Labels{}, 3)
+
+	expectedValue := float64(1 + 2 + 3)
+	assertCounterValue(t, "", "impressionsLegacy", m.impressionsLegacy,
+		expectedValue)
+}
 
 func assertCounterValue(t *testing.T, description, name string, counter prometheus.Counter, expected float64) {
 	m := dto.Metric{}
@@ -503,6 +881,6 @@ func processMetrics(collector prometheus.Collector, handler func(m dto.Metric)) 
 }
 
 func assertHistogram(t *testing.T, name string, histogram dto.Histogram, expectedCount uint64, expectedSum float64) {
-	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":Count")
-	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":Sum")
+	assert.Equal(t, expectedCount, histogram.GetSampleCount(), name+":count")
+	assert.Equal(t, expectedSum, histogram.GetSampleSum(), name+":sum")
 }

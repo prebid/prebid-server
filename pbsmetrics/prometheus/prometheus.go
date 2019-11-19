@@ -45,18 +45,18 @@ type Metrics struct {
 const (
 	accountLabel         = "account"
 	actionLabel          = "action"
-	adapterLabel         = "adapter"
 	adapterErrorLabel    = "adapter_error"
+	adapterLabel         = "adapter"
 	bidTypeLabel         = "bid_type"
 	cacheResultLabel     = "cache_result"
 	connectionErrorLabel = "connection_error"
 	hasBidsLabel         = "has_bids"
-	hasCookieLabel       = "has_cookie"
 	isAudioLabel         = "audio"
 	isBannerLabel        = "banner"
 	isNativeLabel        = "native"
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
+	noCookieLabel        = "missing_cookie"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
@@ -168,8 +168,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	metrics.adapterRequests = newCounter(cfg, metrics.Registry,
 		"adapter_requests",
-		"Count of requests labeled by adapter, if it has a cookie, and if it resulted in bids.",
-		[]string{adapterLabel, hasCookieLabel, hasBidsLabel})
+		"Count of requests labeled by adapter, if has no cookie, and if it resulted in bids.",
+		[]string{adapterLabel, noCookieLabel, hasBidsLabel})
 
 	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
@@ -291,9 +291,9 @@ func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durati
 
 func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	m.adapterRequests.With(prometheus.Labels{
-		adapterLabel:   string(labels.Adapter),
-		hasCookieLabel: strconv.FormatBool(labels.CookieFlag != pbsmetrics.CookieFlagNo),
-		hasBidsLabel:   strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
+		adapterLabel:  string(labels.Adapter),
+		noCookieLabel: strconv.FormatBool(labels.CookieFlag == pbsmetrics.CookieFlagNo),
+		hasBidsLabel:  strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
 	}).Inc()
 
 	for err := range labels.AdapterErrors {
@@ -331,8 +331,7 @@ func (m *Metrics) RecordAdapterPrice(labels pbsmetrics.AdapterLabels, cpm float6
 func (m *Metrics) RecordAdapterTime(labels pbsmetrics.AdapterLabels, length time.Duration) {
 	if len(labels.AdapterErrors) == 0 {
 		m.adapterRequestsTimer.With(prometheus.Labels{
-			adapterLabel:     string(labels.Adapter),
-			requestTypeLabel: string(labels.RType),
+			adapterLabel: string(labels.Adapter),
 		}).Observe(length.Seconds())
 	}
 }

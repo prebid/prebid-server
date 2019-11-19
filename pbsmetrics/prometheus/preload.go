@@ -75,9 +75,9 @@ func preloadLabelValues(m *Metrics) {
 	})
 
 	preloadLabelValuesForCounter(m.adapterRequests, map[string][]string{
-		adapterLabel:   adapterValues,
-		hasCookieLabel: boolValues,
-		hasBidsLabel:   boolValues,
+		adapterLabel:  adapterValues,
+		noCookieLabel: boolValues,
+		hasBidsLabel:  boolValues,
 	})
 
 	preloadLabelValuesForHistogram(m.adapterRequestsTimer, map[string][]string{
