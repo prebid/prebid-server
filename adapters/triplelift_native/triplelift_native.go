@@ -1,6 +1,7 @@
 package triplelift_native
 
 import (
+	"github.com/golang/glog"
 	"encoding/json"
 	"fmt"
 	"github.com/mxmCherry/openrtb"
@@ -173,14 +174,18 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	return bidResponse, errs
 }
 
-func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) *TripleliftNativeAdapter {
+func NewTripleliftNativeBidder(client *http.Client, endpoint string, extraInfo string) adapters.Bidder {
 	var extInfo TripleliftNativeExtInfo
 
 	if len(extraInfo) == 0 {
 		extraInfo = "{\"publisher_whitelist\":[]}"
 	}
 	if err := json.Unmarshal([]byte(extraInfo), &extInfo); err != nil {
-		panic("Invalid TripleLife Native extra adapter info: " + err.Error())
+		glog.Errorf("Invalid TripleLife Native extra adapter info: " + err.Error())
+		return &adapters.MisconfiguredBidder{
+			Name:  "TripleliftNativeAdapter",
+			Error: fmt.Errorf("TripleliftNativeAdapter could not unmarshal config json"),
+		}
 	}
 
 	// Populate map for faster memory access
