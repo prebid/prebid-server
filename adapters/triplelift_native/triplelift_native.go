@@ -1,9 +1,9 @@
 package triplelift_native
 
 import (
-	"github.com/golang/glog"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/errortypes"
