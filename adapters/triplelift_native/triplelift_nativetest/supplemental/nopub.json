@@ -1,17 +1,13 @@
 {
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
-      "comparison": "literal"
-    },
-    {
-      "value": "No valid impressions for triplelift",
+      "value": "Unsupported publisher for triplelift_native",
       "comparison": "literal"
     }
   ],
   "mockBidRequest": {
     "id": "test-request-id",
-    "app": { "publisher": {"ext":{"prebid":{"parentAccount":"foo"}}, "id":"far","name":"bar"}},
+    "app": { "publisher": {"ext":{"prebid":{"parentAccount":"faz"}}, "id":"far","name":"bar"}},
     "imp": [
       {
         "id": "test-imp-id",
@@ -27,7 +23,12 @@
             }
           ]
         },
-        "ext":  "aaa"      
+        "ext": {
+          "bidder": {
+            "inventoryCode": "foo",
+            "floor": 20
+          }
+        }
     }
     ]
   },
