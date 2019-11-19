@@ -27,10 +27,12 @@ type TripleliftNativeExtInfo struct {
 	// Array is used for deserialization.
 	PublisherWhitelist []string `json:"publisher_whitelist"`
 
-	Endpoint string `json:"endpoint"`
-
 	// Map is used for optimized memory access and should be constructed after deserialization.
 	PublisherWhitelistMap map[string]bool
+}
+
+func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
+	return openrtb_ext.BidTypeNative
 }
 
 func processImp(imp *openrtb.Imp) error {
@@ -159,7 +161,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
 			var bidExt TripleliftRespExt
-			bidType := openrtb_ext.BidTypeNative
+			bidType := getBidType(bidExt)
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
 				BidType: bidType,
