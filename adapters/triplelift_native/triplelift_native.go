@@ -27,6 +27,8 @@ type TripleliftNativeExtInfo struct {
 	// Array is used for deserialization.
 	PublisherWhitelist []string `json:"publisher_whitelist"`
 
+	Endpoint string `json:"endpoint"`
+
 	// Map is used for optimized memory access and should be constructed after deserialization.
 	PublisherWhitelistMap map[string]bool
 }
