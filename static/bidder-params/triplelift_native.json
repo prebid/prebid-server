@@ -9,7 +9,7 @@
       "type": "string",
       "description": "TripleLift inventory code for this ad unit (provided to you by your partner manager)"
     },
-    "floor" :  {"description" : "the bid floor", "type": "number" }
+    "floor" :  {"description" : "the bid floor, in usd", "type": "number" }
   },
   "oneOf": [{
     "oneOf": [{
