@@ -146,7 +146,7 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb.BidRequest, 
 	}
 
 	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
+		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
