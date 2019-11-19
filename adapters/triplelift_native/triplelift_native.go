@@ -51,6 +51,9 @@ func processImp(imp *openrtb.Imp) error {
 	if imp.Native == nil {
 		return fmt.Errorf("no native object specified")
 	}
+    if tlext.InvCode == nil {
+        return fmt.Errorf("no inv_code specified")
+    }
 	imp.TagID = tlext.InvCode
 	// floor is optional
 	if tlext.Floor == nil {
