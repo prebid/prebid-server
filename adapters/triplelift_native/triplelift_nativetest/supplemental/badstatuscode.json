@@ -1,5 +1,6 @@
 {
   "mockBidRequest": {
+    "site": { "publisher": {"id":"foo","name":"foo"}},
     "id": "test-request-id",
     "imp": [
       {
@@ -18,8 +19,9 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
+        "uri": "http://tlx.3lift.net/s2sn/auction?supplier_id=20",
         "body": {
+          "site": { "publisher": {"id":"foo","name":"foo"}},
           "id": "test-request-id",
           "imp": [
             {
