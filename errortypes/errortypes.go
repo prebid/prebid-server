@@ -12,6 +12,7 @@ const (
 	BidderTemporarilyDisabledCode
 	BlacklistedAcctCode
 	AcctRequiredCode
+	WarningCode
 )
 
 // We should use this code for any Error interface that is not in this package
@@ -153,6 +154,20 @@ func (err *BidderTemporarilyDisabled) Error() string {
 
 func (err *BidderTemporarilyDisabled) Code() int {
 	return BidderTemporarilyDisabledCode
+}
+
+// Warning is a generic warning type, not a serious error
+type Warning struct {
+	Message string
+}
+
+func (err *Warning) Error() string {
+	return err.Message
+}
+
+// Code returns the error code
+func (err *Warning) Code() int {
+	return WarningCode
 }
 
 // DecodeError provides the error code for an error, as defined above

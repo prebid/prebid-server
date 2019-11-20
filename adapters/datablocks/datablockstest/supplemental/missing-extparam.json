@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "missing-extbid-test",
+    "imp": [
+      {
+        "id": "missing-extbid-test",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "sourceId":54326
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Cannot Resolve host or sourceId: unexpected end of JSON input",
+      "comparison": "literal"
+    } 
+  ]
+
+  
+}

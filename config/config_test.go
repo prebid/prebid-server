@@ -32,6 +32,7 @@ func TestDefaults(t *testing.T) {
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
+	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 }
 
 var fullConfig = []byte(`
@@ -105,6 +106,7 @@ adapters:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
 account_required: true
+certificates_file: /etc/ssl/cert.pem
 `)
 
 var adapterExtraInfoConfig = []byte(`
@@ -266,6 +268,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
+	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
 }
 
 func TestUnmarshalAdapterExtraInfo(t *testing.T) {

@@ -32,6 +32,7 @@ const (
 	BidderBrightroll     BidderName = "brightroll"
 	BidderConsumable     BidderName = "consumable"
 	BidderConversant     BidderName = "conversant"
+	BidderDatablocks     BidderName = "datablocks"
 	BidderEmxDigital     BidderName = "emx_digital"
 	BidderEPlanning      BidderName = "eplanning"
 	BidderFacebook       BidderName = "audienceNetwork"
@@ -41,6 +42,7 @@ const (
 	BidderGumGum         BidderName = "gumgum"
 	BidderImprovedigital BidderName = "improvedigital"
 	BidderIx             BidderName = "ix"
+	BidderKubient        BidderName = "kubient"
 	BidderLifestreet     BidderName = "lifestreet"
 	BidderLockerDome     BidderName = "lockerdome"
 	BidderMgid           BidderName = "mgid"
@@ -80,6 +82,7 @@ var BidderMap = map[string]BidderName{
 	"brightroll":      BidderBrightroll,
 	"consumable":      BidderConsumable,
 	"conversant":      BidderConversant,
+	"datablocks":      BidderDatablocks,
 	"emx_digital":     BidderEmxDigital,
 	"eplanning":       BidderEPlanning,
 	"gamma":           BidderGamma,
@@ -110,6 +113,7 @@ var BidderMap = map[string]BidderName{
 	"visx":            BidderVisx,
 	"tappx":           BidderTappx,
 	"engagebdr":       BidderEngageBDR,
+	"kubient":         BidderKubient,
 }
 
 // BidderList returns the values of the BidderMap
