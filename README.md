@@ -18,7 +18,7 @@ For more information, see:
 
 ## Installation
 
-First install [Go 1.11](https://golang.org/doc/install) latest version (1.11.4) or later.
+First install [Go 1.12](https://golang.org/doc/install) latest version.
 Note that prebid-server is using [Go modules](https://blog.golang.org/using-go-modules).
 If using Go version <1.13 and are inside GOPATH `GO111MODULE` needs to be set to `GO111MODULE=on`.
 

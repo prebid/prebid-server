@@ -1,8 +1,5 @@
 # Automated Tests
 
-**NOTE**: The automated tests will not pass on Go 1.11 due to [this bug](https://github.com/golang/go/issues/27275) in Go.
-This issue has been fixed in Go 1.11.1.
-
 This project uses [TravisCI](https://travis-ci.org/) to make sure that every PR passes automated tests.
 To reproduce these tests locally, use:
 
