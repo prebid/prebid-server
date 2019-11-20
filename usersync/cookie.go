@@ -193,19 +193,24 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 		currSize = len([]byte(httpCookie.String()))
 	}
 
-	uidsCookieStr := httpCookie.String()
+	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
+		httpCookie.Secure = true
+		uidsCookieStr = httpCookie.String()
 		uidsCookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
+			Secure:  true,
 		}
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	} else {
+		uidsCookieStr = httpCookie.String()
 	}
 	w.Header().Add("Set-Cookie", uidsCookieStr)
 }

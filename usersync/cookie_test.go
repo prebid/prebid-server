@@ -425,6 +425,9 @@ func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
 	if !strings.Contains(writtenCookie, "SSCookie=1") {
 		t.Error("Set-Cookie should contain SSCookie=1")
 	}
+	if !strings.Contains(writtenCookie, "; Secure;") {
+		t.Error("Set-Cookie should contain Secure")
+	}
 }
 
 func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
