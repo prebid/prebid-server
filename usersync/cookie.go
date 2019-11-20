@@ -197,7 +197,7 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
 		httpCookie.Secure = true
-		uidsCookieStr := httpCookie.String()
+		uidsCookieStr = httpCookie.String()
 		uidsCookieStr += SameSiteAttribute
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
