@@ -1,0 +1,38 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpTriplelift",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impressions for triplelift",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": { "publisher": {"id":"foo","name":"foo"}},
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "aaa"
+        }
+      }
+    ]
+  },
+  "httpCalls":[],
+  "expectedBidResponses": []
+}
