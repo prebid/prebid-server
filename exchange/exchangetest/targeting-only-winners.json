@@ -121,10 +121,7 @@
             "crid": "creative-4",
             "ext": {
               "prebid": {
-                "type": "video",
-                "targeting": {
-                  "hb_creative_loadtype": "demand_sdk"
-                }
+                "type": "video"
               }
             }
           }]
@@ -143,9 +140,10 @@
                 "type": "video",
                 "targeting": {
                   "hb_bidder": "appnexus",
+                  "hb_cache_host": "www.pbcserver.com",
+                  "hb_cache_path": "pbcache/endpoint",
                   "hb_pb": "0.70",
-                  "hb_size": "200x250",
-                  "hb_creative_loadtype": "html"
+                  "hb_size": "200x250"
                 }
               }
             }
@@ -175,9 +173,10 @@
                 "type": "video",
                 "targeting": {
                   "hb_bidder": "appnexus",
+                  "hb_cache_host": "www.pbcserver.com",
+                  "hb_cache_path": "pbcache/endpoint",
                   "hb_pb": "0.60",
-                  "hb_size": "300x500",
-                  "hb_creative_loadtype": "html"
+                  "hb_size": "300x500"
                 }
               }
             }

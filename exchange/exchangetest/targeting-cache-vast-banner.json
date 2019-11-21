@@ -69,11 +69,14 @@
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
+                  "hb_cache_host": "www.pbcserver.com",
+                  "hb_cache_host_appnex": "www.pbcserver.com",
+                  "hb_cache_path": "pbcache/endpoint",
+                  "hb_cache_path_appnex": "pbcache/endpoint",
                   "hb_pb": "0.00",
                   "hb_pb_appnexus": "0.00",
                   "hb_size": "200x250",
-                  "hb_size_appnexus": "200x250",
-                  "hb_creative_loadtype": "html"
+                  "hb_size_appnexus": "200x250"
                 }
               }
             }

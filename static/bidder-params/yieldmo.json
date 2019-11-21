@@ -1,0 +1,15 @@
+
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Yieldmo Adapter Params",
+    "description": "A schema which validates params accepted by the Yieldmo adapter",
+  
+    "type": "object",
+    "properties": {
+      "placementId": {
+        "type": "string",
+        "description": "Internal Yieldmo Placement ID"
+      }
+    },
+    "required": ["placementId"]
+  }

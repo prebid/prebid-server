@@ -38,7 +38,12 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	return false, nil
 }
 
-func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (p *permissionsImpl) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
+	_, ok := p.cfg.NonStandardPublisherMap[PublisherID]
+	if ok {
+		return true, nil
+	}
+
 	id, ok := p.vendorIDs[bidder]
 	if ok {
 		return p.allowPI(ctx, id, consent)
@@ -88,7 +93,7 @@ func (p *permissionsImpl) allowPI(ctx context.Context, vendorID uint16, consent 
 		return false, nil
 	}
 
-	if vendor.Purpose(consentconstants.InfoStorageAccess) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
+	if (vendor.Purpose(consentconstants.InfoStorageAccess) || vendor.LegitimateInterest(consentconstants.InfoStorageAccess)) && parsedConsent.PurposeAllowed(consentconstants.InfoStorageAccess) && (vendor.Purpose(consentconstants.AdSelectionDeliveryReporting) || vendor.LegitimateInterest(consentconstants.AdSelectionDeliveryReporting)) && parsedConsent.PurposeAllowed(consentconstants.AdSelectionDeliveryReporting) && parsedConsent.VendorConsent(vendorID) {
 		return true, nil
 	}
 
@@ -125,6 +130,6 @@ func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.B
 	return true, nil
 }
 
-func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (a AlwaysAllow) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
 	return true, nil
 }

@@ -8,10 +8,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
+
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/config"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -23,6 +27,9 @@ type Client interface {
 	// value could not be saved, the element will be an empty string. Implementations are responsible for
 	// logging any relevant errors to the app logs
 	PutJson(ctx context.Context, values []Cacheable) ([]string, []error)
+
+	// Serves the purpose of a getter that returns the host and the cache of the prebid-server URL
+	GetExtCacheData() (string, string)
 }
 
 type PayloadType string
@@ -36,9 +43,10 @@ type Cacheable struct {
 	Type       PayloadType
 	Data       json.RawMessage
 	TTLSeconds int64
+	Key        string
 }
 
-func NewClient(conf *config.Cache) Client {
+func NewClient(conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
 	return &clientImpl{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -46,13 +54,30 @@ func NewClient(conf *config.Cache) Client {
 				IdleConnTimeout: 65,
 			},
 		},
-		putUrl: conf.GetBaseURL() + "/cache",
+		putUrl:            conf.GetBaseURL() + "/cache",
+		externalCacheHost: extCache.Host,
+		externalCachePath: extCache.Path,
+		metrics:           metrics,
 	}
 }
 
 type clientImpl struct {
-	httpClient *http.Client
-	putUrl     string
+	httpClient        *http.Client
+	putUrl            string
+	externalCacheHost string
+	externalCachePath string
+	metrics           pbsmetrics.MetricsEngine
+}
+
+func (c *clientImpl) GetExtCacheData() (string, string) {
+	path := c.externalCachePath
+	if path == "/" {
+		path = ""
+	} else if strings.Index(path, "/") == 0 {
+		path = strings.TrimLeft(path, "/")
+	}
+
+	return c.externalCacheHost, path
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
@@ -69,22 +94,29 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 		errs = append(errs, fmt.Errorf("Error creating JSON for prebid cache: %v", err))
 		return uuidsToReturn, errs
 	}
+
 	httpReq, err := http.NewRequest("POST", c.putUrl, bytes.NewReader(postBody))
 	if err != nil {
 		glog.Errorf("Error creating POST request to prebid cache: %v", err)
 		errs = append(errs, fmt.Errorf("Error creating POST request to prebid cache: %v", err))
 		return uuidsToReturn, errs
 	}
+
 	httpReq.Header.Add("Content-Type", "application/json;charset=utf-8")
 	httpReq.Header.Add("Accept", "application/json")
 
+	startTime := time.Now()
 	anResp, err := ctxhttp.Do(ctx, c.httpClient, httpReq)
+	elapsedTime := time.Since(startTime)
 	if err != nil {
-		glog.Errorf("Error sending the request to Prebid Cache: %v", err)
-		errs = append(errs, fmt.Errorf("Error sending the request to Prebid Cache: %v", err))
+		c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusErr}, elapsedTime)
+		friendlyErr := fmt.Errorf("Error sending the request to Prebid Cache: %v; Duration=%v", err, elapsedTime)
+		glog.Error(friendlyErr)
+		errs = append(errs, friendlyErr)
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
+	c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusOK}, elapsedTime)
 
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {
@@ -94,7 +126,7 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	}
 
 	currentIndex := 0
-	processResponse := func(uuidObj []byte, dataType jsonparser.ValueType, offset int, err error) {
+	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
 		if uuid, valueType, _, err := jsonparser.Get(uuidObj, "uuid"); err != nil {
 			glog.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody))
 			errs = append(errs, fmt.Errorf("Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody)))
@@ -149,6 +181,11 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteString(`","value":`)
 	}
 	buffer.Write(value.Data)
+	if len(value.Key) > 0 {
+		buffer.WriteString(`,"key":"`)
+		buffer.WriteString(string(value.Key))
+		buffer.WriteString(`"`)
+	}
 	buffer.WriteByte('}')
 	return nil
 }

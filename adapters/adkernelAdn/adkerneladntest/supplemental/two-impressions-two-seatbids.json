@@ -47,14 +47,12 @@
           "imp": [
             {
               "id": "banner-adunit-1",
-              "tagid": "banner-adunit-1",
               "banner": {
                 "w": 300,
                 "h": 250
               }
             }, {
               "id": "video-adunit-2",
-              "tagid": "video-adunit-2",
               "video": {"mimes": ["video/mp4"]}
             }
           ]
@@ -99,5 +97,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Invalid SeatBids count: 2"]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Invalid SeatBids count: 2",
+      "comparison": "literal"
+    }
+  ]
 }

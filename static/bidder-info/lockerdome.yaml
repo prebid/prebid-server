@@ -1,0 +1,9 @@
+maintainer:
+  email: "bidding@lockerdome.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

@@ -1,0 +1,9 @@
+maintainer:
+  email: "dev@33across.com"
+capabilities:
+  app:
+    mediaTypes:
+    - banner
+  site:
+    mediaTypes:
+    - banner

@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "0000000000001",
+    "test": 1,
+    "imp": [],
+    "app": {
+      "id": "app_001",
+      "bundle": "com.rovio.angrybirds",
+      "publisher": {
+        "id": "2"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "No impression in the bid request",
+      "comparison": "literal"
+    }
+  ]
+}

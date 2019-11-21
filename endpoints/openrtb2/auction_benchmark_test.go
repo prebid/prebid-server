@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/currencies"
+	metrics "github.com/rcrowley/go-metrics"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
@@ -15,7 +17,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
-	"github.com/rcrowley/go-metrics"
 )
 
 // dummyServer returns the header bidding test ad. This response was scraped from a real appnexus server response.
@@ -62,12 +63,32 @@ func BenchmarkOpenrtbEndpoint(b *testing.B) {
 
 	var infos adapters.BidderInfos
 	infos["appnexus"] = adapters.BidderInfo{Capabilities: &adapters.CapabilitiesInfo{Site: &adapters.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner}}}}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	paramValidator, err := openrtb_ext.NewBidderParamsValidator("../../static/bidder-params")
 	if err != nil {
 		return
 	}
-	endpoint, _ := NewEndpoint(exchange.NewExchange(server.Client(), nil, &config.Configuration{}, theMetrics, infos, gdpr.AlwaysAllow{}), paramValidator, empty_fetcher.EmptyFetcher{}, &config.Configuration{MaxRequestSize: maxSize}, theMetrics, analyticsConf.NewPBSAnalytics(&config.Analytics{}))
+
+	endpoint, _ := NewEndpoint(
+		exchange.NewExchange(
+			server.Client(),
+			nil,
+			&config.Configuration{},
+			theMetrics,
+			infos,
+			gdpr.AlwaysAllow{},
+			currencies.NewRateConverterDefault(),
+		),
+		paramValidator,
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		nil,
+	)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "missing-extbid-test",
+    "imp": [
+      {
+        "id": "missing-extbid-test",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Missing bidder ext: unexpected end of JSON input",
+      "comparison": "literal"
+    } 
+  ]
+
+  
+}

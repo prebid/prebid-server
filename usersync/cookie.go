@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"time"
 
@@ -11,9 +12,14 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
-const DEFAULT_TTL = 14 * 24 * time.Hour
-const UID_COOKIE_NAME = "uids"
+const (
+	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
+	DEFAULT_TTL         = 14 * 24 * time.Hour
+	UID_COOKIE_NAME     = "uids"
+	SameSiteCookieName  = "SSCookie"
+	SameSiteCookieValue = "1"
+	SameSiteAttribute   = "; SameSite=None"
+)
 
 // customBidderTTLs stores rules about how long a particular UID sync is valid for each bidder.
 // If a bidder does a cookie sync *without* listing a rule here, then the DEFAULT_TTL will be used.
@@ -118,6 +124,7 @@ func (cookie *PBSCookie) ToHTTPCookie(ttl time.Duration) *http.Cookie {
 		Name:    UID_COOKIE_NAME,
 		Value:   b64,
 		Expires: time.Now().Add(ttl),
+		Path:    "/",
 	}
 }
 
@@ -136,6 +143,18 @@ func (cookie *PBSCookie) GetUID(familyName string) (string, bool, bool) {
 	return "", false, false
 }
 
+// GetUIDs returns this user's ID for all the bidders
+func (cookie *PBSCookie) GetUIDs() map[string]string {
+	uids := make(map[string]string)
+	if cookie != nil {
+		// Extract just the uid for each bidder
+		for bidderName, uidWithExpiry := range cookie.uids {
+			uids[bidderName] = uidWithExpiry.UID
+		}
+	}
+	return uids
+}
+
 // GetId wraps GetUID, letting callers fetch the ID given an OpenRTB BidderName.
 func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, exists bool) {
 	if familyName, ok := bidderToFamilyNames[bidderName]; ok {
@@ -147,12 +166,53 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, domain string, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
+	var domain string = cfg.Domain
+
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
-	http.SetCookie(w, httpCookie)
+
+	var currSize int = len([]byte(httpCookie.String()))
+	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
+		var oldestElem string = ""
+		var oldestDate int64 = math.MaxInt64
+		for key, value := range cookie.uids {
+			timeUntilExpiration := time.Until(value.Expires)
+			if timeUntilExpiration < time.Duration(oldestDate) {
+				oldestElem = key
+				oldestDate = int64(timeUntilExpiration)
+			}
+		}
+		delete(cookie.uids, oldestElem)
+		httpCookie = cookie.ToHTTPCookie(ttl)
+		if domain != "" {
+			httpCookie.Domain = domain
+		}
+		currSize = len([]byte(httpCookie.String()))
+	}
+
+	var uidsCookieStr string
+	var sameSiteCookie *http.Cookie
+	if setSiteCookie {
+		httpCookie.Secure = true
+		uidsCookieStr = httpCookie.String()
+		uidsCookieStr += SameSiteAttribute
+		sameSiteCookie = &http.Cookie{
+			Name:    SameSiteCookieName,
+			Value:   SameSiteCookieValue,
+			Expires: time.Now().Add(ttl),
+			Path:    "/",
+			Secure:  true,
+		}
+		sameSiteCookieStr := sameSiteCookie.String()
+		sameSiteCookieStr += SameSiteAttribute
+		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	} else {
+		uidsCookieStr = httpCookie.String()
+	}
+	w.Header().Add("Set-Cookie", uidsCookieStr)
 }
 
 // Unsync removes the user's ID for the given family from this cookie.
@@ -188,7 +248,7 @@ func (cookie *PBSCookie) TrySync(familyName string, uid string) error {
 
 	// At the moment, Facebook calls /setuid with a UID of 0 if the user isn't logged into Facebook.
 	// They shouldn't be sending us a sentinel value... but since they are, we're refusing to save that ID.
-	if familyName == "audienceNetwork" && uid == "0" {
+	if familyName == string(openrtb_ext.BidderFacebook) && uid == "0" {
 		return errors.New("audienceNetwork uses a UID of 0 as \"not yet recognized\".")
 	}
 
@@ -260,8 +320,8 @@ func (cookie *PBSCookie) UnmarshalJSON(b []byte) error {
 			//
 			// Since users may log into facebook later, this is a bad strategy.
 			// Since "0" is a fake ID for this bidder, we'll just treat it like it doesn't exist.
-			if id, ok := cookie.uids["audienceNetwork"]; ok && id.UID == "0" {
-				delete(cookie.uids, "audienceNetwork")
+			if id, ok := cookie.uids[string(openrtb_ext.BidderFacebook)]; ok && id.UID == "0" {
+				delete(cookie.uids, string(openrtb_ext.BidderFacebook))
 			}
 		}
 	}

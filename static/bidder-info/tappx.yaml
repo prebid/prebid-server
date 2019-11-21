@@ -1,0 +1,7 @@
+maintainer:
+  email: "tappx@tappx.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video

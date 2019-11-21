@@ -1,0 +1,6 @@
+maintainer:
+  email: "info@prebid.org"
+capabilities:
+  site:
+    mediaTypes:
+      - banner

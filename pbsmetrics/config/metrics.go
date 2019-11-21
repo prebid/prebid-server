@@ -6,9 +6,9 @@ import (
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
-	"github.com/prebid/prebid-server/pbsmetrics/prometheus"
-	"github.com/rcrowley/go-metrics"
-	"github.com/vrischmann/go-metrics-influxdb"
+	prometheusmetrics "github.com/prebid/prebid-server/pbsmetrics/prometheus"
+	metrics "github.com/rcrowley/go-metrics"
+	influxdb "github.com/vrischmann/go-metrics-influxdb"
 )
 
 // NewMetricsEngine reads the configuration and returns the appropriate metrics engine
@@ -22,16 +22,16 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 
 	if cfg.Metrics.Influxdb.Host != "" {
 		// Currently use go-metrics as the metrics piece for influx
-		returnEngine.GoMetrics = pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
+		returnEngine.GoMetrics = pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList, cfg.Metrics.Disabled)
 		engineList = append(engineList, returnEngine.GoMetrics)
 		// Set up the Influx logger
 		go influxdb.InfluxDB(
-			returnEngine.GoMetrics.MetricsRegistry, // metrics registry
-			time.Second*10,                         // interval
-			cfg.Metrics.Influxdb.Host,              // the InfluxDB url
-			cfg.Metrics.Influxdb.Database,          // your InfluxDB database
-			cfg.Metrics.Influxdb.Username,          // your InfluxDB user
-			cfg.Metrics.Influxdb.Password,          // your InfluxDB password
+			returnEngine.GoMetrics.MetricsRegistry,                             // metrics registry
+			time.Second*time.Duration(cfg.Metrics.Influxdb.MetricSendInterval), // Configurable interval
+			cfg.Metrics.Influxdb.Host,                                          // the InfluxDB url
+			cfg.Metrics.Influxdb.Database,                                      // your InfluxDB database
+			cfg.Metrics.Influxdb.Username,                                      // your InfluxDB user
+			cfg.Metrics.Influxdb.Password,                                      // your InfluxDB password
 		)
 		// Influx is not added to the engine list as goMetrics takes care of it already.
 	}
@@ -53,7 +53,7 @@ func NewMetricsEngine(cfg *config.Configuration, adapterList []openrtb_ext.Bidde
 	return &returnEngine
 }
 
-// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to unerlying metrics engines.
+// DetailedMetricsEngine is a MultiMetricsEngine that preserves links to underlying metrics engines.
 type DetailedMetricsEngine struct {
 	pbsmetrics.MetricsEngine
 	GoMetrics         *pbsmetrics.Metrics
@@ -83,10 +83,17 @@ func (me *MultiMetricsEngine) RecordConnectionClose(success bool) {
 	}
 }
 
-// RecordImps across all engines
-func (me *MultiMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
+//RecordsImps records imps with imp types across all metric engines
+func (me *MultiMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
 	for _, thisME := range *me {
-		thisME.RecordImps(labels, numImps)
+		thisME.RecordImps(implabels)
+	}
+}
+
+// RecordImps for the legacy endpoint
+func (me *MultiMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
+	for _, thisME := range *me {
+		thisME.RecordLegacyImps(labels, numImps)
 	}
 }
 
@@ -94,6 +101,13 @@ func (me *MultiMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) 
 func (me *MultiMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
 	for _, thisME := range *me {
 		thisME.RecordRequestTime(labels, length)
+	}
+}
+
+// RecordAdapterPanic across all engines
+func (me *MultiMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterPanic(labels)
 	}
 }
 
@@ -132,10 +146,38 @@ func (me *MultiMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
 	}
 }
 
+// RecordStoredReqCacheResult across all engines
+func (me *MultiMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordStoredReqCacheResult(cacheResult, inc)
+	}
+}
+
+// RecordStoredImpCacheResult across all engines
+func (me *MultiMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	for _, thisME := range *me {
+		thisME.RecordStoredImpCacheResult(cacheResult, inc)
+	}
+}
+
+// RecordAdapterCookieSync across all engines
+func (me *MultiMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	for _, thisME := range *me {
+		thisME.RecordAdapterCookieSync(adapter, gdprBlocked)
+	}
+}
+
 // RecordUserIDSet across all engines
 func (me *MultiMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
 	for _, thisME := range *me {
 		thisME.RecordUserIDSet(userLabels)
+	}
+}
+
+// RecordPrebidCacheRequestTime across all engines
+func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordPrebidCacheRequestTime(labels, length)
 	}
 }
 
@@ -158,12 +200,22 @@ func (me *DummyMetricsEngine) RecordConnectionClose(success bool) {
 }
 
 // RecordImps as a noop
-func (me *DummyMetricsEngine) RecordImps(labels pbsmetrics.Labels, numImps int) {
+func (me *DummyMetricsEngine) RecordImps(implabels pbsmetrics.ImpLabels) {
+	return
+}
+
+// RecordLegacyImps as a noop
+func (me *DummyMetricsEngine) RecordLegacyImps(labels pbsmetrics.Labels, numImps int) {
 	return
 }
 
 // RecordRequestTime as a noop
 func (me *DummyMetricsEngine) RecordRequestTime(labels pbsmetrics.Labels, length time.Duration) {
+	return
+}
+
+// RecordAdapterPanic as a noop
+func (me *DummyMetricsEngine) RecordAdapterPanic(labels pbsmetrics.AdapterLabels) {
 	return
 }
 
@@ -192,7 +244,27 @@ func (me *DummyMetricsEngine) RecordCookieSync(labels pbsmetrics.Labels) {
 	return
 }
 
+// RecordAdapterCookieSync as a noop
+func (me *DummyMetricsEngine) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool) {
+	return
+}
+
 // RecordUserIDSet as a noop
 func (me *DummyMetricsEngine) RecordUserIDSet(userLabels pbsmetrics.UserLabels) {
+	return
+}
+
+// RecordStoredReqCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	return
+}
+
+// RecordStoredImpCacheResult as a noop
+func (me *DummyMetricsEngine) RecordStoredImpCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {
+	return
+}
+
+// RecordPrebidCacheRequestTime as a noop
+func (me *DummyMetricsEngine) RecordPrebidCacheRequestTime(labels pbsmetrics.RequestLabels, length time.Duration) {
 	return
 }

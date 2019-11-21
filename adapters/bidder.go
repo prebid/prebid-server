@@ -14,13 +14,18 @@ import (
 type Bidder interface {
 	// MakeRequests makes the HTTP requests which should be made to fetch bids.
 	//
+	// Bidder implementations can assume that the incoming BidRequest has:
+	//
+	//   1. Only {Imp.Type, Platform} combinations which are valid, as defined by the static/bidder-info.{bidder}.yaml file.
+	//   2. Imp.Ext of the form {"bidder": params}, where "params" has been validated against the static/bidder-params/{bidder}.json JSON Schema.
+	//
 	// nil return values are acceptable, but nil elements *inside* those slices are not.
 	//
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the request contained ad types which this bidder doesn't support.
 	//
-	// If the error is caused by bad user input, return a BadInputError.
-	MakeRequests(request *openrtb.BidRequest) ([]*RequestData, []error)
+	// If the error is caused by bad user input, return an errortypes.BadInput.
+	MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
 
 	// MakeBids unpacks the server's response into Bids.
 	//
@@ -29,9 +34,22 @@ type Bidder interface {
 	// The errors should contain a list of errors which explain why this bidder's bids will be
 	// "subpar" in some way. For example: the server response didn't have the expected format.
 	//
-	// If the error was caused by bad user input, return a BadInputError.
-	// If the error was caused by a bad server response, return a BadServerResponseError
+	// If the error was caused by bad user input, return a errortypes.BadInput.
+	// If the error was caused by a bad server response, return a errortypes.BadServerResponse
 	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
+}
+
+type MisconfiguredBidder struct {
+	Name  string
+	Error error
+}
+
+func (this *MisconfiguredBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
+	return nil, []error{this.Error}
+}
+
+func (this *MisconfiguredBidder) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error) {
+	return nil, []error{this.Error}
 }
 
 func BadInput(msg string) *errortypes.BadInput {
@@ -44,7 +62,7 @@ func BadInput(msg string) *errortypes.BadInput {
 //
 // Currency declaration is not mandatory but helps to detect an eventual currency mismatch issue.
 // From the bid response, the bidder accepts a list of valid currencies for the bid.
-// The currency is the same accross all bids.
+// The currency is the same across all bids.
 type BidderResponse struct {
 	Currency string
 	Bids     []*TypedBid
@@ -76,9 +94,11 @@ func NewBidderResponse() *BidderResponse {
 //
 // TypedBid.Bid.Ext will become "response.seatbid[i].bid.ext.bidder" in the final OpenRTB response.
 // TypedBid.BidType will become "response.seatbid[i].bid.ext.prebid.type" in the final OpenRTB response.
+// TypedBid.BidVideo will become "response.seatbid[i].bid.ext.prebid.video" in the final OpenRTB response.
 type TypedBid struct {
-	Bid     *openrtb.Bid
-	BidType openrtb_ext.BidType
+	Bid      *openrtb.Bid
+	BidType  openrtb_ext.BidType
+	BidVideo *openrtb_ext.ExtBidPrebidVideo
 }
 
 // RequestData and ResponseData exist so that prebid-server core code can implement its "debug" functionality

@@ -136,8 +136,10 @@ func checkHttpRequest(req http.Request, t *testing.T) {
 }
 
 func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
+	dnt := int8(0)
 	device := openrtb.Device{
 		Language: "murican",
+		DNT:      &dnt,
 	}
 
 	user := openrtb.User{
@@ -186,7 +188,8 @@ func SampleSovrnRequest(numberOfImpressions int, t *testing.T) *pbs.PBSRequest {
 	pc := usersync.ParsePBSCookieFromRequest(httpReq, &config.HostCookie{})
 	pc.TrySync("sovrn", testSovrnUserId)
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
+
+	pc.SetCookieOnResponse(fakewriter, false, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
 	httpReq.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 	// parse the http request
 	cacheClient, _ := dummycache.New()
