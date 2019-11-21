@@ -25,9 +25,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 
 	// Gather All Metrics
 	metricFamilies, err := m.Registry.Gather()
-	if err != nil {
-		assert.NoError(t, err, "gather metics")
-	}
+	assert.NoError(t, err, "gather metics")
 
 	// Summarize By Adapter Cardinality
 	// - This requires metrics to be preloaded. We don't preload account metrics, so we can't test those.
