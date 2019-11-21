@@ -17,6 +17,9 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "json: cannot unmarshal string into Go struct field ExtImpAdkernelAdn.pubId of type int"
+    {
+      "value": "json: cannot unmarshal string into Go struct field ExtImpAdkernelAdn.pubId of type int",
+      "comparison": "literal"
+    }
   ]
 }

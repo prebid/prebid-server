@@ -19,7 +19,7 @@
         "ext": {
           "bidder": {
             "inventoryCode": "foo",
-            "floor" : 20
+            "floor": 20
           }
         }
       }
@@ -28,7 +28,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=19",
+        "uri": "http://tlx.3lift.net/s2s/auction?supplier_id=20",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -51,7 +51,7 @@
               "ext": {
                 "bidder": {
                   "inventoryCode": "foo",
-                   "floor" : 20
+                  "floor": 20
                 }
               }
             }

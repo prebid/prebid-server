@@ -1,0 +1,25 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+    {
+        "id": "test-imp-id",
+        "audio": {
+        },
+        "ext": {
+            "bidder": {
+                "sspid": "99996"
+            }
+        }
+    }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Ignoring imp id=test-imp-id, invalid MediaType. EngageBDR only supports Banner, Video and Native.",
+      "comparison": "literal"
+    }
+  ]
+}
+

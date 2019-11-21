@@ -8,5 +8,5 @@ import (
 )
 
 func NewUnrulySyncer(temp *template.Template) usersync.Usersyncer {
-	return adapters.NewSyncer("unruly", 162, temp, adapters.SyncTypeRedirect)
+	return adapters.NewSyncer("unruly", 162, temp, adapters.SyncTypeIframe)
 }

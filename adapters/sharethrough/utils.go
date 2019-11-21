@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 const minChromeVersion = 53
@@ -20,10 +21,11 @@ const minSafariVersion = 10
 
 type UtilityInterface interface {
 	gdprApplies(*openrtb.BidRequest) bool
-	parseUserExt(*openrtb.User) userInfo
+	parseUserInfo(*openrtb.User) userInfo
 
-	getAdMarkup(openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
-	getPlacementSize([]openrtb.Format) (uint64, uint64)
+	getAdMarkup([]byte, openrtb_ext.ExtImpSharethroughResponse, *StrAdSeverParams) (string, error)
+	getBestFormat([]openrtb.Format) (uint64, uint64)
+	getPlacementSize(openrtb.Imp, openrtb_ext.ExtImpSharethrough) (uint64, uint64)
 
 	canAutoPlayVideo(string, UserAgentParsers) bool
 	isAndroid(string) bool
@@ -32,9 +34,18 @@ type UtilityInterface interface {
 	isAtMinSafariVersion(string, *regexp.Regexp) bool
 
 	parseDomain(string) string
+	getClock() ClockInterface
 }
 
-type Util struct{}
+type ClockInterface interface {
+	now() time.Time
+}
+
+type Clock struct{}
+
+type Util struct {
+	Clock ClockInterface
+}
 
 type userExt struct {
 	Consent string                   `json:"consent,omitempty"`
@@ -44,17 +55,15 @@ type userExt struct {
 type userInfo struct {
 	Consent string
 	TtdUid  string
+	StxUid  string
 }
 
-func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
+func (u Util) getAdMarkup(strRawResp []byte, strResp openrtb_ext.ExtImpSharethroughResponse, params *StrAdSeverParams) (string, error) {
+	landingTime := u.Clock.now()
 	strRespId := fmt.Sprintf("str_response_%s", strResp.BidID)
-	jsonPayload, err := json.Marshal(strResp)
-	if err != nil {
-		return "", err
-	}
 
 	tmplBody := `
-		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}" />
+		<img src="//b.sharethrough.com/butler?type=s2s-win&arid={{.Arid}}&adReceivedAt={{.LandingTime}}" />
 
 		<div data-str-native-key="{{.Pkey}}" data-stx-response-name="{{.StrRespId}}"></div>
 	 	<script>var {{.StrRespId}} = "{{.B64EncodedJson}}"</script>
@@ -93,17 +102,19 @@ func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params
 	var buf []byte
 	templatedBuf := bytes.NewBuffer(buf)
 
-	b64EncodedJson := base64.StdEncoding.EncodeToString(jsonPayload)
+	b64EncodedJson := base64.StdEncoding.EncodeToString(strRawResp)
 	err = tmpl.Execute(templatedBuf, struct {
 		Arid           template.JS
 		Pkey           string
 		StrRespId      template.JS
 		B64EncodedJson string
+		LandingTime    string
 	}{
 		template.JS(strResp.AdServerRequestID),
 		params.Pkey,
 		template.JS(strRespId),
 		b64EncodedJson,
+		landingTime.Format(time.RFC3339Nano),
 	})
 	if err != nil {
 		return "", err
@@ -112,24 +123,28 @@ func (u Util) getAdMarkup(strResp openrtb_ext.ExtImpSharethroughResponse, params
 	return templatedBuf.String(), nil
 }
 
-func (u Util) getPlacementSize(formats []openrtb.Format) (height uint64, width uint64) {
-	biggest := struct {
-		Height uint64
-		Width  uint64
-	}{
-		Height: 1,
-		Width:  1,
+func (u Util) getPlacementSize(imp openrtb.Imp, strImpParams openrtb_ext.ExtImpSharethrough) (height uint64, width uint64) {
+	height, width = 1, 1
+	if len(strImpParams.IframeSize) >= 2 {
+		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
+	} else if imp.Banner != nil {
+		height, width = u.getBestFormat(imp.Banner.Format)
 	}
 
+	return
+}
+
+func (u Util) getBestFormat(formats []openrtb.Format) (height uint64, width uint64) {
+	height, width = 1, 1
 	for i := 0; i < len(formats); i++ {
 		format := formats[i]
-		if (format.H * format.W) > (biggest.Height * biggest.Width) {
-			biggest.Height = format.H
-			biggest.Width = format.W
+		if (format.H * format.W) > (height * width) {
+			height = format.H
+			width = format.W
 		}
 	}
 
-	return biggest.Height, biggest.Width
+	return
 }
 
 func (u Util) canAutoPlayVideo(userAgent string, parsers UserAgentParsers) bool {
@@ -193,9 +208,15 @@ func (u Util) gdprApplies(request *openrtb.BidRequest) bool {
 	return gdprApplies != 0
 }
 
-func (u Util) parseUserExt(user *openrtb.User) (ui userInfo) {
+func (u Util) parseUserInfo(user *openrtb.User) (ui userInfo) {
+	if user == nil {
+		return
+	}
+
+	ui.StxUid = user.BuyerUID
+
 	var userExt userExt
-	if user != nil && user.Ext != nil {
+	if user.Ext != nil {
 		if err := json.Unmarshal(user.Ext, &userExt); err == nil {
 			ui.Consent = userExt.Consent
 			for i := 0; i < len(userExt.Eids); i++ {
@@ -229,4 +250,12 @@ func (u Util) parseDomain(fullUrl string) string {
 	}
 
 	return domain
+}
+
+func (u Util) getClock() ClockInterface {
+	return u.Clock
+}
+
+func (c Clock) now() time.Time {
+	return time.Now().UTC()
 }

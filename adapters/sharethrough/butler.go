@@ -11,7 +11,10 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
+
+const defaultTmax = 10000 // 10 sec
 
 type StrAdSeverParams struct {
 	Pkey               string
@@ -23,11 +26,12 @@ type StrAdSeverParams struct {
 	Height             uint64
 	Width              uint64
 	TheTradeDeskUserId string
+	SharethroughUserId string
 }
 
 type StrOpenRTBInterface interface {
 	requestFromOpenRTB(openrtb.Imp, *openrtb.BidRequest, string) (*adapters.RequestData, error)
-	responseToOpenRTB(openrtb_ext.ExtImpSharethroughResponse, *adapters.RequestData) (*adapters.BidderResponse, []error)
+	responseToOpenRTB([]byte, *adapters.RequestData) (*adapters.BidderResponse, []error)
 }
 
 type StrAdServerUriInterface interface {
@@ -41,8 +45,20 @@ type UserAgentParsers struct {
 	SafariVersion    *regexp.Regexp
 }
 
+type ButlerRequestBody struct {
+	BlockedAdvDomains []string `json:"badv,omitempty"`
+	MaxTimeout        int64    `json:"tmax"`
+	Deadline          string   `json:"deadline"`
+	BidFloor          float64  `json:"bidfloor,omitempty"`
+}
+
 type StrUriHelper struct {
 	BaseURI string
+	Clock   ClockInterface
+}
+
+type StrBodyHelper struct {
+	Clock ClockInterface
 }
 
 type StrOpenRTBTranslator struct {
@@ -53,7 +69,7 @@ type StrOpenRTBTranslator struct {
 
 func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
 	headers := http.Header{}
-	headers.Add("Content-Type", "text/plain;charset=utf-8")
+	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("Origin", domain)
 	headers.Add("Referer", request.Site.Page)
@@ -64,19 +80,18 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 	if err := json.Unmarshal(imp.Ext, &strImpExt); err != nil {
 		return nil, err
 	}
-	var strImpParams openrtb_ext.ExtImpSharethroughExt
+	var strImpParams openrtb_ext.ExtImpSharethrough
 	if err := json.Unmarshal(strImpExt.Bidder, &strImpParams); err != nil {
 		return nil, err
 	}
 
 	pKey := strImpParams.Pkey
-	userInfo := s.Util.parseUserExt(request.User)
+	userInfo := s.Util.parseUserInfo(request.User)
+	height, width := s.Util.getPlacementSize(imp, strImpParams)
 
-	var height, width uint64
-	if len(strImpParams.IframeSize) >= 2 {
-		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
-	} else {
-		height, width = s.Util.getPlacementSize(imp.Banner.Format)
+	jsonBody, err := (StrBodyHelper{Clock: s.Util.getClock()}).buildBody(request, strImpParams)
+	if err != nil {
+		return nil, err
 	}
 
 	return &adapters.RequestData{
@@ -91,18 +106,24 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			Width:              width,
 			InstantPlayCapable: s.Util.canAutoPlayVideo(request.Device.UA, s.UserAgentParsers),
 			TheTradeDeskUserId: userInfo.TtdUid,
+			SharethroughUserId: userInfo.StxUid,
 		}),
-		Body:    nil,
+		Body:    jsonBody,
 		Headers: headers,
 	}, nil
 }
 
-func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharethroughResponse, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
+func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adapters.RequestData) (*adapters.BidderResponse, []error) {
 	var errs []error
+
+	var strResp openrtb_ext.ExtImpSharethroughResponse
+	if err := json.Unmarshal(strRawResp, &strResp); err != nil {
+		return nil, []error{&errortypes.BadInput{Message: "Unable to parse response JSON"}}
+	}
 	bidResponse := adapters.NewBidderResponse()
 
 	bidResponse.Currency = "USD"
-	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
+	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeBanner}
 
 	if len(strResp.Creatives) == 0 {
 		errs = append(errs, &errortypes.BadInput{Message: "No creative provided"})
@@ -116,7 +137,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharet
 		return nil, errs
 	}
 
-	adm, admErr := s.Util.getAdMarkup(strResp, btlrParams)
+	adm, admErr := s.Util.getAdMarkup(strRawResp, strResp, btlrParams)
 	if admErr != nil {
 		errs = append(errs, &errortypes.BadServerResponse{Message: admErr.Error()})
 		return nil, errs
@@ -141,6 +162,22 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strResp openrtb_ext.ExtImpSharet
 	return bidResponse, errs
 }
 
+func (h StrBodyHelper) buildBody(request *openrtb.BidRequest, strImpParams openrtb_ext.ExtImpSharethrough) (body []byte, err error) {
+	timeout := request.TMax
+	if timeout == 0 {
+		timeout = defaultTmax
+	}
+
+	body, err = json.Marshal(ButlerRequestBody{
+		BlockedAdvDomains: request.BAdv,
+		MaxTimeout:        timeout,
+		Deadline:          h.Clock.now().Add(time.Duration(timeout) * time.Millisecond).Format(time.RFC3339Nano),
+		BidFloor:          strImpParams.BidFloor,
+	})
+
+	return
+}
+
 func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v := url.Values{}
 	v.Set("placement_key", params.Pkey)
@@ -150,14 +187,18 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	if params.TheTradeDeskUserId != "" {
 		v.Set("ttduid", params.TheTradeDeskUserId)
 	}
+	if params.SharethroughUserId != "" {
+		v.Set("stxuid", params.SharethroughUserId)
+	}
 
 	v.Set("instant_play_capable", fmt.Sprintf("%t", params.InstantPlayCapable))
 	v.Set("stayInIframe", fmt.Sprintf("%t", params.Iframe))
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
+	v.Set("adRequestAt", h.Clock.now().Format(time.RFC3339Nano))
 	v.Set("supplyId", supplyId)
-	v.Set("strVersion", strVersion)
+	v.Set("strVersion", strconv.FormatInt(strVersion, 10))
 
 	return h.BaseURI + "?" + v.Encode()
 }

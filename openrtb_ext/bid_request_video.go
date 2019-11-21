@@ -59,7 +59,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Indicates that the response requires an adserver specific content category
-	IncludeBrandCategory IncludeBrandCategory `json:"includebrandcategory"`
+	IncludeBrandCategory *IncludeBrandCategory `json:"includebrandcategory,omitempty"`
 
 	// Attribute:
 	//   video
@@ -191,6 +191,14 @@ type IncludeBrandCategory struct {
 	//   string; optional
 	//  Identifier for the Publisher
 	Publisher string `json:"publisher"`
+
+	// Attribute:
+	//   translatecategories
+	// Type:
+	//   *bool; optional
+	// Description:
+	//   Indicates if IAB categories should be translated to adserver category
+	TranslateCategories *bool `json:"translatecategories,omitempty"`
 }
 
 type Cacheconfig struct {

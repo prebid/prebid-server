@@ -106,10 +106,12 @@ func TestCreateBidExtension(t *testing.T) {
 		Increment: 0.1,
 	})
 
+	translateCategories := true
 	videoRequest := openrtb_ext.BidRequestVideo{
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
-			PrimaryAdserver: 1,
-			Publisher:       "",
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver:     1,
+			Publisher:           "",
+			TranslateCategories: &translateCategories,
 		},
 		PodConfig: openrtb_ext.PodConfig{
 			DurationRangeSec:     durationRange,
@@ -138,10 +140,12 @@ func TestCreateBidExtensionExactDurTrueNoPriceRange(t *testing.T) {
 	durationRange = append(durationRange, 15)
 	durationRange = append(durationRange, 30)
 
+	translateCategories := false
 	videoRequest := openrtb_ext.BidRequestVideo{
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
-			PrimaryAdserver: 1,
-			Publisher:       "",
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
+			PrimaryAdserver:     1,
+			Publisher:           "",
+			TranslateCategories: &translateCategories,
 		},
 		PodConfig: openrtb_ext.PodConfig{
 			DurationRangeSec:     durationRange,
@@ -224,7 +228,7 @@ func TestVideoEndpointValidationsPositive(t *testing.T) {
 		App: &openrtb.App{
 			Bundle: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -262,7 +266,7 @@ func TestVideoEndpointValidationsCritical(t *testing.T) {
 			RequireExactDuration: true,
 			Pods:                 pods,
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 0,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -336,7 +340,7 @@ func TestVideoEndpointValidationsPodErrors(t *testing.T) {
 		App: &openrtb.App{
 			Bundle: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -409,7 +413,7 @@ func TestVideoEndpointValidationsSiteAndApp(t *testing.T) {
 		Site: &openrtb.Site{
 			ID: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -464,7 +468,7 @@ func TestVideoEndpointValidationsSiteMissingRequiredField(t *testing.T) {
 		Site: &openrtb.Site{
 			Domain: "pbs.com",
 		},
-		IncludeBrandCategory: openrtb_ext.IncludeBrandCategory{
+		IncludeBrandCategory: &openrtb_ext.IncludeBrandCategory{
 			PrimaryAdserver: 1,
 		},
 		Video: openrtb_ext.SimplifiedVideo{
@@ -638,7 +642,7 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	edep := &endpointDeps{
 		ex,
 		newParamsValidator(t),

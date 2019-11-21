@@ -945,7 +945,8 @@ func CreatePrebidRequest(server *httptest.Server, t *testing.T) (an *RubiconAdap
 	pc := usersync.ParsePBSCookieFromRequest(req, &config.HostCookie{})
 	pc.TrySync("rubicon", rubidata.buyerUID)
 	fakewriter := httptest.NewRecorder()
-	pc.SetCookieOnResponse(fakewriter, "", 90*24*time.Hour)
+
+	pc.SetCookieOnResponse(fakewriter, false, &config.HostCookie{Domain: ""}, 90*24*time.Hour)
 	req.Header.Add("Cookie", fakewriter.Header().Get("Set-Cookie"))
 
 	cacheClient, _ := dummycache.New()
@@ -1200,6 +1201,63 @@ func TestOpenRTBRequestWithBannerImpEvenIfImpHasVideo(t *testing.T) {
 
 	if rubiconReq.Imp[0].Banner == nil {
 		t.Error("Banner object must be in request impression")
+	}
+}
+
+func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{
+				"bidder": {
+					"zoneId": 8394,
+					"siteId": 283282,
+					"accountId": 7891,
+					"inventory": {"key1" : "val1"},
+					"visitor": {"key2" : "val2"}
+				},
+				"context": {
+					"data": {
+						"adslot": "///test-adslot"
+					}
+				}
+			}`),
+		}},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Errorf("Unexpected error while decoding request: %s", err)
+	}
+
+	if len(rubiconReq.Imp) != 1 {
+		t.Fatalf("Unexpected number of request impressions. Got %d. Expected %d", len(rubiconReq.Imp), 1)
+	}
+
+	var rpImpExt rubiconImpExt
+	if err := json.Unmarshal(rubiconReq.Imp[0].Ext, &rpImpExt); err != nil {
+		t.Fatal("Error unmarshalling imp.ext")
+	}
+
+	rubiconExtInventory := make(map[string]interface{})
+	if err := json.Unmarshal(rpImpExt.RP.Target, &rubiconExtInventory); err != nil {
+		t.Fatal("Error unmarshalling imp.ext.rp.target")
+	}
+
+	if rubiconExtInventory["dfp_ad_unit_code"] != "test-adslot" {
+		t.Fatalf("Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
 	}
 }
 

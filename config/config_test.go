@@ -2,10 +2,12 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"encoding/json"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -22,10 +24,15 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "auction_timeouts_ms.max", int(cfg.AuctionTimeouts.Max), 0)
 	cmpInts(t, "max_request_size", int(cfg.MaxRequestSize), 1024*256)
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
+	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
 	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
+	cmpBools(t, "account_required", cfg.AccountRequired, false)
+	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
+	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 }
 
 var fullConfig = []byte(`
@@ -39,6 +46,7 @@ host_cookie:
   domain: cookies.prebid.org
   opt_out_url: http://prebid.org/optout
   opt_in_url: http://prebid.org/optin
+  max_cookie_size_bytes: 32768
 external_url: http://prebid-server.prebid.org/
 host: prebid-server.prebid.org
 port: 1234
@@ -50,6 +58,9 @@ cache:
   scheme: http
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
+external_cache:
+  host: www.externalprebidcache.net
+  path: endpoints/cache
 http_client:
   max_idle_connections: 500
   max_idle_connections_per_host: 20
@@ -64,6 +75,9 @@ metrics:
     database: metricsdb
     username: admin
     password: admin1324
+    metric_send_interval: 30
+  disabled_metrics:
+    account_adapter_details: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -72,6 +86,41 @@ datacache:
 adapters:
   appnexus:
     endpoint: http://ib.adnxs.com/some/endpoint
+    extra_info: "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}"
+  audienceNetwork:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
+  ix:
+    endpoint: http://ixtest.com/api
+  rubicon:
+    endpoint: http://rubitest.com/api
+    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
+    xapi:
+      username: rubiuser
+      password: rubipw23
+  brightroll:
+    usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s
+    endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
+  adkerneladn:
+     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+blacklisted_apps: ["spamAppID","sketchy-app-id"]
+account_required: true
+certificates_file: /etc/ssl/cert.pem
+`)
+
+var adapterExtraInfoConfig = []byte(`
+adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
+    usersync_url: http://adnxs.com/sync.php?p=prebid
+    platform_id: appNexus
+    xapi:
+      username: appuser
+      password: 123456
+      tracker: anxsTrack
+    disabled: true
+    extra_info: "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}"
   audienceNetwork:
     endpoint: http://facebook.com/pbs
     usersync_url: http://facebook.com/ortb/prebid-s2s
@@ -156,6 +205,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
+	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
@@ -193,6 +244,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "metrics.influxdb.database", cfg.Metrics.Influxdb.Database, "metricsdb")
 	cmpStrings(t, "metrics.influxdb.username", cfg.Metrics.Influxdb.Username, "admin")
 	cmpStrings(t, "metrics.influxdb.password", cfg.Metrics.Influxdb.Password, "admin1324")
+	cmpInts(t, "metrics.influxdb.metric_send_interval", cfg.Metrics.Influxdb.MetricSendInterval, 30)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "postgres")
 	cmpStrings(t, "datacache.filename", cfg.DataCache.Filename, "/usr/db/db.db")
 	cmpInts(t, "datacache.cache_size", cfg.DataCache.CacheSize, 10000000)
@@ -200,6 +252,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
 	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
+	cmpStrings(t, "adapters.appnexus.extra_info", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}")
 	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID, "abcdefgh1234")
@@ -213,6 +266,41 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
+	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
+	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
+}
+
+func TestUnmarshalAdapterExtraInfo(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(adapterExtraInfoConfig))
+	cfg, err := New(v)
+
+	// Assert correctly unmarshaled
+	assert.NoError(t, err, "invalid endpoint in config should return an error")
+
+	// Unescape quotes of JSON-formatted string
+	strings.Replace(cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "\\\"", "\"", -1)
+
+	// Assert JSON-formatted string
+	assert.JSONEqf(t, `{"native":"http://www.native.org/endpoint","video":"http://www.video.org/endpoint"}`, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "Unexpected value of the ExtraAdapterInfo String \n")
+
+	// Data type where we'll unmarshal endpoint values and adapter custom extra information
+	type AppNexusAdapterEndpoints struct {
+		NativeEndpoint string `json:"native,omitempty"`
+		VideoEndpoint  string `json:"video,omitempty"`
+	}
+	var AppNexusAdapterExtraInfo AppNexusAdapterEndpoints
+	err = json.Unmarshal([]byte(cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo), &AppNexusAdapterExtraInfo)
+
+	// Assert correctly unmarshaled
+	assert.NoErrorf(t, err, "Error. Could not unmarshal cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo. Value: %s. Error: %v \n", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, err)
+
+	// Assert endpoint values
+	assert.Equal(t, "http://www.native.org/endpoint", AppNexusAdapterExtraInfo.NativeEndpoint)
+	assert.Equal(t, "http://www.video.org/endpoint", AppNexusAdapterExtraInfo.VideoEndpoint)
 }
 
 func TestValidConfig(t *testing.T) {
@@ -298,6 +386,28 @@ func TestLimitTimeout(t *testing.T) {
 	doTimeoutTest(t, 5, 5, 10, 0)
 	doTimeoutTest(t, 15, 15, 0, 0)
 	doTimeoutTest(t, 15, 0, 20, 15)
+}
+
+func TestCookieSizeError(t *testing.T) {
+	type aTest struct {
+		cookieHost  *HostCookie
+		expectError bool
+	}
+	testCases := []aTest{
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 1 << 15}, expectError: false}, //32 KB, no error
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 800}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 500}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 0}, expectError: false},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: 200}, expectError: true},
+		{cookieHost: &HostCookie{MaxCookieSizeBytes: -100}, expectError: true},
+	}
+	for i := range testCases {
+		if testCases[i].expectError {
+			assert.Error(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes less than MIN_COOKIE_SIZE_BYTES = %d and not equal to zero should return an error", MIN_COOKIE_SIZE_BYTES))
+		} else {
+			assert.NoError(t, isValidCookieSize(testCases[i].cookieHost.MaxCookieSizeBytes), fmt.Sprintf("Configuration.HostCooki.MaxCookieSizeBytes greater than MIN_COOKIE_SIZE_BYTES = %d or equal to zero should not return an error", MIN_COOKIE_SIZE_BYTES))
+		}
+	}
 }
 
 func newDefaultConfig(t *testing.T) *Configuration {

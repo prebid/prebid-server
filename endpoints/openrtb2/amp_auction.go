@@ -93,7 +93,7 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		Source:        pbsmetrics.DemandWeb,
 		RType:         pbsmetrics.ReqTypeAMP,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       pbsmetrics.BrowserOther,
+		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -102,11 +102,6 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 		deps.metricsEngine.RecordRequestTime(labels, time.Since(start))
 		deps.analytics.LogAmpObject(&ao)
 	}()
-
-	isSafari := checkSafari(r)
-	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
-	}
 
 	// Add AMP headers
 	origin := r.FormValue("__amp_source_origin")
@@ -150,14 +145,20 @@ func (deps *endpointDeps) AmpAuction(w http.ResponseWriter, r *http.Request, _ h
 	}
 	labels.PubID = effectivePubID(req.Site.Publisher)
 	// Blacklist account now that we have resolved the value
-	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
-		errL = append(errL, &errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)})
-		w.WriteHeader(http.StatusBadRequest)
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
+		erVal := errortypes.DecodeError(acctIdErr)
+		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
+		} else { //erVal == errortypes.AcctRequiredCode
+			w.WriteHeader(http.StatusBadRequest)
+			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+		}
 		for _, err := range errL {
 			w.Write([]byte(fmt.Sprintf("Invalid request format: %s\n", err.Error())))
 		}
 		ao.Errors = append(ao.Errors, errL...)
-		labels.RequestStatus = pbsmetrics.RequestStatusBadInput
 		return
 	}
 
@@ -331,12 +332,15 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request) (req 
 		*req.Imp[0].Secure = 1
 	}
 
-	deps.overrideWithParams(httpRequest, req)
+	err := deps.overrideWithParams(httpRequest, req)
+	if err != nil {
+		errs = []error{err}
+	}
 
 	return
 }
 
-func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) {
+func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *openrtb.BidRequest) error {
 	if req.Site == nil {
 		req.Site = &openrtb.Site{}
 	}
@@ -375,9 +379,29 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
+	//In the AMP endpoint the consent string found in the http.Request query overrides that of the prebid query
+	queryConsentString := httpRequest.FormValue("gdpr_consent")
+	if queryConsentString != "" {
+		jsonMsg := json.RawMessage(`{"consent":"` + queryConsentString + `"}`)
+		// If nil, initialize
+		if req.User == nil {
+			req.User = &openrtb.User{Ext: jsonMsg}
+		} else if req.User.Ext == nil {
+			req.User.Ext = jsonMsg
+		} else { // req.User.Ext != nil, keep whatever is in there and only substitute the consent string
+			var parserErr error
+			req.User.Ext, parserErr = jsonparser.Set(req.User.Ext, []byte(`"`+queryConsentString+`"`), "consent")
+			if parserErr != nil {
+				return parserErr
+			}
+		}
+	}
+
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
 		req.TMax = timeout - deps.cfg.AMPTimeoutAdjustment
 	}
+
+	return nil
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
