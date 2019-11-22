@@ -178,14 +178,3 @@ func TestLoadDefaultAliasesNoInfo(t *testing.T) {
 	assert.Equal(t, expectedAliases, defAliases)
 
 }
-
-//would it be better to test the mapper somewhere else.. like a validator and pass that through?
-//   familyNameValidator    familyNameValidator.Validate(familyName)
-//    NewFamilyNameValidator(syncers)
-
-// + test the functionality entirely somewhere else, then just plug things in
-// + mock out the validator for the handler test, not re-testing it
-
-func TestValidFamilyNameMap(t *testing.T) {
-	// todo
-}

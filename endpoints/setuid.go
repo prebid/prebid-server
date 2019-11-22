@@ -26,8 +26,14 @@ const (
 	chromeiOSStrLen = len(chromeiOSStr)
 )
 
-func NewSetUIDEndpoint(cfg config.HostCookie, perms gdpr.Permissions, validFamilyNameMap map[string]struct{}, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
+func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName]usersync.Usersyncer, perms gdpr.Permissions, pbsanalytics analytics.PBSAnalyticsModule, metrics pbsmetrics.MetricsEngine) httprouter.Handle {
 	cookieTTL := time.Duration(cfg.TTL) * 24 * time.Hour
+
+	validFamilyNameMap := make(map[string]struct{})
+	for _, s := range syncers {
+		validFamilyNameMap[s.FamilyName()] = struct{}{}
+	}
+
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,

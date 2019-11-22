@@ -265,12 +265,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 		PBSAnalytics:     pbsAnalytics,
 	}
 
-	validFamilyNameMap := make(map[string]struct{})
-	for _, s := range syncers {
-		validFamilyNameMap[s.FamilyName()] = struct{}{}
-	}
-
-	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, validFamilyNameMap, pbsAnalytics, r.MetricsEngine))
+	r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncers, gdprPerms, pbsAnalytics, r.MetricsEngine))
 	r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 	r.POST("/optout", userSyncDeps.OptOut)
 	r.GET("/optout", userSyncDeps.OptOut)
