@@ -129,7 +129,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids)
+	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids) //Why no context for `shouldCacheVast`?
 	defer cancel()
 
 	// Get currency rates conversions for the auction
@@ -137,6 +137,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions)
 
+	var auc *auction = nil
 	if anyBidsReturned {
 
 		var bidCategory map[string]string
@@ -149,7 +150,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 		}
 
-		auc := newAuction(adapterBids, len(bidRequest.Imp))
+		auc = newAuction(adapterBids, len(bidRequest.Imp))
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
@@ -162,7 +163,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
@@ -304,7 +305,7 @@ func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -319,7 +320,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	for _, a := range liveAdapters {
 		//while processing every single bib, do we need to handle categories here?
 		if adapterBids[a] != nil && len(adapterBids[a].bids) > 0 {
-			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra)
+			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auc)
 			seatBids = append(seatBids, *sb)
 		}
 	}
@@ -542,7 +543,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.SeatBid {
+func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction) *openrtb.SeatBid {
 	seatBid := new(openrtb.SeatBid)
 	seatBid.Seat = adapter.String()
 	// Prebid cannot support roadblocking
@@ -565,7 +566,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	}
 
 	var errList []error
-	seatBid.Bid, errList = e.makeBid(adapterBid.bids, adapter)
+	seatBid.Bid, errList = e.makeBid(adapterBid.bids, adapter, auc)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
@@ -574,7 +575,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 }
 
 // Create the Bid array inside of SeatBid
-func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []error) {
+func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, auc *auction) ([]openrtb.Bid, []error) {
 	bids := make([]openrtb.Bid, 0, len(Bids))
 	errList := make([]error, 0, 1)
 	for _, thisBid := range Bids {
@@ -586,7 +587,11 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 				Video:     thisBid.bidVideo,
 			},
 		}
-
+		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
+			bidExt.Prebid.Cache = &openrtb_ext.ExtBidPrebidCache{
+				Bids: &cacheInfo,
+			}
+		}
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
 			errList = append(errList, err)
@@ -596,6 +601,28 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
+}
+
+// If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,
+// a UUID should be found inside `a.cacheIds` or `a.vastCacheIds`. This function returns the UUID along with the internal cache URL
+func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.ExtBidPrebidCacheBids, bool) {
+	var cacheInfo openrtb_ext.ExtBidPrebidCacheBids
+	var cacheUUID string
+	var found bool = false
+
+	if auc != nil {
+		var extCacheHost, extCachePath string
+		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
+			cacheInfo.CacheId = cacheUUID
+			extCacheHost, extCachePath = e.cache.GetExtCacheData()
+			cacheInfo.Url = extCacheHost + "/" + extCachePath + "?uuid=" + cacheUUID
+		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
+			cacheInfo.CacheId = cacheUUID
+			extCacheHost, extCachePath = e.cache.GetExtCacheData()
+			cacheInfo.Url = extCacheHost + "/" + extCachePath + "?uuid=" + cacheUUID
+		}
+	}
+	return cacheInfo, found
 }
 
 // Returns a snapshot of resolved bid request for debug if test field is set in the incomming request

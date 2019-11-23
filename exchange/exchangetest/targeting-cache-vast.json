@@ -64,14 +64,22 @@
             "crid": "creative-1",
             "ext": {
               "prebid": {
+                "cache": {
+                  "bids": {
+                    "cacheId": "0",
+                    "url": "www.pbcserver.com/pbcache/endpoint?uuid=0"
+                  },
+                  "key": "",
+                  "url": ""
+                },
                 "type": "video",
                 "targeting": {
                   "hb_bidder": "appnexus",
                   "hb_bidder_appnexus": "appnexus",
                   "hb_cache_host": "www.pbcserver.com",
                   "hb_cache_host_appnex": "www.pbcserver.com",
-                  "hb_cache_path": "/pbcache/endpoint",
-                  "hb_cache_path_appnex": "/pbcache/endpoint",
+                  "hb_cache_path": "pbcache/endpoint",
+                  "hb_cache_path_appnex": "pbcache/endpoint",
                   "hb_uuid": "0",
                   "hb_uuid_appnexus": "0",
                   "hb_pb": "0.00",

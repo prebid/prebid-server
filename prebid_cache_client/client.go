@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -69,7 +70,14 @@ type clientImpl struct {
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string) {
-	return c.externalCacheHost, c.externalCachePath
+	path := c.externalCachePath
+	if path == "/" {
+		path = ""
+	} else if strings.Index(path, "/") == 0 {
+		path = strings.TrimLeft(path, "/")
+	}
+
+	return c.externalCacheHost, path
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
