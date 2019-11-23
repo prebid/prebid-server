@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
@@ -66,7 +65,14 @@ type rubiBidInfo struct {
 var rubidata rubiBidInfo
 
 func DummyRubiconServer(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	defer func() {
+		err := r.Body.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}()
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -285,7 +291,7 @@ func TestRubiconBasicResponse(t *testing.T) {
 
 				assert.Equal(t, tag.content, bid.Adm, "Incorrect bid markup '%s' expected '%s'", bid.Adm, tag.content)
 
-				assert.True(t, reflect.DeepEqual(bid.AdServerTargeting, tag.adServerTargeting),
+				assert.Equal(t, bid.AdServerTargeting, tag.adServerTargeting,
 					"Incorrect targeting '%+v' expected '%+v'", bid.AdServerTargeting, tag.adServerTargeting)
 
 				assert.Equal(t, tag.mediaType, bid.CreativeMediaType, "Incorrect media type '%s' expected '%s'", bid.CreativeMediaType, tag.mediaType)
@@ -681,7 +687,7 @@ func TestZeroPriceBidResponse(t *testing.T) {
 	an, ctx, pbReq := CreatePrebidRequest(server, t)
 	b, err := an.Call(ctx, pbReq, pbReq.Bidders[0])
 
-	assert.NotNil(t, "\n\n\n0 price bids are being included %d, err : %v", len(b), err)
+	assert.Nil(t, b, "\n\n\n0 price bids are being included %d, err : %v", len(b), err)
 }
 
 func TestDifferentRequest(t *testing.T) {
@@ -942,30 +948,10 @@ func TestOpenRTBRequest(t *testing.T) {
                     "keyv": 1,
                     "pref": 0
                 },
-				"eids": [
-				{
-                    "source": "adserver.org",
-                    "uids": [{
-                        "id": "3d50a262-bd8e-4be3-90b8-246291523907",
-                        "ext": {
-                            "rtiPartner": "TDID"
-                        }
-                    }]
-                },
-                {
+				"eids": [{
                     "source": "pubcid",
                     "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
-				},
-				{
-					"source": "liveintent.com",
-					"uids": [{
-						"id": "T7JiRRvsRAmh88"
-					}],
-					"ext": {
-						"segments": ["999","888"]
-					}
-				}
-				]
+				}]
             }`),
 		},
 		Ext: json.RawMessage(`{"prebid": {}}`),
@@ -1040,22 +1026,8 @@ func TestOpenRTBRequest(t *testing.T) {
 		assert.Equal(t, 0, userExt.DigiTrust.Pref, "DigiTrust Pref id not as expected!")
 
 		assert.NotNil(t, userExt.Eids)
-		assert.Equal(t, 3, len(userExt.Eids), "Eids values are not as expected!")
-
-		assert.NotNil(t, userExt.TpID)
-		assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
-
-		assert.Equal(t, "tdid", userExt.TpID[0].Source, "TpID source value is not as expected!")
-		assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
-
-		userExtRPTarget := make(map[string]interface{})
-		if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
-			t.Fatal("Error unmarshalling request.user.ext.rp.target object.")
-		}
-
-		assert.Contains(t, userExtRPTarget, "LIseg", "request.user.ext.rp.target value is not as expected!")
-		assert.Contains(t, userExtRPTarget["LIseg"], "888", "No segments as expected!")
-		assert.Contains(t, userExtRPTarget["LIseg"], "999", "No segments as expected!")
+		assert.Equal(t, 1, len(userExt.Eids), "Eids values are not as expected!")
+		assert.Contains(t, userExt.Eids, openrtb_ext.ExtUserEid{Source: "pubcid", ID: "2402fc76-7b39-4f0e-bfc2-060ef7693648"})
 	}
 }
 
@@ -1159,6 +1131,90 @@ func TestOpenRTBRequestWithImpAndAdSlotIncluded(t *testing.T) {
 
 	assert.Equal(t, "test-adslot", rubiconExtInventory["dfp_ad_unit_code"],
 		"Unexpected dfp_ad_unit_code: %s", rubiconExtInventory["dfp_ad_unit_code"])
+}
+
+func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
+	SIZE_ID := getTestSizes()
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Banner: &openrtb.Banner{
+				Format: []openrtb.Format{
+					SIZE_ID[15],
+					SIZE_ID[10],
+				},
+			},
+			Ext: json.RawMessage(`{"bidder": {
+				"zoneId": 8394,
+				"siteId": 283282,
+				"accountId": 7891
+			}}`),
+		}},
+		User: &openrtb.User{
+			Ext: json.RawMessage(`{"eids": [
+                {
+                    "source": "pubcid",
+                    "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+				},
+				{
+                    "source": "adserver.org",
+                    "uids": [{
+                        "id": "3d50a262-bd8e-4be3-90b8-246291523907",
+                        "ext": {
+                            "rtiPartner": "TDID"
+                        }
+                    }]
+                },
+				{
+					"source": "liveintent.com",
+					"uids": [{
+						"id": "T7JiRRvsRAmh88"
+					}],
+					"ext": {
+						"segments": ["999","888"]
+					}
+				}
+			]}`),
+		},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	assert.NotNil(t, rubiconReq.User.Ext, "User.Ext object should not be nil.")
+
+	var userExt rubiconUserExt
+	if err := json.Unmarshal(rubiconReq.User.Ext, &userExt); err != nil {
+		t.Fatal("Error unmarshalling request.user.ext object.")
+	}
+
+	assert.NotNil(t, userExt.Eids)
+	assert.Equal(t, 3, len(userExt.Eids), "Eids values are not as expected!")
+
+	assert.NotNil(t, userExt.TpID)
+	assert.Equal(t, 2, len(userExt.TpID), "TpID values are not as expected!")
+
+	// adserver.org
+	assert.Equal(t, "tdid", userExt.TpID[0].Source, "TpID source value is not as expected!")
+
+	// liveintent.com
+	assert.Equal(t, "liveintent.com", userExt.TpID[1].Source, "TpID source value is not as expected!")
+
+	userExtRPTarget := make(map[string]interface{})
+	if err := json.Unmarshal(userExt.RP.Target, &userExtRPTarget); err != nil {
+		t.Fatal("Error unmarshalling request.user.ext.rp.target object.")
+	}
+
+	assert.Contains(t, userExtRPTarget, "LIseg", "request.user.ext.rp.target value is not as expected!")
+	assert.Contains(t, userExtRPTarget["LIseg"], "888", "No segment with 888 as expected!")
+	assert.Contains(t, userExtRPTarget["LIseg"], "999", "No segment with 999 as expected!")
 }
 
 func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t *testing.T) {

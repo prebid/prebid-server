@@ -660,6 +660,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 				if len(userExt.Eids) > 0 {
 					if tpIds, segments, errors := getTpIdsAndSegments(userExt.Eids); len(errors) > 0 {
 						errs = append(errs, errors...)
+						continue
 					} else if err := updateUserExtWithTpIdsAndSegments(&userExtRP, tpIds, segments); err != nil {
 						errs = append(errs, err)
 						continue
