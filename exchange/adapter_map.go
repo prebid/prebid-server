@@ -107,7 +107,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderTappx:          tappx.NewTappxBidder(client, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderTappx))].Endpoint),
 		openrtb_ext.BidderVerizonMedia:   verizonmedia.NewVerizonMediaBidder(client, cfg.Adapters[string(openrtb_ext.BidderVerizonMedia)].Endpoint),
 		openrtb_ext.BidderKubient:        kubient.NewKubientBidder(cfg.Adapters[string(openrtb_ext.BidderKubient)].Endpoint),
-		openrtb_ext.BidderMarsmedia: marsmedia.NewMarsmediaBidder(cfg.Adapters[string(openrtb_ext.BidderMarsmedia)].Endpoint),
 		openrtb_ext.BidderFacebook: audienceNetwork.NewFacebookBidder(
 			client,
 			cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID,
