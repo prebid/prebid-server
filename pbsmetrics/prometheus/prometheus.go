@@ -110,7 +110,7 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	metrics.prebidCacheWriteTimer = newHistogram(cfg, metrics.Registry,
 		"prebidcache_write_time_seconds",
-		"Seconds to write to Prebid Cache labeled by success or failure.",
+		"Seconds to write to Prebid Cache labeled by success or failure. Failure timing is limited by Prebid Server enforced timeouts.",
 		[]string{successLabel},
 		cacheWriteTimeBuckts)
 
