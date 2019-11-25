@@ -41,6 +41,15 @@ func boolValuesAsString() []string {
 	}
 }
 
+func cookieTypesAsString() []string {
+	values := pbsmetrics.CookieTypes()
+	valuesAsString := make([]string, len(values))
+	for i, v := range values {
+		valuesAsString[i] = string(v)
+	}
+	return valuesAsString
+}
+
 func cacheResultsAsString() []string {
 	values := pbsmetrics.CacheResults()
 	valuesAsString := make([]string, len(values))

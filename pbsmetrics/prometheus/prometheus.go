@@ -50,13 +50,13 @@ const (
 	bidTypeLabel         = "bid_type"
 	cacheResultLabel     = "cache_result"
 	connectionErrorLabel = "connection_error"
+	cookieLabel          = "cookie"
 	hasBidsLabel         = "has_bids"
 	isAudioLabel         = "audio"
 	isBannerLabel        = "banner"
 	isNativeLabel        = "native"
 	isVideoLabel         = "video"
 	markupDeliveryLabel  = "delivery"
-	noCookieLabel        = "missing_cookie"
 	privacyBlockedLabel  = "privacy_blocked"
 	requestStatusLabel   = "request_status"
 	requestTypeLabel     = "request_type"
@@ -168,8 +168,8 @@ func NewMetrics(cfg config.PrometheusMetrics) *Metrics {
 
 	metrics.adapterRequests = newCounter(cfg, metrics.Registry,
 		"adapter_requests",
-		"Count of requests labeled by adapter, if has no cookie, and if it resulted in bids.",
-		[]string{adapterLabel, noCookieLabel, hasBidsLabel})
+		"Count of requests labeled by adapter, if has a cookie, and if it resulted in bids.",
+		[]string{adapterLabel, cookieLabel, hasBidsLabel})
 
 	metrics.adapterRequestsTimer = newHistogram(cfg, metrics.Registry,
 		"adapter_request_time_seconds",
@@ -291,9 +291,9 @@ func (m *Metrics) RecordRequestTime(labels pbsmetrics.Labels, length time.Durati
 
 func (m *Metrics) RecordAdapterRequest(labels pbsmetrics.AdapterLabels) {
 	m.adapterRequests.With(prometheus.Labels{
-		adapterLabel:  string(labels.Adapter),
-		noCookieLabel: strconv.FormatBool(labels.CookieFlag == pbsmetrics.CookieFlagNo),
-		hasBidsLabel:  strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
+		adapterLabel: string(labels.Adapter),
+		cookieLabel:  string(labels.CookieFlag),
+		hasBidsLabel: strconv.FormatBool(labels.AdapterBids == pbsmetrics.AdapterBidPresent),
 	}).Inc()
 
 	for err := range labels.AdapterErrors {
@@ -348,10 +348,13 @@ func (m *Metrics) RecordAdapterCookieSync(adapter openrtb_ext.BidderName, privac
 }
 
 func (m *Metrics) RecordUserIDSet(labels pbsmetrics.UserLabels) {
-	m.adapterUserSync.With(prometheus.Labels{
-		adapterLabel: string(labels.Bidder),
-		actionLabel:  string(labels.Action),
-	}).Inc()
+	adapter := string(labels.Bidder)
+	if adapter != "" {
+		m.adapterUserSync.With(prometheus.Labels{
+			adapterLabel: adapter,
+			actionLabel:  string(labels.Action),
+		}).Inc()
+	}
 }
 
 func (m *Metrics) RecordStoredReqCacheResult(cacheResult pbsmetrics.CacheResult, inc int) {

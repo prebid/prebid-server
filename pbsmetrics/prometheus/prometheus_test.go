@@ -61,7 +61,7 @@ func TestMetricCountGatekeeping(t *testing.T) {
 	// Verify Per-Adapter Cardinality
 	// - This assertion provides a warning for newly added adapter metrics. Threre are 40+ adapters which makes the
 	//   cost of new per-adapter metrics rather expensive. Thought should be given when adding new per-adapter metrics.
-	assert.True(t, perAdapterCardinalityCount <= 20, "Per-Adapter Cardinality")
+	assert.True(t, perAdapterCardinalityCount <= 22, "Per-Adapter Cardinality")
 }
 
 func TestConnectionMetrics(t *testing.T) {
@@ -487,65 +487,79 @@ func TestAdapterRequestMetrics(t *testing.T) {
 	}
 
 	testCases := []struct {
-		description           string
-		testCase              func(m *Metrics)
-		expectedCount         float64
-		expectedNoCookieCount float64
-		expectedHasBidsCount  float64
+		description                string
+		testCase                   func(m *Metrics)
+		expectedCount              float64
+		expectedCookieNoCount      float64
+		expectedCookieYesCount     float64
+		expectedCookieUnknownCount float64
+		expectedHasBidsCount       float64
 	}{
 		{
 			description: "No Cookie & No Bids",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagNo, pbsmetrics.AdapterBidNone)
 			},
-			expectedCount:         1,
-			expectedNoCookieCount: 1,
-			expectedHasBidsCount:  0,
+			expectedCount:              1,
+			expectedCookieNoCount:      1,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       0,
 		},
 		{
 			description: "Unknown Cookie & No Bids",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagUnknown, pbsmetrics.AdapterBidNone)
 			},
-			expectedCount:         1,
-			expectedNoCookieCount: 0,
-			expectedHasBidsCount:  0,
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 1,
+			expectedHasBidsCount:       0,
 		},
 		{
 			description: "Has Cookie & No Bids",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagYes, pbsmetrics.AdapterBidNone)
 			},
-			expectedCount:         1,
-			expectedNoCookieCount: 0,
-			expectedHasBidsCount:  0,
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     1,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       0,
 		},
 		{
 			description: "No Cookie & Bids Present",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagNo, pbsmetrics.AdapterBidPresent)
 			},
-			expectedCount:         1,
-			expectedNoCookieCount: 1,
-			expectedHasBidsCount:  1,
+			expectedCount:              1,
+			expectedCookieNoCount:      1,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       1,
 		},
 		{
 			description: "Unknown Cookie & Bids Present",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagUnknown, pbsmetrics.AdapterBidPresent)
 			},
-			expectedCount:         1,
-			expectedNoCookieCount: 0,
-			expectedHasBidsCount:  1,
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     0,
+			expectedCookieUnknownCount: 1,
+			expectedHasBidsCount:       1,
 		},
 		{
 			description: "Has Cookie & Bids Present",
 			testCase: func(m *Metrics) {
 				performTest(m, pbsmetrics.CookieFlagYes, pbsmetrics.AdapterBidPresent)
 			},
-			expectedCount:         1,
-			expectedNoCookieCount: 0,
-			expectedHasBidsCount:  1,
+			expectedCount:              1,
+			expectedCookieNoCount:      0,
+			expectedCookieYesCount:     1,
+			expectedCookieUnknownCount: 0,
+			expectedHasBidsCount:       1,
 		},
 	}
 
@@ -555,7 +569,9 @@ func TestAdapterRequestMetrics(t *testing.T) {
 		test.testCase(m)
 
 		var totalCount float64
-		var totalNoCookieCount float64
+		var totalCookieNoCount float64
+		var totalCookieYesCount float64
+		var totalCookieUnknowmCount float64
 		var totalHasBidsCount float64
 		processMetrics(m.adapterRequests, func(m dto.Metric) {
 			isMetricForAdapter := false
@@ -569,19 +585,28 @@ func TestAdapterRequestMetrics(t *testing.T) {
 				value := m.GetCounter().GetValue()
 				totalCount += value
 				for _, label := range m.GetLabel() {
-					if label.GetValue() == "true" {
-						switch label.GetName() {
-						case noCookieLabel:
-							totalNoCookieCount += value
-						case hasBidsLabel:
-							totalHasBidsCount += value
+
+					if label.GetName() == hasBidsLabel && label.GetValue() == "true" {
+						totalHasBidsCount += value
+					}
+
+					if label.GetName() == cookieLabel {
+						switch label.GetValue() {
+						case string(pbsmetrics.CookieFlagNo):
+							totalCookieNoCount += value
+						case string(pbsmetrics.CookieFlagYes):
+							totalCookieYesCount += value
+						case string(pbsmetrics.CookieFlagUnknown):
+							totalCookieUnknowmCount += value
 						}
 					}
 				}
 			}
 		})
 		assert.Equal(t, test.expectedCount, totalCount, test.description+":total")
-		assert.Equal(t, test.expectedNoCookieCount, totalNoCookieCount, test.description+":noCookie")
+		assert.Equal(t, test.expectedCookieNoCount, totalCookieNoCount, test.description+":cookie=no")
+		assert.Equal(t, test.expectedCookieYesCount, totalCookieYesCount, test.description+":cookie=yes")
+		assert.Equal(t, test.expectedCookieUnknownCount, totalCookieUnknowmCount, test.description+":cookie=unknown")
 		assert.Equal(t, test.expectedHasBidsCount, totalHasBidsCount, test.description+":hasBids")
 	}
 }
@@ -742,6 +767,23 @@ func TestUserIDSetMetric(t *testing.T) {
 			adapterLabel: adapterName,
 			actionLabel:  string(action),
 		})
+}
+
+func TestUserIDSetMetric_WhenBidderEmpty(t *testing.T) {
+	m := createMetricsForTesting()
+	action := pbsmetrics.RequestActionErr
+
+	m.RecordUserIDSet(pbsmetrics.UserLabels{
+		Bidder: openrtb_ext.BidderName(""),
+		Action: action,
+	})
+
+	expectedTotalCount := float64(0)
+	actualTotalCount := float64(0)
+	processMetrics(m.adapterUserSync, func(m dto.Metric) {
+		actualTotalCount += m.GetCounter().GetValue()
+	})
+	assert.Equal(t, expectedTotalCount, actualTotalCount, "total count")
 }
 
 func TestAdapterPanicMetric(t *testing.T) {
