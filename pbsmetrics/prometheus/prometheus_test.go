@@ -769,7 +769,7 @@ func TestUserIDSetMetric(t *testing.T) {
 		})
 }
 
-func TestUserIDSetMetric_WhenBidderEmpty(t *testing.T) {
+func TestUserIDSetMetricWhenBidderEmpty(t *testing.T) {
 	m := createMetricsForTesting()
 	action := pbsmetrics.RequestActionErr
 
