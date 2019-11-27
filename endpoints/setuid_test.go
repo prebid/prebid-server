@@ -230,10 +230,6 @@ func TestSiteCookieCheck(t *testing.T) {
 }
 
 func TestGetFamilyName(t *testing.T) {
-	validFamilyName := "valid"
-	validFamilyNameMap := map[string]struct{}{validFamilyName: {}}
-	invalidFamilyName := "invalid"
-
 	testCases := []struct {
 		urlValues     url.Values
 		expectedName  string
@@ -241,12 +237,17 @@ func TestGetFamilyName(t *testing.T) {
 		description   string
 	}{
 		{
-			urlValues:    url.Values{"bidder": []string{validFamilyName}},
-			expectedName: validFamilyName,
+			urlValues:    url.Values{"bidder": []string{"valid"}},
+			expectedName: "valid",
 			description:  "Should return no error for valid family name",
 		},
 		{
-			urlValues:     url.Values{"bidder": []string{invalidFamilyName}},
+			urlValues:    url.Values{"bidder": []string{"VALID"}},
+			expectedName: "valid",
+			description:  "Should return all lower case",
+		},
+		{
+			urlValues:     url.Values{"bidder": []string{"invalid"}},
 			expectedName:  "",
 			expectedError: "The bidder name provided is not supported by Prebid Server",
 			description:   "Should return an error for unsupported bidder",
@@ -267,7 +268,7 @@ func TestGetFamilyName(t *testing.T) {
 
 	for _, test := range testCases {
 
-		name, err := getFamilyName(test.urlValues, validFamilyNameMap)
+		name, err := getFamilyName(test.urlValues, map[string]struct{}{"valid": {}})
 
 		assert.Equal(t, test.expectedName, name, test.description)
 

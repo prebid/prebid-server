@@ -98,7 +98,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 
 func getFamilyName(query url.Values, validFamilyNameMap map[string]struct{}) (string, error) {
 	// The family name is bound to the 'bidder' query param. In most cases, these values are the same.
-	familyName := query.Get("bidder")
+	familyName := strings.ToLower(query.Get("bidder"))
 
 	if familyName == "" {
 		return "", errors.New(`"bidder" query param is required`)
