@@ -236,6 +236,16 @@ const (
 	RequestActionErr    RequestAction = "err"
 )
 
+// RequestActions returns possible setuid action labels
+func RequestActions() []RequestAction {
+	return []RequestAction{
+		RequestActionSet,
+		RequestActionOptOut,
+		RequestActionGDPR,
+		RequestActionErr,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total numer of incoming requests. The remaining 5 fire off per outgoing
@@ -256,10 +266,10 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordCookieSync()
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
-	RecordPrebidCacheRequestTime(labels RequestLabels, length time.Duration)
+	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 }
