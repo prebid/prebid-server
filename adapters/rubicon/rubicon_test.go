@@ -1155,28 +1155,28 @@ func TestOpenRTBRequestWithSpecificExtUserEids(t *testing.T) {
 		}},
 		User: &openrtb.User{
 			Ext: json.RawMessage(`{"eids": [
-                {
-                    "source": "pubcid",
-                    "id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
-				},
-				{
-                    "source": "adserver.org",
-                    "uids": [{
-                        "id": "3d50a262-bd8e-4be3-90b8-246291523907",
-                        "ext": {
-                            "rtiPartner": "TDID"
-                        }
-                    }]
-                },
-				{
-					"source": "liveintent.com",
-					"uids": [{
-						"id": "T7JiRRvsRAmh88"
-					}],
+			{
+				"source": "pubcid",
+				"id": "2402fc76-7b39-4f0e-bfc2-060ef7693648"
+			},
+			{
+				"source": "adserver.org",
+				"uids": [{
+					"id": "3d50a262-bd8e-4be3-90b8-246291523907",
 					"ext": {
-						"segments": ["999","888"]
+						"rtiPartner": "TDID"
 					}
+				}]
+			},
+			{
+				"source": "liveintent.com",
+				"uids": [{
+					"id": "T7JiRRvsRAmh88"
+				}],
+				"ext": {
+					"segments": ["999","888"]
 				}
+			}
 			]}`),
 		},
 	}
