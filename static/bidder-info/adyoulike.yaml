@@ -1,0 +1,7 @@
+maintainer:
+  email: "guillaume.andouard@adyoulike.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
