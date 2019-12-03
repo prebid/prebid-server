@@ -32,7 +32,7 @@ func (adapter *adyoulikeAdapter) MakeRequests(
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, newBadInputError(err.Error()))
 		}
-		var ttxExt openrtb_ext.ExtAdyoulike
+		var ttxExt openrtb_ext.ExtImpAdyoulike
 		if err := json.Unmarshal(bidderExt.Bidder, &ttxExt); err != nil {
 			errs = append(errs, newBadInputError(err.Error()))
 		}
