@@ -444,6 +444,10 @@ func fillAndValidateNative(n *openrtb.Native, impIndex int) error {
 }
 
 func validateNativeContextTypes(cType native.ContextType, cSubtype native.ContextSubType, impIndex int) error {
+	if cType == 0 {
+		// Context is only recommended, so none is a valid type.
+		return nil
+	}
 	if cType < native.ContextTypeContent || cType > native.ContextTypeProduct {
 		return fmt.Errorf("request.imp[%d].native.request.context is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=39", impIndex)
 	}
@@ -480,6 +484,10 @@ func validateNativeContextTypes(cType native.ContextType, cSubtype native.Contex
 }
 
 func validateNativePlacementType(pt native.PlacementType, impIndex int) error {
+	if pt == 0 {
+		// Placement Type is only reccomended, not required.
+		return nil
+	}
 	if pt < native.PlacementTypeFeed || pt > native.PlacementTypeRecommendationWidget {
 		return fmt.Errorf("request.imp[%d].native.request.plcmttype is invalid. See https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=40", impIndex)
 	}
@@ -523,9 +531,7 @@ func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex in
 			return fmt.Errorf(assetErr, impIndex, assetIndex)
 		}
 		foundType = true
-		if err := validateNativeAssetImg(asset.Img, impIndex, assetIndex); err != nil {
-			return err
-		}
+		// It is technically valid to have neither w/h nor wmin/hmin, so no check
 	}
 
 	if asset.Video != nil {
@@ -582,19 +588,6 @@ func validateNativeEventTracker(tracker nativeRequests.EventTracker, impIndex in
 		if method < native.EventTrackingMethodImage || method > native.EventTrackingMethodJS {
 			return fmt.Errorf("request.imp[%d].native.request.eventtrackers[%d].methods[%d] is invalid. See section 7.7: https://iabtechlab.com/wp-content/uploads/2016/07/OpenRTB-Native-Ads-Specification-Final-1.2.pdf#page=43", impIndex, eventIndex, methodIndex)
 		}
-	}
-
-	return nil
-}
-
-func validateNativeAssetImg(image *nativeRequests.Image, impIndex int, assetIndex int) error {
-	// Note that w, wmin, h, and hmin cannot be negative because these variables use unsigned ints.
-	// Those fail during the standard json.Unmarshal() call.
-	if image.W == 0 && image.WMin == 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "w" or "wmin"`, impIndex, assetIndex)
-	}
-	if image.H == 0 && image.HMin == 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].img must contain at least one of "h" or "hmin"`, impIndex, assetIndex)
 	}
 
 	return nil

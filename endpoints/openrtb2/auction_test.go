@@ -282,7 +282,6 @@ func TestRejectAccountRequired(t *testing.T) {
 func (gr *getResponseFromDirectory) assert(t *testing.T) {
 	//t *testing.T, dir string, payloadGetter func(*testing.T, []byte) []byte, messageGetter func(*testing.T, []byte) []byte, expectedCode int, aliased bool) {
 	t.Helper()
-	var filename string
 	var filesToAssert []string
 	if gr.file == "" {
 		// Append every file found in `gr.dir` to the `filesToAssert` array and test them all
@@ -300,14 +299,14 @@ func (gr *getResponseFromDirectory) assert(t *testing.T) {
 		fileData = readFile(t, testFile)
 		code, msg := gr.doRequest(t, gr.payloadGetter(t, fileData))
 		fmt.Printf("Processing %s\n", testFile)
-		assertResponseCode(t, filename, code, gr.expectedCode, msg)
+		assertResponseCode(t, testFile, code, gr.expectedCode, msg)
 
 		expectMsg := gr.messageGetter(t, fileData)
 		if gr.description != "" {
 			if len(expectMsg) > 0 {
-				assert.Equal(t, string(expectMsg), msg, "Test failed. %s. Filename: \n", gr.description, filename)
+				assert.Equal(t, string(expectMsg), msg, "Test failed. %s. Filename: \n", gr.description, testFile)
 			} else {
-				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", filename)
+				assert.Equal(t, string(expectMsg), msg, "file %s had bad response body", testFile)
 			}
 		}
 	}
