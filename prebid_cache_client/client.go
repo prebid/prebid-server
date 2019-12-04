@@ -70,14 +70,7 @@ type clientImpl struct {
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string) {
-	path := c.externalCachePath
-	if path == "/" {
-		path = ""
-	} else if strings.Index(path, "/") == 0 {
-		path = strings.TrimLeft(path, "/")
-	}
-
-	return c.externalCacheHost, path
+	return c.externalCacheHost, c.externalCachePath
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
