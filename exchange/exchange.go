@@ -615,11 +615,11 @@ func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.E
 		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
 			cacheInfo.CacheId = cacheUUID
 			extCacheHost, extCachePath = e.cache.GetExtCacheData()
-			cacheInfo.Url = extCacheHost + "/" + extCachePath + "?uuid=" + cacheUUID
+			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
 		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
 			cacheInfo.CacheId = cacheUUID
 			extCacheHost, extCachePath = e.cache.GetExtCacheData()
-			cacheInfo.Url = extCacheHost + "/" + extCachePath + "?uuid=" + cacheUUID
+			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
 		}
 	}
 	return cacheInfo, found
