@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	httpCore "net/http"
-	url2 "net/url"
+	"net/url"
 	"time"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -97,7 +97,7 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			thisTimeInUTC := thisTime.UTC()
 
 			// Parse the endpoint url defined
-			url, urlErr := url2.Parse(e.Endpoint)
+			endpointUrl, urlErr := url.Parse(e.Endpoint)
 
 			// Error with url parsing
 			if urlErr != nil {
@@ -106,16 +106,16 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			}
 
 			// Parse the url query string
-			urlQuery := url.Query()
+			urlQuery := endpointUrl.Query()
 
 			// See the last-modified query param
 			urlQuery.Set("last-modified", e.lastUpdate.Format(time.RFC3339))
 
 			// Rebuild
-			url.RawQuery = urlQuery.Encode()
+			endpointUrl.RawQuery = urlQuery.Encode()
 
 			// Convert to string
-			endpoint := url.String()
+			endpoint := endpointUrl.String()
 
 			glog.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
 
