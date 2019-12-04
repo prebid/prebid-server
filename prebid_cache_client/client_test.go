@@ -185,6 +185,14 @@ func TestStripCacheHostAndPath(t *testing.T) {
 			expectedHost: "prebid-server.prebid.org",
 			expectedPath: "/pbcache/endpoint",
 		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebidcache.net",
+				Path: "/",
+			},
+			expectedHost: "prebidcache.net",
+			expectedPath: "",
+		},
 	}
 	for _, test := range testInput {
 		//start client
