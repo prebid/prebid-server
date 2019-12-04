@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	httpCore "net/http"
+	url2 "net/url"
 	"time"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -94,7 +95,27 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 		select {
 		case thisTime := <-ticker:
 			thisTimeInUTC := thisTime.UTC()
-			thisEndpoint := e.Endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
+			
+			// Parse the endpoint url defined
+			url, urlErr := url2.Parse(e.Endpoint)
+	
+			// Error with url parsing
+			if urlErr != nil {
+   				// Should do something here probably...
+			}
+
+			// Parse the url query string
+			urlQuery := url.Query()
+
+			// See the last-modified query param
+			urlQuery.Set("last-modified", e.lastUpdate.Format(time.RFC3339))
+
+			// Rebuild
+			url.RawQuery = urlQuery.Encode()
+
+			// Convert to string and save
+			thisEndpoint := url.String()
+			
 			ctx, cancel := e.ctxProducer()
 			resp, err := ctxhttp.Get(ctx, e.client, thisEndpoint)
 			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
