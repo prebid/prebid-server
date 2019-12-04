@@ -95,13 +95,14 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 		select {
 		case thisTime := <-ticker:
 			thisTimeInUTC := thisTime.UTC()
-			
+
 			// Parse the endpoint url defined
 			url, urlErr := url2.Parse(e.Endpoint)
-	
+
 			// Error with url parsing
 			if urlErr != nil {
-   				// Should do something here probably...
+				glog.Errorf("Disabling refresh HTTP cache from GET '%s': %v", e.Endpoint, urlErr)
+				return
 			}
 
 			// Parse the url query string
@@ -113,12 +114,14 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			// Rebuild
 			url.RawQuery = urlQuery.Encode()
 
-			// Convert to string and save
-			thisEndpoint := url.String()
-			
+			// Convert to string
+			endpoint := url.String()
+
+			glog.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
+
 			ctx, cancel := e.ctxProducer()
-			resp, err := ctxhttp.Get(ctx, e.client, thisEndpoint)
-			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
+			resp, err := ctxhttp.Get(ctx, e.client, endpoint)
+			if respObj, ok := e.parse(endpoint, resp, err); ok {
 				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
 					Imps:     extractInvalidations(respObj.StoredImps),
