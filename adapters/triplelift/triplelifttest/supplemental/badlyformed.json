@@ -1,0 +1,27 @@
+{
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "neither Banner nor Video object specified",
+      "comparison": "literal"
+    },
+    {
+      "value": "No valid impressions for triplelift",
+      "comparison": "literal"
+    }
+  ],
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "ext": {
+          "bidder": {
+            "inventoryCode": "aa" 
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+  ]
+}

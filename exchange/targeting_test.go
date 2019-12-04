@@ -18,6 +18,7 @@ import (
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/stretchr/testify/assert"
 )
 
 // Using this set of bids in more than one test
@@ -54,6 +55,15 @@ func TestTargetingCache(t *testing.T) {
 
 	assertKeyExists(t, bids["losing-bid"], string(openrtb_ext.HbCacheKey), false)
 	assertKeyExists(t, bids["losing-bid"], openrtb_ext.HbCacheKey.BidderKey(openrtb_ext.BidderAppnexus, maxKeyLength), false)
+
+	//assert hb_cache_host was included
+	assert.Contains(t, string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCacheHostKey))
+	assert.Contains(t, string(bids["winning-bid"].Ext), "www.pbcserver.com")
+
+	//assert hb_cache_path was included
+	assert.Contains(t, string(bids["winning-bid"].Ext), string(openrtb_ext.HbConstantCachePathKey))
+	assert.Contains(t, string(bids["winning-bid"].Ext), "/pbcache/endpoint")
+
 }
 
 func assertKeyExists(t *testing.T, bid *openrtb.Bid, key string, expected bool) {
@@ -92,7 +102,11 @@ func runTargetingAuction(t *testing.T, mockBids map[openrtb_ext.BidderName][]*op
 		req.Site = &openrtb.Site{}
 	}
 
-	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{})
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+	bidResp, err := ex.HoldAuction(context.Background(), req, &mockFetcher{}, pbsmetrics.Labels{}, &categoriesFetcher)
 
 	if err != nil {
 		t.Fatalf("Unexpected errors running auction: %v", err)
@@ -200,7 +214,7 @@ type mockTargetingBidder struct {
 	bids          []*openrtb.Bid
 }
 
-func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (m *mockTargetingBidder) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     m.mockServerURL,

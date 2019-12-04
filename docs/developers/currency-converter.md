@@ -49,3 +49,8 @@ This configuration can be changed:
 | 1                | EUR           |          1.13 | YES                      |                      1.13 | YES       |
 | 1                | EUR           |           N/A | YES                      |                       N/A | NO        |
 | 1                | EUR           |          1.13 | NO                       |                       N/A | NO        |
+
+## Debug
+
+A dedicated endpoint will allow you to see what's happening within the currency converter.
+See [currency rates endpoint](../endpoints/currency_rates.md) for more details.

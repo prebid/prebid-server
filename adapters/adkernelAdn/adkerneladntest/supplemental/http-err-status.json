@@ -32,7 +32,6 @@
           "imp": [
             {
               "id": "adunit-1",
-              "tagid": "adunit-1",
               "banner": {
                 "w": 300,
                 "h": 250
@@ -50,5 +49,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Unexpected http status code: 404"]
+  "expectedMakeBidsErrors": [ 
+    {
+      "value": "Unexpected http status code: 404",
+      "comparison": "literal" 
+    }
+  ]
 }

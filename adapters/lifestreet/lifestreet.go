@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -71,15 +72,27 @@ func (a *LifestreetAdapter) callOne(ctx context.Context, req *pbs.PBSRequest, re
 	}
 	bid := bidResp.SeatBid[0].Bid[0]
 
+	t := openrtb_ext.BidTypeBanner
+
+	if bid.Ext != nil {
+		var e openrtb_ext.ExtBid
+		err = json.Unmarshal(bid.Ext, &e)
+		if err != nil {
+			return
+		}
+		t = e.Prebid.Type
+	}
+
 	result.Bid = &pbs.PBSBid{
-		AdUnitCode:  bid.ImpID,
-		Price:       bid.Price,
-		Adm:         bid.AdM,
-		Creative_id: bid.CrID,
-		Width:       bid.W,
-		Height:      bid.H,
-		DealId:      bid.DealID,
-		NURL:        bid.NURL,
+		AdUnitCode:        bid.ImpID,
+		Price:             bid.Price,
+		Adm:               bid.AdM,
+		Creative_id:       bid.CrID,
+		Width:             bid.W,
+		Height:            bid.H,
+		DealId:            bid.DealID,
+		NURL:              bid.NURL,
+		CreativeMediaType: string(t),
 	}
 	return
 }

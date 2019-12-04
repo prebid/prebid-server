@@ -27,7 +27,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Expected at least one banner.format entry or explicit w/h"
+    {
+      "value": "Expected at least one banner.format entry or explicit w/h",
+      "comparison": "literal"
+    }
   ]
- 
+  
 }

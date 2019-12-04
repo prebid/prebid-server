@@ -1,0 +1,97 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+            "bidder": {
+                "sspid": "99999"
+            }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://dsp.bnmla.com/hb?zoneid=99999",
+        "body":{
+          "id": "test-request-id",
+          "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+                "bidder": {
+                    "sspid":"99999"
+                }
+            }
+          }]
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+              {
+                  "id" : "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 9.81,
+                  "adid": "abcde-12345",
+                  "adm": "<div><img src=\"https://cdn0.bnmla.com/0b1c6e85e9376e3092df8c9fc8ab9095.gif\" width=350 height=250 /></div>",
+                  "adomain": [
+                      "advertiserdomain.com"
+                  ],
+                  "iurl": "http://match.bnmla.com/usersync?sspid=59&redir=",
+                  "cid": "campaign1",
+                  "crid": "abcde-12345",
+                  "w": 300,
+                  "h": 250
+              }
+              ],
+              "seat": "test-request-id"
+            }
+          ],
+          "bidid": "test-request-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+  {
+      "currency": "USD",
+      "bids": [
+      {
+          "bid": {
+              "id": "test-imp-id",
+              "impid": "test-imp-id",
+              "price": 9.81,
+              "adid": "abcde-12345",
+              "adm": "<div><img src=\"https://cdn0.bnmla.com/0b1c6e85e9376e3092df8c9fc8ab9095.gif\" width=350 height=250 /></div>",
+              "adomain": ["advertiserdomain.com"],
+              "iurl": "http://match.bnmla.com/usersync?sspid=59&redir=",
+              "cid": "campaign1",
+              "crid": "abcde-12345",
+              "w": 300,
+              "h": 250
+          },
+          "type": "banner"
+      }
+      ]
+  }
+  ]
+}
+

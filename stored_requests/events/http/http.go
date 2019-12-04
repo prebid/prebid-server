@@ -80,12 +80,11 @@ func (e *HTTPEvents) fetchAll() {
 	ctx, cancel := e.ctxProducer()
 	defer cancel()
 	resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
-	if respObj, ok := e.parse(e.Endpoint, resp, err); ok {
-		if len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0 {
-			e.saves <- events.Save{
-				Requests: respObj.StoredRequests,
-				Imps:     respObj.StoredImps,
-			}
+	if respObj, ok := e.parse(e.Endpoint, resp, err); ok &&
+		(len(respObj.StoredRequests) > 0 || len(respObj.StoredImps) > 0) {
+		e.saves <- events.Save{
+			Requests: respObj.StoredRequests,
+			Imps:     respObj.StoredImps,
 		}
 	}
 }
@@ -97,7 +96,7 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 			thisTimeInUTC := thisTime.UTC()
 			thisEndpoint := e.Endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
 			ctx, cancel := e.ctxProducer()
-			resp, err := ctxhttp.Get(ctx, e.client, e.Endpoint)
+			resp, err := ctxhttp.Get(ctx, e.client, thisEndpoint)
 			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
 				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),

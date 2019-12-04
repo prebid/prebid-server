@@ -148,56 +148,56 @@ func TestSortBidsAndAddKeywordsForMobile(t *testing.T) {
 			t.Error("Ad server targeting should not be nil")
 		}
 		if bid.BidderCode == "audienceNetwork" {
-			if bid.AdServerTargeting["hb_size"] != "300x250" {
-				t.Error("hb_size key was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbSizeConstantKey)] != "300x250" {
+				t.Error(string(openrtb_ext.HbSizeConstantKey) + " key was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_pb"] != "2.00" {
-				t.Error("hb_pb key was not parsed correctly ", bid.AdServerTargeting["hb_pb"])
+			if bid.AdServerTargeting[string(openrtb_ext.HbpbConstantKey)] != "2.00" {
+				t.Error(string(openrtb_ext.HbpbConstantKey)+" key was not parsed correctly ", bid.AdServerTargeting[string(openrtb_ext.HbpbConstantKey)])
 			}
 
-			if bid.AdServerTargeting["hb_cache_id"] != "test_cache_id1" {
-				t.Error("hb_cache_id key was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbCacheKey)] != "test_cache_id1" {
+				t.Error(string(openrtb_ext.HbCacheKey) + " key was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_bidder"] != "audienceNetwork" {
-				t.Error("hb_bidder key was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbBidderConstantKey)] != "audienceNetwork" {
+				t.Error(string(openrtb_ext.HbBidderConstantKey) + " key was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_deal"] != "2345" {
-				t.Error("hb_deal_id key was not parsed correctly ")
+			if bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)] != "2345" {
+				t.Error(string(openrtb_ext.HbDealIDConstantKey) + " key was not parsed correctly ")
 			}
 		}
 		if bid.BidderCode == "appnexus" {
-			if bid.AdServerTargeting["hb_size_appnexus"] != "320x50" {
-				t.Error("hb_size key for appnexus bidder was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbSizeConstantKey)+"_appnexus"] != "320x50" {
+				t.Error(string(openrtb_ext.HbSizeConstantKey) + " key for appnexus bidder was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_cache_id_appnexus"] != "test_cache_id2" {
-				t.Error("hb_cache_id key for appnexus bidder was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbCacheKey)+"_appnexus"] != "test_cache_id2" {
+				t.Error(string(openrtb_ext.HbCacheKey) + " key for appnexus bidder was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_bidder_appnexus"] != "appnexus" {
-				t.Error("hb_bidder key for appnexus bidder was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbBidderConstantKey)+"_appnexus"] != "appnexus" {
+				t.Error(string(openrtb_ext.HbBidderConstantKey) + " key for appnexus bidder was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_pb_appnexus"] != "1.00" {
-				t.Error("hb_pb key for appnexus bidder was not parsed correctly")
+			if bid.AdServerTargeting[string(openrtb_ext.HbpbConstantKey)+"_appnexus"] != "1.00" {
+				t.Error(string(openrtb_ext.HbpbConstantKey) + " key for appnexus bidder was not parsed correctly")
 			}
-			if bid.AdServerTargeting["hb_pb"] != "" {
-				t.Error("hb_pb key was parsed for two bidders")
+			if bid.AdServerTargeting[string(openrtb_ext.HbpbConstantKey)] != "" {
+				t.Error(string(openrtb_ext.HbpbConstantKey) + " key was parsed for two bidders")
 			}
-			if bid.AdServerTargeting["hb_deal_appnexus"] != "1234" {
-				t.Errorf("hb_deal_id_appnexus was not parsed correctly %v", bid.AdServerTargeting["hb_deal_id_appnexus"])
+			if bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)+"_appnexus"] != "1234" {
+				t.Errorf(string(openrtb_ext.HbDealIDConstantKey)+"_appnexus was not parsed correctly %v", bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)+"_appnexus"])
 			}
 		}
-		if bid.BidderCode == "rubicon" {
+		if bid.BidderCode == string(openrtb_ext.BidderRubicon) {
 			if bid.AdServerTargeting["rpfl_1001"] != "15_tier0100" {
 				t.Error("custom ad_server_targeting KVPs from adapter were not preserved")
 			}
 		}
 		if bid.BidderCode == "nosizebidder" {
-			if _, exists := bid.AdServerTargeting["hb_size_nosizebidder"]; exists {
-				t.Error("hb_size key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
+			if _, exists := bid.AdServerTargeting[string(openrtb_ext.HbSizeConstantKey)+"_nosizebidder"]; exists {
+				t.Error(string(openrtb_ext.HbSizeConstantKey)+" key for nosize bidder was not parsed correctly", bid.AdServerTargeting)
 			}
 		}
 		if bid.BidderCode == "nodeal" {
-			if _, exists := bid.AdServerTargeting["hb_deal_nodeal"]; exists {
-				t.Error("hb_deal_id key for nodeal bidder was not parsed correctly")
+			if _, exists := bid.AdServerTargeting[string(openrtb_ext.HbDealIDConstantKey)+"_nodeal"]; exists {
+				t.Error(string(openrtb_ext.HbDealIDConstantKey) + " key for nodeal bidder was not parsed correctly")
 			}
 		}
 	}
@@ -341,7 +341,6 @@ func TestCacheVideoOnly(t *testing.T) {
 	bids = append(bids, &rbVideoBid2)
 
 	ctx := context.TODO()
-	w := httptest.NewRecorder()
 	v := viper.New()
 	config.SetupViper(v, "")
 	cfg, err := config.New(v)
@@ -353,7 +352,11 @@ func TestCacheVideoOnly(t *testing.T) {
 		HostVendorID: 0,
 	}, nil, nil)
 	prebid_cache_client.InitPrebidCache(server.URL)
-	cacheVideoOnly(bids, ctx, w, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, &pbsmetrics.Labels{})
+	var labels = &pbsmetrics.Labels{}
+	if err := cacheVideoOnly(bids, ctx, &auction{cfg: cfg, syncers: syncers, gdprPerms: gdprPerms, metricsEngine: &metricsConf.DummyMetricsEngine{}}, labels); err != nil {
+		t.Errorf("Prebid cache failed: %v \n", err)
+		return
+	}
 	if bids[0].CacheID != "UUID-1" {
 		t.Errorf("UUID was '%s', should have been 'UUID-1'", bids[0].CacheID)
 	}
@@ -409,7 +412,7 @@ func (m *auctionMockPermissions) BidderSyncAllowed(ctx context.Context, bidder o
 	return m.allowBidderSync, nil
 }
 
-func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, consent string) (bool, error) {
+func (m *auctionMockPermissions) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
 	return m.allowPI, nil
 }
 
@@ -591,9 +594,18 @@ func TestWriteAuctionError(t *testing.T) {
 }
 
 func TestPanicRecovery(t *testing.T) {
+	dummy := auction{
+		cfg:     nil,
+		syncers: nil,
+		gdprPerms: &auctionMockPermissions{
+			allowBidderSync:  false,
+			allowHostCookies: false,
+		},
+		metricsEngine: &metricsConf.DummyMetricsEngine{},
+	}
 	panicker := func(bidder *pbs.PBSBidder, blables pbsmetrics.AdapterLabels) {
 		panic("panic!")
 	}
-	recovered := recoverSafely(panicker)
+	recovered := dummy.recoverSafely(panicker)
 	recovered(nil, pbsmetrics.AdapterLabels{})
 }

@@ -32,7 +32,7 @@
         }
       ]
     },
-  
+
     "httpCalls": [
       {
         "expectedRequest": {
@@ -47,7 +47,13 @@
                     }
                 }
               },
-                    "imp": [
+              "ext": {
+                "appnexus": {
+                  "hb_source": 5
+                },
+                "prebid": {}
+              },
+              "imp": [
               {
                 "id": "test-imp-id",
                 "banner": {
@@ -96,6 +102,7 @@
                   "ext": {
                     "appnexus": {
                       "brand_id": 1,
+                      "brand_category_id": 1,
                       "auction_id": 8189378542222915032,
                       "bid_ad_type": 0,
                       "bidder_id": 2,
@@ -111,7 +118,7 @@
         }
       }
     ],
-  
+
     "expectedBidResponses": [
       {
         "currency": "USD",
@@ -129,9 +136,11 @@
               "crid": "29681110",
               "w": 300,
               "h": 250,
+              "cat": ["IAB20-3"],
               "ext": {
                 "appnexus": {
                   "brand_id": 1,
+                  "brand_category_id": 1,
                   "auction_id": 8189378542222915032,
                   "bid_ad_type": 0,
                   "bidder_id": 2,

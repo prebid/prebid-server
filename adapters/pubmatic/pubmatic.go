@@ -21,6 +21,7 @@ import (
 )
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
+const bidTypeExtKey = "BidType"
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -288,7 +289,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 				DealId:      bid.DealID,
 			}
 
-			mediaType := getMediaTypeForImp(bid.ImpID, pbReq.Imp)
+			mediaType := getBidType(bid.Ext)
 			pbid.CreativeMediaType = string(mediaType)
 
 			bids = append(bids, &pbid)
@@ -300,7 +301,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	return bids, nil
 }
 
-func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters.RequestData, []error) {
+func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	errs := make([]error, 0, len(request.Imp))
 
 	var err error
@@ -368,6 +369,73 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest) ([]*adapters
 	}}, errs
 }
 
+// validateAdslot validate the optional adslot string
+// valid formats are 'adslot@WxH', 'adslot' and no adslot
+func validateAdSlot(adslot string, imp *openrtb.Imp) error {
+	adSlotStr := strings.TrimSpace(adslot)
+
+	if len(adSlotStr) == 0 {
+		return nil
+	}
+
+	if !strings.Contains(adSlotStr, "@") {
+		imp.TagID = adSlotStr
+		return nil
+	}
+
+	adSlot := strings.Split(adSlotStr, "@")
+	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
+		imp.TagID = strings.TrimSpace(adSlot[0])
+
+		adSize := strings.Split(strings.ToLower(adSlot[1]), "x")
+		if len(adSize) != 2 {
+			return errors.New(fmt.Sprintf("Invalid size provided in adSlot %v", adSlotStr))
+		}
+
+		width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
+		if err != nil {
+			return errors.New(fmt.Sprintf("Invalid width provided in adSlot %v", adSlotStr))
+		}
+
+		heightStr := strings.Split(adSize[1], ":")
+		height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
+		if err != nil {
+			return errors.New(fmt.Sprintf("Invalid height provided in adSlot %v", adSlotStr))
+		}
+
+		//In case of video, size could be derived from the player size
+		if imp.Banner != nil {
+			imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
+			imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
+		}
+	} else {
+		return errors.New(fmt.Sprintf("Invalid adSlot %v", adSlotStr))
+	}
+
+	return nil
+}
+
+func assignBannerSize(banner *openrtb.Banner) error {
+	if banner == nil {
+		return nil
+	}
+
+	if banner.W != nil && banner.H != nil {
+		return nil
+	}
+
+	if len(banner.Format) == 0 {
+		return errors.New(fmt.Sprintf("No sizes provided for Banner %v", banner.Format))
+	}
+
+	banner.W = new(uint64)
+	*banner.W = banner.Format[0].W
+	banner.H = new(uint64)
+	*banner.H = banner.Format[0].H
+
+	return nil
+}
+
 // parseImpressionObject parse the imp to get it ready to send to pubmatic
 func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) error {
 	// PubMatic supports banner and video impressions.
@@ -403,38 +471,14 @@ func parseImpressionObject(imp *openrtb.Imp, wrapExt *string, pubID *string) err
 		*wrapExt = string(pubmaticExt.WrapExt)
 	}
 
-	adSlotStr := strings.TrimSpace(pubmaticExt.AdSlot)
+	if err := validateAdSlot(strings.TrimSpace(pubmaticExt.AdSlot), imp); err != nil {
+		return err
+	}
 
-	adSlot := strings.Split(adSlotStr, "@")
-	if len(adSlot) == 2 && adSlot[0] != "" && adSlot[1] != "" {
-		imp.TagID = strings.TrimSpace(adSlot[0])
-
-		adSize := strings.Split(strings.ToLower(strings.TrimSpace(adSlot[1])), "x")
-		if len(adSize) == 2 {
-			width, err := strconv.Atoi(strings.TrimSpace(adSize[0]))
-			if err != nil {
-				return errors.New("Invalid width provided in adSlot")
-			}
-
-			heightStr := strings.Split(strings.TrimSpace(adSize[1]), ":")
-			height, err := strconv.Atoi(strings.TrimSpace(heightStr[0]))
-			if err != nil {
-				return errors.New("Invalid height provided in adSlot")
-			}
-			if imp.Banner != nil {
-				imp.Banner.H = openrtb.Uint64Ptr(uint64(height))
-				imp.Banner.W = openrtb.Uint64Ptr(uint64(width))
-			} /* In case of video, params.adSlot would always be in the format adunit@0x0,
-			so we are not replacing video.W and video.H with size passed in params.adSlot
-				else {
-				imp.Video.H = uint64(height)
-				imp.Video.W = uint64(width)
-			}*/
-		} else {
-			return errors.New("Invalid size provided in adSlot")
+	if imp.Banner != nil {
+		if err := assignBannerSize(imp.Banner); err != nil {
+			return err
 		}
-	} else {
-		return errors.New("Invalid adSlot provided")
 	}
 
 	if pubmaticExt.Keywords != nil && len(pubmaticExt.Keywords) != 0 {
@@ -507,7 +551,7 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 			bid := sb.Bid[i]
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &bid,
-				BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+				BidType: getBidType(bid.Ext),
 			})
 
 		}
@@ -515,22 +559,32 @@ func (a *PubmaticAdapter) MakeBids(internalRequest *openrtb.BidRequest, external
 	return bidResponse, errs
 }
 
-// getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				mediaType = openrtb_ext.BidTypeAudio
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
+// getBidType returns the bid type specified in the response bid.ext
+func getBidType(bidExt json.RawMessage) openrtb_ext.BidType {
+	// setting "banner" as the default bid type
+	bidType := openrtb_ext.BidTypeBanner
+	if bidExt != nil {
+		bidExtMap := make(map[string]interface{})
+		extbyte, err := json.Marshal(bidExt)
+		if err == nil {
+			err = json.Unmarshal(extbyte, &bidExtMap)
+			if err == nil && bidExtMap[bidTypeExtKey] != nil {
+				bidTypeVal := int(bidExtMap[bidTypeExtKey].(float64))
+				switch bidTypeVal {
+				case 0:
+					bidType = openrtb_ext.BidTypeBanner
+				case 1:
+					bidType = openrtb_ext.BidTypeVideo
+				case 2:
+					bidType = openrtb_ext.BidTypeNative
+				default:
+					// default value is banner
+					bidType = openrtb_ext.BidTypeBanner
+				}
 			}
-			return mediaType
 		}
 	}
-	return mediaType
+	return bidType
 }
 
 func logf(msg string, args ...interface{}) {

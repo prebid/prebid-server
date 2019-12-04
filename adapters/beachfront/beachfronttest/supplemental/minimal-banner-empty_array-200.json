@@ -1,0 +1,72 @@
+{
+  "mockBidRequest": {
+    "id": "some_test_ad",
+    "site": {
+      "page": "https://yourmomshouse.com"
+    },
+    "imp": [
+      {
+        "bidfloor": 0.02,
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "bidfloor": 0.02,
+            "appId": "00000000-1111-2222-3333-11111111111"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://display.bfmio.com/prebid_display",
+        "body": {
+          "slots": [
+            {
+              "slot": "",
+              "id": "00000000-1111-2222-3333-11111111111",
+              "bidfloor": 0.02,
+              "sizes": [
+                {
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ],
+          "domain": "yourmomshouse.com",
+          "page": "https://yourmomshouse.com",
+          "referrer": "",
+          "search": "",
+          "secure": 1,
+          "requestId": "some_test_ad",
+          "isMobile": 0,
+          "ip": "",
+          "deviceModel": "",
+          "deviceOs": "",
+          "dnt": 0,
+          "ua": "",
+          "adapterName": "BF_PREBID_S2S",
+          "adapterVersion": "0.8.0",
+          "user": {
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": []
+      }
+    }
+  ],
+
+  "expectedBids": []
+}

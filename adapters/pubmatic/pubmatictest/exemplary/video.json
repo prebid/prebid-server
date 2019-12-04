@@ -114,7 +114,8 @@
                   "dealid":"test deal",
                   "ext": {
                     "dspid": 6,
-                    "deal_channel": 1
+                    "deal_channel": 1,
+                    "BidType": 1
                   }
                 }]
               }
@@ -144,7 +145,8 @@
               "dealid":"test deal",
               "ext": {
                 "dspid": 6,
-                "deal_channel": 1
+                "deal_channel": 1,
+                "BidType": 1
               }
             },
             "type": "video"

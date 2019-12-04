@@ -44,17 +44,6 @@ type UserSyncDeps struct {
 	PBSAnalytics     analytics.PBSAnalyticsModule
 }
 
-// pbsCookieJson defines the JSON contract for the cookie data's storage format.
-//
-// This exists so that PBSCookie (which is public) can have private fields, and the rest of
-// PBS doesn't have to worry about the cookie data storage format.
-type pbsCookieJson struct {
-	LegacyUIDs map[string]string        `json:"uids,omitempty"`
-	UIDs       map[string]uidWithExpiry `json:"tempUIDs,omitempty"`
-	OptOut     bool                     `json:"optout,omitempty"`
-	Birthday   *time.Time               `json:"bday,omitempty"`
-}
-
 // Struct for parsing json in google's response
 type googleResponse struct {
 	Success    bool
@@ -106,7 +95,8 @@ func (deps *UserSyncDeps) OptOut(w http.ResponseWriter, r *http.Request, _ httpr
 	pc := usersync.ParsePBSCookieFromRequest(r, deps.HostCookieConfig)
 	pc.SetPreference(optout == "")
 
-	pc.SetCookieOnResponse(w, deps.HostCookieConfig.Domain, deps.HostCookieConfig.TTLDuration())
+	pc.SetCookieOnResponse(w, false, deps.HostCookieConfig, deps.HostCookieConfig.TTLDuration())
+
 	if optout == "" {
 		http.Redirect(w, r, deps.HostCookieConfig.OptInURL, 301)
 	} else {

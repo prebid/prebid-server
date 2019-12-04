@@ -1,0 +1,52 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+            "bidder": {
+                "sspid": "99999"
+            }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://dsp.bnmla.com/hb?zoneid=99999",
+        "body":{
+          "id": "test-request-id",
+          "imp": [{
+            "id": "test-imp-id",
+            "banner": {
+              "w": 300,
+              "h": 250
+            },
+            "ext": {
+                "bidder": {
+                    "sspid":"99999"
+                }
+            }
+          }]
+        }
+      },
+      "mockResponse": {
+        "status": 500
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
+
