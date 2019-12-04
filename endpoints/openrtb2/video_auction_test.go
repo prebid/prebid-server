@@ -3,12 +3,14 @@ package openrtb2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/analytics"
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/exchange"
@@ -640,6 +642,91 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 
 	assert.Equal(t, videoReq.Site.Page, bidReq.Site.Page, "Device.Site.Page is incorrect")
 }
+
+func TestHandleError(t *testing.T) {
+	ao := analytics.AuctionObject{
+		Status: 200,
+		Errors: make([]error, 0),
+	}
+
+	labels := pbsmetrics.Labels{
+		Source:        pbsmetrics.DemandUnknown,
+		RType:         pbsmetrics.ReqTypeVideo,
+		PubID:         pbsmetrics.PublisherUnknown,
+		Browser:       "test browser",
+		CookieFlag:    pbsmetrics.CookieFlagUnknown,
+		RequestStatus: pbsmetrics.RequestStatusOK,
+	}
+
+	recorder := httptest.NewRecorder()
+	err1 := errors.New("Error for testing handleError 1")
+	err2 := errors.New("Error for testing handleError 2")
+	handleError(&labels, recorder, []error{err1, err2}, &ao)
+
+	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
+	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
+	assert.Equal(t, 500, ao.Status, "AnalyticsObject should have error status")
+	assert.Equal(t, 2, len(ao.Errors), "New errors should be appended to AnalyticsObject Errors")
+	assert.Equal(t, "Error for testing handleError 1", ao.Errors[0].Error(), "Error in AnalyticsObject should have test error message for first error")
+	assert.Equal(t, "Error for testing handleError 2", ao.Errors[1].Error(), "Error in AnalyticsObject should have test error message for second error")
+}
+
+func TestHandleErrorMetrics(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	reqData, err := ioutil.ReadFile("sample-requests/video/video_invalid_sample.json")
+	if err != nil {
+		t.Fatalf("Failed to fetch a valid request: %v", err)
+	}
+	reqBody := string(getRequestPayload(t, reqData))
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader(reqBody))
+	recorder := httptest.NewRecorder()
+
+	deps, met, mod := mockDepsWithMetrics(t, ex)
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	assert.Equal(t, int64(0), met.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusOK].Count(), "OK requests count should be 0")
+	assert.Equal(t, int64(1), met.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusErr].Count(), "Error requests count should be 1")
+	assert.Equal(t, 1, len(mod.auctionObjects), "Mock AnalyticsModule should have 1 AuctionObject")
+	assert.Equal(t, 500, mod.auctionObjects[0].Status, "AnalyticsObject should have 500 status")
+	assert.Equal(t, 2, len(mod.auctionObjects[0].Errors), "AnalyticsObject should have Errors length of 2")
+	assert.Equal(t, "request missing required field: PodConfig.DurationRangeSec", mod.auctionObjects[0].Errors[0].Error(), "First error in AnalyticsObject should have message regarding DurationRangeSec")
+	assert.Equal(t, "request missing required field: PodConfig.Pods", mod.auctionObjects[0].Errors[1].Error(), "Second error in AnalyticsObject should have message regarding Pods")
+}
+
+func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+	mockModule := &mockAnalyticsModule{}
+	edep := &endpointDeps{
+		ex,
+		newParamsValidator(t),
+		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		mockModule,
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
+	}
+
+	return edep, theMetrics, mockModule
+}
+
+type mockAnalyticsModule struct {
+	auctionObjects []*analytics.AuctionObject
+}
+
+func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
+	m.auctionObjects = append(m.auctionObjects, ao)
+}
+
+func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { return }
+
+func (m *mockAnalyticsModule) LogSetUIDObject(so *analytics.SetUIDObject) { return }
+
+func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject) { return }
 
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
