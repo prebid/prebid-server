@@ -23,6 +23,6 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-       "ext.bidder.publisher not provided"
+       "ext.bidder.zone not provided"
   ]
 }

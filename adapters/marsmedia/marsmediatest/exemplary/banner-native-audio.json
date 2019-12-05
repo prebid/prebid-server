@@ -18,7 +18,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher": "9999"
+            "zone": "9999"
           }
         }
       },
@@ -30,7 +30,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher": "9999"
+            "zone": "9999"
           }
         }
       },
@@ -43,7 +43,7 @@
         },
         "ext": {
           "bidder": {
-            "publisher": "9999"
+            "zone": "9999"
           }
         }
       }
@@ -75,7 +75,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher": "9999"
+                  "zone": "9999"
                 }
               }
             },
@@ -87,7 +87,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher": "9999"
+                  "zone": "9999"
                 }
               }
             },
@@ -100,7 +100,7 @@
               },
               "ext": {
                 "bidder": {
-                  "publisher": "9999"
+                  "zone": "9999"
                 }
               }
             }

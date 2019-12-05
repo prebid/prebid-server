@@ -3,7 +3,7 @@
     "id": "test-request-id",
     "ext": {
       "bidder": {
-        "publisher": "9999"
+        "zone": "9999"
       }
     }
   },

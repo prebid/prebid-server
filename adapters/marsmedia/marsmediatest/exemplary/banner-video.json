@@ -18,7 +18,7 @@
         },
         "ext": {
           "marsmedia": {
-            "publisher": "9999"
+            "zone": "9999"
           }
         }
       },
@@ -32,7 +32,7 @@
         },
         "ext": {
           "marsmedia": {
-            "publisher": "9999"
+            "zone": "9999"
           }
         }
       }
@@ -68,7 +68,7 @@
               },
               "ext": {
                 "marsmedia": {
-                  "publisher": "9999"
+                  "zone": "9999"
                 }
               }
             },
@@ -82,7 +82,7 @@
               },
               "ext": {
                 "marsmedia": {
-                  "publisher": "9999"
+                  "zone": "9999"
                 }
               }
             }
