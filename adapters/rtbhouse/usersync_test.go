@@ -10,9 +10,9 @@ import (
 )
 
 func TestRTBHouseSyncer(t *testing.T) {
-	syncURLText := "https://creativecdn.com/cm-notify?pi=prebidsrvtst&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
+	syncURL := "https://creativecdn.com/cm-notify?pi=prebidsrvtst&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}"
 	syncURLTemplate := template.Must(
-		template.New("sync-template").Parse(syncURLText),
+		template.New("sync-template").Parse(syncURL),
 	)
 
 	syncer := NewRTBHouseSyncer(syncURLTemplate)

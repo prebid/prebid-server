@@ -43,7 +43,7 @@ const (
 )
 
 func (s *Syncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
-	userSyncURL, err := macros.ResolveMacros(*s.urlTemplate, macros.UserSyncTemplateParams{
+	syncURL, err := macros.ResolveMacros(*s.urlTemplate, macros.UserSyncTemplateParams{
 		GDPR:        privacyPolicies.GDPR.Signal,
 		GDPRConsent: privacyPolicies.GDPR.Consent,
 		USPrivacy:   privacyPolicies.CCPA.Signal,
@@ -53,7 +53,7 @@ func (s *Syncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.Us
 	}
 
 	return &usersync.UsersyncInfo{
-		URL:         userSyncURL,
+		URL:         syncURL,
 		Type:        string(s.syncType),
 		SupportCORS: false,
 	}, err
