@@ -40,15 +40,15 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
-	`{"publisher": "9999"}`,
+	`{"zone": "9999"}`,
 }
 
 var invalidParams = []string{
-	`{"publisher": 100}`,
+	`{"zone": 100}`,
 	`{"headerbidding": false}`,
-	`{"publisher": true}`,
-	`{"publisherId": 123, "headerbidding": true}`,
-	`{"publisherID": "1"}`,
+	`{"zone": true}`,
+	`{"zoneId": 123, "headerbidding": true}`,
+	`{"zoneID": "1"}`,
 	``,
 	`null`,
 	`true`,
