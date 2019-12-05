@@ -5,3 +5,4 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
