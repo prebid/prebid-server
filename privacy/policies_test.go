@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestWritePolicieNone(t *testing.T) {
+func TestWritePoliciesNone(t *testing.T) {
 	request := &openrtb.BidRequest{}
 	policyWriters := []policyWriter{}
 
@@ -18,7 +18,7 @@ func TestWritePolicieNone(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestWritePolicieOne(t *testing.T) {
+func TestWritePoliciesOne(t *testing.T) {
 	request := &openrtb.BidRequest{}
 	mockWriter := new(mockPolicyWriter)
 	policyWriters := []policyWriter{
@@ -33,7 +33,7 @@ func TestWritePolicieOne(t *testing.T) {
 	mockWriter.AssertExpectations(t)
 }
 
-func TestWritePolicieMany(t *testing.T) {
+func TestWritePoliciesMany(t *testing.T) {
 	request := &openrtb.BidRequest{}
 	mockWriter1 := new(mockPolicyWriter)
 	mockWriter2 := new(mockPolicyWriter)
@@ -51,7 +51,7 @@ func TestWritePolicieMany(t *testing.T) {
 	mockWriter2.AssertExpectations(t)
 }
 
-func TestWritePolicieError(t *testing.T) {
+func TestWritePoliciesError(t *testing.T) {
 	request := &openrtb.BidRequest{}
 	mockWriter := new(mockPolicyWriter)
 	policyWriters := []policyWriter{
