@@ -5,6 +5,7 @@ import (
 
 	"github.com/prebid/prebid-server/macros"
 	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/prebid/prebid-server/privacy"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -41,10 +42,11 @@ const (
 	SyncTypeIframe   SyncType = "iframe"
 )
 
-func (s *Syncer) GetUsersyncInfo(gdpr string, consent string) (*usersync.UsersyncInfo, error) {
+func (s *Syncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
 	userSyncURL, err := macros.ResolveMacros(*s.urlTemplate, macros.UserSyncTemplateParams{
-		GDPR:        gdpr,
-		GDPRConsent: consent,
+		GDPR:        privacyPolicies.GDPR.Signal,
+		GDPRConsent: privacyPolicies.GDPR.Consent,
+		USPrivacy:   privacyPolicies.CCPA.Signal,
 	})
 	if err != nil {
 		return nil, err
