@@ -51,7 +51,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
-			bannerCopy := *openrtb.BidRequest.Imp[i].Banner
+			bannerCopy := *requestIn.Imp[i].Banner
 			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
 				firstFormat := bannerCopy.Format[0]
 				bannerCopy.W = &(firstFormat.W)
@@ -74,12 +74,12 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		}}
 	}
 
-	if *openrtb.BidRequest.Site != nil {
-		siteCopy := *openrtb.BidRequest.Site
+	if request.Site != nil {
+		siteCopy := *requestIn.Site
 		siteCopy.Publisher.ID = marsmediaExt.ZoneID
 		request.Site = &siteCopy
 	} else {
-		appCopy := *openrtb.BidRequest.App
+		appCopy := *requestIn.App
 		appCopy.Publisher.ID = marsmediaExt.ZoneID
 		request.App = &appCopy
 	}
