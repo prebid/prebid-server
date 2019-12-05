@@ -1,0 +1,9 @@
+maintainer:
+  email: "prebid@triplelift.com"
+capabilities:
+  app:
+    mediaTypes:
+      - native
+  site:
+    mediaTypes:
+      - native

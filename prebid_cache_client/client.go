@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/config"
@@ -69,7 +70,16 @@ type clientImpl struct {
 }
 
 func (c *clientImpl) GetExtCacheData() (string, string) {
-	return c.externalCacheHost, c.externalCachePath
+	path := c.externalCachePath
+	if path == "/" {
+		// Only the slash for the path, remove it to empty
+		path = ""
+	} else if len(path) > 0 && !strings.HasPrefix(path, "/") {
+		// Path defined but does not start with "/", prepend it
+		path = "/" + path
+	}
+
+	return c.externalCacheHost, path
 }
 
 func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []string, errs []error) {
@@ -101,14 +111,14 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 	anResp, err := ctxhttp.Do(ctx, c.httpClient, httpReq)
 	elapsedTime := time.Since(startTime)
 	if err != nil {
-		c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusErr}, elapsedTime)
+		c.metrics.RecordPrebidCacheRequestTime(false, elapsedTime)
 		friendlyErr := fmt.Errorf("Error sending the request to Prebid Cache: %v; Duration=%v", err, elapsedTime)
 		glog.Error(friendlyErr)
 		errs = append(errs, friendlyErr)
 		return uuidsToReturn, errs
 	}
 	defer anResp.Body.Close()
-	c.metrics.RecordPrebidCacheRequestTime(pbsmetrics.RequestLabels{RequestStatus: pbsmetrics.RequestStatusOK}, elapsedTime)
+	c.metrics.RecordPrebidCacheRequestTime(true, elapsedTime)
 
 	responseBody, err := ioutil.ReadAll(anResp.Body)
 	if anResp.StatusCode != 200 {

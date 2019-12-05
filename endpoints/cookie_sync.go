@@ -52,7 +52,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
-	deps.metrics.RecordCookieSync(pbsmetrics.Labels{})
+	deps.metrics.RecordCookieSync()
 	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.hostCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
