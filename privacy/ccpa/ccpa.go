@@ -7,15 +7,14 @@ import (
 	"github.com/mxmCherry/openrtb"
 )
 
-// Policy represents the CCPA regulation of an OpenRTB bid request.
+// Policy represents the CCPA regulation for an OpenRTB bid request.
 type Policy struct {
-	Enabled bool
-	Value   string
+	Value string
 }
 
 // Write mutates an OpenRTB bid request with the context of the CCPA policy.
 func (p Policy) Write(req *openrtb.BidRequest) error {
-	if p.Enabled == false {
+	if p.Value == "" {
 		return nil
 	}
 

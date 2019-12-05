@@ -787,7 +787,7 @@ func TestCCPAPresent(t *testing.T) {
 	var regs openrtb_ext.ExtRegs
 	err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
 	assert.NoError(t, err)
-	assert.Equal(t, usPrivacy, *regs.USPrivacy)
+	assert.Equal(t, usPrivacy, regs.USPrivacy)
 }
 
 func TestCCPANotPresent(t *testing.T) {
@@ -831,7 +831,7 @@ func TestCCPANotPresent(t *testing.T) {
 		var regs openrtb_ext.ExtRegs
 		err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
 		assert.NoError(t, err)
-		assert.Nil(t, regs.USPrivacy)
+		assert.Empty(t, regs.USPrivacy)
 	}
 }
 

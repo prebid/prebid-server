@@ -382,16 +382,14 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	gdprConsent, gdprOK := getQueryParam(httpRequest, "gdpr_consent")
-	ccpaValue, ccpaOK := getQueryParam(httpRequest, "us_privacy")
+	gdprConsent := getQueryParam(httpRequest, "gdpr_consent")
+	ccpaValue := getQueryParam(httpRequest, "us_privacy")
 	privacyPolicies := privacy.Policies{
 		GDPR: gdpr.Policy{
-			Enabled: gdprOK && len(gdprConsent) > 0,
 			Consent: gdprConsent,
 		},
 		CCPA: ccpa.Policy{
-			Enabled: ccpaOK,
-			Value:   ccpaValue,
+			Value: ccpaValue,
 		},
 	}
 
@@ -406,15 +404,15 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	return nil
 }
 
-func getQueryParam(httpRequest *http.Request, name string) (string, bool) {
+func getQueryParam(httpRequest *http.Request, name string) string {
 	values, ok := httpRequest.URL.Query()[name]
 
 	if !ok || len(values) == 0 {
-		return "", false
+		return ""
 	}
 
 	// return first value of the query param, matching the behavior of httpRequest.FormValue
-	return values[0], true
+	return values[0]
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {

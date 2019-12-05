@@ -9,13 +9,12 @@ import (
 
 // Policy represents the GDPR regulation of an OpenRTB bid request.
 type Policy struct {
-	Enabled bool
 	Consent string
 }
 
 // Write mutates an OpenRTB bid request with the context of the GDPR policy.
 func (p Policy) Write(req *openrtb.BidRequest) error {
-	if p.Enabled == false {
+	if p.Consent == "" {
 		return nil
 	}
 

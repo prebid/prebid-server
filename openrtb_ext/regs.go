@@ -8,5 +8,5 @@ type ExtRegs struct {
 	GDPR *int8 `json:"gdpr,omitempty"`
 
 	// USPrivacy should be a four character string, see: https://iabtechlab.com/wp-content/uploads/2019/11/OpenRTB-Extension-U.S.-Privacy-IAB-Tech-Lab.pdf
-	USPrivacy *string `json:"us_privacy,omitempty"`
+	USPrivacy string `json:"us_privacy,omitempty"`
 }

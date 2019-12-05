@@ -18,27 +18,27 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			description: "Disabled",
-			policy:      Policy{Enabled: false, Consent: "anyValue"},
+			policy:      Policy{Consent: ""},
 			request:     &openrtb.BidRequest{},
 			expected:    &openrtb.BidRequest{},
 		},
 		{
 			description: "Enabled With Nil Request User Object",
-			policy:      Policy{Enabled: true, Consent: "anyValue"},
+			policy:      Policy{Consent: "anyValue"},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"consent":"anyValue"}`)}},
 		},
 		{
 			description: "Enabled With Nil Request User Ext Object",
-			policy:      Policy{Enabled: true, Consent: "anyValue"},
+			policy:      Policy{Consent: "anyValue"},
 			request:     &openrtb.BidRequest{User: &openrtb.User{}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"consent":"anyValue"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Doesn't Overwrite",
-			policy:      Policy{Enabled: true, Consent: "anyValue"},
+			policy:      Policy{Consent: "anyValue"},
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
@@ -46,7 +46,7 @@ func TestWrite(t *testing.T) {
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Overwrites",
-			policy:      Policy{Enabled: true, Consent: "anyValue"},
+			policy:      Policy{Consent: "anyValue"},
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"existing":"any","consent":"toBeOverwritten"}`)}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
@@ -54,7 +54,7 @@ func TestWrite(t *testing.T) {
 		},
 		{
 			description: "Enabled With Existing Malformed Request User Ext Object",
-			policy:      Policy{Enabled: true, Consent: "anyValue"},
+			policy:      Policy{Consent: "anyValue"},
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,

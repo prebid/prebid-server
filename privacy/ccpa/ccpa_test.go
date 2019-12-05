@@ -18,27 +18,27 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			description: "Disabled",
-			policy:      Policy{Enabled: false, Value: "anyValue"},
+			policy:      Policy{Value: ""},
 			request:     &openrtb.BidRequest{},
 			expected:    &openrtb.BidRequest{},
 		},
 		{
 			description: "Enabled With Nil Request Regs Object",
-			policy:      Policy{Enabled: true, Value: "anyValue"},
+			policy:      Policy{Value: "anyValue"},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)}},
 		},
 		{
 			description: "Enabled With Nil Request Regs Ext Object",
-			policy:      Policy{Enabled: true, Value: "anyValue"},
+			policy:      Policy{Value: "anyValue"},
 			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request Regs Ext Object - Doesn't Overwrite",
-			policy:      Policy{Enabled: true, Value: "anyValue"},
+			policy:      Policy{Value: "anyValue"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
@@ -46,7 +46,7 @@ func TestWrite(t *testing.T) {
 		},
 		{
 			description: "Enabled With Existing Request Regs Ext Object - Overwrites",
-			policy:      Policy{Enabled: true, Value: "anyValue"},
+			policy:      Policy{Value: "anyValue"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any","us_privacy":"toBeOverwritten"}`)}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
@@ -54,7 +54,7 @@ func TestWrite(t *testing.T) {
 		},
 		{
 			description: "Enabled With Existing Malformed Request Regs Ext Object",
-			policy:      Policy{Enabled: true, Value: "anyValue"},
+			policy:      Policy{Value: "anyValue"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
