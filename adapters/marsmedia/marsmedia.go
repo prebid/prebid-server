@@ -17,7 +17,7 @@ type MarsmediaAdapter struct {
 }
 
 func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	
+
 	request := *requestIn
 
 	if len(request.Imp) == 0 {
@@ -60,8 +60,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 				request.Imp[i].Banner = &bannerCopy
 				validImpExists = true
 				validImpExistsForImp = true
-			}
-			else {
+			} else {
 				return nil, []error{&errortypes.BadInput{
 					Message: "No valid banner foramt in the bid request",
 				}}
@@ -85,7 +84,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	if request.Site != nil {
 		siteCopy := *request.Site
 		siteCopy.Publisher.Id = marsmediaExt.Publisher
-		
+
 		if marsmediaExt.ZoneId != "" {
 			siteCopy.Publisher.Ext.ZoneId = marsmediaExt.ZoneId
 		}
