@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Marsmedia Adapter Params",
+  "description": "A schema which validates params accepted by the Marsmedia adapter",
+  "type": "object",
+  "properties": {
+    "publisher": {
+      "type": "string",
+      "description": "Publisher ID to use."
+    },
+    "zone": {
+      "type": "string",
+      "description": "Zone ID to use."
+    },
+    "bidfloor": {
+      "type": "number",
+      "description": "The price floor for the bid"
+    }
+  },
+  "required": ["publisher"]
+}

@@ -19,74 +19,98 @@ type MarsmediaAdapter struct {
 func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	
 	request := *requestIn
-	errs := make([]error, 0, len(request.Imp))
-	if len(request.Imp) == 0 {
-		err := &errortypes.BadInput{
-			Message: "No impression in the bid request",
-		}
-		errs = append(errs, err)
-		return nil, errs
-	}
 
-	errors := make([]error, 0, 1)
+	if len(request.Imp) == 0 {
+		return nil, []error{&errortypes.BadInput{
+			Message: "No impression in the bid request",
+		}}
+	}
 
 	var bidderExt adapters.ExtImpBidder
 	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
 	if err != nil {
-		err = &errortypes.BadInput{
+		return nil, []error{&errortypes.BadInput{
 			Message: "ext.bidder not provided",
-		}
-		errors = append(errors, err)
-		return nil, errors
+		}}
 	}
+
 	var marsmediaExt openrtb_ext.ExtImpMarsmedia
 	err = json.Unmarshal(bidderExt.Bidder, &marsmediaExt)
 	if err != nil {
-		err = &errortypes.BadInput{
+		return nil, []error{&errortypes.BadInput{
 			Message: "ext.bidder.publisher not provided",
-		}
-		errors = append(errors, err)
-		return nil, errors
+		}}
 	}
+
 	if marsmediaExt.Publisher == "" {
-		err = &errortypes.BadInput{
+		return nil, []error{&errortypes.BadInput{
 			Message: "publisher is empty",
-		}
-		errors = append(errors, err)
-		return nil, errors
+		}}
 	}
+
 	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
+		validImpExistsForImp := false
 		if request.Imp[i].Banner != nil {
 			bannerCopy := *request.Imp[i].Banner
 			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
 				firstFormat := bannerCopy.Format[0]
 				bannerCopy.W = &(firstFormat.W)
 				bannerCopy.H = &(firstFormat.H)
+				request.Imp[i].Banner = &bannerCopy
+				validImpExists = true
+				validImpExistsForImp = true
 			}
-			request.Imp[i].Banner = &bannerCopy
-			validImpExists = true
+			else {
+				return nil, []error{&errortypes.BadInput{
+					Message: "No valid banner foramt in the bid request",
+				}}
+			}
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
-			videoCopy := *request.Imp[i].Video
-			request.Imp[i].Video = &videoCopy
+			validImpExistsForImp = true
+			request.Imp[i].Video = *request.Imp[i].Video
+		}
+
+		if validImpExistsForImp; marsmediaExt.BidFloor > 0 {
+			request.Imp[i].BidFloor = marsmediaExt.BidFloor
 		}
 	}
 	if !validImpExists {
-		err := &errortypes.BadInput{
-			Message: fmt.Sprintf("No valid impression in the bid request"),
+		return nil, []error{&errortypes.BadInput{
+			Message: "No valid impression in the bid request",
+		}}
+	}
+
+	if request.Site != nil {
+		siteCopy := *request.Site
+		siteCopy.Publisher.Id = marsmediaExt.Publisher
+		
+		if marsmediaExt.ZoneId != "" {
+			siteCopy.Publisher.Ext.ZoneId = marsmediaExt.ZoneId
 		}
-		errs = append(errs, err)
-		return nil, errs
+
+		request.Site = &siteCopy
+	} else {
+		appCopy := *request.App
+		appCopy.Publisher.Id = marsmediaExt.Publisher
+
+		if marsmediaExt.ZoneId != "" {
+			appCopy.Publisher.Ext.ZoneId = marsmediaExt.ZoneId
+		}
+
+		request.App = &appCopy
 	}
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
 
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, []error{&errortypes.BadInput{
+			Message: "Json not encoded",
+		}}
 	}
+
 	thisURI := a.URI
 	thisURI = thisURI + "&dev=1"
 	headers := http.Header{}
@@ -108,7 +132,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		Uri:     thisURI,
 		Body:    reqJSON,
 		Headers: headers,
-	}}, errors
+	}}, []error{}
 }
 
 func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
@@ -142,7 +166,7 @@ func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 		bid := sb.Bid[i]
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: "banner",//getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+			BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
 		})
 	}
 	return bidResponse, nil
