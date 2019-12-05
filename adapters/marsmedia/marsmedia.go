@@ -38,28 +38,26 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	err = json.Unmarshal(bidderExt.Bidder, &marsmediaExt)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: "ext.bidder.publisher not provided",
+			Message: "ext.bidder.zone not provided",
 		}}
 	}
 
-	if marsmediaExt.Publisher == "" {
+	if marsmediaExt.ZoneID == "" {
 		return nil, []error{&errortypes.BadInput{
-			Message: "publisher is empty",
+			Message: "zone is empty",
 		}}
 	}
 
 	validImpExists := false
 	for i := 0; i < len(request.Imp); i++ {
-		validImpExistsForImp := false
 		if request.Imp[i].Banner != nil {
-			bannerCopy := *request.Imp[i].Banner
+			bannerCopy := *openrtb.BidRequest.Imp[i].Banner
 			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
 				firstFormat := bannerCopy.Format[0]
 				bannerCopy.W = &(firstFormat.W)
 				bannerCopy.H = &(firstFormat.H)
 				request.Imp[i].Banner = &bannerCopy
 				validImpExists = true
-				validImpExistsForImp = true
 			} else {
 				return nil, []error{&errortypes.BadInput{
 					Message: "No valid banner foramt in the bid request",
@@ -67,12 +65,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 			}
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
-			validImpExistsForImp = true
-			request.Imp[i].Video = *request.Imp[i].Video
-		}
-
-		if validImpExistsForImp; marsmediaExt.BidFloor > 0 {
-			request.Imp[i].BidFloor = marsmediaExt.BidFloor
+			request.Imp[i].Video = request.Imp[i].Video
 		}
 	}
 	if !validImpExists {
@@ -81,23 +74,13 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		}}
 	}
 
-	if request.Site != nil {
-		siteCopy := *request.Site
-		siteCopy.Publisher.Id = marsmediaExt.Publisher
-
-		if marsmediaExt.ZoneId != "" {
-			siteCopy.Publisher.Ext.ZoneId = marsmediaExt.ZoneId
-		}
-
+	if *openrtb.BidRequest.Site != nil {
+		siteCopy := *openrtb.BidRequest.Site
+		siteCopy.Publisher.ID = marsmediaExt.ZoneID
 		request.Site = &siteCopy
 	} else {
-		appCopy := *request.App
-		appCopy.Publisher.Id = marsmediaExt.Publisher
-
-		if marsmediaExt.ZoneId != "" {
-			appCopy.Publisher.Ext.ZoneId = marsmediaExt.ZoneId
-		}
-
+		appCopy := *openrtb.BidRequest.App
+		appCopy.Publisher.ID = marsmediaExt.ZoneID
 		request.App = &appCopy
 	}
 
@@ -111,7 +94,6 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	}
 
 	thisURI := a.URI
-	thisURI = thisURI + "&dev=1"
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
