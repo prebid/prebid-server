@@ -1,60 +1,77 @@
 package privacy
 
 import (
-	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
-	"github.com/prebid/prebid-server/privacy/ccpa"
-	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestWrite(t *testing.T) {
-	polciies := Policies{
-		GDPR: gdpr.Policy{Consent: "anyConsent"},
-		CCPA: ccpa.Policy{Value: "anyValue"},
-	}
-	expectedRequest := &openrtb.BidRequest{
-		Regs: &openrtb.Regs{
-			Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)},
-		User: &openrtb.User{
-			Ext: json.RawMessage(`{"consent":"anyConsent"}`)},
-	}
-
+func TestWritePolicieNone(t *testing.T) {
 	request := &openrtb.BidRequest{}
-	err := polciies.Write(request)
+	policyWriters := []policyWriter{}
+
+	err := writePolicies(request, policyWriters)
 
 	assert.NoError(t, err)
-	assert.Equal(t, expectedRequest, request)
 }
 
-func TestWriteWithErrorFromGDPR(t *testing.T) {
-	polciies := Policies{
-		GDPR: gdpr.Policy{Consent: "anyConsent"},
-		CCPA: ccpa.Policy{Value: "anyValue"},
-	}
-	request := &openrtb.BidRequest{
-		User: &openrtb.User{
-			Ext: json.RawMessage(`malformed`)},
+func TestWritePolicieOne(t *testing.T) {
+	request := &openrtb.BidRequest{}
+	mockWriter := new(mockPolicyWriter)
+	policyWriters := []policyWriter{
+		mockWriter,
 	}
 
-	err := polciies.Write(request)
+	mockWriter.On("Write", request).Return(nil).Once()
 
-	assert.Error(t, err)
+	err := writePolicies(request, policyWriters)
+
+	assert.NoError(t, err)
+	mockWriter.AssertExpectations(t)
 }
 
-func TestWriteWithErrorFromCCPA(t *testing.T) {
-	polciies := Policies{
-		GDPR: gdpr.Policy{Consent: "anyConsent"},
-		CCPA: ccpa.Policy{Value: "anyValue"},
-	}
-	request := &openrtb.BidRequest{
-		Regs: &openrtb.Regs{
-			Ext: json.RawMessage(`malformed`)},
+func TestWritePolicieMany(t *testing.T) {
+	request := &openrtb.BidRequest{}
+	mockWriter1 := new(mockPolicyWriter)
+	mockWriter2 := new(mockPolicyWriter)
+	policyWriters := []policyWriter{
+		mockWriter1, mockWriter2,
 	}
 
-	err := polciies.Write(request)
+	mockWriter1.On("Write", request).Return(nil).Once()
+	mockWriter2.On("Write", request).Return(nil).Once()
 
-	assert.Error(t, err)
+	err := writePolicies(request, policyWriters)
+
+	assert.NoError(t, err)
+	mockWriter1.AssertExpectations(t)
+	mockWriter2.AssertExpectations(t)
+}
+
+func TestWritePolicieError(t *testing.T) {
+	request := &openrtb.BidRequest{}
+	mockWriter := new(mockPolicyWriter)
+	policyWriters := []policyWriter{
+		mockWriter,
+	}
+
+	expectedErr := errors.New("anyError")
+	mockWriter.On("Write", request).Return(expectedErr).Once()
+
+	err := writePolicies(request, policyWriters)
+
+	assert.Error(t, err, expectedErr)
+	mockWriter.AssertExpectations(t)
+}
+
+type mockPolicyWriter struct {
+	mock.Mock
+}
+
+func (m *mockPolicyWriter) Write(req *openrtb.BidRequest) error {
+	args := m.Called(req)
+	return args.Error(0)
 }

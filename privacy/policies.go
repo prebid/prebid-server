@@ -13,14 +13,22 @@ type Policies struct {
 	CCPA ccpa.Policy
 }
 
+type policyWriter interface {
+	Write(req *openrtb.BidRequest) error
+}
+
 // Write mutates an OpenRTB bid request with the policies applied.
 func (p Policies) Write(req *openrtb.BidRequest) error {
-	if err := p.GDPR.Write(req); err != nil {
-		return err
-	}
+	return writePolicies(req, []policyWriter{
+		p.GDPR, p.CCPA,
+	})
+}
 
-	if err := p.CCPA.Write(req); err != nil {
-		return err
+func writePolicies(req *openrtb.BidRequest, writers []policyWriter) error {
+	for _, writer := range writers {
+		if err := writer.Write(req); err != nil {
+			return err
+		}
 	}
 
 	return nil
