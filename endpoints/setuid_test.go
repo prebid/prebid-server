@@ -216,7 +216,17 @@ func TestSetUIDEndpointMetrics(t *testing.T) {
 			expectedMetricAction:  pbsmetrics.RequestActionSet,
 			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
 			expectedResponseCode:  200,
-			description:           "Success",
+			description:           "Success - Sync",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionSet,
+			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			expectedResponseCode:  200,
+			description:           "Success - Unsync",
 		},
 		{
 			uri:                   "/setuid?bidder=pubmatic&uid=123",

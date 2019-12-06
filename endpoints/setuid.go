@@ -83,14 +83,16 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		if uid == "" {
 			pc.Unsync(familyName)
 		} else {
-			if err = pc.TrySync(familyName, uid); err == nil {
-				labels := pbsmetrics.UserLabels{
-					Action: pbsmetrics.RequestActionSet,
-					Bidder: openrtb_ext.BidderName(familyName),
-				}
-				metrics.RecordUserIDSet(labels)
-				so.Success = true
+			err = pc.TrySync(familyName, uid)
+		}
+
+		if err == nil {
+			labels := pbsmetrics.UserLabels{
+				Action: pbsmetrics.RequestActionSet,
+				Bidder: openrtb_ext.BidderName(familyName),
 			}
+			metrics.RecordUserIDSet(labels)
+			so.Success = true
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
