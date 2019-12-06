@@ -22,6 +22,9 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -379,22 +382,19 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	//In the AMP endpoint the consent string found in the http.Request query overrides that of the prebid query
-	queryConsentString := httpRequest.FormValue("gdpr_consent")
-	if queryConsentString != "" {
-		jsonMsg := json.RawMessage(`{"consent":"` + queryConsentString + `"}`)
-		// If nil, initialize
-		if req.User == nil {
-			req.User = &openrtb.User{Ext: jsonMsg}
-		} else if req.User.Ext == nil {
-			req.User.Ext = jsonMsg
-		} else { // req.User.Ext != nil, keep whatever is in there and only substitute the consent string
-			var parserErr error
-			req.User.Ext, parserErr = jsonparser.Set(req.User.Ext, []byte(`"`+queryConsentString+`"`), "consent")
-			if parserErr != nil {
-				return parserErr
-			}
-		}
+	gdprConsent := getQueryParam(httpRequest, "gdpr_consent")
+	ccpaValue := getQueryParam(httpRequest, "us_privacy")
+	privacyPolicies := privacy.Policies{
+		GDPR: gdpr.Policy{
+			Consent: gdprConsent,
+		},
+		CCPA: ccpa.Policy{
+			Value: ccpaValue,
+		},
+	}
+
+	if err := privacyPolicies.Write(req); err != nil {
+		return err
 	}
 
 	if timeout, err := strconv.ParseInt(httpRequest.FormValue("timeout"), 10, 64); err == nil {
@@ -402,6 +402,17 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	}
 
 	return nil
+}
+
+func getQueryParam(httpRequest *http.Request, name string) string {
+	values, ok := httpRequest.URL.Query()[name]
+
+	if !ok || len(values) == 0 {
+		return ""
+	}
+
+	// return first value of the query param, matching the behavior of httpRequest.FormValue
+	return values[0]
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
