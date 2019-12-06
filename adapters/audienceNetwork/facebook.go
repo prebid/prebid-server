@@ -23,7 +23,6 @@ type FacebookAdapter struct {
 	URI          string
 	nonSecureUri string
 	platformID   string
-	appID        string
 	appSecret    string
 }
 
@@ -75,7 +74,6 @@ func (this *FacebookAdapter) buildRequests(request *openrtb.BidRequest) ([]*adap
 
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("Auth-Token", this.appID+"|"+this.appSecret)
 	headers.Add("X-Fb-Pool-Routing-Token", request.User.BuyerUID)
 
 	for _, imp := range request.Imp {
@@ -406,17 +404,9 @@ func resolveImpType(imp *openrtb.Imp) (openrtb_ext.BidType, bool) {
 	return openrtb_ext.BidTypeBanner, false
 }
 
-func NewFacebookBidder(client *http.Client, platformID string, appID string, appSecret string) adapters.Bidder {
+func NewFacebookBidder(client *http.Client, platformID string, appSecret string) adapters.Bidder {
 	if platformID == "" {
 		glog.Errorf("No facebook partnerID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.platform_id in the app config?")
-		return &adapters.MisconfiguredBidder{
-			Name:  "audienceNetwork",
-			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
-		}
-	}
-
-	if appID == "" {
-		glog.Errorf("No facebook app ID specified. Calls to the Audience Network will fail. Did you set adapters.facebook.app_id in the app config?")
 		return &adapters.MisconfiguredBidder{
 			Name:  "audienceNetwork",
 			Error: errors.New("Audience Network is not configured properly on this Prebid Server deploy. If you believe this should work, contact the company hosting the service and tell them to check their configuration."),
@@ -439,7 +429,6 @@ func NewFacebookBidder(client *http.Client, platformID string, appID string, app
 		//for AB test
 		nonSecureUri: "http://an.facebook.com/placementbid.ortb",
 		platformID:   platformID,
-		appID:        appID,
 		appSecret:    appSecret,
 	}
 }

@@ -2,9 +2,10 @@ package exchange
 
 import (
 	"fmt"
-	"github.com/prebid/prebid-server/adapters/kubient"
 	"net/http"
 	"strings"
+
+	"github.com/prebid/prebid-server/adapters/kubient"
 
 	"github.com/prebid/prebid-server/adapters"
 	ttx "github.com/prebid/prebid-server/adapters/33across"
@@ -111,7 +112,6 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderFacebook: audienceNetwork.NewFacebookBidder(
 			client,
 			cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID,
-			cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppID,
 			cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppSecret),
 	}
 
