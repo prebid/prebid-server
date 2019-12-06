@@ -739,6 +739,102 @@ func TestWidthOnly(t *testing.T) {
 	}.execute(t)
 }
 
+func TestCCPAPresent(t *testing.T) {
+	req, err := getTestBidRequest(false, false, "", "digitrustId")
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	reqStored := map[string]json.RawMessage{
+		"1": json.RawMessage(req),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{reqStored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+
+	usPrivacy := "1YYN"
+	httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&us_privacy="+usPrivacy, nil)
+	httpRecorder := httptest.NewRecorder()
+	endpoint(httpRecorder, httpReq, nil)
+
+	// Assert our bidRequest was valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", httpRecorder.Code, httpRecorder.Body.String()) {
+		return
+	}
+	// Assert our bidRequest had a valid "Regs" field
+	if !assert.NotNil(t, exchange.lastRequest.Regs) {
+		return
+	}
+	// Assert our bidRequest had a valid "Regs.Ext" field
+	if !assert.NotNil(t, exchange.lastRequest.Regs.Ext) {
+		return
+	}
+
+	var regs openrtb_ext.ExtRegs
+	err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
+	assert.NoError(t, err)
+	assert.Equal(t, usPrivacy, regs.USPrivacy)
+}
+
+func TestCCPANotPresent(t *testing.T) {
+	req, err := getTestBidRequest(false, false, "", "digitrustId")
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	reqStored := map[string]json.RawMessage{
+		"1": json.RawMessage(req),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{reqStored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+
+	httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
+	httpRecorder := httptest.NewRecorder()
+	endpoint(httpRecorder, httpReq, nil)
+
+	// Assert our bidRequest was valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", httpRecorder.Code, httpRecorder.Body.String()) {
+		return
+	}
+
+	// Assert CCPA Signal Not Found
+	if exchange.lastRequest.Regs != nil && exchange.lastRequest.Regs.Ext != nil {
+		var regs openrtb_ext.ExtRegs
+		err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
+		assert.NoError(t, err)
+		assert.Empty(t, regs.USPrivacy)
+	}
+}
+
 type formatOverrideSpec struct {
 	width          uint64
 	height         uint64
