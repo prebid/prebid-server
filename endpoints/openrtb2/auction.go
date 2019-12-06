@@ -499,23 +499,37 @@ func fillAndValidateNativeAssets(assets []nativeRequests.Asset, impIndex int) er
 		return fmt.Errorf("request.imp[%d].native.request.assets must be an array containing at least one object", impIndex)
 	}
 
+	assetIDs := make(map[int64]struct{}, len(assets))
+
+	// If none of the asset IDs are defined by the caller, then prebid server should assign its own unique IDs. But
+	// if the caller did assign its own asset IDs, then prebid server will respect those IDs
+	assignAssetIDs := true
 	for i := 0; i < len(assets); i++ {
-		// Per the OpenRTB spec docs, this is a "unique asset ID, assigned by exchange. Typically a counter for the array"
-		// To avoid conflict with the Request, we'll return a 400 if the Request _did_ define this ID,
-		// and then populate it as the spec suggests.
+		assignAssetIDs = assignAssetIDs && (assets[i].ID == 0)
+	}
+
+	for i := 0; i < len(assets); i++ {
 		if err := validateNativeAsset(assets[i], impIndex, i); err != nil {
 			return err
 		}
-		assets[i].ID = int64(i)
+
+		if assignAssetIDs {
+			assets[i].ID = int64(i)
+			continue
+		}
+
+		// Each asset should have a unique ID thats assigned by the caller
+		if _, ok := assetIDs[assets[i].ID]; ok {
+			return fmt.Errorf("request.imp[%d].native.request.assets[%d].id is already being used by another asset. Each asset ID must be unique.", impIndex, i)
+		}
+
+		assetIDs[assets[i].ID] = struct{}{}
 	}
+
 	return nil
 }
 
 func validateNativeAsset(asset nativeRequests.Asset, impIndex int, assetIndex int) error {
-	if asset.ID != 0 {
-		return fmt.Errorf(`request.imp[%d].native.request.assets[%d].id must not be defined. Prebid Server will set this automatically, using the index of the asset in the array as the ID`, impIndex, assetIndex)
-	}
-
 	assetErr := "request.imp[%d].native.request.assets[%d] must define exactly one of {title, img, video, data}"
 	foundType := false
 
