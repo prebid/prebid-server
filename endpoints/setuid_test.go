@@ -10,13 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prebid/prebid-server/config"
+	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/usersync"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/prebid/prebid-server/openrtb_ext"
 
 	analyticsConf "github.com/prebid/prebid-server/analytics/config"
-	"github.com/prebid/prebid-server/config"
 	metricsConf "github.com/prebid/prebid-server/pbsmetrics/config"
 )
 
@@ -178,8 +179,9 @@ func TestSetUIDEndpoint(t *testing.T) {
 		},
 	}
 
+	metrics := &metricsConf.DummyMetricsEngine{}
 	for _, test := range testCases {
-		response := doRequest(makeRequest(test.uri, test.existingSyncs),
+		response := doRequest(makeRequest(test.uri, test.existingSyncs), metrics,
 			test.validFamilyNames, test.gdprAllowsHostCookies, test.gdprReturnsError)
 		assert.Equal(t, test.expectedResponseCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 
@@ -195,13 +197,84 @@ func TestSetUIDEndpoint(t *testing.T) {
 	}
 }
 
+func TestSetUIDEndpointMetrics(t *testing.T) {
+	testCases := []struct {
+		uri                   string
+		cookies               []*usersync.PBSCookie
+		validFamilyNames      []string
+		gdprAllowsHostCookies bool
+		expectedMetricAction  pbsmetrics.RequestAction
+		expectedMetricBidder  openrtb_ext.BidderName
+		expectedResponseCode  int
+		description           string
+	}{
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionSet,
+			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			expectedResponseCode:  200,
+			description:           "Success",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			cookies:               []*usersync.PBSCookie{usersync.NewPBSCookieWithOptOut()},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionOptOut,
+			expectedResponseCode:  401,
+			description:           "Cookie Opted Out",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionErr,
+			expectedResponseCode:  400,
+			description:           "Unsupported Cookie Name",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: false,
+			expectedMetricAction:  pbsmetrics.RequestActionGDPR,
+			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			expectedResponseCode:  400,
+			description:           "Prevented By GDPR",
+		},
+	}
+
+	for _, test := range testCases {
+		metrics := &pbsmetrics.MetricsEngineMock{}
+		expectedLabels := pbsmetrics.UserLabels{
+			Action: test.expectedMetricAction,
+			Bidder: test.expectedMetricBidder,
+		}
+		metrics.On("RecordUserIDSet", expectedLabels).Once()
+
+		req := httptest.NewRequest("GET", test.uri, nil)
+		for _, v := range test.cookies {
+			addCookie(req, v)
+		}
+		response := doRequest(req, metrics, test.validFamilyNames, test.gdprAllowsHostCookies, false)
+
+		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
+		metrics.AssertExpectations(t)
+	}
+}
+
 func TestOptedOut(t *testing.T) {
 	request := httptest.NewRequest("GET", "/setuid?bidder=pubmatic&uid=123", nil)
 	cookie := usersync.NewPBSCookie()
 	cookie.SetPreference(false)
 	addCookie(request, cookie)
 	validFamilyNames := []string{"pubmatic"}
-	response := doRequest(request, validFamilyNames, true, false)
+	metrics := &metricsConf.DummyMetricsEngine{}
+	response := doRequest(request, metrics, validFamilyNames, true, false)
 
 	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
@@ -242,25 +315,22 @@ func TestGetFamilyName(t *testing.T) {
 			description:  "Should return no error for valid family name",
 		},
 		{
-			urlValues:    url.Values{"bidder": []string{"VALID"}},
-			expectedName: "valid",
-			description:  "Should return all lower case",
+			urlValues:     url.Values{"bidder": []string{"VALID"}},
+			expectedError: "The bidder name provided is not supported by Prebid Server",
+			description:   "Should return error for different case",
 		},
 		{
 			urlValues:     url.Values{"bidder": []string{"invalid"}},
-			expectedName:  "",
 			expectedError: "The bidder name provided is not supported by Prebid Server",
 			description:   "Should return an error for unsupported bidder",
 		},
 		{
 			urlValues:     url.Values{"bidder": []string{}},
-			expectedName:  "",
 			expectedError: `"bidder" query param is required`,
 			description:   "Should return an error for empty bidder name",
 		},
 		{
 			urlValues:     url.Values{},
-			expectedName:  "",
 			expectedError: `"bidder" query param is required`,
 			description:   "Should return an error for missing bidder name",
 		},
@@ -303,7 +373,7 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 	return request
 }
 
-func doRequest(req *http.Request, validFamilyNames []string, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, metrics pbsmetrics.MetricsEngine, validFamilyNames []string, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
 	cfg := config.Configuration{}
 	perms := &mockPermsSetUID{
 		allowHost: gdprAllowsHostCookies,
@@ -311,8 +381,6 @@ func doRequest(req *http.Request, validFamilyNames []string, gdprAllowsHostCooki
 		allowPI:   true,
 	}
 	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
-	metrics := metricsConf.NewMetricsEngine(&cfg, openrtb_ext.BidderList())
-
 	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer)
 	for _, name := range validFamilyNames {
 		syncers[openrtb_ext.BidderName(name)] = newFakeSyncer(name)

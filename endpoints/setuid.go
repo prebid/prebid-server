@@ -45,7 +45,9 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		pc := usersync.ParsePBSCookieFromRequest(r, &cfg)
 		if !pc.AllowSyncs() {
 			w.WriteHeader(http.StatusUnauthorized)
-			metrics.RecordUserIDSet(pbsmetrics.UserLabels{Action: pbsmetrics.RequestActionOptOut})
+			metrics.RecordUserIDSet(pbsmetrics.UserLabels{
+				Action: pbsmetrics.RequestActionOptOut,
+			})
 			so.Status = http.StatusUnauthorized
 			return
 		}
@@ -81,7 +83,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		if uid == "" {
 			pc.Unsync(familyName)
 		} else {
-			if err = pc.TrySync(familyName, uid); err != nil {
+			if err = pc.TrySync(familyName, uid); err == nil {
 				labels := pbsmetrics.UserLabels{
 					Action: pbsmetrics.RequestActionSet,
 					Bidder: openrtb_ext.BidderName(familyName),
@@ -98,7 +100,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 
 func getFamilyName(query url.Values, validFamilyNameMap map[string]struct{}) (string, error) {
 	// The family name is bound to the 'bidder' query param. In most cases, these values are the same.
-	familyName := strings.ToLower(query.Get("bidder"))
+	familyName := query.Get("bidder")
 
 	if familyName == "" {
 		return "", errors.New(`"bidder" query param is required`)
