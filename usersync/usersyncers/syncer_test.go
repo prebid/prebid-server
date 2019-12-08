@@ -35,6 +35,7 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderIx):               syncConfig,
 			string(openrtb_ext.BidderLifestreet):       syncConfig,
 			string(openrtb_ext.BidderLockerDome):       syncConfig,
+			string(openrtb_ext.BidderMarsmedia):        syncConfig,
 			string(openrtb_ext.BidderMgid):             syncConfig,
 			string(openrtb_ext.BidderOpenx):            syncConfig,
 			string(openrtb_ext.BidderPubmatic):         syncConfig,
@@ -58,7 +59,6 @@ func TestNewSyncerMap(t *testing.T) {
 			string(openrtb_ext.BidderUnruly):           syncConfig,
 			string(openrtb_ext.BidderVerizonMedia):     syncConfig,
 			string(openrtb_ext.BidderEngageBDR):        syncConfig,
-			string(openrtb_ext.BidderMarsmedia):        syncConfig,
 		},
 	}
 
