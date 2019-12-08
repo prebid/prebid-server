@@ -16,16 +16,13 @@
           }
         }
       }
-    ],
-    "site" : {
-      "id" : "9999"
-    }
+    ]
   },
 
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet",
+        "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet&zone=9999",
         "body": {
           "id": "test-request-id",
           "at":1,
@@ -44,10 +41,7 @@
                 }
               }
             }
-          ],
-          "site" : {
-            "id" : "9999"
-          }
+          ]
         }
       },
       "mockResponse": {

@@ -5,16 +5,7 @@
       {
         "id": "test-imp-id",
         "banner": {
-          "format": [
-            {
-              "w": 300,
-              "h": 250
-            },
-            {
-              "w": 300,
-              "h": 600
-            }
-          ]
+          "format": [ { "w": 300,"h": 250 } ]
         },
         "ext": {
           "marsmedia": {
@@ -22,16 +13,13 @@
           }
         }
       }
-    ],
-    "site" : {
-      "id" : "9999"
-    }
+    ]
   },
 
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet",
+        "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet&zone=9999",
         "body": {
           "id": "test-request-id",
           "at":1,
@@ -43,14 +31,8 @@
                   {
                     "w": 300,
                     "h": 250
-                  },
-                  {
-                    "w": 300,
-                    "h": 600
                   }
-                ],
-                "w": 300,
-                "h": 250
+                ]
               },
               "ext": {
                 "marsmedia": {
@@ -58,10 +40,7 @@
                 }
               }
             }
-          ],
-          "site" : {
-            "id" : "9999"
-          }
+          ]
         }
       },
       "mockResponse": {
@@ -70,18 +49,18 @@
           "id": "test-request-id",
           "seatbid": [
             {
-              "seat": "958",
+              "seat": "marsmedia",
               "bid": [{
-                "id": "7706636740145184841",
+                "id": "1",
                 "impid": "test-imp-id",
-                "price": 0.500000,
-                "adid": "29681110",
+                "price": 1.1,
+                "adid": "17586",
                 "adm": "some-test-ad",
-                "adomain": ["yahoo.com"],
-                "cid": "958",
-                "crid": "29681110",
-                "h": 250,
-                "w": 300
+                "nurl" : "some-test-nurl",
+                "iurl" : "some-test-iurl",
+                "adomain": ["wooga.com"],
+                "cid": "17586",
+                "crid": "17586"
               }]
             }
           ],
@@ -102,11 +81,13 @@
         "adid": "29681110",
         "adomain": ["yahoo.com"],
         "cid": "958",
-        "crid": "29681110",
-        "w": 300,
-        "h": 250
+        "crid": "29681110"
       },
-      "type": "banner"
+      "ext": {
+          "prebid": {
+              "type": "banner"
+          }
+      }
     }
   ]
 }
