@@ -27,16 +27,14 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	err := json.Unmarshal(request.Imp[0].Ext, &bidderExt)
-	if err != nil {
+	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}}
 	}
 
 	var marsmediaExt openrtb_ext.ExtImpMarsmedia
-	err = json.Unmarshal(bidderExt.Bidder, &marsmediaExt)
-	if err != nil {
+	if err := json.Unmarshal(bidderExt.Bidder, &marsmediaExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "ext.bidder.zone not provided",
 		}}
@@ -44,7 +42,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 
 	if marsmediaExt.ZoneID == "" {
 		return nil, []error{&errortypes.BadInput{
-			Message: "zone is empty",
+			Message: "Zone is empty",
 		}}
 	}
 
@@ -65,23 +63,12 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 			}
 		} else if request.Imp[i].Video != nil {
 			validImpExists = true
-			request.Imp[i].Video = request.Imp[i].Video
 		}
 	}
 	if !validImpExists {
 		return nil, []error{&errortypes.BadInput{
 			Message: "No valid impression in the bid request",
 		}}
-	}
-
-	if request.Site != nil {
-		siteCopy := *requestIn.Site
-		siteCopy.Publisher.ID = marsmediaExt.ZoneID
-		request.Site = &siteCopy
-	} else {
-		appCopy := *requestIn.App
-		appCopy.Publisher.ID = marsmediaExt.ZoneID
-		request.App = &appCopy
 	}
 
 	request.AT = 1 //Defaulting to first price auction for all prebid requests
@@ -93,7 +80,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 		}}
 	}
 
-	thisURI := a.URI
+	uri := a.URI + "&zone=" + marsmediaExt.ZoneID
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -110,7 +97,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 
 	return []*adapters.RequestData{{
 		Method:  "POST",
-		Uri:     thisURI,
+		Uri:     uri,
 		Body:    reqJSON,
 		Headers: headers,
 	}}, []error{}
@@ -130,14 +117,14 @@ func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 
 	if response.StatusCode != http.StatusOK {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
+			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode),
 		}}
 	}
 
 	var bidResp openrtb.BidResponse
 	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bad server response: %d. ", err),
+			Message: fmt.Sprintf("Bad server response: %d. ", err),
 		}}
 	}
 
@@ -153,7 +140,6 @@ func (a *MarsmediaAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	return bidResponse, nil
 }
 
-//Adding header fields to request header
 func addHeaderIfNonEmpty(headers http.Header, headerName string, headerValue string) {
 	if len(headerValue) > 0 {
 		headers.Add(headerName, headerValue)
