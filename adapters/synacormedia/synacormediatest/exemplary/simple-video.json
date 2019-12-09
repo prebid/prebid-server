@@ -10,7 +10,6 @@
     "imp": [
       {
         "id": "i3",
-        "tagid": "3020",
         "video": {
           "w": 300,
           "h": 250,
@@ -21,8 +20,9 @@
         },
         "metric": [],
         "ext": {
-          "bidder":{
-            "seatId":"1927"
+          "bidder": {
+            "seatId":"1927",
+            "tagId": "3020"
           }
         }
       }
@@ -56,7 +56,8 @@
               },
               "ext": {
                 "bidder":{
-                  "seatId":"1927"
+                  "seatId":"1927",
+                  "tagId": "3020"
                 }
               }
             }

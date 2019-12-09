@@ -20,6 +20,7 @@ type SynacorMediaAdapter struct {
 
 type SyncEndpointTemplateParams struct {
 	SeatId string
+	TagId  string
 }
 
 type ReqExt struct {
@@ -55,14 +56,16 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 	var firstExtImp *openrtb_ext.ExtImpSynacormedia = nil
 
 	for _, imp := range request.Imp {
-		validImp, err := getExtImpObj(&imp)
+		validExtImpObj, err := getExtImpObj(&imp) // getExtImpObj returns {seatId:"", tagId:""}
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
+		// right here is where we need to take out the tagId and then add it to imp
+		imp.TagID = validExtImpObj.TagId
 		validImps = append(validImps, imp)
 		if firstExtImp == nil {
-			firstExtImp = validImp
+			firstExtImp = validExtImpObj
 		}
 	}
 
@@ -77,6 +80,7 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 			Message: fmt.Sprintf("Impression missing seat id"),
 		})
 	}
+	// this is where the empty seatId is filled
 	re = &ReqExt{SeatId: firstExtImp.SeatId}
 
 	// create JSON Request Body
