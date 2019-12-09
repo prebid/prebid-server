@@ -4,11 +4,17 @@
     "imp": [
       {
         "id": "test-imp-id",
+        "at" : 1,
         "banner": {
-          "format": [ { "w": 300,"h": 250 } ]
+          "format": [
+            {
+                "w": 300,
+                "h": 250
+            }
+          ]
         },
         "ext": {
-          "marsmedia": {
+          "bidder": {
             "zone": "9999"
           }
         }
@@ -22,20 +28,22 @@
         "uri": "http://bid306.rtbsrv.com/bidder/?bid=f3xtet&zone=9999",
         "body": {
           "id": "test-request-id",
-          "at":1,
+          "at" : 1,
           "imp": [
             {
               "id": "test-imp-id",
               "banner": {
                 "format": [
                   {
-                    "w": 300,
-                    "h": 250
+                      "w": 300,
+                      "h": 250
                   }
-                ]
+                ],
+                "w": 300,
+                "h": 250
               },
               "ext": {
-                "marsmedia": {
+                "bidder": {
                   "zone": "9999"
                 }
               }
@@ -60,7 +68,9 @@
                 "iurl" : "some-test-iurl",
                 "adomain": ["wooga.com"],
                 "cid": "17586",
-                "crid": "17586"
+                "crid": "17586",
+                "h": 250,
+                "w": 300
               }]
             }
           ],
@@ -81,7 +91,9 @@
         "adid": "29681110",
         "adomain": ["yahoo.com"],
         "cid": "958",
-        "crid": "29681110"
+        "crid": "29681110",
+        "h": 250,
+        "w": 300
       },
       "ext": {
           "prebid": {

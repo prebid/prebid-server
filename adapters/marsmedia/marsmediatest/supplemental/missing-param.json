@@ -26,6 +26,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-    "zone is empty"
+    {
+      "value": "Zone is empty",
+      "comparison": "literal"
+    }
   ]
 }

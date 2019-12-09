@@ -23,6 +23,9 @@
     ]
   },
   "expectedMakeRequestsErrors": [
-       "ext.bidder.zone not provided"
+    {
+      "value": "ext.bidder.zone not provided",
+      "comparison": "literal"
+    }
   ]
 }
