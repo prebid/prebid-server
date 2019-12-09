@@ -21,11 +21,11 @@ type BidderName string
 // Please keep these (and the BidderMap) alphabetized to minimize merge conflicts among adapter submissions.
 const (
 	Bidder33Across         BidderName = "33across"
+	BidderAdform           BidderName = "adform"
 	BidderAdkernel         BidderName = "adkernel"
 	BidderAdkernelAdn      BidderName = "adkernelAdn"
 	BidderAdpone           BidderName = "adpone"
 	BidderAdtelligent      BidderName = "adtelligent"
-	BidderAdform           BidderName = "adform"
 	BidderAdvangelists     BidderName = "advangelists"
 	BidderAppnexus         BidderName = "appnexus"
 	BidderBeachfront       BidderName = "beachfront"
@@ -34,6 +34,7 @@ const (
 	BidderConversant       BidderName = "conversant"
 	BidderDatablocks       BidderName = "datablocks"
 	BidderEmxDigital       BidderName = "emx_digital"
+	BidderEngageBDR        BidderName = "engagebdr"
 	BidderEPlanning        BidderName = "eplanning"
 	BidderFacebook         BidderName = "audienceNetwork"
 	BidderGamma            BidderName = "gamma"
@@ -54,48 +55,49 @@ const (
 	BidderRubicon          BidderName = "rubicon"
 	BidderSharethrough     BidderName = "sharethrough"
 	BidderSomoaudience     BidderName = "somoaudience"
-	BidderSovrn            BidderName = "sovrn"
 	BidderSonobi           BidderName = "sonobi"
+	BidderSovrn            BidderName = "sovrn"
 	BidderSynacormedia     BidderName = "synacormedia"
+	BidderTappx            BidderName = "tappx"
 	BidderTriplelift       BidderName = "triplelift"
 	BidderTripleliftNative BidderName = "triplelift_native"
 	BidderUnruly           BidderName = "unruly"
 	BidderVerizonMedia     BidderName = "verizonmedia"
+	BidderVisx             BidderName = "visx"
 	BidderVrtcal           BidderName = "vrtcal"
 	BidderYieldmo          BidderName = "yieldmo"
-	BidderVisx             BidderName = "visx"
-	BidderTappx            BidderName = "tappx"
-	BidderEngageBDR        BidderName = "engagebdr"
 )
 
 // BidderMap stores all the valid OpenRTB 2.x Bidders in the project. This map *must not* be mutated.
 var BidderMap = map[string]BidderName{
 	"33across":          Bidder33Across,
+	"adform":            BidderAdform,
 	"adkernel":          BidderAdkernel,
 	"adkernelAdn":       BidderAdkernelAdn,
 	"adpone":            BidderAdpone,
 	"adtelligent":       BidderAdtelligent,
-	"adform":            BidderAdform,
 	"advangelists":      BidderAdvangelists,
 	"appnexus":          BidderAppnexus,
 	"beachfront":        BidderBeachfront,
-	"audienceNetwork":   BidderFacebook,
 	"brightroll":        BidderBrightroll,
 	"consumable":        BidderConsumable,
 	"conversant":        BidderConversant,
 	"datablocks":        BidderDatablocks,
 	"emx_digital":       BidderEmxDigital,
+	"engagebdr":         BidderEngageBDR,
 	"eplanning":         BidderEPlanning,
+	"audienceNetwork":   BidderFacebook,
 	"gamma":             BidderGamma,
 	"gamoshi":           BidderGamoshi,
 	"grid":              BidderGrid,
 	"gumgum":            BidderGumGum,
 	"improvedigital":    BidderImprovedigital,
 	"ix":                BidderIx,
+	"kubient":           BidderKubient,
 	"lifestreet":        BidderLifestreet,
 	"lockerdome":        BidderLockerDome,
-	"openx":             BidderOpenx,
 	"mgid":              BidderMgid,
+	"openx":             BidderOpenx,
 	"pubmatic":          BidderPubmatic,
 	"pulsepoint":        BidderPulsepoint,
 	"rhythmone":         BidderRhythmone,
@@ -103,19 +105,17 @@ var BidderMap = map[string]BidderName{
 	"rubicon":           BidderRubicon,
 	"sharethrough":      BidderSharethrough,
 	"somoaudience":      BidderSomoaudience,
-	"sovrn":             BidderSovrn,
 	"sonobi":            BidderSonobi,
+	"sovrn":             BidderSovrn,
 	"synacormedia":      BidderSynacormedia,
+	"tappx":             BidderTappx,
 	"triplelift":        BidderTriplelift,
 	"triplelift_native": BidderTripleliftNative,
 	"unruly":            BidderUnruly,
 	"verizonmedia":      BidderVerizonMedia,
+	"visx":              BidderVisx,
 	"vrtcal":            BidderVrtcal,
 	"yieldmo":           BidderYieldmo,
-	"visx":              BidderVisx,
-	"tappx":             BidderTappx,
-	"engagebdr":         BidderEngageBDR,
-	"kubient":           BidderKubient,
 }
 
 // BidderList returns the values of the BidderMap
@@ -134,9 +134,9 @@ func (name BidderName) MarshalJSON() ([]byte, error) {
 func (name *BidderName) String() string {
 	if name == nil {
 		return ""
-	} else {
-		return string(*name)
 	}
+
+	return string(*name)
 }
 
 // The BidderParamValidator is used to enforce bidrequest.imp[i].ext.{anyBidder} values.
