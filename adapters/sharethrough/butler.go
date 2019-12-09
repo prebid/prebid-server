@@ -11,7 +11,10 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"time"
 )
+
+const defaultTmax = 10000 // 10 sec
 
 type StrAdSeverParams struct {
 	Pkey               string
@@ -42,8 +45,20 @@ type UserAgentParsers struct {
 	SafariVersion    *regexp.Regexp
 }
 
+type ButlerRequestBody struct {
+	BlockedAdvDomains []string `json:"badv,omitempty"`
+	MaxTimeout        int64    `json:"tmax"`
+	Deadline          string   `json:"deadline"`
+	BidFloor          float64  `json:"bidfloor,omitempty"`
+}
+
 type StrUriHelper struct {
 	BaseURI string
+	Clock   ClockInterface
+}
+
+type StrBodyHelper struct {
+	Clock ClockInterface
 }
 
 type StrOpenRTBTranslator struct {
@@ -54,7 +69,7 @@ type StrOpenRTBTranslator struct {
 
 func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openrtb.BidRequest, domain string) (*adapters.RequestData, error) {
 	headers := http.Header{}
-	headers.Add("Content-Type", "text/plain;charset=utf-8")
+	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("Origin", domain)
 	headers.Add("Referer", request.Site.Page)
@@ -72,12 +87,11 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 
 	pKey := strImpParams.Pkey
 	userInfo := s.Util.parseUserInfo(request.User)
+	height, width := s.Util.getPlacementSize(imp, strImpParams)
 
-	var height, width uint64
-	if len(strImpParams.IframeSize) >= 2 {
-		height, width = uint64(strImpParams.IframeSize[0]), uint64(strImpParams.IframeSize[1])
-	} else {
-		height, width = s.Util.getPlacementSize(imp.Banner.Format)
+	jsonBody, err := (StrBodyHelper{Clock: s.Util.getClock()}).buildBody(request, strImpParams)
+	if err != nil {
+		return nil, err
 	}
 
 	return &adapters.RequestData{
@@ -94,7 +108,7 @@ func (s StrOpenRTBTranslator) requestFromOpenRTB(imp openrtb.Imp, request *openr
 			TheTradeDeskUserId: userInfo.TtdUid,
 			SharethroughUserId: userInfo.StxUid,
 		}),
-		Body:    nil,
+		Body:    jsonBody,
 		Headers: headers,
 	}, nil
 }
@@ -109,7 +123,7 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	bidResponse := adapters.NewBidderResponse()
 
 	bidResponse.Currency = "USD"
-	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeNative}
+	typedBid := &adapters.TypedBid{BidType: openrtb_ext.BidTypeBanner}
 
 	if len(strResp.Creatives) == 0 {
 		errs = append(errs, &errortypes.BadInput{Message: "No creative provided"})
@@ -148,6 +162,22 @@ func (s StrOpenRTBTranslator) responseToOpenRTB(strRawResp []byte, btlrReq *adap
 	return bidResponse, errs
 }
 
+func (h StrBodyHelper) buildBody(request *openrtb.BidRequest, strImpParams openrtb_ext.ExtImpSharethrough) (body []byte, err error) {
+	timeout := request.TMax
+	if timeout == 0 {
+		timeout = defaultTmax
+	}
+
+	body, err = json.Marshal(ButlerRequestBody{
+		BlockedAdvDomains: request.BAdv,
+		MaxTimeout:        timeout,
+		Deadline:          h.Clock.now().Add(time.Duration(timeout) * time.Millisecond).Format(time.RFC3339Nano),
+		BidFloor:          strImpParams.BidFloor,
+	})
+
+	return
+}
+
 func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v := url.Values{}
 	v.Set("placement_key", params.Pkey)
@@ -166,6 +196,7 @@ func (h StrUriHelper) buildUri(params StrAdSeverParams) string {
 	v.Set("height", strconv.FormatUint(params.Height, 10))
 	v.Set("width", strconv.FormatUint(params.Width, 10))
 
+	v.Set("adRequestAt", h.Clock.now().Format(time.RFC3339Nano))
 	v.Set("supplyId", supplyId)
 	v.Set("strVersion", strconv.FormatInt(strVersion, 10))
 

@@ -1,0 +1,11 @@
+maintainer:
+  email: "eng-demand@synacor.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

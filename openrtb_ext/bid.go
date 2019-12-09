@@ -21,8 +21,14 @@ type ExtBidPrebid struct {
 
 // ExtBidPrebidCache defines the contract for  bidresponse.seatbid.bid[i].ext.prebid.cache
 type ExtBidPrebidCache struct {
-	Key string `json:"key"`
-	Url string `json:"url"`
+	Key  string                 `json:"key"`
+	Url  string                 `json:"url"`
+	Bids *ExtBidPrebidCacheBids `json:"bids,omitempty"`
+}
+
+type ExtBidPrebidCacheBids struct {
+	Url     string `json:"url"`
+	CacheId string `json:"cacheId"`
 }
 
 // ExtBidPrebidVideo defines the contract for bidresponse.seatbid.bid[i].ext.prebid.video
@@ -83,6 +89,10 @@ const (
 	// HbEnvKey exists to support the Prebid Universal Creative. If it exists, the only legal value is mobile-app.
 	// It will exist only if the incoming bidRequest defiend request.app instead of request.site.
 	HbEnvKey TargetingKey = "hb_env"
+
+	// HbCacheHost and HbCachePath exist to supply cache host and path as targeting parameters
+	HbConstantCacheHostKey TargetingKey = "hb_cache_host"
+	HbConstantCachePathKey TargetingKey = "hb_cache_path"
 
 	// HbBidderConstantKey is the name of the Bidder. For example, "appnexus" or "rubicon".
 	HbBidderConstantKey TargetingKey = "hb_bidder"

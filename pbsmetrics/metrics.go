@@ -28,12 +28,17 @@ type AdapterLabels struct {
 	AdapterErrors map[AdapterError]struct{}
 }
 
-// ImpLabels
+// ImpLabels defines metric labels describing the impression type.
 type ImpLabels struct {
 	BannerImps bool
 	VideoImps  bool
 	AudioImps  bool
 	NativeImps bool
+}
+
+// RequestLabels defines metric labels describing the result of a network request.
+type RequestLabels struct {
+	RequestStatus RequestStatus
 }
 
 // Label typecasting. Se below the type definitions for possible values
@@ -65,7 +70,7 @@ type AdapterError string
 // CacheResult : Cache hit/miss
 type CacheResult string
 
-// PublisherUnknown: Default value for Labels.PubID
+// PublisherUnknown : Default value for Labels.PubID
 const PublisherUnknown = "unknown"
 
 // The demand sources
@@ -149,10 +154,11 @@ func CookieTypes() []CookieFlag {
 
 // Request/return status
 const (
-	RequestStatusOK         RequestStatus = "ok"
-	RequestStatusBadInput   RequestStatus = "badinput"
-	RequestStatusErr        RequestStatus = "err"
-	RequestStatusNetworkErr RequestStatus = "networkerr"
+	RequestStatusOK          RequestStatus = "ok"
+	RequestStatusBadInput    RequestStatus = "badinput"
+	RequestStatusErr         RequestStatus = "err"
+	RequestStatusNetworkErr  RequestStatus = "networkerr"
+	RequestStatusBlacklisted RequestStatus = "blacklistedacctorapp"
 )
 
 func RequestStatuses() []RequestStatus {
@@ -161,6 +167,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusBadInput,
 		RequestStatusErr,
 		RequestStatusNetworkErr,
+		RequestStatusBlacklisted,
 	}
 }
 
@@ -229,6 +236,16 @@ const (
 	RequestActionErr    RequestAction = "err"
 )
 
+// RequestActions returns possible setuid action labels
+func RequestActions() []RequestAction {
+	return []RequestAction{
+		RequestActionSet,
+		RequestActionOptOut,
+		RequestActionGDPR,
+		RequestActionErr,
+	}
+}
+
 // MetricsEngine is a generic interface to record PBS metrics into the desired backend
 // The first three metrics function fire off once per incoming request, so total metrics
 // will equal the total numer of incoming requests. The remaining 5 fire off per outgoing
@@ -249,9 +266,10 @@ type MetricsEngine interface {
 	RecordAdapterBidReceived(labels AdapterLabels, bidType openrtb_ext.BidType, hasAdm bool)
 	RecordAdapterPrice(labels AdapterLabels, cpm float64)
 	RecordAdapterTime(labels AdapterLabels, length time.Duration)
-	RecordCookieSync(labels Labels) // May ignore all labels
+	RecordCookieSync()
 	RecordAdapterCookieSync(adapter openrtb_ext.BidderName, gdprBlocked bool)
 	RecordUserIDSet(userLabels UserLabels) // Function should verify bidder values
 	RecordStoredReqCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredImpCacheResult(cacheResult CacheResult, inc int)
+	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 }

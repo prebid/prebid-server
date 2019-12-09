@@ -37,7 +37,7 @@ func TestMultiMetricsEngine(t *testing.T) {
 	cfg := mainConfig.Configuration{}
 	cfg.Metrics.Influxdb.Host = "localhost"
 	adapterList := openrtb_ext.BidderList()
-	goEngine := pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList)
+	goEngine := pbsmetrics.NewMetrics(metrics.NewPrefixedRegistry("prebidserver."), adapterList, mainConfig.DisabledMetrics{})
 	engineList := make(MultiMetricsEngine, 2)
 	engineList[0] = goEngine
 	engineList[1] = &DummyMetricsEngine{}
@@ -85,6 +85,28 @@ func TestMultiMetricsEngine(t *testing.T) {
 		metricsEngine.RecordAdapterPrice(pubLabels, 1.34)
 		metricsEngine.RecordAdapterBidReceived(pubLabels, openrtb_ext.BidTypeBanner, true)
 		metricsEngine.RecordAdapterTime(pubLabels, time.Millisecond*20)
+		metricsEngine.RecordPrebidCacheRequestTime(true, time.Millisecond*20)
+	}
+	labelsBlacklist := []pbsmetrics.Labels{
+		{
+			Source:        pbsmetrics.DemandWeb,
+			RType:         pbsmetrics.ReqTypeAMP,
+			PubID:         "test2",
+			Browser:       pbsmetrics.BrowserOther,
+			CookieFlag:    pbsmetrics.CookieFlagYes,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
+		},
+		{
+			Source:        pbsmetrics.DemandWeb,
+			RType:         pbsmetrics.ReqTypeVideo,
+			PubID:         "test2",
+			Browser:       pbsmetrics.BrowserOther,
+			CookieFlag:    pbsmetrics.CookieFlagYes,
+			RequestStatus: pbsmetrics.RequestStatusBlacklisted,
+		},
+	}
+	for _, label := range labelsBlacklist {
+		metricsEngine.RecordRequest(label)
 	}
 	impTypeLabels.BannerImps = false
 	impTypeLabels.VideoImps = true
@@ -97,16 +119,21 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "RequestStatuses.Legacy.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeLegacy][pbsmetrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.AMP.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeAMP][pbsmetrics.RequestStatusOK].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.AMP.BlacklistedAcctOrApp", goEngine.RequestStatuses[pbsmetrics.ReqTypeAMP][pbsmetrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.Video.OK", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusOK].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.Video.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.Video.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.Video.BlacklistedAcctOrApp", goEngine.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusBlacklisted].Count(), 1)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.Error", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusErr].Count(), 0)
 	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BadInput", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBadInput].Count(), 0)
+	VerifyMetrics(t, "RequestStatuses.OpenRTB2.BlacklistedAcctOrApp", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusBlacklisted].Count(), 0)
 
 	VerifyMetrics(t, "ImpsTypeBanner", goEngine.ImpsTypeBanner.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeVideo", goEngine.ImpsTypeVideo.Count(), 3)
 	VerifyMetrics(t, "ImpsTypeAudio", goEngine.ImpsTypeAudio.Count(), 5)
 	VerifyMetrics(t, "ImpsTypeNative", goEngine.ImpsTypeNative.Count(), 5)
+
+	VerifyMetrics(t, "RecordPrebidCacheRequestTime", goEngine.PrebidCacheRequestTimerSuccess.Count(), 5)
 
 	VerifyMetrics(t, "Request", goEngine.RequestStatuses[pbsmetrics.ReqTypeORTB2Web][pbsmetrics.RequestStatusOK].Count(), 5)
 	VerifyMetrics(t, "ImpMeter", goEngine.ImpMeter.Count(), 8)
@@ -123,8 +150,8 @@ func TestMultiMetricsEngine(t *testing.T) {
 	VerifyMetrics(t, "AdapterMetrics.AppNexus.NoBidMeter", goEngine.AdapterMetrics[openrtb_ext.BidderAppnexus].NoBidMeter.Count(), 5)
 }
 
-func VerifyMetrics(t *testing.T, name string, expected int64, actual int64) {
+func VerifyMetrics(t *testing.T, name string, actual int64, expected int64) {
 	if expected != actual {
-		t.Errorf("Error in metric %s: expected %d, got %d.", name, expected, actual)
+		t.Errorf("Error in metric %s: got %d, expected %d.", name, actual, expected)
 	}
 }

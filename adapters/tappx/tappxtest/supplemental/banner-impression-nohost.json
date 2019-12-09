@@ -29,7 +29,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Tappx host undefined"
+    {
+      "value": "Tappx host undefined",
+      "comparison": "literal"
+    }
   ]
  
 }
