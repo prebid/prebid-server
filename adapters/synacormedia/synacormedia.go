@@ -75,9 +75,9 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 
 	var err error
 
-	if firstExtImp == nil || firstExtImp.SeatId == "" {
+	if firstExtImp == nil || firstExtImp.SeatId == "" || firstExtImp.TagId == "" {
 		return nil, append(errs, &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Impression missing seat id"),
+			Message: fmt.Sprintf("Invalid Impression"),
 		})
 	}
 	// this is where the empty seatId is filled
