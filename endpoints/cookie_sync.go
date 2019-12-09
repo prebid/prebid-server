@@ -131,7 +131,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 				Consent: parsedReq.Consent,
 			},
 			CCPA: ccpa.Policy{
-				Signal: parsedReq.CCPA,
+				Signal: parsedReq.USPrivacy,
 			},
 		}
 		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(privacyPolicy)
@@ -202,11 +202,11 @@ func cookieSyncStatus(syncCount int) string {
 }
 
 type cookieSyncRequest struct {
-	Bidders []string `json:"bidders"`
-	GDPR    *int     `json:"gdpr"`
-	Consent string   `json:"gdpr_consent"`
-	CCPA    string   `json:"us_privacy"`
-	Limit   int      `json:"limit"`
+	Bidders   []string `json:"bidders"`
+	GDPR      *int     `json:"gdpr"`
+	Consent   string   `json:"gdpr_consent"`
+	USPrivacy string   `json:"us_privacy"`
+	Limit     int      `json:"limit"`
 }
 
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {
