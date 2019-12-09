@@ -9,7 +9,7 @@
         },
         "ext": {
           "bidder": {
-            "seatId": "1927",
+            "seatId": "prebid",
             "tagId": "1234"
           }
         }
@@ -20,11 +20,11 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://1927.technoratimedia.com/openrtb/bids/1927",
+        "uri": "http://prebid.technoratimedia.com/openrtb/bids/prebid",
         "body": {
           "id": "test-request-id",
           "ext": {
-            "seatId": "1927"
+            "seatId": "prebid"
           },
           "imp": [
             {
@@ -35,7 +35,7 @@
               },
               "ext": {
                 "bidder": {
-                  "seatId": "1927",
+                  "seatId": "prebid",
                   "tagId": "1234"
                 }
               }
