@@ -10,7 +10,7 @@
         "ext": {
           "bidder": {
             "seatId": "prebid",
-            "tagId": "1234"
+            "tagId": "demo1"
           }
         }
       }
@@ -29,14 +29,14 @@
           "imp": [
             {
               "id":"test-imp-id",
-              "tagid": "1234",
+              "tagid": "demo1",
               "audio": {
                 "mimes": ["video/mp4"]
               },
               "ext": {
                 "bidder": {
                   "seatId": "prebid",
-                  "tagId": "1234"
+                  "tagId": "demo1"
                 }
               }
             }
