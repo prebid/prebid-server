@@ -382,17 +382,14 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	gdprConsent := getQueryParam(httpRequest, "gdpr_consent")
-	ccpaValue := getQueryParam(httpRequest, "us_privacy")
 	privacyPolicies := privacy.Policies{
 		GDPR: gdpr.Policy{
-			Consent: gdprConsent,
+			Consent: getQueryParam(httpRequest, "gdpr_consent"),
 		},
 		CCPA: ccpa.Policy{
-			Value: ccpaValue,
+			Value: getQueryParam(httpRequest, "us_privacy"),
 		},
 	}
-
 	if err := privacyPolicies.Write(req); err != nil {
 		return err
 	}
