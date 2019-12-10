@@ -31,6 +31,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 	}
 
 	for _, imp := range request.Imp {
+		requestCopy := *request
 		var bidderExt adapters.ExtImpBidder
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
@@ -49,7 +50,8 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 			continue
 		}
 
-		reqJSON, err := json.Marshal(request)
+		requestCopy.Imp = []openrtb.Imp{imp}
+		reqJSON, err := json.Marshal(&requestCopy)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
