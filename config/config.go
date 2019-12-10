@@ -678,6 +678,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("adapters.lifestreet.endpoint", "https://prebid.s2s.lfstmedia.com/adrequest")
 	v.SetDefault("adapters.lockerdome.endpoint", "https://lockerdome.com/ladbid/prebidserver/openrtb2")
 	v.SetDefault("adapters.marsmedia.endpoint", "http://bid306.rtbsrv.com/bidder/?bid=f3xtet")
+	v.SetDefault("adapters.mgid.endpoint", "https://prebid.mgid.com/prebid/")
 	v.SetDefault("adapters.openx.endpoint", "http://rtb.openx.net/prebid")
 	v.SetDefault("adapters.pubmatic.endpoint", "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	v.SetDefault("adapters.pulsepoint.endpoint", "http://bid.contextweb.com/header/s/ortb/prebid-s2s")
