@@ -22,7 +22,7 @@
         "ext": {
           "bidder": {
             "seatId":"prebid",
-            "tagId": "3020"
+            "tagId": "demo1"
           }
         }
       }
@@ -45,7 +45,7 @@
           "imp": [
             {
               "id": "i3",
-              "tagid": "3020",
+              "tagid": "demo1",
               "video": {
                 "w": 300,
                 "h": 250,
@@ -57,7 +57,7 @@
               "ext": {
                 "bidder":{
                   "seatId":"prebid",
-                  "tagId": "3020"
+                  "tagId": "demo1"
                 }
               }
             }
