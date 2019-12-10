@@ -72,9 +72,11 @@ type clientImpl struct {
 func (c *clientImpl) GetExtCacheData() (string, string) {
 	path := c.externalCachePath
 	if path == "/" {
+		// Only the slash for the path, remove it to empty
 		path = ""
-	} else if strings.Index(path, "/") == 0 {
-		path = strings.TrimLeft(path, "/")
+	} else if len(path) > 0 && !strings.HasPrefix(path, "/") {
+		// Path defined but does not start with "/", prepend it
+		path = "/" + path
 	}
 
 	return c.externalCacheHost, path
