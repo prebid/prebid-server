@@ -32,7 +32,7 @@ func (p *permissionsMock) PersonalInfoAllowed(ctx context.Context, bidder openrt
 }
 
 func assertReq(t *testing.T, reqByBidders map[openrtb_ext.BidderName]*openrtb.BidRequest,
-	applyCOPPA bool, consentedVendors map[string]bool, applyCCPA bool) {
+	applyCOPPA bool, consentedVendors map[string]bool) {
 	// assert individual bidder requests
 	assert.NotEqual(t, reqByBidders, 0, "cleanOpenRTBRequest should split request into individual bidder requests")
 
@@ -40,7 +40,7 @@ func assertReq(t *testing.T, reqByBidders map[openrtb_ext.BidderName]*openrtb.Bi
 	// Both appnexus and brightroll should be allowed since brightroll
 	// is used as an alias for appnexus in the test request
 	for bidderName, bidder := range reqByBidders {
-		if !applyCOPPA && !applyCCPA && consentedVendors[bidderName.String()] {
+		if !applyCOPPA && consentedVendors[bidderName.String()] {
 			assert.NotEqual(t, bidder.User.BuyerUID, "", "cleanOpenRTBRequest shouldn't clean PI data as per COPPA or for a consented vendor as per GDPR or per CCPA")
 			assert.NotEqual(t, bidder.Device.DIDMD5, "", "cleanOpenRTBRequest shouldn't clean PI data as per COPPA or for a consented vendor as per GDPR or per CCPA")
 		} else {
@@ -54,27 +54,60 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 	testCases := []struct {
 		req              *openrtb.BidRequest
 		bidReqAssertions func(t *testing.T, reqByBidders map[openrtb_ext.BidderName]*openrtb.BidRequest,
-			applyCOPPA bool, consentedVendors map[string]bool, applyCCPA bool)
+			applyCOPPA bool, consentedVendors map[string]bool)
 		hasError         bool
 		applyCOPPA       bool
 		consentedVendors map[string]bool
-		applyCCPA        bool
 	}{
 		{req: newRaceCheckingRequest(t), bidReqAssertions: assertReq, hasError: false,
-			applyCOPPA: true, consentedVendors: map[string]bool{"appnexus": true}, applyCCPA: false},
+			applyCOPPA: true, consentedVendors: map[string]bool{"appnexus": true}},
 		{req: newAdapterAliasBidRequest(t), bidReqAssertions: assertReq, hasError: false,
-			applyCOPPA: false, consentedVendors: map[string]bool{"appnexus": true, "brightroll": true}, applyCCPA: false},
-		{req: newCCPABidRequest(t), bidReqAssertions: assertReq, hasError: false,
-			applyCOPPA: false, consentedVendors: map[string]bool{"appnexus": true}, applyCCPA: true},
+			applyCOPPA: false, consentedVendors: map[string]bool{"appnexus": true, "brightroll": true}},
 	}
 
 	for _, test := range testCases {
-		reqByBidders, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true)
+		reqByBidders, _, err := cleanOpenRTBRequests(context.Background(), test.req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, true)
 		if test.hasError {
 			assert.NotNil(t, err, "Error shouldn't be nil")
 		} else {
 			assert.Nil(t, err, "Err should be nil")
-			test.bidReqAssertions(t, reqByBidders, test.applyCOPPA, test.consentedVendors, test.applyCCPA)
+			test.bidReqAssertions(t, reqByBidders, test.applyCOPPA, test.consentedVendors)
+		}
+	}
+}
+
+func TestCleanOpenRTBRequestsCCPA(t *testing.T) {
+	testCases := []struct {
+		description     string
+		enforceCCPA     bool
+		expectDataScrub bool
+	}{
+		{
+			description:     "Feature Flag Enabled",
+			enforceCCPA:     true,
+			expectDataScrub: true,
+		},
+		{
+			description:     "Feature Flag Disabled",
+			enforceCCPA:     false,
+			expectDataScrub: false,
+		},
+	}
+
+	for _, test := range testCases {
+		req := newCCPABidRequest(t)
+
+		results, _, errs := cleanOpenRTBRequests(context.Background(), req, &emptyUsersync{}, map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels{}, pbsmetrics.Labels{}, &permissionsMock{}, true, test.enforceCCPA)
+		result := results["appnexus"]
+
+		assert.Nil(t, errs)
+
+		if test.expectDataScrub {
+			assert.Equal(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.Equal(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
+		} else {
+			assert.NotEqual(t, result.User.BuyerUID, "", test.description+":User.BuyerUID")
+			assert.NotEqual(t, result.Device.DIDMD5, "", test.description+":Device.DIDMD5")
 		}
 	}
 }
@@ -166,7 +199,7 @@ func newCCPABidRequest(t *testing.T) *openrtb.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"appnexus": {"placementId": 10433394},"brightroll": {"placementId": 105}}`),
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
 		}},
 	}
 }

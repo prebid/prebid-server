@@ -26,7 +26,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
-	usersyncIfAmbiguous bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+	usersyncIfAmbiguous,
+	enforceCCPA bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -44,11 +45,13 @@ func cleanOpenRTBRequests(ctx context.Context,
 	consent := extractConsent(orig)
 	isAMP := labels.RType == pbsmetrics.ReqTypeAMP
 
-	ccpaPolicy, _ := ccpa.ReadPolicy(orig)
-
 	privacyEnforcement := privacy.Enforcement{
 		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
-		CCPA:  ccpaPolicy.ShouldEnforce(),
+	}
+
+	if enforceCCPA {
+		ccpaPolicy, _ := ccpa.ReadPolicy(orig)
+		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce()
 	}
 
 	for bidder, bidReq := range requestsByBidder {

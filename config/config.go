@@ -47,6 +47,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+	CCPA                 CCPA               `mapstructure:"ccpa"`
 	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 
@@ -158,6 +159,10 @@ func (t *GDPRTimeouts) InitTimeout() time.Duration {
 
 func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
+}
+
+type CCPA struct {
+	Enforce bool `mapstructure:"enforce"`
 }
 
 type Analytics struct {
@@ -706,6 +711,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("default_request.type", "")
