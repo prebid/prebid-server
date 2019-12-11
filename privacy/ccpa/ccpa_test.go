@@ -18,43 +18,43 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			description: "Disabled",
-			policy:      Policy{Value: ""},
+			policy:      Policy{Signal: ""},
 			request:     &openrtb.BidRequest{},
 			expected:    &openrtb.BidRequest{},
 		},
 		{
 			description: "Enabled With Nil Request Regs Object",
-			policy:      Policy{Value: "anyValue"},
+			policy:      Policy{Signal: "anySignal"},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
-				Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"us_privacy":"anySignal"}`)}},
 		},
 		{
 			description: "Enabled With Nil Request Regs Ext Object",
-			policy:      Policy{Value: "anyValue"},
+			policy:      Policy{Signal: "anySignal"},
 			request:     &openrtb.BidRequest{Regs: &openrtb.Regs{}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
-				Ext: json.RawMessage(`{"us_privacy":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"us_privacy":"anySignal"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request Regs Ext Object - Doesn't Overwrite",
-			policy:      Policy{Value: "anyValue"},
+			policy:      Policy{Signal: "anySignal"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
-				Ext: json.RawMessage(`{"existing":"any","us_privacy":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"existing":"any","us_privacy":"anySignal"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request Regs Ext Object - Overwrites",
-			policy:      Policy{Value: "anyValue"},
+			policy:      Policy{Signal: "anySignal"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`{"existing":"any","us_privacy":"toBeOverwritten"}`)}},
 			expected: &openrtb.BidRequest{Regs: &openrtb.Regs{
-				Ext: json.RawMessage(`{"existing":"any","us_privacy":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"existing":"any","us_privacy":"anySignal"}`)}},
 		},
 		{
 			description: "Enabled With Existing Malformed Request Regs Ext Object",
-			policy:      Policy{Value: "anyValue"},
+			policy:      Policy{Signal: "anySignal"},
 			request: &openrtb.BidRequest{Regs: &openrtb.Regs{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
