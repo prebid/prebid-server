@@ -728,6 +728,7 @@ func setBidderDefaults(v *viper.Viper, bidder string) {
 	v.SetDefault(adapterCfgPrefix+bidder+".endpoint", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".usersync_url", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".platform_id", "")
+	v.SetDefault(adapterCfgPrefix+bidder+".app_secret", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.username", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.password", "")
 	v.SetDefault(adapterCfgPrefix+bidder+".xapi.tracker", "")
