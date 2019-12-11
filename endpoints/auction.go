@@ -23,6 +23,8 @@ import (
 	"github.com/prebid/prebid-server/pbs"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	pbc "github.com/prebid/prebid-server/prebid_cache_client"
+	"github.com/prebid/prebid-server/privacy"
+	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -188,20 +190,20 @@ func (a *auction) recoverSafely(inner func(*pbs.PBSBidder, pbsmetrics.AdapterLab
 	}
 }
 
-func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprApplies string, consent string) bool {
-	switch gdprApplies {
+func (a *auction) shouldUsersync(ctx context.Context, bidder openrtb_ext.BidderName, gdprPrivacyPolicy gdprPolicy.Policy) bool {
+	switch gdprPrivacyPolicy.Signal {
 	case "0":
 		return true
 	case "1":
-		if consent == "" {
+		if gdprPrivacyPolicy.Consent == "" {
 			return false
 		}
 		fallthrough
 	default:
-		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, consent); !canSync || err != nil {
+		if canSync, err := a.gdprPerms.HostCookiesAllowed(ctx, gdprPrivacyPolicy.Consent); !canSync || err != nil {
 			return false
 		}
-		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, consent)
+		canSync, err := a.gdprPerms.BidderSyncAllowed(ctx, bidder, gdprPrivacyPolicy.Consent)
 		return canSync && err == nil
 	}
 }
@@ -508,10 +510,14 @@ func (a *auction) processUserSync(req *pbs.PBSRequest, bidder *pbs.PBSBidder, bl
 	uid, _, _ := req.Cookie.GetUID(syncer.FamilyName())
 	if uid == "" {
 		bidder.NoCookie = true
-		gdprApplies := req.ParseGDPR()
-		consent := req.ParseConsent()
-		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), gdprApplies, consent) {
-			syncInfo, err := syncer.GetUsersyncInfo(gdprApplies, consent)
+		privacyPolicies := privacy.Policies{
+			GDPR: gdprPolicy.Policy{
+				Signal:  req.ParseGDPR(),
+				Consent: req.ParseConsent(),
+			},
+		}
+		if a.shouldUsersync(*ctx, openrtb_ext.BidderName(syncerCode), privacyPolicies.GDPR) {
+			syncInfo, err := syncer.GetUsersyncInfo(privacyPolicies)
 			if err == nil {
 				bidder.UsersyncInfo = syncInfo
 			} else {

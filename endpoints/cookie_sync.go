@@ -18,6 +18,9 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -122,7 +125,16 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
+		privacyPolicy := privacy.Policies{
+			GDPR: gdprPolicy.Policy{
+				Signal:  gdprToString(parsedReq.GDPR),
+				Consent: parsedReq.Consent,
+			},
+			CCPA: ccpa.Policy{
+				Signal: parsedReq.USPrivacy,
+			},
+		}
+		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(privacyPolicy)
 		if err == nil {
 			newSync := &usersync.CookieSyncBidders{
 				BidderCode:   bidder,
@@ -190,10 +202,11 @@ func cookieSyncStatus(syncCount int) string {
 }
 
 type cookieSyncRequest struct {
-	Bidders []string `json:"bidders"`
-	GDPR    *int     `json:"gdpr"`
-	Consent string   `json:"gdpr_consent"`
-	Limit   int      `json:"limit"`
+	Bidders   []string `json:"bidders"`
+	GDPR      *int     `json:"gdpr"`
+	Consent   string   `json:"gdpr_consent"`
+	USPrivacy string   `json:"us_privacy"`
+	Limit     int      `json:"limit"`
 }
 
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {

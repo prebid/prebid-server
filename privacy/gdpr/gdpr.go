@@ -7,8 +7,9 @@ import (
 	"github.com/mxmCherry/openrtb"
 )
 
-// Policy represents the GDPR regulation of an OpenRTB bid request.
+// Policy represents the GDPR regulation for an OpenRTB bid request.
 type Policy struct {
+	Signal  string
 	Consent string
 }
 
