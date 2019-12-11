@@ -309,8 +309,7 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	}
 
 	if err := ccpaPolicy.Validate(); err != nil {
-		errL = append(errL, err)
-		return errL
+		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))

@@ -34,7 +34,7 @@
     ],
     "regs": {
       "ext": {
-        "us_privacy": "1NYN"
+        "us_privacy": "invalid by length. allowed since it only produces a warning."
       }
     }
   }

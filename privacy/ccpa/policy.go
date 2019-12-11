@@ -80,5 +80,9 @@ func (p Policy) Validate() error {
 
 // ShouldEnforce returns true when the opt-out signal is explicitly detected.
 func (p Policy) ShouldEnforce() bool {
-	return len(p.Value) == 4 && p.Value[2] == 'Y'
+	if err := p.Validate(); err != nil {
+		return false
+	}
+
+	return p.Value != "" && p.Value[2] == 'Y'
 }

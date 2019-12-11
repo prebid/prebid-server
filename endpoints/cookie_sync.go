@@ -131,7 +131,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 				Consent: parsedReq.Consent,
 			},
 			CCPA: ccpa.Policy{
-				Signal: parsedReq.USPrivacy,
+				Value: parsedReq.USPrivacy,
 			},
 		}
 		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(privacyPolicy)

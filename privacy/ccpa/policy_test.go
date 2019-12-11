@@ -238,8 +238,8 @@ func TestShouldEnforce(t *testing.T) {
 			expected:    false,
 		},
 		{
-			description: "Malformed",
-			policy:      Policy{Value: "malformed"},
+			description: "Invalid",
+			policy:      Policy{Value: "2---"},
 			expected:    false,
 		},
 	}
