@@ -183,6 +183,12 @@ func (this *FacebookAdapter) modifyImp(out *openrtb.Imp) error {
 			return nil
 		}
 
+		if out.Banner.H == nil {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("imp #%s: banner height required", out.ID),
+			}
+		}
+
 		if _, ok := supportedBannerHeights[*out.Banner.H]; !ok {
 			return &errortypes.BadInput{
 				Message: fmt.Sprintf("imp #%s: only banner heights 50 and 250 are supported", out.ID),
