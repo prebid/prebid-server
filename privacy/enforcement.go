@@ -16,11 +16,6 @@ func (e Enforcement) Any() bool {
 	return e.CCPA || e.COPPA || e.GDPR
 }
 
-// None returns true if no privacy policies require enforcement.
-func (e Enforcement) None() bool {
-	return !e.CCPA && !e.COPPA && !e.GDPR
-}
-
 // Apply cleans personally identifiable information from an OpenRTB bid request.
 func (e Enforcement) Apply(bidRequest *openrtb.BidRequest, isAMP bool) {
 	e.apply(bidRequest, isAMP, NewScrubber())

@@ -49,47 +49,6 @@ func TestAny(t *testing.T) {
 	}
 }
 
-func TestNone(t *testing.T) {
-	testCases := []struct {
-		enforcement Enforcement
-		expected    bool
-		description string
-	}{
-		{
-			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: false,
-				GDPR:  false,
-			},
-			expected:    true,
-			description: "All False",
-		},
-		{
-			enforcement: Enforcement{
-				CCPA:  true,
-				COPPA: true,
-				GDPR:  true,
-			},
-			expected:    false,
-			description: "All True",
-		},
-		{
-			enforcement: Enforcement{
-				CCPA:  false,
-				COPPA: true,
-				GDPR:  false,
-			},
-			expected:    false,
-			description: "Mixed",
-		},
-	}
-
-	for _, test := range testCases {
-		result := test.enforcement.None()
-		assert.Equal(t, test.expected, result, test.description)
-	}
-}
-
 func TestApply(t *testing.T) {
 	testCases := []struct {
 		enforcement             Enforcement
