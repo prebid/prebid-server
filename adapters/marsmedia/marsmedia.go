@@ -58,7 +58,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 				validImpExists = true
 			} else {
 				return nil, []error{&errortypes.BadInput{
-					Message: "No valid banner foramt in the bid request",
+					Message: "No valid banner format in the bid request",
 				}}
 			}
 		} else if request.Imp[i].Video != nil {
@@ -76,7 +76,7 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	reqJSON, err := json.Marshal(request)
 	if err != nil {
 		return nil, []error{&errortypes.BadInput{
-			Message: "Json not encoded",
+			Message: fmt.Sprintf("Json not encoded. err: %s", err),
 		}}
 	}
 
