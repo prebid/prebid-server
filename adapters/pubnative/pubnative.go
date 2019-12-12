@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
@@ -57,9 +59,15 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 			return nil, errs
 		}
 
+
+		queryParams := url.Values{}
+		queryParams.Add("apptoken", pubnativeExt.AppAuthToken)
+		queryParams.Add("zoneid", strconv.Itoa(pubnativeExt.ZoneID))
+		queryString := queryParams.Encode()
+
 		reqData := &adapters.RequestData{
 			Method:  "POST",
-			Uri:     fmt.Sprintf("%s?apptoken=%s&zoneid=%d", a.URI, pubnativeExt.AppAuthToken, pubnativeExt.ZoneID),
+			Uri:     fmt.Sprintf("%s?%s", a.URI, queryString),
 			Body:    reqJSON,
 			Headers: headers,
 		}
