@@ -59,7 +59,6 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ad
 			return nil, errs
 		}
 
-
 		queryParams := url.Values{}
 		queryParams.Add("apptoken", pubnativeExt.AppAuthToken)
 		queryParams.Add("zoneid", strconv.Itoa(pubnativeExt.ZoneID))
