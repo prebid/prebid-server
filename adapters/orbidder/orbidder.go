@@ -45,9 +45,6 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 
 	}
 
-	//err = errors.New("orbidder is not implemented yet")
-	//errs = append(errs, err)
-
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
@@ -90,9 +87,9 @@ func (rcv OrbidderAdapter) MakeBids(internalRequest *openrtb.BidRequest, externa
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
 
 	for _, sb := range bidResp.SeatBid {
-		for i := range sb.Bid {
+		for _, b := range sb.Bid {
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-				Bid:     &sb.Bid[i],
+				Bid:     &b,
 				BidType: openrtb_ext.BidTypeBanner,
 			})
 		}
