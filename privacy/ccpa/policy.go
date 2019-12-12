@@ -21,7 +21,7 @@ func ReadPolicy(req *openrtb.BidRequest) (Policy, error) {
 	if req != nil && req.Regs != nil && len(req.Regs.Ext) > 0 {
 		var ext openrtb_ext.ExtRegs
 		if err := json.Unmarshal(req.Regs.Ext, &ext); err != nil {
-			return Policy{}, err
+			return policy, err
 		}
 		policy.Value = ext.USPrivacy
 	}
@@ -59,19 +59,24 @@ func (p Policy) Validate() error {
 		return errors.New("request.regs.ext.us_privacy must contain 4 characters")
 	}
 
-	if c := p.Value[0]; c != '1' {
+	if p.Value[0] != '1' {
 		return errors.New("request.regs.ext.us_privacy must specify version 1")
 	}
 
-	if c := p.Value[1]; c != 'N' && c != 'Y' && c != '-' {
+	var c byte
+
+	c = p.Value[1]
+	if c != 'N' && c != 'Y' && c != '-' {
 		return errors.New("request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice")
 	}
 
-	if c := p.Value[2]; c != 'N' && c != 'Y' && c != '-' {
+	c = p.Value[2]
+	if c != 'N' && c != 'Y' && c != '-' {
 		return errors.New("request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale")
 	}
 
-	if c := p.Value[3]; c != 'N' && c != 'Y' && c != '-' {
+	c = p.Value[3]
+	if c != 'N' && c != 'Y' && c != '-' {
 		return errors.New("request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement")
 	}
 
