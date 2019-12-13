@@ -630,7 +630,7 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 	videoReq.BAdv = []string{"test3", "test4"}
 
 	videoReq.Regs = &openrtb.Regs{
-		Ext: json.RawMessage(`{"us_privacy":"1NYY"}`),
+		Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"1NYY","existing":"any","consent":"anyConsent"}`),
 	}
 
 	mergeData(videoReq, bidReq)
