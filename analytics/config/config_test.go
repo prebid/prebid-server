@@ -45,6 +45,11 @@ func TestSampleModule(t *testing.T) {
 	if count != 4 {
 		t.Errorf("PBSAnalyticsModule failed at LogAmpObject")
 	}
+
+	am.LogVideoObject(&analytics.VideoObject{})
+	if count != 5 {
+		t.Errorf("PBSAnalyticsModule failed at LogVideoObject")
+	}
 }
 
 type sampleModule struct {
