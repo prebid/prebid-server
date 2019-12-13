@@ -189,13 +189,28 @@ func TestValidate(t *testing.T) {
 			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice",
 		},
 		{
+			description: "Invalid Explicit Notice Case",
+			policy:      Policy{Value: "1y--"},
+			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the explicit notice",
+		},
+		{
 			description: "Invalid Opt-Out Sale Char",
 			policy:      Policy{Value: "1-X-"},
 			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale",
 		},
 		{
+			description: "Invalid Opt-Out Sale Case",
+			policy:      Policy{Value: "1-y-"},
+			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the opt-out sale",
+		},
+		{
 			description: "Invalid LSPA Char",
 			policy:      Policy{Value: "1--X"},
+			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement",
+		},
+		{
+			description: "Invalid LSPA Case",
+			policy:      Policy{Value: "1--y"},
 			expected:    "request.regs.ext.us_privacy must specify 'N', 'Y', or '-' for the limited service provider agreement",
 		},
 	}
