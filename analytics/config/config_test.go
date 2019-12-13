@@ -53,6 +53,8 @@ type sampleModule struct {
 
 func (m *sampleModule) LogAuctionObject(ao *analytics.AuctionObject) { *m.count++ }
 
+func (m *sampleModule) LogVideoObject(vo *analytics.VideoObject) { *m.count++ }
+
 func (m *sampleModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { *m.count++ }
 
 func (m *sampleModule) LogSetUIDObject(so *analytics.SetUIDObject) { *m.count++ }
