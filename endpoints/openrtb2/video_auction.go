@@ -500,6 +500,10 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 		bidRequest.TMax = videoRequest.TMax
 	}
 
+	if videoRequest.Regs != nil {
+		bidRequest.Regs = videoRequest.Regs
+	}
+
 	return nil
 }
 

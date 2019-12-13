@@ -629,6 +629,10 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 	videoReq.BCat = []string{"test1", "test2"}
 	videoReq.BAdv = []string{"test3", "test4"}
 
+	videoReq.Regs = &openrtb.Regs{
+		Ext: json.RawMessage(`{"gdpr":1,"us_privacy":"1NYY","existing":"any","consent":"anyConsent"}`),
+	}
+
 	mergeData(videoReq, bidReq)
 
 	assert.Equal(t, videoReq.BCat, bidReq.BCat, "BCat is incorrect")
@@ -641,6 +645,8 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 	assert.Equal(t, videoReq.Device.DNT, bidReq.Device.DNT, "Device.DNT is incorrect")
 
 	assert.Equal(t, videoReq.Site.Page, bidReq.Site.Page, "Device.Site.Page is incorrect")
+
+	assert.Equal(t, videoReq.Regs, bidReq.Regs, "Regs is incorrect")
 }
 
 func TestHandleError(t *testing.T) {
