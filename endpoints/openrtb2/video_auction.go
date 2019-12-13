@@ -24,6 +24,8 @@ import (
 	"github.com/prebid/prebid-server/exchange"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/usersync"
 )
@@ -500,7 +502,29 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 		bidRequest.TMax = videoRequest.TMax
 	}
 
+	if videoRequest.Regs != nil {
+		var usPrivacy UsPrivacy
+		err = json.Unmarshal(videoRequest.Regs.Ext, &usPrivacy)
+		if err != nil {
+			return err
+		}
+
+		privacyPolicies := privacy.Policies{
+			CCPA: ccpa.Policy{
+				Signal: usPrivacy.Value,
+			},
+		}
+
+		if err = privacyPolicies.Write(bidRequest); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+type UsPrivacy struct {
+	Value string `json:"us_privacy"`
 }
 
 func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, error) {
