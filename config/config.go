@@ -287,7 +287,6 @@ func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs con
 			GDPRConsent: dummyGDPRConsent,
 			USPrivacy:   dummyCCPA,
 		}
-
 		resolvedUserSyncURL, err := macros.ResolveMacros(*userSyncTemplate, dummyMacroValues)
 		if err != nil {
 			return append(errs, fmt.Errorf("Unable to resolve user sync URL: %s for adapter: %s. %v", userSyncURL, adapterName, err))
