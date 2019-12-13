@@ -41,6 +41,8 @@ gdpr:
   host_vendor_id: 15
   usersync_if_ambiguous: true
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+ccpa:
+  enforce: true
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -229,6 +231,8 @@ func TestFullConfig(t *testing.T) {
 	}
 	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+
+	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
