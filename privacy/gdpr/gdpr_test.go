@@ -24,37 +24,37 @@ func TestWrite(t *testing.T) {
 		},
 		{
 			description: "Enabled With Nil Request User Object",
-			policy:      Policy{Consent: "anyValue"},
+			policy:      Policy{Consent: "anyConsent"},
 			request:     &openrtb.BidRequest{},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
-				Ext: json.RawMessage(`{"consent":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"consent":"anyConsent"}`)}},
 		},
 		{
 			description: "Enabled With Nil Request User Ext Object",
-			policy:      Policy{Consent: "anyValue"},
+			policy:      Policy{Consent: "anyConsent"},
 			request:     &openrtb.BidRequest{User: &openrtb.User{}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
-				Ext: json.RawMessage(`{"consent":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"consent":"anyConsent"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Doesn't Overwrite",
-			policy:      Policy{Consent: "anyValue"},
+			policy:      Policy{Consent: "anyConsent"},
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"existing":"any"}`)}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
-				Ext: json.RawMessage(`{"existing":"any","consent":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"existing":"any","consent":"anyConsent"}`)}},
 		},
 		{
 			description: "Enabled With Existing Request User Ext Object - Overwrites",
-			policy:      Policy{Consent: "anyValue"},
+			policy:      Policy{Consent: "anyConsent"},
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`{"existing":"any","consent":"toBeOverwritten"}`)}},
 			expected: &openrtb.BidRequest{User: &openrtb.User{
-				Ext: json.RawMessage(`{"existing":"any","consent":"anyValue"}`)}},
+				Ext: json.RawMessage(`{"existing":"any","consent":"anyConsent"}`)}},
 		},
 		{
 			description: "Enabled With Existing Malformed Request User Ext Object",
-			policy:      Policy{Consent: "anyValue"},
+			policy:      Policy{Consent: "anyConsent"},
 			request: &openrtb.BidRequest{User: &openrtb.User{
 				Ext: json.RawMessage(`malformed`)}},
 			expectedError: true,
