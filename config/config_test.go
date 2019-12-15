@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"encoding/json"
+
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -91,6 +92,7 @@ adapters:
     endpoint: http://facebook.com/pbs
     usersync_url: http://facebook.com/ortb/prebid-s2s
     platform_id: abcdefgh1234
+    app_secret: 987abc
   ix:
     endpoint: http://ixtest.com/api
   rubicon:
@@ -256,6 +258,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.audiencenetwork.app_secret", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppSecret, "987abc")
 	cmpStrings(t, "adapters.ix.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint, "http://rubitest.com/api")
 	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
