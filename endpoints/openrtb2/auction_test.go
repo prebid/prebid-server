@@ -900,16 +900,52 @@ func TestCurrencyTrunc(t *testing.T) {
 	}
 
 	errL := deps.validateRequest(&req)
-	for _, err := range errL {
-		if err.Error() != "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency" {
-			t.Errorf(err.Error())
-		} else {
-			if errortypes.DecodeError(err) != errortypes.WarningCode {
-				t.Errorf("The expected warning has the wrong error type/code")
-			}
-		}
+
+	expectedError := errortypes.Warning{Message: "A prebid request can only process one currency. Taking the first currency in the list, USD, as the active currency"}
+	assert.ElementsMatch(t, errL, []error{&expectedError})
+}
+
+func TestCCPAInvalidValueWarning(t *testing.T) {
+	deps := &endpointDeps{
+		&nobidExchange{},
+		newParamsValidator(t),
+		&mockStoredReqFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{},
+		pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}),
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BidderMap,
 	}
-	assert.Len(t, req.Cur, 1)
+
+	ui := uint64(1)
+	req := openrtb.BidRequest{
+		ID: "someID",
+		Imp: []openrtb.Imp{
+			{
+				ID: "imp-ID",
+				Banner: &openrtb.Banner{
+					W: &ui,
+					H: &ui,
+				},
+				Ext: json.RawMessage("{\"appnexus\": {\"placementId\": 5667}}"),
+			},
+		},
+		Site: &openrtb.Site{
+			ID: "myID",
+		},
+		Regs: &openrtb.Regs{
+			Ext: json.RawMessage("{\"us_privacy\":\"invalid by length\"}"),
+		},
+	}
+
+	errL := deps.validateRequest(&req)
+
+	expectedError := errortypes.Warning{Message: "CCPA value is invalid and will be ignored. (request.regs.ext.us_privacy must contain 4 characters)"}
+	assert.ElementsMatch(t, errL, []error{&expectedError})
 }
 
 // nobidExchange is a well-behaved exchange which always bids "no bid".

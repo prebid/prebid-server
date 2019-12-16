@@ -17,7 +17,7 @@ func TestGetUsersyncInfo(t *testing.T) {
 			Consent: "B",
 		},
 		CCPA: ccpa.Policy{
-			Signal: "C",
+			Value: "C",
 		},
 	}
 
