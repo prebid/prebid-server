@@ -1,0 +1,9 @@
+maintainer:
+  email: "realtime-siggi@otto.de"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+  site:
+    mediaTypes:
+      - banner

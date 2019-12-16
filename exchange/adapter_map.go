@@ -3,6 +3,7 @@ package exchange
 import (
 	"fmt"
 	"github.com/prebid/prebid-server/adapters/kubient"
+	"github.com/prebid/prebid-server/adapters/orbidder"
 	"net/http"
 	"strings"
 
@@ -79,6 +80,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 		openrtb_ext.BidderGumGum:     gumgum.NewGumGumBidder(cfg.Adapters[string(openrtb_ext.BidderGumGum)].Endpoint),
 		openrtb_ext.BidderLockerDome: lockerdome.NewLockerDomeBidder(cfg.Adapters[string(openrtb_ext.BidderLockerDome)].Endpoint),
 		openrtb_ext.BidderOpenx:      openx.NewOpenxBidder(cfg.Adapters[string(openrtb_ext.BidderOpenx)].Endpoint),
+		openrtb_ext.BidderOrbidder:   orbidder.NewOrbidderBidder(cfg.Adapters[string(openrtb_ext.BidderOrbidder)].Endpoint),
 		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticBidder(client, cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint),
 		openrtb_ext.BidderRhythmone:  rhythmone.NewRhythmoneBidder(cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint),
 		openrtb_ext.BidderRTBHouse:   rtbhouse.NewRTBHouseBidder(cfg.Adapters[string(openrtb_ext.BidderRTBHouse)].Endpoint),
