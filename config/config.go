@@ -47,6 +47,7 @@ type Configuration struct {
 	Analytics            Analytics          `mapstructure:"analytics"`
 	AMPTimeoutAdjustment int64              `mapstructure:"amp_timeout_adjustment_ms"`
 	GDPR                 GDPR               `mapstructure:"gdpr"`
+	CCPA                 CCPA               `mapstructure:"ccpa"`
 	CurrencyConverter    CurrencyConverter  `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig       `mapstructure:"default_request"`
 
@@ -160,6 +161,10 @@ func (t *GDPRTimeouts) ActiveTimeout() time.Duration {
 	return time.Duration(t.ActiveVendorlistFetch) * time.Millisecond
 }
 
+type CCPA struct {
+	Enforce bool `mapstructure:"enforce"`
+}
+
 type Analytics struct {
 	File FileLogs `mapstructure:"file"`
 }
@@ -202,6 +207,7 @@ const (
 	dummyPublisherID string = "12"
 	dummyGDPR        string = "0"
 	dummyGDPRConsent string = "someGDPRConsentString"
+	dummyCCPA        string = "1NYN"
 )
 
 type Adapter struct {
@@ -216,8 +222,9 @@ type Adapter struct {
 	//
 	// This value will be interpreted as a Golang Template. At runtime, the following Template variables will be replaced.
 	//
-	//   {{.GDPR}} -- This will be replaced with the "gdpr" property sent to /cookie_sync
-	//   {{.Consent}} -- This will be replaced with the "consent" property sent to /cookie_sync
+	//   {{.GDPR}}      -- This will be replaced with the "gdpr" property sent to /cookie_sync
+	//   {{.Consent}}   -- This will be replaced with the "consent" property sent to /cookie_sync
+	//   {{.USPrivacy}} -- This will be replaced with the "us_privacy" property sent to /cookie_sync
 	//
 	// For more info on templates, see: https://golang.org/pkg/text/template/
 	UserSyncURL string `mapstructure:"usersync_url"`
@@ -275,7 +282,12 @@ func validateAdapterUserSyncURL(userSyncURL string, adapterName string, errs con
 			return append(errs, fmt.Errorf("Invalid user sync URL template: %s for adapter: %s. %v", userSyncURL, adapterName, err))
 		}
 		// Resolve macros (if any) in the user_sync URL
-		resolvedUserSyncURL, err := macros.ResolveMacros(*userSyncTemplate, macros.UserSyncTemplateParams{GDPR: dummyGDPR, GDPRConsent: dummyGDPRConsent})
+		dummyMacroValues := macros.UserSyncTemplateParams{
+			GDPR:        dummyGDPR,
+			GDPRConsent: dummyGDPRConsent,
+			USPrivacy:   dummyCCPA,
+		}
+		resolvedUserSyncURL, err := macros.ResolveMacros(*userSyncTemplate, dummyMacroValues)
 		if err != nil {
 			return append(errs, fmt.Errorf("Unable to resolve user sync URL: %s for adapter: %s. %v", userSyncURL, adapterName, err))
 		}
@@ -707,6 +719,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
+	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("default_request.type", "")

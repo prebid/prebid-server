@@ -384,13 +384,12 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 
 	privacyPolicies := privacy.Policies{
 		GDPR: gdpr.Policy{
-			Consent: getQueryParam(httpRequest, "gdpr_consent"),
+			Consent: httpRequest.URL.Query().Get("gdpr_consent"),
 		},
 		CCPA: ccpa.Policy{
-			Signal: getQueryParam(httpRequest, "us_privacy"),
+			Value: httpRequest.URL.Query().Get("us_privacy"),
 		},
 	}
-
 	if err := privacyPolicies.Write(req); err != nil {
 		return err
 	}
@@ -400,17 +399,6 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 	}
 
 	return nil
-}
-
-func getQueryParam(httpRequest *http.Request, name string) string {
-	values, ok := httpRequest.URL.Query()[name]
-
-	if !ok || len(values) == 0 {
-		return ""
-	}
-
-	// return first value of the query param, matching the behavior of httpRequest.FormValue
-	return values[0]
 }
 
 func makeFormatReplacement(overrideWidth uint64, overrideHeight uint64, width uint64, height uint64, multisize string) []openrtb.Format {
