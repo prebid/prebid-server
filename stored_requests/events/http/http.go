@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	httpCore "net/http"
+	"net/url"
 	"time"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -94,10 +95,33 @@ func (e *HTTPEvents) refresh(ticker <-chan time.Time) {
 		select {
 		case thisTime := <-ticker:
 			thisTimeInUTC := thisTime.UTC()
-			thisEndpoint := e.Endpoint + "?last-modified=" + e.lastUpdate.Format(time.RFC3339)
+
+			// Parse the endpoint url defined
+			endpointUrl, urlErr := url.Parse(e.Endpoint)
+
+			// Error with url parsing
+			if urlErr != nil {
+				glog.Errorf("Disabling refresh HTTP cache from GET '%s': %v", e.Endpoint, urlErr)
+				return
+			}
+
+			// Parse the url query string
+			urlQuery := endpointUrl.Query()
+
+			// See the last-modified query param
+			urlQuery.Set("last-modified", e.lastUpdate.Format(time.RFC3339))
+
+			// Rebuild
+			endpointUrl.RawQuery = urlQuery.Encode()
+
+			// Convert to string
+			endpoint := endpointUrl.String()
+
+			glog.Infof("Refreshing HTTP cache from GET '%s'", endpoint)
+
 			ctx, cancel := e.ctxProducer()
-			resp, err := ctxhttp.Get(ctx, e.client, thisEndpoint)
-			if respObj, ok := e.parse(thisEndpoint, resp, err); ok {
+			resp, err := ctxhttp.Get(ctx, e.client, endpoint)
+			if respObj, ok := e.parse(endpoint, resp, err); ok {
 				invalidations := events.Invalidation{
 					Requests: extractInvalidations(respObj.StoredRequests),
 					Imps:     extractInvalidations(respObj.StoredImps),

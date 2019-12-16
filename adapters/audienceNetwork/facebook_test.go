@@ -38,5 +38,5 @@ type FacebookExt struct {
 }
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", NewFacebookBidder(nil, "test-platform-id", "test-app-id", "test-app-secret"))
+	adapterstest.RunJSONBidderTest(t, "audienceNetworktest", NewFacebookBidder(nil, "test-platform-id", "test-app-secret"))
 }
