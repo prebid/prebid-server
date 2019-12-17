@@ -1,0 +1,37 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [{
+			"id": "test-impression-id-1",
+			"banner": {}
+		}, {
+			"id": "test-impression-id-2",
+			"banner": {
+				"w": 300,
+				"h": 250
+			}
+		}, {
+			"id": "test-impression-id-3",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": {}
+		}, {
+			"id": "test-impression-id-4"
+		}]
+	},
+	"expectedMakeRequestsErrors": [{
+		"value": "banner size information missing",
+		"comparison": "literal"
+	}, {
+		"value": "impression extensions required",
+		"comparison": "literal"
+	}, {
+		"value": "Applogy token required",
+		"comparison": "literal"
+	}, {
+		"value": "Applogy only supports banner, video or native ads",
+		"comparison": "literal"
+	}]
+}
