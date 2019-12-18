@@ -52,7 +52,28 @@
 							"token": "test-token-1"
 						}
 					}
-				}, {
+				}]
+			}
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": {
+				"id": "test-response-id",
+				"seatbid": [{
+					"bid": [{
+						"id": "test-bid-id-1",
+						"impid": "test-impression-id-1",
+						"price": 1
+					}]
+				}]
+			}
+		}
+	}, {
+		"expectedRequest": {
+			"uri": "http://example.com/prebid/test-token-1",
+			"body": {
+				"id": "test-request-id",
+				"imp": [{
 					"id": "test-impression-id-2",
 					"banner": {
 						"h": 250,
@@ -69,13 +90,9 @@
 		"mockResponse": {
 			"status": 200,
 			"body": {
-				"id": "test-response-id",
+				"id": "test-response-id-2",
 				"seatbid": [{
 					"bid": [{
-						"id": "test-bid-id-1",
-						"impid": "test-impression-id-1",
-						"price": 1
-					}, {
 						"id": "test-bid-id-2",
 						"impid": "test-impression-id-2",
 						"price": 2
@@ -124,7 +141,9 @@
 				"price": 1
 			},
 			"type": "banner"
-		}, {
+		}]
+	}, {
+		"bids": [{
 			"bid": {
 				"id": "test-bid-id-2",
 				"impid": "test-impression-id-2",
@@ -132,8 +151,8 @@
 			},
 			"type": "banner"
 		}]
-	},{
-		"bids": [ {
+	}, {
+		"bids": [{
 			"bid": {
 				"id": "test-bid-id-3",
 				"impid": "test-impression-id-3",

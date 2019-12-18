@@ -24,9 +24,8 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 	totalImpressions := len(impressions)
 	result := make([]*adapters.RequestData, 0, totalImpressions)
 	errs := make([]error, 0, totalImpressions)
-	impressionsByToken := make(map[string][]openrtb.Imp)
 
-	for _, impression := range impressions {
+	for i, impression := range impressions {
 		if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
 			errs = append(errs, &errortypes.BadInput{
 				Message: "Applogy only supports banner, video or native ads",
@@ -71,11 +70,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 			errs = append(errs, errors.New("Applogy token required"))
 			continue
 		}
-		impressionsByToken[impressionExt.Token] = append(impressionsByToken[impressionExt.Token], impression)
-	}
-
-	for token, impressions := range impressionsByToken {
-		request.Imp = impressions
+		request.Imp = impressions[i : i+1]
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
@@ -83,7 +78,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 		}
 		result = append(result, &adapters.RequestData{
 			Method:  "POST",
-			Uri:     a.endpoint + "/" + token,
+			Uri:     a.endpoint + "/" + impressionExt.Token,
 			Body:    body,
 			Headers: headers,
 		})
