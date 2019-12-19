@@ -50,11 +50,13 @@ func (a *MarsmediaAdapter) MakeRequests(requestIn *openrtb.BidRequest, reqInfo *
 	for i := 0; i < len(request.Imp); i++ {
 		if request.Imp[i].Banner != nil {
 			bannerCopy := *requestIn.Imp[i].Banner
-			if bannerCopy.W == nil && bannerCopy.H == nil && len(bannerCopy.Format) > 0 {
+			if len(bannerCopy.Format) > 0 {
 				firstFormat := bannerCopy.Format[0]
 				bannerCopy.W = &(firstFormat.W)
 				bannerCopy.H = &(firstFormat.H)
 				request.Imp[i].Banner = &bannerCopy
+				validImpExists = true
+			} else if bannerCopy.W != nil && bannerCopy.H != nil {
 				validImpExists = true
 			} else {
 				return nil, []error{&errortypes.BadInput{
