@@ -21,9 +21,8 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	impressions := request.Imp
-	totalImpressions := len(impressions)
-	result := make([]*adapters.RequestData, 0, totalImpressions)
-	errs := make([]error, 0, totalImpressions)
+	result := make([]*adapters.RequestData, 0, len(impressions))
+	errs := make([]error, 0, len(impressions))
 
 	for i, impression := range impressions {
 		if impression.Banner == nil && impression.Video == nil && impression.Native == nil {
@@ -74,7 +73,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 		body, err := json.Marshal(request)
 		if err != nil {
 			errs = append(errs, err)
-			return nil, errs
+			continue
 		}
 		result = append(result, &adapters.RequestData{
 			Method:  "POST",
@@ -96,13 +95,13 @@ func (a *ApplogyAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Reque
 		return nil, nil
 	case http.StatusBadRequest:
 		return nil, []error{&errortypes.BadInput{
-			Message: "Unexpected status code: " + strconv.Itoa(responseData.StatusCode) + ". Run with request.debug = 1 for more info",
+			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode),
 		}}
 	case http.StatusOK:
 		break
 	default:
 		return nil, []error{&errortypes.BadServerResponse{
-			Message: "Unexpected status code: " + strconv.Itoa(responseData.StatusCode) + ". Run with request.debug = 1 for more info",
+			Message: "unexpected status code: " + strconv.Itoa(responseData.StatusCode),
 		}}
 	}
 
