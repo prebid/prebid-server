@@ -84,6 +84,10 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 	}
 
 	request.Imp = impressions
+
+	if len(result) == 0 {
+		return nil, errs
+	}
 	return result, errs
 }
 
