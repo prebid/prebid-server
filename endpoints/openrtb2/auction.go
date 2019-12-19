@@ -27,6 +27,7 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/prebid"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -299,6 +300,16 @@ func (deps *endpointDeps) validateRequest(req *openrtb.BidRequest) []error {
 	if err := validateRegs(req.Regs); err != nil {
 		errL = append(errL, err)
 		return errL
+	}
+
+	ccpaPolicy, ccpaPolicyErr := ccpa.ReadPolicy(req)
+	if ccpaPolicyErr != nil {
+		errL = append(errL, ccpaPolicyErr)
+		return errL
+	}
+
+	if err := ccpaPolicy.Validate(); err != nil {
+		errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("CCPA value is invalid and will be ignored. (%s)", err.Error())})
 	}
 
 	impIDs := make(map[string]int, len(req.Imp))

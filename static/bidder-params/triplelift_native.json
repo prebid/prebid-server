@@ -11,11 +11,5 @@
     },
     "floor" :  {"description" : "the bid floor, in usd", "type": "number" }
   },
-  "oneOf": [{
-    "oneOf": [{
-      "required": ["inventoryCode"]
-    }] }],
-  "not": {
-    "required": ["floor"]
-  }
+  "required": ["inventoryCode"]
 }
