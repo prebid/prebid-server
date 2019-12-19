@@ -48,6 +48,13 @@
 			"ext": {
 				"bidder": {}
 			}
+		}, {
+			"id": "test-impression-id-0",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": "invalid ext"
 		}]
 	},
 	"httpCalls": [{
@@ -114,6 +121,9 @@
 		"comparison": "literal"
 	}, {
 		"value": "Applogy token required",
+		"comparison": "literal"
+	}, {
+		"value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
 		"comparison": "literal"
 	}],
 	"expectedMakeBidsErrors": [{

@@ -4,8 +4,10 @@
 		"imp": [{
 			"id": "test-impression-id-1",
 			"banner": {
-				"w": 300,
-				"h": 250
+				"format": [{
+					"h": 250,
+					"w": 300
+				}]
 			},
 			"ext": {
 				"bidder": {
@@ -44,6 +46,10 @@
 				"imp": [{
 					"id": "test-impression-id-1",
 					"banner": {
+						"format": [{
+							"h": 250,
+							"w": 300
+						}],
 						"h": 250,
 						"w": 300
 					},
