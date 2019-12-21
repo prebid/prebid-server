@@ -357,12 +357,7 @@ func TestBidResponseCurrency(t *testing.T) {
 		H:     250,
 		Ext:   nil,
 	}
-	aPbsOrtbBidArr := []*pbsOrtbBid{
-		{
-			bid:     sampleBid,
-			bidType: openrtb_ext.BidTypeBanner,
-		},
-	}
+	aPbsOrtbBidArr := []*pbsOrtbBid{{bid: sampleBid, bidType: openrtb_ext.BidTypeBanner}}
 	sampleSeatBid := []openrtb.SeatBid{
 		{
 			Seat: string("appnexus"),
@@ -377,6 +372,7 @@ func TestBidResponseCurrency(t *testing.T) {
 			},
 		},
 	}
+	emptySeatBid := []openrtb.SeatBid{}
 
 	// Test cases
 	type aTest struct {
@@ -386,7 +382,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	testCases := []aTest{
 		{
-			description: "1) Non-empty currency, non-empty bid array",
+			description: "1) Adapter to bids map comes with a non-empty currency field and non-empty bid array",
 			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
 				openrtb_ext.BidderName("appnexus"): {
 					bids:     aPbsOrtbBidArr,
@@ -402,7 +398,7 @@ func TestBidResponseCurrency(t *testing.T) {
 			},
 		},
 		{
-			description: "2) Non-empty currency, empty bid array",
+			description: "2) Adapter to bids map comes with a non-empty currency field but an empty bid array",
 			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
 				openrtb_ext.BidderName("appnexus"): {
 					bids:     nil,
@@ -411,14 +407,14 @@ func TestBidResponseCurrency(t *testing.T) {
 			},
 			expectedBidResponse: &openrtb.BidResponse{
 				ID:      "some-request-id",
-				SeatBid: []openrtb.SeatBid{},
+				SeatBid: emptySeatBid,
 				Cur:     "",
 				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
 `),
 			},
 		},
 		{
-			description: "3) Empty currency, non-empty bid array",
+			description: "3) Adapter to bids map comes with an empty currency string and a non-empty bid array",
 			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
 				openrtb_ext.BidderName("appnexus"): {
 					bids:     aPbsOrtbBidArr,
@@ -434,16 +430,16 @@ func TestBidResponseCurrency(t *testing.T) {
 			},
 		},
 		{
-			description: "4) Empty currency, empty bid array",
+			description: "4) Adapter to bids map comes with an empty currency string and an empty bid array",
 			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
 				openrtb_ext.BidderName("appnexus"): {
 					bids:     nil,
-					currency: "USD",
+					currency: "",
 				},
 			},
 			expectedBidResponse: &openrtb.BidResponse{
 				ID:      "some-request-id",
-				SeatBid: []openrtb.SeatBid{},
+				SeatBid: emptySeatBid,
 				Cur:     "",
 				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
 `),
