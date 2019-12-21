@@ -314,120 +314,20 @@ func TestGetBidCacheInfo(t *testing.T) {
 	assert.Equal(t, expCacheURL, cacheURL, "[TestGetBidCacheInfo] cacheId field in ext should equal \"%s\" \n", expCacheURL)
 }
 
-//func TestBidResponseCurrency(t *testing.T) {
-//	/* 	   Init parameters    									*/
-//	auc := &auction{
-//		cacheIds: map[*openrtb.Bid]string{
-//			bids[0]: testUUID,
-//		},
-//	}
-//	liveAdapters, adapterBids, resolvedRequest, adapterExtra := buildBidResponseParams()
-//
-//	/* 	   List test cases    									*/
-//
-//	sampleBidRequest := &openrtb.BidRequest{
-//		ID: "some-request-id",
-//		Imp: []openrtb.Imp{{
-//			ID:     "some-impression-id",
-//			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-//			Ext:    json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
-//		}},
-//		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
-//		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
-//		AT:     1,
-//		TMax:   500,
-//		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
-//	}
-//	/* 	   Execute tests      									*/
-//	for test := range testCases {
-//		/* 	4) Build bid response 									*/
-//		adapterBids.currency = test.currency
-//		//sampleBidRequest.Cur = testCurrencyArray
-//
-//		bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, sampleBidRequest, resolvedRequest, adapterExtra, auc, errList)
-//	}
-//
-//	assert.NoError(t, err, "[TestBidResponseCurrency] buildBidResponse() threw an error")
-//
-//	expectedBidResponse := &openrtb.BidResponse{
-//		SeatBid: []openrtb.SeatBid{
-//			{
-//				Seat: string(bidderName),
-//				Bid: []openrtb.Bid{
-//					{
-//						Ext: json.RawMessage(`{ "prebid": { "cache": { "bids": { "cacheId": "` + testUUID + `", "url": "` + testExternalCacheHost + `/` + testExternalCachePath + `?uuid=` + testUUID + `" }, "key": "", "url": "" }`),
-//					},
-//				},
-//			},
-//		},
-//	}
-//}
-func TestBidResponseCurrency2(t *testing.T) {
-	/* 1) Adapter with a '& char in its endpoint property 		*/
-	/*    https://github.com/prebid/prebid-server/issues/465	*/
-	cfg := &config.Configuration{
-		Adapters: make(map[string]config.Adapter, 1),
-	}
-	cfg.Adapters["appnexus"] = config.Adapter{
-		Endpoint: "http://ib.adnxs.com/openrtb2?query1&query2", //Note the '&' character in there
-	}
+func TestBidResponseCurrency(t *testing.T) {
+	// Init objects
+	cfg := &config.Configuration{Adapters: make(map[string]config.Adapter, 1)}
+	cfg.Adapters["appnexus"] = config.Adapter{Endpoint: "http://ib.adnxs.com"}
 
-	/* 	2) Init new exchange with said configuration			*/
-	//Other parameters also needed to create exchange
 	handlerNoBidServer := func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
 	e := NewExchange(server.Client(), nil, cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 
-	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
-	//liveAdapters []openrtb_ext.BidderName,
 	liveAdapters := make([]openrtb_ext.BidderName, 1)
 	liveAdapters[0] = "appnexus"
 
-	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
-	aPbsOrtbBidArr := []*pbsOrtbBid{
-		{
-			bid: &openrtb.Bid{
-				ID:             "some-imp-id",
-				ImpID:          "",
-				Price:          9.517803,
-				NURL:           "",
-				BURL:           "",
-				LURL:           "",
-				AdM:            "",
-				AdID:           "",
-				ADomain:        nil,
-				Bundle:         "",
-				IURL:           "",
-				CID:            "",
-				CrID:           "",
-				Tactic:         "",
-				Cat:            nil,
-				Attr:           nil,
-				API:            0,
-				Protocol:       0,
-				QAGMediaRating: 0,
-				Language:       "",
-				DealID:         "",
-				W:              300,
-				H:              250,
-				WRatio:         0,
-				HRatio:         0,
-				Exp:            0,
-				Ext:            nil,
-			},
-			bidType: openrtb_ext.BidTypeBanner,
-		},
-	}
-	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
-		openrtb_ext.BidderName("appnexus"): {
-			bids:     aPbsOrtbBidArr,
-			currency: "USD",
-		},
-	}
-
-	//An openrtb.BidRequest struct as specified in https://github.com/prebid/prebid-server/issues/465
 	bidRequest := &openrtb.BidRequest{
 		ID: "some-request-id",
 		Imp: []openrtb.Imp{{
@@ -442,79 +342,122 @@ func TestBidResponseCurrency2(t *testing.T) {
 		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
 	}
 
-	//resolvedRequest json.RawMessage
 	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
 
-	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
-	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
-	adapterExtra["appnexus"] = &seatResponseExtra{
-		ResponseTimeMillis: 5,
-		Errors:             []openrtb_ext.ExtBidderError{{Code: 999, Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\""}},
+	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
+		"appnexus": &seatResponseExtra{ResponseTimeMillis: 5},
 	}
 
-	//errList []error
 	var errList []error
 
-	/* 	4) Build bid response 									*/
-	bidResp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, errList)
+	sampleBid := &openrtb.Bid{
+		ID:    "some-imp-id",
+		Price: 9.517803,
+		W:     300,
+		H:     250,
+		Ext:   nil,
+	}
+	aPbsOrtbBidArr := []*pbsOrtbBid{
+		{
+			bid:     sampleBid,
+			bidType: openrtb_ext.BidTypeBanner,
+		},
+	}
+	sampleSeatBid := []openrtb.SeatBid{
+		{
+			Seat: string("appnexus"),
+			Bid: []openrtb.Bid{
+				{
+					ID:    "some-imp-id",
+					Price: 9.517803,
+					W:     300,
+					H:     250,
+					Ext:   json.RawMessage(`{"prebid":{"type":"banner"}}`),
+				},
+			},
+		},
+	}
 
-	/* 	5) Assert we have no errors and one '&' character as we are supposed to 	*/
-	if err != nil {
-		t.Errorf("exchange.buildBidResponse returned unexpected error: %v", err)
+	// Test cases
+	type aTest struct {
+		description         string
+		adapterBids         map[openrtb_ext.BidderName]*pbsOrtbSeatBid
+		expectedBidResponse *openrtb.BidResponse
 	}
-	if len(errList) > 0 {
-		t.Errorf("exchange.buildBidResponse returned %d errors", len(errList))
+	testCases := []aTest{
+		{
+			description: "1) Non-empty currency, non-empty bid array",
+			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				openrtb_ext.BidderName("appnexus"): {
+					bids:     aPbsOrtbBidArr,
+					currency: "USD",
+				},
+			},
+			expectedBidResponse: &openrtb.BidResponse{
+				ID:      "some-request-id",
+				SeatBid: sampleSeatBid,
+				Cur:     "USD",
+				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
+`),
+			},
+		},
+		{
+			description: "2) Non-empty currency, empty bid array",
+			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				openrtb_ext.BidderName("appnexus"): {
+					bids:     nil,
+					currency: "USD",
+				},
+			},
+			expectedBidResponse: &openrtb.BidResponse{
+				ID:      "some-request-id",
+				SeatBid: []openrtb.SeatBid{},
+				Cur:     "",
+				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
+`),
+			},
+		},
+		{
+			description: "3) Empty currency, non-empty bid array",
+			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				openrtb_ext.BidderName("appnexus"): {
+					bids:     aPbsOrtbBidArr,
+					currency: "",
+				},
+			},
+			expectedBidResponse: &openrtb.BidResponse{
+				ID:      "some-request-id",
+				SeatBid: sampleSeatBid,
+				Cur:     "",
+				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
+`),
+			},
+		},
+		{
+			description: "4) Empty currency, empty bid array",
+			adapterBids: map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
+				openrtb_ext.BidderName("appnexus"): {
+					bids:     nil,
+					currency: "USD",
+				},
+			},
+			expectedBidResponse: &openrtb.BidResponse{
+				ID:      "some-request-id",
+				SeatBid: []openrtb.SeatBid{},
+				Cur:     "",
+				Ext: json.RawMessage(`{"responsetimemillis":{"appnexus":5},"tmaxrequest":500}
+`),
+			},
+		},
 	}
-	if bytes.Contains(bidResp.Ext, []byte("u0026")) {
-		t.Errorf("exchange.buildBidResponse() did not correctly print the '&' characters %s", string(bidResp.Ext))
+
+	// Run tests
+	for i := range testCases {
+		actualBidResp, err := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, resolvedRequest, adapterExtra, nil, errList)
+		assert.NoError(t, err, fmt.Sprintf("[TEST_FAILED] e.buildBidResponse resturns error in test: %s Error message: %s \n", testCases[i].description, err))
+		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
 }
-
-//func buildBidResponseParams(bidRequest *openrtb.BidRequest) ([]openrtb_ext.BidderName, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, json.RawMessage, map[openrtb_ext.BidderName]*seatResponseExtra) {
-//	//liveAdapters []openrtb_ext.BidderName,
-//	liveAdapters := []openrtb_ext.BidderName{openrtb_ext.BidderName("appnexus")}
-//
-//	//adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid,
-//	adapterBids := map[openrtb_ext.BidderName]*pbsOrtbSeatBid{
-//		bidderName: {
-//			bids: []*pbsOrtbBid{
-//				{
-//					bid: &openrtb.Bid{
-//						ID:    "some-imp-id",
-//						Price: 9.517803,
-//						W:     300,
-//						H:     250,
-//					},
-//					bidType: openrtb_ext.BidTypeBanner,
-//					bidTargets: map[string]string{
-//						"pricegranularity":  "med",
-//						"includewinners":    "true",
-//						"includebidderkeys": "false",
-//					},
-//				},
-//			},
-//			currency: "",
-//		},
-//	}
-//
-//	//resolvedRequest json.RawMessage
-//	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
-//
-//	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
-//	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
-//		bidderName: {
-//			ResponseTimeMillis: 5,
-//			Errors: []openrtb_ext.ExtBidderError{
-//				{
-//					Code:    999,
-//					Message: "Post ib.adnxs.com/openrtb2?query1&query2: unsupported protocol scheme \"\"",
-//				},
-//			},
-//		},
-//	}
-//
-//	return liveAdapters, adapterBids, resolvedRequest, adapterExtra
-//}
 
 // TestRaceIntegration runs an integration test using all the sample params from
 // adapters/{bidder}/{bidder}test/params/race/*.json files.
