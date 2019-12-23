@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/prebid/prebid-server/adapters/adapterstest"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 )
 
 func TestJsonSamples(t *testing.T) {

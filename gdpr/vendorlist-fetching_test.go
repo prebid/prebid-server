@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 )
 
 func TestVendorFetch(t *testing.T) {

@@ -3,8 +3,8 @@ package consumable
 import (
 	"text/template"
 
-	"github.com/prebid/prebid-server/adapters"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 )
 
 var VENDOR_ID uint16 = 65535 // TODO: Insert consumable value when one is assigned

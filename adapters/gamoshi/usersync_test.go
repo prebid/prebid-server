@@ -4,8 +4,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
+	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	"github.com/stretchr/testify/assert"
 )
 
