@@ -3,10 +3,13 @@ package endpoints
 import (
 	"context"
 	"errors"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -372,7 +375,7 @@ func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecord
 	}
 }
 
-func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
+func makeRequest(uri string, existingSyncs map[string]string, addSecParam bool) *http.Request {
 	request := httptest.NewRequest("GET", uri, nil)
 	if len(existingSyncs) > 0 {
 		pbsCookie := usersync.NewPBSCookie()
@@ -380,6 +383,11 @@ func makeRequest(uri string, existingSyncs map[string]string) *http.Request {
 			pbsCookie.TrySync(family, value)
 		}
 		addCookie(request, pbsCookie)
+	}
+	if addSecParam {
+		q := request.URL.Query()
+		q.Add("sec", "1")
+		request.URL.RawQuery = q.Encode()
 	}
 	return request
 }
@@ -409,6 +417,7 @@ func addCookie(req *http.Request, cookie *usersync.PBSCookie) {
 
 func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *usersync.PBSCookie {
 	cookieString := response.Header().Get("Set-Cookie")
+
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
 	assert.Equal(t, 2, len(res))

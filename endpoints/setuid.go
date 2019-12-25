@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -35,6 +35,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 	}
 
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
 		so := analytics.SetUIDObject{
 			Status: http.StatusOK,
 			Errors: make([]error, 0),

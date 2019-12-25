@@ -44,10 +44,21 @@ type response struct {
 }
 
 var (
-	client  *http.Client
-	baseURL string
-	putURL  string
+	client   *http.Client
+	baseURL  string
+	putURL   string
+	cacheURL string
 )
+
+// GetPrebidCacheURL for the global prebid cache
+func GetPrebidCacheURL() string {
+	return cacheURL
+}
+
+// InitPrebidCache setup the global prebid cache
+func InitPrebidCacheURL(baseurl string) {
+	cacheURL = fmt.Sprintf("%s", baseurl)
+}
 
 // InitPrebidCache setup the global prebid cache
 func InitPrebidCache(baseurl string) {

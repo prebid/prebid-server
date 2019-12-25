@@ -9,9 +9,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/PubMatic-OpenWrap/prebid-server/macros"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 
 	validator "github.com/asaskevich/govalidator"
@@ -596,7 +596,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("datacache.cache_size", 0)
 	v.SetDefault("datacache.ttl_seconds", 0)
 	v.SetDefault("category_mapping.filesystem.enabled", true)
-	v.SetDefault("category_mapping.filesystem.directorypath", "./static/category-mapping")
+	v.SetDefault("category_mapping.filesystem.directorypath", "/home/http/GO_SERVER/dmhbserver/static/category-mapping")
 	v.SetDefault("category_mapping.http.endpoint", "")
 	v.SetDefault("stored_requests.filesystem", false)
 	v.SetDefault("stored_requests.directorypath", "./stored_requests/data/by_id")
@@ -659,7 +659,6 @@ func SetupViper(v *viper.Viper, filename string) {
 	// If you're using one of these, make sure you check out the documentation (https://github.com/PubMatic-OpenWrap/prebid-server/tree/master/docs/bidders)
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
-	v.SetDefault("adapters.rubicon.disabled", true)
 
 	v.SetDefault("adapters.33across.endpoint", "http://ssc.33across.com/api/v1/hb")
 	v.SetDefault("adapters.33across.partner_id", "")
@@ -715,7 +714,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("analytics.file.filename", "")
 	v.SetDefault("amp_timeout_adjustment_ms", 0)
 	v.SetDefault("gdpr.host_vendor_id", 0)
-	v.SetDefault("gdpr.usersync_if_ambiguous", false)
+	v.SetDefault("gdpr.usersync_if_ambiguous", true)
 	v.SetDefault("gdpr.timeouts_ms.init_vendorlist_fetches", 0)
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})

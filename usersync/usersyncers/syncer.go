@@ -1,11 +1,11 @@
 package usersyncers
 
 import (
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adpone"
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adpone"
+
 	ttx "github.com/PubMatic-OpenWrap/prebid-server/adapters/33across"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adkernel"
@@ -52,6 +52,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/golang/glog"
 )
 
 // NewSyncerMap returns a map of all the usersyncer objects.

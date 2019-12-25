@@ -1,5 +1,5 @@
 {
-  "message": "Invalid request: request.imp[0].ext must contain at least one bidder\n",
+  "message": "Invalid request: request.imp[0].ext must contain at least one bidder with valid parameters\n",
   "requestPayload": {
     "id": "req-id",
     "imp": [

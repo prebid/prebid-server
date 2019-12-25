@@ -1,16 +1,16 @@
-package main
+package prebidServer
 
 import (
-	"flag"
 	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/router"
-	"github.com/PubMatic-OpenWrap/prebid-server/server"
+	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -24,6 +24,9 @@ import (
 // See issue #559
 var Rev string
 
+const schemaDirectory = "/home/http/GO_SERVER/dmhbserver/static/"
+
+/*
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -38,6 +41,25 @@ func main() {
 
 	err = serve(Rev, cfg)
 	if err != nil {
+		glog.Errorf("prebid-server failed: %v", err)
+	}
+}
+*/
+
+func InitPrebidServer(configFile string) {
+	rand.Seed(time.Now().UnixNano())
+	v := viper.New()
+	config.SetupViper(v, configFile)
+	v.SetConfigFile(configFile)
+	v.ReadInConfig()
+
+	cfg, err := config.New(v)
+
+	if err != nil {
+		glog.Fatalf("Configuration could not be loaded or did not pass validation: %v", err)
+	}
+
+	if err := serve(Rev, cfg); err != nil {
 		glog.Errorf("prebid-server failed: %v", err)
 	}
 }
@@ -58,10 +80,36 @@ func serve(revision string, cfg *config.Configuration) error {
 	}
 
 	pbc.InitPrebidCache(cfg.CacheURL.GetBaseURL())
+	pbc.InitPrebidCacheURL(cfg.ExternalURL)
 
-	corsRouter := router.SupportCORS(r)
-	server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision, currencyConverter), r.MetricsEngine)
-
-	r.Shutdown()
+	// Add cors support
+	//corsRouter := router.SupportCORS(r)
+	//server.Listen(cfg, router.NoCache{Handler: corsRouter}, router.Admin(revision, currencyConverter), r.MetricsEngine)
+	//r.Shutdown()
 	return nil
+}
+
+func OrtbAuction(w http.ResponseWriter, r *http.Request) error {
+	return router.OrtbAuctionEndpointWrapper(w, r)
+}
+
+func Auction(w http.ResponseWriter, r *http.Request) {
+	router.AuctionWrapper(w, r)
+
+}
+
+func GetUIDS(w http.ResponseWriter, r *http.Request) {
+	router.GetUIDSWrapper(w, r)
+}
+
+func SetUIDS(w http.ResponseWriter, r *http.Request) {
+	router.SetUIDSWrapper(w, r)
+}
+
+func CookieSync(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	router.CookieSync(w, r)
+}
+
+func SyncerMap() map[openrtb_ext.BidderName]usersync.Usersyncer {
+	return router.SyncerMap()
 }

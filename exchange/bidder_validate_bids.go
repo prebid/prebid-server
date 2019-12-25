@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mxmCherry/openrtb"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/mxmCherry/openrtb"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
+
 	"golang.org/x/text/currency"
 )
 
@@ -28,8 +30,8 @@ type validatedBidder struct {
 	bidder adaptedBidder
 }
 
-func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo) (*pbsOrtbSeatBid, []error) {
-	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo)
+func (v *validatedBidder) requestBid(ctx context.Context, request *openrtb.BidRequest, name openrtb_ext.BidderName, bidAdjustment float64, conversions currencies.Conversions, reqInfo *adapters.ExtraRequestInfo, debug bool) (*pbsOrtbSeatBid, []error) {
+	seatBid, errs := v.bidder.requestBid(ctx, request, name, bidAdjustment, conversions, reqInfo, debug)
 	if validationErrors := removeInvalidBids(request, seatBid); len(validationErrors) > 0 {
 		errs = append(errs, validationErrors...)
 	}

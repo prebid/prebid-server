@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 // Recaptcha code from https://github.com/haisum/recaptcha/blob/master/recaptcha.go

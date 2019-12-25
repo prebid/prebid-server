@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
-	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/errortypes"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
+	"github.com/golang/glog"
+	"github.com/mxmCherry/openrtb"
 	"golang.org/x/net/context/ctxhttp"
 )
 
@@ -61,8 +61,8 @@ const (
 )
 
 func PrepareLogMessage(tID, pubId, adUnitId, bidID, details string, args ...interface{}) string {
-	return fmt.Sprintf("[PUBMATIC] ReqID [%s] PubID [%s] AdUnit [%s] BidID [%s] %s \n",
-		tID, pubId, adUnitId, bidID, details)
+	return fmt.Sprintf("%s ReqID [%s] PubID [%s] AdUnit [%s] BidID [%s] %s \n",
+		PUBMATIC, tID, pubId, adUnitId, bidID, details)
 }
 
 func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder *pbs.PBSBidder) (pbs.PBSBidSlice, error) {
@@ -70,7 +70,7 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	pbReq, err := adapters.MakeOpenRTBGeneric(req, bidder, a.Name(), mediaTypes)
 
 	if err != nil {
-		logf("[PUBMATIC] Failed to make ortb request for request id [%s] \n", pbReq.ID)
+		logf("%s Failed to make ortb request for request id [%s] \n", PUBMATIC, pbReq.ID)
 		return nil, err
 	}
 
@@ -79,8 +79,8 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 	pubId := ""
 	wrapExt := ""
 	if len(bidder.AdUnits) > MAX_IMPRESSIONS_PUBMATIC {
-		logf("[PUBMATIC] First %d impressions will be considered from request tid %s\n",
-			MAX_IMPRESSIONS_PUBMATIC, pbReq.ID)
+		logf("%s First %d impressions will be considered from request tid %s\n",
+			PUBMATIC, MAX_IMPRESSIONS_PUBMATIC, pbReq.ID)
 	}
 
 	for i, unit := range bidder.AdUnits {
@@ -293,12 +293,64 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 			pbid.CreativeMediaType = string(mediaType)
 
 			bids = append(bids, &pbid)
-			logf("[PUBMATIC] Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
-				pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
+			logf("%s Returned Bid for PubID [%s] AdUnit [%s] BidID [%s] Size [%dx%d] Price [%f] \n",
+				PUBMATIC, pubId, pbid.AdUnitCode, pbid.BidID, pbid.Width, pbid.Height, pbid.Price)
 		}
 	}
 
 	return bids, nil
+}
+
+func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
+	var reqExt openrtb_ext.ExtRequest
+	err := json.Unmarshal(request.Ext, &reqExt)
+	if err != nil {
+		err := fmt.Errorf("%s Error unmarshalling request.ext: %v", PUBMATIC, string(request.Ext))
+		return nil, err
+	}
+
+	if reqExt.Prebid.BidderParams == nil {
+		return nil, nil
+	}
+
+	bidderParams, ok := reqExt.Prebid.BidderParams.(map[string]interface{})
+	if !ok {
+		err := fmt.Errorf("%s Error retrieving request.ext.prebid.ext: %v", PUBMATIC, reqExt.Prebid.BidderParams)
+		return nil, err
+	}
+
+	iface, ok := bidderParams[key]
+	if !ok {
+		return nil, nil
+	}
+
+	bytes, err := json.Marshal(iface)
+	if err != nil {
+		err := fmt.Errorf("%s Error retrieving '%s' from request.ext.prebid.ext: %v", PUBMATIC, key, bidderParams)
+		return nil, err
+	}
+
+	return bytes, nil
+}
+
+func getCookiesFromRequest(request *openrtb.BidRequest) ([]string, error) {
+	cbytes, err := getBidderParam(request, "Cookie")
+	if err != nil {
+		return nil, err
+	}
+
+	if cbytes == nil {
+		return nil, nil
+	}
+
+	var cookies []string
+	err = json.Unmarshal(cbytes, &cookies)
+	if err != nil {
+		err := fmt.Errorf("%s Error unmarshalling retrieving cookies from request.ext.prebid.ext: %v", PUBMATIC, string(cbytes))
+		return nil, err
+	}
+
+	return cookies, nil
 }
 
 func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -307,6 +359,11 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	var err error
 	wrapExt := ""
 	pubID := ""
+
+	cookies, err := getCookiesFromRequest(request)
+	if err != nil {
+		errs = append(errs, err)
+	}
 
 	for i := 0; i < len(request.Imp); i++ {
 		err = parseImpressionObject(&request.Imp[i], &wrapExt, &pubID)
@@ -345,6 +402,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 		request.App = &appCopy
 	}
 
+	//adding hack to support DNT, since hbopenbid does not support lmt
+	if request.Device != nil && request.Device.Lmt != nil && *request.Device.Lmt != 0 {
+		request.Device.DNT = request.Device.Lmt
+	}
 	thisURI := a.URI
 
 	// If all the requests are invalid, Call to adaptor is skipped
@@ -361,6 +422,10 @@ func (a *PubmaticAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *ada
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	for _, line := range cookies {
+		headers.Add("Cookie", line)
+	}
+
 	return []*adapters.RequestData{{
 		Method:  "POST",
 		Uri:     thisURI,

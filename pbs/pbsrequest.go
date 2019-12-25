@@ -172,7 +172,7 @@ type PBSRequest struct {
 	Cookie  *usersync.PBSCookie `json:"-"`
 	Url     string              `json:"-"`
 	Domain  string              `json:"-"`
-	Regs    *openrtb.Regs       `json:"-"`
+	Regs    *openrtb.Regs       `json:"regs"`
 	Start   time.Time
 }
 
