@@ -22,6 +22,7 @@ import (
 
 const MAX_IMPRESSIONS_PUBMATIC = 30
 const bidTypeExtKey = "BidType"
+const PUBMATIC = "[PUBMATIC]"
 
 type PubmaticAdapter struct {
 	http *adapters.HTTPAdapter
@@ -303,6 +304,9 @@ func (a *PubmaticAdapter) Call(ctx context.Context, req *pbs.PBSRequest, bidder 
 
 func getBidderParam(request *openrtb.BidRequest, key string) ([]byte, error) {
 	var reqExt openrtb_ext.ExtRequest
+	if len(request.Ext) <= 0 {
+		return nil, nil
+	}
 	err := json.Unmarshal(request.Ext, &reqExt)
 	if err != nil {
 		err := fmt.Errorf("%s Error unmarshalling request.ext: %v", PUBMATIC, string(request.Ext))

@@ -279,7 +279,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 	var errList []error
 
 	/* 	4) Build bid response 									*/
-	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errList)
+	bid_resp, err := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, false, errList)
 
 	/* 	5) Assert we have no errors and the bid response we expected*/
 	assert.NoError(t, err, "[TestGetBidCacheInfo] buildBidResponse() threw an error")

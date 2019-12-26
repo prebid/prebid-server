@@ -19,6 +19,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/mxmCherry/openrtb"
 )
 
 func TestJsonSamples(t *testing.T) {

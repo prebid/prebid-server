@@ -3,11 +3,11 @@ package gdpr
 import (
 	"context"
 
-	"github.com/PubMatic-OpenWrap/go-gdpr/consentconstants"
-	"github.com/PubMatic-OpenWrap/go-gdpr/vendorconsent"
-	"github.com/PubMatic-OpenWrap/go-gdpr/vendorlist"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/prebid/go-gdpr/consentconstants"
+	"github.com/prebid/go-gdpr/vendorconsent"
+	"github.com/prebid/go-gdpr/vendorlist"
 )
 
 // This file implements GDPR permissions for the app.

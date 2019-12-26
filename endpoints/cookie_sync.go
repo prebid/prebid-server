@@ -12,9 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
@@ -24,6 +21,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	gdprPolicy "github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
@@ -229,14 +229,14 @@ func cookieSyncStatus(syncCount int) string {
 func setSecureParam(usersync_url string) (string, error) {
 	u1, err := url.Parse(usersync_url)
 	if err != nil {
-		glog.Errorf("Error while setting secure flag, failed to parse usersync url: %v",err)
+		glog.Errorf("Error while setting secure flag, failed to parse usersync url: %v", err)
 		return "", err
 	}
 
 	q1 := u1.Query()
 	u2, err := url.Parse(q1.Get("predirect"))
 	if err != nil {
-		glog.Errorf("Error while setting secure flag, failed to parse predirect param: %v",err)
+		glog.Errorf("Error while setting secure flag, failed to parse predirect param: %v", err)
 		return "", err
 	}
 

@@ -946,7 +946,7 @@ func TestServerCallDebugging(t *testing.T) {
 		1.0,
 		currencyConverter.Rates(),
 		&adapters.ExtraRequestInfo{},
-		false,
+		true,
 	)
 
 	if len(bids.httpCalls) != 1 {
@@ -1057,6 +1057,7 @@ func TestMobileNativeTypes(t *testing.T) {
 			1.0,
 			currencyConverter.Rates(),
 			&adapters.ExtraRequestInfo{},
+			false,
 		)
 
 		var actualValue string

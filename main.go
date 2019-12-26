@@ -10,7 +10,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/router"
-	"github.com/prebid/prebid-server/usersync"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/julienschmidt/httprouter"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -74,7 +75,7 @@ func serve(revision string, cfg *config.Configuration) error {
 	fetchingInterval := time.Duration(cfg.CurrencyConverter.FetchIntervalSeconds) * time.Second
 	currencyConverter := currencies.NewRateConverter(&http.Client{}, cfg.CurrencyConverter.FetchURL, fetchingInterval)
 
-	r, err := router.New(cfg, currencyConverter)
+	_, err := router.New(cfg, currencyConverter)
 	if err != nil {
 		return err
 	}

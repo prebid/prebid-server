@@ -77,16 +77,19 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
-	var requestExt openrtb_ext.ExtRequest
-	err := json.Unmarshal(bidRequest.Ext, &requestExt)
-	if err != nil {
-		return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+	debug := false
+	if bidRequest.Ext != nil {
+		var requestExt openrtb_ext.ExtRequest
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
+
+		if requestExt.Prebid.Debug == 1 {
+			debug = true
+		}
 	}
 
-	debug := false
-	if requestExt.Prebid.Debug == 1 {
-		debug = true
-	}
 	// Snapshot of resolved bid request for debug if test request
 	resolvedRequest, err := buildResolvedRequest(bidRequest, debug)
 	if err != nil {
@@ -115,6 +118,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	shouldCacheBids := false
 	shouldCacheVAST := false
 	var bidAdjustmentFactors map[string]float64
+	var requestExt openrtb_ext.ExtRequest
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
-	"github.com/PubMatic-OpenWrap/go-gdpr/vendorlist"
+	"github.com/prebid/go-gdpr/vendorlist"
 )
 
 func TestNoConsentButAllowByDefault(t *testing.T) {

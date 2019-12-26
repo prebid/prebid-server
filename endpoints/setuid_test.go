@@ -3,21 +3,19 @@ package endpoints
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"regexp"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
@@ -185,7 +183,7 @@ func TestSetUIDEndpoint(t *testing.T) {
 
 	metrics := &metricsConf.DummyMetricsEngine{}
 	for _, test := range testCases {
-		response := doRequest(makeRequest(test.uri, test.existingSyncs), metrics,
+		response := doRequest(makeRequest(test.uri, test.existingSyncs, false), metrics,
 			test.validFamilyNames, test.gdprAllowsHostCookies, test.gdprReturnsError)
 		assert.Equal(t, test.expectedResponseCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
 

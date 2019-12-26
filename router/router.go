@@ -41,8 +41,8 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
 	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	storedRequestsConf "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
-	"github.com/prebid/prebid-server/usersync"
 
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
@@ -319,7 +319,7 @@ func GetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
-	setUID := endpoints.NewSetUIDEndpoint(g_cfg.HostCookie, g_gdprPerms, g_analytics, g_metrics)
+	setUID := endpoints.NewSetUIDEndpoint(g_cfg.HostCookie, g_syncers, g_gdprPerms, g_analytics, g_metrics)
 	setUID(w, r, nil)
 }
 

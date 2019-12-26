@@ -170,6 +170,7 @@ func (err *Warning) Error() string {
 func (err *Warning) Code() int {
 	return WarningCode
 }
+
 // BidderFailedSchemaValidation is used at the request validation step,
 // when the bidder parameters fail the schema validation, we want to
 // continue processing the request and still return an error message.

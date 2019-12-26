@@ -444,29 +444,3 @@ func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
 		t.Error("Set-Cookie should not contain SameSite=none")
 	}
 }
-
-func TestSetCookieOnResponseForSameSiteNone(t *testing.T) {
-	cookie := newSampleCookie()
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36")
-	cookie.SetCookieOnResponse(w, req, "mock-domain", 90*24*time.Hour)
-	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-	t.Log("Set-Cookie is: ", writtenCookie)
-	if !strings.Contains(writtenCookie, "SSCookie=1") {
-		t.Error("Set-Cookie should contain SSCookie=1")
-	}
-}
-
-func TestSetCookieOnResponseForOlderChromeVersion(t *testing.T) {
-	cookie := newSampleCookie()
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "http://www.prebid.com", nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36")
-	cookie.SetCookieOnResponse(w, req, "mock-domain", 90*24*time.Hour)
-	writtenCookie := w.HeaderMap.Get("Set-Cookie")
-	t.Log("Set-Cookie is: ", writtenCookie)
-	if strings.Contains(writtenCookie, "SameSite=none") {
-		t.Error("Set-Cookie should not contain SameSite=none")
-	}
-}

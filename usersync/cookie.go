@@ -203,15 +203,15 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 	}
 
 	// Set the secure flag to 'uids' cookie; using sec query param for backward compatibility
-	secParam := r.URL.Query().Get("sec")
+	/*secParam := r.URL.Query().Get("sec")
 	if secParam == "1" {
 		httpCookie.Secure = true
-	}
+	}*/
 
 	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
 	if setSiteCookie {
-		//httpCookie.Secure = true
+		httpCookie.Secure = true
 		uidsCookieStr = httpCookie.String()
 		uidsCookieStr += SameSiteAttribute
 
@@ -220,7 +220,7 @@ func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCooki
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
-			/*Secure:  true,*/
+			Secure:  true,
 		}
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
