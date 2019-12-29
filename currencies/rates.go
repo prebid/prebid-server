@@ -9,7 +9,7 @@ import (
 	"golang.org/x/text/currency"
 )
 
-// Rates holds data as represented on https://cdn.jsdelivr.net/gh/PubMatic-OpenWrap/currency-file@1/latest.json
+// Rates holds data as represented on https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json
 // note that `DataAsOfRaw` field is needed when parsing remote JSON as the date format if not standard and requires
 // custom parsing to be properly set as Golang time.Time
 type Rates struct {

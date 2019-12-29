@@ -719,7 +719,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	v.SetDefault("gdpr.timeouts_ms.active_vendorlist_fetch", 0)
 	v.SetDefault("gdpr.non_standard_publishers", []string{""})
 	v.SetDefault("ccpa.enforce", false)
-	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/PubMatic-OpenWrap/currency-file@1/latest.json")
+	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
 	v.SetDefault("default_request.type", "")
 	v.SetDefault("default_request.file.name", "")

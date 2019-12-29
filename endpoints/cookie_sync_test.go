@@ -26,7 +26,7 @@ import (
 )
 
 func TestCookieSyncNoCookies(t *testing.T) {
-	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil, true, syncersForTest())
+	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, nil, true, syncersForTest(), false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	syncs := parseSyncs(t, rr.Body.Bytes())
@@ -36,7 +36,7 @@ func TestCookieSyncNoCookies(t *testing.T) {
 }
 
 func TestGDPRPreventsCookie(t *testing.T) {
-	rr := doPost(`{"bidders":["appnexus", "pubmatic"]}`, nil, false, syncersForTest())
+	rr := doPost(`{"bidders":["appnexus", "pubmatic"]}`, nil, false, syncersForTest(), false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
@@ -46,7 +46,7 @@ func TestGDPRPreventsCookie(t *testing.T) {
 func TestGDPRPreventsBidders(t *testing.T) {
 	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic", "lifestreet"],"gdpr_consent":"BOONs2HOONs2HABABBENAGgAAAAPrABACGA"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{
 		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
-	})
+	}, false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	syncs := parseSyncs(t, rr.Body.Bytes())
@@ -55,7 +55,7 @@ func TestGDPRPreventsBidders(t *testing.T) {
 }
 
 func TestGDPRIgnoredIfZero(t *testing.T) {
-	rr := doPost(`{"gdpr":0,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
+	rr := doPost(`{"gdpr":0,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil, false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	syncs := parseSyncs(t, rr.Body.Bytes())
@@ -65,7 +65,7 @@ func TestGDPRIgnoredIfZero(t *testing.T) {
 }
 
 func TestGDPRConsentRequired(t *testing.T) {
-	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil)
+	rr := doPost(`{"gdpr":1,"bidders":["appnexus", "pubmatic"]}`, nil, false, nil, false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Equal(t, "gdpr_consent is required if gdpr=1\n", rr.Body.String())
@@ -130,7 +130,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 	rr := doPost(`{"bidders":["appnexus", "audienceNetwork", "random"]}`, map[string]string{
 		"adnxs":           "1234",
 		"audienceNetwork": "2345",
-	}, true, syncersForTest())
+	}, true, syncersForTest(), false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
@@ -139,7 +139,7 @@ func TestCookieSyncHasCookies(t *testing.T) {
 
 // Make sure that an empty bidders array returns no syncs
 func TestCookieSyncEmptyBidders(t *testing.T) {
-	rr := doPost(`{"bidders": []}`, nil, true, syncersForTest())
+	rr := doPost(`{"bidders": []}`, nil, true, syncersForTest(), false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Empty(t, parseSyncs(t, rr.Body.Bytes()))
@@ -148,7 +148,7 @@ func TestCookieSyncEmptyBidders(t *testing.T) {
 
 // Make sure that all syncs are returned if "bidders" isn't a key
 func TestCookieSyncNoBidders(t *testing.T) {
-	rr := doPost("{}", nil, true, syncersForTest())
+	rr := doPost("{}", nil, true, syncersForTest(), false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	syncs := parseSyncs(t, rr.Body.Bytes())
@@ -160,7 +160,7 @@ func TestCookieSyncNoBidders(t *testing.T) {
 }
 
 func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
-	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{})
+	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`, nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{}, config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{}, false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
 	syncs := parseSyncs(t, rr.Body.Bytes())
@@ -170,7 +170,7 @@ func TestCookieSyncNoCookiesBrokenGDPR(t *testing.T) {
 }
 
 func TestCookieSyncWithLimit(t *testing.T) {
-	rr := doPost(`{"limit":2}`, nil, true, syncersForTest())
+	rr := doPost(`{"limit":2}`, nil, true, syncersForTest(), false, false, false)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), 2, "usersyncs")
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
@@ -178,22 +178,73 @@ func TestCookieSyncWithLimit(t *testing.T) {
 
 func TestCookieSyncWithLargeLimit(t *testing.T) {
 	syncers := syncersForTest()
-	rr := doPost(`{"limit":1000}`, nil, true, syncers)
+	rr := doPost(`{"limit":1000}`, nil, true, syncers, false, false, false)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Len(t, parseSyncs(t, rr.Body.Bytes()), len(syncers), "usersyncs")
 	assert.Equal(t, "no_cookie", parseStatus(t, rr.Body.Bytes()))
 }
 
-func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer) *httptest.ResponseRecorder {
-	return doConfigurablePost(body, existingSyncs, gdprHostConsent, gdprBidders, config.GDPR{}, config.CCPA{})
+func TestCookieSyncWithSecureParam(t *testing.T) {
+	rr := doPost(`{"bidders":["pubmatic", "random"]}`, nil, true, syncersForTest(),
+		true, false, false)
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	syncs := parseSyncs(t, rr.Body.Bytes())
+	assert.Contains(t, syncs, "pubmatic")
+	assert.True(t, isSetSecParam(syncs["pubmatic"]))
 }
 
-func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, cfgGDPR config.GDPR, cfgCCPA config.CCPA) *httptest.ResponseRecorder {
+func TestCookieSyncWithoutSecureParam(t *testing.T) {
+	rr := doPost(`{"bidders":["pubmatic", "random"]}`, nil, true, syncersForTest(),
+		false, false, false)
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	syncs := parseSyncs(t, rr.Body.Bytes())
+	assert.Contains(t, syncs, "pubmatic")
+	assert.False(t, isSetSecParam(syncs["pubmatic"]))
+}
+
+func TestRefererHeader(t *testing.T) {
+	rr := doPost(`{"bidders":["pubmatic", "random"]}`, nil, true, syncersForTest(),
+		false, true, false)
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	syncs := parseSyncs(t, rr.Body.Bytes())
+	assert.Contains(t, syncs, "pubmatic")
+	assert.False(t, isSetSecParam(syncs["pubmatic"]))
+}
+
+func TestNoRefererHeader(t *testing.T) {
+	rr := doPost(`{"bidders":["pubmatic", "random"]}`, nil, true, syncersForTest(),
+		false, false, false)
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	syncs := parseSyncs(t, rr.Body.Bytes())
+	assert.Contains(t, syncs, "pubmatic")
+	assert.False(t, isSetSecParam(syncs["pubmatic"]))
+}
+
+func TestSecureRefererHeader(t *testing.T) {
+	rr := doPost(`{"bidders":["pubmatic", "random"]}`, nil, true, syncersForTest(),
+		false, false, true)
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	syncs := parseSyncs(t, rr.Body.Bytes())
+	assert.Contains(t, syncs, "pubmatic")
+	assert.True(t, isSetSecParam(syncs["pubmatic"]))
+}
+
+func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, addSecParam bool, addHttpRefererHeader bool, addHttpsRefererHeader bool) *httptest.ResponseRecorder {
+	return doConfigurablePost(body, existingSyncs, gdprHostConsent, gdprBidders, config.GDPR{}, config.CCPA{}, addSecParam,
+		addHttpRefererHeader, addHttpsRefererHeader)
+}
+
+func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, cfgGDPR config.GDPR, cfgCCPA config.CCPA, addSecParam bool, addHttpRefererHeader bool, addHttpsRefererHeader bool) *httptest.ResponseRecorder {
 	endpoint := testableEndpoint(mockPermissions(gdprHostConsent, gdprBidders), cfgGDPR, cfgCCPA)
 	router := httprouter.New()
 	router.POST("/cookie_sync", endpoint)
 	req, _ := http.NewRequest("POST", "/cookie_sync", strings.NewReader(body))
-	/*if addSecParam {
+	if addSecParam {
 		q := req.URL.Query()
 		q.Add("sec", "1")
 		req.URL.RawQuery = q.Encode()
@@ -202,7 +253,7 @@ func doConfigurablePost(body string, existingSyncs map[string]string, gdprHostCo
 		req.Header.Set("Referer", "http://unit-test.com")
 	} else if addHttpsRefererHeader {
 		req.Header.Set("Referer", "https://unit-test.com")
-	}*/
+	}
 	if len(existingSyncs) > 0 {
 
 		pcs := usersync.NewPBSCookie()
