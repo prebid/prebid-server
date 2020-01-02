@@ -686,7 +686,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 		if isVideo {
 			if rubiconExt.Video.VideoSizeID == 0 {
 				errs = append(errs, &errortypes.BadInput{
-					Message: fmt.Sprintf("imp[...].ext.bidder.rubicon.video.size_id must be defined for video impression #%d", i),
+					Message: fmt.Sprintf("imp[%d].ext.bidder.rubicon.video.size_id must be defined for video impression", i),
 				})
 				continue
 			}

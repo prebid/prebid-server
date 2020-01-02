@@ -24,7 +24,7 @@
     },
     "expectedMakeRequestsErrors": [
         {
-            "value": "imp[...].ext.bidder.rubicon.video.size_id must be defined for video impression #0",
+            "value": "imp[0].ext.bidder.rubicon.video.size_id must be defined for video impression",
             "comparison": "literal"
         }
     ]

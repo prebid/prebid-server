@@ -1288,8 +1288,9 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				"zoneId": 8394,
 				"siteId": 283282,
 				"accountId": 7891,
-				"inventory": {"key1" : "val1"},
-				"visitor": {"key2" : "val2"}
+				"inventory": {"key1": "val1"},
+				"visitor": {"key2": "val2"},
+				"video": {"size_id": 1}
 			}}`),
 		}},
 	}
@@ -1421,6 +1422,10 @@ func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 		t.Errorf("Bad bid ID. Expected %s, got %s", "1234567890", theBid.ID)
 	}
 }
+
+//func TestOpenRTBRequestWithVideoMissingSizeID() {
+//
+//}
 
 func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
