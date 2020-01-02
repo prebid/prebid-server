@@ -1423,10 +1423,6 @@ func TestOpenRTBCopyBidIdFromResponseIfZero(t *testing.T) {
 	}
 }
 
-//func TestOpenRTBRequestWithVideoMissingSizeID() {
-//
-//}
-
 func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "rubicontest", NewRubiconBidder(http.DefaultClient, "uri", "xuser", "xpass", "pbs-test-tracker"))
 }
