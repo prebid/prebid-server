@@ -56,7 +56,7 @@ func (a *ApplogyAdapter) MakeRequests(request *openrtb.BidRequest, _ *adapters.E
 			continue
 		}
 		if len(bidderExt.Bidder) == 0 {
-			errs = append(errs, errors.New("Applogy token required"))
+			errs = append(errs, errors.New("bidder required"))
 			continue
 		}
 		var impressionExt openrtb_ext.ExtImpApplogy
@@ -121,7 +121,7 @@ func (a *ApplogyAdapter) MakeBids(request *openrtb.BidRequest, _ *adapters.Reque
 
 	for _, seatBid := range bidResponse.SeatBid {
 		for _, bid := range seatBid.Bid {
-			bid := bid
+			bid := bid // pin https://github.com/kyoh86/scopelint#whats-this
 			var bidType openrtb_ext.BidType
 			for _, impression := range request.Imp {
 				if impression.ID != bid.ImpID {

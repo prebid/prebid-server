@@ -111,7 +111,7 @@
 		"value": "impression extensions required",
 		"comparison": "literal"
 	}, {
-		"value": "Applogy token required",
+		"value": "bidder required",
 		"comparison": "literal"
 	}, {
 		"value": "Applogy only supports banner, video or native ads",
