@@ -1244,8 +1244,9 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 				"zoneId": 8394,
 				"siteId": 283282,
 				"accountId": 7891,
-				"inventory": {"key1" : "val1"},
-				"visitor": {"key2" : "val2"}
+				"inventory": {"key1": "val1"},
+				"visitor": {"key2": "val2"},
+				"video": {"size_id": 1}
 			}}`),
 		}},
 	}
