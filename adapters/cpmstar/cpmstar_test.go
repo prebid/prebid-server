@@ -7,5 +7,5 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	adapterstest.RunJSONBidderTest(t, "cpmstartest", NewCpmstarBidder("https://server.cpmstar.com/openrtbbidrq.aspx"))
+	adapterstest.RunJSONBidderTest(t, "cpmstartest", NewCpmstarBidder("//host"))
 }

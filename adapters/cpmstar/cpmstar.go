@@ -11,12 +11,10 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 )
 
-//Adapter :
 type Adapter struct {
 	endpoint string
 }
 
-//MakeRequests :
 func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
 	var adapterRequests []*adapters.RequestData
@@ -26,22 +24,23 @@ func (a *Adapter) MakeRequests(request *openrtb.BidRequest, unused *adapters.Ext
 		return nil, errs
 	}
 
-	adapterReq, errors := a.makeRequest(request)
-	if adapterReq != nil {
-		adapterRequests = append(adapterRequests, adapterReq)
+	adapterReq, err := a.makeRequest(request)
+	if err != nil {
+		errs = append(errs, err)
+		return nil, errs
 	}
-	errs = append(errs, errors...)
+
+	adapterRequests = append(adapterRequests, adapterReq)
 
 	return adapterRequests, errs
 }
 
-func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, []error) {
-	var errs []error
+func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestData, error) {
+	var err error
 
 	jsonBody, err := json.Marshal(request)
 	if err != nil {
-		errs = append(errs, err)
-		return nil, errs
+		return nil, err
 	}
 
 	headers := http.Header{}
@@ -52,7 +51,7 @@ func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 		Uri:     a.endpoint,
 		Body:    jsonBody,
 		Headers: headers,
-	}, errs
+	}, nil
 }
 
 func preprocess(request *openrtb.BidRequest) error {
@@ -77,14 +76,7 @@ func preprocess(request *openrtb.BidRequest) error {
 			}
 		}
 
-		extImpJSON, err := json.Marshal(extImp)
-		if err != nil {
-			return &errortypes.BadInput{
-				Message: err.Error(),
-			}
-		}
-
-		request.Imp[i].Ext = extImpJSON
+		request.Imp[i].Ext = bidderExt.Bidder
 	}
 
 	return nil
@@ -150,7 +142,6 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 	return rv, errors
 }
 
-//NewCpmstarBidder :
 func NewCpmstarBidder(endpoint string) *Adapter {
 	return &Adapter{
 		endpoint: endpoint,

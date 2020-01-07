@@ -26,7 +26,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://server.cpmstar.com/openrtbbidrq.aspx",
+        "uri": "//host",
         "body": {
           "id": "test-request-id",
           "imp": [
