@@ -603,30 +603,28 @@ func TestPriceTypeUrlParameterCreation(t *testing.T) {
 // Asserts that toOpenRtbBidResponse() creates a *adapters.BidderResponse with
 // the currency of the last valid []*adformBid element and the expected number of bids
 func TestToOpenRtbBidResponse(t *testing.T) {
-	// expected values
 	expectedBids := 3
 	lastCurrency, anotherCurrency, emptyCurrency := "EUR", "USD", ""
 
-	// init `toOpenRtbBidResponse` parameters
 	request := &openrtb.BidRequest{
 		ID: "test-request-id",
 		Imp: []openrtb.Imp{
-			{ //1
+			{
 				ID:     "banner-imp-no1",
 				Ext:    json.RawMessage(`{"bidder1": { "mid": "32341" }}`),
 				Banner: &openrtb.Banner{},
 			},
-			{ //2
+			{
 				ID:     "banner-imp-no2",
 				Ext:    json.RawMessage(`{"bidder1": { "mid": "32342" }}`),
 				Banner: &openrtb.Banner{},
 			},
-			{ //3
+			{
 				ID:     "banner-imp-no3",
 				Ext:    json.RawMessage(`{"bidder1": { "mid": "32343" }}`),
 				Banner: &openrtb.Banner{},
 			},
-			{ //4
+			{
 				ID:     "banner-imp-no4",
 				Ext:    json.RawMessage(`{"bidder1": { "mid": "32344" }}`),
 				Banner: &openrtb.Banner{},
@@ -637,7 +635,7 @@ func TestToOpenRtbBidResponse(t *testing.T) {
 	}
 
 	testAdformBids := []*adformBid{
-		{ //1
+		{
 			ResponseType: "banner",
 			Banner:       "banner-content1",
 			Price:        1.23,
@@ -647,33 +645,31 @@ func TestToOpenRtbBidResponse(t *testing.T) {
 			DealId:       "dealId1",
 			CreativeId:   "creativeId1",
 		},
-		{}, //2
-		{ //3
-			ResponseType: "banner",
-			Banner:       "banner-content2",
-			Price:        1.24,
-			Currency:     emptyCurrency,
-			Width:        300,
-			Height:       200,
-			DealId:       "dealId2",
-			CreativeId:   "creativeId2",
-		},
-		{ //4
+		{},
+		{
 			ResponseType: "banner",
 			Banner:       "banner-content3",
-			Price:        1.25,
-			Currency:     lastCurrency,
+			Price:        1.24,
+			Currency:     emptyCurrency,
 			Width:        300,
 			Height:       200,
 			DealId:       "dealId3",
 			CreativeId:   "creativeId3",
 		},
+		{
+			ResponseType: "banner",
+			Banner:       "banner-content4",
+			Price:        1.25,
+			Currency:     lastCurrency,
+			Width:        300,
+			Height:       200,
+			DealId:       "dealId4",
+			CreativeId:   "creativeId4",
+		},
 	}
 
-	// Execute `toOpenRtbBidResponse`
 	actualBidResponse := toOpenRtbBidResponse(testAdformBids, request)
 
-	// Assert number of bids and currency
-	assert.Equalf(t, expectedBids, len(actualBidResponse.Bids), fmt.Sprintf("[TestToOpenRtbBidResponse] actualBidResponse lenght differs\n"))
-	assert.Equalf(t, lastCurrency, actualBidResponse.Currency, fmt.Sprintf("[TestToOpenRtbBidResponse] actualBidResponse lenght differs\n"))
+	assert.Equalf(t, expectedBids, len(actualBidResponse.Bids), "bid count")
+	assert.Equalf(t, lastCurrency, actualBidResponse.Currency, "currency")
 }

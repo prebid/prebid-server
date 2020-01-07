@@ -360,7 +360,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	aPbsOrtbBidArr := []*pbsOrtbBid{{bid: sampleBid, bidType: openrtb_ext.BidTypeBanner}}
 	sampleSeatBid := []openrtb.SeatBid{
 		{
-			Seat: string("appnexus"),
+			Seat: "appnexus",
 			Bid: []openrtb.Bid{
 				{
 					ID:    "some-imp-id",
