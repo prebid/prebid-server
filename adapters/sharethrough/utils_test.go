@@ -22,7 +22,7 @@ func TestGetAdMarkup(t *testing.T) {
 			inputResponse: []byte(`{"bidId": "bid", "adserverRequestId": "arid"}`),
 			inputParams:   &StrAdSeverParams{Pkey: "pkey"},
 			expectedSuccess: []string{
-				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid" />`,
+				`<img src="//b.sharethrough.com/butler?type=s2s-win&arid=arid&adReceivedAt=2019-09-12T11%3a29%3a00.000123456Z" />`,
 				`<div data-str-native-key="pkey" data-stx-response-name="str_response_bid"></div>`,
 				fmt.Sprintf(`<script>var str_response_bid = "%s"</script>`, base64.StdEncoding.EncodeToString([]byte(`{"bidId": "bid", "adserverRequestId": "arid"}`))),
 			},
@@ -61,15 +61,58 @@ func TestGetAdMarkup(t *testing.T) {
 		var strResp openrtb_ext.ExtImpSharethroughResponse
 		_ = json.Unmarshal(test.inputResponse, &strResp)
 
-		outputSuccess, outputError := Util{}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
+		outputSuccess, outputError := Util{Clock: MockClock{}}.getAdMarkup(test.inputResponse, strResp, test.inputParams)
 		for _, markup := range test.expectedSuccess {
 			assert.Contains(outputSuccess, markup)
 		}
-		assert.Equal(outputError, test.expectedError)
+		assert.Equal(test.expectedError, outputError)
 	}
 }
 
 func TestGetPlacementSize(t *testing.T) {
+	tests := map[string]struct {
+		imp            openrtb.Imp
+		strImpParams   openrtb_ext.ExtImpSharethrough
+		expectedHeight uint64
+		expectedWidth  uint64
+	}{
+		"Returns size from STR params if provided": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{IframeSize: []int{100, 200}},
+			expectedHeight: 100,
+			expectedWidth:  200,
+		},
+		"Skips size from STR params if malformed": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{IframeSize: []int{100}},
+			expectedHeight: 1,
+			expectedWidth:  1,
+		},
+		"Returns size from banner format if provided": {
+			imp:            openrtb.Imp{Banner: &openrtb.Banner{Format: []openrtb.Format{{H: 100, W: 200}}}},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{},
+			expectedHeight: 100,
+			expectedWidth:  200,
+		},
+		"Defaults to 1x1": {
+			imp:            openrtb.Imp{},
+			strImpParams:   openrtb_ext.ExtImpSharethrough{},
+			expectedHeight: 1,
+			expectedWidth:  1,
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		outputHeight, outputWidth := Util{}.getPlacementSize(test.imp, test.strImpParams)
+		assert.Equal(test.expectedHeight, outputHeight)
+		assert.Equal(test.expectedWidth, outputWidth)
+	}
+}
+
+func TestGetBestFormat(t *testing.T) {
 	tests := map[string]struct {
 		input          []openrtb.Format
 		expectedHeight uint64
@@ -96,9 +139,9 @@ func TestGetPlacementSize(t *testing.T) {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
-		outputHeight, outputWidth := Util{}.getPlacementSize(test.input)
-		assert.Equal(outputHeight, test.expectedHeight)
-		assert.Equal(outputWidth, test.expectedWidth)
+		outputHeight, outputWidth := Util{}.getBestFormat(test.input)
+		assert.Equal(test.expectedHeight, outputHeight)
+		assert.Equal(test.expectedWidth, outputWidth)
 	}
 }
 
@@ -107,13 +150,17 @@ type userAgentTest struct {
 	expected bool
 }
 
+type userAgentFailureTest struct {
+	input string
+}
+
 func runUserAgentTests(tests map[string]userAgentTest, fn func(string) bool, t *testing.T) {
 	for testName, test := range tests {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
 		output := fn(test.input)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -155,7 +202,7 @@ func TestCanAutoPlayVideo(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.canAutoPlayVideo(test.input, uaParsers)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -232,7 +279,7 @@ func TestIsAtMinChromeVersion(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -262,7 +309,7 @@ func TestIsAtMinChromeIosVersion(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.isAtMinChromeVersion(test.input, regex)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -292,7 +339,7 @@ func TestIsAtMinSafariVersion(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.isAtMinSafariVersion(test.input, regex)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
@@ -343,42 +390,46 @@ func TestGdprApplies(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.gdprApplies(test.input)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
 	}
 }
 
-func TestParseUserExt(t *testing.T) {
+func TestParseUserInfo(t *testing.T) {
 	tests := map[string]struct {
 		input    *openrtb.User
 		expected userInfo
 	}{
 		"Return empty strings if no User": {
 			input:    nil,
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
 		"Return empty strings if no uids": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": []}] }`)},
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
 		"Return empty strings if ID is not defined or empty string": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": null}]}, {"source": "adserver.org", "uids": [{"id": ""}]}] }`)},
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
 		},
 		"Return consent correctly": {
 			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc" }`)},
-			expected: userInfo{Consent: "abc", TtdUid: ""},
+			expected: userInfo{Consent: "abc", TtdUid: "", StxUid: ""},
 		},
 		"Return ttd uid correctly": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
-			expected: userInfo{Consent: "", TtdUid: "abc123"},
+			expected: userInfo{Consent: "", TtdUid: "abc123", StxUid: ""},
 		},
 		"Ignore non-trade-desk uid": {
 			input:    &openrtb.User{Ext: []byte(`{ "eids": [{"source": "something", "uids": [{"id": "xyz"}]}] }`)},
-			expected: userInfo{Consent: "", TtdUid: ""},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: ""},
+		},
+		"Returns STX user id from buyer id": {
+			input:    &openrtb.User{BuyerUID: "myid"},
+			expected: userInfo{Consent: "", TtdUid: "", StxUid: "myid"},
 		},
 		"Full test": {
-			input:    &openrtb.User{Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
-			expected: userInfo{Consent: "abc", TtdUid: "abc123"},
+			input:    &openrtb.User{BuyerUID: "myid", Ext: []byte(`{ "consent": "abc", "eids": [{"source": "something", "uids": [{"id": "xyz"}]}, {"source": "adserver.org", "uids": [{"id": "abc123"}]}] }`)},
+			expected: userInfo{Consent: "abc", TtdUid: "abc123", StxUid: "myid"},
 		},
 	}
 
@@ -386,9 +437,10 @@ func TestParseUserExt(t *testing.T) {
 		t.Logf("Test case: %s\n", testName)
 		assert := assert.New(t)
 
-		output := Util{}.parseUserExt(test.input)
-		assert.Equal(output.Consent, test.expected.Consent)
-		assert.Equal(output.TtdUid, test.expected.TtdUid)
+		output := Util{}.parseUserInfo(test.input)
+		assert.Equal(test.expected.Consent, output.Consent)
+		assert.Equal(test.expected.TtdUid, output.TtdUid)
+		assert.Equal(test.expected.StxUid, output.StxUid)
 	}
 }
 
@@ -416,6 +468,26 @@ func TestParseDomain(t *testing.T) {
 		assert := assert.New(t)
 
 		output := Util{}.parseDomain(test.input)
-		assert.Equal(output, test.expected)
+		assert.Equal(test.expected, output)
+	}
+}
+
+func TestGetClock(t *testing.T) {
+	tests := map[string]struct {
+		input    Util
+		expected Clock
+	}{
+		"returns Clock from Utility": {
+			input:    Util{Clock: Clock{}},
+			expected: Clock{},
+		},
+	}
+
+	for testName, test := range tests {
+		t.Logf("Test case: %s\n", testName)
+		assert := assert.New(t)
+
+		output := test.input.getClock()
+		assert.Equal(test.expected, output)
 	}
 }

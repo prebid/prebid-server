@@ -59,7 +59,7 @@ type BidRequestVideo struct {
 	//   object; optional
 	// Description:
 	//   Indicates that the response requires an adserver specific content category
-	IncludeBrandCategory IncludeBrandCategory `json:"includebrandcategory"`
+	IncludeBrandCategory *IncludeBrandCategory `json:"includebrandcategory,omitempty"`
 
 	// Attribute:
 	//   video
@@ -128,6 +128,14 @@ type BidRequestVideo struct {
 	// Description:
 	//   Block list of advertisers by their domains (e.g., “ford.com”).
 	BAdv []string `json:"badv,omitempty"`
+
+	// Attribute:
+	//   regs
+	// Type:
+	//   object; optional
+	// Description:
+	//   Contains the OpenRTB Regs object to be passed to OpenRTB request
+	Regs *openrtb.Regs `json:"regs,omitempty"`
 }
 
 type PodConfig struct {
@@ -191,6 +199,14 @@ type IncludeBrandCategory struct {
 	//   string; optional
 	//  Identifier for the Publisher
 	Publisher string `json:"publisher"`
+
+	// Attribute:
+	//   translatecategories
+	// Type:
+	//   *bool; optional
+	// Description:
+	//   Indicates if IAB categories should be translated to adserver category
+	TranslateCategories *bool `json:"translatecategories,omitempty"`
 }
 
 type Cacheconfig struct {

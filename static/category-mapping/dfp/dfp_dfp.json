@@ -1,0 +1,546 @@
+{
+  "IAB1-5": {
+    "id": "movies",
+    "name": "Filmed Entertainment"
+  },
+  "IAB1-6": {
+    "id": "movies",
+    "name": "Filmed Entertainment"
+  },
+  "IAB1-7": {
+    "id": "movies",
+    "name": "Filmed Entertainment"
+  },
+  "IAB2-1": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-2": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-3": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-4": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-5": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-6": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-7": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-8": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-9": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-10": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-11": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-12": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-13": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-14": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-15": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-16": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-17": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-18": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-19": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-20": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-21": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-22": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB2-23": {
+    "id": "auto",
+    "name": "Automotive"
+  },
+  "IAB3-1": {
+    "id": "business",
+    "name": "Business Services"
+  },
+  "IAB3-4": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB4-5": {
+    "id": "business",
+    "name": "Business Services"
+  },
+  "IAB5-1": {
+    "id": "education",
+    "name": "Educational Services"
+  },
+  "IAB5-10": {
+    "id": "education",
+    "name": "Educational Services"
+  },
+  "IAB7-1": {
+    "id": "healthcare",
+    "name": "Health Care Services"
+  },
+  "IAB7-32": {
+    "id": "healthcare",
+    "name": "Health Care Services"
+  },
+  "IAB7-44": {
+    "id": "healthcare",
+    "name": "Health Care Services"
+  },
+  "IAB8-1": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-2": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-3": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-4": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-5": {
+    "id": "beverages",
+    "name": "Beer/Wine/Liquor"
+  },
+  "IAB8-6": {
+    "id": "beverages",
+    "name": "Beverages"
+  },
+  "IAB8-7": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-8": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-9": {
+    "id": "food",
+    "name": "Restaurant/Fast Food"
+  },
+  "IAB8-10": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-11": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-12": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-13": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-14": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-15": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-16": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-17": {
+    "id": "food",
+    "name": "Food"
+  },
+  "IAB8-18": {
+    "id": "beverages",
+    "name": "Beer/Wine/Liquor"
+  },
+  "IAB9-5": {
+    "id": "game",
+    "name": "Gaming"
+  },
+  "IAB9-9": {
+    "id": "tobacco",
+    "name": "Tobacco"
+  },
+  "IAB9-30": {
+    "id": "entertainment",
+    "name": "Entertainment"
+  },
+  "IAB10-1": {
+    "id": "appliances",
+    "name": "Appliances"
+  },
+  "IAB10-7": {
+    "id": "furnishings",
+    "name": "Home Furnishings"
+  },
+  "IAB11-2": {
+    "id": "government",
+    "name": "Government/Municipal"
+  },
+  "IAB11-4": {
+    "id": "government",
+    "name": "Government/Municipal"
+  },
+  "IAB13-2": {
+    "id": "business",
+    "name": "Business Services"
+  },
+  "IAB13-4": {
+    "id": "financial",
+    "name": "Financial Services"
+  },
+  "IAB13-6": {
+    "id": "insurance",
+    "name": "Insurance"
+  },
+  "IAB14-1": {
+    "id": "dating",
+    "name": "dating"
+  },
+  "IAB16-1": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-2": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-3": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-4": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-5": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-6": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB16-7": {
+    "id": "pets",
+    "name": "Pet Food/Supplies"
+  },
+  "IAB17-12": {
+    "id": "sport",
+    "name": "Professional Sports"
+  },
+  "IAB18-1": {
+    "id": "beauty",
+    "name": "Cosmetics/Toiletries"
+  },
+  "IAB18-4": {
+    "id": "jewelry",
+    "name": "Jewelry"
+  },
+  "IAB18-5": {
+    "id": "apparel",
+    "name": "Apparel"
+  },
+  "IAB19-2": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-3": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-4": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-6": {
+    "id": "telecommunications",
+    "name": "Telecommunications"
+  },
+  "IAB19-7": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-8": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-9": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-10": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-11": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-12": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-13": {
+    "id": "publishing",
+    "name": "Publishing"
+  },
+  "IAB19-14": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-15": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-16": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-17": {
+    "id": "movies",
+    "name": "Filmed Entertainment"
+  },
+  "IAB19-18": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-19": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-20": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-21": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-22": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-23": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-24": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-25": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-26": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-27": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-28": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-30": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-31": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-32": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-33": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-34": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-35": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB19-36": {
+    "id": "electronics",
+    "name": "Computing Product"
+  },
+  "IAB20-1": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-2": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-3": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-4": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-5": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-6": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-7": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-8": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-9": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-10": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-11": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-12": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-13": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-14": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-15": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-16": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-17": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-18": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-19": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-20": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-21": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-22": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-23": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-24": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-25": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-26": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB20-27": {
+    "id": "travel",
+    "name": "Travel/Hotels/Airlines"
+  },
+  "IAB21-3": {
+    "id": "realestate",
+    "name": "Real Estate"
+  },
+  "IAB22-2": {
+    "id": "realestate",
+    "name": "Real Estate"
+  }
+}

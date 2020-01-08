@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
@@ -127,11 +128,16 @@ func runSpec(t *testing.T, filename string, spec *testSpec, bidder adapters.Bidd
 }
 
 type testSpec struct {
-	BidRequest        openrtb.BidRequest    `json:"mockBidRequest"`
-	HttpCalls         []httpCall            `json:"httpCalls"`
-	BidResponses      []expectedBidResponse `json:"expectedBidResponses"`
-	MakeRequestErrors []string              `json:"expectedMakeRequestsErrors"`
-	MakeBidsErrors    []string              `json:"expectedMakeBidsErrors"`
+	BidRequest        openrtb.BidRequest      `json:"mockBidRequest"`
+	HttpCalls         []httpCall              `json:"httpCalls"`
+	BidResponses      []expectedBidResponse   `json:"expectedBidResponses"`
+	MakeRequestErrors []testSpecExpectedError `json:"expectedMakeRequestsErrors"`
+	MakeBidsErrors    []testSpecExpectedError `json:"expectedMakeBidsErrors"`
+}
+
+type testSpecExpectedError struct {
+	Value      string `json:"value"`
+	Comparison string `json:"comparison"`
 }
 
 func (spec *testSpec) expectsErrors() bool {
@@ -198,15 +204,23 @@ func diffHttpRequestLists(t *testing.T, filename string, actual []*adapters.Requ
 	}
 }
 
-func diffErrorLists(t *testing.T, description string, actual []error, expected []string) {
+func diffErrorLists(t *testing.T, description string, actual []error, expected []testSpecExpectedError) {
 	t.Helper()
 
 	if len(expected) != len(actual) {
 		t.Fatalf("%s had wrong error count. Expected %d, got %d", description, len(expected), len(actual))
 	}
 	for i := 0; i < len(actual); i++ {
-		if expected[i] != actual[i].Error() {
-			t.Errorf(`%s error[%d] had wrong message. Expected "%s", got "%s"`, description, i, expected[i], actual[i].Error())
+		if expected[i].Comparison == "literal" {
+			if expected[i].Value != actual[i].Error() {
+				t.Errorf(`%s error[%d] had wrong message. Expected "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+			}
+		} else if expected[i].Comparison == "regex" {
+			if matched, _ := regexp.MatchString(expected[i].Value, actual[i].Error()); !matched {
+				t.Errorf(`%s error[%d] had wrong message. Expected match with regex "%s", got "%s"`, description, i, expected[i].Value, actual[i].Error())
+			}
+		} else {
+			t.Fatalf(`invalid comparison type "%s"`, expected[i].Comparison)
 		}
 	}
 }

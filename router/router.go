@@ -15,7 +15,6 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adform"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/appnexus"
-	"github.com/PubMatic-OpenWrap/prebid-server/adapters/audienceNetwork"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/conversant"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/ix"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/lifestreet"
@@ -24,10 +23,6 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/rubicon"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/sovrn"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
-	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
-	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
-
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache"
 	"github.com/PubMatic-OpenWrap/prebid-server/cache/dummycache"
@@ -40,10 +35,13 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/exchange"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 	pbc "github.com/PubMatic-OpenWrap/prebid-server/prebid_cache_client"
 	"github.com/PubMatic-OpenWrap/prebid-server/ssl"
+	"github.com/PubMatic-OpenWrap/prebid-server/stored_requests"
 	storedRequestsConf "github.com/PubMatic-OpenWrap/prebid-server/stored_requests/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync/usersyncers"
 
 	"github.com/golang/glog"
@@ -170,11 +168,10 @@ func newExchangeMap(cfg *config.Configuration) map[string]adapters.Adapter {
 		"pulsepoint": pulsepoint.NewPulsePointAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderPulsepoint)].Endpoint),
 		"rubicon": rubicon.NewRubiconAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint,
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
-		"audienceNetwork": audienceNetwork.NewAdapterFromFacebook(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID),
-		"lifestreet":      lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
-		"conversant":      conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
-		"adform":          adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
-		"sovrn":           sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
+		"lifestreet": lifestreet.NewLifestreetAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderLifestreet)].Endpoint),
+		"conversant": conversant.NewConversantAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderConversant)].Endpoint),
+		"adform":     adform.NewAdformAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderAdform)].Endpoint),
+		"sovrn":      sovrn.NewSovrnAdapter(adapters.DefaultHTTPAdapterConfig, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),
 	}
 }
 
@@ -193,12 +190,22 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	r = &Router{
 		Router: httprouter.New(),
 	}
+
+	// For bid processing, we need both the hardcoded certificates and the certificates found in container's
+	// local file system
+	certPool := ssl.GetRootCAPool()
+	var readCertErr error
+	certPool, readCertErr = ssl.AppendPEMFileToRootCAPool(certPool, cfg.PemCertsFile)
+	if readCertErr != nil {
+		glog.Infof("Could not read certificates file: %s \n", readCertErr.Error())
+	}
+
 	theClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        cfg.Client.MaxIdleConns,
 			MaxIdleConnsPerHost: cfg.Client.MaxIdleConnsPerHost,
 			IdleConnTimeout:     time.Duration(cfg.Client.IdleConnTimeout) * time.Second,
-			TLSClientConfig:     &tls.Config{RootCAs: ssl.GetRootCAPool()},
+			TLSClientConfig:     &tls.Config{RootCAs: certPool},
 		},
 	}
 	// Hack because of how legacy handles districtm
@@ -243,7 +250,8 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 	g_gdprPerms = gdpr.NewPermissions(context.Background(), cfg.GDPR, adapters.GDPRAwareSyncerIDs(g_syncers), theClient)
 
 	exchanges = newExchangeMap(cfg)
-	g_ex = exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL), cfg, g_metrics, bidderInfos, g_gdprPerms, rateConvertor)
+
+	g_ex = exchange.NewExchange(theClient, pbc.NewClient(&cfg.CacheURL, &cfg.ExtCacheURL, r.MetricsEngine), cfg, g_metrics, bidderInfos, g_gdprPerms, rateConvertor)
 
 	/*
 			openrtbEndpoint, err := openrtb2.NewEndpoint(theExchange, paramsValidator, fetcher, cfg, r.MetricsEngine, pbsAnalytics, disabledBidders, defReqJSON, bidderMap, categoriesFetcher)
@@ -283,7 +291,7 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 			PBSAnalytics:     pbsAnalytics,
 		}
 
-			r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, gdprPerms, pbsAnalytics, r.MetricsEngine))
+			r.GET("/setuid", endpoints.NewSetUIDEndpoint(cfg.HostCookie, syncers, gdprPerms, pbsAnalytics, r.MetricsEngine))
 			r.GET("/getuids", endpoints.NewGetUIDsEndpoint(cfg.HostCookie))
 			r.POST("/optout", userSyncDeps.OptOut)
 			r.GET("/optout", userSyncDeps.OptOut)
@@ -311,7 +319,7 @@ func GetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetUIDSWrapper(w http.ResponseWriter, r *http.Request) {
-	setUID := endpoints.NewSetUIDEndpoint(g_cfg.HostCookie, g_gdprPerms, g_analytics, g_metrics)
+	setUID := endpoints.NewSetUIDEndpoint(g_cfg.HostCookie, g_syncers, g_gdprPerms, g_analytics, g_metrics)
 	setUID(w, r, nil)
 }
 

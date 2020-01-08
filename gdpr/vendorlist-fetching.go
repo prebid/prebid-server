@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/golang/glog"
 	"github.com/prebid/go-gdpr/vendorlist"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"golang.org/x/net/context/ctxhttp"
 )
 

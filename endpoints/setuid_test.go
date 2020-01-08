@@ -3,85 +3,280 @@ package endpoints
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	analyticsConf "github.com/PubMatic-OpenWrap/prebid-server/analytics/config"
-	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	metricsConf "github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics/config"
 )
 
-func TestNormalSet(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false), true, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	assertHasSyncs(t, response, map[string]string{
-		"pubmatic": "123",
-	})
+func TestSetUIDEndpoint(t *testing.T) {
+	testCases := []struct {
+		uri                   string
+		validFamilyNames      []string
+		existingSyncs         map[string]string
+		gdprAllowsHostCookies bool
+		gdprReturnsError      bool
+		expectedSyncs         map[string]string
+		expectedRespMessage   string
+		expectedResponseCode  int
+		description           string
+	}{
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         map[string]string{"pubmatic": "123"},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Set uid for valid bidder",
+		},
+		{
+			uri:                   "/setuid?bidder=unsupported-bidder&uid=123",
+			validFamilyNames:      []string{},
+			existingSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         nil,
+			expectedResponseCode:  http.StatusBadRequest,
+			description:           "Don't set uid for an unsupported bidder",
+		},
+		{
+			uri:                   "/setuid?bidder=&uid=123",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         nil,
+			expectedResponseCode:  http.StatusBadRequest,
+			description:           "Don't set uid for an empty bidder",
+		},
+		{
+			uri:                   "/setuid?bidder=unsupported-bidder&uid=123",
+			validFamilyNames:      []string{},
+			existingSyncs:         map[string]string{"pubmatic": "1234"},
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         nil,
+			expectedResponseCode:  http.StatusBadRequest,
+			description: "No need to set existing syncs back in response for a request " +
+				"to set uid for an unsupported bidder",
+		},
+		{
+			uri:                   "/setuid?bidder=&uid=123",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         map[string]string{"pubmatic": "1234"},
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         nil,
+			expectedResponseCode:  http.StatusBadRequest,
+			description: "No need to set existing syncs back in response for a request " +
+				"to set uid for an empty bidder",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         map[string]string{"pubmatic": "1234"},
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         map[string]string{},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Unset uid for a bidder if the request contains an empty uid for that bidder",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			validFamilyNames:      []string{"pubmatic"},
+			existingSyncs:         map[string]string{"rubicon": "def"},
+			gdprAllowsHostCookies: true,
+			expectedSyncs:         map[string]string{"pubmatic": "123", "rubicon": "def"},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Add the uid for the requested bidder to the list of existing syncs",
+		},
+		{
+			uri:                  "/setuid?bidder=pubmatic&uid=123&gdpr=0",
+			validFamilyNames:     []string{"pubmatic"},
+			existingSyncs:        nil,
+			expectedSyncs:        map[string]string{"pubmatic": "123"},
+			expectedResponseCode: http.StatusOK,
+			description:          "Don't care about GDPR consent if GDPR is set to 0",
+		},
+		{
+			uri:                  "/setuid?bidder=pubmatic&uid=123",
+			validFamilyNames:     []string{"pubmatic"},
+			existingSyncs:        nil,
+			expectedSyncs:        nil,
+			expectedResponseCode: http.StatusOK,
+			expectedRespMessage:  "The gdpr_consent string prevents cookies from being saved",
+			description:          "Return err message if the GDPR consent doesn't allow syncs for the given bidder",
+		},
+		{
+			uri:                   "/setuid?uid=123",
+			validFamilyNames:      []string{"appnexus"},
+			existingSyncs:         nil,
+			expectedSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedResponseCode:  http.StatusBadRequest,
+			expectedRespMessage:   `"bidder" query param is required`,
+			description:           "Return an error if the bidder param is missing from the request",
+		},
+		{
+			uri:                   "/setuid?bidder=appnexus&uid=123&gdpr=2",
+			validFamilyNames:      []string{"appnexus"},
+			existingSyncs:         nil,
+			expectedSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedResponseCode:  http.StatusBadRequest,
+			expectedRespMessage:   "the gdpr query param must be either 0 or 1. You gave 2",
+			description:           "Return an error if GDPR is set to anything else other that 0 or 1",
+		},
+		{
+			uri:                   "/setuid?bidder=appnexus&uid=123&gdpr=1",
+			validFamilyNames:      []string{"appnexus"},
+			existingSyncs:         nil,
+			expectedSyncs:         nil,
+			gdprAllowsHostCookies: true,
+			expectedResponseCode:  http.StatusBadRequest,
+			expectedRespMessage:   "gdpr_consent is required when gdpr=1",
+			description:           "Return an error if GDPR is set to 1 but GDPR consent string is missing",
+		},
+		{
+			uri: "/setuid?bidder=pubmatic&uid=123&gdpr_consent=" +
+				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			validFamilyNames:     []string{"pubmatic"},
+			existingSyncs:        nil,
+			expectedSyncs:        nil,
+			gdprReturnsError:     true,
+			expectedResponseCode: http.StatusBadRequest,
+			expectedRespMessage: "No global vendor list was available to interpret this consent string. " +
+				"If this is a new, valid version, it should become available soon.",
+			description: "Return an error if the GDPR string is either malformed or using a newer version that isn't yet supported",
+		},
+		{
+			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
+				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			validFamilyNames:     []string{"pubmatic"},
+			existingSyncs:        nil,
+			expectedSyncs:        nil,
+			expectedResponseCode: http.StatusOK,
+			expectedRespMessage:  "The gdpr_consent string prevents cookies from being saved",
+			description:          "Shouldn't set uid for a bidder if it is not allowed by the GDPR consent string",
+		},
+		{
+			uri: "/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=" +
+				"BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw",
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			existingSyncs:         nil,
+			expectedSyncs:         map[string]string{"pubmatic": "123"},
+			expectedResponseCode:  http.StatusOK,
+			description:           "Should set uid for a bidder that is allowed by the GDPR consent string",
+		},
+	}
+
+	metrics := &metricsConf.DummyMetricsEngine{}
+	for _, test := range testCases {
+		response := doRequest(makeRequest(test.uri, test.existingSyncs, false), metrics,
+			test.validFamilyNames, test.gdprAllowsHostCookies, test.gdprReturnsError)
+		assert.Equal(t, test.expectedResponseCode, response.Code, "Test Case: %s. /setuid returned unexpected error code", test.description)
+
+		if test.expectedSyncs != nil {
+			assertHasSyncs(t, test.description, response, test.expectedSyncs)
+		} else {
+			assert.Equal(t, "", response.Header().Get("Set-Cookie"), "Test Case: %s. /setuid returned unexpected cookie", test.description)
+		}
+
+		if test.expectedRespMessage != "" {
+			assert.Equal(t, test.expectedRespMessage, response.Body.String(), "Test Case: %s. /setuid returned unexpected message")
+		}
+	}
 }
 
-func TestUnset(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic", map[string]string{"pubmatic": "1234"}, false), true, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	assertHasSyncs(t, response, nil)
-}
+func TestSetUIDEndpointMetrics(t *testing.T) {
+	testCases := []struct {
+		uri                   string
+		cookies               []*usersync.PBSCookie
+		validFamilyNames      []string
+		gdprAllowsHostCookies bool
+		expectedMetricAction  pbsmetrics.RequestAction
+		expectedMetricBidder  openrtb_ext.BidderName
+		expectedResponseCode  int
+		description           string
+	}{
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionSet,
+			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			expectedResponseCode:  200,
+			description:           "Success - Sync",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionSet,
+			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			expectedResponseCode:  200,
+			description:           "Success - Unsync",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			cookies:               []*usersync.PBSCookie{usersync.NewPBSCookieWithOptOut()},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionOptOut,
+			expectedResponseCode:  401,
+			description:           "Cookie Opted Out",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{},
+			gdprAllowsHostCookies: true,
+			expectedMetricAction:  pbsmetrics.RequestActionErr,
+			expectedResponseCode:  400,
+			description:           "Unsupported Cookie Name",
+		},
+		{
+			uri:                   "/setuid?bidder=pubmatic&uid=123&gdpr=1",
+			cookies:               []*usersync.PBSCookie{},
+			validFamilyNames:      []string{"pubmatic"},
+			gdprAllowsHostCookies: false,
+			expectedMetricAction:  pbsmetrics.RequestActionGDPR,
+			expectedMetricBidder:  openrtb_ext.BidderName("pubmatic"),
+			expectedResponseCode:  400,
+			description:           "Prevented By GDPR",
+		},
+	}
 
-func TestMergeSet(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", map[string]string{"rubicon": "def"}, false), true, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	assertHasSyncs(t, response, map[string]string{
-		"pubmatic": "123",
-		"rubicon":  "def",
-	})
-}
+	for _, test := range testCases {
+		metrics := &pbsmetrics.MetricsEngineMock{}
+		expectedLabels := pbsmetrics.UserLabels{
+			Action: test.expectedMetricAction,
+			Bidder: test.expectedMetricBidder,
+		}
+		metrics.On("RecordUserIDSet", expectedLabels).Once()
 
-func TestGDPRPrevention(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false), false, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	assertStringsMatch(t, "The gdpr_consent string prevents cookies from being saved", response.Body.String())
-	assertNoCookie(t, response)
-}
+		req := httptest.NewRequest("GET", test.uri, nil)
+		for _, v := range test.cookies {
+			addCookie(req, v)
+		}
+		response := doRequest(req, metrics, test.validFamilyNames, test.gdprAllowsHostCookies, false)
 
-func TestGDPRConsentError(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil, false), false, true)
-	assertIntsMatch(t, http.StatusBadRequest, response.Code)
-	assertStringsMatch(t, "No global vendor list was available to interpret this consent string. If this is a new, valid version, it should become available soon.", response.Body.String())
-	assertNoCookie(t, response)
-}
-
-func TestInapplicableGDPR(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=0", nil, false), false, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	assertHasSyncs(t, response, map[string]string{
-		"pubmatic": "123",
-	})
-}
-
-func TestExplicitGDPRPrevention(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123&gdpr=1&gdpr_consent=BONciguONcjGKADACHENAOLS1rAHDAFAAEAASABQAMwAeACEAFw", nil, false), false, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	assertStringsMatch(t, "The gdpr_consent string prevents cookies from being saved", response.Body.String())
-	assertNoCookie(t, response)
-}
-
-func assertNoCookie(t *testing.T, resp *httptest.ResponseRecorder) {
-	t.Helper()
-	assertStringsMatch(t, "", resp.Header().Get("Set-Cookie"))
-}
-
-func TestBadRequests(t *testing.T) {
-	assertBadRequest(t, "/setuid?uid=123", `"bidder" query param is required`)
-	assertBadRequest(t, "/setuid?bidder=appnexus&uid=123&gdpr=2", "the gdpr query param must be either 0 or 1. You gave 2")
-	assertBadRequest(t, "/setuid?bidder=appnexus&uid=123&gdpr=1", "gdpr_consent is required when gdpr=1")
+		assert.Equal(t, test.expectedResponseCode, response.Code, test.description)
+		metrics.AssertExpectations(t)
+	}
 }
 
 func TestOptedOut(t *testing.T) {
@@ -89,40 +284,93 @@ func TestOptedOut(t *testing.T) {
 	cookie := usersync.NewPBSCookie()
 	cookie.SetPreference(false)
 	addCookie(request, cookie)
-	response := doRequest(request, true, false)
+	validFamilyNames := []string{"pubmatic"}
+	metrics := &metricsConf.DummyMetricsEngine{}
+	response := doRequest(request, metrics, validFamilyNames, true, false)
 
-	assertIntsMatch(t, http.StatusUnauthorized, response.Code)
+	assert.Equal(t, http.StatusUnauthorized, response.Code)
 }
 
-func TestSecParam(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, true), true, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	uidsCookie := readUidsCookie(response.Header())
-	assert.True(t, uidsCookie.Secure)
-}
+func TestSiteCookieCheck(t *testing.T) {
+	testCases := []struct {
+		ua             string
+		expectedResult bool
+		description    string
+	}{
+		{
+			ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36",
+			expectedResult: true,
+			description:    "Should return true for a valid chrome version",
+		},
+		{
+			ua:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3770.142 Safari/537.36",
+			expectedResult: false,
+			description:    "Should return false for chrome version below than the supported min version",
+		},
+	}
 
-func TestNoSecParam(t *testing.T) {
-	response := doRequest(makeRequest("/setuid?bidder=pubmatic&uid=123", nil, false), true, false)
-	assertIntsMatch(t, http.StatusOK, response.Code)
-	uidsCookie := readUidsCookie(response.Header())
-	assert.False(t, uidsCookie.Secure)
-}
-
-func assertHasSyncs(t *testing.T, resp *httptest.ResponseRecorder, syncs map[string]string) {
-	t.Helper()
-	cookie := parseCookieString(t, resp)
-	assertIntsMatch(t, len(syncs), cookie.LiveSyncCount())
-	for bidder, value := range syncs {
-		assertBoolsMatch(t, true, cookie.HasLiveSync(bidder))
-		assertSyncValue(t, cookie, bidder, value)
+	for _, test := range testCases {
+		assert.Equal(t, test.expectedResult, siteCookieCheck(test.ua), test.description)
 	}
 }
 
-func assertBadRequest(t *testing.T, uri string, errMsg string) {
+func TestGetFamilyName(t *testing.T) {
+	testCases := []struct {
+		urlValues     url.Values
+		expectedName  string
+		expectedError string
+		description   string
+	}{
+		{
+			urlValues:    url.Values{"bidder": []string{"valid"}},
+			expectedName: "valid",
+			description:  "Should return no error for valid family name",
+		},
+		{
+			urlValues:     url.Values{"bidder": []string{"VALID"}},
+			expectedError: "The bidder name provided is not supported by Prebid Server",
+			description:   "Should return error for different case",
+		},
+		{
+			urlValues:     url.Values{"bidder": []string{"invalid"}},
+			expectedError: "The bidder name provided is not supported by Prebid Server",
+			description:   "Should return an error for unsupported bidder",
+		},
+		{
+			urlValues:     url.Values{"bidder": []string{}},
+			expectedError: `"bidder" query param is required`,
+			description:   "Should return an error for empty bidder name",
+		},
+		{
+			urlValues:     url.Values{},
+			expectedError: `"bidder" query param is required`,
+			description:   "Should return an error for missing bidder name",
+		},
+	}
+
+	for _, test := range testCases {
+
+		name, err := getFamilyName(test.urlValues, map[string]struct{}{"valid": {}})
+
+		assert.Equal(t, test.expectedName, name, test.description)
+
+		if test.expectedError != "" {
+			assert.EqualError(t, err, test.expectedError, test.description)
+		} else {
+			assert.NoError(t, err, test.description)
+		}
+	}
+}
+
+func assertHasSyncs(t *testing.T, testCase string, resp *httptest.ResponseRecorder, syncs map[string]string) {
 	t.Helper()
-	response := doRequest(makeRequest(uri, nil, false), true, false)
-	assertIntsMatch(t, http.StatusBadRequest, response.Code)
-	assertStringsMatch(t, errMsg, response.Body.String())
+	cookie := parseCookieString(t, resp)
+	assert.Equal(t, len(syncs), cookie.LiveSyncCount(), "Test Case: %s. /setuid response doesn't contain expected number of syncs", testCase)
+	for bidder, uid := range syncs {
+		assert.True(t, cookie.HasLiveSync(bidder), "Test Case: %s. /setuid response cookie doesn't contain uid for bidder: %s", testCase, bidder)
+		actualUID, _, _ := cookie.GetUID(bidder)
+		assert.Equal(t, uid, actualUID, "Test Case: %s. /setuid response cookie doesn't contain correct uid for bidder: %s", testCase, bidder)
+	}
 }
 
 func makeRequest(uri string, existingSyncs map[string]string, addSecParam bool) *http.Request {
@@ -142,14 +390,20 @@ func makeRequest(uri string, existingSyncs map[string]string, addSecParam bool) 
 	return request
 }
 
-func doRequest(req *http.Request, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
+func doRequest(req *http.Request, metrics pbsmetrics.MetricsEngine, validFamilyNames []string, gdprAllowsHostCookies bool, gdprReturnsError bool) *httptest.ResponseRecorder {
+	cfg := config.Configuration{}
 	perms := &mockPermsSetUID{
 		allowHost: gdprAllowsHostCookies,
 		errorHost: gdprReturnsError,
 		allowPI:   true,
 	}
-	cfg := config.Configuration{}
-	endpoint := NewSetUIDEndpoint(cfg.HostCookie, perms, analyticsConf.NewPBSAnalytics(&cfg.Analytics), metricsConf.NewMetricsEngine(&cfg, openrtb_ext.BidderList()))
+	analytics := analyticsConf.NewPBSAnalytics(&cfg.Analytics)
+	syncers := make(map[openrtb_ext.BidderName]usersync.Usersyncer)
+	for _, name := range validFamilyNames {
+		syncers[openrtb_ext.BidderName(name)] = newFakeSyncer(name)
+	}
+
+	endpoint := NewSetUIDEndpoint(cfg.HostCookie, syncers, perms, analytics, metrics)
 	response := httptest.NewRecorder()
 	endpoint(response, req, nil)
 	return response
@@ -164,38 +418,12 @@ func parseCookieString(t *testing.T, response *httptest.ResponseRecorder) *users
 
 	parser := regexp.MustCompile("uids=(.*?);")
 	res := parser.FindStringSubmatch(cookieString)
-	assertIntsMatch(t, 2, len(res))
+	assert.Equal(t, 2, len(res))
 	httpCookie := http.Cookie{
 		Name:  "uids",
 		Value: res[1],
 	}
 	return usersync.ParsePBSCookie(&httpCookie)
-}
-
-func assertIntsMatch(t *testing.T, expected int, actual int) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf("Expected %d, got %d", expected, actual)
-	}
-}
-
-func assertBoolsMatch(t *testing.T, expected bool, actual bool) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf("Expected %t, got %t", expected, actual)
-	}
-}
-
-func assertStringsMatch(t *testing.T, expected string, actual string) {
-	t.Helper()
-	if expected != actual {
-		t.Errorf(`Expected "%s", got "%s"`, expected, actual)
-	}
-}
-
-func assertSyncValue(t *testing.T, cookie *usersync.PBSCookie, family string, expectedValue string) {
-	got, _, _ := cookie.GetUID(family)
-	assertStringsMatch(t, expectedValue, got)
 }
 
 type mockPermsSetUID struct {
@@ -220,121 +448,27 @@ func (g *mockPermsSetUID) PersonalInfoAllowed(ctx context.Context, bidder openrt
 	return g.allowPI, nil
 }
 
-func readUidsCookie(h http.Header) *http.Cookie {
-	cookieCount := len(h["Set-Cookie"])
-	if cookieCount == 0 {
-		return nil
+func newFakeSyncer(familyName string) usersync.Usersyncer {
+	return fakeSyncer{
+		familyName: familyName,
 	}
-	//cookies := make([]*http.Cookie, 0, cookieCount)
-	for _, line := range h["Set-Cookie"] {
-		parts := strings.Split(strings.TrimSpace(line), ";")
-		if len(parts) == 1 && parts[0] == "" {
-			continue
-		}
-		parts[0] = strings.TrimSpace(parts[0])
-		j := strings.Index(parts[0], "=")
-		if j < 0 {
-			continue
-		}
-		name, value := parts[0][:j], parts[0][j+1:]
-		if name != "uids" {
-			continue
-		}
-		//if !isCookieNameValid(name) {
-		//	continue
-		//}
-		value, ok := parseCookieValue(value, true)
-		if !ok {
-			continue
-		}
-		c := &http.Cookie{
-			Name:  name,
-			Value: value,
-			Raw:   line,
-		}
-		for i := 1; i < len(parts); i++ {
-			parts[i] = strings.TrimSpace(parts[i])
-			if len(parts[i]) == 0 {
-				continue
-			}
-
-			attr, val := parts[i], ""
-			if j := strings.Index(attr, "="); j >= 0 {
-				attr, val = attr[:j], attr[j+1:]
-			}
-			lowerAttr := strings.ToLower(attr)
-			val, ok = parseCookieValue(val, false)
-			if !ok {
-				c.Unparsed = append(c.Unparsed, parts[i])
-				continue
-			}
-			switch lowerAttr {
-			case "samesite":
-				lowerVal := strings.ToLower(val)
-				switch lowerVal {
-				case "lax":
-					c.SameSite = http.SameSiteLaxMode
-				case "strict":
-					c.SameSite = http.SameSiteStrictMode
-				default:
-					c.SameSite = http.SameSiteDefaultMode
-				}
-				continue
-			case "secure":
-				c.Secure = true
-				continue
-			case "httponly":
-				c.HttpOnly = true
-				continue
-			case "domain":
-				c.Domain = val
-				continue
-			case "max-age":
-				secs, err := strconv.Atoi(val)
-				if err != nil || secs != 0 && val[0] == '0' {
-					break
-				}
-				if secs <= 0 {
-					secs = -1
-				}
-				c.MaxAge = secs
-				continue
-			case "expires":
-				c.RawExpires = val
-				exptime, err := time.Parse(time.RFC1123, val)
-				if err != nil {
-					exptime, err = time.Parse("Mon, 02-Jan-2006 15:04:05 MST", val)
-					if err != nil {
-						c.Expires = time.Time{}
-						break
-					}
-				}
-				c.Expires = exptime.UTC()
-				continue
-			case "path":
-				c.Path = val
-				continue
-			}
-			c.Unparsed = append(c.Unparsed, parts[i])
-		}
-		return c
-	}
-	return nil
 }
 
-func parseCookieValue(raw string, allowDoubleQuote bool) (string, bool) {
-	// Strip the quotes, if present.
-	if allowDoubleQuote && len(raw) > 1 && raw[0] == '"' && raw[len(raw)-1] == '"' {
-		raw = raw[1 : len(raw)-1]
-	}
-	for i := 0; i < len(raw); i++ {
-		if !validCookieValueByte(raw[i]) {
-			return "", false
-		}
-	}
-	return raw, true
+type fakeSyncer struct {
+	familyName string
 }
 
-func validCookieValueByte(b byte) bool {
-	return 0x20 <= b && b < 0x7f && b != '"' && b != ';' && b != '\\'
+// FamilyNames implements the Usersyncer interface.
+func (s fakeSyncer) FamilyName() string {
+	return s.familyName
+}
+
+// GetUsersyncInfo implements the Usersyncer interface with a no-op.
+func (s fakeSyncer) GetUsersyncInfo(privacyPolicies privacy.Policies) (*usersync.UsersyncInfo, error) {
+	return nil, nil
+}
+
+// GDPRVendorID implements the Usersyncer interface with a no-op.
+func (s fakeSyncer) GDPRVendorID() uint16 {
+	return 0
 }

@@ -1,0 +1,24 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Ignoring imp id=test-imp-id, error while decoding impExt, err: unexpected end of JSON input.",
+      "comparison": "literal"
+    }
+  ]
+}
+

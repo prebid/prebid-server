@@ -4,9 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
@@ -17,11 +16,6 @@ const (
 	// DEFAULT_TTL is the default amount of time which a cookie is considered valid.
 	DEFAULT_TTL         = 14 * 24 * time.Hour
 	UID_COOKIE_NAME     = "uids"
-	chromeStr           = "Chrome/"
-	chromeiOSStr        = "CriOS/"
-	chromeMinVer        = 67
-	chromeStrLen        = len(chromeStr)
-	chromeiOSStrLen     = len(chromeiOSStr)
 	SameSiteCookieName  = "SSCookie"
 	SameSiteCookieValue = "1"
 	SameSiteAttribute   = "; SameSite=None"
@@ -106,6 +100,15 @@ func NewPBSCookie() *PBSCookie {
 	}
 }
 
+// NewPBSCookie returns an empty PBSCookie with optOut enabled
+func NewPBSCookieWithOptOut() *PBSCookie {
+	return &PBSCookie{
+		uids:     make(map[string]uidWithExpiry),
+		optOut:   true,
+		birthday: timestamp(),
+	}
+}
+
 // AllowSyncs is true if the user lets bidders sync cookies, and false otherwise.
 func (cookie *PBSCookie) AllowSyncs() bool {
 	return cookie != nil && !cookie.optOut
@@ -172,64 +175,61 @@ func (cookie *PBSCookie) GetId(bidderName openrtb_ext.BidderName) (id string, ex
 }
 
 // SetCookieOnResponse is a shortcut for "ToHTTPCookie(); cookie.setDomain(domain); setCookie(w, cookie)"
-func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, r *http.Request, domain string, ttl time.Duration) {
+func (cookie *PBSCookie) SetCookieOnResponse(w http.ResponseWriter, setSiteCookie bool, secParam string, cfg *config.HostCookie, ttl time.Duration) {
 	httpCookie := cookie.ToHTTPCookie(ttl)
+	var domain string = cfg.Domain
+
 	if domain != "" {
 		httpCookie.Domain = domain
 	}
 
+	var currSize int = len([]byte(httpCookie.String()))
+	for cfg.MaxCookieSizeBytes > 0 && currSize > cfg.MaxCookieSizeBytes && len(cookie.uids) > 0 {
+		var oldestElem string = ""
+		var oldestDate int64 = math.MaxInt64
+		for key, value := range cookie.uids {
+			timeUntilExpiration := time.Until(value.Expires)
+			if timeUntilExpiration < time.Duration(oldestDate) {
+				oldestElem = key
+				oldestDate = int64(timeUntilExpiration)
+			}
+		}
+		delete(cookie.uids, oldestElem)
+		httpCookie = cookie.ToHTTPCookie(ttl)
+		if domain != "" {
+			httpCookie.Domain = domain
+		}
+		currSize = len([]byte(httpCookie.String()))
+	}
+
 	// Set the secure flag to 'uids' cookie; using sec query param for backward compatibility
-	secParam := r.URL.Query().Get("sec")
 	if secParam == "1" {
 		httpCookie.Secure = true
 	}
 
-	cookieStr := httpCookie.String()
+	var uidsCookieStr string
 	var sameSiteCookie *http.Cookie
-	if IsBrowserApplicableForSameSite(r) {
-		cookieStr += SameSiteAttribute
+	if setSiteCookie {
+		//httpCookie.Secure = true
+		uidsCookieStr = httpCookie.String()
+		uidsCookieStr += SameSiteAttribute
+
 		sameSiteCookie = &http.Cookie{
 			Name:    SameSiteCookieName,
 			Value:   SameSiteCookieValue,
 			Expires: time.Now().Add(ttl),
 			Path:    "/",
 		}
+		if secParam == "1" {
+			sameSiteCookie.Secure = true
+		}
 		sameSiteCookieStr := sameSiteCookie.String()
 		sameSiteCookieStr += SameSiteAttribute
 		w.Header().Add("Set-Cookie", sameSiteCookieStr)
+	} else {
+		uidsCookieStr = httpCookie.String()
 	}
-	if cookieStr != "" {
-		w.Header().Add("Set-Cookie", cookieStr)
-	}
-}
-
-// IsBrowserApplicableForSameSite function checks if browser is Chrome and browser version is greater than the minimum version for adding the SameSite attribute
-func IsBrowserApplicableForSameSite(req *http.Request) bool {
-	result := false
-	ua := req.UserAgent()
-
-	index := strings.Index(ua, chromeStr)
-	criOSIndex := strings.Index(ua, chromeiOSStr)
-	if index != -1 {
-		result = checkChromeBrowserVersion(ua, index, chromeStrLen)
-	} else if criOSIndex != -1 {
-		result = checkChromeBrowserVersion(ua, criOSIndex, chromeiOSStrLen)
-	}
-	return result
-}
-
-func checkChromeBrowserVersion(ua string, index int, chromeStrLength int) bool {
-	result := false
-	vIndex := index + chromeStrLength
-	dotIndex := strings.Index(ua[vIndex:], ".")
-	if dotIndex == -1 {
-		dotIndex = len(ua[vIndex:])
-	}
-	version, _ := strconv.Atoi(ua[vIndex : vIndex+dotIndex])
-	if version >= chromeMinVer {
-		result = true
-	}
-	return result
+	w.Header().Add("Set-Cookie", uidsCookieStr)
 }
 
 // Unsync removes the user's ID for the given family from this cookie.

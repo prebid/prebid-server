@@ -22,6 +22,9 @@ type targetData struct {
 	includeBidderKeys bool
 	includeCacheBids  bool
 	includeCacheVast  bool
+	// cacheHost and cachePath exist to supply cache host and path as targeting parameters
+	cacheHost string
+	cachePath string
 }
 
 // setTargeting writes all the targeting params into the bids.
@@ -50,6 +53,14 @@ func (targData *targetData) setTargeting(auc *auction, isApp bool, categoryMappi
 			if vastID, ok := auc.vastCacheIds[topBidPerBidder.bid]; ok {
 				targData.addKeys(targets, openrtb_ext.HbVastCacheKey, vastID, bidderName, isOverallWinner)
 			}
+
+			if targData.cacheHost != "" {
+				targData.addKeys(targets, openrtb_ext.HbConstantCacheHostKey, targData.cacheHost, bidderName, isOverallWinner)
+			}
+			if targData.cachePath != "" {
+				targData.addKeys(targets, openrtb_ext.HbConstantCachePathKey, targData.cachePath, bidderName, isOverallWinner)
+			}
+
 			if deal := topBidPerBidder.bid.DealID; len(deal) > 0 {
 				targData.addKeys(targets, openrtb_ext.HbDealIDConstantKey, deal, bidderName, isOverallWinner)
 			}

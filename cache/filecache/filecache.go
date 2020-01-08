@@ -76,8 +76,7 @@ func New(filename string) (*Cache, error) {
 	}, nil
 }
 
-// Close does nothing
-// TODO: close the file
+// This empty function exists so the Cache struct implements the Cache interface defined in cache/legacy.go
 func (c *Cache) Close() error {
 	return nil
 }

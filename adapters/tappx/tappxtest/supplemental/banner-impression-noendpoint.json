@@ -11,7 +11,7 @@
         "ext": {
           "bidder": {
             "tappxkey": "pub-12345-android-9876",
-            "host": "test.tappx.com/"
+            "host": "test.tappx.com"
           }
         }
       }
@@ -29,7 +29,10 @@
   },
 
   "expectedMakeRequestsErrors": [
-    "Tappx endpoint undefined"
+    {
+      "value": "Tappx endpoint undefined",
+      "comparison": "literal"
+    }
   ]
- 
+  
 }

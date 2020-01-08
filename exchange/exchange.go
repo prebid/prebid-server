@@ -46,6 +46,7 @@ type exchange struct {
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
+	enforceCCPA         bool
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -71,27 +72,28 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
+	e.enforceCCPA = cfg.CCPA.Enforce
 	return e
 }
 
 func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidRequest, usersyncs IdFetcher, labels pbsmetrics.Labels, categoriesFetcher *stored_requests.CategoryFetcher) (*openrtb.BidResponse, error) {
-	// Snapshot of resolved bid request for debug if test request
-	var resolvedRequest json.RawMessage
+	debug := false
+	if bidRequest.Ext != nil {
+		var requestExt openrtb_ext.ExtRequest
+		err := json.Unmarshal(bidRequest.Ext, &requestExt)
+		if err != nil {
+			return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		}
 
-	var requestExt openrtb_ext.ExtRequest
-	err := json.Unmarshal(bidRequest.Ext, &requestExt)
-	if err != nil {
-		return nil, fmt.Errorf("Error decoding Request.ext : %s", err.Error())
+		if requestExt.Prebid.Debug == 1 {
+			debug = true
+		}
 	}
 
-	debug := false
-	if requestExt.Prebid.Debug == 1 {
-		debug = true
-		if r, err := json.Marshal(bidRequest); err != nil {
-			glog.Errorf("Error marshalling bid request for debug: %v", err)
-		} else {
-			resolvedRequest = r
-		}
+	// Snapshot of resolved bid request for debug if test request
+	resolvedRequest, err := buildResolvedRequest(bidRequest, debug)
+	if err != nil {
+		glog.Errorf("Error marshalling bid request for debug: %v", err)
 	}
 
 	for _, impInRequest := range bidRequest.Imp {
@@ -106,22 +108,17 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Slice of BidRequests, each a copy of the original cleaned to only contain bidder data for the named bidder
 	blabels := make(map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels)
-	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous)
+	cleanRequests, aliases, errs := cleanOpenRTBRequests(ctx, bidRequest, usersyncs, blabels, labels, e.gDPR, e.UsersyncIfAmbiguous, e.enforceCCPA)
 
 	// List of bidders we have requests for.
-	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
-	i := 0
-	for a := range cleanRequests {
-		liveAdapters[i] = a
-		i++
-	}
-	// Randomize the list of adapters to make the auction more fair
-	randomizeList(liveAdapters)
+	liveAdapters := listBiddersWithRequests(cleanRequests)
+
 	// Process the request to check for targeting parameters.
 	var targData *targetData
 	shouldCacheBids := false
 	shouldCacheVAST := false
 	var bidAdjustmentFactors map[string]float64
+	var requestExt openrtb_ext.ExtRequest
 	if len(bidRequest.Ext) > 0 {
 		err := json.Unmarshal(bidRequest.Ext, &requestExt)
 		if err != nil {
@@ -138,19 +135,16 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				priceGranularity:  requestExt.Prebid.Targeting.PriceGranularity,
 				includeWinners:    requestExt.Prebid.Targeting.IncludeWinners,
 				includeBidderKeys: requestExt.Prebid.Targeting.IncludeBidderKeys,
+				includeCacheBids:  shouldCacheBids,
+				includeCacheVast:  shouldCacheVAST,
 			}
-			if shouldCacheBids {
-				targData.includeCacheBids = true
-			}
-			if shouldCacheVAST {
-				targData.includeCacheVast = true
-			}
+			targData.cacheHost, targData.cachePath = e.cache.GetExtCacheData()
 		}
 	}
 
 	// If we need to cache bids, then it will take some time to call prebid cache.
 	// We should reduce the amount of time the bidders have, to compensate.
-	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids)
+	auctionCtx, cancel := e.makeAuctionContext(ctx, shouldCacheBids) //Why no context for `shouldCacheVast`?
 	defer cancel()
 
 	// Get currency rates conversions for the auction
@@ -158,13 +152,20 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	adapterBids, adapterExtra, anyBidsReturned := e.getAllBids(auctionCtx, cleanRequests, aliases, bidAdjustmentFactors, blabels, conversions, debug)
 
+	var auc *auction = nil
 	if anyBidsReturned {
-		bidCategory, adapterBids, err := applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
-		if err != nil {
-			return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+
+		var bidCategory map[string]string
+		//If includebrandcategory is present in ext then CE feature is on.
+		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
+			var err error
+			bidCategory, adapterBids, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			if err != nil {
+				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+			}
 		}
 
-		auc := newAuction(adapterBids, len(bidRequest.Imp))
+		auc = newAuction(adapterBids, len(bidRequest.Imp))
 
 		if targData != nil {
 			auc.setRoundedPrices(targData.priceGranularity)
@@ -177,7 +178,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	}
 
 	// Build the response
-	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, debug, errs)
+	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, debug, errs)
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
@@ -319,7 +320,7 @@ func errsToBidderErrors(errs []error) []openrtb_ext.ExtBidderError {
 }
 
 // This piece takes all the bids supplied by the adapters and crafts an openRTB response to send back to the requester
-func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, debug bool, errList []error) (*openrtb.BidResponse, error) {
+func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_ext.BidderName, adapterBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, bidRequest *openrtb.BidRequest, resolvedRequest json.RawMessage, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction, debug bool, errList []error) (*openrtb.BidResponse, error) {
 	bidResponse := new(openrtb.BidResponse)
 
 	bidResponse.ID = bidRequest.ID
@@ -334,7 +335,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	for _, a := range liveAdapters {
 		//while processing every single bib, do we need to handle categories here?
 		if adapterBids[a] != nil && len(adapterBids[a].bids) > 0 {
-			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra)
+			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auc)
 			seatBids = append(seatBids, *sb)
 		}
 	}
@@ -362,24 +363,30 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
-	//If includebrandcategory is present in ext then CE feature is on.
-	if requestExt.Prebid.Targeting == nil {
-		return res, seatBids, nil
-	}
 	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
-	if brandCatExt == (openrtb_ext.ExtIncludeBrandCategory{}) {
-		return res, seatBids, nil //if not present continue the existing processing without CE.
-	}
+	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
 
-	//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
-	primaryAdServer, err := getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
-	if err != nil {
-		return res, seatBids, err
-	}
+	var primaryAdServer string
+	var publisher string
+	var err error
+	var translateCategories = true
 
-	publisher := brandCatExt.Publisher
+	if includeBrandCategory && brandCatExt.WithCategory {
+		if brandCatExt.TranslateCategories != nil {
+			translateCategories = *brandCatExt.TranslateCategories
+		}
+		//if translateCategories is set to false, ignore checking primaryAdServer and publisher
+		if translateCategories {
+			//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
+			primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
+			if err != nil {
+				return res, seatBids, err
+			}
+			publisher = brandCatExt.Publisher
+		}
+	}
 
 	seatBidsToRemove := make([]openrtb_ext.BidderName, 0)
 
@@ -395,15 +402,15 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				duration = bid.bidVideo.Duration
 				category = bid.bidVideo.PrimaryCategory
 			}
-
-			if category == "" {
+			if brandCatExt.WithCategory && category == "" {
 				bidIabCat := bid.bid.Cat
 				if len(bidIabCat) != 1 {
 					//TODO: add metrics
 					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
 					continue
-				} else {
+				}
+				if translateCategories {
 					//if unique IAB category is present then translate it to the adserver category based on mapping file
 					category, err = categoriesFetcher.FetchCategories(ctx, primaryAdServer, publisher, bidIabCat[0])
 					if err != nil || category == "" {
@@ -412,6 +419,9 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 						bidsToRemove = append(bidsToRemove, bidInd)
 						continue
 					}
+				} else {
+					//category translation is disabled, continue with IAB category
+					category = bidIabCat[0]
 				}
 			}
 
@@ -436,7 +446,12 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				}
 			}
 
-			categoryDuration := fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			var categoryDuration string
+			if brandCatExt.WithCategory {
+				categoryDuration = fmt.Sprintf("%s_%s_%ds", pb, category, newDur)
+			} else {
+				categoryDuration = fmt.Sprintf("%s_%ds", pb, newDur)
+			}
 
 			if dupe, ok := dedupe[categoryDuration]; ok {
 				// 50% chance for either bid with duplicate categoryDuration values to be kept
@@ -545,7 +560,7 @@ func (e *exchange) makeExtBidResponse(adapterBids map[openrtb_ext.BidderName]*pb
 
 // Return an openrtb seatBid for a bidder
 // BuildBidResponse is responsible for ensuring nil bid seatbids are not included
-func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra) *openrtb.SeatBid {
+func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.BidderName, adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra, auc *auction) *openrtb.SeatBid {
 	seatBid := new(openrtb.SeatBid)
 	seatBid.Seat = adapter.String()
 	// Prebid cannot support roadblocking
@@ -568,7 +583,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 	}
 
 	var errList []error
-	seatBid.Bid, errList = e.makeBid(adapterBid.bids, adapter)
+	seatBid.Bid, errList = e.makeBid(adapterBid.bids, adapter, auc)
 	if len(errList) > 0 {
 		adapterExtra[adapter].Errors = append(adapterExtra[adapter].Errors, errsToBidderErrors(errList)...)
 	}
@@ -577,7 +592,7 @@ func (e *exchange) makeSeatBid(adapterBid *pbsOrtbSeatBid, adapter openrtb_ext.B
 }
 
 // Create the Bid array inside of SeatBid
-func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) ([]openrtb.Bid, []error) {
+func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName, auc *auction) ([]openrtb.Bid, []error) {
 	bids := make([]openrtb.Bid, 0, len(Bids))
 	errList := make([]error, 0, 1)
 	for _, thisBid := range Bids {
@@ -589,7 +604,11 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 				Video:     thisBid.bidVideo,
 			},
 		}
-
+		if cacheInfo, found := e.getBidCacheInfo(thisBid, auc); found {
+			bidExt.Prebid.Cache = &openrtb_ext.ExtBidPrebidCache{
+				Bids: &cacheInfo,
+			}
+		}
 		ext, err := json.Marshal(bidExt)
 		if err != nil {
 			errList = append(errList, err)
@@ -599,4 +618,47 @@ func (e *exchange) makeBid(Bids []*pbsOrtbBid, adapter openrtb_ext.BidderName) (
 		}
 	}
 	return bids, errList
+}
+
+// If bid got cached inside `(a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client, targData *targetData, bidRequest *openrtb.BidRequest, ttlBuffer int64, defaultTTLs *config.DefaultTTLs, bidCategory map[string]string)`,
+// a UUID should be found inside `a.cacheIds` or `a.vastCacheIds`. This function returns the UUID along with the internal cache URL
+func (e *exchange) getBidCacheInfo(bid *pbsOrtbBid, auc *auction) (openrtb_ext.ExtBidPrebidCacheBids, bool) {
+	var cacheInfo openrtb_ext.ExtBidPrebidCacheBids
+	var cacheUUID string
+	var found bool = false
+
+	if auc != nil {
+		var extCacheHost, extCachePath string
+		if cacheUUID, found = auc.cacheIds[bid.bid]; found {
+			cacheInfo.CacheId = cacheUUID
+			extCacheHost, extCachePath = e.cache.GetExtCacheData()
+			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
+		} else if cacheUUID, found = auc.vastCacheIds[bid.bid]; found {
+			cacheInfo.CacheId = cacheUUID
+			extCacheHost, extCachePath = e.cache.GetExtCacheData()
+			cacheInfo.Url = extCacheHost + extCachePath + "?uuid=" + cacheUUID
+		}
+	}
+	return cacheInfo, found
+}
+
+// Returns a snapshot of resolved bid request for debug if test field is set in the incomming request
+func buildResolvedRequest(bidRequest *openrtb.BidRequest, debug bool) (json.RawMessage, error) {
+	if debug {
+		return json.Marshal(bidRequest)
+	}
+	return nil, nil
+}
+
+func listBiddersWithRequests(cleanRequests map[openrtb_ext.BidderName]*openrtb.BidRequest) []openrtb_ext.BidderName {
+	liveAdapters := make([]openrtb_ext.BidderName, len(cleanRequests))
+	i := 0
+	for a := range cleanRequests {
+		liveAdapters[i] = a
+		i++
+	}
+	// Randomize the list of adapters to make the auction more fair
+	randomizeList(liveAdapters)
+
+	return liveAdapters
 }

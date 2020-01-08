@@ -68,21 +68,25 @@ func testGetBidders(t *testing.T, aliases map[string]string) {
 func TestGetSpecificBidders(t *testing.T) {
 	// Setup:
 	testCases := []struct {
-		bidderDisabled bool
-		description    string
+		status      adapters.BidderStatus
+		description string
 	}{
 		{
-			bidderDisabled: false,
-			description:    "case 1 - bidder status is active",
+			status:      adapters.StatusActive,
+			description: "case 1 - bidder status is active",
 		},
 		{
-			bidderDisabled: true,
-			description:    "case 2 - bidder status is disabled",
+			status:      adapters.StatusDisabled,
+			description: "case 2 - bidder status is disabled",
 		},
 	}
 
 	for _, tc := range testCases {
-		cfg := blankAdapterConfigWithStatus(openrtb_ext.BidderList(), tc.bidderDisabled)
+		bidderDisabled := false
+		if tc.status == adapters.StatusDisabled {
+			bidderDisabled = true
+		}
+		cfg := blankAdapterConfigWithStatus(openrtb_ext.BidderList(), bidderDisabled)
 		bidderInfos := adapters.ParseBidderInfos(cfg, "../../static/bidder-info", openrtb_ext.BidderList())
 		endpoint := info.NewBidderDetailsEndpoint(bidderInfos, map[string]string{})
 
@@ -110,13 +114,7 @@ func TestGetSpecificBidders(t *testing.T) {
 				assert.FailNow(t, "Failed to unmarshal JSON from endpoints/info/bidders/%s: %v", bidderName, err, tc.description)
 			}
 
-			var expectedBidderStatus adapters.BidderStatus
-			if tc.bidderDisabled {
-				expectedBidderStatus = adapters.StatusDisabled
-			} else {
-				expectedBidderStatus = adapters.StatusActive
-			}
-			assert.Equal(t, expectedBidderStatus, resBidderInfo.Status, tc.description)
+			assert.Equal(t, tc.status, resBidderInfo.Status, tc.description)
 		}
 	}
 }

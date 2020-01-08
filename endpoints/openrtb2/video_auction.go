@@ -75,7 +75,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		Source:        pbsmetrics.DemandUnknown,
 		RType:         pbsmetrics.ReqTypeVideo,
 		PubID:         pbsmetrics.PublisherUnknown,
-		Browser:       pbsmetrics.BrowserOther,
+		Browser:       getBrowserName(r),
 		CookieFlag:    pbsmetrics.CookieFlagUnknown,
 		RequestStatus: pbsmetrics.RequestStatusOK,
 	}
@@ -85,19 +85,13 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		deps.analytics.LogAuctionObject(&ao)
 	}()
 
-	isSafari := checkSafari(r)
-	if isSafari {
-		labels.Browser = pbsmetrics.BrowserSafari
-	}
-
 	lr := &io.LimitedReader{
 		R: r.Body,
 		N: deps.cfg.MaxRequestSize,
 	}
 	requestJson, err := ioutil.ReadAll(lr)
 	if err != nil {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, []error{err}, &ao)
 		return
 	}
 
@@ -106,30 +100,29 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//load additional data - stored simplified req
 	storedRequestId, err := getVideoStoredRequestId(requestJson)
 
-	if err != nil && deps.cfg.VideoStoredRequestRequired {
-		errL := []error{err}
-		handleError(labels, w, errL, ao)
-		return
-	}
-	if err == nil {
+	if err != nil {
+		if deps.cfg.VideoStoredRequestRequired {
+			handleError(&labels, w, []error{err}, &ao)
+			return
+		}
+	} else {
 		storedRequest, errs := deps.loadStoredVideoRequest(context.Background(), storedRequestId)
 		if len(errs) > 0 {
-			handleError(labels, w, errs, ao)
+			handleError(&labels, w, errs, &ao)
 			return
 		}
 
 		//merge incoming req with stored video req
 		resolvedRequest, err = jsonpatch.MergePatch(storedRequest, requestJson)
 		if err != nil {
-			errL := []error{err}
-			handleError(labels, w, errL, ao)
+			handleError(&labels, w, []error{err}, &ao)
 			return
 		}
 	}
 	//unmarshal and validate combined result
 	videoBidReq, errL, podErrors := deps.parseVideoRequest(resolvedRequest)
 	if len(errL) > 0 {
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, errL, &ao)
 		return
 	}
 
@@ -137,7 +130,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	if deps.defaultRequest {
 		if err := json.Unmarshal(deps.defReqJSON, bidReq); err != nil {
 			err = fmt.Errorf("Invalid JSON in Default Request Settings: %s", err)
-			errL = []error{err}
+			handleError(&labels, w, []error{err}, &ao)
 			return
 		}
 	}
@@ -161,7 +154,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		err := errors.New(fmt.Sprintf("all pods are incorrect: %s", strings.Join(resPodErr, "; ")))
 		errL = append(errL, err)
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, errL, &ao)
 		return
 	}
 
@@ -173,7 +166,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 
 	errL = deps.validateRequest(bidReq)
 	if len(errL) > 0 {
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, errL, &ao)
 		return
 	}
 
@@ -198,10 +191,11 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 		}
 		labels.PubID = effectivePubID(bidReq.Site.Publisher)
 	}
-	// Blacklist account now that we have resolved the value
-	if _, found := deps.cfg.BlacklistedAcctMap[labels.PubID]; found {
-		errL := []error{&errortypes.BlacklistedAcct{Message: fmt.Sprintf("Prebid-server has blacklisted Account ID: %s, pleaase reach out to the prebid server host.", labels.PubID)}}
-		handleError(labels, w, errL, ao)
+
+	if acctIdErr := validateAccount(deps.cfg, labels.PubID); acctIdErr != nil {
+		errL = append(errL, acctIdErr)
+		handleError(&labels, w, errL, &ao)
+		return
 	}
 	//execute auction logic
 	response, err := deps.ex.HoldAuction(ctx, bidReq, usersyncs, labels, &deps.categories)
@@ -209,7 +203,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	ao.Response = response
 	if err != nil {
 		errL := []error{err}
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, errL, &ao)
 		return
 	}
 
@@ -217,7 +211,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	bidResp, err := buildVideoResponse(response, podErrors)
 	if err != nil {
 		errL := []error{err}
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, errL, &ao)
 		return
 	}
 	if bidReq.Test == 1 {
@@ -228,7 +222,7 @@ func (deps *endpointDeps) VideoAuctionEndpoint(w http.ResponseWriter, r *http.Re
 	//resp, err := json.Marshal(response)
 	if err != nil {
 		errL := []error{err}
-		handleError(labels, w, errL, ao)
+		handleError(&labels, w, errL, &ao)
 		return
 	}
 
@@ -244,24 +238,25 @@ func cleanupVideoBidRequest(videoReq *openrtb_ext.BidRequestVideo, podErrors []P
 	return videoReq
 }
 
-func handleError(labels pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao analytics.AuctionObject) {
+func handleError(labels *pbsmetrics.Labels, w http.ResponseWriter, errL []error, ao *analytics.AuctionObject) {
 	labels.RequestStatus = pbsmetrics.RequestStatusErr
 	var errors string
-	var foundBlacklisted bool = false
+	var status int = http.StatusInternalServerError
 	for _, er := range errL {
 		erVal := errortypes.DecodeError(er)
 		if erVal == errortypes.BlacklistedAppCode || erVal == errortypes.BlacklistedAcctCode {
-			foundBlacklisted = true
+			status = http.StatusServiceUnavailable
+			labels.RequestStatus = pbsmetrics.RequestStatusBlacklisted
+			break
+		} else if erVal == errortypes.AcctRequiredCode {
+			status = http.StatusBadRequest
+			labels.RequestStatus = pbsmetrics.RequestStatusBadInput
+			break
 		}
 		errors = fmt.Sprintf("%s %s", errors, er.Error())
 	}
-	if foundBlacklisted {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		ao.Status = http.StatusServiceUnavailable
-	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		ao.Status = http.StatusInternalServerError
-	}
+	w.WriteHeader(status)
+	ao.Status = status
 	fmt.Fprintf(w, "Critical error while running the video endpoint: %v", errors)
 	glog.Errorf("/openrtb2/video Critical error: %v", errors)
 	ao.Errors = append(ao.Errors, errL...)
@@ -505,15 +500,29 @@ func mergeData(videoRequest *openrtb_ext.BidRequestVideo, bidRequest *openrtb.Bi
 		bidRequest.TMax = videoRequest.TMax
 	}
 
+	if videoRequest.Regs != nil {
+		bidRequest.Regs = videoRequest.Regs
+	}
+
 	return nil
 }
 
 func createBidExtension(videoRequest *openrtb_ext.BidRequestVideo) ([]byte, error) {
 
-	inclBrandCat := openrtb_ext.ExtIncludeBrandCategory{
-		PrimaryAdServer: videoRequest.IncludeBrandCategory.PrimaryAdserver,
-		Publisher:       videoRequest.IncludeBrandCategory.Publisher,
+	var inclBrandCat *openrtb_ext.ExtIncludeBrandCategory
+	if videoRequest.IncludeBrandCategory != nil {
+		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
+			PrimaryAdServer:     videoRequest.IncludeBrandCategory.PrimaryAdserver,
+			Publisher:           videoRequest.IncludeBrandCategory.Publisher,
+			WithCategory:        true,
+			TranslateCategories: videoRequest.IncludeBrandCategory.TranslateCategories,
+		}
+	} else {
+		inclBrandCat = &openrtb_ext.ExtIncludeBrandCategory{
+			WithCategory: false,
+		}
 	}
+
 	var durationRangeSec []int
 	if !videoRequest.PodConfig.RequireExactDuration {
 		durationRangeSec = videoRequest.PodConfig.DurationRangeSec

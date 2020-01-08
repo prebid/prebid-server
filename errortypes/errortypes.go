@@ -11,6 +11,8 @@ const (
 	FailedToRequestBidsCode
 	BidderTemporarilyDisabledCode
 	BlacklistedAcctCode
+	AcctRequiredCode
+	WarningCode
 	BidderFailedSchemaValidationCode
 )
 
@@ -86,6 +88,22 @@ func (err *BlacklistedAcct) Code() int {
 	return BlacklistedAcctCode
 }
 
+// AcctRequired should be used when the environment variable ACCOUNT_REQUIRED has been set to not
+// process requests that don't come with a valid account ID
+//
+// These errors will be written to  http.ResponseWriter before canceling execution
+type AcctRequired struct {
+	Message string
+}
+
+func (err *AcctRequired) Error() string {
+	return err.Message
+}
+
+func (err *AcctRequired) Code() int {
+	return AcctRequiredCode
+}
+
 // BadServerResponse should be used when returning errors which are caused by bad/unexpected behavior on the remote server.
 //
 // For example:
@@ -137,6 +155,20 @@ func (err *BidderTemporarilyDisabled) Error() string {
 
 func (err *BidderTemporarilyDisabled) Code() int {
 	return BidderTemporarilyDisabledCode
+}
+
+// Warning is a generic warning type, not a serious error
+type Warning struct {
+	Message string
+}
+
+func (err *Warning) Error() string {
+	return err.Message
+}
+
+// Code returns the error code
+func (err *Warning) Code() int {
+	return WarningCode
 }
 
 // BidderFailedSchemaValidation is used at the request validation step,

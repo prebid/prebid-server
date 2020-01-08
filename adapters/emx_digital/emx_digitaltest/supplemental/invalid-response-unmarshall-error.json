@@ -54,5 +54,10 @@
           }
     }],
 
-    "expectedMakeBidsErrors": ["Unable to unpackage bid response. Error: json: cannot unmarshal string into Go struct field Bid.w of type uint64"]
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Unable to unpackage bid response\\. Error: json: cannot unmarshal string into Go struct field (Bid\\.seatbid\\.bid\\.w|Bid\\.w) of type uint64",
+            "comparison": "regex"
+        }
+    ]
 }
