@@ -56,7 +56,7 @@ func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 
 func preprocess(request *openrtb.BidRequest) error {
 	for i := 0; i < len(request.Imp); i++ {
-		var imp = request.Imp[i]
+		var imp = &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
 
 		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
@@ -65,7 +65,7 @@ func preprocess(request *openrtb.BidRequest) error {
 			}
 		}
 
-		if err := validateImp(&request.Imp[i]); err != nil {
+		if err := validateImp(imp); err != nil {
 			return err
 		}
 
@@ -76,7 +76,7 @@ func preprocess(request *openrtb.BidRequest) error {
 			}
 		}
 
-		request.Imp[i].Ext = bidderExt.Bidder
+		imp.Ext = bidderExt.Bidder
 	}
 
 	return nil
