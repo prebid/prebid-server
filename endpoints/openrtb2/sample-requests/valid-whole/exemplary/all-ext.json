@@ -18,7 +18,8 @@
     },
     "regs": {
       "ext": {
-        "gdpr": 1
+        "gdpr": 1,
+        "us_privacy": "1NYN"
       }
     },
     "imp": [

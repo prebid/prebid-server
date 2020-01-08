@@ -1,0 +1,133 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [{
+			"id": "test-impression-id-1",
+			"banner": {}
+		}, {
+			"id": "test-impression-id-2",
+			"banner": {
+				"w": 300,
+				"h": 250
+			}
+		}, {
+			"id": "test-impression-id-3",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": {}
+		}, {
+			"id": "test-impression-id-4"
+		}, {
+			"id": "test-impression-id-5",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": {
+				"bidder": {
+					"token": "test-token-5"
+				}
+			}
+		}, {
+			"id": "test-impression-id-0",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": {
+				"bidder": "invalid bidder"
+			}
+		}, {
+			"id": "test-impression-id-0",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": {
+				"bidder": {}
+			}
+		}, {
+			"id": "test-impression-id-0",
+			"banner": {
+				"w": 300,
+				"h": 250
+			},
+			"ext": "invalid ext"
+		}]
+	},
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "http://example.com/prebid/test-token-5",
+			"body": {
+				"id": "test-request-id",
+				"imp": [{
+					"id": "test-impression-id-5",
+					"banner": {
+						"h": 250,
+						"w": 300
+					},
+					"ext": {
+						"bidder": {
+							"token": "test-token-5"
+						}
+					}
+				}]
+			}
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": {
+				"id": "test-response-id",
+				"seatbid": [{
+					"bid": [{
+						"id": "test-bid-id-5",
+						"impid": "test-impression-id-5",
+						"price": 5
+					}, {
+						"id": "test-bid-id-6",
+						"impid": "test-impression-id-6",
+						"price": 6
+					}]
+				}]
+			}
+		}
+	}],
+	"expectedBidResponses": [{
+		"bids": [{
+			"bid": {
+				"id": "test-bid-id-5",
+				"impid": "test-impression-id-5",
+				"price": 5
+			},
+			"type": "banner"
+		}]
+	}],
+	"expectedMakeRequestsErrors": [{
+		"value": "banner size information missing",
+		"comparison": "literal"
+	}, {
+		"value": "impression extensions required",
+		"comparison": "literal"
+	}, {
+		"value": "bidder required",
+		"comparison": "literal"
+	}, {
+		"value": "Applogy only supports banner, video or native ads",
+		"comparison": "literal"
+	}, {
+		"value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpApplogy",
+		"comparison": "literal"
+	}, {
+		"value": "Applogy token required",
+		"comparison": "literal"
+	}, {
+		"value": "json: cannot unmarshal string into Go value of type adapters.ExtImpBidder",
+		"comparison": "literal"
+	}],
+	"expectedMakeBidsErrors": [{
+		"value": "ignoring bid id=test-bid-id-6, request doesn't contain any valid impression with id=test-impression-id-6",
+		"comparison": "literal"
+	}]
+}

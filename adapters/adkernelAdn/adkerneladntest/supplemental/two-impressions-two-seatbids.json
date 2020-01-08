@@ -97,5 +97,10 @@
     }
   ],
 
-  "expectedMakeBidsErrors": ["Invalid SeatBids count: 2"]
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Invalid SeatBids count: 2",
+      "comparison": "literal"
+    }
+  ]
 }

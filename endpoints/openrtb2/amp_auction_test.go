@@ -41,7 +41,7 @@ func TestGoodAmpRequests(t *testing.T) {
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
@@ -93,7 +93,7 @@ func TestAMPPageInfo(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -137,7 +137,7 @@ func TestConsentThroughEndpoint(t *testing.T) {
 		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -200,7 +200,7 @@ func TestConsentThroughEndpointNilUser(t *testing.T) {
 		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -260,7 +260,7 @@ func TestConsentThroughEndpointNilUserExt(t *testing.T) {
 		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -320,7 +320,7 @@ func TestSubstituteRequestConsentWithEndpointConsent(t *testing.T) {
 		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -380,7 +380,7 @@ func TestDontSubstituteRequestConsentWithBlankEndpointConsent(t *testing.T) {
 		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -435,7 +435,7 @@ func TestDontSubstituteRequestConsentNoEndpointConsent(t *testing.T) {
 		"1": json.RawMessage(fullMarshaledBidRequest),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 
 	endpoint, _ := NewAmpEndpoint(
@@ -479,7 +479,7 @@ func TestAMPSiteExt(t *testing.T) {
 	stored := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	exchange := &mockAmpExchange{}
 	endpoint, _ := NewAmpEndpoint(
 		exchange,
@@ -519,7 +519,7 @@ func TestAmpBadRequests(t *testing.T) {
 
 	// NewMetrics() will create a new go_metrics MetricsEngine, bypassing the need for a crafted configuration set to support it.
 	// As a side effect this gives us some coverage of the go_metrics piece of the metrics engine.
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
@@ -551,7 +551,7 @@ func TestAmpDebug(t *testing.T) {
 		"2": json.RawMessage(validRequest(t, "site.json")),
 	}
 
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),
@@ -623,7 +623,7 @@ func TestQueryParamOverrides(t *testing.T) {
 	requests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
@@ -739,6 +739,102 @@ func TestWidthOnly(t *testing.T) {
 	}.execute(t)
 }
 
+func TestCCPAPresent(t *testing.T) {
+	req, err := getTestBidRequest(false, false, "", "digitrustId")
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	reqStored := map[string]json.RawMessage{
+		"1": json.RawMessage(req),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{reqStored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+
+	usPrivacy := "1YYN"
+	httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1&us_privacy="+usPrivacy, nil)
+	httpRecorder := httptest.NewRecorder()
+	endpoint(httpRecorder, httpReq, nil)
+
+	// Assert our bidRequest was valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", httpRecorder.Code, httpRecorder.Body.String()) {
+		return
+	}
+	// Assert our bidRequest had a valid "Regs" field
+	if !assert.NotNil(t, exchange.lastRequest.Regs) {
+		return
+	}
+	// Assert our bidRequest had a valid "Regs.Ext" field
+	if !assert.NotNil(t, exchange.lastRequest.Regs.Ext) {
+		return
+	}
+
+	var regs openrtb_ext.ExtRegs
+	err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
+	assert.NoError(t, err)
+	assert.Equal(t, usPrivacy, regs.USPrivacy)
+}
+
+func TestCCPANotPresent(t *testing.T) {
+	req, err := getTestBidRequest(false, false, "", "digitrustId")
+	if err != nil {
+		t.Fatalf("Failed to marshal the complete openrtb.BidRequest object %v", err)
+	}
+
+	reqStored := map[string]json.RawMessage{
+		"1": json.RawMessage(req),
+	}
+
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
+
+	exchange := &mockAmpExchange{}
+
+	endpoint, _ := NewAmpEndpoint(
+		exchange,
+		newParamsValidator(t),
+		&mockAmpStoredReqFetcher{reqStored},
+		empty_fetcher.EmptyFetcher{},
+		&config.Configuration{MaxRequestSize: maxSize},
+		theMetrics,
+		analyticsConf.NewPBSAnalytics(&config.Analytics{}),
+		map[string]string{},
+		[]byte{},
+		openrtb_ext.BidderMap,
+	)
+
+	httpReq := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id=1", nil)
+	httpRecorder := httptest.NewRecorder()
+	endpoint(httpRecorder, httpReq, nil)
+
+	// Assert our bidRequest was valid
+	if !assert.NotNil(t, exchange.lastRequest, "Endpoint responded with %d: %s", httpRecorder.Code, httpRecorder.Body.String()) {
+		return
+	}
+
+	// Assert CCPA Signal Not Found
+	if exchange.lastRequest.Regs != nil && exchange.lastRequest.Regs.Ext != nil {
+		var regs openrtb_ext.ExtRegs
+		err = json.Unmarshal(exchange.lastRequest.Regs.Ext, &regs)
+		assert.NoError(t, err)
+		assert.Empty(t, regs.USPrivacy)
+	}
+}
+
 type formatOverrideSpec struct {
 	width          uint64
 	height         uint64
@@ -752,7 +848,7 @@ func (s formatOverrideSpec) execute(t *testing.T) {
 	requests := map[string]json.RawMessage{
 		"1": json.RawMessage(validRequest(t, "site.json")),
 	}
-	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList())
+	theMetrics := pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{})
 	endpoint, _ := NewAmpEndpoint(
 		&mockAmpExchange{},
 		newParamsValidator(t),

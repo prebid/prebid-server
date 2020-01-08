@@ -1,0 +1,67 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatId": "1927"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://1927.technoratimedia.com/openrtb/bids/1927",
+        "body": {
+          "id": "test-request-id",
+          "ext": {
+            "seatId": "1927"
+          },
+          "imp": [
+            {
+              "id":"test-imp-id",
+              "banner": {
+                "format": [
+                  {"w":300,"h":250},
+                  {"w":300,"h":600}
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "seatId": "1927"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

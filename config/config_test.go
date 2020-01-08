@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"encoding/json"
+
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -30,6 +32,8 @@ func TestDefaults(t *testing.T) {
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
 	cmpInts(t, "metrics.influxdb.collection_rate_seconds", cfg.Metrics.Influxdb.MetricSendInterval, 20)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, false)
+	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "")
 }
 
 var fullConfig = []byte(`
@@ -37,6 +41,8 @@ gdpr:
   host_vendor_id: 15
   usersync_if_ambiguous: true
   non_standard_publishers: ["siteID","fake-site-id","appID","agltb3B1Yi1pbmNyDAsSA0FwcBiJkfIUDA"]
+ccpa:
+  enforce: true
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -55,6 +61,9 @@ cache:
   scheme: http
   host: prebidcache.net
   query: uuid=%PBS_CACHE_UUID%
+external_cache:
+  host: www.externalprebidcache.net
+  path: endpoints/cache
 http_client:
   max_idle_connections: 500
   max_idle_connections_per_host: 20
@@ -70,6 +79,8 @@ metrics:
     username: admin
     password: admin1324
     metric_send_interval: 30
+  disabled_metrics:
+    account_adapter_details: true
 datacache:
   type: postgres
   filename: /usr/db/db.db
@@ -78,6 +89,42 @@ datacache:
 adapters:
   appnexus:
     endpoint: http://ib.adnxs.com/some/endpoint
+    extra_info: "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}"
+  audienceNetwork:
+    endpoint: http://facebook.com/pbs
+    usersync_url: http://facebook.com/ortb/prebid-s2s
+    platform_id: abcdefgh1234
+    app_secret: 987abc
+  ix:
+    endpoint: http://ixtest.com/api
+  rubicon:
+    endpoint: http://rubitest.com/api
+    usersync_url: http://pixel.rubiconproject.com/sync.php?p=prebid
+    xapi:
+      username: rubiuser
+      password: rubipw23
+  brightroll:
+    usersync_url: http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url=%s
+    endpoint: http://test-bid.ybp.yahoo.com/bid/appnexuspbs
+  adkerneladn:
+     usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
+blacklisted_apps: ["spamAppID","sketchy-app-id"]
+account_required: true
+certificates_file: /etc/ssl/cert.pem
+`)
+
+var adapterExtraInfoConfig = []byte(`
+adapters:
+  appnexus:
+    endpoint: http://ib.adnxs.com/some/endpoint
+    usersync_url: http://adnxs.com/sync.php?p=prebid
+    platform_id: appNexus
+    xapi:
+      username: appuser
+      password: 123456
+      tracker: anxsTrack
+    disabled: true
+    extra_info: "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}"
   audienceNetwork:
     endpoint: http://facebook.com/pbs
     usersync_url: http://facebook.com/ortb/prebid-s2s
@@ -96,7 +143,6 @@ adapters:
   adkerneladn:
      usersync_url: https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=
 blacklisted_apps: ["spamAppID","sketchy-app-id"]
-account_required: true
 `)
 
 var invalidAdapterEndpointConfig = []byte(`
@@ -163,6 +209,8 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cache.scheme", cfg.CacheURL.Scheme, "http")
 	cmpStrings(t, "cache.host", cfg.CacheURL.Host, "prebidcache.net")
 	cmpStrings(t, "cache.query", cfg.CacheURL.Query, "uuid=%PBS_CACHE_UUID%")
+	cmpStrings(t, "external_cache.host", cfg.ExtCacheURL.Host, "www.externalprebidcache.net")
+	cmpStrings(t, "external_cache.path", cfg.ExtCacheURL.Path, "endpoints/cache")
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
@@ -183,6 +231,8 @@ func TestFullConfig(t *testing.T) {
 	}
 	_, found = cfg.GDPR.NonStandardPublisherMap["appnexus"]
 	cmpBools(t, "cfg.GDPR.NonStandardPublisherMap", found, false)
+
+	cmpBools(t, "ccpa.enforce", cfg.CCPA.Enforce, true)
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "blacklisted_apps", cfg.BlacklistedApps[0], "spamAppID")
@@ -208,20 +258,56 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "", cfg.CacheURL.GetBaseURL(), "http://prebidcache.net")
 	cmpStrings(t, "", cfg.GetCachedAssetURL("a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11"), "http://prebidcache.net/cache?uuid=a0eebc99-9c0b-4ef8-bb00-6bb9bd380a11")
 	cmpStrings(t, "adapters.appnexus.endpoint", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].Endpoint, "http://ib.adnxs.com/some/endpoint")
+	cmpStrings(t, "adapters.appnexus.extra_info", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "{\"native\":\"http://www.native.org/endpoint\",\"video\":\"http://www.video.org/endpoint\"}")
 	cmpStrings(t, "adapters.audiencenetwork.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].Endpoint, "http://facebook.com/pbs")
 	cmpStrings(t, "adapters.audiencenetwork.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].UserSyncURL, "http://facebook.com/ortb/prebid-s2s")
 	cmpStrings(t, "adapters.audiencenetwork.platform_id", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].PlatformID, "abcdefgh1234")
+	cmpStrings(t, "adapters.audiencenetwork.app_secret", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderFacebook))].AppSecret, "987abc")
 	cmpStrings(t, "adapters.ix.endpoint", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderIx))].Endpoint, "http://ixtest.com/api")
 	cmpStrings(t, "adapters.rubicon.endpoint", cfg.Adapters[string(openrtb_ext.BidderRubicon)].Endpoint, "http://rubitest.com/api")
 	cmpStrings(t, "adapters.rubicon.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRubicon)].UserSyncURL, "http://pixel.rubiconproject.com/sync.php?p=prebid")
 	cmpStrings(t, "adapters.rubicon.xapi.username", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Username, "rubiuser")
 	cmpStrings(t, "adapters.rubicon.xapi.password", cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Password, "rubipw23")
 	cmpStrings(t, "adapters.brightroll.endpoint", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].Endpoint, "http://test-bid.ybp.yahoo.com/bid/appnexuspbs")
-	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&url=%s")
+	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url=%s")
 	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
 	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
+	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
+	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
+}
+
+func TestUnmarshalAdapterExtraInfo(t *testing.T) {
+	v := viper.New()
+	SetupViper(v, "")
+	v.SetConfigType("yaml")
+	v.ReadConfig(bytes.NewBuffer(adapterExtraInfoConfig))
+	cfg, err := New(v)
+
+	// Assert correctly unmarshaled
+	assert.NoError(t, err, "invalid endpoint in config should return an error")
+
+	// Unescape quotes of JSON-formatted string
+	strings.Replace(cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "\\\"", "\"", -1)
+
+	// Assert JSON-formatted string
+	assert.JSONEqf(t, `{"native":"http://www.native.org/endpoint","video":"http://www.video.org/endpoint"}`, cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, "Unexpected value of the ExtraAdapterInfo String \n")
+
+	// Data type where we'll unmarshal endpoint values and adapter custom extra information
+	type AppNexusAdapterEndpoints struct {
+		NativeEndpoint string `json:"native,omitempty"`
+		VideoEndpoint  string `json:"video,omitempty"`
+	}
+	var AppNexusAdapterExtraInfo AppNexusAdapterEndpoints
+	err = json.Unmarshal([]byte(cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo), &AppNexusAdapterExtraInfo)
+
+	// Assert correctly unmarshaled
+	assert.NoErrorf(t, err, "Error. Could not unmarshal cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo. Value: %s. Error: %v \n", cfg.Adapters[string(openrtb_ext.BidderAppnexus)].ExtraAdapterInfo, err)
+
+	// Assert endpoint values
+	assert.Equal(t, "http://www.native.org/endpoint", AppNexusAdapterExtraInfo.NativeEndpoint)
+	assert.Equal(t, "http://www.video.org/endpoint", AppNexusAdapterExtraInfo.VideoEndpoint)
 }
 
 func TestValidConfig(t *testing.T) {
