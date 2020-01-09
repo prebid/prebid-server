@@ -1,0 +1,164 @@
+{
+	"mockBidRequest": {
+		"id": "test-request-id",
+		"imp": [{
+			"id": "test-impression-id-1",
+			"native": {
+				"request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+				"ver": "1.1"
+			},
+			"ext": {
+				"bidder": {
+					"token": "test-token-1"
+				}
+			}
+		}, {
+			"id": "test-impression-id-2",
+			"native": {
+				"request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+				"ver": "1.1"
+			},
+			"ext": {
+				"bidder": {
+					"token": "test-token-1"
+				}
+			}
+		}, {
+			"id": "test-impression-id-3",
+			"native": {
+				"request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+				"ver": "1.1"
+			},
+			"ext": {
+				"bidder": {
+					"token": "test-token-2"
+				}
+			}
+		}]
+	},
+	"httpCalls": [{
+		"expectedRequest": {
+			"uri": "http://example.com/prebid/test-token-1",
+			"body": {
+				"id": "test-request-id",
+				"imp": [{
+					"id": "test-impression-id-1",
+					"native": {
+						"request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+						"ver": "1.1"
+					},
+					"ext": {
+						"bidder": {
+							"token": "test-token-1"
+						}
+					}
+				}]
+			}
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": {
+				"id": "test-response-id",
+				"seatbid": [{
+					"bid": [{
+						"id": "test-bid-id-1",
+						"impid": "test-impression-id-1",
+						"price": 1
+					}]
+				}]
+			}
+		}
+	}, {
+		"expectedRequest": {
+			"uri": "http://example.com/prebid/test-token-1",
+			"body": {
+				"id": "test-request-id",
+				"imp": [{
+					"id": "test-impression-id-2",
+					"native": {
+						"request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+						"ver": "1.1"
+					},
+					"ext": {
+						"bidder": {
+							"token": "test-token-1"
+						}
+					}
+				}]
+			}
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": {
+				"id": "test-response-id-2",
+				"seatbid": [{
+					"bid": [{
+						"id": "test-bid-id-2",
+						"impid": "test-impression-id-2",
+						"price": 2
+					}]
+				}]
+			}
+		}
+	}, {
+		"expectedRequest": {
+			"uri": "http://example.com/prebid/test-token-2",
+			"body": {
+				"id": "test-request-id",
+				"imp": [{
+					"id": "test-impression-id-3",
+					"native": {
+						"request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+						"ver": "1.1"
+					},
+					"ext": {
+						"bidder": {
+							"token": "test-token-2"
+						}
+					}
+				}]
+			}
+		},
+		"mockResponse": {
+			"status": 200,
+			"body": {
+				"id": "test-response-id-3",
+				"seatbid": [{
+					"bid": [{
+						"id": "test-bid-id-3",
+						"impid": "test-impression-id-3",
+						"price": 3
+					}]
+				}]
+			}
+		}
+	}],
+	"expectedBidResponses": [{
+		"bids": [{
+			"bid": {
+				"id": "test-bid-id-1",
+				"impid": "test-impression-id-1",
+				"price": 1
+			},
+			"type": "native"
+		}]
+	}, {
+		"bids": [{
+			"bid": {
+				"id": "test-bid-id-2",
+				"impid": "test-impression-id-2",
+				"price": 2
+			},
+			"type": "native"
+		}]
+	}, {
+		"bids": [{
+			"bid": {
+				"id": "test-bid-id-3",
+				"impid": "test-impression-id-3",
+				"price": 3
+			},
+			"type": "native"
+		}]
+	}]
+}
