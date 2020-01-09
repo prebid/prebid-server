@@ -27,7 +27,7 @@ func TestDefaults(t *testing.T) {
 	cmpInts(t, "host_cookie.ttl_days", int(cfg.HostCookie.TTL), 90)
 	cmpInts(t, "host_cookie.max_cookie_size_bytes", cfg.HostCookie.MaxCookieSizeBytes, 0)
 	cmpStrings(t, "datacache.type", cfg.DataCache.Type, "dummy")
-	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "http://hbopenbid.pubmatic.com/translator?source=prebid-server")
+	cmpStrings(t, "adapters.pubmatic.endpoint", cfg.Adapters[string(openrtb_ext.BidderPubmatic)].Endpoint, "https://hbopenbid.pubmatic.com/translator?source=prebid-server")
 	cmpInts(t, "currency_converter.fetch_interval_seconds", cfg.CurrencyConverter.FetchIntervalSeconds, 1800)
 	cmpStrings(t, "currency_converter.fetch_url", cfg.CurrencyConverter.FetchURL, "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	cmpBools(t, "account_required", cfg.AccountRequired, false)
