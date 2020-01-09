@@ -153,7 +153,7 @@ func newAdapterAliasBidRequest(t *testing.T) *openrtb.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"appnexus": {"placementId": 10433394},"brightroll": {"placementId": 105}}`),
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1},"brightroll": {"placementId": 105}}`),
 		}},
 		Ext: json.RawMessage(`{"prebid":{"aliases":{"brightroll":"appnexus"}}}`),
 	}
@@ -199,7 +199,7 @@ func newCCPABidRequest(t *testing.T) *openrtb.BidRequest {
 					H: 600,
 				}},
 			},
-			Ext: json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+			Ext: json.RawMessage(`{"appnexus": {"placementId": 1}}`),
 		}},
 	}
 }

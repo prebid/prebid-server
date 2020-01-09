@@ -103,17 +103,17 @@ func TestCharacterEscape(t *testing.T) {
 		Imp: []openrtb.Imp{{
 			ID:     "some-impression-id",
 			Banner: &openrtb.Banner{Format: []openrtb.Format{{W: 300, H: 250}, {W: 300, H: 600}}},
-			Ext:    json.RawMessage(`{"appnexus": {"placementId": 10433394}}`),
+			Ext:    json.RawMessage(`{"appnexus": {"placementId": 1}}`),
 		}},
 		Site:   &openrtb.Site{Page: "prebid.org", Ext: json.RawMessage(`{"amp":0}`)},
 		Device: &openrtb.Device{UA: "curl/7.54.0", IP: "::1"},
 		AT:     1,
 		TMax:   500,
-		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`),
+		Ext:    json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`),
 	}
 
 	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
 
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := make(map[openrtb_ext.BidderName]*seatResponseExtra, 1)
@@ -231,7 +231,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 	}
 
 	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
 
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
@@ -259,7 +259,7 @@ func TestGetBidCacheInfo(t *testing.T) {
         "siteId": 113932,
         "zoneId": 535510
     },
-    "appnexus": { "placementId": 10433394 },
+    "appnexus": { "placementId": 1 },
     "pubmatic": { "publisherId": "156209", "adSlot": "pubmatic_test2@300x250" },
     "pulsepoint": { "cf": "300X250", "cp": 512379, "ct": 486653 },
     "conversant": { "site_id": "108060" },
@@ -343,7 +343,7 @@ func buildBidResponseParams(bidderName openrtb_ext.BidderName, bidRequest *openr
 	}
 
 	//resolvedRequest json.RawMessage
-	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 10433394}}}],"tmax": 500}`)
+	resolvedRequest := json.RawMessage(`{"id": "some-request-id","site": {"page": "prebid.org"},"imp": [{"id": "some-impression-id","banner": {"format": [{"w": 300,"h": 250},{"w": 300,"h": 600}]},"ext": {"appnexus": {"placementId": 1}}}],"tmax": 500}`)
 
 	//adapterExtra map[openrtb_ext.BidderName]*seatResponseExtra,
 	adapterExtra := map[openrtb_ext.BidderName]*seatResponseExtra{
