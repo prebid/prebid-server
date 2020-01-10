@@ -379,6 +379,7 @@ func TestRates(t *testing.T) {
 		{from: "", to: "EUR", expectedRate: 0, hasError: true},
 		{from: "CNY", to: "", expectedRate: 0, hasError: true},
 		{from: "", to: "", expectedRate: 0, hasError: true},
+		{from: "USD", to: "USD", expectedRate: 1, hasError: false},
 	}
 
 	mockedHttpServer := httptest.NewServer(http.HandlerFunc(
