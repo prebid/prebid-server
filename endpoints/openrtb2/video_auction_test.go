@@ -650,7 +650,7 @@ func TestMergeOpenRTBToVideoRequest(t *testing.T) {
 }
 
 func TestHandleError(t *testing.T) {
-	ao := analytics.AuctionObject{
+	vo := analytics.VideoObject{
 		Status: 200,
 		Errors: make([]error, 0),
 	}
@@ -667,14 +667,14 @@ func TestHandleError(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	err1 := errors.New("Error for testing handleError 1")
 	err2 := errors.New("Error for testing handleError 2")
-	handleError(&labels, recorder, []error{err1, err2}, &ao)
+	handleError(&labels, recorder, []error{err1, err2}, &vo)
 
 	assert.Equal(t, pbsmetrics.RequestStatusErr, labels.RequestStatus, "labels.RequestStatus should indicate an error")
 	assert.Equal(t, 500, recorder.Code, "Error status should be written to writer")
-	assert.Equal(t, 500, ao.Status, "AnalyticsObject should have error status")
-	assert.Equal(t, 2, len(ao.Errors), "New errors should be appended to AnalyticsObject Errors")
-	assert.Equal(t, "Error for testing handleError 1", ao.Errors[0].Error(), "Error in AnalyticsObject should have test error message for first error")
-	assert.Equal(t, "Error for testing handleError 2", ao.Errors[1].Error(), "Error in AnalyticsObject should have test error message for second error")
+	assert.Equal(t, 500, vo.Status, "Analytics object should have error status")
+	assert.Equal(t, 2, len(vo.Errors), "New errors should be appended to Analytics object Errors")
+	assert.Equal(t, "Error for testing handleError 1", vo.Errors[0].Error(), "Error in Analytics object should have test error message for first error")
+	assert.Equal(t, "Error for testing handleError 2", vo.Errors[1].Error(), "Error in Analytics object should have test error message for second error")
 }
 
 func TestHandleErrorMetrics(t *testing.T) {
@@ -692,11 +692,11 @@ func TestHandleErrorMetrics(t *testing.T) {
 
 	assert.Equal(t, int64(0), met.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusOK].Count(), "OK requests count should be 0")
 	assert.Equal(t, int64(1), met.RequestStatuses[pbsmetrics.ReqTypeVideo][pbsmetrics.RequestStatusErr].Count(), "Error requests count should be 1")
-	assert.Equal(t, 1, len(mod.auctionObjects), "Mock AnalyticsModule should have 1 AuctionObject")
-	assert.Equal(t, 500, mod.auctionObjects[0].Status, "AnalyticsObject should have 500 status")
-	assert.Equal(t, 2, len(mod.auctionObjects[0].Errors), "AnalyticsObject should have Errors length of 2")
-	assert.Equal(t, "request missing required field: PodConfig.DurationRangeSec", mod.auctionObjects[0].Errors[0].Error(), "First error in AnalyticsObject should have message regarding DurationRangeSec")
-	assert.Equal(t, "request missing required field: PodConfig.Pods", mod.auctionObjects[0].Errors[1].Error(), "Second error in AnalyticsObject should have message regarding Pods")
+	assert.Equal(t, 1, len(mod.videoObjects), "Mock AnalyticsModule should have 1 AuctionObject")
+	assert.Equal(t, 500, mod.videoObjects[0].Status, "AnalyticsObject should have 500 status")
+	assert.Equal(t, 2, len(mod.videoObjects[0].Errors), "AnalyticsObject should have Errors length of 2")
+	assert.Equal(t, "request missing required field: PodConfig.DurationRangeSec", mod.videoObjects[0].Errors[0].Error(), "First error in AnalyticsObject should have message regarding DurationRangeSec")
+	assert.Equal(t, "request missing required field: PodConfig.Pods", mod.videoObjects[0].Errors[1].Error(), "Second error in AnalyticsObject should have message regarding Pods")
 }
 
 func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *pbsmetrics.Metrics, *mockAnalyticsModule) {
@@ -722,10 +722,15 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *p
 
 type mockAnalyticsModule struct {
 	auctionObjects []*analytics.AuctionObject
+	videoObjects   []*analytics.VideoObject
 }
 
 func (m *mockAnalyticsModule) LogAuctionObject(ao *analytics.AuctionObject) {
 	m.auctionObjects = append(m.auctionObjects, ao)
+}
+
+func (m *mockAnalyticsModule) LogVideoObject(vo *analytics.VideoObject) {
+	m.videoObjects = append(m.videoObjects, vo)
 }
 
 func (m *mockAnalyticsModule) LogCookieSyncObject(cso *analytics.CookieSyncObject) { return }
