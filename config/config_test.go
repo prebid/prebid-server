@@ -272,7 +272,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "adapters.brightroll.usersync_url", cfg.Adapters[string(openrtb_ext.BidderBrightroll)].UserSyncURL, "http://test-bh.ybp.yahoo.com/sync/appnexuspbs?gdpr={{.GDPR}}&euconsent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&url=%s")
 	cmpStrings(t, "adapters.adkerneladn.usersync_url", cfg.Adapters[strings.ToLower(string(openrtb_ext.BidderAdkernelAdn))].UserSyncURL, "https://tag.adkernel.com/syncr?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&r=")
 	cmpStrings(t, "adapters.rhythmone.endpoint", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].Endpoint, "http://tag.1rx.io/rmp")
-	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
+	cmpStrings(t, "adapters.rhythmone.usersync_url", cfg.Adapters[string(openrtb_ext.BidderRhythmone)].UserSyncURL, "https://sync.1rx.io/usersync2/rmphb?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redir=http%3A%2F%2Fprebid-server.prebid.org%2F%2Fsetuid%3Fbidder%3Drhythmone%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%5BRX_UUID%5D")
 	cmpBools(t, "account_required", cfg.AccountRequired, true)
 	cmpBools(t, "account_adapter_details", cfg.Metrics.Disabled.AccountAdapterDetails, true)
 	cmpStrings(t, "certificates_file", cfg.PemCertsFile, "/etc/ssl/cert.pem")
