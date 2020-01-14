@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -15,6 +16,7 @@ import (
 
 type PBSAnalyticsModule interface {
 	LogAuctionObject(*AuctionObject)
+	LogVideoObject(*VideoObject)
 	LogCookieSyncObject(*CookieSyncObject)
 	LogSetUIDObject(*SetUIDObject)
 	LogAmpObject(*AmpObject)
@@ -36,6 +38,16 @@ type AmpObject struct {
 	AuctionResponse    *openrtb.BidResponse
 	AmpTargetingValues map[string]string
 	Origin             string
+}
+
+//Loggable object of a transaction at /openrtb2/video endpoint
+type VideoObject struct {
+	Status        int
+	Errors        []error
+	Request       *openrtb.BidRequest
+	Response      *openrtb.BidResponse
+	VideoRequest  *openrtb_ext.BidRequestVideo
+	VideoResponse *openrtb_ext.BidResponseVideo
 }
 
 //Loggable object of a transaction at /setuid

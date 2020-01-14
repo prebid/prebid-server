@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
 )
 
 // cleanOpenRTBRequests splits the input request into requests which are sanitized for each bidder. Intended behavior is:
@@ -25,7 +26,8 @@ func cleanOpenRTBRequests(ctx context.Context,
 	blables map[openrtb_ext.BidderName]*pbsmetrics.AdapterLabels,
 	labels pbsmetrics.Labels,
 	gDPR gdpr.Permissions,
-	usersyncIfAmbiguous bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
+	usersyncIfAmbiguous,
+	enforceCCPA bool) (requestsByBidder map[openrtb_ext.BidderName]*openrtb.BidRequest, aliases map[string]string, errs []error) {
 
 	impsByBidder, errs := splitImps(orig.Imp)
 	if len(errs) > 0 {
@@ -39,34 +41,32 @@ func cleanOpenRTBRequests(ctx context.Context,
 
 	requestsByBidder, errs = splitBidRequest(orig, impsByBidder, aliases, usersyncs, blables, labels)
 
-	// Clean PI from bidrequests if not allowed per GDPR
 	gdpr := extractGDPR(orig, usersyncIfAmbiguous)
 	consent := extractConsent(orig)
-
-	// Check if it's an AMP request
 	isAMP := labels.RType == pbsmetrics.ReqTypeAMP
 
-	// Check if COPPA applies for this request
-	var applyCOPPA bool
-	if orig.Regs != nil && orig.Regs.COPPA == 1 {
-		applyCOPPA = true
+	privacyEnforcement := privacy.Enforcement{
+		COPPA: orig.Regs != nil && orig.Regs.COPPA == 1,
+	}
+
+	if enforceCCPA {
+		ccpaPolicy, _ := ccpa.ReadPolicy(orig)
+		privacyEnforcement.CCPA = ccpaPolicy.ShouldEnforce()
 	}
 
 	for bidder, bidReq := range requestsByBidder {
-		var applyGDPR bool
-		// Fixes #820
+
 		if gdpr == 1 {
 			coreBidder := resolveBidder(bidder.String(), aliases)
 
 			var publisherID = labels.PubID
-			if ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent); !ok && err == nil {
-				applyGDPR = true
-			}
+			ok, err := gDPR.PersonalInfoAllowed(ctx, coreBidder, publisherID, consent)
+			privacyEnforcement.GDPR = !ok && err == nil
+		} else {
+			privacyEnforcement.GDPR = false
 		}
 
-		if applyGDPR || applyCOPPA {
-			applyRegs(bidReq, isAMP, applyGDPR, applyCOPPA)
-		}
+		privacyEnforcement.Apply(bidReq, isAMP)
 	}
 
 	return
@@ -312,106 +312,4 @@ func randomizeList(list []openrtb_ext.BidderName) {
 		j = perm[i]
 		list[i], list[j] = list[j], list[i]
 	}
-}
-
-func applyRegs(bidRequest *openrtb.BidRequest, isAMP, applyGDPR, applyCOPPA bool) {
-	if bidRequest.User != nil {
-		// Need to duplicate pointer objects
-		user := *bidRequest.User
-		bidRequest.User = &user
-
-		// There's no way for AMP to send a GDPR consent string yet so it's hard
-		// to know if the vendor is consented or not and therefore for AMP requests
-		// we keep the BuyerUID as is
-		if !isAMP {
-			bidRequest.User.BuyerUID = ""
-		}
-		if applyCOPPA {
-			bidRequest.User.ID = ""
-			bidRequest.User.Yob = 0
-			bidRequest.User.Gender = ""
-			bidRequest.User.BuyerUID = ""
-		}
-		bidRequest.User.Geo = cleanGeo(bidRequest.User.Geo, applyGDPR, applyCOPPA)
-	}
-	if bidRequest.Device != nil {
-		// Need to duplicate pointer objects
-		device := *bidRequest.Device
-		bidRequest.Device = &device
-
-		bidRequest.Device.DIDMD5 = ""
-		bidRequest.Device.DIDSHA1 = ""
-		bidRequest.Device.DPIDMD5 = ""
-		bidRequest.Device.DPIDSHA1 = ""
-		if applyCOPPA {
-			bidRequest.Device.MACSHA1 = ""
-			bidRequest.Device.MACMD5 = ""
-			bidRequest.Device.IFA = ""
-		}
-		bidRequest.Device.IP = cleanIP(bidRequest.Device.IP)
-		bidRequest.Device.IPv6 = cleanIPV6(bidRequest.Device.IPv6, applyGDPR, applyCOPPA)
-		bidRequest.Device.Geo = cleanGeo(bidRequest.Device.Geo, applyGDPR, applyCOPPA)
-	}
-}
-
-// Zero the last byte of an IP address
-func cleanIP(fullIP string) string {
-	i := strings.LastIndex(fullIP, ".")
-	if i == -1 {
-		return ""
-	}
-	return fullIP[0:i] + ".0"
-}
-
-func cleanIPV6(fullIP string, applyGDPR, applyCOPPA bool) string {
-	// If neither GDPR nor COPPA applies then do nothing
-	if !applyGDPR && !applyCOPPA {
-		return fullIP
-	}
-
-	i := strings.LastIndex(fullIP, ":")
-	if i == -1 {
-		return ""
-	}
-	fullIP = fullIP[0:i]
-
-	// If COPPA then remove the lowest 32 bits of the IP
-	if applyCOPPA {
-		fullIP = fullIP[:strings.LastIndex(fullIP, ":")+1] + "0:0"
-		return fullIP
-	}
-	// If GDPR then remove the lowest 32 bits of the IP
-	if applyGDPR {
-		fullIP = fullIP + ":0"
-	}
-	return fullIP
-}
-
-// Return a cleaned Geo object pointer (round off the latitude/longitude)
-func cleanGeo(geo *openrtb.Geo, applyGDPR, applyCOPPA bool) *openrtb.Geo {
-	// If neither GDPR nor COPPA applies then do nothing
-	if !applyCOPPA && !applyGDPR {
-		return geo
-	}
-
-	if geo == nil {
-		return nil
-	}
-	newGeo := *geo
-
-	// If GDPR applies then round off the Lat and LON values
-	if applyGDPR {
-		newGeo.Lat = float64(int(geo.Lat*100.0+0.5)) / 100.0
-		newGeo.Lon = float64(int(geo.Lon*100.0+0.5)) / 100.0
-	}
-
-	// If COPPA applies then remove Lat, Lon, Metro, City and Zip values
-	if applyCOPPA {
-		newGeo.Lat = 0
-		newGeo.Lon = 0
-		newGeo.Metro = ""
-		newGeo.City = ""
-		newGeo.ZIP = ""
-	}
-	return &newGeo
 }
