@@ -163,6 +163,60 @@ func TestGetRate(t *testing.T) {
 	}
 }
 
+func TestGetRate_ReverseConversion(t *testing.T) {
+
+	// Setup:
+	rates := currencies.NewRates(time.Now(), map[string]map[string]float64{
+		"USD": {
+			"GBP": 0.77208,
+		},
+		"EUR": {
+			"USD": 0.88723,
+		},
+	})
+
+	testCases := []struct {
+		from         string
+		to           string
+		expectedRate float64
+		description  string
+	}{
+		{
+			from:         "USD",
+			to:           "GBP",
+			expectedRate: 0.77208,
+			description:  "case 1 - Rate is present directly and will be returned as is",
+		},
+		{
+			from:         "EUR",
+			to:           "USD",
+			expectedRate: 0.88723,
+			description:  "case 2 - Rate is present directly and will be returned as is (2)",
+		},
+		{
+			from:         "GBP",
+			to:           "USD",
+			expectedRate: 1 / 0.77208,
+			description:  "case 3 - Rate is not present but the reverse one is, will return the computed rate from the reverse entry",
+		},
+		{
+			from:         "USD",
+			to:           "EUR",
+			expectedRate: 1 / 0.88723,
+			description:  "case 4 - Rate is not present but the reverse one is, will return the computed rate from the reverse entry (2)",
+		},
+	}
+
+	for _, tc := range testCases {
+		// Execute:
+		rate, err := rates.GetRate(tc.from, tc.to)
+
+		// Verify:
+		assert.Nil(t, err, "err should be nil: "+tc.description)
+		assert.Equal(t, tc.expectedRate, rate, "rate doesn't match the expected one: "+tc.description)
+	}
+}
+
 func TestGetRate_EmptyRates(t *testing.T) {
 
 	// Setup:

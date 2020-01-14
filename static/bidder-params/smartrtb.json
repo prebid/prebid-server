@@ -9,13 +9,17 @@
         "description": "Assigned publisher ID",
         "minLength": 4
       },
+      "med_id": {
+        "type": "string",
+        "description": "Property ID not zone ID not provided"
+      },
       "zone_id": {
         "type": "string",
         "description": "Specific zone ID for this placement, belonging to app/site",
         "minLength": 20
       },
       "force_bid": {
-        "type": "bool",
+        "type": "boolean",
         "description": "Force bids with a test creative"
       }
     },

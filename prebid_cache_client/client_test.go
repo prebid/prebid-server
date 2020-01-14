@@ -48,10 +48,7 @@ func TestBadResponse(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	successCacheCallResponseLabels := pbsmetrics.RequestLabels{
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
-	metricsMock.On("RecordPrebidCacheRequestTime", successCacheCallResponseLabels, mock.Anything).Once()
+	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -82,10 +79,7 @@ func TestCancelledContext(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	errorCacheCallResponseLabels := pbsmetrics.RequestLabels{
-		RequestStatus: pbsmetrics.RequestStatusErr,
-	}
-	metricsMock.On("RecordPrebidCacheRequestTime", errorCacheCallResponseLabels, mock.Anything).Once()
+	metricsMock.On("RecordPrebidCacheRequestTime", false, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -111,10 +105,7 @@ func TestSuccessfulPut(t *testing.T) {
 	defer server.Close()
 
 	metricsMock := &pbsmetrics.MetricsEngineMock{}
-	successCacheCallResponseLabels := pbsmetrics.RequestLabels{
-		RequestStatus: pbsmetrics.RequestStatusOK,
-	}
-	metricsMock.On("RecordPrebidCacheRequestTime", successCacheCallResponseLabels, mock.Anything).Once()
+	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
 
 	client := &clientImpl{
 		httpClient: server.Client(),
@@ -165,10 +156,10 @@ func TestStripCacheHostAndPath(t *testing.T) {
 		{
 			inExtCacheURL: config.ExternalCache{
 				Host: "prebid-server.prebid.org",
-				Path: "pbcache/endpoint",
+				Path: "/pbcache/endpoint",
 			},
 			expectedHost: "prebid-server.prebid.org",
-			expectedPath: "pbcache/endpoint",
+			expectedPath: "/pbcache/endpoint",
 		},
 		{
 			inExtCacheURL: config.ExternalCache{
@@ -184,6 +175,22 @@ func TestStripCacheHostAndPath(t *testing.T) {
 				Path: "",
 			},
 			expectedHost: "",
+			expectedPath: "",
+		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebid-server.prebid.org",
+				Path: "pbcache/endpoint",
+			},
+			expectedHost: "prebid-server.prebid.org",
+			expectedPath: "/pbcache/endpoint",
+		},
+		{
+			inExtCacheURL: config.ExternalCache{
+				Host: "prebidcache.net",
+				Path: "/",
+			},
+			expectedHost: "prebidcache.net",
 			expectedPath: "",
 		},
 	}

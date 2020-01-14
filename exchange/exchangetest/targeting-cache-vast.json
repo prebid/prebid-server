@@ -64,6 +64,14 @@
             "crid": "creative-1",
             "ext": {
               "prebid": {
+                "cache": {
+                  "bids": {
+                    "cacheId": "0",
+                    "url": "www.pbcserver.com/pbcache/endpoint?uuid=0"
+                  },
+                  "key": "",
+                  "url": ""
+                },
                 "type": "video",
                 "targeting": {
                   "hb_bidder": "appnexus",

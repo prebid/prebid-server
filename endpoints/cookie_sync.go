@@ -18,6 +18,9 @@ import (
 	"github.com/prebid/prebid-server/gdpr"
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/prebid/prebid-server/privacy"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	gdprPolicy "github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/usersync"
 )
 
@@ -29,6 +32,7 @@ func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersynce
 		syncPermissions: syncPermissions,
 		metrics:         metrics,
 		pbsAnalytics:    pbsAnalytics,
+		enforceCCPA:     cfg.CCPA.Enforce,
 	}
 	return deps.Endpoint
 }
@@ -40,6 +44,7 @@ type cookieSyncDeps struct {
 	syncPermissions gdpr.Permissions
 	metrics         pbsmetrics.MetricsEngine
 	pbsAnalytics    analytics.PBSAnalyticsModule
+	enforceCCPA     bool
 }
 
 func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -52,7 +57,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 
 	defer deps.pbsAnalytics.LogCookieSyncObject(&co)
 
-	deps.metrics.RecordCookieSync(pbsmetrics.Labels{})
+	deps.metrics.RecordCookieSync()
 	userSyncCookie := usersync.ParsePBSCookieFromRequest(r, deps.hostCookie)
 	if !userSyncCookie.AllowSyncs() {
 		http.Error(w, "User has opted out", http.StatusUnauthorized)
@@ -100,15 +105,26 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		}
 	}
 
+	privacyPolicy := privacy.Policies{
+		GDPR: gdprPolicy.Policy{
+			Signal:  gdprToString(parsedReq.GDPR),
+			Consent: parsedReq.Consent,
+		},
+		CCPA: ccpa.Policy{
+			Value: parsedReq.USPrivacy,
+		},
+	}
+
 	parsedReq.filterExistingSyncs(deps.syncers, userSyncCookie, needSyncupForSameSite)
+
 	adapterSyncs := make(map[openrtb_ext.BidderName]bool)
+	// assume all bidders will be privacy blocked
 	for _, b := range parsedReq.Bidders {
-		// assume all bidders will be GDPR blocked
 		adapterSyncs[openrtb_ext.BidderName(b)] = true
 	}
-	parsedReq.filterForGDPR(deps.syncPermissions)
+	parsedReq.filterForPrivacy(deps.syncPermissions, privacyPolicy, deps.enforceCCPA)
+	// surviving bidders are not privacy blocked
 	for _, b := range parsedReq.Bidders {
-		// surviving bidders are not GDPR blocked
 		adapterSyncs[openrtb_ext.BidderName(b)] = false
 	}
 	for b, g := range adapterSyncs {
@@ -122,7 +138,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(gdprToString(parsedReq.GDPR), parsedReq.Consent)
+		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(privacyPolicy)
 		if err == nil {
 			newSync := &usersync.CookieSyncBidders{
 				BidderCode:   bidder,
@@ -190,10 +206,11 @@ func cookieSyncStatus(syncCount int) string {
 }
 
 type cookieSyncRequest struct {
-	Bidders []string `json:"bidders"`
-	GDPR    *int     `json:"gdpr"`
-	Consent string   `json:"gdpr_consent"`
-	Limit   int      `json:"limit"`
+	Bidders   []string `json:"bidders"`
+	GDPR      *int     `json:"gdpr"`
+	Consent   string   `json:"gdpr_consent"`
+	USPrivacy string   `json:"us_privacy"`
+	Limit     int      `json:"limit"`
 }
 
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {
@@ -206,7 +223,12 @@ func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderNa
 	}
 }
 
-func (req *cookieSyncRequest) filterForGDPR(permissions gdpr.Permissions) {
+func (req *cookieSyncRequest) filterForPrivacy(permissions gdpr.Permissions, privacyPolicies privacy.Policies, enforceCCPA bool) {
+	if enforceCCPA && privacyPolicies.CCPA.ShouldEnforce() {
+		req.Bidders = nil
+		return
+	}
+
 	if req.GDPR != nil && *req.GDPR == 0 {
 		return
 	}
