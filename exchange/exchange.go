@@ -324,6 +324,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 		if adapterBids[a] != nil && len(adapterBids[a].bids) > 0 {
 			sb := e.makeSeatBid(adapterBids[a], a, adapterExtra, auc)
 			seatBids = append(seatBids, *sb)
+			bidResponse.Cur = adapterBids[a].currency
 		}
 	}
 
