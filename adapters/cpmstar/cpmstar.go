@@ -55,6 +55,11 @@ func (a *Adapter) makeRequest(request *openrtb.BidRequest) (*adapters.RequestDat
 }
 
 func preprocess(request *openrtb.BidRequest) error {
+	if len(request.Imp) == 0 {
+		return &errortypes.BadInput{
+			Message: "No Imps in Bid Request",
+		}
+	}
 	for i := 0; i < len(request.Imp); i++ {
 		var imp = &request.Imp[i]
 		var bidderExt adapters.ExtImpBidder
@@ -106,10 +111,16 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 	var bidResponse openrtb.BidResponse
 
 	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
-		return nil, []error{err}
+		return nil, []error{&errortypes.BadServerResponse{
+			Message: err.Error(),
+		}}
 	}
 
-	rv := adapters.NewBidderResponseWithBidsCapacity(1)
+	if len(bidResponse.SeatBid) == 0 {
+		return nil, nil
+	}
+
+	rv := adapters.NewBidderResponseWithBidsCapacity(len(bidResponse.SeatBid[0].Bid))
 	var errors []error
 
 	for _, seatbid := range bidResponse.SeatBid {
@@ -124,6 +135,7 @@ func (a *Adapter) MakeBids(bidRequest *openrtb.BidRequest, unused *adapters.Requ
 					} else if imp.Video != nil {
 						bidType = openrtb_ext.BidTypeVideo
 					}
+					break
 				}
 			}
 

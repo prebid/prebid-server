@@ -1,9 +1,9 @@
 {
   "mockBidRequest": {
-    "id": "unsupported-native-request",
+    "id": "rqid",
     "imp": [
       {
-        "id": "unsupported-native-imp",
+        "id": "impid",
         "video": {
          "w": 100,
           "h": 200
