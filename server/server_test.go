@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
 )
 
 func TestNewAdminServer(t *testing.T) {

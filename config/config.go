@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/macros"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/macros"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/spf13/viper"
 
 	validator "github.com/asaskevich/govalidator"
@@ -657,7 +657,7 @@ func SetupViper(v *viper.Viper, filename string) {
 	}
 
 	// Disabling adapters by default that require some specific config params.
-	// If you're using one of these, make sure you check out the documentation (https://github.com/prebid/prebid-server/tree/master/docs/bidders)
+	// If you're using one of these, make sure you check out the documentation (https://github.com/PubMatic-OpenWrap/prebid-server/tree/master/docs/bidders)
 	// for them and specify all the parameters they need for them to work correctly.
 	v.SetDefault("adapters.audiencenetwork.disabled", true)
 	v.SetDefault("adapters.rubicon.disabled", true)

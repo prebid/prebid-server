@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/openrtb_ext"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 
 	"github.com/prebid/go-gdpr/vendorlist"
 )

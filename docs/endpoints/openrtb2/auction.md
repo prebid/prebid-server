@@ -637,8 +637,8 @@ This supports publishers who want to sell different impressions to different bid
 This endpoint returns a 400 if the request contains deprecated properties (e.g. `imp.wmin`, `imp.hmax`).
 
 The error message in the response should describe how to "fix" the request to make it legal.
-If the message is unclear, please [log an issue](https://github.com/prebid/prebid-server/issues)
-or [submit a pull request](https://github.com/prebid/prebid-server/pulls) to improve it.
+If the message is unclear, please [log an issue](https://github.com/PubMatic-OpenWrap/prebid-server/issues)
+or [submit a pull request](https://github.com/PubMatic-OpenWrap/prebid-server/pulls) to improve it.
 
 #### Determining Bid Security (http/https)
 

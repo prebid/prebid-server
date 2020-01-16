@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prebid/prebid-server/config"
-	"github.com/prebid/prebid-server/pbsmetrics"
+	"github.com/PubMatic-OpenWrap/prebid-server/config"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbsmetrics"
 
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
