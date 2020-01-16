@@ -44,6 +44,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -108,6 +109,7 @@ func newAdapterMap(client *http.Client, cfg *config.Configuration, infos adapter
 			cfg.Adapters[string(openrtb_ext.BidderRubicon)].XAPI.Tracker),
 
 		openrtb_ext.BidderSharethrough:     sharethrough.NewSharethroughBidder(cfg.Adapters[string(openrtb_ext.BidderSharethrough)].Endpoint),
+		openrtb_ext.BidderSmartRTB:         smartrtb.NewSmartRTBBidder(cfg.Adapters[string(openrtb_ext.BidderSmartRTB)].Endpoint),
 		openrtb_ext.BidderSomoaudience:     somoaudience.NewSomoaudienceBidder(cfg.Adapters[string(openrtb_ext.BidderSomoaudience)].Endpoint),
 		openrtb_ext.BidderSonobi:           sonobi.NewSonobiBidder(client, cfg.Adapters[string(openrtb_ext.BidderSonobi)].Endpoint),
 		openrtb_ext.BidderSovrn:            sovrn.NewSovrnBidder(client, cfg.Adapters[string(openrtb_ext.BidderSovrn)].Endpoint),

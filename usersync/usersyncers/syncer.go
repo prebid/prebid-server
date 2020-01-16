@@ -40,6 +40,7 @@ import (
 	"github.com/prebid/prebid-server/adapters/rtbhouse"
 	"github.com/prebid/prebid-server/adapters/rubicon"
 	"github.com/prebid/prebid-server/adapters/sharethrough"
+	"github.com/prebid/prebid-server/adapters/smartrtb"
 	"github.com/prebid/prebid-server/adapters/somoaudience"
 	"github.com/prebid/prebid-server/adapters/sonobi"
 	"github.com/prebid/prebid-server/adapters/sovrn"
@@ -99,6 +100,7 @@ func NewSyncerMap(cfg *config.Configuration) map[openrtb_ext.BidderName]usersync
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSomoaudience, somoaudience.NewSomoaudienceSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSonobi, sonobi.NewSonobiSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSovrn, sovrn.NewSovrnSyncer)
+	insertIntoMap(cfg, syncers, openrtb_ext.BidderSmartRTB, smartrtb.NewSmartRTBSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderSynacormedia, synacormedia.NewSynacorMediaSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTriplelift, triplelift.NewTripleliftSyncer)
 	insertIntoMap(cfg, syncers, openrtb_ext.BidderTripleliftNative, triplelift_native.NewTripleliftSyncer)
