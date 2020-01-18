@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/prebid/prebid-server.svg?branch=master)](https://travis-ci.org/prebid/prebid-server)
+[![Build Status](https://travis-ci.org/PubMatic-OpenWrap/prebid-server.svg?branch=master)](https://travis-ci.org/PubMatic-OpenWrap/prebid-server)
 [![Go Report Card](https://goreportcard.com/badge/github.com/PubMatic-OpenWrap/prebid-server?style=flat-square)](https://goreportcard.com/report/github.com/PubMatic-OpenWrap/prebid-server)
 
 # Prebid Server

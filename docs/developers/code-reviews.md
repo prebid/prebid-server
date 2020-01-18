@@ -3,7 +3,7 @@
 ## Standards
 Anyone is free to review and comment on any [open pull requests](https://github.com/PubMatic-OpenWrap/prebid-server/pulls).
 
-All pull requests must be reviewed and approved by at least one [core member](https://github.com/orgs/prebid/teams/core/members) before merge.
+All pull requests must be reviewed and approved by at least one [core member](https://github.com/orgs/PubMatic-OpenWrap/teams/core/members) before merge.
 
 Very small pull requests may be merged with just one review if they:
 

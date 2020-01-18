@@ -8,11 +8,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
-	"github.com/buger/jsonparser"
-	"github.com/golang/glog"
-	"github.com/julienschmidt/httprouter"
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
@@ -22,6 +21,9 @@ import (
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	gdprPolicy "github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
+	"github.com/buger/jsonparser"
+	"github.com/golang/glog"
+	"github.com/julienschmidt/httprouter"
 )
 
 func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
@@ -48,6 +50,7 @@ type cookieSyncDeps struct {
 }
 
 func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
 	//CookieSyncObject makes a log of requests and responses to  /cookie_sync endpoint
 	co := analytics.CookieSyncObject{
 		Status:       http.StatusOK,
@@ -138,8 +141,26 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 	}
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
-		syncInfo, err := deps.syncers[openrtb_ext.BidderName(bidder)].GetUsersyncInfo(privacyPolicy)
+
+		//added hack to support to old wrapper versions having indexExchange as partner
+		//TODO: Remove when a stable version is released
+		newBidder := bidder
+		if bidder == "indexExchange" {
+			newBidder = "ix"
+		}
+		syncInfo, err := deps.syncers[openrtb_ext.BidderName(newBidder)].GetUsersyncInfo(privacyPolicy)
 		if err == nil {
+			//For secure = true flag on cookie
+			secParam := r.URL.Query().Get("sec")
+			refererHeader := r.Header.Get("Referer")
+			bidderPubmatic := openrtb_ext.BidderPubmatic
+			if (secParam == "1" || strings.HasPrefix(refererHeader, "https")) && newBidder == bidderPubmatic.String() {
+				urlWithSecParam, err := setSecureParam(syncInfo.URL)
+				if err == nil {
+					syncInfo.URL = urlWithSecParam
+				}
+			}
+
 			newSync := &usersync.CookieSyncBidders{
 				BidderCode:   bidder,
 				NoCookie:     true,
@@ -147,7 +168,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			}
 			csResp.BidderStatus = append(csResp.BidderStatus, newSync)
 		} else {
-			glog.Errorf("Failed to get usersync info for %s: %v", bidder, err)
+			glog.Errorf("Failed to get usersync info for %s: %v", newBidder, err)
 		}
 	}
 
@@ -205,6 +226,34 @@ func cookieSyncStatus(syncCount int) string {
 	return "ok"
 }
 
+func setSecureParam(usersync_url string) (string, error) {
+	u1, err := url.Parse(usersync_url)
+	if err != nil {
+		glog.Errorf("Error while setting secure flag, failed to parse usersync url: %v", err)
+		return "", err
+	}
+
+	q1 := u1.Query()
+	u2, err := url.Parse(q1.Get("predirect"))
+	if err != nil {
+		glog.Errorf("Error while setting secure flag, failed to parse predirect param: %v", err)
+		return "", err
+	}
+
+	q2 := u2.Query()
+
+	q2.Set("sec", "1")
+
+	u2.RawQuery = q2.Encode()
+	q1.Set("predirect", u2.String())
+	u1.RawQuery = q1.Encode()
+
+	return u1.String(), nil
+}
+
+type CookieSyncReq cookieSyncRequest
+type CookieSyncResp cookieSyncResponse
+
 type cookieSyncRequest struct {
 	Bidders   []string `json:"bidders"`
 	GDPR      *int     `json:"gdpr"`
@@ -216,6 +265,11 @@ type cookieSyncRequest struct {
 func (req *cookieSyncRequest) filterExistingSyncs(valid map[openrtb_ext.BidderName]usersync.Usersyncer, cookie *usersync.PBSCookie, needSyncupForSameSite bool) {
 	for i := 0; i < len(req.Bidders); i++ {
 		thisBidder := req.Bidders[i]
+		//added hack to support to old wrapper versions having indexExchange as partner
+		//TODO: Remove when a stable version is released
+		if thisBidder == "indexExchange" {
+			thisBidder = "ix"
+		}
 		if syncer, isValid := valid[openrtb_ext.BidderName(thisBidder)]; !isValid || (cookie.HasLiveSync(syncer.FamilyName()) && !needSyncupForSameSite) {
 			req.Bidders = append(req.Bidders[:i], req.Bidders[i+1:]...)
 			i--

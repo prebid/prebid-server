@@ -5,13 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
+	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/golang/glog"
-	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 
 	"golang.org/x/net/context/ctxhttp"
 

@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
-// Client stores values in Prebid Cache. For more info, see https://github.com/prebid/prebid-cache
+// Client stores values in Prebid Cache. For more info, see https://github.com/PubMatic-OpenWrap/prebid-cache
 type Client interface {
 	// PutJson stores JSON values for the given openrtb.Bids in the cache. Null values will be
 	//
