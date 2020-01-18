@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/prebid/prebid-server/stored_requests"
@@ -162,10 +163,90 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			}
 			targData.setTargeting(auc, bidRequest.App != nil, bidCategory)
 		}
+
+		if requestExt.Prebid.SupportDeals {
+			applyDealSupport(bidRequest, auc)
+		}
 	}
 
 	// Build the response
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
+}
+
+// TODO needs better naming
+type DealTierInfo struct {
+	Prefix      string `json:"prefix"`
+	MinDealTier int    `json:"minDealTier"`
+}
+
+type DealTier struct {
+	Info *DealTierInfo `json:"dealTier,omitempty"`
+}
+
+type BidderDealTier struct {
+	DealInfo map[string]*DealTier
+}
+
+// Updates targeting keys with deal prefixes if minimum deal tier exceeded
+func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) {
+	impDealMap := getDealTiers(bidRequest)
+
+	for impId, topBidsPerImp := range auc.winningBidsByBidder {
+		impDeal := impDealMap[impId].DealInfo
+		for bidderName, topBidPerBidder := range topBidsPerImp {
+			if validateDealTier(impDeal[bidderName.String()]) {
+				updateCatDur(topBidPerBidder, impDeal[bidderName.String()].Info)
+			}
+		}
+	}
+}
+
+func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
+	impDealMap := make(map[string]*BidderDealTier)
+
+	for _, imp := range bidRequest.Imp {
+		var bidderDealTier BidderDealTier
+		err := json.Unmarshal(imp.Ext, &bidderDealTier.DealInfo)
+		if err != nil {
+			continue
+		}
+		impDealMap[imp.ID] = &bidderDealTier
+	}
+
+	return impDealMap
+}
+
+func validateDealTier(impDeal *DealTier) bool {
+	return impDeal.Info != nil && len(impDeal.Info.Prefix) > 0
+}
+
+func updateCatDur(topBidPerBidder *pbsOrtbBid, dealTierInfo *DealTierInfo) {
+	var anExt AppNexusExt
+	err := json.Unmarshal(topBidPerBidder.bid.Ext, &anExt)
+	if err != nil {
+		return
+	}
+
+	if anExt.Info.Priority >= dealTierInfo.MinDealTier {
+		newPb := fmt.Sprintf("%s%d", dealTierInfo.Prefix, anExt.Info.Priority)
+
+		if oldCatDur, ok := topBidPerBidder.bidTargets["hb_pb_cat_dur"]; ok {
+			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
+			oldCatDurSplit[0] = newPb + "_"
+
+			newCatDur := strings.Join(oldCatDurSplit, "")
+			topBidPerBidder.bidTargets["hb_pb_cat_dur"] = newCatDur
+		}
+	}
+}
+
+type DealPriority struct {
+	Priority int `json:"deal_priority"`
+	Extra    json.RawMessage
+}
+
+type AppNexusExt struct {
+	Info DealPriority `json:"appnexus"`
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {
