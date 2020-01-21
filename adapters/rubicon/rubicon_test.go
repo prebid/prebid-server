@@ -1270,6 +1270,48 @@ func TestOpenRTBRequestWithVideoImpEvenIfImpHasBannerButAllRequiredVideoFields(t
 	assert.NotNil(t, rubiconReq.Imp[0].Video, "Video object must be in request impression")
 }
 
+func TestOpenRTBRequestWithVideoImpAndEnabledRewardedInventoryFlag(t *testing.T) {
+	bidder := new(RubiconAdapter)
+
+	request := &openrtb.BidRequest{
+		ID: "test-request-id",
+		Imp: []openrtb.Imp{{
+			ID: "test-imp-id",
+			Video: &openrtb.Video{
+				W:           640,
+				H:           360,
+				MIMEs:       []string{"video/mp4"},
+				Protocols:   []openrtb.Protocol{openrtb.ProtocolVAST10},
+				MaxDuration: 30,
+				Linearity:   1,
+				API:         []openrtb.APIFramework{},
+			},
+			Ext: json.RawMessage(`{
+			"prebid":{
+				"is_rewarded_inventory": 1
+			},
+			"bidder": {
+				"video": {"size_id": 1}
+			}}`),
+		}},
+	}
+
+	reqs, _ := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	rubiconReq := &openrtb.BidRequest{}
+	if err := json.Unmarshal(reqs[0].Body, rubiconReq); err != nil {
+		t.Fatalf("Unexpected error while decoding request: %s", err)
+	}
+
+	videoExt := &rubiconVideoExt{}
+	if err := json.Unmarshal(rubiconReq.Imp[0].Video.Ext, &videoExt); err != nil {
+		t.Fatal("Error unmarshalling request.imp[i].video.ext object.")
+	}
+
+	assert.Equal(t, "rewarded", videoExt.VideoType,
+		"Unexpected VideoType. Got %s. Expected %s", videoExt.VideoType, "rewarded")
+}
+
 func TestOpenRTBEmptyResponse(t *testing.T) {
 	httpResp := &adapters.ResponseData{
 		StatusCode: http.StatusNoContent,
