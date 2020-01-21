@@ -696,7 +696,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 			// if imp.ext.is_rewarded_inventory = 1, set imp.video.ext.videotype = "rewarded"
 			var videoType = ""
-			if extImpPrebid := bidderExt.Prebid; extImpPrebid != nil && extImpPrebid.IsRewardedInventory == 1 {
+			if bidderExt.Prebid != nil && bidderExt.Prebid.IsRewardedInventory == 1 {
 				videoType = "rewarded"
 			}
 
