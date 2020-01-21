@@ -178,7 +178,6 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	return e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, auc, errs)
 }
 
-// TODO needs better naming
 type DealTierInfo struct {
 	Prefix      string `json:"prefix"`
 	MinDealTier int    `json:"minDealTier"`
@@ -196,16 +195,19 @@ type BidderDealTier struct {
 func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) {
 	impDealMap := getDealTiers(bidRequest)
 
-	for impId, topBidsPerImp := range auc.winningBidsByBidder {
-		impDeal := impDealMap[impId].DealInfo
+	for impID, topBidsPerImp := range auc.winningBidsByBidder {
+		impDeal := impDealMap[impID].DealInfo
 		for bidderName, topBidPerBidder := range topBidsPerImp {
-			if validateDealTier(impDeal[bidderName.String()]) {
-				updateCatDur(topBidPerBidder, impDeal[bidderName.String()].Info)
+			bidderString := bidderName.String()
+
+			if validateDealTier(impDeal[bidderString]) {
+				updateCatDur(topBidPerBidder, impDeal[bidderString].Info)
 			}
 		}
 	}
 }
 
+// Creates map of impression to bidder deal tier configuration
 func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 	impDealMap := make(map[string]*BidderDealTier)
 
@@ -215,6 +217,7 @@ func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 		if err != nil {
 			continue
 		}
+
 		impDealMap[imp.ID] = &bidderDealTier
 	}
 
@@ -233,11 +236,11 @@ func updateCatDur(topBidPerBidder *pbsOrtbBid, dealTierInfo *DealTierInfo) {
 	}
 
 	if anExt.Info.Priority >= dealTierInfo.MinDealTier {
-		newPb := fmt.Sprintf("%s%d", dealTierInfo.Prefix, anExt.Info.Priority)
+		newPb := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, anExt.Info.Priority)
 
 		if oldCatDur, ok := topBidPerBidder.bidTargets["hb_pb_cat_dur"]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
-			oldCatDurSplit[0] = newPb + "_"
+			oldCatDurSplit[0] = newPb
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
 			topBidPerBidder.bidTargets["hb_pb_cat_dur"] = newCatDur
