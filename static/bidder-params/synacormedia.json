@@ -15,5 +15,5 @@
     }
   },
 
-  "required": ["seatId", "tagId"]
+  "required": ["seatId"]
 }

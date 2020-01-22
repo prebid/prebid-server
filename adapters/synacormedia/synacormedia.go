@@ -61,6 +61,13 @@ func (a *SynacorMediaAdapter) makeRequest(request *openrtb.BidRequest) (*adapter
 			errs = append(errs, err)
 			continue
 		}
+		// if the bid request is missing seatId or TagId then ignore it
+		if validExtImpObj.SeatId == "" || validExtImpObj.TagId == "" {
+			errs = append(errs, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("Invalid Impression"),
+			})
+			continue
+		}
 		// right here is where we need to take out the tagId and then add it to imp
 		imp.TagID = validExtImpObj.TagId
 		validImps = append(validImps, imp)
