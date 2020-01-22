@@ -225,36 +225,21 @@ func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 }
 
 func validateDealTier(impDeal *DealTier) bool {
-	return impDeal.Info != nil && len(impDeal.Info.Prefix) > 0
+	return impDeal.Info != nil && len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
 }
 
-func updateCatDur(topBidPerBidder *pbsOrtbBid, dealTierInfo *DealTierInfo) {
-	var anExt AppNexusExt
-	err := json.Unmarshal(topBidPerBidder.bid.Ext, &anExt)
-	if err != nil {
-		return
-	}
+func updateCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo) {
+	if bid.dealPriority >= dealTierInfo.MinDealTier {
+		newPb := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, bid.dealPriority)
 
-	if anExt.Info.Priority >= dealTierInfo.MinDealTier {
-		newPb := fmt.Sprintf("%s%d_", dealTierInfo.Prefix, anExt.Info.Priority)
-
-		if oldCatDur, ok := topBidPerBidder.bidTargets["hb_pb_cat_dur"]; ok {
+		if oldCatDur, ok := bid.bidTargets["hb_pb_cat_dur"]; ok {
 			oldCatDurSplit := strings.SplitAfterN(oldCatDur, "_", 2)
 			oldCatDurSplit[0] = newPb
 
 			newCatDur := strings.Join(oldCatDurSplit, "")
-			topBidPerBidder.bidTargets["hb_pb_cat_dur"] = newCatDur
+			bid.bidTargets["hb_pb_cat_dur"] = newCatDur
 		}
 	}
-}
-
-type DealPriority struct {
-	Priority int `json:"deal_priority"`
-	Extra    json.RawMessage
-}
-
-type AppNexusExt struct {
-	Info DealPriority `json:"appnexus"`
 }
 
 func (e *exchange) makeAuctionContext(ctx context.Context, needsCache bool) (auctionCtx context.Context, cancel context.CancelFunc) {

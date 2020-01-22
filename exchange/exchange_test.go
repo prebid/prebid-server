@@ -914,10 +914,10 @@ func TestCategoryMapping(t *testing.T) {
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}}
-	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, 0}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}, 0}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 
 	innerBids := []*pbsOrtbBid{
 		&bid1_1,
@@ -969,10 +969,10 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 40.0000, Cat: cats4, W: 1, H: 1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}}
-	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, 0}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30, PrimaryCategory: "AdapterOverride"}, 0}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, 0}
 
 	innerBids := []*pbsOrtbBid{
 		&bid1_1,
@@ -1023,9 +1023,9 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, 0}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 
 	innerBids := []*pbsOrtbBid{
 		&bid1_1,
@@ -1105,9 +1105,9 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 	bid2 := openrtb.Bid{ID: "bid_id2", ImpID: "imp_id2", Price: 20.0000, Cat: cats2, W: 1, H: 1}
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 30.0000, Cat: cats3, W: 1, H: 1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 40}, 0}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 
 	innerBids := []*pbsOrtbBid{
 		&bid1_1,
@@ -1156,10 +1156,10 @@ func TestCategoryDedupe(t *testing.T) {
 	bid3 := openrtb.Bid{ID: "bid_id3", ImpID: "imp_id3", Price: 10.0000, Cat: cats1, W: 1, H: 1}
 	bid4 := openrtb.Bid{ID: "bid_id4", ImpID: "imp_id4", Price: 20.0000, Cat: cats4, W: 1, H: 1}
 
-	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}}
-	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
-	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}}
+	bid1_1 := pbsOrtbBid{&bid1, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_2 := pbsOrtbBid{&bid2, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 50}, 0}
+	bid1_3 := pbsOrtbBid{&bid3, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
+	bid1_4 := pbsOrtbBid{&bid4, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: 30}, 0}
 
 	selectedBids := make(map[string]int)
 	expectedCategories := map[string]string{
@@ -1379,19 +1379,11 @@ func TestApplyDealSupport(t *testing.T) {
 		"hb_pb_cat_dur": "12.00_auto_30s",
 	}
 
-	bid1_1 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":5}}`),
-	}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_2 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":6}}`),
-	}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_3 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":7}}`),
-	}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_4 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":8}}`),
-	}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_5 := pbsOrtbBid{&openrtb.Bid{}, "video", targ5, &openrtb_ext.ExtBidPrebidVideo{}}
+	bid1_1 := pbsOrtbBid{&openrtb.Bid{}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}, 5}
+	bid1_2 := pbsOrtbBid{&openrtb.Bid{}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}, 6}
+	bid1_3 := pbsOrtbBid{&openrtb.Bid{}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}, 7}
+	bid1_4 := pbsOrtbBid{&openrtb.Bid{}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}, 8}
+	bid1_5 := pbsOrtbBid{&openrtb.Bid{}, "video", targ5, &openrtb_ext.ExtBidPrebidVideo{}, 0}
 
 	auc := &auction{
 		winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
@@ -1440,7 +1432,7 @@ func TestGetDealTiers(t *testing.T) {
 			},
 			{
 				ID:  "imp_id4",
-				Ext: json.RawMessage(`{"onedealTier1": {"placementId": 10433394}, "onedealTier2": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
+				Ext: json.RawMessage(`{"validbase": {"placementId": 10433394}, "onedealTier2": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
 			},
 		},
 	}
@@ -1459,8 +1451,11 @@ func TestGetDealTiers(t *testing.T) {
 	assert.Equal(t, &filledDealTier, impDealMap["imp_id2"].DealInfo["validmultiple1"], "DealTier should be filled with config data")
 	assert.Equal(t, &filledDealTier, impDealMap["imp_id2"].DealInfo["validmultiple2"], "DealTier should be filled with config data")
 	assert.Equal(t, &emptyDealTier, impDealMap["imp_id3"].DealInfo["nodealtier"], "DealTier should be empty")
-	assert.Equal(t, &emptyDealTier, impDealMap["imp_id4"].DealInfo["onedealTier1"], "DealTier should be empty")
+	assert.Equal(t, &emptyDealTier, impDealMap["imp_id4"].DealInfo["validbase"], "DealTier should be empty")
 	assert.Equal(t, &filledDealTier, impDealMap["imp_id4"].DealInfo["onedealTier2"], "DealTier should be filled with config data")
+
+	_, ok := impDealMap["imp_id4"].DealInfo["validmultiple1"]
+	assert.Equal(t, false, ok, "DealTier should not be initialized")
 }
 
 func TestValidateDealTier(t *testing.T) {
@@ -1485,9 +1480,16 @@ func TestValidateDealTier(t *testing.T) {
 		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
 	}
 
-	rawParams4 := json.RawMessage(`{"appnexus": {"placementId": 10433394}}`)
+	rawParams4 := json.RawMessage(`{"appnexus": {"dealTier": {"prefix": "tier"}, "placementId": 10433394}}`)
 	var bidderDealTier4 BidderDealTier
 	err = json.Unmarshal(rawParams4, &bidderDealTier4.DealInfo)
+	if err != nil {
+		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
+	}
+
+	rawParams5 := json.RawMessage(`{"appnexus": {"placementId": 10433394}}`)
+	var bidderDealTier5 BidderDealTier
+	err = json.Unmarshal(rawParams5, &bidderDealTier5.DealInfo)
 	if err != nil {
 		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
 	}
@@ -1495,7 +1497,8 @@ func TestValidateDealTier(t *testing.T) {
 	assert.Equal(t, true, validateDealTier(bidderDealTier1.DealInfo["appnexus"]), "BidderDealTier should be valid")
 	assert.Equal(t, false, validateDealTier(bidderDealTier2.DealInfo["appnexus"]), "BidderDealTier should be invalid due to empty prefix")
 	assert.Equal(t, false, validateDealTier(bidderDealTier3.DealInfo["appnexus"]), "BidderDealTier should be invalid due to empty dealTier")
-	assert.Equal(t, false, validateDealTier(bidderDealTier4.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing dealTier")
+	assert.Equal(t, false, validateDealTier(bidderDealTier4.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing minDealTier")
+	assert.Equal(t, false, validateDealTier(bidderDealTier5.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing dealTier")
 }
 
 func TestUpdateCatDur(t *testing.T) {
@@ -1516,18 +1519,10 @@ func TestUpdateCatDur(t *testing.T) {
 		"hb_pb_cat_dur": "12.00_30s",
 	}
 
-	bid1_1 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":5}}`),
-	}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_2 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":6}}`),
-	}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_3 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":7}}`),
-	}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}}
-	bid1_4 := pbsOrtbBid{&openrtb.Bid{
-		Ext: json.RawMessage(`{"appnexus":{"deal_priority":8}}`),
-	}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}}
+	bid1_1 := pbsOrtbBid{&openrtb.Bid{}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}, 5}
+	bid1_2 := pbsOrtbBid{&openrtb.Bid{}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}, 6}
+	bid1_3 := pbsOrtbBid{&openrtb.Bid{}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}, 7}
+	bid1_4 := pbsOrtbBid{&openrtb.Bid{}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}, 8}
 
 	deal1 := &DealTierInfo{
 		Prefix:      "tier",
