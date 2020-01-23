@@ -48,7 +48,7 @@ var invalidParams = []string{
 	`null`,
 	`true`,
 	`154`,
-	`{"placementId": "154"}`, // placementId should be numeric
+	`{"placementId": "154"}`,                   // placementId should be numeric
 	`{"placementId": 154, "subpoolId": "123"}`, // placementId and subpoolId should both be numeric
 	`{"invalid_param": 123}`,
 }
