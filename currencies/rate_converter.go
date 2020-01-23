@@ -172,11 +172,15 @@ func (rc *RateConverter) Rates() Conversions {
 
 // GetInfo returns setup information about the converter
 func (rc *RateConverter) GetInfo() ConverterInfo {
+	var rates *map[string]map[string]float64
+	if rc.Rates() != nil {
+		rates = rc.Rates().GetRates()
+	}
 	return converterInfo{
 		source:           rc.syncSourceURL,
 		fetchingInterval: rc.fetchingInterval,
 		lastUpdated:      rc.LastUpdated(),
-		rates:            rc.Rates().GetRates(),
+		rates:            rates,
 	}
 }
 
