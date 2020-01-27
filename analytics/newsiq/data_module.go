@@ -124,7 +124,8 @@ func TrySendCollectorData(job Job, jobChan <-chan Job) bool {
     default:
         return false
     }
-}*/
+}
+*/
 
 func postData(prebidEventsData *LogPrebidEvents) {
 	data, err := proto.Marshal(prebidEventsData)
@@ -184,13 +185,18 @@ func (d *DataLogger) SendCollectorData(request *openrtb.BidRequest, response *op
 		}
 	}
 
-	adunitsArray := generateAdUnits(request, response)
+	adunitsArray := []*AdUnit{}
+	prebidAuctionID := ""
+	if response != nil {
+		adunitsArray = generateAdUnits(request, response)
+		prebidAuctionID = response.BidID // TODO : Is this correct?
+	}
 
 	auctionObj := Auction{
 		Version:              PrebidServerVersion,
 		AuctionInitTimestamp: currentTimestamp(), // TODO : Update all timestamps
-		PrebidAuctionId:      response.BidID,     // TODO : Is this correct?
-		ConfiguredTimeoutMs:  30000,              // 30 seconds
+		PrebidAuctionId:      prebidAuctionID,
+		ConfiguredTimeoutMs:  30000, // 30 seconds
 		MsgType:              uint32(msg),
 		AdUnits:              adunitsArray,
 	}
