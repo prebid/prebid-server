@@ -16,6 +16,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/mxmCherry/openrtb"
 	"github.com/prebid/prebid-server/adapters"
+	"github.com/prebid/prebid-server/analytics/newsiq"
 	"github.com/prebid/prebid-server/config"
 	"github.com/prebid/prebid-server/currencies"
 	"github.com/prebid/prebid-server/errortypes"
@@ -46,6 +47,7 @@ type exchange struct {
 	currencyConverter   *currencies.RateConverter
 	UsersyncIfAmbiguous bool
 	defaultTTLs         config.DefaultTTLs
+	dataLogger          newsiq.DataLogger
 }
 
 // Container to pass out response ext data from the GetAllBids goroutines back into the main thread
@@ -71,6 +73,7 @@ func NewExchange(client *http.Client, cache prebid_cache_client.Client, cfg *con
 	e.currencyConverter = currencyConverter
 	e.UsersyncIfAmbiguous = cfg.GDPR.UsersyncIfAmbiguous
 	e.defaultTTLs = cfg.CacheURL.DefaultTTLs
+	e.dataLogger = newsiq.InitDataLogger()
 	return e
 }
 
@@ -80,6 +83,9 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 	if err != nil {
 		glog.Errorf("Error marshalling bid request for debug: %v", err)
 	}
+
+	// NewsIQ : Auction Init call
+	e.dataLogger.SendCollectorData(bidRequest, nil, newsiq.AuctionInit)
 
 	for _, impInRequest := range bidRequest.Imp {
 		var impLabels pbsmetrics.ImpLabels = pbsmetrics.ImpLabels{
@@ -197,7 +203,9 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 			brw.bidder = aName
 			// Defer basic metrics to insure we capture them after all the values have been set
 			defer func() {
+				// TODO : Bids Requested from Bidder
 				e.me.RecordAdapterRequest(*bidlabels)
+				e.dataLogger.SendCollectorData(request, nil, newsiq.BidRequested)
 			}()
 			start := time.Now()
 
@@ -228,6 +236,7 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					var cpm = float64(bid.bid.Price * 1000)
 					e.me.RecordAdapterPrice(*bidlabels, cpm)
 					e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
+					// TODO : Bids Response from bidder
 				}
 			}
 			chBids <- brw
@@ -347,7 +356,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 
 	dedupe := make(map[string]bidDedupe)
 
-	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory
+	brandCatExt := requestExt.Prebid.Targeting.IncludeBrandCategory // TODO : Include in the parameters and Test
 
 	//If ext.prebid.targeting.includebrandcategory is present in ext then competitive exclusion feature is on.
 	var includeBrandCategory = brandCatExt != nil //if not present - category will no be appended
