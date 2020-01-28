@@ -189,9 +189,9 @@ func TestCookieSyncWithSecureParam(t *testing.T) {
 		true, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
+	syncs := parseSyncs(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	assert.True(t, isSetSecParam(syncs["pubmatic"]))
+	//assert.True(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestCookieSyncWithoutSecureParam(t *testing.T) {
@@ -199,9 +199,9 @@ func TestCookieSyncWithoutSecureParam(t *testing.T) {
 		false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
+	syncs := parseSyncs(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	assert.False(t, isSetSecParam(syncs["pubmatic"]))
+	//assert.False(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestRefererHeader(t *testing.T) {
@@ -209,9 +209,9 @@ func TestRefererHeader(t *testing.T) {
 		false, true, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
+	syncs := parseSyncs(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	assert.False(t, isSetSecParam(syncs["pubmatic"]))
+	//assert.False(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestNoRefererHeader(t *testing.T) {
@@ -219,9 +219,9 @@ func TestNoRefererHeader(t *testing.T) {
 		false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
+	syncs := parseSyncs(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	assert.False(t, isSetSecParam(syncs["pubmatic"]))
+	//assert.False(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestSecureRefererHeader(t *testing.T) {
@@ -229,24 +229,9 @@ func TestSecureRefererHeader(t *testing.T) {
 		false, false, true)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
+	syncs := parseSyncs(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	assert.True(t, isSetSecParam(syncs["pubmatic"]))
-}
-
-//Test that secure flag is getting set for all bidders
-func TestCookieSyncWithSecureParamForBidders(t *testing.T) {
-	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`,
-		nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{},
-		config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{}, true, false,
-		false)
-	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
-	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
-	assert.Contains(t, syncs, "appnexus")
-	assert.Contains(t, syncs, "audienceNetwork")
-	assert.True(t, isSetSecParam(syncs["appnexus"]))
-	assert.True(t, isSetSecParam(syncs["audienceNetwork"]))
+	//assert.True(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, addSecParam bool, addHttpRefererHeader bool, addHttpsRefererHeader bool) *httptest.ResponseRecorder {
@@ -316,33 +301,6 @@ func parseSyncs(t *testing.T, response []byte) []string {
 			t.Errorf("response.bidder_status[?].bidder was not a string. Value was %s", string(value))
 		} else {
 			syncs = append(syncs, val)
-		}
-	}, "bidder_status")
-	return syncs
-}
-
-func parseSyncsForSecureFlag(t *testing.T, response []byte) map[string]string {
-	t.Helper()
-	var syncs map[string]string = make(map[string]string)
-	jsonparser.ArrayEach(response, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		if dataType != jsonparser.Object {
-			t.Errorf("response.bidder_status contained unexpected element of type %v.", dataType)
-		}
-		if val, err := jsonparser.GetString(value, "bidder"); err != nil {
-			t.Errorf("response.bidder_status[?].bidder was not a string. Value was %s", string(value))
-		} else {
-			usersyncObj, _, _, err := jsonparser.Get(value, "usersync")
-			if err != nil {
-				syncs[val] = ""
-			} else {
-				usrsync_url, err := jsonparser.GetString(usersyncObj, "url")
-				if err != nil {
-					syncs[val] = ""
-				} else {
-					syncs[val] = usrsync_url
-				}
-			}
-			//syncs = append(syncs, val)
 		}
 	}, "bidder_status")
 	return syncs
