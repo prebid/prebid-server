@@ -153,8 +153,7 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			//For secure = true flag on cookie
 			secParam := r.URL.Query().Get("sec")
 			refererHeader := r.Header.Get("Referer")
-			bidderPubmatic := openrtb_ext.BidderPubmatic
-			if (secParam == "1" || strings.HasPrefix(refererHeader, "https")) && newBidder == bidderPubmatic.String() {
+			if secParam == "1" || strings.HasPrefix(refererHeader, "https") {
 				urlWithSecParam, err := setSecureParam(syncInfo.URL)
 				if err == nil {
 					syncInfo.URL = urlWithSecParam
