@@ -244,7 +244,9 @@ func TestCookieSyncWithSecureParamForBidders(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "appnexus")
+	assert.Contains(t, syncs, "audienceNetwork")
 	assert.True(t, isSetSecParam(syncs["appnexus"]))
+	assert.True(t, isSetSecParam(syncs["audienceNetwork"]))
 }
 
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, addSecParam bool, addHttpRefererHeader bool, addHttpsRefererHeader bool) *httptest.ResponseRecorder {
@@ -287,10 +289,10 @@ func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR, cfgCCPA confi
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAppnexus:   appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com?sec={SecParam}"))),
-		openrtb_ext.BidderFacebook:   audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetworksec%3Dsec={SecParam}%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com?sec%3D{SecParam}"))),
-		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com?sec={SecParam}"))),
+		openrtb_ext.BidderAppnexus:   appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
+		openrtb_ext.BidderFacebook:   audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com"))),
+		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com"))),
 	}
 }
 
@@ -346,13 +348,20 @@ func parseSyncsForSecureFlag(t *testing.T, response []byte) map[string]string {
 	return syncs
 }
 
-func isSetSecParam(syncUrl string) bool {
-	u, err := url.Parse(syncUrl)
+func isSetSecParam(sync_url string) bool {
+	u, err := url.Parse(sync_url)
 	if err != nil {
 		return false
 	}
 	q := u.Query()
-	isSet := q.Get("sec") == "1"
+	predirect := q.Get("predirect")
+
+	u2, err := url.Parse(predirect)
+	if err != nil {
+		return false
+	}
+	q2 := u2.Query()
+	isSet := q2.Get("sec") == "1"
 	return isSet
 }
 
