@@ -5,13 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-
 	"github.com/PubMatic-OpenWrap/prebid-server/analytics"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
 	"github.com/PubMatic-OpenWrap/prebid-server/gdpr"
@@ -24,7 +17,15 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 )
+
+var secureFlagRegex = regexp.MustCompile(`{SecParam}`)
 
 func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
 	deps := &cookieSyncDeps{
@@ -154,10 +155,9 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 			secParam := r.URL.Query().Get("sec")
 			refererHeader := r.Header.Get("Referer")
 			if secParam == "1" || strings.HasPrefix(refererHeader, "https") {
-				urlWithSecParam, err := setSecureParam(syncInfo.URL)
-				if err == nil {
-					syncInfo.URL = urlWithSecParam
-				}
+				syncInfo.URL = setSecureParam(syncInfo.URL, true)
+			} else {
+				syncInfo.URL = setSecureParam(syncInfo.URL, false)
 			}
 
 			newSync := &usersync.CookieSyncBidders{
@@ -225,29 +225,13 @@ func cookieSyncStatus(syncCount int) string {
 	return "ok"
 }
 
-func setSecureParam(usersync_url string) (string, error) {
-	u1, err := url.Parse(usersync_url)
-	if err != nil {
-		glog.Errorf("Error while setting secure flag, failed to parse usersync url: %v", err)
-		return "", err
+func setSecureParam(userSyncUrl string, isSecure bool) string {
+	var secParam = "0"
+	if isSecure {
+		secParam = "1"
 	}
-
-	q1 := u1.Query()
-	u2, err := url.Parse(q1.Get("predirect"))
-	if err != nil {
-		glog.Errorf("Error while setting secure flag, failed to parse predirect param: %v", err)
-		return "", err
-	}
-
-	q2 := u2.Query()
-
-	q2.Set("sec", "1")
-
-	u2.RawQuery = q2.Encode()
-	q1.Set("predirect", u2.String())
-	u1.RawQuery = q1.Encode()
-
-	return u1.String(), nil
+	syncURL := secureFlagRegex.ReplaceAllString(userSyncUrl, secParam)
+	return syncURL
 }
 
 type CookieSyncReq cookieSyncRequest
