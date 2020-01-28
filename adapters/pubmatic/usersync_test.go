@@ -5,6 +5,7 @@ import (
 	"text/template"
 
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy"
+	"github.com/PubMatic-OpenWrap/prebid-server/privacy/ccpa"
 	"github.com/PubMatic-OpenWrap/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 )
