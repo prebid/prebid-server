@@ -98,14 +98,7 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
 
-		// In case of PubMatic bidder, check the sec param passed /cookie_sync endpoint for backward compatibility
-		// For all other bidders set secure = true
-		secParam := "1"
-		bidderPubmatic := openrtb_ext.BidderPubmatic
-		if familyName == bidderPubmatic.String() {
-			secParam = r.URL.Query().Get("sec")
-		}
-
+		secParam := r.URL.Query().Get("sec")
 		pc.SetCookieOnResponse(w, setSiteCookie, secParam, &cfg, cookieTTL)
 	})
 }
