@@ -145,7 +145,6 @@ func postData(prebidEventsData *LogPrebidEvents) {
 }
 
 type DataLogger struct {
-	dataTaskChannel chan DataTask
 }
 
 type DataTask struct {
@@ -158,9 +157,7 @@ func NewDataLogger(filename string) analytics.PBSAnalyticsModule {
 	if DebugLogging {
 		fmt.Println("News IQ Module - NewDataLogger - ", filename)
 	}
-	return &DataLogger{
-		dataTaskChannel: make(chan DataTask, 100),
-	}
+	return &DataLogger{}
 }
 
 func InitDataLogger() DataLogger {
@@ -171,13 +168,19 @@ func InitDataLogger() DataLogger {
 	return DataLogger{}
 }
 
+var dataTaskChannel chan DataTask
+
 func (d *DataLogger) StartDataTaskWorker() {
-	go dataTaskWorker(d.dataTaskChannel)
+	dataTaskChannel = make(chan DataTask, 100)
+	go dataTaskWorker(dataTaskChannel)
 }
 
 func (d *DataLogger) EnqueueDataTask(task DataTask) bool {
+	if DebugLogging {
+		fmt.Println("TEST : EnqueueDataTask(): ", dataTaskChannel)
+	}
 	select {
-	case d.dataTaskChannel <- task:
+	case dataTaskChannel <- task:
 		return true
 	default:
 		return false
