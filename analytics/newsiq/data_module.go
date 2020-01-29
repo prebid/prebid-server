@@ -104,28 +104,17 @@ func (d *DataLogger) LogAmpObject(ao *analytics.AmpObject) {
 	}
 }
 
-/* TODO : Build multithreaded env like DataLog: https://www.opsdash.com/blog/job-queues-in-go.html, https://nesv.github.io/golang/2014/02/25/worker-queues-in-go.html
-func worker(jobChan <-chan Job) {
-    for job := range jobChan {
-        SendCollectorData(job)
-    }
+func currentTimestamp() uint64 {
+	timeStamp := strings.ReplaceAll(time.Now().Format("01-02-2006"), "-", "")
+	intTimeStamp, err := strconv.ParseUint(timeStamp, 10, 64)
+	if err != nil {
+		if DebugLogging {
+			fmt.Println("Error: ", err)
+		} // TODO: Log Error
+		return 0
+	}
+	return intTimeStamp
 }
-
-// make a channel with a capacity of 100.
-jobChan := make(chan Job, 100)
-
-// start the worker
-go worker(jobChan)
-
-func TrySendCollectorData(job Job, jobChan <-chan Job) bool {
-    select {
-    case jobChan <- job:
-        return true
-    default:
-        return false
-    }
-}
-*/
 
 func postData(prebidEventsData *LogPrebidEvents) {
 	data, err := proto.Marshal(prebidEventsData)
@@ -150,13 +139,61 @@ func postData(prebidEventsData *LogPrebidEvents) {
 		}
 
 		if DebugLogging {
-			fmt.Println("RAW protobuf: ", data)
+			// fmt.Println("RAW protobuf: ", data)
 		}
 	}
 }
 
-// Sends Auction Data to Collector
-func (d *DataLogger) SendCollectorData(request *openrtb.BidRequest, response *openrtb.BidResponse, msg MsgType) {
+type DataLogger struct {
+	dataTaskChannel chan DataTask
+}
+
+type DataTask struct {
+	Request  *openrtb.BidRequest
+	Response *openrtb.BidResponse
+	Msg      MsgType
+}
+
+func NewDataLogger(filename string) analytics.PBSAnalyticsModule {
+	if DebugLogging {
+		fmt.Println("News IQ Module - NewDataLogger - ", filename)
+	}
+	return &DataLogger{
+		dataTaskChannel: make(chan DataTask, 100),
+	}
+}
+
+func InitDataLogger() DataLogger {
+	if DebugLogging {
+		fmt.Println("News IQ Module - InitDataLogger")
+	}
+
+	return DataLogger{}
+}
+
+func (d *DataLogger) StartDataTaskWorker() {
+	go dataTaskWorker(d.dataTaskChannel)
+}
+
+func (d *DataLogger) EnqueueDataTask(task DataTask) bool {
+	select {
+	case d.dataTaskChannel <- task:
+		return true
+	default:
+		return false
+	}
+}
+
+func dataTaskWorker(dataTaskChannel <-chan DataTask) {
+	fmt.Println("Start loop")
+	for task := range dataTaskChannel {
+		fmt.Println("In loop: ", task.Msg)
+		sendCollectorData(task.Request, task.Response, task.Msg)
+	}
+	fmt.Println("End loop")
+}
+
+func sendCollectorData(request *openrtb.BidRequest, response *openrtb.BidResponse, msg MsgType) {
 	if DebugLogging {
 		fmt.Println("News IQ Module - SendCollectorData() ", msg)
 	}
@@ -220,38 +257,6 @@ func (d *DataLogger) SendCollectorData(request *openrtb.BidRequest, response *op
 	postData(prebidEventObj)
 }
 
-//Module that can perform transactional logging
-type DataLogger struct {
-}
-
-//Method to initialize the analytic module
-func NewDataLogger(filename string) analytics.PBSAnalyticsModule {
-	if DebugLogging {
-		fmt.Println("News IQ Module - NewDataLogger - ", filename)
-	}
-	return &DataLogger{}
-}
-
-//Method to initialize the analytic module
-func InitDataLogger() DataLogger {
-	if DebugLogging {
-		fmt.Println("News IQ Module - InitDataLogger")
-	}
-	return DataLogger{}
-}
-
-func currentTimestamp() uint64 {
-	timeStamp := strings.ReplaceAll(time.Now().Format("01-02-2006"), "-", "")
-	intTimeStamp, err := strconv.ParseUint(timeStamp, 10, 64)
-	if err != nil {
-		if DebugLogging {
-			fmt.Println("Error: ", err)
-		} // TODO: Log Error
-		return 0
-	}
-	return intTimeStamp
-}
-
 func generateBidsArray(identifier string, response *openrtb.BidResponse) []*Bid {
 	bidsArray := []*Bid{}
 	seatBid := response.SeatBid
@@ -292,7 +297,6 @@ func generateBidsArray(identifier string, response *openrtb.BidResponse) []*Bid 
 }
 
 func generateAdUnits(request *openrtb.BidRequest, response *openrtb.BidResponse) []*AdUnit {
-
 	adunitsArray := []*AdUnit{}
 	for _, impressionObj := range request.Imp {
 		paramsArray := []*Param{}
