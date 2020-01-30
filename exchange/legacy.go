@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/buger/jsonparser"
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/currencies"
 	"github.com/PubMatic-OpenWrap/prebid-server/openrtb_ext"
 	"github.com/PubMatic-OpenWrap/prebid-server/pbs"
 	"github.com/PubMatic-OpenWrap/prebid-server/usersync"
-	"github.com/buger/jsonparser"
-	"github.com/mxmCherry/openrtb"
 )
 
 // AdaptLegacyAdapter turns a bidder.Adapter into an adaptedBidder.

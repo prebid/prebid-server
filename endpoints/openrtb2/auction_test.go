@@ -88,7 +88,7 @@ func TestExplicitUserId(t *testing.T) {
 				},
 				"ext": {
 					"appnexus": {
-						"placementId": 10433394
+						"placementId": 12883451
 					}
 				}
 			}
@@ -425,7 +425,7 @@ func buildNativeRequest(t *testing.T, nativeData []byte) []byte {
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString(`{"id":"req-id","site":{"page":"some.page.com"},"tmax":500,"imp":[{"id":"some-imp","native":{"request":`)
 	buf.Write(serialized)
-	buf.WriteString(`},"ext":{"appnexus":{"placementId":10433394}}}]}`)
+	buf.WriteString(`},"ext":{"appnexus":{"placementId":12883451}}}]}`)
 	return buf.Bytes()
 }
 
