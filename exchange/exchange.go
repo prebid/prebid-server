@@ -184,9 +184,19 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 
 	// Build the response
 	bidResponseObj, reponseError := e.buildBidResponse(ctx, liveAdapters, adapterBids, bidRequest, resolvedRequest, adapterExtra, errs)
-
 	if DebugLogging {
-		fmt.Println("TEST Bid Response Object Created: ", bidResponseObj)
+		fmt.Println("TEST Bid Responded here")
+		// fmt.Println("TEST Bid Response Object Created: ", bidResponseObj)
+	}
+
+	// NewsIQ : Bids Response from bidder
+	bidResponseDataTask := newsiq.DataTask{
+		Request:  bidRequest,
+		Response: bidResponseObj,
+		Msg:      newsiq.BidResponse,
+	}
+	if !e.dataLogger.EnqueueDataTask(bidResponseDataTask) {
+		fmt.Println("TEST : Data enqueue failure")
 	}
 
 	return bidResponseObj, reponseError
@@ -268,11 +278,6 @@ func (e *exchange) getAllBids(ctx context.Context, cleanRequests map[openrtb_ext
 					var cpm = float64(bid.bid.Price * 1000)
 					e.me.RecordAdapterPrice(*bidlabels, cpm)
 					e.me.RecordAdapterBidReceived(*bidlabels, bid.bidType, bid.bid.AdM != "")
-					// TODO : Bids Response from bidder
-					if DebugLogging {
-						fmt.Println("TEST Bid Responded here")
-					}
-
 				}
 			}
 			chBids <- brw
