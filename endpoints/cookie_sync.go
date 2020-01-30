@@ -26,7 +26,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-var secureFlagRegex = regexp.MustCompile(`{SecParam}`)
+var secureFlagRegex = regexp.MustCompile(`(%7B|{)SecParam(%7D|})`)
 
 func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
 	deps := &cookieSyncDeps{
