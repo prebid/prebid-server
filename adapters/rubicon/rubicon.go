@@ -685,6 +685,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *adap
 
 		isVideo := isVideo(thisImp)
 		if isVideo {
+			if rubiconExt.Video.VideoSizeID == 0 {
+				errs = append(errs, &errortypes.BadInput{
+					Message: fmt.Sprintf("imp[%d].ext.bidder.rubicon.video.size_id must be defined for video impression", i),
+				})
+				continue
+			}
+
 			videoCopy := *thisImp.Video
 			videoExt := rubiconVideoExt{Skip: rubiconExt.Video.Skip, SkipDelay: rubiconExt.Video.SkipDelay, RP: rubiconVideoExtRP{SizeID: rubiconExt.Video.VideoSizeID}}
 			videoCopy.Ext, err = json.Marshal(&videoExt)
