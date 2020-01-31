@@ -19,12 +19,11 @@ import (
 )
 
 type FacebookAdapter struct {
-	http                    *adapters.HTTPAdapter
-	URI                     string
-	nonSecureUri            string
-	platformID              string
-	appSecret               string
-	sendTimeoutNotification bool
+	http         *adapters.HTTPAdapter
+	URI          string
+	nonSecureUri string
+	platformID   string
+	appSecret    string
 }
 
 type facebookAdMarkup struct {
