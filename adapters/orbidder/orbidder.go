@@ -40,7 +40,7 @@ func (rcv *OrbidderAdapter) MakeRequests(request *openrtb.BidRequest, reqInfo *a
 		}
 		fmt.Printf("Req: ID %s\n", request.ID)
 		fmt.Printf("Imp-Banner witdh: %d, height: %d \n", imp.Banner.Format[0].W, imp.Banner.Format[0].H)
-		fmt.Printf("ExtImp: %#v\n", extImp )
+		fmt.Printf("ExtImp: %#v\n", extImp)
 		fmt.Printf("Site: %s\n", request.Site.Page)
 
 	}
