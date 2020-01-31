@@ -14,8 +14,7 @@
         },
         "ext": {
           "bidder": {
-            "seatId": 1927,
-            "tagId": "demo1"
+            "seatId": "prebid"
           }
         }
       }
@@ -24,7 +23,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go struct field ExtImpSynacormedia.seatId of type string",
+      "value": "Invalid Impression",
       "comparison": "literal"
     }
   ]
