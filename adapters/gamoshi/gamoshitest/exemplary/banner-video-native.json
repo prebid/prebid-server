@@ -53,7 +53,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://rtb.gamoshi.io/r/1707/bidr?reqformat=RTB_JSON",
+        "uri": "https://rtb.gamoshi.io/r/1707/bidr?bidder=prebid-server",
         "body": {
           "id": "test-request-id",
           "imp": [

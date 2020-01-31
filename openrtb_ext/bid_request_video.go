@@ -128,6 +128,14 @@ type BidRequestVideo struct {
 	// Description:
 	//   Block list of advertisers by their domains (e.g., “ford.com”).
 	BAdv []string `json:"badv,omitempty"`
+
+	// Attribute:
+	//   regs
+	// Type:
+	//   object; optional
+	// Description:
+	//   Contains the OpenRTB Regs object to be passed to OpenRTB request
+	Regs *openrtb.Regs `json:"regs,omitempty"`
 }
 
 type PodConfig struct {
