@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/mxmCherry/openrtb"
 	nativeRequests "github.com/mxmCherry/openrtb/native/request"
@@ -295,6 +296,10 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
+			if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); ok {
+				go bidder.doTimeoutNotification(tb, req)
+			}
+
 		}
 		return &httpCallInfo{
 			request: req,
@@ -326,6 +331,22 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 		},
 		err: err,
 	}
+}
+
+func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.TimeoutBidder, req *adapters.RequestData) {
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	toReq, errL := timeoutBidder.MakeTimeoutNotification(req)
+	if toReq != nil && len(errL) == 0 {
+		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
+		if err == nil {
+			httpReq.Header = req.Headers
+			httpResp, _ := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			// No validation yet on sending notifications
+			_ = httpResp
+		}
+	}
+
 }
 
 type httpCallInfo struct {

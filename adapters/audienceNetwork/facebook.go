@@ -19,11 +19,12 @@ import (
 )
 
 type FacebookAdapter struct {
-	http         *adapters.HTTPAdapter
-	URI          string
-	nonSecureUri string
-	platformID   string
-	appSecret    string
+	http                    *adapters.HTTPAdapter
+	URI                     string
+	nonSecureUri            string
+	platformID              string
+	appSecret               string
+	sendTimeoutNotification bool
 }
 
 type facebookAdMarkup struct {
@@ -446,4 +447,19 @@ func NewFacebookBidder(client *http.Client, platformID string, appSecret string)
 		platformID:   platformID,
 		appSecret:    appSecret,
 	}
+}
+
+func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	auction_id, err := jsonparser.GetString(req.Body, "imp", "[0]", "id")
+	if err != nil {
+		return &adapters.RequestData{}, []error{err}
+	}
+
+	timeoutReq := adapters.RequestData{
+		Method:  "GET",
+		Uri:     fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, fa.platformID, auction_id),
+		Body:    nil,
+		Headers: http.Header{},
+	}
+	return &timeoutReq, nil
 }
