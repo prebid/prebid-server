@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -25,6 +25,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 )
+
+var secureFlagRegex = regexp.MustCompile(`(%7B|{)SecParam(%7D|})`)
 
 func NewCookieSyncEndpoint(syncers map[openrtb_ext.BidderName]usersync.Usersyncer, cfg *config.Configuration, syncPermissions gdpr.Permissions, metrics pbsmetrics.MetricsEngine, pbsAnalytics analytics.PBSAnalyticsModule) httprouter.Handle {
 	deps := &cookieSyncDeps{
@@ -139,6 +141,15 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		Status:       cookieSyncStatus(userSyncCookie.LiveSyncCount()),
 		BidderStatus: make([]*usersync.CookieSyncBidders, 0, len(parsedReq.Bidders)),
 	}
+
+	//For secure = true flag on cookie
+	secParam := r.URL.Query().Get("sec")
+	refererHeader := r.Header.Get("Referer")
+	setSecureFlag := false
+	if secParam == "1" || strings.HasPrefix(refererHeader, "https") {
+		setSecureFlag = true
+	}
+
 	for i := 0; i < len(parsedReq.Bidders); i++ {
 		bidder := parsedReq.Bidders[i]
 
@@ -150,16 +161,8 @@ func (deps *cookieSyncDeps) Endpoint(w http.ResponseWriter, r *http.Request, _ h
 		}
 		syncInfo, err := deps.syncers[openrtb_ext.BidderName(newBidder)].GetUsersyncInfo(privacyPolicy)
 		if err == nil {
-			//For secure = true flag on cookie
-			secParam := r.URL.Query().Get("sec")
-			refererHeader := r.Header.Get("Referer")
-			bidderPubmatic := openrtb_ext.BidderPubmatic
-			if (secParam == "1" || strings.HasPrefix(refererHeader, "https")) && newBidder == bidderPubmatic.String() {
-				urlWithSecParam, err := setSecureParam(syncInfo.URL)
-				if err == nil {
-					syncInfo.URL = urlWithSecParam
-				}
-			}
+
+			syncInfo.URL = setSecureParam(syncInfo.URL, setSecureFlag)
 
 			newSync := &usersync.CookieSyncBidders{
 				BidderCode:   bidder,
@@ -226,29 +229,13 @@ func cookieSyncStatus(syncCount int) string {
 	return "ok"
 }
 
-func setSecureParam(usersync_url string) (string, error) {
-	u1, err := url.Parse(usersync_url)
-	if err != nil {
-		glog.Errorf("Error while setting secure flag, failed to parse usersync url: %v", err)
-		return "", err
+func setSecureParam(userSyncUrl string, isSecure bool) string {
+	var secParam = "0"
+	if isSecure {
+		secParam = "1"
 	}
-
-	q1 := u1.Query()
-	u2, err := url.Parse(q1.Get("predirect"))
-	if err != nil {
-		glog.Errorf("Error while setting secure flag, failed to parse predirect param: %v", err)
-		return "", err
-	}
-
-	q2 := u2.Query()
-
-	q2.Set("sec", "1")
-
-	u2.RawQuery = q2.Encode()
-	q1.Set("predirect", u2.String())
-	u1.RawQuery = q1.Encode()
-
-	return u1.String(), nil
+	syncURL := secureFlagRegex.ReplaceAllString(userSyncUrl, secParam)
+	return syncURL
 }
 
 type CookieSyncReq cookieSyncRequest

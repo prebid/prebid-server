@@ -97,8 +97,8 @@ func NewSetUIDEndpoint(cfg config.HostCookie, syncers map[openrtb_ext.BidderName
 		}
 
 		setSiteCookie := siteCookieCheck(r.UserAgent())
-		secParam := r.URL.Query().Get("sec")
 
+		secParam := r.URL.Query().Get("sec")
 		pc.SetCookieOnResponse(w, setSiteCookie, secParam, &cfg, cookieTTL)
 	})
 }
