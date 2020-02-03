@@ -151,10 +151,8 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
-			if len(rejections) > 0 {
-				for _, message := range rejections {
-					errs = append(errs, fmt.Errorf(message))
-				}
+			for _, message := range rejections {
+				errs = append(errs, fmt.Errorf(message))
 			}
 		}
 
@@ -414,8 +412,8 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 						//TODO: add metrics
 						//if mapping required but no mapping file is found then discard the bid
 						bidsToRemove = append(bidsToRemove, bidInd)
-						tempReason := fmt.Sprintf("Category mapping file for primary ad server: '%s', publisher: '%s' not found", primaryAdServer, publisher)
-						rejections = updateRejections(rejections, bidID, tempReason)
+						reason := fmt.Sprintf("Category mapping file for primary ad server: '%s', publisher: '%s' not found", primaryAdServer, publisher)
+						rejections = updateRejections(rejections, bidID, reason)
 						continue
 					}
 				} else {
@@ -465,7 +463,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 						oldSeatBid := (seatBids)[dupe.bidderName]
 						if len(oldSeatBid.bids) == 1 {
 							seatBidsToRemove = append(seatBidsToRemove, bidderName)
-							rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
+							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
 							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
 						}
@@ -498,10 +496,8 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 		}
 
 	}
-	if len(seatBidsToRemove) > 0 {
-		for _, seatBidInd := range seatBidsToRemove {
-			seatBids[seatBidInd].bids = nil
-		}
+	for _, seatBidInd := range seatBidsToRemove {
+		seatBids[seatBidInd].bids = nil
 	}
 
 	return res, seatBids, rejections, nil
