@@ -1,4 +1,4 @@
-module github.com/prebid/prebid-server
+module github.com/intergi/prebid-server
 
 go 1.19
 
