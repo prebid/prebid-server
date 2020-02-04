@@ -1,9 +1,8 @@
 package mgid
 
 import (
-	"testing"
-
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
+	"testing"
 )
 
 func TestJsonSamples(t *testing.T) {

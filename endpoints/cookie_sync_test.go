@@ -189,9 +189,9 @@ func TestCookieSyncWithSecureParam(t *testing.T) {
 		true, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
+	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	//assert.True(t, isSetSecParam(syncs["pubmatic"]))
+	assert.True(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestCookieSyncWithoutSecureParam(t *testing.T) {
@@ -199,9 +199,9 @@ func TestCookieSyncWithoutSecureParam(t *testing.T) {
 		false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
+	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	//assert.False(t, isSetSecParam(syncs["pubmatic"]))
+	assert.False(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestRefererHeader(t *testing.T) {
@@ -209,9 +209,9 @@ func TestRefererHeader(t *testing.T) {
 		false, true, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
+	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	//assert.False(t, isSetSecParam(syncs["pubmatic"]))
+	assert.False(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestNoRefererHeader(t *testing.T) {
@@ -219,9 +219,9 @@ func TestNoRefererHeader(t *testing.T) {
 		false, false, false)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
+	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	//assert.False(t, isSetSecParam(syncs["pubmatic"]))
+	assert.False(t, isSetSecParam(syncs["pubmatic"]))
 }
 
 func TestSecureRefererHeader(t *testing.T) {
@@ -229,9 +229,22 @@ func TestSecureRefererHeader(t *testing.T) {
 		false, false, true)
 	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
 	assert.Equal(t, http.StatusOK, rr.Code)
-	syncs := parseSyncs(t, rr.Body.Bytes())
+	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
 	assert.Contains(t, syncs, "pubmatic")
-	//assert.True(t, isSetSecParam(syncs["pubmatic"]))
+	assert.True(t, isSetSecParam(syncs["pubmatic"]))
+}
+
+//Test that secure flag is getting set for all bidders
+func TestCookieSyncWithSecureParamForBidders(t *testing.T) {
+	rr := doConfigurablePost(`{"bidders":["appnexus", "audienceNetwork", "random"],"gdpr_consent":"GLKHGKGKKGK"}`,
+		nil, true, map[openrtb_ext.BidderName]usersync.Usersyncer{},
+		config.GDPR{UsersyncIfAmbiguous: true}, config.CCPA{}, true, false,
+		false)
+	assert.Equal(t, rr.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, http.StatusOK, rr.Code)
+	syncs := parseSyncsForSecureFlag(t, rr.Body.Bytes())
+	assert.Contains(t, syncs, "appnexus")
+	assert.True(t, isSetSecParam(syncs["appnexus"]))
 }
 
 func doPost(body string, existingSyncs map[string]string, gdprHostConsent bool, gdprBidders map[openrtb_ext.BidderName]usersync.Usersyncer, addSecParam bool, addHttpRefererHeader bool, addHttpsRefererHeader bool) *httptest.ResponseRecorder {
@@ -274,10 +287,10 @@ func testableEndpoint(perms gdpr.Permissions, cfgGDPR config.GDPR, cfgCCPA confi
 
 func syncersForTest() map[openrtb_ext.BidderName]usersync.Usersyncer {
 	return map[openrtb_ext.BidderName]usersync.Usersyncer{
-		openrtb_ext.BidderAppnexus:   appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com"))),
-		openrtb_ext.BidderFacebook:   audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetwork%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
-		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com"))),
-		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com"))),
+		openrtb_ext.BidderAppnexus:   appnexus.NewAppnexusSyncer(template.Must(template.New("sync").Parse("someurl.com?sec={SecParam}"))),
+		openrtb_ext.BidderFacebook:   audienceNetwork.NewFacebookSyncer(template.Must(template.New("sync").Parse("https://www.facebook.com/audiencenetwork/idsync/?partner=partnerId&callback=localhost%2Fsetuid%3Fbidder%3DaudienceNetworksec%3Dsec={SecParam}%26gdpr%3D{{.GDPR}}%26gdpr_consent%3D{{.GDPRConsent}}%26uid%3D%24UID"))),
+		openrtb_ext.BidderLifestreet: lifestreet.NewLifestreetSyncer(template.Must(template.New("sync").Parse("anotherurl.com?sec%3D{SecParam}"))),
+		openrtb_ext.BidderPubmatic:   pubmatic.NewPubmaticSyncer(template.Must(template.New("sync").Parse("thaturl.com?sec={SecParam}"))),
 	}
 }
 
@@ -306,20 +319,40 @@ func parseSyncs(t *testing.T, response []byte) []string {
 	return syncs
 }
 
-func isSetSecParam(sync_url string) bool {
-	u, err := url.Parse(sync_url)
+func parseSyncsForSecureFlag(t *testing.T, response []byte) map[string]string {
+	t.Helper()
+	var syncs map[string]string = make(map[string]string)
+	jsonparser.ArrayEach(response, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		if dataType != jsonparser.Object {
+			t.Errorf("response.bidder_status contained unexpected element of type %v.", dataType)
+		}
+		if val, err := jsonparser.GetString(value, "bidder"); err != nil {
+			t.Errorf("response.bidder_status[?].bidder was not a string. Value was %s", string(value))
+		} else {
+			usersyncObj, _, _, err := jsonparser.Get(value, "usersync")
+			if err != nil {
+				syncs[val] = ""
+			} else {
+				usrsync_url, err := jsonparser.GetString(usersyncObj, "url")
+				if err != nil {
+					syncs[val] = ""
+				} else {
+					syncs[val] = usrsync_url
+				}
+			}
+			//syncs = append(syncs, val)
+		}
+	}, "bidder_status")
+	return syncs
+}
+
+func isSetSecParam(syncUrl string) bool {
+	u, err := url.Parse(syncUrl)
 	if err != nil {
 		return false
 	}
 	q := u.Query()
-	predirect := q.Get("predirect")
-
-	u2, err := url.Parse(predirect)
-	if err != nil {
-		return false
-	}
-	q2 := u2.Query()
-	isSet := q2.Get("sec") == "1"
+	isSet := q.Get("sec") == "1"
 	return isSet
 }
 
@@ -346,4 +379,44 @@ func (g *gdprPerms) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.Bi
 
 func (g *gdprPerms) PersonalInfoAllowed(ctx context.Context, bidder openrtb_ext.BidderName, PublisherID string, consent string) (bool, error) {
 	return true, nil
+}
+
+func TestSetSecureParam(t *testing.T) {
+	type args struct {
+		userSyncUrl string
+		isSecure    bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Test unescaped with secure = false",
+			args: args{"http://testurl.com?sec={SecParam}", false},
+			want: "http://testurl.com?sec=0",
+		},
+		{
+			name: "Test unescaped with secure = true",
+			args: args{"http://testurl.com?sec={SecParam}", true},
+			want: "http://testurl.com?sec=1",
+		},
+		{
+			name: "Test escaped with secure = false",
+			args: args{"http://testurl.com?sec%2f%7BSecParam%7D", false},
+			want: "http://testurl.com?sec%2f0",
+		},
+		{
+			name: "Test escaped with secure = true",
+			args: args{"http://testurl.com?sec%2f%7BSecParam%7D", true},
+			want: "http://testurl.com?sec%2f1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := setSecureParam(tt.args.userSyncUrl, tt.args.isSecure); got != tt.want {
+				t.Errorf("Got: %s, want: %s", got, tt.want)
+			}
+		})
+	}
 }

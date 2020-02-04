@@ -16,10 +16,10 @@ import (
 
 	"fmt"
 
+	"github.com/mxmCherry/openrtb"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters"
 	"github.com/PubMatic-OpenWrap/prebid-server/adapters/adapterstest"
 	"github.com/PubMatic-OpenWrap/prebid-server/config"
-	"github.com/mxmCherry/openrtb"
 )
 
 func TestJsonSamples(t *testing.T) {

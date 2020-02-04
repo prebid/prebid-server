@@ -966,7 +966,7 @@ func getTestBidRequest(nilUser bool, nilExt bool, consentString string, digitrus
 		Imp: []openrtb.Imp{
 			{
 				ID:  "/19968336/header-bid-tag-0",
-				Ext: json.RawMessage(`{"appnexus": { "placementId":10433394 }}`),
+				Ext: json.RawMessage(`{"appnexus": { "placementId":12883451 }}`),
 				Banner: &openrtb.Banner{
 					Format: []openrtb.Format{
 						{
