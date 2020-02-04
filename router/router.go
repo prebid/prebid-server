@@ -194,9 +194,9 @@ func New(cfg *config.Configuration, rateConvertor *currencies.RateConverter) (r 
 
 	cacheHttpClient := &http.Client{
 		Transport: &http.Transport{
-			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,                                 // 10
-			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,                          // unset (2)
-			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second, // 65
+			MaxIdleConns:        cfg.CacheClient.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.CacheClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     time.Duration(cfg.CacheClient.IdleConnTimeout) * time.Second,
 		},
 	}
 
