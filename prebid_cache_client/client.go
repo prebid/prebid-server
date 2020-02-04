@@ -47,14 +47,9 @@ type Cacheable struct {
 	Key        string
 }
 
-func NewClient(conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
+func NewClient(httpClient *http.Client, conf *config.Cache, extCache *config.ExternalCache, metrics pbsmetrics.MetricsEngine) Client {
 	return &clientImpl{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConns:    10,
-				IdleConnTimeout: 65,
-			},
-		},
+		httpClient:        httpClient,
 		putUrl:            conf.GetBaseURL() + "/cache",
 		externalCacheHost: extCache.Host,
 		externalCachePath: extCache.Path,

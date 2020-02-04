@@ -68,6 +68,10 @@ http_client:
   max_idle_connections: 500
   max_idle_connections_per_host: 20
   idle_connection_timeout_seconds: 30
+http_client_cache:
+  max_idle_connections: 1
+  max_idle_connections_per_host: 2
+  idle_connection_timeout_seconds: 3
 currency_converter:
   fetch_url: https://currency.prebid.org
   fetch_interval_seconds: 1800
@@ -214,6 +218,9 @@ func TestFullConfig(t *testing.T) {
 	cmpInts(t, "http_client.max_idle_connections", cfg.Client.MaxIdleConns, 500)
 	cmpInts(t, "http_client.max_idle_connections_per_host", cfg.Client.MaxIdleConnsPerHost, 20)
 	cmpInts(t, "http_client.idle_connection_timeout_seconds", cfg.Client.IdleConnTimeout, 30)
+	cmpInts(t, "http_client_cache.max_idle_connections", cfg.CacheClient.MaxIdleConns, 1)
+	cmpInts(t, "http_client_cache.max_idle_connections_per_host", cfg.CacheClient.MaxIdleConnsPerHost, 2)
+	cmpInts(t, "http_client_cache.idle_connection_timeout_seconds", cfg.CacheClient.IdleConnTimeout, 3)
 	cmpInts(t, "gdpr.host_vendor_id", cfg.GDPR.HostVendorID, 15)
 	cmpBools(t, "gdpr.usersync_if_ambiguous", cfg.GDPR.UsersyncIfAmbiguous, true)
 
