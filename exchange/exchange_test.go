@@ -170,7 +170,7 @@ func TestGetBidCacheInfo(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(handlerNoBidServer))
 	defer server.Close()
 
-	e := NewExchange(server.Client(), pbc.NewClient(&cfg.CacheURL, &cfg.ExtCacheURL, testEngine), cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
+	e := NewExchange(server.Client(), pbc.NewClient(&http.Client{}, &cfg.CacheURL, &cfg.ExtCacheURL, testEngine), cfg, pbsmetrics.NewMetrics(metrics.NewRegistry(), openrtb_ext.BidderList(), config.DisabledMetrics{}), adapters.ParseBidderInfos(cfg.Adapters, "../static/bidder-info", openrtb_ext.BidderList()), gdpr.AlwaysAllow{}, currencies.NewRateConverterDefault()).(*exchange)
 
 	/* 	3) Build all the parameters e.buildBidResponse(ctx.Background(), liveA... ) needs */
 	liveAdapters := []openrtb_ext.BidderName{bidderName}
