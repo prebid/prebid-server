@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -152,7 +153,7 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
 			}
 			for _, message := range rejections {
-				errs = append(errs, fmt.Errorf(message))
+				errs = append(errs, errors.New(message))
 			}
 		}
 
