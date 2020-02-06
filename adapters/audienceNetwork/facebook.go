@@ -449,6 +449,7 @@ func NewFacebookBidder(client *http.Client, platformID string, appSecret string)
 }
 
 func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*adapters.RequestData, []error) {
+	// Note, facebook creates one request per imp, so all these requests will only have one imp in them
 	auction_id, err := jsonparser.GetString(req.Body, "imp", "[0]", "id")
 	if err != nil {
 		return &adapters.RequestData{}, []error{err}
