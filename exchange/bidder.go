@@ -297,6 +297,10 @@ func (bidder *bidderAdapter) doRequest(ctx context.Context, req *adapters.Reques
 		if err == context.DeadlineExceeded {
 			err = &errortypes.Timeout{Message: err.Error()}
 			if tb, ok := bidder.Bidder.(adapters.TimeoutBidder); ok {
+				// Toss the timeout notification call into a go routine, as we are out of time'
+				// and cannot delay processing. We don't do anything result, as there is not much
+				// we can do about a timeout notification failure. We do not want to get stuck in
+				// a loop of trying to report timeouts to the timeout notifications.
 				go bidder.doTimeoutNotification(tb, req)
 			}
 
@@ -341,9 +345,8 @@ func (bidder *bidderAdapter) doTimeoutNotification(timeoutBidder adapters.Timeou
 		httpReq, err := http.NewRequest(toReq.Method, toReq.Uri, bytes.NewBuffer(toReq.Body))
 		if err == nil {
 			httpReq.Header = req.Headers
-			httpResp, _ := ctxhttp.Do(ctx, bidder.Client, httpReq)
+			ctxhttp.Do(ctx, bidder.Client, httpReq)
 			// No validation yet on sending notifications
-			_ = httpResp
 		}
 	}
 

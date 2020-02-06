@@ -454,9 +454,10 @@ func (fa *FacebookAdapter) MakeTimeoutNotification(req *adapters.RequestData) (*
 		return &adapters.RequestData{}, []error{err}
 	}
 
+	uri := fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, fa.platformID, auction_id)
 	timeoutReq := adapters.RequestData{
 		Method:  "GET",
-		Uri:     fmt.Sprintf("https://www.facebook.com/audiencenetwork/nurl/?partner=%s&app=%s&auction=%s&ortb_loss_code=2", fa.platformID, fa.platformID, auction_id),
+		Uri:     uri,
 		Body:    nil,
 		Headers: http.Header{},
 	}
