@@ -60,3 +60,20 @@ func TestMakeTimeoutNotice(t *testing.T) {
 	assert.Equal(t, expectedUri, toReq.Uri, "Facebook timeout notification not returning the expected URI.")
 
 }
+
+func TestMakeTimeoutNoticeBadRequest(t *testing.T) {
+	req := adapters.RequestData{
+		Body: []byte(`{"imp":[{{"id":"1234"}}`),
+	}
+	fba := NewFacebookBidder(nil, "test-platform-id", "test-app-secret")
+
+	tb, ok := fba.(adapters.TimeoutBidder)
+	if !ok {
+		t.Error("Facebook adapter is not a TimeoutAdapter")
+	}
+
+	toReq, err := tb.MakeTimeoutNotification(&req)
+	assert.Empty(t, toReq.Uri, "Facebook MakeTimeoutNotification() did not return nil", err)
+	assert.NotNil(t, err, "Facebook MakeTimeoutNotification() did not return an error")
+
+}
