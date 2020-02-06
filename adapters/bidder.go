@@ -41,8 +41,7 @@ type Bidder interface {
 
 // TimeoutBidder is used to identify bidders that support timeout notifications.
 type TimeoutBidder interface {
-	MakeRequests(request *openrtb.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error)
-	MakeBids(internalRequest *openrtb.BidRequest, externalRequest *RequestData, response *ResponseData) (*BidderResponse, []error)
+	Bidder
 
 	// MakeTimeoutNotice functions much the same as MakeRequests, except it is fed the bidder request that timed out,
 	// and expects that only one notification "request" will be generated. A use case for multiple timeout notifications
