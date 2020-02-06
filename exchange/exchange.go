@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -146,9 +147,13 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		//If includebrandcategory is present in ext then CE feature is on.
 		if requestExt.Prebid.Targeting != nil && requestExt.Prebid.Targeting.IncludeBrandCategory != nil {
 			var err error
-			bidCategory, adapterBids, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
+			var rejections []string
+			bidCategory, adapterBids, rejections, err = applyCategoryMapping(ctx, requestExt, adapterBids, *categoriesFetcher, targData)
 			if err != nil {
 				return nil, fmt.Errorf("Error in category mapping : %s", err.Error())
+			}
+			for _, message := range rejections {
+				errs = append(errs, errors.New(message))
 			}
 		}
 
@@ -340,7 +345,7 @@ func (e *exchange) buildBidResponse(ctx context.Context, liveAdapters []openrtb_
 	return bidResponse, err
 }
 
-func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, error) {
+func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest, seatBids map[openrtb_ext.BidderName]*pbsOrtbSeatBid, categoriesFetcher stored_requests.CategoryFetcher, targData *targetData) (map[string]string, map[openrtb_ext.BidderName]*pbsOrtbSeatBid, []string, error) {
 	res := make(map[string]string)
 
 	type bidDedupe struct {
@@ -359,6 +364,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 	var primaryAdServer string
 	var publisher string
 	var err error
+	var rejections []string
 	var translateCategories = true
 
 	if includeBrandCategory && brandCatExt.WithCategory {
@@ -370,7 +376,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 			//if ext.prebid.targeting.includebrandcategory present but primaryadserver/publisher not present then error out the request right away.
 			primaryAdServer, err = getPrimaryAdServer(brandCatExt.PrimaryAdServer) //1-Freewheel 2-DFP
 			if err != nil {
-				return res, seatBids, err
+				return res, seatBids, rejections, err
 			}
 			publisher = brandCatExt.Publisher
 		}
@@ -382,6 +388,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 		bidsToRemove := make([]int, 0)
 		for bidInd := range seatBid.bids {
 			bid := seatBid.bids[bidInd]
+			bidID := bid.bid.ID
 			var duration int
 			var category string
 			var pb string
@@ -396,6 +403,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 					//TODO: add metrics
 					//on receiving bids from adapters if no unique IAB category is returned  or if no ad server category is returned discard the bid
 					bidsToRemove = append(bidsToRemove, bidInd)
+					rejections = updateRejections(rejections, bidID, "Bid did not contain a category")
 					continue
 				}
 				if translateCategories {
@@ -405,6 +413,8 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 						//TODO: add metrics
 						//if mapping required but no mapping file is found then discard the bid
 						bidsToRemove = append(bidsToRemove, bidInd)
+						reason := fmt.Sprintf("Category mapping file for primary ad server: '%s', publisher: '%s' not found", primaryAdServer, publisher)
+						rejections = updateRejections(rejections, bidID, reason)
 						continue
 					}
 				} else {
@@ -424,6 +434,7 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				//if the bid is above the range of the listed durations (and outside the buffer), reject the bid
 				if duration > durationRange[len(durationRange)-1] {
 					bidsToRemove = append(bidsToRemove, bidInd)
+					rejections = updateRejections(rejections, bidID, "Bid duration exceeds maximum allowed")
 					continue
 				}
 				for _, dur := range durationRange {
@@ -447,11 +458,13 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 					if dupe.bidderName == bidderName {
 						// An older bid from the current bidder
 						bidsToRemove = append(bidsToRemove, dupe.bidIndex)
+						rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 					} else {
 						// An older bid from a different seatBid we've already finished with
 						oldSeatBid := (seatBids)[dupe.bidderName]
 						if len(oldSeatBid.bids) == 1 {
 							seatBidsToRemove = append(seatBidsToRemove, bidderName)
+							rejections = updateRejections(rejections, dupe.bidID, "Bid was deduplicated")
 						} else {
 							oldSeatBid.bids = append(oldSeatBid.bids[:dupe.bidIndex], oldSeatBid.bids[dupe.bidIndex+1:]...)
 						}
@@ -460,11 +473,12 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 				} else {
 					// Remove this bid
 					bidsToRemove = append(bidsToRemove, bidInd)
+					rejections = updateRejections(rejections, bidID, "Bid was deduplicated")
 					continue
 				}
 			}
-			res[bid.bid.ID] = categoryDuration
-			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bid.bid.ID}
+			res[bidID] = categoryDuration
+			dedupe[categoryDuration] = bidDedupe{bidderName: bidderName, bidIndex: bidInd, bidID: bidID}
 		}
 
 		if len(bidsToRemove) > 0 {
@@ -483,19 +497,16 @@ func applyCategoryMapping(ctx context.Context, requestExt openrtb_ext.ExtRequest
 		}
 
 	}
-	if len(seatBidsToRemove) > 0 {
-		if len(seatBidsToRemove) == len(seatBids) {
-			//delete all seat bids
-			seatBids = nil
-		} else {
-			for _, seatBidInd := range seatBidsToRemove {
-				delete(seatBids, seatBidInd)
-			}
-
-		}
+	for _, seatBidInd := range seatBidsToRemove {
+		seatBids[seatBidInd].bids = nil
 	}
 
-	return res, seatBids, nil
+	return res, seatBids, rejections, nil
+}
+
+func updateRejections(rejections []string, bidID string, reason string) []string {
+	message := fmt.Sprintf("bid rejected [bid ID: %s] reason: %s", bidID, reason)
+	return append(rejections, message)
 }
 
 func getPrimaryAdServer(adServerId int) (string, error) {

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -930,9 +931,11 @@ func TestCategoryMapping(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
+	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
+	assert.Equal(t, "bid rejected [bid ID: bid_id4] reason: Category mapping file for primary ad server: 'freewheel', publisher: '' not found", rejections[0], "Rejection message did not match expected")
 	assert.Equal(t, "10.00_Electronics_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_Sports_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_AdapterOverride_30s", bidCategory["bid_id3"], "Category mapping override from adapter didn't take")
@@ -983,9 +986,10 @@ func TestCategoryMappingNoIncludeBrandCategory(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
+	assert.Empty(t, rejections, "There should be no bid rejection messages")
 	assert.Equal(t, "10.00_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_40s", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_30s", bidCategory["bid_id3"], "Category mapping doesn't match")
@@ -1034,9 +1038,11 @@ func TestCategoryMappingTranslateCategoriesNil(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
+	assert.Equal(t, 1, len(rejections), "There should be 1 bid rejection message")
+	assert.Equal(t, "bid rejected [bid ID: bid_id3] reason: Category mapping file for primary ad server: 'freewheel', publisher: '' not found", rejections[0], "Rejection message did not match expected")
 	assert.Equal(t, "10.00_Electronics_30s", bidCategory["bid_id1"], "Category mapping doesn't match")
 	assert.Equal(t, "20.00_Sports_50s", bidCategory["bid_id2"], "Category mapping doesn't match")
 	assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
@@ -1114,9 +1120,10 @@ func TestCategoryMappingTranslateCategoriesFalse(t *testing.T) {
 
 	adapterBids[bidderName1] = &seatBid
 
-	bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+	bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 	assert.Equal(t, nil, err, "Category mapping error should be empty")
+	assert.Empty(t, rejections, "There should be no bid rejection messages")
 	assert.Equal(t, "10.00_IAB1-3_30s", bidCategory["bid_id1"], "Category should not be translated")
 	assert.Equal(t, "20.00_IAB1-4_50s", bidCategory["bid_id2"], "Category should not be translated")
 	assert.Equal(t, "20.00_IAB1-1000_30s", bidCategory["bid_id3"], "Bid should not be rejected")
@@ -1179,9 +1186,12 @@ func TestCategoryDedupe(t *testing.T) {
 
 		adapterBids[bidderName1] = &seatBid
 
-		bidCategory, adapterBids, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, requestExt, adapterBids, categoriesFetcher, targData)
 
 		assert.Equal(t, nil, err, "Category mapping error should be empty")
+		assert.Equal(t, 2, len(rejections), "There should be 2 bid rejection messages")
+		assert.Regexpf(t, regexp.MustCompile(`bid rejected \[bid ID: bid_id(1|3)\] reason: Bid was deduplicated`), rejections[0], "Rejection message did not match expected")
+		assert.Equal(t, "bid rejected [bid ID: bid_id4] reason: Category mapping file for primary ad server: 'freewheel', publisher: '' not found", rejections[1], "Rejection message did not match expected")
 		assert.Equal(t, 2, len(adapterBids[bidderName1].bids), "Bidders number doesn't match")
 		assert.Equal(t, 2, len(bidCategory), "Bidders category mapping doesn't match")
 
@@ -1194,6 +1204,125 @@ func TestCategoryDedupe(t *testing.T) {
 	assert.Equal(t, numIterations, selectedBids["bid_id2"], "Bid 2 did not make it through every time")
 	assert.NotEqual(t, numIterations, selectedBids["bid_id1"], "Bid 1 made it through every time")
 	assert.NotEqual(t, numIterations, selectedBids["bid_id3"], "Bid 3 made it through every time")
+}
+
+func TestBidRejectionErrors(t *testing.T) {
+	categoriesFetcher, error := newCategoryFetcher("./test/category-mapping")
+	if error != nil {
+		t.Errorf("Failed to create a category Fetcher: %v", error)
+	}
+
+	requestExt := newExtRequest()
+	requestExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
+
+	targData := &targetData{
+		priceGranularity: requestExt.Prebid.Targeting.PriceGranularity,
+		includeWinners:   true,
+	}
+
+	invalidReqExt := newExtRequest()
+	invalidReqExt.Prebid.Targeting.DurationRangeSec = []int{15, 30, 50}
+	invalidReqExt.Prebid.Targeting.IncludeBrandCategory.PrimaryAdServer = 2
+	invalidReqExt.Prebid.Targeting.IncludeBrandCategory.Publisher = "some_publisher"
+
+	adapterBids := make(map[openrtb_ext.BidderName]*pbsOrtbSeatBid)
+	bidderName := openrtb_ext.BidderName("appnexus")
+
+	testCases := []struct {
+		description        string
+		reqExt             openrtb_ext.ExtRequest
+		bids               []*openrtb.Bid
+		duration           int
+		expectedRejections []string
+		expectedCatDur     string
+	}{
+		{
+			description: "Bid should be rejected due to not containing a category",
+			reqExt:      requestExt,
+			bids: []*openrtb.Bid{
+				{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: []string{}, W: 1, H: 1},
+			},
+			duration: 30,
+			expectedRejections: []string{
+				"bid rejected [bid ID: bid_id1] reason: Bid did not contain a category",
+			},
+		},
+		{
+			description: "Bid should be rejected due to missing category mapping file",
+			reqExt:      invalidReqExt,
+			bids: []*openrtb.Bid{
+				{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: []string{"IAB1-1"}, W: 1, H: 1},
+			},
+			duration: 30,
+			expectedRejections: []string{
+				"bid rejected [bid ID: bid_id1] reason: Category mapping file for primary ad server: 'dfp', publisher: 'some_publisher' not found",
+			},
+		},
+		{
+			description: "Bid should be rejected due to duration exceeding maximum",
+			reqExt:      requestExt,
+			bids: []*openrtb.Bid{
+				{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: []string{"IAB1-1"}, W: 1, H: 1},
+			},
+			duration: 70,
+			expectedRejections: []string{
+				"bid rejected [bid ID: bid_id1] reason: Bid duration exceeds maximum allowed",
+			},
+		},
+		{
+			description: "Bid should be rejected due to duplicate bid",
+			reqExt:      requestExt,
+			bids: []*openrtb.Bid{
+				{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: []string{"IAB1-1"}, W: 1, H: 1},
+				{ID: "bid_id1", ImpID: "imp_id1", Price: 10.0000, Cat: []string{"IAB1-1"}, W: 1, H: 1},
+			},
+			duration: 30,
+			expectedRejections: []string{
+				"bid rejected [bid ID: bid_id1] reason: Bid was deduplicated",
+			},
+			expectedCatDur: "10.00_VideoGames_30s",
+		},
+	}
+
+	for _, test := range testCases {
+		innerBids := []*pbsOrtbBid{}
+		for _, bid := range test.bids {
+			currentBid := pbsOrtbBid{
+				bid, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: test.duration},
+			}
+			innerBids = append(innerBids, &currentBid)
+		}
+
+		seatBid := pbsOrtbSeatBid{innerBids, "USD", nil, nil}
+
+		adapterBids[bidderName] = &seatBid
+
+		bidCategory, adapterBids, rejections, err := applyCategoryMapping(nil, test.reqExt, adapterBids, categoriesFetcher, targData)
+
+		if len(test.expectedCatDur) > 0 {
+			// Bid deduplication case
+			assert.Equal(t, 1, len(adapterBids[bidderName].bids), "Bidders number doesn't match")
+			assert.Equal(t, 1, len(bidCategory), "Bidders category mapping doesn't match")
+			assert.Equal(t, test.expectedCatDur, bidCategory["bid_id1"], "Bid category did not contain expected hb_pb_cat_dur")
+		} else {
+			assert.Empty(t, adapterBids[bidderName].bids, "Bidders number doesn't match")
+			assert.Empty(t, bidCategory, "Bidders category mapping doesn't match")
+		}
+
+		assert.Empty(t, err, "Category mapping error should be empty")
+		assert.Equal(t, test.expectedRejections, rejections, test.description)
+	}
+}
+
+func TestUpdateRejections(t *testing.T) {
+	rejections := []string{}
+
+	rejections = updateRejections(rejections, "bid_id1", "some reason 1")
+	rejections = updateRejections(rejections, "bid_id2", "some reason 2")
+
+	assert.Equal(t, 2, len(rejections), "Rejections should contain 2 rejection messages")
+	assert.Containsf(t, rejections, "bid rejected [bid ID: bid_id1] reason: some reason 1", "Rejection message did not match expected")
+	assert.Containsf(t, rejections, "bid rejected [bid ID: bid_id2] reason: some reason 2", "Rejection message did not match expected")
 }
 
 type exchangeSpec struct {
