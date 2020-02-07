@@ -1288,7 +1288,7 @@ func TestBidRejectionErrors(t *testing.T) {
 		innerBids := []*pbsOrtbBid{}
 		for _, bid := range test.bids {
 			currentBid := pbsOrtbBid{
-				bid, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: test.duration},
+				bid, "video", nil, &openrtb_ext.ExtBidPrebidVideo{Duration: test.duration}, 0,
 			}
 			innerBids = append(innerBids, &currentBid)
 		}
@@ -1331,6 +1331,7 @@ func TestApplyDealSupport(t *testing.T) {
 	bidderName3 := openrtb_ext.BidderName("minnotmet")
 	bidderName4 := openrtb_ext.BidderName("invalidconfig")
 	bidderName5 := openrtb_ext.BidderName("nodeal")
+	bidderName6 := openrtb_ext.BidderName("invalidconfig2")
 
 	bidRequest := &openrtb.BidRequest{
 		ID: "some-request-id",
@@ -1355,6 +1356,10 @@ func TestApplyDealSupport(t *testing.T) {
 				ID:  "imp_id5",
 				Ext: json.RawMessage(`{"nodeal": {"dealTier": {"minDealTier": 5, "prefix": "tier"}, "placementId": 10433394}}`),
 			},
+			{
+				ID:  "imp_id6",
+				Ext: json.RawMessage(`{"invalidconfig2": {"dealTier": {"minDealTier": 0, "prefix": "tier"}, "placementId": 10433394}}`),
+			},
 		},
 	}
 
@@ -1378,12 +1383,17 @@ func TestApplyDealSupport(t *testing.T) {
 		"hb_pb":         "12.00",
 		"hb_pb_cat_dur": "12.00_auto_30s",
 	}
+	targ6 := map[string]string{
+		"hb_pb":         "12.00",
+		"hb_pb_cat_dur": "12.00_beauty_30s",
+	}
 
 	bid1_1 := pbsOrtbBid{&openrtb.Bid{}, "video", targ1, &openrtb_ext.ExtBidPrebidVideo{}, 5}
 	bid1_2 := pbsOrtbBid{&openrtb.Bid{}, "video", targ2, &openrtb_ext.ExtBidPrebidVideo{}, 6}
 	bid1_3 := pbsOrtbBid{&openrtb.Bid{}, "video", targ3, &openrtb_ext.ExtBidPrebidVideo{}, 7}
 	bid1_4 := pbsOrtbBid{&openrtb.Bid{}, "video", targ4, &openrtb_ext.ExtBidPrebidVideo{}, 8}
 	bid1_5 := pbsOrtbBid{&openrtb.Bid{}, "video", targ5, &openrtb_ext.ExtBidPrebidVideo{}, 0}
+	bid1_6 := pbsOrtbBid{&openrtb.Bid{}, "video", targ6, &openrtb_ext.ExtBidPrebidVideo{}, 9}
 
 	auc := &auction{
 		winningBidsByBidder: map[string]map[openrtb_ext.BidderName]*pbsOrtbBid{
@@ -1402,16 +1412,23 @@ func TestApplyDealSupport(t *testing.T) {
 			"imp_id5": {
 				bidderName5: &bid1_5,
 			},
+			"imp_id6": {
+				bidderName6: &bid1_6,
+			},
 		},
 	}
 
-	applyDealSupport(bidRequest, auc)
+	dealErrs := applyDealSupport(bidRequest, auc)
 
+	assert.Equal(t, 2, len(dealErrs), "Deal errors should contain 2 errors")
+	assert.Containsf(t, dealErrs, errors.New("dealTier configuration invalid for bidder 'invalidconfig', imp ID 'imp_id4'"), "Expected error message not found in deal errors")
+	assert.Containsf(t, dealErrs, errors.New("dealTier configuration invalid for bidder 'invalidconfig2', imp ID 'imp_id6'"), "Expected error message not found in deal errors")
 	assert.Equal(t, "tier5_movies_30s", auc.winningBidsByBidder["imp_id1"][bidderName1].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur was not updated correctly")
 	assert.Equal(t, "second6_15s", auc.winningBidsByBidder["imp_id2"][bidderName2].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur was not updated correctly")
 	assert.Equal(t, "12.00_medicine_30s", auc.winningBidsByBidder["imp_id3"][bidderName3].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
 	assert.Equal(t, "12.00_30s", auc.winningBidsByBidder["imp_id4"][bidderName4].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
 	assert.Equal(t, "12.00_auto_30s", auc.winningBidsByBidder["imp_id5"][bidderName5].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
+	assert.Equal(t, "12.00_beauty_30s", auc.winningBidsByBidder["imp_id6"][bidderName6].bidTargets["hb_pb_cat_dur"], "hb_pb_cat_dur should not have been changed")
 }
 
 func TestGetDealTiers(t *testing.T) {
@@ -1494,11 +1511,28 @@ func TestValidateDealTier(t *testing.T) {
 		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
 	}
 
+	rawParams6 := json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "  \t   \n"}, "placementId": 10433394}}`)
+	var bidderDealTier6 BidderDealTier
+	err = json.Unmarshal(rawParams6, &bidderDealTier6.DealInfo)
+	if err != nil {
+		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
+	}
+
+	rawParams7 := json.RawMessage(`{"appnexus": {"dealTier": {"minDealTier": 5, "prefix": "   \n prefix\twith  sp aces "}, "placementId": 10433394}}`)
+	var bidderDealTier7 BidderDealTier
+	err = json.Unmarshal(rawParams7, &bidderDealTier7.DealInfo)
+	if err != nil {
+		assert.Fail(t, "Unable to unmarshal JSON data for testing BidderDealTier")
+	}
+
 	assert.Equal(t, true, validateDealTier(bidderDealTier1.DealInfo["appnexus"]), "BidderDealTier should be valid")
 	assert.Equal(t, false, validateDealTier(bidderDealTier2.DealInfo["appnexus"]), "BidderDealTier should be invalid due to empty prefix")
 	assert.Equal(t, false, validateDealTier(bidderDealTier3.DealInfo["appnexus"]), "BidderDealTier should be invalid due to empty dealTier")
 	assert.Equal(t, false, validateDealTier(bidderDealTier4.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing minDealTier")
 	assert.Equal(t, false, validateDealTier(bidderDealTier5.DealInfo["appnexus"]), "BidderDealTier should be invalid due to missing dealTier")
+	assert.Equal(t, false, validateDealTier(bidderDealTier6.DealInfo["appnexus"]), "BidderDealTier should be invalid due to prefix containing all whitespace")
+	assert.Equal(t, true, validateDealTier(bidderDealTier7.DealInfo["appnexus"]), "BidderDealTier should be valid after removing whitespace")
+	assert.Equal(t, "prefixwithspaces", bidderDealTier7.DealInfo["appnexus"].Info.Prefix, "Prefix should have whitespace removed")
 }
 
 func TestUpdateCatDur(t *testing.T) {

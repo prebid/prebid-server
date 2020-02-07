@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -170,7 +171,10 @@ func (e *exchange) HoldAuction(ctx context.Context, bidRequest *openrtb.BidReque
 		}
 
 		if requestExt.Prebid.SupportDeals {
-			applyDealSupport(bidRequest, auc)
+			dealErrs := applyDealSupport(bidRequest, auc)
+			if len(dealErrs) > 0 {
+				errs = append(errs, dealErrs...)
+			}
 		}
 	}
 
@@ -192,7 +196,8 @@ type BidderDealTier struct {
 }
 
 // Updates targeting keys with deal prefixes if minimum deal tier exceeded
-func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) {
+func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) []error {
+	errs := []error{}
 	impDealMap := getDealTiers(bidRequest)
 
 	for impID, topBidsPerImp := range auc.winningBidsByBidder {
@@ -202,9 +207,13 @@ func applyDealSupport(bidRequest *openrtb.BidRequest, auc *auction) {
 
 			if validateDealTier(impDeal[bidderString]) {
 				updateCatDur(topBidPerBidder, impDeal[bidderString].Info)
+			} else {
+				errs = append(errs, fmt.Errorf("dealTier configuration invalid for bidder '%s', imp ID '%s'", bidderString, impID))
 			}
 		}
 	}
+
+	return errs
 }
 
 // Creates map of impression to bidder deal tier configuration
@@ -225,7 +234,12 @@ func getDealTiers(bidRequest *openrtb.BidRequest) map[string]*BidderDealTier {
 }
 
 func validateDealTier(impDeal *DealTier) bool {
-	return impDeal.Info != nil && len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
+	if impDeal.Info != nil {
+		// Remove whitespace from prefix before checking if it can be used
+		impDeal.Info.Prefix = regexp.MustCompile(`\s+`).ReplaceAllString(impDeal.Info.Prefix, "")
+		return len(impDeal.Info.Prefix) > 0 && impDeal.Info.MinDealTier > 0
+	}
+	return false
 }
 
 func updateCatDur(bid *pbsOrtbBid, dealTierInfo *DealTierInfo) {
