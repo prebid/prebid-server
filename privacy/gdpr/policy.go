@@ -5,6 +5,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/go-gdpr/vendorconsent"
 )
 
 // Policy represents the GDPR regulation for an OpenRTB bid request.
@@ -30,5 +31,11 @@ func (p Policy) Write(req *openrtb.BidRequest) error {
 
 	var err error
 	req.User.Ext, err = jsonparser.Set(req.User.Ext, []byte(`"`+p.Consent+`"`), "consent")
+	return err
+}
+
+// ValidateConsent returns an error if the GDPR consent string does not adhere to the IAB TCF spec.
+func ValidateConsent(consent string) error {
+	_, err := vendorconsent.ParseString(consent)
 	return err
 }

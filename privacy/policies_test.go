@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/mxmCherry/openrtb"
+	"github.com/prebid/prebid-server/privacy/ccpa"
+	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -74,4 +76,38 @@ type mockPolicyWriter struct {
 func (m *mockPolicyWriter) Write(req *openrtb.BidRequest) error {
 	args := m.Called(req)
 	return args.Error(0)
+}
+
+func TestReadPoliciesFromConsent(t *testing.T) {
+	testCases := []struct {
+		description    string
+		consent        string
+		expectedResult Policies
+	}{
+		{
+			description:    "Empty String",
+			consent:        "",
+			expectedResult: Policies{},
+		},
+		{
+			description:    "CCPA",
+			consent:        "1NYN",
+			expectedResult: Policies{CCPA: ccpa.Policy{Value: "1NYN"}},
+		},
+		{
+			description:    "GDPR TCF 1.0",
+			consent:        "BONV8oqONXwgmADACHENAO7pqzAAppY",
+			expectedResult: Policies{GDPR: gdpr.Policy{Consent: "BONV8oqONXwgmADACHENAO7pqzAAppY"}},
+		},
+		{
+			description:    "Invalid",
+			consent:        "any invalid",
+			expectedResult: Policies{},
+		},
+	}
+
+	for _, test := range testCases {
+		result := ReadPoliciesFromConsent(test.consent)
+		assert.Equal(t, test.expectedResult, result, test.description)
+	}
 }

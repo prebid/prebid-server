@@ -33,3 +33,23 @@ func writePolicies(req *openrtb.BidRequest, writers []policyWriter) error {
 
 	return nil
 }
+
+func ReadPoliciesFromConsent(consent string) Policies {
+	if err := ccpa.ValidateConsent(consent); err == nil {
+		return Policies{
+			CCPA: ccpa.Policy{
+				Value: consent,
+			},
+		}
+	}
+
+	if err := gdpr.ValidateConsent(consent); err == nil {
+		return Policies{
+			GDPR: gdpr.Policy{
+				Consent: consent,
+			},
+		}
+	}
+
+	return Policies{}
+}

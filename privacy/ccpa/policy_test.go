@@ -226,6 +226,80 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestValidateConsent(t *testing.T) {
+	testCases := []struct {
+		description string
+		consent     string
+		expected    string
+	}{
+		{
+			description: "Valid",
+			consent:     "1NYN",
+			expected:    "",
+		},
+		{
+			description: "Valid - Not Applicable",
+			consent:     "1---",
+			expected:    "",
+		},
+		{
+			description: "Invalid Empty",
+			consent:     "",
+			expected:    "must contain 4 characters",
+		},
+		{
+			description: "Invalid Length",
+			consent:     "1NY",
+			expected:    "must contain 4 characters",
+		},
+		{
+			description: "Invalid Version",
+			consent:     "2---",
+			expected:    "must specify version 1",
+		},
+		{
+			description: "Invalid Explicit Notice Char",
+			consent:     "1X--",
+			expected:    "must specify 'N', 'Y', or '-' for the explicit notice",
+		},
+		{
+			description: "Invalid Explicit Notice Case",
+			consent:     "1y--",
+			expected:    "must specify 'N', 'Y', or '-' for the explicit notice",
+		},
+		{
+			description: "Invalid Opt-Out Sale Char",
+			consent:     "1-X-",
+			expected:    "must specify 'N', 'Y', or '-' for the opt-out sale",
+		},
+		{
+			description: "Invalid Opt-Out Sale Case",
+			consent:     "1-y-",
+			expected:    "must specify 'N', 'Y', or '-' for the opt-out sale",
+		},
+		{
+			description: "Invalid LSPA Char",
+			consent:     "1--X",
+			expected:    "must specify 'N', 'Y', or '-' for the limited service provider agreement",
+		},
+		{
+			description: "Invalid LSPA Case",
+			consent:     "1--y",
+			expected:    "must specify 'N', 'Y', or '-' for the limited service provider agreement",
+		},
+	}
+
+	for _, test := range testCases {
+		result := ValidateConsent(test.consent)
+
+		if test.expected == "" {
+			assert.NoError(t, result, test.description)
+		} else {
+			assert.EqualError(t, result, test.expected, test.description)
+		}
+	}
+}
+
 func TestShouldEnforce(t *testing.T) {
 	testCases := []struct {
 		description string

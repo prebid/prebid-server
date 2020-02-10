@@ -23,7 +23,6 @@ import (
 	"github.com/prebid/prebid-server/openrtb_ext"
 	"github.com/prebid/prebid-server/pbsmetrics"
 	"github.com/prebid/prebid-server/privacy"
-	"github.com/prebid/prebid-server/privacy/gdpr"
 	"github.com/prebid/prebid-server/stored_requests"
 	"github.com/prebid/prebid-server/stored_requests/backends/empty_fetcher"
 	"github.com/prebid/prebid-server/usersync"
@@ -381,11 +380,8 @@ func (deps *endpointDeps) overrideWithParams(httpRequest *http.Request, req *ope
 		req.Imp[0].TagID = slot
 	}
 
-	privacyPolicies := privacy.Policies{
-		GDPR: gdpr.Policy{
-			Consent: readConsentString(httpRequest.URL),
-		},
-	}
+	privacyConsent := readConsentString(httpRequest.URL)
+	privacyPolicies := privacy.ReadPoliciesFromConsent(privacyConsent)
 	if err := privacyPolicies.Write(req); err != nil {
 		return err
 	}
